@@ -1,0 +1,2 @@
+#!/bin/env bash
+java -Xmx8000m -jar $IRAP_DIR/bin/scripture.jar $*

@@ -1,0 +1,343 @@
+#!/bin/env Rscript
+# =========================================================
+# Copyright 2012,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#    $Id: irap.txt Nuno Fonseca Fri Mar 15 01:39:46 2013$
+# =========================================================
+
+###############################################################
+suppressPackageStartupMessages(library("optparse"))
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+
+library(DESeq)
+# specify our desired options in a list
+#
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+pdebug.enabled <- TRUE
+
+# htseq
+# tsvGE2html -f gene -s homo_sapiens  -i test_files/htseq/genes.raw.htseq2.tsv  -x 0 -t "TITLE" -a annot.file --css css.file -o 
+#######################
+usage <- "tsvGE2html --tsv file [options]"
+filenames <- c("tsv_file","annotation") ;#filenames that must exist (if defined)
+option_list <- list(
+  make_option(c("-v", "--verbose"), action="store_true", default=TRUE, help="Print extra output [default]"),
+  make_option(c("-q", "--quietly"), action="store_false", dest="verbose", help="Print little output"),
+  make_option(c("-f", "--feature"), type="character", dest="feature", default="gene",help="Feature (gene,exon,CDS) [default %default]"),
+  make_option(c("-s", "--species"), type="character", dest="species", default="homo_sapiens",help="Species [default %default]"),
+  make_option(c("-i", "--tsv"), type="character", dest="tsv_file", default=NULL,help="TSV file name with ge values"),
+  make_option(c("-m", "--metric"), type="character", dest="metric", default="",help="Metric used in the normalized matrix  (raw, rpkm, nlib, ...)"),
+  make_option(c("-x", "--min-value"), type="numeric", dest="min_value", default=0,help="Discard entries with  values lower than the one provided. [default $default]"),
+  make_option(c("-t", "--title"), type="character", dest="title", default="",help="Report title"),
+  make_option(c("-a", "--annotation"), type="character",default=NULL,help="Annotation file (TSV format)"),
+  make_option(c("-b", "--browser"), type="character",default="../jbrowse/",help="Relative path to the genome browser"),
+  make_option(c("-g","--gdef"), type="character",dest="gdef",default="",help="Groups of samples"),
+  make_option(c("-n","--gnames"), type="character",dest="gnames",default="",help="Groups' names"),
+  make_option(c("-r","--replicates"), type="character",dest="replicates",default="",help="Definition of replicates"),
+  make_option(c("--css"), type="character",default="",help="Path to the CSS file"),
+  make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
+  make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name prefix. An HTML and TSV.gz file will be created.")
+)
+#make_option(c("-p", "--flavour"), type="character", default="cuffdiff",help="Name of the software that produced the TSV file [default %default]"),
+
+# check multiple options values
+multiple.options = list(
+  feature=c('gene','exon','CDS'),
+  metric=c('norm','raw')
+)
+mandatory <- c("tsv_file","out",'metric')
+opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
+
+#############################
+# Fields defined per feature
+# Gene ok
+fields <- list(
+               URL.FIELD.NAME="Gene",
+               URLFIELD.ID="Gene",
+               LOCUS.FIELD="locus",
+               ANNOT.ID="Gene",
+               ID.in.ANNOT="ID"
+               )
+
+# ensure that the path include / in the end
+opt$browser <- paste(gsub("/$","",opt$browser),"/",sep="")
+pdebug(opt)
+
+html.template <- get.path2template(paste("tsvGE2html_",opt$metric,sep=""))
+############
+# process group names and definition
+# TODO: move to irap_utils.R
+# groups
+# list with the files/cols that belong to a specific group
+groups.names <- sapply(strsplit(opt$gnames,",")[[1]],mytrim)
+groups.def <- strsplit(opt$gdef,";")[[1]]
+
+groups.l <- list();
+label2group <- list();
+i <- 1;
+for (c  in groups.def) {
+  groups.l[[groups.names[i]]] <- mytrim(strsplit(c,",")[[1]])
+  for (f in groups.l[[groups.names[i]]]) {
+    label2group[[f]] <- groups.names[i]
+  }
+  i <- i+1;
+}
+
+lib2group <- function(groups.l,files) {
+  g2files <- files
+  for ( g in names(groups.l) ) {
+    for ( l in groups.l[[g]] ) {
+      g2files[g2files==l] <- g
+    }
+  }
+  g2files
+}
+
+# check if output directory exists
+#
+out.dir <- dirname(opt$out)
+if ( ! file.exists(out.dir)) {
+  system(paste("mkdir -p ",out.dir,sep=""))
+}
+########
+pdebug("groups=",groups.names)
+pdebug("TSVFILE=",opt$tsv_file)
+pdebug("Annotation=",opt$annotation)
+
+#tsvDE2html  --tsv RT_bias/tophat2/htseq2/deseq/Brain42vs60.genes_de.tsv
+annot.table <- NULL
+irap.css <- opt$css
+title <- opt$title
+sources.menu <- ""
+
+if ( !is.null(opt$annotation) ) {
+  annot.table <- read.tsv(opt$annotation)
+}
+
+# load TSV
+# TODO: trap and report errors
+table <- read.tsv(opt$tsv_file)
+pdebug("data loaded=",nrow(table)," rows ",ncol(table)," cols")
+
+if (is.irap.empty(table)) {
+  perror("Warning: ignoring 'empty' input file")
+  q(status=0)
+}
+
+html.cols2sel <- colnames(table)
+pdebug.save.state("tsvGE2html0","p0")
+# annotation should be mandatory
+if ( !is.null(annot.table)) {
+  table <- mergeAnnot(table,annot.table,table.field=fields$ANNOT.ID,annot.field=fields$ID.in.ANNOT)
+  # check if name ok
+  if ( sum(!is.na(table$Name)) >0 ) {
+    fields$URL.FIELD.NAME <- "Name"
+  }
+  if ( "locus" %in% colnames(table) ) {
+    fields$LOCUS.FIELD  <- "locus"
+  }
+  if ( "lname" %in% colnames(table) ) {
+    table[,"Gene name"] <- table$lname
+  }
+}
+
+# copies of original matrix
+table.orig  <- table
+uncut.table <- table
+uncut.table.orig <- table
+
+
+###########################################################
+if ( "source" %in% colnames(table) ) {
+  # generate filt.groups.files and filt.groups.def
+  # with for each list (all, pseudogene,...)
+  #  list with the elements from the table that should be included in a specific list
+  #  html filename 
+  sources <- levels(table$source)
+  pdebug(sources)
+  pseudogenes <- grep("pseudogene",sources,value=T)
+  pseudogenes.filt <- sapply(table$source,`%in%`,pseudogenes)
+  pseudogenes.filt2 <- sapply(uncut.table$source,`%in%`,pseudogenes)
+  #pdebug(sum(pseudogenes.filt))
+  protein_coding <- c("protein_coding")
+  protein_coding.filt <- sapply(table$source,`%in%`,protein_coding)
+  protein_coding.filt2 <- sapply(uncut.table$source,`%in%`,protein_coding)
+  xRNA <- grep("RNA$",sources,value=T)
+  xRNA.filt <- sapply(table$source,`%in%`,xRNA)
+  xRNA.filt2 <- sapply(uncut.table$source,`%in%`,xRNA)
+
+  filt.groups.def <- list(
+    all,
+    "pseudogenes"=pseudogenes,
+    "protein coding"=protein_coding,
+    "xRNA"=xRNA
+    )
+  filt.groups <- list(
+    all=TRUE,
+    "pseudogenes"=pseudogenes.filt,
+    "protein coding"=protein_coding.filt,
+    "xRNA"=xRNA.filt
+    )
+  filt.groups.uncut <- list(
+    all=TRUE,
+    "pseudogenes"=pseudogenes.filt2,
+    "protein coding"=protein_coding.filt2,
+    "xRNA"=xRNA.filt2
+    )
+
+  filt.groups.files <- list(
+    all=paste(opt$out,".html",sep=""),
+    "pseudogenes"=paste(opt$out,"_","pseudogenes",".html",sep=""),
+    "protein coding"=paste(opt$out,"_","protein_coding",".html",sep=""),
+    "xRNA"=paste(opt$out,"_","xRNA",".html",sep="")
+    )
+  # sources menu
+  get.source.menu.entry <- function(name) {
+    paste("<a href='",basename(filt.groups.files[[name]]),"'>",name,"</a>",sep="")
+  }
+  sources.menu=paste(sapply(names(filt.groups),get.source.menu.entry),collapse="|")
+}
+#
+library(R2HTML)
+library(brew)
+
+# 
+#
+gen.page <- function (o.html.file) {
+  #save.image()
+  pdebug("Generating html ",o.html.file)
+
+  write.tsv(table.html,file=tsv.file)
+  system(paste("rm -f ",tsv.file,".gz ;gzip ",tsv.file,sep=""))
+
+  irap.assert(ncol(table.html)>0,"unexpected empty table")
+  if ( nrow(uncut.table)<1 ) {
+    pdebug("Not enough data")
+    write.tsv(uncut.table,file=tsv.file)
+    system(paste("rm -f ",tsv.file,".gz ;gzip ",tsv.file,sep=""))
+    brew(get.path2template("not_enough_data"),o.html.file)
+    return
+  }
+  # setup variables
+  quant.data<-table.html[,html.cols2sel]
+  rownames(quant.data)<-quant.data[,1]
+  quant.data<-quant.data[,-1]
+  # colours for each group
+  coloursbygroup <- rainbow(length(names(groups.l)))
+  names(coloursbygroup) <- names(groups.l)
+  # colours by sample
+  conds <- lib2group(groups.l,names(quant.data))
+  coloursbysample <- coloursbygroup[conds]
+  names(coloursbysample) <- colnames(quant.data)
+  
+  # if raw counts use deseq
+  # TODO: handle normalized values
+  if ( opt$metric=="raw" ) {
+     # aggregate (using DE seq)
+     conds <- lib2group(groups.l,names(quant.data))
+
+     #Note: counts of technical replicates  have to be summed up into a single column
+     pdebug("Conds=",conds)
+     #pdebug(head(quant.data))
+     cds <- newCountDataSet(quant.data,conds)
+     #normalize the number of read counts
+     cds <- estimateSizeFactors(cds)
+     if (sum(is.na(sizeFactors(cds)))[1]==0) {
+       quant.data.norm <-counts(cds,normalized=T)
+     } else {
+       quant.data.norm <-counts(cds,normalized=F)
+     }
+   } else {
+     pdebug("Report for metric ",opt$metric," not implemented")
+     q(status=1)
+  }
+  # data per group
+  pdebug("conds=",conds)
+  pdebug("dim(quant.data.norm)=",dim(quant.data.norm))
+  #save(file="wip",quant.data.norm,conds)
+  quant.data.norm.group <- data2groups(quant.data.norm,conds)
+  quant.data.group <- data2groups(quant.data,conds)
+  ##############################################
+  pdebug("Generating html ",o.html.file)
+  pdebug("temp=",html.template)
+  options("R2HTML.format.decimal.mark"=".")
+  caption <- ""
+  brew(html.template,o.html.file)
+}
+
+o.html.file <-paste(opt$out,".html",sep="")
+file.prefix <- opt$out
+tsv.file <- gsub(".html$",".tsv",o.html.file)
+tsv.file.ref <- basename(tsv.file)
+# Main html page
+table.html <- table
+
+#save.image("wip")
+gen.page(o.html.file)
+
+
+if ( "source" %in% colnames(table) ) {
+  for (filt.name  in names(filt.groups) ) {
+    uncut.table <-  uncut.table.orig
+    table <- table.orig
+    o.html.file <-filt.groups.files[[filt.name]]
+    if ( filt.name!="all" ) {
+      #save.image()
+      uncut.table <- uncut.table[filt.groups.uncut[[filt.name]],]
+      if ( length(filt.groups[[filt.name]])==0 ) {
+        tsv.file<-""
+        brew(get.path2template("not_enough_data"),o.html.file)  
+      } else {
+        table.html <- table[filt.groups[[filt.name]],html.cols2sel]        
+        tsv.file <- gsub(".html$",".tsv",o.html.file)
+        tsv.file.ref <- basename(tsv.file)
+        file.prefix <- gsub(".html","",filt.groups.files[[filt.name]])
+        gen.page(o.html.file)
+      }
+    }
+  }
+}
+warnings()
+q(status=0)
+
+tsvGE2html.debug <- function() {
+  rdata.obj <- "tsvGE2html0.Rdata"
+  load(rdata.obj,envir=.GlobalEnv)
+  pdebug.rdata()
+  source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+  library(DESeq)
+  assign("html.template",get.path2template("tsvGE2html_raw"),,envir = .GlobalEnv)
+}
+
+IRAP.DIR=getwd()
+Sys.setenv(IRAP_DIR=IRAP.DIR)
+tsvGE2html.debug()
+
+# tests
+tsvDE2html -t test_files/cuffdiff/varVersusnoVar.genes_de.tsv -o a -a test_files/dummy_annot.tsv -a
+tsvGE2html -i test_files/htseq/genes.raw.htseq2.tsv -o a -m raw --gdef "Brain37R1,Brain37R2,Brain37R3,Brain37R4;Brain42R1,Brain42R2,Brain42R3,Brain42R4;Brain60R1,Brain60R2,Brain60R3,Brain60R4;UHRR37R1,UHRR37R2,UHRR37R3,UHRR37R4;UHRR42R1,UHRR42R2,UHRR42R3,UHRR42R4;UHRR60R1,UHRR60R2,UHRR60R3,UHRR60R4" --gnames "Brain37,Brain42,Brain60,UHRR37,UHRR42,UHRR60"  -a test_files/gene.annot2.tsv 
+
+tsvGE2html -i test_se_2l/tophat1/htseq1/SE1.se.transcripts.rpkms.none.tsv -o a 
+tsvGE2html -m "raw" --tsv test_se_2l/bowtie1/basic/genes.raw.basic.tsv --out test_se_2l/report/quant/bowtie1_x_basic/gene.raw.t --species homo_sapiens --feature CDS --browser ../../../../jbrowse/ --css ../../../../irap.css --title "bowtie1 x basic" -a test_se_2l/data/gene.annot.tsv  --gdef "SE1; SE2;" --gnames "C1,C2" -f "gene"
+

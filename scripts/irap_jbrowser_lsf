@@ -1,0 +1,112 @@
+#!/bin/env bash
+# =========================================================
+# Copyright 2012,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#    $Id: 0.1.1$
+# =========================================================
+
+set -e 
+
+###################################
+# load shared code
+LSF_CMD=irap_jbrowse_lsf
+source $IRAP_DIR/aux/sh/lsf_shared_code.sh
+
+###################################
+
+# TODO add the stages to irap_jbrowse.mk
+stage1_files=`irap conf=$conf $IRAP_PARAMS jbrowser_stage1_targets |tail -n 1 2>/dev/null`
+stage2_files=`irap conf=$conf $IRAP_PARAMS jbrowser_stage2_targets |tail -n 1 2>/dev/null`
+stage3_files=`irap conf=$conf $IRAP_PARAMS jbrowser_stage3_targets |tail -n 1 2>/dev/null`
+stage4_files=`irap conf=$conf $IRAP_PARAMS jbrowser_stage4_targets |tail -n 1 2>/dev/null`
+
+# dependencies
+level1="$stage1_files"
+level2="$stage2_files $stage3_files $stage4_files"
+#nlevels=2
+declare -i nlevels=2 ;#+1
+
+declare -i level=1
+declare -i level_counter=1
+
+echo "Level=$level/$nlevels"
+prev_job=""
+while [ $level -le $nlevels ]; do
+    var="level${level}"
+    files=${!var}
+    echo "LEVEL($level)=$files"
+    jobn="${jobname_prefix}l$level"
+    level_counter=1
+    for f in $files; do
+	submit_job "${jobn}[$level_counter]" $prev_job  "$cmd conf=$conf $IRAP_PARAMS $f"
+	let level_counter=level_counter+1
+    done
+    prev_job="-w ended(\"$jobn\")"
+    let level=level+1
+done
+
+submit_job_status "${jobn}"
+echo "JOBNAME=$jobn"
+exit 0
+
+# echo " * Report setup "
+# submit_job "${jobname_prefix}0[1]" ""  "$cmd conf=$conf report_setup $IRAP_PARAMS"
+
+
+# #############
+# # Alignments
+# irap_path=`which irap`
+# # TODO replace the following two lines with a call to irap to get the files to be generated
+# supported_mappers=`grep "^SUPPORTED_MAPPERS=" $irap_path|cut -f 2 -d= |sed "s/ /|/g"`
+# mappers_dirs=`ls -d -1 $name/* | grep -E "$supported_mappers"`
+# quant_ofiles=`irap conf=$conf quant_report_files|tail -n 1`
+# de_ofiles=`irap conf=$conf de_report_files|tail -n 1`
+
+# for d in $mappers_dirs; do
+#     mapper=`basename $d`
+#     echo "Bam files generated using $mapper..."
+#     let c=1
+#     FILES=$d/*.hits.bam
+#     if [ "$FILES" != '$d/*.hits.bam' ]; then
+# 	mapper_counter=`expr $mapper_counter + 1`
+# 	NEW_JOB=`irap_bam_report_lsf conf=$conf mapper=$mapper | grep "JOB=" | cut -f 2 -d\=`	
+# 	submit_job "${jobname_prefix}f[$mapper_counter]"  "-w  ended($NEW_JOB)"  "irap conf=$conf $IRAP_PARAMS $name/report/mapping/$mapper.html"
+#     fi
+# done
+
+# # GE
+# mapper_counter=`expr $mapper_counter + 1`
+# submit_job "${jobname_prefix}f[$mapper_counter]"  ""  "irap conf=$conf $IRAP_PARAMS quant_report"
+
+# ####
+# # DE
+# for f in $de_ofiles; do
+#     mapper_counter=`expr $mapper_counter + 1`
+#     submit_job "${jobname_prefix}f[$mapper_counter]"  "-w ended(${jobname_prefix}0*)"  "irap conf=$conf  $IRAP_PARAMS $f"
+# done
+
+# submit_job_status "${jobname_prefix}f"
+# echo "JOBS=$name/${jobname_prefix}*.out"
+# exit
+
+
+
+
+
+

@@ -1,0 +1,87 @@
+#!/bin/env Rscript
+# =========================================================
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#    $Id: 0.1.1$
+# =========================================================
+
+###############################################################
+suppressPackageStartupMessages(library("optparse"))
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+
+pdebug.enabled <- TRUE
+# 
+args <- commandArgs(trailingOnly=TRUE)
+#######################
+usage <- "irap_cufflinksFPKMs2counts ..."
+option_list <- list(
+  make_option(c("-c", "--cufflinks"), type="character", dest="cufffile", default=NULL,help="Cufflinks isoform fpkm tracking file"),
+  make_option(c("-l", "--label"), type="character", dest="label", default=NULL,help="Label for the column with the counts"),
+  make_option(c("-r", "--readlength"), type="numeric", dest="rl", default=NULL,help="Read length"),
+#  make_option(c("-p", "--ispe"), type="character", dest="ispe", default=NULL,help="Paired reads (y|n)"),
+  make_option(c("-o", "--genefile"), type="character", dest="genefile", default=NULL,help="Name of the file to write the counts per gene."),
+  make_option(c("-i", "--isoformfile"), type="character", dest="isoformfile", default=NULL,help="Name of the file to write the counts per isoform.")
+  )
+
+# check multiple options values & file existence
+filenames <- c("cufffile")
+multiple.options = list()
+mandatory <- c("label","rl","genefile","isoformfile")
+opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
+
+#####################
+# if Paired reads
+#if (opt$ispe=="y") {
+#  RL <- opt$rl
+#} else {
+RL <- opt$rl
+#}
+#
+#save.image("debug.Rdata")
+tsv.data<-read.tsv(opt$cufffile)
+cnames <- c("tracking_id","gene_id","length","coverage")
+# Check if the necessary columns are available
+if ( sum(cnames  %in% colnames(tsv.data))!=length(cnames) ) {
+  perror("Error in ",optcufffile,", expected the columns", paste(cnames,sep=","))
+  q(status=1)
+}
+s<-tsv.data[,c("tracking_id","gene_id","length","coverage")]
+# cleanup some problematic entries generated sometimes by cufflinks
+s<-tsv.data[tsv.data$tracking_id!="",]
+s$pseudo.counts <- round(s[,"coverage"]*s[,"length"]/RL,digits=0)
+
+# save pseudo counts per transcript
+# genes.....
+s2 <- s[,c("tracking_id","pseudo.counts")]
+colnames(s2) <- c("ID",opt$label)
+s2 <- s2[order(as.character(s2[,1])),]
+write.tsv(s2,file=opt$isoformfile,header=F)
+# save pseudo counts per gene
+# aggregate!
+cols2aggr <- c("tracking_id","gene_id")
+a<-aggregate(s[,"pseudo.counts"], by=list(gene_id=s$gene_id), "sum")
+colnames(a) <- c("ID",opt$label)
+write.tsv(a,file=opt$genefile,header=F)
+
+q(status=0)

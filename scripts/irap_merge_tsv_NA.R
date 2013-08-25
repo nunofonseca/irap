@@ -1,0 +1,38 @@
+#!/bin/env Rscript
+args <- commandArgs(trailingOnly=TRUE)
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+
+
+if (length(args)<1) {
+  cat("ERROR! usage: irap_merge_tsv_NA.R  file1.tsv [file2.tsv file3.tsv ...]\n")
+  q(status=1);
+}
+
+
+
+files <- args
+f1<-files[1]
+files<-files[-1]
+t1<-read.table(f1,sep="\t",as.is=c(T,F))
+t1 <- fix.cufflinks.fpkms(t1)
+colnames(t1)<-c("Gene",basename(f1))
+for ( f in  files ) {
+	t2<-read.table(f,sep="\t",as.is=c(T,F))
+        t2 <- fix.cufflinks.fpkms(t2)
+        colnames(t2) <- c("Gene",basename(f))
+	m<-merge(t1,t2,by="Gene",all=TRUE)
+        t1 <- NULL
+        t2 <- NULL
+        t1 <- m
+        m  <- NULL        
+}
+#change NAs to 0
+t1[is.na(t1)]<-0
+write.table(t1,sep="\t",quote=F,row.names=F,col.names=T)
+q(status=0)

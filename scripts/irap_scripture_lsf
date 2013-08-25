@@ -1,0 +1,66 @@
+#!/bin/env bash
+# =========================================================
+# Copyright 2012,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#    $Id$
+# =========================================================
+
+set -e 
+
+###################################
+# load shared code
+LSF_CMD=irap_scripture_lsf
+source $IRAP_DIR/aux/sh/lsf_shared_code.sh
+
+################
+# length of jobname needs to be small otherwise lsf dependencies will not work
+declare -i s1=0
+declare -i s2=0
+
+
+#############
+# Submit jobs
+echo " * Initialization "
+submit_job "${jobname_prefix}0[1]"   "$cmd conf=$conf stage0 scripture_setup $IRAP_PARAMS quant_method=scripture"
+
+
+# Paired end files
+echo "***********************************************"
+echo "* Step&21 (PE)"
+for p in $pe ; do 
+    let s1=s1+1
+    let s2=s2+1
+    submit_job "${jobname_prefix}${s1}2[1]" -w "${jobname_prefix}0*" "$cmd conf=$conf  pe=$p se=  $IRAP_PARAMS quant_method=scripture stage1 stage2 quant_method=scripture scripture_assembly_lsf1"
+done
+
+# Single end files
+echo "***********************************************"
+echo "*Step1&2 (SE)"
+for f in $se ; do
+    let s2=s2+1
+    submit_job "${jobname_prefix}2[$s2]" -w  "${jobname_prefix}0*"  "$cmd conf=$conf   pe=  se=$f  $IRAP_PARAMS quant_method=scripture stage1 stage2 scripture_assembly_lsf1"
+done
+
+#
+submit_job "${jobname_prefix}fs" -w  "${jobname_prefix}2*"  "$cmd conf=$conf  $IRAP_PARAMS quant_method=scripture scripture_assembly"
+
+# TODO: report
+echo JOBS=$name/${jobname_prefix}*.out
+echo JOBNAME=${jobname_prefix}fs
+exit

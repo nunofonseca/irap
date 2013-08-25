@@ -1,0 +1,48 @@
+#!/bin/env Rscript
+# =========================================================
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#    $Id$
+# =========================================================
+
+args <- commandArgs(trailingOnly=TRUE)
+
+tsv_file <- args[1]
+field2aggr <- args[2]
+out_file <- args[3]
+
+# TODO validate arguments
+if ( is.na(out_file)) {
+  cat("ERROR!\n usage: tsv.aggrbygene TSVfile countfield outfile\n")
+  q(status=1) 		
+} 
+
+
+x<-read.table(tsv_file,header=T)
+a<-aggregate(x[,c("reads","RPKM")], by=list(x$gene), "sum")
+a$reads<-round(a$reads,0)
+names(a)<-c("gene","counts","RPKM")
+df<-data.frame(a)
+df$gene<-as.character(df$gene)
+
+write.table(df[,c("gene",field2aggr)],file=out_file,row.names=F,sep="\t",quote=FALSE,col.names=F)
+  
+q(status=0)
+
+
+

@@ -1,0 +1,1520 @@
+#!/bin/sh
+#; -*- mode: Makefile;-*-
+#the next line restarts using\
+exec make --warn-undefined-variables -Rf "$0"  ${1+"$@"} 
+# send the standard output to a log file --quiet
+# exec bash -c 'make  --warn-undefined-variables -Rf "$0" ${1+"$@"}  | tee  `date "+%d%m%y%H%M"`.log" - 
+# =========================================================
+# Copyright 2012,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#    $Id: scripts/irap 0.1.1 Nuno Fonseca Fri Dec 21 01:07:37 2012$
+# =========================================================
+
+# Goals: flexible pipeline that can perform checkpoints, easily exchange of components
+#
+# Note that this program is constantly evolving - we are trying to maintain the documentation up to date.
+#
+#This program will perform: 
+#  - setup/stage0: check all directories and data files are present and at the expected place 
+#        --- called with "setup"
+#  - stage1: quality filtering and reporting: check fastq file quality and report
+#        --- called with "quality_filtering_and_report"
+#  - stage2: mapping: to the transcriptome or to the genome (the former: to come)
+#        --- called by the mapper's name, e.g. "bwa_mapping", "tophat_mapping", etc.
+#  - stage3: estimate gene expression 
+#        --- called with the assembler's name, e.g. "cufflinks_assemble", "mmseq_assemble", etc.                                                                                                                         
+#  - stage4: estimate differential expression 
+#        --- called by "DE"
+#
+# Tools to map, calculate gene expression or differential expression will vary so are not documented.
+#
+#
+# The file requires a config file OR to enter the compulsory parameters in command line (name= data_dir= species= reference=)
+# Typical command:
+#     - irap conf=my_conf_file.conf
+#     - irap name=study_name species=my_species reference=DNA_species_file 
+#            E.g. irap name=ibm_fastqc data_dir=/net/isilon5/ma/home/kmegy/iRAP/irap/data species=homo_sapiens reference=Homo_sapiens.GRCh37.66.dna.fa.gz
+#
+#To run a specific stage, provide its name as parameter: 
+#     - irap conf=my_conf_file.conf quality_filtering_and_report
+#
+#It is recommended to run the "setup" stage before any specific single task 
+# to ensure the directory structure is set properly. 
+#No need to do this if running the whole analysis as setup WILL be run by default.
+#
+# Note:
+#   - libnames in conf file should not end in _(1/2)
+#
+###############################################################
+# TODO: organize the code into multiple files (mapping, quantification, DE)
+# disable deletion of temporary files
+.SECONDARY: 
+.ONESHELL:
+
+##################
+# Setup some paths
+# path to script
+path=.
+path?=$(shell if which irap >/dev/null 2>/dev/null; then dirname $(MAKEFILE_LIST); else dirname `which irap`; fi)
+
+ifdef path
+ PATH:=$(path):$(PATH)
+endif
+
+# Requires make 3.82 or above
+VERSION_OK=$(shell if [ `make --version|head -n 1 | cut -f3 -d\ ` \< 3.82 ]; then echo 0; else echo 1; fi )
+ifeq ($(VERSION_OK),0)
+ $(error make version needs to be 3.82 or above)
+endif
+
+
+################################################################################
+# Auxiliary functions
+################################################################################
+
+# Information messages
+define p_info=
+$(info $(shell date "+%H:%M:%S %d/%m/%Y * ") $(1))
+endef
+
+# Error messages
+define p_error=
+$(info $(shell date "+%H:%M:%S %d/%m/%Y") * ERROR: $(1)) && $(error Fatal error)
+endef
+
+# check if the parameter has a value - prints an error if not
+define check_ok=
+$(if $($(1)),$(call p_info, *	$(1)=$($(1))),$(p_error Missing $(1)))
+endef
+
+# complain if a file does not exist and exit
+file_exists=$(if  $(realpath $(1)),,$(call p_error,$(1) not found))
+
+check_param_ok=$(if $($(1)),$(info *	$(1)=$($(1))),$(error * Missing $(1)))
+
+# 1 - param 2-param_name
+check_name=$(if $(shell echo $(1)|sed "s/[0-9]*//g"),,$(error * Invalid $(2) $(1)))
+
+
+################################################################################
+# Variables
+################################################################################
+ifndef debug	
+ debug=1
+endif
+
+ifndef pe
+ pe=
+endif
+
+ifndef se
+ se=
+endif
+
+#************************
+#Version and license info
+pname=IRAP
+version=0.2.0
+contact=Developed by Nuno Fonseca (authorname (at) acm.org)
+license=This pipeline is distributed  under the terms of the GNU General Public License 3
+
+
+################################################################################
+# Default values
+################################################################################
+# max. memory (in MB)
+def_max_mem=6000
+
+#Contamination file
+def_cont_index=$(data_dir)/contamination/e_coli
+
+#Default number of threads to run on a computer farm
+def_max_threads=1
+
+#Minimal base quality accepted
+def_min_read_quality=10
+
+#Trim all reads to the minimum read size after quality trimming - y/n
+def_trim_reads=y
+
+# Quality filtering - on/off (alias: qc)
+def_qual_filtering=on
+
+#Software for mapping (reads -> genome/transcriptome)
+def_mapper=tophat1
+def_mapper_splicing=yes
+
+#Software for differential expression
+def_de_method=none
+
+#Is the experiment designed to compare the results of different mappers? yes|no => undef conditions|contrasts
+def_mapper_comparison=no
+
+# default method to count reads mapped to features (genes, exons, ...)
+def_quant_method=htseq2
+
+# default method to normalize the counts
+def_quant_norm_method=htseq2
+
+# produce quantification per exon? default is gene level or transcript level depending on the method used
+def_exon_quant=y
+def_transcript_quant=y
+
+# maximum number of hits reported by the mapper
+def_max_hits=10
+
+# fix NH flags in bam files
+def_fix_NH=y
+
+# use only a subset of the genes in the DE analysis (y|n)
+def_de_annot_genes_only=n
+
+# Htseq - produce a sam file with annotations?y/n
+htseq_sam_output_def=n
+
+# DE
+def_de_pvalue_cutoff=0.05
+def_de_num_genes_per_table=300
+
+def_annot_tsv=auto
+
+################################################################################
+# START!
+$(info *****************************************************)
+$(info * $(pname) $(version))
+$(info * $(contact))
+$(info * $(license))
+$(info *)
+
+$(info * Initializing...)
+###############################################
+# Load configuration (mandatory)
+ifdef conf
+ $(call file_exists,$(conf))
+ $(info * Trying to load configuration file $(conf)...)
+ include $(conf)
+ $(info * Configuration loaded.)
+else
+ $(call p_error,Configuration file missing)
+endif
+
+###############################################################
+# Check and validate the parameters values
+# fastq files -> pair-end, single-end or both
+# for now we assume that only one file can be provided for pe and se
+
+$(info * )
+$(info * Required Parameters:)
+
+#***********************
+# Name of the experiment
+# A directory will be created (in the data_dir/results/) with that name with the results of the analysis
+ifndef name
+ $(call p_error, missing argument name!)
+else
+ $(info *	name=$(name))
+endif
+
+#************************
+# data_dir Data directory (directory where the data is expected to be)
+# Directory organization
+# data_dir/reference/species/(fasta+(cdna+gtf))
+# data_dir/raw_data/species/
+# data_dir/results
+
+# check if data dir exists and structure is OK
+# TODO
+ifndef data_dir
+ $(call p_error,missing argument data_dir)
+endif
+
+
+$(info *	data_dir=$(data_dir))
+$(call file_exists,$(data_dir))
+
+#********
+# Species
+ifndef species
+ $(call p_error,missing argument species)
+else
+ $(info *	species=$(species))
+endif
+
+#**********************
+# Reference genome file
+ifndef reference
+ $(call p_error,missing argument reference)
+endif
+
+# 
+reference_dir=$(abspath $(data_dir)/reference/$(species))
+reference_abspath=$(abspath $(reference_dir)/$(subst .gz,,$(reference)))
+reference_prefix=$(reference_abspath)
+# remove .gz if the file is gziped...the creation of the uncompress file is automatic
+
+$(info *	reference=$(reference))
+$(call file_exists,$(reference_dir)/$(reference))
+#********* 
+# GTF file
+ifndef gtf_file
+ gtf_file?=$(subst .fa,.gtf,$(reference))
+endif
+
+# remove .gz if the file is gziped...the creation of the uncompress file is automatic
+gtf_file_dir=$(abspath $(data_dir)/reference/$(species))
+gtf_file_abspath=$(abspath $(gtf_file_dir)/$(subst .gz,,$(gtf_file)))
+
+$(info *       gtf_file  = $(gtf_file))
+$(call file_exists,$(gtf_file_dir)/$(gtf_file))
+
+# file with the junctions (as used by tophat)
+# offset=0
+# includes 1 base of the exons
+juncs_file=$(subst .gz,,$(gtf_file)).juncs
+juncs_file_abspath=$(name)/data/$(juncs_file)
+
+# GFF3 file obtained from the gtf file
+gff3_file=$(subst .gz,,$(subst .gtf,.gff3,$(gtf_file)))
+
+$(info *       gff3_file  = $(gff3_file))
+gff3_file_abspath=$(name)/data/$(gff3_file)
+#**********
+# cDNA file
+ifndef cdna_file
+ cdna_file?=$(subst .dna.fa,.cdna.all.fa,$(reference))
+ ifeq ($(cdna_file),$(reference))
+   cdna_file=$(subst .fa,.cdna.all.fa,$(reference))
+ endif
+endif
+cdna_dir:=$(abspath $(data_dir)/reference/$(species))
+cdna_file_abspath=$(abspath $(cdna_dir)/$(subst .gz,,$(cdna_file)))
+
+#$(info *       CDNA = $(cdna_file))
+# TODO: only report an error if the file is really needed
+#$(call file_exists,$(cdna_dir)/$(cdna_file))
+
+
+#trans_file?=$(abspath $(data_dir)/reference/$(species)/$(shell echo $(reference)|sed "s/.dna.fa/.trans.fa/" | sed "s/.gz//"))
+trans_file?=$(cdna_file_abspath)
+$(info *       Transcripts = $(trans_file))
+#$(call file_exists,$(trans_file))
+
+#************
+# FASTQ files
+# SE reads
+ifdef se
+ # check if file exists
+ $(info *	se=$(se))
+ $(foreach l,$(se),$(call check_param_ok,$(l)_rs))
+ $(foreach l,$(se),$(call check_param_ok,$(l)_qual))
+ ifile_given=1
+endif
+
+# PE files (libraries)
+# follow the same syntax as Abyss
+# lib=A B C
+# 
+# A=""
+ifdef pe
+ map=$(foreach a,$(2),$(abspath $(call $(1),$(a))))
+ deref=$($1)
+ fastq_files?=$(call map, deref, $(pe))
+ $(info *	pe=$(pe))
+ $(info * debug * fastq_files=$(fastq_files))
+ # check the definition of 
+ #  insert size
+ #  sd
+ #  read size
+ # for each lib
+ rs_list=
+ set_rs_list=$(eval rs_list+= $($(1)))
+ $(foreach l,$(pe),$(call check_param_ok,$(l)_sd))
+ $(foreach l,$(pe),$(call check_param_ok,$(l)_ins))
+ $(foreach l,$(pe),$(call check_param_ok,$(l)_rs))
+ $(foreach l,$(pe),$(call check_param_ok,$(l)_qual))
+ $(foreach l,$(pe),$(call set_rs_list,$(l)_rs))
+ #$(foreach l,$(pe),$(call check_param_ok,$(l)_mp))
+ ifile_given=1
+endif
+
+ifndef ifile_given
+$(warning pe parameter or se parameter should be given)
+endif
+
+#***********
+# Contrasts
+#***********
+
+# backward compatibility
+#ifdef conditions
+#ifndef contrasts
+#contrasts=conditions
+#endif
+#endif
+
+
+ifdef contrasts
+ $(info *	contrasts=$(contrasts))
+# check contrast/group names
+ $(foreach l,$(contrasts),$(call check_name,$(l),contrast);$(foreach g,$($(l)),$(call check_name,$(g),group/condition)))
+ $(foreach l,$(contrasts),$(info *      $(l)=$($(l)));$(foreach g,$($(l)),$(call check_param_ok,$(g))))
+endif
+
+
+# Contrasts
+# Ex.
+# contrasts=contrast1 contrast2
+# contrast1=g1 g2
+# g1=Lib1 Lib2
+# g2=Lib3 Lib4
+
+#*********************
+# Technical replicates
+#*********************
+
+# ex. technical.replicates=SE1,SE2;PE1,PE3,PE4
+# means that there are two groups of tech. replicates (separated by;), group 1 composed by SE1 and SE2  and group2 composed by PE1,PE3 and PE4.
+ifndef technical.replicates
+technical.replicates=
+ $(info *	technical.replicates=NONE)
+else
+ $(info *	technical.replicates=$(technical.replicates))
+# $(info *       Currently this information is not used)
+endif
+
+
+#####################
+# Other Optional parameters
+#####################
+$(info * )
+$(info * Optional Parameters:)
+
+#********
+# Threads
+#********
+ifndef max_threads
+ max_threads=$(def_max_threads)
+endif
+$(info *	max_threads=$(max_threads))
+
+#********************
+# Temporary directory
+#********************
+# TODO: currently unused
+ifndef tmp_dir
+ tmp_dir=$(data_dir)/tmp
+endif
+
+$(shell mkdir -p tmp_dir)
+$(info *	tmp_dir=$(tmp_dir) (temporary directory))
+
+#******************
+# Quality filtering
+#******************
+ifdef qc
+ qual_filtering=$(qc)
+endif
+
+ifndef qual_filtering
+ qual_filtering=$(def_qual_filtering)
+endif
+
+ifndef trim_reads
+ trim_reads=$(def_trim_reads)
+endif
+
+#*************
+# Min. quality
+#*************
+ifdef min_read_quality
+ ifeq ($(strip $(min_read_quality)),)
+  undefine min_read_quality
+ endif
+endif
+
+ifndef min_read_quality
+ min_read_quality=$(def_min_read_quality)
+endif
+
+
+#*******************
+# Contamination file
+#*******************
+ifndef cont_index
+ cont_index=$(def_cont_index)
+endif
+
+#**************
+# Mapper to use
+#**************
+ifndef mapper
+ mapper=$(def_mapper)
+endif
+$(info *	mapper=$(mapper))
+
+SUPPORTED_MAPPERS=tophat1 tophat2 smalt gsnap soapsplice bwa1 bwa2 bowtie1 bowtie2 gem star osa gems
+ifeq (,$(filter $(mapper),$(SUPPORTED_MAPPERS)))
+$(call p_info,[ERROR] Mapping)
+$(error $(mapper) not implemented)
+endif
+
+#***************************
+# Quantification/Transcr. assembly program
+#***************************
+# Note: only reference based assemblers should be supported
+# assembler (deprecated)
+ifdef quant_method
+undefine assembler
+endif
+
+ifdef assembler
+ifndef quant_method
+quant_method=$(assembler)
+endif
+ifndef quant_norm_method
+quant_norm_method=$(assembler)
+endif
+endif
+
+ifndef quant_norm_method
+quant_norm_method=none
+endif
+
+
+###########################
+# Method to count reads mapped to features (genes, exons, ...)
+###########################
+ifndef quant_method
+ quant_method:=$(def_quant_method)
+endif
+
+#SUPPORTED_QUANT_METHODS=basic htseq_1 htseq_2 cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd scripture
+# temporary (backward compatibility)
+SUPPORTED_QUANT_METHODS=basic htseq1 htseq2 cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd scripture flux_cap
+ifeq (,$(filter $(quant_method),$(SUPPORTED_QUANT_METHODS) none))
+$(call p_info,[ERROR] quant_method)
+$(error $(quant_method) not supported)
+endif
+
+# temporary (backward compatibility)
+# ifeq ($(quant_method),htseq_1)
+# override quant_method:=htseq1
+# endif
+
+# ifeq ($(quant_method),htseq_2)
+# override quant_method=htseq2
+# endif
+
+$(info *	quant_method=$(quant_method))
+
+ifndef exon_quant
+exon_quant=$(def_exon_quant)
+endif
+
+ifndef transcript_quant
+transcript_quant=$(def_transcript_quant)
+endif
+
+$(info *	exon_quant=$(exon_quant))
+$(info *	transcript_quant=$(transcript_quant))
+
+##################################
+# method to normalize the counts
+##################################
+ifndef quant_norm_method
+  ifneq (,$(filter flux_cap,$(quant_method)))
+   $(call info,*	overriding quant_norm_method!)
+   override quant_norm_method=$(quant_method)
+  else
+   ifneq (,$(findstring cufflinks,$(quant_method)))
+    $(call info,*	overriding quant_norm_method!)
+    override quant_norm_method=$(quant_method)
+   else
+    quant_norm_method=$(def_quant_norm_method)
+   endif
+  endif
+endif
+SUPPORTED_COUNT_NMETHODS=cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd deseq flux_cap edger
+ifeq (,$(filter $(quant_norm_method),none $(SUPPORTED_COUNT_NMETHODS)))
+$(call p_info,[ERROR] quant_norm_method)
+$(error $(quant_norm_method) not supported)
+endif
+
+## override normalization option based on the quantification method
+ifneq (,$(findstring cufflinks,$(quant_method)))
+$(call info,*	overriding quant_norm_method!)
+override quant_norm_method=$(quant_method)
+endif
+
+ifneq (,$(filter flux_cap,$(quant_method)))
+$(call info,*	overriding quant_norm_method!)
+override quant_norm_method=$(quant_method)
+endif
+
+$(info *	quant_norm_method=$(quant_norm_method))
+
+#******************************
+# Use unspliced mapping: yes/no 
+#******************************
+# this option is going to be removed in the future
+ifndef mapper_splicing
+ mapper_splicing=$(def_mapper_splicing)
+endif
+$(info *	mapper_splicing=$(mapper_splicing))
+
+#********************
+# DE
+#********************
+ifndef de_method
+ifdef compare
+de_method=$(compare)
+endif
+endif
+
+ifndef de_method
+ de_method=$(def_de_method)
+endif
+
+SUPPORTED_DE_METHODS=cuffdiff1 cuffdiff2 cuffdiff1_nd cuffdiff2_nd deseq edger voom
+ifeq (,$(filter $(de_method),none $(SUPPORTED_DE_METHODS)))
+$(call p_info,[ERROR] de_method)
+$(error $(de_method) not supported)
+endif
+
+$(info *	de_method=$(de_method))
+
+ifndef de_pvalue_cutoff=
+ de_pvalue_cutoff=$(def_de_pvalue_cutoff)
+endif
+
+ifndef de_num_genes_per_table
+de_num_genes_per_table=$(def_de_num_genes_per_table)
+endif
+
+# TSV file
+# format (fields may be missing with NA)- (gene) ID is mandatory and should match the one given in the gtf file
+# "ID","Name","locus","source","lname","GO","GOterm","KEGG"
+ifndef annot_tsv
+annot_tsv=$(def_annot_tsv)
+#else
+# TODO: check if file format is ok and file !=auto
+endif
+
+ifeq (auto,$(annot_tsv)) 
+annot_tsv=$(name)/data/gene.annot.tsv
+endif
+
+ifndef de_annot_genes_only
+de_annot_genes_only=$(def_de_annot_genes_only)
+endif
+
+#************
+# Constraints
+#************
+ifdef compare_mappers
+ ifdef conditions
+  $(error Incompatible options: compare_mappers and conditions)
+ endif
+endif
+
+# Check if the options provided are valid
+ifeq (invalid,$(shell irap_paths $(mapper) $(quant_method) $(quant_norm_method) $(de_method)))
+  $(error invalid combination mapper:$(mapper) -> quant_method:$(quant_method) -> quant_norm_method:$(quant_norm_method) -> de_method:$(de_method))
+endif
+
+$(info *========================================================)
+
+ifeq ($(mapper_splicing),no)
+ file_indexed=$(trans_file)
+else
+ file_indexed=$(reference_prefix)
+endif
+
+ifeq (y,$(de_annot_genes_only))
+ ifeq ($(de_method),cuffdiff1)
+  $(error Incompatible options: de_annot_genes_only & $(quant_method))
+ endif
+ ifeq ($(de_method),cuffdiff2)
+  $(error Incompatible options: de_annot_genes_only & $(quant_method))
+ endif
+endif
+
+##########
+# other options
+
+# maximum number of mappings allowed for each read
+ifndef max_hits
+ max_hits=$(def_max_hits)
+endif
+
+# fix NH flag in BAM files (y,n)
+ifndef fix_NH
+ fix_NH=$(def_fix_NH)
+endif
+
+#
+# Htseq - produce a sam file with annotations?y/n
+ifndef htseq_sam_output
+htseq_sam_output=$(htseq_sam_output_def)
+endif
+
+ifeq ($(htseq_sam_output),y)
+htseq_sam_output=
+endif
+#
+# 
+ifndef max_mem
+max_mem=$(def_max_mem)
+endif
+
+# max memory in GB
+max_mem_gb:=$(shell expr $(max_mem) \/ 1000)
+
+# samtools max mem should be set ~ 1/2 of the max. memory available
+ifndef SAMTOOLS_SORT_MEM
+ SAMTOOLS_SORT_MEM:=`expr $(max_mem) \* 1000000 \* 50 \/ 100`
+endif
+
+################################################################################
+# Make stuff
+phony_targets=
+silent_targets= 
+
+
+################################################################################
+# AUXILIARY FUNCTIONS
+################################################################################
+# FALSE=empty
+
+# return a string in the form of group1,group2,...
+define groups2str=
+$(call spaces2commas,$(call groupsnames))
+endef
+
+define spaces2commas=
+$(shell echo $(1)|tr " " ",")
+endef
+
+define groupsnames=
+$(sort $(strip $(foreach l,$(contrasts),$(foreach g,$($(l)),$(g)))))
+endef
+
+
+# return groups definition
+define groupsdef2str=
+$(foreach g,$(call groupsnames),$(call spaces2commas,$(strip $($(g))));)
+endef
+
+define libname2ofastq=
+$($(1))
+endef
+
+# fix the libname by excluding _1 and _2 from PE files
+define fix_libname=
+$(if $(call valid_libname,$(1)),$(1),$(subst _2,,$(subst _1,,$(1))))
+endef
+
+define valid_libname=
+$(if $(filter $(strip $(1)),$(pe) $(se)),y)
+endef
+
+# 1 - libname
+# return y if is PE '' otherwise
+define is_pe_lib=
+$(if $(filter $(strip $(1)),$(pe)),y)
+endef
+
+# 1-libname
+# path to the filtered fastq files 
+define libname2fastq=
+$(if $(call is_pe_lib,$(1)),$(name)/data/$(1)_1.f.fastq $(name)/data/$(1)_2.f.fastq,$(name)/data/$(1).f.fastq)
+endef
+
+# 1-libname
+define bam_file_for_lib=
+$(if $(call is_pe_lib,$(1)),$(1).pe.hits.bam,$(1).se.hits.bam)
+endef
+
+define get_lib_name=
+$(if $(filter $(1),$(se)),$(1),$(if $(findstring $(1),$(pe)),$(subst _1,,$(1)),$(if $(findstring $(subst _1,,$(1)),$(pe)),$(subst _1,,$(1)),$(1))))
+endef
+
+# 1-group
+define  get_group_bam_files=
+$(foreach l,$($(1)), $(name)/$(mapper)/$(call bam_file_for_lib,$(l)))
+endef
+
+# the bam file names of each group are concatened using ,
+define  get_contrast_bam_files=
+$(foreach c,$($(1)), $(shell echo $(call get_group_bam_files,$(c)) | sed "s/ /,/g"))
+endef
+
+# 
+define get_de_annot=
+$(if $(annot_tsv),--annotation $(annot_tsv),)
+endef
+
+# DE options
+define get_de_annot_genes_only=
+$(if $(subst y,,$(de_annot_genes_only)),,--annot-genes-only)
+endef
+
+#1
+define filename2libname=
+$(foreach l,$(se) $(pe),$(if $(filter $(l).,$(1)),$(l)))
+endef
+
+# 1 tsv filename
+#  exon, gene or CDS?
+# DE filename to Analysis level
+define DEfilename2AL=
+$(if $(findstring .genes_de,$(1)),gene,$(if $(findstring .exons_de,$(1)),exon,CDS))
+endef
+
+define DEfilepath2demethod=
+$(shell basename `dirname $(1)`)
+endef
+
+# sam/bam cat
+# avoid samtools cat if there is only a file
+# $(1)=files
+define samcat=
+$(if $(strip $(word 2,$(1))),samtools cat -o - $(1),cat $(1))
+endef
+
+# two line empty file (ensure that size !=0 and # lines >1)
+# 1 - filename
+define empty_file=
+echo Empty	Empty > $(1) && echo Empty	Empty  >> $(1)
+endef
+
+# 1 - filename
+# return y if it is an empty file or '' otherwise
+define is_empty_file=
+$(if  $(realpath $(1)),$(if $(shell head -n 1 $(1) | grep   Empty),y))
+endef
+
+################################################################################
+# Default target
+all: setup quality_filtering_and_report mapping assemble DE
+
+################################################################################
+# Load extra code
+irap_path=$(shell dirname `which irap`)
+# Mapping
+include $(irap_path)/../aux/mk/irap_map.mk
+# JBrowse
+include $(irap_path)/../aux/mk/irap_jbrowse.mk
+# HTML Reporting
+include $(irap_path)/../aux/mk/irap_report.mk
+# Software used (versions and citations)
+include $(irap_path)/../aux/mk/irap_citations.mk
+# Quantification
+include $(irap_path)/../aux/mk/irap_quant.mk
+# DE
+include $(irap_path)/../aux/mk/irap_de.mk
+#################################################################################
+ 
+index_files=$(call $(mapper)_index_filename,$(file_indexed),$(file_indexed))
+
+#*********************
+# print all variables
+ifdef debug
+$(info DEBUG)
+VARS2PRINT=reference_prefix gtf_file_abspath index_files file_indexed
+$(foreach v,$(VARS2PRINT),$(info $v=$($v)))
+endif
+$(call p_info,[DONE] Initialization)
+
+###################
+# Quality Filtering
+###################
+define do_quality_filtering_and_report=
+	irap_fastq_qc $(read_qual_filter_common_params) read_size=$($(1)_rs) qual=$($(1)_qual) f="$($(1))" out_prefix=$(1)
+endef
+
+define do_quality_filtering_and_report_cleanup=
+	irap_fastq_qc $(read_qual_filter_common_params) read_size=$($(1)_rs) qual=$($(1)_qual) f="$($(1))" out_prefix=$(1) clean
+endef
+
+define not_empty=
+	$(if $(call file_exists,$(1),),$(call p_error,File $(1) not found))
+	$(if $(shell wc -l $(1)|cut -f 1 -d\ ),,$(call p_error,Empty file $(1)))
+endef
+
+################################################################################
+#
+################################################################################
+# Generic file extension rules
+
+# uncompress rules
+%.fa: %.fa.gz
+	gunzip -c $< > $@.tmp && mv $@.tmp $@
+
+%.fasta: %.fasta.gz
+	gunzip -c $< > $@.tmp && mv $@.tmp $@
+
+%.gtf: %.gtf.gz
+	gunzip -c $< > $@.tmp && mv $@.tmp $@
+
+# give an error (should never happen)
+#%.gtf:
+#	$(call p_error, Missing gtf file $@)
+
+%.gtf.checked: %.gtf
+	irap_check_gtf $(gtf_file_abspath) &&  touch $@
+
+%.gtf.bed: %.gtf
+	gtf2bed.pl $< > $@
+
+%.bam.bedGraph: %.bam $(name)/data/chr_sizes.txt
+	bedtools  genomecov -ibam $< -bg -g $(name)/data/chr_sizes.txt > $@.tmp && mv $@.tmp $@
+
+# gtf file with exon_id attribute
+%.gtf.exon_id.gtf: %.gtf %.gtf.checked
+	gtf_add_exon_id.pl $< > $@.tmp && mv $@.tmp $@
+
+
+# sort a bam file by name and index
+%.byname.bam: %.bam
+	samtools sort -n -m $(SAMTOOLS_SORT_MEM) $< $*.byname.tmp && mv $*.byname.tmp.bam $@ 
+
+# index a bam file
+%.bam.bai: %.bam
+	samtools index $< $@.tmp && mv $@.tmp $@
+
+#
+# bigWig from bed 
+# bed file needs to be sorted and converted to bedGraph
+%.bw: %.bed $(name)/data/chr_sizes.txt
+	tail -n +2 $< | cut -f 1,2,3,5 | sort -k1,1 -k2,2n  > $<.sorted.bed && \
+	bedGraphToBigWig $<.sorted.bed $(name)/data/chr_sizes.txt $@.tmp && mv $@.tmp $@
+
+# bigwig from bedgraph
+%.bw: %.bedGraph $(name)/data/chr_sizes.txt
+	bedGraphToBigWig $< $(name)/data/chr_sizes.txt $@.tmp && mv $@.tmp $@
+
+define quant_levelFromFilename=
+$(if $(findstring exons,$(1)),exon,$(if $(findstring genes,$(1)),gene,mRNA))
+endef
+
+# TSV (with feature value) is converted to bedGraph (http://genome.ucsc.edu/goldenPath/help/bedgraph.html)
+# bedGraph generated is sorted
+%.bedGraph: %.tsv $(gff3_file_abspath).csv $(name)/data/chr_sizes.txt
+	tsv2bed.R $<  $(call quant_levelFromFilename,$*) $(gff3_file_abspath).csv $(name)/data/chr_sizes.txt | \
+	sort -k1,1 -k2,2n | \
+	bedtools merge -scores mean -i - > $@.tmp &&\
+	mv $@.tmp $@
+
+
+# give an error
+%.cdna.fa:
+	$(call p_error,Missing cdna file $@)
+
+################################################################################
+phony_targets+= stage0 stage1 stage2 stage3 stage3a stage3as stage3b stage4
+silent_targets+= 
+
+# alias - make it easier for the user
+stage0: setup
+stage1: setup quality_filtering_and_report
+stage2: setup mapping
+stage3: setup quantification
+stage3a: setup $(quant_method)_quant 
+stage3as: setup quantification_s
+#stage3b: setup stage3a
+# deprecated
+stage3b: setup $(shell rm -f $(name)/$(mapper)/$(quant_method)/rawcounts.$(quant_method).tsv) stage3a
+stage4: setup DE
+
+# deprecated: to be removed in the future
+assemble: quantification
+
+################################################################################
+# stage 0 - setup/initialization
+setup: setup_dirs setup_files
+
+phony_targets+= setup setup_files
+
+################################################################################
+# Setup initial files
+SETUP_DATA_FILES=$(name)/data/gene_class.txt $(index_files) $(gtf_file_abspath).checked  $(gtf_file_abspath).exon_id.gtf $(juncs_file_abspath) $(name)/data/chr_sizes.txt  $(gff3_file_abspath) $(annot_tsv)
+
+setup_files: $(SETUP_DATA_FILES)
+
+$(index_files): $(file_indexed)
+	$(call p_info,INDEXING)
+	$(call run_$(mapper)_index,$(file_indexed))
+
+# Create the file with gene classification by EnsembleId
+$(data_dir)/reference/$(species)/gene_class.txt: $(gtf_file_abspath)
+	gtf2geneclass.sh $< > $@.tmp && mv $@.tmp  $@
+#	$(error Missing required file $@)
+
+# use tophat to generate the juncs file
+# .gtf.juncs: .gtf
+# note: the file may be empty
+# in this case gtf2juncs returns an error that is ignored
+$(juncs_file_abspath): $(gtf_file_abspath)
+	tophat2_gtf_juncs $< > $@.tmp 
+	mv $@.tmp $@
+
+# .gff3.csv: .gff3
+$(gff3_file_abspath): $(gtf_file_abspath)
+	gtf2gff3.pl $< | sed "s/^chr//" |sed "s/^Chr//" > $@
+
+# 
+$(gff3_file_abspath).csv: $(gff3_file_abspath)
+	gff32csv.R $<   >   $@.tmp && mv $@.tmp $@
+
+
+$(name)/data/gene_class.txt: $(data_dir)/reference/$(species)/gene_class.txt
+	cp $< $@.tmp && mv $@.tmp $@
+
+# file with chr\tchr_size
+$(name)/data/chr_sizes.txt: $(reference_abspath)
+	irap_chr_sizes.pl $< > $@.tmp && mv $@.tmp $@
+
+$(reference_abspath).fai: $(reference_abspath)
+	samtools faidx $<
+
+# automatically generated annot file
+# avoid generating file if it is in the reference directory
+ifeq ($(realpath $(data_dir)/reference/$(species)/gene.annot.tsv),)
+$(name)/data/gene.annot.tsv: $(gff3_file_abspath)
+	irap_gff32annot --gff3 $< -s $(species) > $@.tmp && mv $@.tmp $@
+else
+$(name)/data/gene.annot.tsv: $(data_dir)/reference/$(species)/gene.annot.tsv
+	cp $< $@
+endif
+
+# $(trans_file): 
+# 	$(call p_error,Missing trans_file = $(trans_file))
+
+################################################################################
+# Setup directory structure
+phony_targets+= setup_dirs
+
+setup_dirs: $(tmp_dir) $(name)/report/riq/ $(name)/$(mapper)/ $(name)/data/  $(name)/$(mapper)/$(quant_method)/  $(name)/$(mapper)/$(quant_method)/$(de_method)/
+	$(call p_info,[DONE] Directory structure created)
+
+$(tmp_dir):
+	@mkdir -p $@
+
+# really required?
+#$(data_dir)/data:
+#	mkdir -p $@
+
+
+$(name)/data/:
+	@mkdir -p $@
+
+$(name)/report/riq/:
+	@mkdir -p $@
+
+$(name)/$(mapper)/:
+	@mkdir -p $@
+
+$(name)/$(mapper)/$(quant_method)/:
+	@mkdir -p $@
+
+$(name)/$(mapper)/$(quant_method)/$(de_method)/:
+	@mkdir -p $@
+
+
+################################################################################
+# Read Filtering
+################################################################################
+# reuse the data filtered between experiments?
+read_qual_filter_common_params=tmp_dir=$(tmp_dir) out_dir=$(name)/data report_dir=$(name)/report/riq threads=$(max_threads) data_dir=$(data_dir)/raw_data/$(species) qual_filtering=$(qual_filtering)  min_qual=$(min_read_quality) trim=$(trim_reads) cont_index=$(cont_index) 
+
+phony_targets+= qc quality_filtering_and_report clean_quality_filtering_and_report_cleanup
+
+ifdef min_read_len
+	read_qual_filter_common_params+=min_len=$(min_read_len)
+endif
+
+# alias: stage1=qc=quality_filtering_and_report
+qc: quality_filtering_and_report 
+
+STAGE1_OUT_FILES=$(foreach p,$(se),$(name)/data/$(p).f.fastq) $(foreach p,$(pe),$(name)/data/$(p)_1.f.fastq)
+# TODO: improve robustness (no filtered reads)
+# TODO:	signature=filtering parameters (if they are the same then avoid recomputation between experiments)  minlen=$(min_read_len) min_qual=$(min_qual) qual_perc=$(min_qu
+quality_filtering_and_report: setup	$(STAGE1_OUT_FILES)
+	$(call p_info,[DONE] Quality filtering)
+# SE 
+$(name)/data/%.f.fastq: 
+	$(call p_info,Filtering $(call fix_libname,$*))
+	$(call do_quality_filtering_and_report,$(call get_lib_name,$(call fix_libname,$*)))
+#	$(call not_empty,$@)
+
+
+# Cleanup
+clean_quality_filtering_and_report_cleanup:
+	$(foreach p,$(se) $(pe),$(call do_quality_filtering_and_report_cleanup,$(p));)
+
+################################################################################
+# Mapping
+################################################################################
+# All mapping files have the same name (but are placed in different folders)
+# The mappings are placed in $(name)/$(mapper) with the suffix (se/pe)hits.bam
+
+# ** TODO **
+# 1. Use singleton reads if available  (f.sing.fastq file)
+# 2. make mapping independent from the remaining steps...WIP
+
+mapping: stage1 $(name)/$(mapper)/ $(mapper)_mapping
+	$(call p_info,[DONE] Mapping)
+
+#*************
+# Generic rule
+#*************
+STAGE2_OUT_FILES=$(foreach p,$(pe), $(name)/$(mapper)/$(p).pe.hits.bam) $(foreach s,$(se), $(name)/$(mapper)/$(s).se.hits.bam)
+
+STAGE2BYNAME_OUT_FILES=$(foreach p,$(pe), $(name)/$(mapper)/$(p).pe.hits.byname.bam) $(foreach s,$(se), $(name)/$(mapper)/$(s).se.hits.byname.bam)
+#####################
+phony_targets+= $(mapper)_mapping mapping stage2_tracks
+
+$(mapper)_mapping: $(index_files) $(STAGE2_OUT_FILES)
+
+stage2_tracks: $(call rep_browse,$(subst .bam,.bam.tracks,$(STAGE2_OUT_FILES)))	
+	echo $^ $(mapper)
+	$(call p_info,[DONE] stage 2 tracks)
+
+# 
+mappingbyname: $(mapper)_mappingbyname
+
+$(mapper)_mappingbyname: $(index_files) $(STAGE2BYNAME_OUT_FILES)
+
+$(name)/$(mapper)/%.se.hits.bam: $(name)/data/%.f.fastq $(index_files) $(gtf_file_abspath) $(reference_prefix) $(index_files)
+	$(call run_$(mapper)_map,$*,$<,$@)
+
+# interleaved fastq file
+# special rule for GEM with PE
+# 1-mapper
+define mapper_ifiles=
+$(if $(subst gem,,$(1)),$(3),$(name)/data/$(2)_int.f.fastq)
+endef
+
+$(name)/$(mapper)/%.pe.hits.bam: $(call mapper_ifiles,$(mapper),%,$(name)/data/%_1.f.fastq $(name)/data/%_2.f.fastq)   $(index_files)
+	$(call run_$(mapper)_map,$*,$(call mapper_ifiles,$(mapper),$*,$(name)/data/$*_1.f.fastq $(name)/data/$*_2.f.fastq),$@)
+
+
+# interleaved fastq file
+$(name)/data/%_int.f.fastq: $(name)/data/%_1.f.fastq $(name)/data/%_2.f.fastq
+	fastq2interleaved.pl $^ $@.tmp && mv $@.tmp $@
+
+
+%.$(mapper).index: %.fa
+
+################################################################################
+# Quantification
+################################################################################
+
+define genes_quant_files=
+$(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.genes.raw.$(quant_method).tsv) $(foreach s,$(se), $(name)/$(mapper)/$(quant_method)/$(s).se.genes.raw.$(quant_method).tsv)
+endef
+
+define exons_quant_file=
+$(if $(filter y,$(exon_quant)),$(name)/$(mapper)/$(quant_method)/exons.raw.$(quant_method).tsv,)
+endef
+
+define exons_quant_files=
+$(if $(filter y,$(exon_quant)),$(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.exons.raw.$(quant_method).tsv) $(foreach s,$(se), $(name)/$(mapper)/$(quant_method)/$(s).se.exons.raw.$(quant_method).tsv),)
+endef
+
+define exons_quant_norm=
+$(if $(filter y,$(exon_quant)),$(1),)
+endef
+
+
+define transcripts_quant_file=
+$(if $(filter y,$(transcript_quant)),$(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv,)
+endef
+
+define transcripts_quant_files=
+$(if $(filter y,$(transcript_quant)),$(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se), $(name)/$(mapper)/$(quant_method)/$(s).se.transcripts.raw.$(quant_method).tsv),)
+endef
+
+define transcripts_quant_norm=
+$(if $(filter y,$(transcript_quant)),$(1),)
+endef
+
+
+define nquant_files=
+$(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.genes.rpkms.$(quant_norm_method).tsv) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.genes.rpkms.$(quant_norm_method).tsv) $(call exons_quant_file,$(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.exons.rpkms.$(quant_norm_method).tsv) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.exons.rpkms.$(quant_norm_method).tsv)) $(call transcripts_quant_file,$(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.transcripts.rpkms.$(quant_norm_method).tsv) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.transcripts.rpkms.$(quant_norm_method).tsv))
+endef
+
+# Note
+# The quantification may be produced at the level of genes, exons  or transcripts/isoforms
+# The quantification can be simply counts (raw), f/rpkms (rpkm), or normalized by library size (nlib)
+# The names of the TSV files produced have the format: <quant.level>.<type of quantification>.quant_method.tsv
+# Ex. genes.raw.htseq1.tsv
+#     exons.raw.htseq1.tsv
+#     genes.nlib.htseq1.tsv
+
+$(quant_method)_quant_files=$(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv $(call transcripts_quant_file)  $(call exons_quant_file) 
+
+phony_targets+= quantification $(quant_method)_quant quantification_s
+
+# Raw  + Normalized 
+quantification: $(quant_norm_method)_nquant $(quant_method)_quant 
+	$(call p_info,[DONE] Assembly and quantification)
+
+$(quant_method)_quant: mapping $($(quant_method)_quant_files)
+
+
+# do not create the final matrix file (used by lsf wrapper)
+ifeq ($(shell echo -n $(quant_method)|sed -E "s/[12].*//"),cufflinks)
+quantification_s: setup mapping $(call nquant_files)
+else
+quantification_s: setup mapping $(call genes_quant_files) $(call transcripts_quant_files)  $(call exons_quant_files) 
+endif
+
+
+#*****************
+# Scripture 
+#*****************
+
+ifndef scripture_params
+scripture_params= -minSpliceSupport 1
+endif
+
+define scripture_pe_file=
+$(if $(strip $(pe)),$(1).paired.bam,)
+endef
+
+define scripture_pe_params=
+$(if $(strip $(pe)),-pairedEnd $(1),)
+endef
+# run scripture for each chr
+# extract the sequences
+#                 1     2            3          4           5             6              7
+# run_scripture (sam,tsv file,reference_dir,target_dir,pairend_option,annot.gtf,tsv file@extended bed)
+define run_scripture=
+	mkdir -p $(4)
+	for chr in `cut -f 1 $(2)`; do  \
+		scripture  $(scripture_params) -alignment $(1) -out $(4)/$$chr.segments -sizeFile $(2) -chr $$chr  -chrSequence $(3)/$$chr.fa $(5); \
+	    scripture  -task score -in  $(4)/$$chr.segments -alignment $(1) -sizeFile $(2) -out $(4)/$$chr.score.tsv $(5);\
+	done; 
+	cat $(4)/*.score.tsv > $(7).tmp  && bedtools intersect -wb -b $(6) -a $(7).tmp | cut -f 15,29- a.tsv | sed -e "s/^\([0-9]*\).0.\(.*\)/\2\t\1/" > $(7).tmp2 &&\
+	irap_naive_count.pl $(7).tmp2 $(7).exons $(7).genes && \
+	mv $(7).exons $(7).exons.tsv && \
+	mv $(7).genes $(7).genes.tsv  && \
+	grep -v -e "(`cut -f 1 $(7).exons.tsv|sed 's/ /|/g'`)" $(gtf_file_abspath)| sed  "s/.*gene_id .\([^\"]*\).;.*/\1\t0/" >>  $(7).genes $(7).genes.tsv 
+endef
+
+phony_targets+= scripture_quant scripture_assembly scripture_setup scripture_assembly_lsf1
+
+scripture_quant: mapping $(name)/$(mapper)/scripture/rawcounts.scripture.tsv
+	$(call p_error,scripture assembly is working (use target scripture_assembly) but quantification is still under development)
+#
+# as recommend by scripture manual
+scripture_assembly: $(name)/$(mapper)/scripture/rawcounts.all.scripture.tsv
+
+scripture_setup: $(name)/$(mapper)/$(quant_method)/chr_size.tsv $(reference_abspath)_files
+
+# only generate the bam files for each lib
+scripture_assembly_lsf1: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.$(quant_method).tsv) $(foreach s,$(se), $(name)/$(mapper)/$(quant_method)/$(s).se.$(quant_method).tsv)
+
+$(name)/$(mapper)/scripture/rawcounts.all.scripture.tsv:  $(gtf_file_abspath) $(name)/$(mapper)/$(quant_method)/alignments.bam $(name)/$(mapper)/$(quant_method)/chr_size.tsv $(reference_abspath)_files    $(call scripture_pe_file,$(name)/$(mapper)/$(quant_method)/alignments.bam) 
+	mkdir -p $(@D)/all
+	$(call run_scripture,$(@D)/alignments.bam,$(@D)/chr_size.tsv,$(reference_abspath)_files,$(@D)/all, $(call scripture_pe_params,$(call scripture_pe_file,$(@D)/alignments.bam)),$(gtf_file_abspath),$@.tmp) && mv $@.tmp.genes.tsv $@
+
+
+#
+# for DE and normalization it may be better to have the counts file by file
+$(name)/$(mapper)/scripture/rawcounts.scripture.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.$(quant_method).tsv) $(foreach s,$(se), $(name)/$(mapper)/$(quant_method)/$(s).se.$(quant_method).tsv)
+	irap_merge_tsv.sh $^  > $@
+
+# SE & PE
+$(name)/$(mapper)/scripture/%.se.scripture.tsv: $(name)/$(mapper)/%.se.hits.bam $(gtf_file_abspath) $(name)/$(mapper)/$(quant_method)/chr_size.tsv $(reference_abspath)_files   $(name)/$(mapper)/%.se.hits.bam.bai
+	$(call run_scripture,$<,$(@D)/chr_size.tsv,$(reference_abspath)_files,$(@D)/$*,,$(gtf_file_abspath),$@.tmp) && mv $@.tmp.genes.tsv $@
+
+$(name)/$(mapper)/scripture/%.pe.scripture.tsv: $(name)/$(mapper)/%.pe.hits.bam $(gtf_file_abspath) $(name)/$(mapper)/$(quant_method)/chr_size.tsv $(reference_abspath)_files   $(name)/$(mapper)/%.pe.hits.bam.bai
+	$(call run_scripture,$<,$(@D)/chr_size.tsv,$(reference_abspath)_files,$(@D)/$*, -pairedEnd $<,$(gtf_file_abspath),$@.tmp) && mv $@.tmp.genes.tsv $@
+
+
+$(name)/$(mapper)/$(quant_method)/alignments.bam: $(foreach p,$(pe),$(name)/$(mapper)/$(p).pe.hits.byname.bam) $(foreach s,$(se),$(name)/$(mapper)/$(s).se.hits.byname.bam)
+	$(call samcat,$^) >  $@.tmp.bam  && samtools sort -m $(SAMTOOLS_SORT_MEM)  $@.tmp.bam $@.sorted  && mv  $@.sorted.bam $@  && samtools index $@
+
+
+$(name)/$(mapper)/$(quant_method)/alignments.bam.paired.bam: $(foreach p,$(pe),$(name)/$(mapper)/$(p).pe.hits.byname.bam)
+	$(call samcat,$^) > $@.unsorted.bam && samtools sort  -m $(SAMTOOLS_SORT_MEM) $@.unsorted.bam $@.tmp && mv $@.tmp.bam $@ && samtools index $@
+
+#
+#A 2-column tab separated file containing the chromosome name and size for the organism.
+$(name)/$(mapper)/$(quant_method)/chr_size.tsv: $(reference_abspath).fai
+	cut -f 1,2 $< > $@.tmp && mv $@.tmp $@
+
+$(reference_abspath)_files: $(reference_abspath)
+	irap_fasta_split.pl $< $@
+
+
+################################################################################
+# Normalization
+################################################################################
+$(quant_norm_method)_nquant_files=$(name)/$(mapper)/$(quant_method)/genes.nlib.$(quant_norm_method).tsv $(name)/$(mapper)/$(quant_method)/genes.rpkms.$(quant_norm_method).tsv $(call exons_quant_norm,$(name)/$(mapper)/$(quant_method)/exons.nlib.$(quant_norm_method).tsv $(name)/$(mapper)/$(quant_method)/exons.rpkms.$(quant_norm_method).tsv) $(call transcripts_quant_norm,$(name)/$(mapper)/$(quant_method)/transcripts.nlib.$(quant_norm_method).tsv $(name)/$(mapper)/$(quant_method)/transcripts.rpkms.$(quant_norm_method).tsv)
+
+STAGE3_OUT_FILES=$($(quant_method)_quant_files) $($(quant_norm_method)_nquant_files)
+
+STAGE3_TSV_FILES=$(call exons_quant_files)\
+	       $(call transcripts_quant_files)\
+	       $(call genes_quant_files)\
+	       $(call nquant_files)
+
+##################
+#
+
+# which program to use to merge the tsv files
+# 1 = quant_method
+# TODO: reduce memory footprint of irap_merge_tsv_NA.sh 
+define merge_tsv=
+$(if $(findstring cufflinks,$(1)),irap_merge_tsv_NA.sh,irap_merge_tsv.sh)
+endef
+
+phony_targets+= $(quant_norm_method)_nquant
+
+$(quant_norm_method)_nquant: $(quant_method)_quant $($(quant_norm_method)_nquant_files)
+
+$(name)/$(mapper)/$(quant_method)/genes.rpkms.$(quant_norm_method).tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.genes.rpkms.$(quant_norm_method).tsv) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.genes.rpkms.$(quant_norm_method).tsv) 
+	$(call merge_tsv,$(quant_method)) $^  > $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/$(quant_method)/exons.rpkms.$(quant_norm_method).tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.exons.rpkms.$(quant_norm_method).tsv) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.exons.rpkms.$(quant_norm_method).tsv) 
+	$(call merge_tsv,$(quant_method)) $^  | sed "s/^Gene/Exon/" > $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/$(quant_method)/transcripts.rpkms.$(quant_norm_method).tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.transcripts.rpkms.$(quant_norm_method).tsv) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.transcripts.rpkms.$(quant_norm_method).tsv) 
+	$(call merge_tsv,$(quant_method)) $^  | sed "s/^Gene/Transcript/"  > $@.tmp && mv $@.tmp $@
+
+
+###########
+# Disabled
+$(name)/$(mapper)/$(quant_method)/%.none.tsv:
+	$(call p_info,Quantification normalization disabled. Please set the quant_norm_method parameter if you do not want this behavior.)
+	@$(call empty_file,$@)
+
+#############
+# Cufflinks1
+#############
+$(name)/$(mapper)/$(quant_method)/%.genes.rpkms.cufflinks1.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.genes.fpkm_tracking
+	cut -f 1,10 $<  | tail -n +2  | grep -v CUFF  > $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/cufflinks1_nd/%.genes.rpkms.cufflinks1_nd.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.genes.fpkm_tracking
+	cut -f 1,10 $< | tail -n +2 > $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/$(quant_method)/%.exons.rpkms.cufflinks1.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.gtf
+	grep -w exon $< | grep -v CUFF | sed -e 's/.*gene_id .\([^\"]*\).; transcript_id .\([^\"]*\).; exon_number .\([^\"]*\).; FPKM .\([^\"]*\)..*/\1.\2.\3\t\4/' > $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/$(quant_method)/%.exons.rpkms.cufflinks1_nd.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.gtf
+	grep -w exon $<  | grep -v CUFF | sed -e 's/.*gene_id .\([^\"]*\).; transcript_id .\([^\"]*\).; exon_number .\([^\"]*\).; FPKM .\([^\"]*\)..*/\1.\2.\3\t\4/' > $@.tmp && mv $@.tmp $@
+
+#
+$(name)/$(mapper)/$(quant_method)/%.transcripts.rpkms.cufflinks1.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.isoforms.fpkm_tracking
+	cut -f 1,10 $<  | tail -n +2  | grep -v CUFF > $@.tmp && mv $@.tmp $@
+# 'new' genes can't appear in the tsv file otherwise the different files can't be merged
+
+$(name)/$(mapper)/$(quant_method)/%.transcripts.rpkms.cufflinks1_nd.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.isoforms.fpkm_tracking
+	cut -f 1,10 $<  | tail -n +2 > $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/$(quant_method)/%.nlib.cufflinks1.tsv:
+	$(call p_info, Warning! Unable to generate  nlib file $@ with $(quant_method).)
+	@$(call empty_file,$@)
+$(name)/$(mapper)/$(quant_method)/%.nlib.cufflinks1_nd.tsv:
+	$(call p_info, Warning! Unable to generate nlib file $@ with $(quant_method).)
+	@$(call empty_file,$@)
+
+############
+# Cufflinks2
+############
+$(name)/$(mapper)/$(quant_method)/%.genes.rpkms.cufflinks2.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.genes.fpkm_tracking
+	cut -f 1,10 $<  | tail -n +2  |grep -v CUFF > $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/cufflinks2/%.exons.rpkms.cufflinks2.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.gtf
+	grep -w exon $<  | grep -v CUFF | sed -e 's/.*gene_id .\([^\"]*\).; transcript_id .\([^\"]*\).; exon_number .\([^\"]*\).; FPKM .\([^\"]*\)..*/\1.\2.\3\t\4/' > $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/$(quant_method)/%.transcripts.rpkms.cufflinks2.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.isoforms.fpkm_tracking
+	cut -f 1,10 $<  | tail -n +2  |grep -v CUFF  > $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/$(quant_method)/%.genes.rpkms.cufflinks2_nd.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.genes.fpkm_tracking
+	cut -f 1,10 $<  | tail -n +2  |grep -v CUFF > $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/$(quant_method)/%.exons.rpkms.cufflinks2_nd.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.gtf
+	grep -w exon $<  | grep -v CUFF | sed -e 's/.*gene_id .\([^\"]*\).; transcript_id .\([^\"]*\).; exon_number .\([^\"]*\).; FPKM .\([^\"]*\)..*/\1.\2.\3\t\4/' > $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/$(quant_method)/%.transcripts.rpkms.cufflinks2_nd.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.isoforms.fpkm_tracking
+	cut -f 1,10 $<  | tail -n +2  |grep -v CUFF  > $@.tmp && mv $@.tmp $@
+
+
+$(name)/$(mapper)/$(quant_method)/%.nlib.cufflinks2.tsv:
+	$(call p_info, Warning! Unable to  generate nlib file $@ with $(quant_method).)
+	@$(call empty_file,$@)
+
+$(name)/$(mapper)/$(quant_method)/%.nlib.cufflinks2_nd.tsv:
+	$(call p_info, Warning! Unable to generate  nlib file $@ with $(quant_method).)
+	@$(call empty_file,$@)
+
+##################################
+# DEseq - normalize by sample size
+# nlib
+# deseq_min_reads:=5
+# Note: counts of technical replicates  have to be summed up into a single column
+$(name)/$(mapper)/$(quant_method)/genes.nlib.deseq.tsv: $(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv
+	irap_deseq_norm $<  > $@.tmp && mv $@.tmp $@
+$(name)/$(mapper)/$(quant_method)/transcripts.nlib.deseq.tsv: $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv
+	irap_deseq_norm $<  > $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/$(quant_method)/exons.nlib.deseq.tsv: $(name)/$(mapper)/$(quant_method)/exons.raw.$(quant_method).tsv
+	irap_deseq_norm $<  > $@.tmp && mv $@.tmp $@
+
+
+$(name)/$(mapper)/$(quant_method)/%.rpkms.deseq.tsv:  
+	$(call p_info,WIP)
+	@$(call empty_file,$@)
+	@touch $@
+
+##################################
+# EDGER
+$(name)/$(mapper)/$(quant_method)/exons.nlib.edger.tsv:
+	$(call p_error, Under implementation)
+$(name)/$(mapper)/$(quant_method)/genes.nlib.edger.tsv:
+	$(call p_error, Under implementation)
+$(name)/$(mapper)/$(quant_method)/transcripts.nlib.edger.tsv:
+	$(call p_error, Under implementation)
+
+##################################
+# VOOM
+$(name)/$(mapper)/$(quant_method)/exons.nlib.voom.tsv:
+	$(call p_error, Under implementation)
+$(name)/$(mapper)/$(quant_method)/genes.nlib.voom.tsv:
+	$(call p_error, Under implementation)
+$(name)/$(mapper)/$(quant_method)/transcripts.nlib.voom.tsv:
+	$(call p_error, Under implementation)
+
+################
+# flux-capacitor
+# norm. already done in quant step...fix file names if necessary
+# cufflinks1, cufflinks2, deseq and edger flux
+
+$(name)/$(mapper)/$(quant_method)/genes.nlib.flux_cap.tsv: $(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv
+	irap_deseq_norm $<  > $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/$(quant_method)/transcripts.nlib.flux_cap.tsv: $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv
+	irap_deseq_norm $<  > $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/$(quant_method)/exons.nlib.flux_cap.tsv: 
+#	irap_deseq_norm $<  > $@.tmp && mv $@.tmp $@
+	@$(call empty_file,$@)
+
+
+################################################################################
+# Differential Analysis
+################################################################################
+# TODO: consider DE at isoform level, exon level
+ifeq (none,$(de_method))
+STAGE4_OUT_FILES=
+else
+STAGE4_OUT_FILES=$(foreach cont,$(contrasts),$(name)/$(mapper)/$(quant_method)/$(de_method)/$(cont).genes_de.tsv)
+endif
+phony_targets+= DE
+
+DE: stage3 $(STAGE4_OUT_FILES)
+	$(call p_info,[DONE] Differential analysis)
+
+de_files:
+	echo $(STAGE4_OUT_FILES)
+
+#############################################################
+## Cleanup
+phony_targets+= clean full_clean clean_data_files
+
+clean: clean_quality_filtering_and_report_cleanup 
+
+full_clean: clean_data_files
+	rm -fr $(name)/
+
+clean_data_files:
+	rm -rf $(SETUP_DATA_FILES)
+
+# TODO: archive (delete everything except the "main" output files for each stage
+#
+#############################################################
+
+# *************
+# Transcriptome (WIP)
+# *************
+%.trans.fa: $(reference_abspath) %.ref.gtf
+	extract_transcripts $^ > $@
+
+%.cdna_ncrna.fa: %.cdna.all.fa %.ncrna.fa
+	cat $^ > $@
+
+%.ref.gtf: %.gtf %.ncrna.fa
+	filterGTF.rb  $*.ncrna.fa $< > $@
+
+%.ref.gtf: %.ref.gff
+	ensembl_gtf_to_gff.pl $< > $@
+
+##############################################################################
+# Reporting
+
+phony_targets+= report
+report: $(name)/report/index.html mapping_report quant_report de_report show_citations end_report
+
+###################################################
+# Execution status
+# Creates a status.tsv file with the completion status of each stage of the pipeline based on the files created
+phony_targets+= status_html status
+status_html: $(name)/report/$(name).status.html
+	$(call p_info,Created $<)
+
+status: $(name)/$(name).status.tsv
+	$(call p_info,Created $<)
+
+
+### Tracks
+define exclude_empty=
+$(foreach f,$(1), $(if $(call is_empty_file,$(f)),,$(f)))
+endef
+
+define stage3_tracks_targets=
+$(subst .tsv,.tsv.tracks,$(call exclude_empty,$(STAGE3_TSV_FILES)))
+endef
+
+stage3_tracks: $(call stage3_tracks_targets)
+	$(call p_info,[DONE] stage 3 tracks)
+
+stage4_tracks_targets=$(subst .tsv,.tsv.tracks,$(STAGE4_OUT_FILES))
+
+stage4_tracks: $(stage4_tracks_targets)
+	$(call p_info,[DONE] stage 4 tracks)
+#	echo $^
+
+########
+# Status
+include $(irap_path)/../aux/mk/irap_status.mk
+
+##############################################################################
+# FORCE the program to run even if files haven't changed
+FORCE: 
+
+#PHONY: performance improvement. Tell MAKE that those targets don't generate any files. 
+.PHONY:  $(phony_targets)
+.SILENT: $(silent_targets)
+
+###################################################

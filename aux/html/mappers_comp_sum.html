@@ -1,0 +1,180 @@
+<% brew::brew(get.path2template("page.header")) %>
+
+<%
+# TODO: option to show the values
+align.comp.bplot<-function(data,ci.l,ci.u,main,show.legend=TRUE,ylim.max=NA) {
+
+  library(gplots)
+  barcol <- "gray"
+  if ( show.legend==TRUE ) {
+    legend=rownames(data)
+  } else {
+    legend=FALSE
+  }
+  if (is.na(ylim.max) ) {
+      ylim.max<-max(ci.u)
+  }
+  if (!is.matrix(data)) {
+    beside=F
+    colors <- barcol
+  } else {
+    beside=T
+    colors <- rainbow(nrow(data))
+  }
+  # disable error bars
+  # 
+  plot.ci=FALSE
+  bp <- barplot2(
+                 data,
+                 beside = beside,
+                 col = colors,
+                 legend = legend,
+                 ylim = c(0, ylim.max),
+                 main = main,
+                 font.main = 4,
+                 sub = "Mean values",
+                 col.sub = barcol,
+                 cex.names = 1.1,
+                 plot.ci = plot.ci,
+                 ci.l = ci.l,
+                 ci.u = ci.u,
+	         las=2,
+                 plot.grid = TRUE
+                 )
+  bp
+}
+%>
+
+<%# Comment -- wrap up everything in a div %>
+<DIV name='mapper_res'>
+
+<H1><%=title%></H1>
+<H3 class="section">Overall Comparison</H3>
+
+<table>
+<tr>
+<td>
+<%
+#aggr <- list(med=aggr.med,sd=aggr.sd,l=ci.l,u=ci.u)
+#paggr <- get.ptable(aggr.med,aggr.sd)
+r.a<-gen.plot2report(filename=paste(file.prefix,"_overall.png",sep=""),
+          width=500,
+          height=500,
+	  html=TRUE,
+	  ps=TRUE,
+	  data.table=cbind(rownames(aggr$med),aggr$med),
+          to.plot=function() {
+          align.comp.bplot(aggr$med,aggr$l,aggr$u,"Overall comparison",show.legend=T)          
+        }
+         )
+cat(r.a$html)
+%>
+
+</TD><TD>
+<%
+# remove the alignments row
+m<-paggr$med[rownames(paggr$med)!="Alignments",]
+l<-paggr$l[rownames(paggr$l)!="Alignments",]
+u<-paggr$u[rownames(paggr$u)!="Alignments",]
+u[u>100]<-100
+r.p<-gen.plot2report(filename=paste(file.prefix,"_p_overall.png",sep=""),
+          width=500,
+          height=500,
+	  html=TRUE,
+	  ps=TRUE,
+	  data.table=cbind(rownames(m),m),
+          to.plot=function() {
+          align.comp.bplot(m,l,u,"Overall comparison (%)",show.legend=T,ylim=100)
+        }
+         )
+cat(r.p$html)
+%>
+
+</TD></TR>
+
+<TR><TD colspan=2>
+<H4 class="section">Alignments</H4>  
+</TD></TR>
+
+<TR><TD>
+<%
+rplot<-gen.plot2report(filename=paste(file.prefix,"_align.png",sep=""),
+	width=500,
+	height=500,
+	html=TRUE,
+	ps=TRUE,
+	to.plot=function() {
+	   align.comp.bplot(aggr$med["Alignments",],aggr$l["Alignments",],aggr$u["Alignments",],"Alignments",show.legend=F)
+         }
+)
+cat(rplot$html)
+%>
+</TD></TR>
+
+<TR><TD colspan=2>
+<H4 class="section">Mapped reads</H4></TD></TR>
+
+<TR><TD>
+<%
+
+rplot<-gen.plot2report(filename=paste(file.prefix,"_reads.mapped.png",sep=""),
+	width=500,
+	height=500,
+	html=TRUE,
+	ps=TRUE,
+	to.plot=function() {
+	   align.comp.bplot(aggr$med["Reads mapped",],aggr$l["Reads mapped",],aggr$u["Reads mapped",],"Reads mapped",show.legend=F)
+         }
+)
+cat(rplot$html)
+%>
+</TD><TD>
+<%
+rplot<-gen.plot2report(filename=paste(file.prefix,"_p_reads.mapped.png",sep=""),
+	width=500,
+	height=500,
+	html=TRUE,
+	ps=TRUE,
+	to.plot=function() {
+	   align.comp.bplot(paggr$med["Reads mapped",],paggr$l["Reads mapped",],paggr$u["Reads mapped",],"Reads mapped (%)",show.legend=F,ylim=100)
+         }
+)
+cat(rplot$html)
+%>  
+</TD></TR>
+<TR><TD colspan=2>
+<H4 class="section">Spliced reads</H4></TD></TR>
+
+<TR><TD>
+<%
+rplot<-gen.plot2report(filename=paste(file.prefix,"_spliced.png",sep=""),
+	width=500,
+	height=500,
+	html=TRUE,
+	ps=TRUE,
+	to.plot=function() {
+	   align.comp.bplot(aggr$med["Spliced reads",],aggr$l["Spliced reads",],aggr$u["Spliced reads",],"Spliced reads",show.legend=F)
+         }
+)
+cat(rplot$html)
+%>
+</TD><TD>
+<%
+rplot<-gen.plot2report(filename=paste(file.prefix,"_p_spliced.png",sep=""),
+	width=500,
+	height=500,
+	html=TRUE,
+	ps=TRUE,
+	to.plot=function() {
+	   align.comp.bplot(paggr$med["Spliced reads",],paggr$l["Spliced reads",],paggr$u["Spliced reads",],"Spliced reads (%)",show.legend=F)
+         }
+)
+cat(rplot$html)
+%>
+</TD></TR>
+
+</TABLE>
+<%# Comment -- wrap up everything in a div - end %>  
+</DIV>
+
+<% brew::brew(get.path2template("page.footer")) %>

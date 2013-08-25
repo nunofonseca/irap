@@ -1,0 +1,77 @@
+#!/bin/env bash
+# =========================================================
+# Copyright 2013,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#   $Id: 0.1.3 Nuno Fonseca Wed Jul 03 17:18:21 2013$
+# =========================================================
+set -e
+
+function usage {
+    echo "Usage: irap_add2contaminationDB -f fasta_file -n name -d [irap_data_directory]";
+    echo " -n name : name of the new database";
+    echo " -f filename : fasta filename with the sequences to index";
+    echo " -d dir : IRAP data directory (default: $IRAP_DIR/data/contamination)";
+}
+
+if [ "$IRAP_DIR-" = "-" ]; then
+    echo "ERROR: IRAP_DIR environment variable must be defined."
+    usage
+    exit 1    
+fi
+
+FASTAFILE=
+NAME=
+DIR=$IRAP_DIR/data/contamination
+OPTERR=0
+
+while getopts "f:n:d:h"  Option
+do
+    case $Option in
+	f ) FASTAFILE=$OPTARG;;  # run irap up to the given stage
+        n ) NAME=$OPTARG;;# send all output to a log file
+        d ) DIR=$OPTARG;;# send all output to a log file
+        h ) usage; exit 1;;
+    esac
+done
+
+#
+if [  "$FASTAFILE-" == "-" ]; then
+    echo "ERROR: Missing arguments."
+    usage
+    exit 1
+fi
+
+if [ "$NAME-" == "-" ]; then
+    echo "ERROR: Missing arguments"
+    usage
+    exit 1
+fi
+
+if [ !-e "$FASTAFILE" ]; then
+    echo "ERROR: fasta file not found $FASTAFILE"
+    exit 1
+fi
+
+if [ ! -e $DIR ]; then
+    echo "ERROR: directory not found $DIR"
+    exit 1
+fi
+
+irap_map.sh bowtie1 bowtie-build -f $FASTAFILE $DIR/$NAME
+exit 0

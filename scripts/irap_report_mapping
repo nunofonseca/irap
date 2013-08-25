@@ -1,0 +1,250 @@
+#!/bin/env Rscript
+# =========================================================
+# Copyright 2012,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#    $Id: irap.txt Nuno Fonseca Wed Feb 6 00:51:29 2013$
+# =========================================================
+suppressPackageStartupMessages(library("optparse"))
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+
+# specify our desired options in a list
+#
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+pdebug.enabled <- TRUE
+
+css_file <- "aehts.css"
+
+args <- commandArgs(trailingOnly=TRUE)
+html_file <- args[1]
+mapper <- args[2]
+pe.bam <- args[3]
+se.bam <- args[4]
+pe.labels <- args[5]
+se.labels <- args[6]
+
+if (length(args)!=6) {
+  cat("Usage: irap_report_mapping output_html_file mapper_name pe_bam_list se_bam_list pe_labels se_labels\n")
+  cat("example: irap_report_mapping dirA/index.html myMapper \";pe1.bam ;p2.bam\" \"\" \"; PE1; Fancy namese\" \"\"\n")
+  q("no",status=1);
+}
+
+pe.bam.v <- strsplit(gsub(" *; *",";",gsub("^;","",pe.bam)),";")[[1]]
+se.bam.v <- strsplit(gsub(" *; *",";",gsub("^;","",se.bam)),";")[[1]]
+
+pe.labels.v <- strsplit(gsub(" *; *",";",gsub("^;","",pe.labels)),";")[[1]]
+se.labels.v <- strsplit(gsub(" *; *",";",gsub("^;","",se.labels)),";")[[1]]
+
+#print(pe.bam.v)
+#source("myUtils.R")
+library("emBAM")
+
+################################################################################################
+# Useful functions
+
+pinfo <- function(...) {
+  cat(paste("[INFO] ",...,"\n",sep=""))
+}
+
+pwarning <- function(...) {
+  cat(paste("[WARNING] ",...,"\n",sep=""))
+}
+pmissing <- function(...) {
+  cat(paste("[MISSING FILE] ",...,"\n",sep=""))
+}
+
+###########################
+mytrim <- function(s) {
+  sub("^[[:blank:]]+", "",sub("[[:blank:]]+$", "",s))
+}
+
+myread.list <- function (s) {
+  if(!length(s)) { return(c()) }
+  strsplit(mytrim(as.character(s))," +")[[1]]
+}
+
+myread.string <- function (s) {
+  mytrim(as.character(s))
+}
+
+myderef <- function(s) {
+  v <- myread.list(s)
+  r <- c()
+  for ( i in v) {
+    #pinfo(i,"=",get(i))
+    r <- append(as.character(get(i)),r)
+  }
+  r
+}
+
+# duplicated code (see irap_report_mapping)
+bam.compare.plots <- function(html.dir,bam.files) {
+
+  data <- lapply(bam.files,em.bam.counts.df,use.cache=TRUE)
+  df <- as.data.frame(data[[1]][,1])
+  rownames(df)<-rownames(data[[1]])
+
+  if(length(data)>1) {
+    for (i in c(2:length(data))) {
+      df <- cbind(df,data[[i]]$Count)
+    }
+  }
+  colnames(df) <- gsub(".*/","",gsub("(\\.pe|\\.se).*","",bam.files))
+
+  ########
+  #
+  legend <- c("Alignments","Reads mapped","Unmapped","Uniquely mapped","Spliced reads")
+  a.data <- df[c("Alignments","Primary","Unmapped","Uniquely mapped reads","Spliced reads"),]
+  rownames(a.data) <- legend
+  file <- "align_overall_comparison.png"
+  filepath <- paste(html.dir,file,sep="/")
+  cols <- rainbow(length(rownames(a.data)))
+  cex <- 0.95
+
+  n <- length(colnames(a.data))
+  width=(480*round(0.5+n/6/2,0))
+  png(filepath,width=width,height=480)
+  bp <- barplot(as.matrix(a.data),ylab="Number of alignments",las=2 , cex.axis=cex, cex.names=cex*0.90,col=cols,beside=T)
+
+  par( xpd=NA )  
+  legend( "top", legend=rownames(a.data),fill=cols,horiz=TRUE, cex=0.90)
+
+  # save TSV file
+  data2file <- as.matrix(a.data)
+  data2file <- cbind(rownames(data2file),data2file)
+  write.tsv(data2file,paste(filepath,".tsv",sep=""))
+
+  # Add %
+  #
+  dev.off()
+}
+
+##################################################
+
+mapping.report <- function(outdir,mapper,pe.bam.v,se.bam.v,pe.labels.v,se.labels.v) {
+
+
+  libs <- unique(append(pe.labels.v,se.labels.v))
+  nlibs <- length(libs)
+  # an individual report for each bam file is available in bam
+  dir.prefix <- paste(mapper,sep="/")
+  pe.bam.urls <- c()
+  se.bam.urls <- c()
+  if (length(pe.labels.v)>0) { pe.bam.urls <- paste("<a href='",dir.prefix,"/",pe.labels.v,"/index.html'>Align. Details</a>",sep="") }
+  if (length(se.labels.v)>0) { se.bam.urls <- paste("<a href='",dir.prefix,"/",se.labels.v,"/index.html'>Align. Details</a>",sep="") }
+
+  urls <- append(pe.bam.urls,se.bam.urls)
+
+
+  m <- matrix(c(urls),nrow=1,byrow=T)
+  colnames(m) <- libs
+
+  system(paste("mkdir -p ",outdir,"/",mapper,sep=""));  
+  HTML("<H2>Alignments</H2>")
+  
+  overall.plot <- paste(outdir,"/align_overall_comparison.png",sep="")
+  html <- paste("<img src='",mapper,"/align_overall_comparison.png' alt=''>",sep="")
+  HTML(html)
+
+  ###############
+  # Overall table
+  #                          lib1   lib2     ... libk
+  # Reads Mapped           value (%)                      | average (%)
+  # Reads not mapped       value (%) ...                  |
+  # Reads uniquely mapped
+  # Reads spiced
+  #  
+  bam.files <- append(pe.bam.v,se.bam.v)
+  #print(bam.files)
+  #cat("--------------------------------------------")
+  data <- lapply(bam.files,em.bam.counts.df,use.cache=TRUE)
+
+  bam.compare.plots(paste(outdir,mapper,sep="/"),bam.files)
+  
+  df <- as.data.frame(data[[1]][,1])
+  rownames(df)<-rownames(data[[1]])
+  if(length(data)>1) {
+    for (i in c(2:length(data))) {
+      df <- cbind(df,data[[i]]$Count)
+    }
+  }
+  colnames(df) <- gsub(".*/","",gsub("(\\.pe|\\.se).*","",bam.files))
+
+  n.reads <- df[c("Unmapped","Primary","Uniquely mapped reads","Multimap reads","Spliced reads"),]
+  table.rnames <- c("Unmapped","Mapped","Uniquely mapped","Multimaps","Spliced")
+  rownames(n.reads) <- table.rnames
+
+  tot.reads <- apply(n.reads[c(1,2),],MARGIN=2,FUN=sum)
+
+  #%
+  p.reads <- n.reads
+  p.reads[1,] <- round(p.reads[1,]/tot.reads*100,2)
+  p.reads[2,] <- round(p.reads[2,]/tot.reads*100,2)
+  p.reads["Uniquely mapped",] <- round(n.reads["Uniquely mapped",]/as.numeric(n.reads["Mapped",])*100,2)
+  p.reads["Multimaps",] <- round(n.reads["Multimaps",]/n.reads["Mapped",]*100,2)
+  p.reads["Spliced",] <- round(n.reads["Spliced",]/n.reads["Mapped",]*100,2)
+  # average
+  p.reads<-cbind(p.reads,apply(p.reads,MARGIN=1,FUN=median))
+  colnames(p.reads) <- append(colnames(n.reads),"Median")
+
+  p.reads <- rbind(p.reads,append(as.vector(m),NA))
+  n.reads <- rbind(n.reads,append(as.vector(m),NA))
+  rownames(p.reads) <- append(table.rnames," ")
+  rownames(n.reads) <- append(table.rnames," ")
+
+  # add a link for details
+  HTML(data.frame(p.reads),align="left", big.mark='.',caption="Percentage of reads")
+  HTML(data.frame(n.reads),align="left", big.mark='.')
+  
+}
+
+#
+library(R2HTML)
+
+HTMLInitFile( outdir=dirname(html_file), filename=basename(html_file), Title=paste("Mapping Report ",mapper,sep=""), CSSFile=css_file, useGrid=FALSE)
+# Javascript code
+HTML( '<script language="javascript"> 
+function toggle(showHideDiv, switchTextDiv) {
+	var ele = document.getElementById(showHideDiv);
+	var text = document.getElementById(switchTextDiv);
+	if(ele.style.display == "block") {
+    		ele.style.display = "none";
+		text.innerHTML = "show";
+  	}
+	else {
+		ele.style.display = "block";
+		text.innerHTML = "hide";
+	}
+} 
+</script>
+')
+
+HTML( "<h1>Mapping Report</h1>" )
+HTML( paste("Mapper:", mapper) )
+HTML( paste("Project:", "<a href='../index.html'>go to main page</a>") )
+
+mapping.report(paste(dirname(html_file),sep=""),mapper,pe.bam.v,se.bam.v,pe.labels.v,se.labels.v)
+
+HTMLEndFile()
+q()
+

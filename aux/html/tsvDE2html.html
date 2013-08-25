@@ -1,0 +1,96 @@
+<% brew::brew(get.path2template("page.header")) %>
+
+<%# Comment -- wrap up everything in a div %>
+<DIV name='de_res'>
+<H1><%=title%></H1>
+<H2><%=sources.menu%></H2>
+<H3 class="section">DE <%=opt$feature%>s</H3>
+<p>FDR=<%=opt$`cut-off`%> <a class='download' href='<%=basename(tsv.file.ref)%>.gz'>TSV</a></p>
+
+<% 
+pdebug("Generating DE table...")
+if ( nrow(table.html)>0 ) {
+  table.html.out<-table.html
+  truncated.info<-""
+  if ( nrow(table.html.out) > opt$max ) {
+    table.html.out <- table.html.out[c(1:opt$max),]    
+    truncated.info <- paste("(truncated list to ",opt$max,sep="")
+  }
+  caption <- paste("# DE genes:",nrow(table.html),sep="")
+  HTML(table.html.out, file = stdout(),
+     Border = 0, innerBorder=0,
+        classfirstline = "firstline", classfirstcolumn = "firstcolumn",
+        classcellinside = "cellinside", append = FALSE,
+        caption = caption, captionalign = "top", classcaption = "captiondataframe", classtable = "dataframe",
+        digits=2, nsmall = 0, big.mark = " ", big.interval = 3, decimal.mark = ",",
+        sortableDF=TRUE, row.names = FALSE)
+} else { cat("None found.") }
+pdebug("Generating DE table...done.")
+%>
+
+<!-- plots -->
+<H3 class="section">Fold Change</H3>
+<%
+pdebug("Generating fold change plot...")
+gen.plot(filename=paste(file.prefix,"_fold.png",sep=""),
+	width=500,
+	height=500,
+	to.plot=function() {
+	   DE.fold.change.plot(uncut.table,
+                 col.mean=fields$FOLDCHANGE_MEDIAN,
+                 col.foldChange=fields$LOG2FOLDCHANGE,
+                 col.pval=fields$PVALUE.FIELD,
+                 fdr=opt$`cut-off`)
+         }
+)
+pdebug("Generating fold change plot...done.")
+%>
+
+<p><IMG src='<%=basename(file.prefix)%>_fold.png' border=0 width=500 height=500><a class='download' href='<%=basename(file.prefix)%>_fold.png.pdf'>PDF</a></p>
+
+
+<%
+pdebug("Generating hist...")
+gen.plot(filename=paste(file.prefix,"_hist.png",sep=""),
+   width=600,
+   height=300,
+   to.plot=function() {
+   par(mfrow=c(1,2)) 
+   hist(uncut.table[,fields$PVALUE.FIELD], breaks=100, col="skyblue", border="slateblue", xlab=fields$PVALUE.FIELD,main="All")
+   if ( nrow(table.html) > 0 ) {
+        hist(table.html[,fields$PVALUE.FIELD], breaks=100, col="skyblue", border="slateblue", xlab=fields$PVALUE.FIELD,main=paste(fields$PVALUE.FIELD,"<=",opt$`cut-off`,sep=""))
+     }
+   }
+)
+pdebug("Generating hist...done.")
+%>
+<H3 class="section">P-values</H3>
+<p><IMG src='<%=basename(file.prefix)%>_hist.png' border=0 width=600 height=300><a class='download' href='<%=basename(file.prefix)%>_hist.png.pdf'>PDF</a></p>
+
+<!--<H3 class="section">Heatmap</H3>-->
+<%
+## selected.de <- nrow(table.html)
+## ns <- c(20,40,60)
+## if ( length(fields$groups)==2 &&
+##      length(duplicated(table.html[,fields$ANNOT.ID]))==0 ) {
+##   ns <- ns[ns<=selected.de]
+##   for (n in ns ) {
+##     rownames(table.html) <- table.html[,fields$ANNOT.ID]
+##     select <- table.html[1:n,]
+##     colors <- colorRampPalette(c("white","darkblue"))(selected.de*10)
+##     gen.plot(filename=paste(file.prefix,"_",n,"_heat.png",sep=""),
+##     	width=400,
+## 	height=400,
+## 	to.plot=function() {
+## 	   heatmap(table.html[n,fields$groups],col = colors, scale = "none")
+## 	}
+##     )
+##     cat(paste("<p><IMG src='",basename(file.prefix),"_",n,"_heat.png' border=0 width=400 height=400><a href='",basename(file.prefix),"_",n,"_heat.png.pdf'>PDF</a></p>",sep=""),sep="")
+##   }
+## }
+%>
+
+</DIV>
+
+<% brew::brew(get.path2template("page.footer")) %>
+

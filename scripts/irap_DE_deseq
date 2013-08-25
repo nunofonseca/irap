@@ -1,0 +1,114 @@
+#!/bin/env Rscript
+# =========================================================
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#    $Id: irap.txt Nuno Fonseca Tue Jan 29 23:13:16 2013$
+# =========================================================
+
+###############################################################
+suppressPackageStartupMessages(library("optparse"))
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+#
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+source(paste(IRAP.DIR,"aux/R","irap_de.R",sep="/"))
+
+cmd <- "irap_DE_deseq"
+opt <- process.cmdline.args(cmd)
+pinfo("Parameters parsed.")
+
+if ( length(opt$labels.v) > 2 ) {
+  perror("irap_DE_deseq only supports pairwise comparisons!");
+  q(status=2);
+}
+system(paste("mkdir -p ",opt$out));
+data <- quant.load(opt$tsv_file)
+## debug
+pdebug.save.state("irap_DE_deseq","1")
+## 
+data.f <- filter.read.counts.table(data,opt)
+data.f <- handle.tech.replicates(data.f,opt)
+opt$conds <- map.conds2cols(opt$label2group,colnames(data.f))
+
+#########################
+library(DESeq)
+#Note: TODO counts of technical replicates  have to be summed up into a single column
+cds <- newCountDataSet(data.f,opt$conds)
+
+#normalize the number of read counts
+cds <- estimateSizeFactors(cds)
+
+## estimates a dispersion value for each gene, then fits a curve
+result <- try(cds <- estimateDispersions(cds));
+if(class(result) == "try-error") {
+  pinfo("Parametric dispersion failed with default settings. Trying with local fit.");
+  result <- try(cds <- estimateDispersions(cds,fitType="local"));
+  if(class(result) == "try-error") {
+    pinfo("Parametric dispersion failed with default settings. Trying with method=blind.");
+    # blind=estimate across conditions
+    result <- try(cds <- estimateDispersions(cds,method="blind",fitType="local",sharingMode="fit-only"));
+    if(class(result) == "try-error") {
+      # pooled-CR: crossed factors
+      perror("Ooops, it seems that you need to run manually DEseq to estimate the dispersion.")
+      q(status=2)
+    }
+  }
+  pinfo("OK")
+}
+pinfo("Dispersion estimation complete.")
+# through the estimates. Finally, it assigns to each gene a dispersion
+# value, using a choice between the estimate of fitted-value The
+# dispersion can be understood as the square of the coefficient of
+# biological variation. So if ge expression tically differs from
+# replicate to replicate sample by 20% this gene’s dispersion is
+# 0.2^2 = .04.
+
+##
+de <- nbinomTest(cds,opt$labels.v[1],opt$labels.v[2])
+pinfo("nbinomTest complete.")
+## annotate the gene list
+if ( !is.na(opt$annotation)) {
+   de.annot <- de[order(de$pval),];
+   match.v  <- match(de.annot$id,opt$annot[,1]);
+   de.annot <- cbind(de.annot,opt$annot[match.v,])
+} else {
+   de.annot <- de;
+}
+
+de.annot <- de.annot[order(de.annot$pval),];
+
+save.de2tsv(de.annot,ofile.prefix=opt$out)
+# save the objects
+save(opt,de.annot,cds,data,data.f,file=paste(opt$out,"de.Rdata",sep="/"))
+quit(save="no",status=0)
+
+######################################
+irap_DE_deseq_debug <- function(rdata.obj) {
+  load(rdata.obj,envir=.GlobalEnv)
+  pdebug.rdata()
+  source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+  library(DESeq)
+}
+IRAP.DIR=getwd()
+Sys.setenv(IRAP_DIR=IRAP.DIR)
+rdata.obj="irap_DE_deseq.Rdata"
+irap_DE_deseq_debug("irap_DE_deseq.Rdata")

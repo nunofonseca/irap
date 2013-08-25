@@ -1,0 +1,1319 @@
+<% brew::brew(get.path2template("page.header")) %>
+<%
+source(paste(IRAP.DIR,"aux/R","deseq_shared.R",sep="/"))
+source(paste(IRAP.DIR,"aux/R","irap_extra.R",sep="/"))
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+gtrans<-load.transbygene()
+cur.plot<-0
+methods.colors <- rainbow(length(data2html$pipelines))
+names(methods.colors)<-data2html$pipelines
+methods.lty <- function(i) { c(1,2,5)[i%%3+1] }
+ERR.LABEL <- "Error (%)"
+errors<-diag(data2html$quant.ndiff)
+# sort the genes by average error across all methods
+germ<-rowMeans(data2html$quant.gene.nerror)
+o<-sort(germ,decreasing=FALSE,index.return=T)
+data2html$gene.nerr.sort <- data2html$quant.gene.nerror[o$ix,]
+germ <- germ[o$ix]
+top.15.selection<-c("osa x cufflinks2_nd","tophat1 x cufflinks2_nd","osa x htseq2","tophat1 x htseq2","osa x cufflinks1_nd","tophat1 x cufflinks1_nd","tophat2 x htseq2","smalt x htseq2","gsnap x htseq2","star x htseq2","gsnap x cufflinks2_nd","star x cufflinks2_nd","tophat2 x cufflinks2_nd","tophat1 x htseq1","osa x flux_cap")
+pipelines <- colnames(data2html$quant.gene.error)[colnames(data2html$quant.gene.error) %in% top.15.selection]
+methods.colors2 <- rainbow(length(top.15.selection))
+names(methods.colors2) <- top.15.selection
+pdebug.save.state("compare_exp_quant_sim","html")
+makeTransparent<-function(someColor, alpha=100) {
+  newColor<-col2rgb(someColor)
+  apply(newColor, 2, function(curcoldata){rgb(red=curcoldata[1], green=curcoldata[2],
+    blue=curcoldata[3],alpha=alpha, maxColorValue=255)})
+}
+
+# colors for the heatmaps
+# 1%, 10%, 20%, 30%, 40%
+#
+low.val.col.txt <- "Errors with less of 1% error in black, with less of 30% with different shades of gray."
+low.val.col <- append(append(append(rep("black",2),rep("grey3",8)),rep("grey5",10)),rep("grey",10))
+#low.val.col <- append(append(append(append(rep("black",2),rep("grey3",8)),rep("grey5",10)),rep("grey10",10)),rep("grey",10))
+get.heat.color.pallete <- function(matrix) {
+  max.err <- max(matrix)
+  min.err <- min(matrix)
+  nlow <- length(low.val.col)
+  low.vals <- seq(1:nlow)-1
+  low.sel <- low.vals>=min.err
+  col <- append(low.val.col[low.sel],topo.colors(max.err-nlow+sum(low.sel)))
+  col
+}
+
+plot.sel.quant.comp <- function(m,true) {
+  par(mfrow=c(2,2),mar=c(5,10,2,2))
+  picked <- 1
+  col <- methods.colors2[colnames(m)]
+  for (g in rownames(m)) {
+    if ( picked > 4 ) {
+      break
+    }
+    picked <- picked+1
+    tmp.a <- as.numeric(m[g,])
+    names(tmp.a) <- colnames(m)
+    barplot(tmp.a,horiz=T,col=col,las=2,main=g,sub=paste(round(true[g],0)," reads"),xlab="error",xlim=c(0,max(m[g,])))
+  }
+}
+## INSTALL
+#source("http://bioconductor.org/biocLite.R")
+#biocLite("goseq")
+#geneLenDatabase?
+check.go.enrich <- function(sel.genes,all.genes,genome="hg19",geneids="ensGene",fdr=0.01) {
+  library(goseq)
+  assayed.genes <- all.genes
+  gene.vector <- as.integer(assayed.genes %in% sel.genes)
+  names(gene.vector) <- assayed.genes
+  # length for the genes
+  #gene.length <- annot.table$len[assayed.genes]
+  #names(gene.length) <- assayed.genes
+  # cat. mapping?? or lists?
+  # supportedGenomes
+
+  pwf <- nullp(gene.vector,genome,geneids)
+#plotPWF()
+  GO.wall <- goseq(pwf,genome,geneids)
+  GO.wall$over_represented_pvalue_padj <- p.adjust(GO.wall$over_represented_pvalue,method="BH")
+  GO.wall$under_represented_pvalue_padj <- p.adjust(GO.wall$under_represented_pvalue,method="BH")
+  enriched.over.GO <- GO.wall$category[GO.wall$over_represented_pvalue_padj<fdr]
+  enriched.under.GO <- GO.wall$category[GO.wall$under_represented_pvalue_padj<fdr]
+  # add the go terms to the table
+  library(GO.db)
+  GO.wall$goterm <- sapply(GO.wall$category,goID2term)
+  # return GO.wall
+  # enriched.over+enriched under
+  list(under=GO.wall[GO.wall$category %in% enriched.under.GO,],over=GO.wall[GO.wall$category %in% enriched.over.GO,],fdr=fdr)
+}
+
+%>
+<%# Comment -- wrap up everything in a div %>
+<!--<DIV name='de_res'>-->
+<H1><%=title%></H1>
+<H2><%=sources.menu%></H2>
+<H3 class="section">Comparison <%=opt$feature%> quantification</H3>
+
+<!-- quant p.cor + rank  rank.diff -->
+<table class="center">
+<tr>
+<TD>
+<%
+if(length(rownames(data2html$gene.expr))<10) {
+cur.plot<-cur.plot+1
+r.a<-gen.plot2report(filename=paste(file.prefix,"_counts_pairs.png",sep=""),
+          width=900,
+          height=900,
+	  html=TRUE,
+	  ps=TRUE,
+          caption="Pearson correlation of gene expression (counts) estimates (red line corresponds to the lowess curve generated).",
+      to.plot=function() {
+#log="xy" broken
+            log.pairs(data2html$gene.expr, lower.panel=panel.smooth, upper.panel=panel.cor,pch=".")
+        })
+cat(r.a$html)
+} else {
+  df <- data2html$gene.expr
+  true <- data2html$true.quant.mean.f[rownames(data2html$gene.expr)]
+  df <- cbind(df,true)
+  cat("<TABLE><TR>")
+  i <- 0
+  for (d in colnames(data2html$gene.expr)) {
+        r.a<-gen.plot2report(filename=paste(file.prefix,"_true_scatter_",d,".png",sep=""),
+          width=300,
+          height=300,
+	  html=TRUE,
+	  ps=TRUE,
+          caption="Raw counts",
+          to.plot=function() {        
+            cor.scatterplot(df=df,colA=d,colB="true",paste("",sep=""),smooth="lowess")
+          })
+        cat("<TD>")
+        cat(r.a$html)
+        cat("</TD>")
+        i<-i+1
+        if ((i %% 5)==0 ) {
+          cat("</TR><TR>")
+        }
+      }
+  print("</TR></TABLE>")
+}
+
+%>
+<%=cur.plot%>
+</TD>
+</tr>
+
+<tr>
+<TD>
+<%
+if(length(rownames(data2html$gene.expr))<10) {
+cur.plot<-cur.plot+1
+r.a<-gen.plot2report(filename=paste(file.prefix,"_rpkms_pairs.png",sep=""),
+          width=900,
+          height=900,
+	  html=TRUE,
+	  ps=TRUE,
+          caption="Pearson correlation of gene expression (RPKMs) estimates  (red line corresponds to the lowess curve generated).",
+          to.plot=function() {
+            log.pairs(data2html$gene.rpkms, lower.panel=panel.smooth, upper.panel=panel.cor,pch=".")
+        })
+cat(r.a$html)
+} else {
+  df <- data2html$gene.rpkms
+  true <- data2html$true.quant.rpkm.mean.f[rownames(data2html$gene.rpkms)]
+  df <- cbind(df,true)
+  cat("<TABLE><TR>")
+  i <- 0
+  for (d in colnames(data2html$gene.rpkms)) {
+        r.a<-gen.plot2report(filename=paste(file.prefix,"_true_scatter_rpkms_",d,".png",sep=""),
+          width=300,
+          height=300,
+	  html=TRUE,
+	  ps=TRUE,
+          caption="RPKMS",
+          to.plot=function() {        
+            cor.scatterplot(df,d,"true",paste("",sep=""),smooth="lowess")
+          })
+        cat("<TD>")
+        cat(r.a$html)
+        cat("</TD>")
+        i<-i+1
+        if ((i %% 5)==0 ) {
+          cat("</TR><TR>")
+        }
+      }
+  print("</TR></TABLE>")
+}
+%>
+<%=cur.plot%>
+</TD>
+</tr>
+
+<tr>
+<TD>
+<%
+if(length(rownames(data2html$gene.expr))<10) {
+cur.plot<-cur.plot+1
+r.a<-gen.plot2report(filename=paste(file.prefix,"_sp_counts_pairs.png",sep=""),
+          width=900,
+          height=900,
+	  html=TRUE,
+	  ps=TRUE,
+          caption="Spearman correlation of gene expression (counts) estimates (red line corresponds to the lowess curve generated).",
+      to.plot=function() {
+#log="xy" broken
+            log.pairs(data2html$gene.expr, lower.panel=panel.smooth, upper.panel=panel.cor.spearman,pch=".")
+        })
+cat(r.a$html)
+}
+%>
+<%=cur.plot%>
+</TD>
+</tr>
+
+<tr>
+<TD>
+<%
+if(length(rownames(data2html$gene.expr))<10) {
+cur.plot<-cur.plot+1
+r.a<-gen.plot2report(filename=paste(file.prefix,"_sp_rpkms_pairs.png",sep=""),
+          width=900,
+          height=900,
+	  html=TRUE,
+	  ps=TRUE,
+          caption="Spearman correlation of gene expression (RPKMs) estimates  (red line corresponds to the lowess curve generated).",
+          to.plot=function() {
+            log.pairs(data2html$gene.rpkms, lower.panel=panel.smooth, upper.panel=panel.cor.spearman,pch=".")
+        })
+cat(r.a$html)
+}
+%>
+<%=cur.plot%>
+</TD>
+</tr>
+
+<TR><TD colspan=2>
+<H4 class="section"><H4 class="section">Average Spearman correlation</H4>  
+</TD></TR>
+
+
+<tr>
+<TD>
+<%
+#cur.plot<-cur.plot+1
+ncomp<-5
+ngenes<-8
+#sel.genes<-selected.examples(ncomp,ngenes)
+#for (c in names(sel.genes)) {
+#  cs <- strsplit(c,pipeline.sep)
+#  comp1 <- cs[[1]][1]
+##   comp2 <- ""
+#  dev.new(width=15,height=5)
+#  r.a<-gen.plot2report(filename=paste(file.prefix,"_",c,"_selection.png",sep=""),
+#          width=900,
+#          height=300,
+#	  html=TRUE,
+#	  ps=TRUE,
+#          to.plot=function() {
+#              plot.selection(comp1,comp2,sel.genes[[c]],data2html$gene.expr,data2html$base.mean.deseq[[c]],data2html$log2.fold.change.deseq[[c]],data2html$p.val.deseq[[c]],data2html$p.val.ttest[[c]],fdr)
+#        })
+#  cat(r.a$html)
+# }
+
+%>
+<!--P<%=cur.plot%>-->
+</TD></TR>
+
+<TR><TD>
+<%
+cur.plot<-cur.plot+1
+r.a<-gen.plot2report(filename=paste(file.prefix,"pearsonVsspearman.png",sep=""),
+                     height=400,
+                     width=400,
+                     html=TRUE,
+                     ps=TRUE,
+                     caption="Pearson vs spearman correlation",
+                     to.plot=function() {
+                       v1<-diag(data2html$p.pearson.cor)
+		       v2<-diag(data2html$p.cor)
+                       plot(v1,v2[names(v1)],xlim=c(min(v1,v2),1),ylim=c(0.7,1),ylab="Spearman",xlab="Pearson")
+                       abline(0,1)       
+                       text(v1,v2[names(v1)],names(v1),cex=0.7,offset=1)
+                      })
+cat(r.a$html)
+
+%>
+P<%=cur.plot%>
+</TD></TR>
+
+<TR><TD colspan=2>
+<H4 class="section">Quantification normalized difference/error</H4>  
+</TD></TR>
+
+
+<tr><TD>
+<%
+#Error
+cur.plot<-cur.plot+1
+ERR.LABEL <- "Error (%)"
+errors<-diag(data2html$quant.ndiff)
+# sort the genes by average error across all methods
+germ<-rowMeans(data2html$quant.gene.nerror)
+o<-sort(germ,decreasing=FALSE,index.return=T)
+data2html$quant.gene.nerror.sort <- data2html$quant.gene.nerror[o$ix,]
+germ <- germ[o$ix]
+#  width=max((length(errors)*70),400),
+#  height=500,
+r.a<-gen.plot2report(filename=paste(file.prefix,"_ndiff_error_bp.png",sep=""),
+                     height=max((length(errors)*60),400),
+                     width=500,
+                     html=TRUE,
+                     ps=TRUE,
+                     caption="Normalized error",
+                     to.plot=function() {
+                       par(mar=c(5,10,4,4))
+                       boxplot(data2html$quant.gene.nerror.sort,nonotch=T,outline=F,ylim=c(0,100),las=2,xlab=ERR.LABEL,col=methods.colors[colnames(data2html$quant.gene.nerror.sort)],horizontal=T)
+                     }) 
+  par(mar=c(5,5,4,4))
+  cat(r.a$html)
+
+%>
+P<%=cur.plot%>
+</TD></TR>
+<tr><TD>
+<%
+cur.plot<-cur.plot+1
+# Include the outliers
+  r.a<-gen.plot2report(filename=paste(file.prefix,"_ndiff_error_bpo.png",sep=""),
+  height=max((length(errors)*60),400),
+  width=500,
+  html=TRUE,
+  ps=TRUE,
+  caption="Normalized error",
+  to.plot=function() {
+    par(mar=c(5,10,4,4))
+    boxplot(data2html$quant.gene.nerror.sort,nonotch=T,outline=T,las=2,xlab=ERR.LABEL,col=methods.colors[colnames(data2html$quant.gene.nerror.sort)],horizontal=T)
+  })
+  par(mar=c(5,5,4,4))
+  cat(r.a$html)
+%>
+P<%=cur.plot%>
+</TD></TR>
+<tr>
+<TD>
+<%
+#
+#pinfo("Generating ",file.prefix,"_gene_methods_nerrByexpr.png")
+if (F) {
+cur.plot<-cur.plot+1
+r.a<-gen.plot2report(filename=paste(file.prefix,"_gene_methods_nerrByexpr.png",sep=""),
+          width=500,
+          height=500,
+	  html=TRUE,
+          caption="Genes sorted by average normalized error (across all pipelines)",
+	  ps=TRUE,
+          to.plot=function() {            
+	    par(mar=c(5,5,4,11),xpd=TRUE,bty="n");#reserve space for the legend
+#           plot(smooth.spline(data2html$quant.gene.nerror.sort[,1]),type="l",col=methods.colors[1],ylab=ERR.LABEL,xlab="Genes",log="y",ylim=c(0,200),xaxt="n")
+            plot(smooth.spline(data2html$quant.gene.nerror.sort[,1]),type="l",col=methods.colors[1],ylab=ERR.LABEL,xlab="Genes",ylim=c(0,200),xaxt="n")
+            for ( i in seq(2,length(colnames(data2html$quant.gene.nerror.sort)))) {
+                   lines(smooth.spline(data2html$quant.gene.nerror.sort[,i]),col=methods.colors[colnames(data2html$quant.gene.nerror.sort)[i]])
+                 }
+            lines(smooth.spline(germ),type="l",col="black")
+            # Add legend to top right, outside plot region
+	    legend("topright", inset=c(-0.6,0), legend=append(colnames(data2html$quant.gene.nerror.sort),"Mean"), lty=1, col=append(methods.colors[colnames(data2html$quant.gene.nerror.sort)],"black"), title="", bty='n')
+            axis(1,at=seq(1,nrow(data2html$quant.gene.nerror.sort)+1,nrow(data2html$quant.gene.nerror.sort)/5),labels=paste(seq(0,100,100/5),"%",sep=""))
+      })
+cat(r.a$html)
+}
+%>
+<!--P<%=cur.plot%>-->
+</td>
+</tr>
+
+<tr>
+<TD>
+<%
+if (F) {
+cur.plot<-cur.plot+1
+sq<-names(sort(data2html$true.quant.mean))
+r.a<-gen.plot2report(filename=paste(file.prefix,"_gene_methods_nerrByexpr2.png",sep=""),
+          width=500,
+          height=500,
+	  html=TRUE,
+	  ps=TRUE,
+          caption="Genes sorted (ascending) by true quantification (raw counts)",
+          to.plot=function() {#,
+	    par(mar=c(5,5,4,11),xpd=TRUE,bty="n");#reserve space for the legend
+            plot(smooth.spline(data2html$quant.gene.nerror.sort[sq,1]),type="l",ylab=ERR.LABEL,xlab="Genes",ylim=c(0,200),col=methods.colors[1],xaxt="n")
+            for ( i in seq(2,length(colnames(data2html$quant.gene.nerror.sort)))) {
+                   lines(smooth.spline(data2html$quant.gene.nerror.sort[sq,i]),col=methods.colors[colnames(data2html$quant.gene.nerror.sort)[i]])
+            }
+            #lines(data2html$true.quant.mean.f[sq]/sum(data2html$true.quant.mean.f)*length(data2html$true.quant.mean.f)*100,col="gray")
+	    legend("topright", inset=c(-0.6,0), legend=colnames(data2html$quant.gene.nerror.sort), lty=1, col=methods.colors[colnames(data2html$quant.gene.nerror.sort)], title="", bty='n')
+            axis(1,at=seq(1,nrow(data2html$quant.gene.nerror.sort)+1,nrow(data2html$quant.gene.nerror.sort)/5),labels=paste(seq(0,100,100/5),"%",sep=""))
+      })
+cat(r.a$html)
+}
+%>
+P<%=cur.plot%>
+</td>
+</tr>
+
+<tr>
+<TD>
+<%
+if (F) {
+cur.plot<-cur.plot+1
+true.rpkms<-counts2RPKMs(as.matrix(data2html$true.quant.mean.f),annot.table)
+names(true.rpkms)<-names(data2html$true.quant.mean.f)
+sq<-names(sort(true.rpkms))
+r.a<-gen.plot2report(filename=paste(file.prefix,"_gene_methods_nerrByexpr2rpkm.png",sep=""),
+          width=500,
+          height=500,
+	  html=TRUE,
+	  ps=TRUE,
+          caption="Genes sorted by true quantification (RPKM)",
+          to.plot=function() {#,
+	    par(mar=c(5,5,4,11),xpd=TRUE,bty="n");#reserve space for the legend
+            plot(y=data2html$quant.gene.nerror.sort[sq,1],x=true.rpkms[rownames(data2html$quant.gene.nerror.sort[sq,])],type="p",ylab=ERR.LABEL,xlab="RPKMs",ylim=c(0,300),col=methods.colors[1],pch=".",xlim=c(0,max(true.rpkms)))
+            for ( i in seq(2,length(colnames(data2html$quant.gene.nerror.sort)))) {
+                   points(y=data2html$quant.gene.nerror.sort[sq,i],x=true.rpkms[rownames(data2html$quant.gene.nerror.sort[sq,])],col=methods.colors[i])
+            }
+            #lines(data2html$true.quant.mean.f[sq]/sum(data2html$true.quant.mean.f)*length(data2html$true.quant.mean.f)*100,col="gray")
+	    legend("topright", inset=c(-0.6,0), legend=colnames(data2html$quant.gene.nerror.sort), lty=1, col=methods.colors[colnames(data2html$quant.gene.nerror.sort)], title="", bty='n')
+      
+      })
+cat(r.a$html)
+}
+%>
+P<%=cur.plot%>
+</td>
+</tr>
+
+<tr>
+<TD>
+</td>
+</tr>
+
+<tr>
+<TD>
+<%
+if ( F ) {
+cur.plot<-cur.plot+1
+sq<-names(sort(data2html$true.quant.mean.f))
+r.a<-gen.plot2report(filename=paste(file.prefix,"_gene_methods_nerrByexpr3.png",sep=""),
+          width=500,
+          height=500,
+	  html=TRUE,
+	  ps=TRUE,
+          caption="Error vs true quantification",
+          to.plot=function() {#,
+	    par(mar=c(5,5,4,11),xpd=TRUE,bty="n");#reserve space for the legend
+            plot(smooth.spline(data2html$quant.gene.nerror.sort[sq,1],data2html$true.quant.mean.f[sq]),type="l",ylab=ERR.LABEL,xlab="Counts (true)",ylim=c(0,200),col=methods.colors[1],log="x")
+            for ( i in seq(2,length(colnames(data2html$quant.gene.nerror.sort)))) {
+                   lines(smooth.spline(data2html$quant.gene.nerror.sort[sq,i],data2html$true.quant.mean.f[sq]),col=methods.colors[colnames(data2html$quant.gene.nerror.sort)[i]])
+            }
+	    legend("topright", inset=c(-0.6,0), legend=colnames(data2html$quant.gene.nerror.sort), lty=1, col=methods.colors[colnames(data2html$quant.gene.nerror.sort)], title="", bty='n')
+     
+      })
+cat(r.a$html)
+}
+%>
+P<%=cur.plot%>
+</td>
+</tr>
+
+  <tr>
+<TD>
+<%
+
+top.15.selection.f<-top.15.selection[top.15.selection %in% colnames(data2html$quant.gene.nerror.sort)]
+cur.plot<-cur.plot+1
+quant.vals.u<-sort(unique(round(data2html$true.quant.mean.f,0)))
+quant.vals.r<-round(data2html$true.quant.mean.f,0)
+my.filt<-function(val,l1,l2) {
+               mean(l2[l1>=val])
+}
+#####
+r.a<-gen.plot2report(filename=paste(file.prefix,"_errorsbycount.top.png",sep=""),
+          width=500,
+          height=500,
+	  html=TRUE,
+	  ps=TRUE,
+          caption="Average relative error for genes with X or more reads (selected pipelines)",
+          to.plot=function() {
+            # reorder l2
+            col<-rainbow(length(top.15.selection.f))
+            names(col)<-top.15.selection.f
+            l2 <- data2html$quant.gene.nerror.sort[names(quant.vals.r),top.15.selection.f[1]]
+            err.by.expr<-sapply(quant.vals.u,my.filt,quant.vals.r,l2)              
+	    par(mar=c(5,5,4,11),xpd=TRUE,bty="l");#reserve space for the legend
+            plot(smooth.spline(err.by.expr),type="l",log="x",xlab="Quantification (reads)",ylab="Error ( mean(expr>=X)",ylim=c(0,100),col=methods.colors[pipelines[1]],lty=methods.lty(1))
+            for ( i in seq(2:length(top.15.selection.f))) {
+              l2 <- data2html$quant.gene.nerror.sort[names(quant.vals.r),top.15.selection.f[i]]
+              err.by.expr<-sapply(quant.vals.u,my.filt,quant.vals.r,l2)
+              lines(smooth.spline(err.by.expr),col=methods.colors[pipelines[i]],lty=methods.lty(i))
+            }
+            # Add legend to top right, outside plot region
+	    legend("topright", inset=c(-0.6,0), legend=top.15.selection.f, lty=unlist(sapply(c(1:length(pipelines)),methods.lty)), col=methods.colors[pipelines], title="", bty='n')
+      })
+cat(r.a$html)
+#######
+r.a<-gen.plot2report(filename=paste(file.prefix,"_errorsbycount.png",sep=""),
+          width=500,
+          height=500,
+	  html=TRUE,
+	  ps=TRUE,
+          caption="Average relative error for genes with X or more reads",
+          to.plot=function() {
+            # reorder l2
+            l2 <- data2html$quant.gene.nerror.sort[names(quant.vals.r),1]
+            err.by.expr<-sapply(quant.vals.u,my.filt,quant.vals.r,l2)              
+	    par(mar=c(5,5,4,11),xpd=TRUE,bty="l");#reserve space for the legend
+            plot(smooth.spline(err.by.expr),type="l",log="x",xlab="Quantification (reads)",ylab="Error ( mean(expr>=X)",ylim=c(0,100),col=methods.colors[1])
+            for ( i in seq(2,length(colnames(data2html$quant.gene.nerror.sort)))) {
+              l2 <- data2html$quant.gene.nerror.sort[names(quant.vals.r),i]
+              err.by.expr<-sapply(quant.vals.u,my.filt,quant.vals.r,l2)
+              lines(smooth.spline(err.by.expr),col=methods.colors[i])
+            }
+            # Add legend to top right, outside plot region
+	    legend("topright", inset=c(-0.6,0), legend=colnames(data2html$quant.gene.nerror.sort), lty=1, col=methods.colors[colnames(data2html$quant.gene.nerror.sort)], title="", bty='n')
+      })
+cat(r.a$html)
+
+%>
+P<%=cur.plot%>
+</td>
+</tr>
+
+  <tr>
+<TD>
+<%
+cur.plot<-cur.plot+1
+quant.vals.u<-sort(unique(round(data2html$true.quant.mean.f,0)))
+quant.vals.r<-round(data2html$true.quant.mean.f,0)
+r.a<-gen.plot2report(filename=paste(file.prefix,"_aerrorsbycount.png",sep=""),
+          width=500,
+          height=500,
+	  html=TRUE,
+	  ps=TRUE,
+          caption="Average  absolute error for genes with X or more reads",
+          to.plot=function() {
+            my.filt<-function(val,l1,l2) {
+               mean(l2[l1>=val])
+            }
+            # reorder l2
+            l2 <- data2html$quant.gene.error[names(quant.vals.r),1]
+            err.by.expr<-sapply(quant.vals.u,my.filt,quant.vals.r,l2)
+              
+	    par(mar=c(5,5,4,11),xpd=TRUE,bty="l");#reserve space for the legend
+            plot(smooth.spline(err.by.expr),type="l",log="x",xlab="Quantification (reads)",ylab="Absolute error (mean(expr>=X)",ylim=c(0,100),col=methods.colors[1])
+            for ( i in seq(2,length(colnames(data2html$quant.gene.error)))) {
+              l2 <- data2html$quant.gene.error[names(quant.vals.r),i]
+              err.by.expr<-sapply(quant.vals.u,my.filt,quant.vals.r,l2)
+              lines(smooth.spline(err.by.expr),col=methods.colors[i])
+            }
+            # Add legend to top right, outside plot region
+	    legend("topright", inset=c(-0.6,0), legend=colnames(data2html$quant.gene.error), lty=1, col=methods.colors[colnames(data2html$quant.gene.error)], title="", bty='n')
+      })
+cat(r.a$html)
+
+r.a<-gen.plot2report(filename=paste(file.prefix,"_aerrorsbycount_sel.png",sep=""),
+          width=500,
+          height=500,
+	  html=TRUE,
+	  ps=TRUE,
+          caption="Average  absolute error for genes with X or more reads",
+          to.plot=function() {
+            my.filt<-function(val,l1,l2) {
+               mean(l2[l1>=val])
+            }
+            # reorder l2
+            l2 <- data2html$quant.gene.error[names(quant.vals.r),pipelines[1]]
+            err.by.expr<-sapply(quant.vals.u,my.filt,quant.vals.r,l2)
+              
+	    par(mar=c(5,5,4,11),xpd=TRUE,bty="l");#reserve space for the legend
+            plot(smooth.spline(err.by.expr),type="l",log="x",xlab="Quantification (reads)",ylab="Absolute error (mean(expr>=X)",ylim=c(0,100),col=methods.colors[pipelines[1]],lty=methods.lty(1))
+            for ( i in seq(2,length(pipelines))) {
+              l2 <- data2html$quant.gene.error[names(quant.vals.r),i]
+              err.by.expr<-sapply(quant.vals.u,my.filt,quant.vals.r,l2)
+              lines(smooth.spline(err.by.expr),col=methods.colors[pipelines[i]],lty=methods.lty(i))
+            }
+            # Add legend to top right, outside plot region
+	    legend("topright", inset=c(-0.6,0), legend=pipelines, lty=unlist(sapply(c(1:length(pipelines)),methods.lty)), col=methods.colors[pipelines], title="", bty='n')
+            
+      })
+cat(r.a$html)
+
+%>
+P<%=cur.plot%>
+</td>
+</tr>
+<tr>
+<td>
+<H3 class="section">Gene expression</H3>
+<%
+# 
+
+h1<-hist(data2html$true.quant.mean.f,nclass=max(data2html$true.quant.mean.f)/10,plot=F)
+h1.r<-hist(data2html$true.quant.rpkm.mean.f,nclass=max(data2html$true.quant.rpkm.mean.f)/2,plot=F)
+for ( p in names(data2html$gene.expr)  ) {
+   h2<-hist(databox$gene.expr[[p]],nclass=max(databox$gene.expr[[p]])/10,plot=F)
+   h2.r<-hist(databox$gene.rpkms[,p],nclass=max(databox$gene.rpkms[,p])/2,plot=F)
+   r.a<-gen.plot2report(filename=paste(file.prefix,"_",p,"_hist.png",sep=""),
+                     width=800,
+                     height=400,
+                     html=TRUE,
+                     ps=TRUE,
+                     caption="Expression (true values overlaid in semi-transparent red)",
+                     to.plot=function() {
+                      par(mfrow=c(1,2))
+#	              m<-max(boxplot(databox$gene.expr[[p]],plot=F)$stats[5],boxplot(data2html$true.quant.mean.f,plot=F)$stats[5])
+                      plot( h1, col=makeTransparent("red"), xlim=c(0,1000),main=p,xlab="Reads")
+	              plot( h2, col=makeTransparent("green"), xlim=c(0,1000),add=T)
+                      m <- boxplot(databox$gene.rpkms[,p],plot=F)$stats[5]
+                      plot( h1.r, col=makeTransparent("red"), xlim=c(0,m),main=p,xlab="RPKM")
+                      plot( h2.r, col=makeTransparent("green"), xlim=c(0,m),add=T)  
+                     })
+    cat(r.a$html)
+ }
+%>
+</td>
+</tr>
+
+<tr>
+<TD>
+<%
+#pinfo("Generating ",file.prefix,"_expr_acc_nerr.png")
+if ( T ) {  
+  #save.image("/homes/nf/lixo.Rdata")
+  # reads
+  true.c.limits <- c(0,50,100,200,500)
+  xlim <- 200
+  for (l in true.c.limits) {
+    sel <- names(data2html$true.quant.mean.f[data2html$true.quant.mean.f>=l])
+    if (sel>0 ){
+      cur.plot<-cur.plot+1
+      
+      r.a<-gen.plot2report(filename=paste(file.prefix,"_",l,"_nerr_distr1.png",sep=""),
+                           width=1000,
+                           height=500,
+                           html=TRUE,
+                           ps=TRUE,
+                           caption=paste("Genes with more than ",l," reads",sep=""),
+                           to.plot=function() {
+                             par(mfrow=c(1,2),mar=c(5,5,6,6),xpd=TRUE,bty="l");#reserve space for the legend
+                             y<-hist(data2html$quant.gene.nerror[sel,1],nclass=1000,plot=F)	    
+                             plot(y$counts,type="l",ylab="Number of genes",xlab="Rel. Error",xlim=c(0,xlim),col=makeTransparent(methods.colors[1]))
+                             for ( i in seq(2,length(colnames(data2html$quant.gene.nerror)))) {
+                               y<-hist(data2html$quant.gene.nerror[sel,i],plot=F,nclass=1000)
+                               lines(y$counts,col=makeTransparent(methods.colors[i]))
+                             }
+                             # accumulative distribution
+                             sum.acc <- function(k,l) {
+                               sum(l[c(1:k)])
+                             }
+                                        #!
+                             y<-hist(data2html$quant.gene.nerror[sel,1],nclass=1000,plot=F)            
+                             y<-sapply(seq(1,min(xlim,length(y$counts))),sum.acc,y$counts)
+                             plot(y,type="l",ylab="Number of genes (Rel. Error <= X)",xlab="Rel. Error",xlim=c(0,xlim),col=makeTransparent(methods.colors[1]))
+                             for ( i in seq(2,length(colnames(data2html$quant.gene.nerror)))) {
+                               y<-hist(data2html$quant.gene.nerror[sel,i],plot=F,nclass=1000)
+                               y<-sapply(seq(1,min(xlim,length(y$counts))),sum.acc,y$counts)
+                               lines(y,col=makeTransparent(methods.colors[i]))
+                             }
+                             # Add legend to top right, outside plot region
+                             #legend("topright", inset=c(-0.6,0), legend=colnames(data2html$quant.gene.nerror.sort), lty=1, col=methods.colors[colnames(data2html$quant.gene.nerror.sort)], title="", bty='n')
+                           })
+      cat(r.a$html)
+    }
+  }
+}
+%>
+P<%=cur.plot%>
+</td>
+</tr>
+
+<tr>
+<TD>
+<%
+#pinfo("Generating ",file.prefix,"_expr_acc_nerr.png")
+pipelines <- top.15.selection[top.15.selection %in% colnames(data2html$quant.gene.nerror)]
+if ( !is.null(pipelines) ) {  
+  cur.plot<-cur.plot+1
+  #save.image("/homes/nf/lixo.Rdata")
+  # reads
+  true.c.limits <- c(0,50,100,200,500)
+  xlim <- 200
+
+  lty <- c(1,2,4,5)
+  for (l in true.c.limits) {
+    sel <- names(data2html$true.quant.mean.f[data2html$true.quant.mean.f>=l])
+    r.a<-gen.plot2report(filename=paste(file.prefix,"top15_",l,"_nerr_distr1.png",sep=""),
+          width=1000,
+          height=500,
+	  html=TRUE,
+	  ps=TRUE,
+          caption=paste("Genes with more than ",l," reads (for the top 15 pipelines)",sep=""),
+          to.plot=function() {
+            par(mfrow=c(1,2),mar=c(5,5,2,2),xpd=TRUE,bty="l");#reserve space for the legend
+            y<-hist(data2html$quant.gene.nerror[sel,pipelines[1]],nclass=max(data2html$quant.gene.nerror),plot=F)	    
+            plot(y$counts[c(1:xlim)],type="l",ylab="Number of genes",xlab="Rel. Error",xlim=c(0,xlim),col=methods.colors2[pipelines[1]],lty=lty[1])
+
+            for ( i in seq(2,length(pipelines))) {
+              y<-hist(data2html$quant.gene.nerror[sel,pipelines[i]],plot=F,nclass=max(data2html$quant.gene.nerror))
+              lines(y$counts[c(1:xlim)],col=methods.colors2[pipelines[i]],lty=lty[(i%%4)+1])
+            }
+                                        # Add legend to top right, outside plot region
+	    #legend("topright", legend=pipelines, col=methods.colors[pipelines], title="", bty='n',cex=0.8,lty=lty)
+
+            # accumulative distribution
+            sum.acc <- function(k,l) {
+              sum(l[c(1:k)])
+            }
+            y<-hist(data2html$quant.gene.nerror[sel,pipelines[1]],nclass=max(data2html$quant.gene.nerror),plot=F)
+            y<-sapply(seq(1,min(xlim,length(y$counts))),sum.acc,y$counts)
+            plot(y,type="l",ylab="Number of genes (Rel. Error <= X)",xlab="Rel. Error",xlim=c(0,xlim),col=methods.colors2[pipelines[1]],lty=lty[1])
+            for ( i in seq(2,length(pipelines))) {
+              y<-hist(data2html$quant.gene.nerror[sel,pipelines[i]],plot=F,nclass=max(data2html$quant.gene.nerror))
+              y<-sapply(seq(1,min(xlim,length(y$counts))),sum.acc,y$counts)
+              lines(y,col=methods.colors2[pipelines[i]],lty=lty[(i%%4)+1])
+            }
+            legend("bottomright", legend=pipelines, col=methods.colors[pipelines], title="", bty='n',cex=0.7,lty=lty)
+
+      })
+cat(r.a$html)
+}
+}
+%>
+P<%=cur.plot%>
+</td>
+</tr>
+
+
+<tr>
+<TD>
+<%
+#pinfo("Generating ",file.prefix,"_expr_acc_nerr.png")
+if ( T ) {  
+  cur.plot<-cur.plot+1
+  # reads
+  r.a<-gen.plot2report(filename=paste(file.prefix,"_true_reads_distr_per_gene.png",sep=""),
+                       width=800,
+                       height=400,
+                       html=TRUE,
+                       ps=TRUE,
+                       caption=paste("True number of reads per gene",sep=""),
+                       to.plot=function() {
+                         par(mfrow=c(1,2),mar=c(5,5,6,6),xpd=TRUE,bty="l");#reserve space for the legend
+                         boxplot(data2html$true.quant.mean.f,ylab="Number of reads",outline=F)
+                         plot(hist(data2html$true.quant.mean.f,plot=F,nclass=max(data2html$true.quant.mean.f)/10)$counts,xlab="Number of reads",ylab="Number of genes",type="l",main=paste("min=",min(data2html$true.quant.mean.f),sep=""))
+                       })
+  cat(r.a$html)
+}
+%>
+P<%=cur.plot%>
+</td>
+</tr>
+
+  
+<tr>
+<td>
+<%
+if(F) {
+cur.plot<-cur.plot+1
+quant.vals.u<-sort(unique(round(data2html$true.quant.rpkm.mean.f,0)))
+quant.vals.r<-round(data2html$true.quant.rpkm.mean.f,0)
+r.a<-gen.plot2report(filename=paste(file.prefix,"_errorsbyrpkm.png",sep=""),
+          width=500,
+          height=500,
+	  html=TRUE,
+	  ps=TRUE,
+          caption="Average relative error for genes with X or more  RPKMs",
+          to.plot=function() {
+            my.filt<-function(val,l1,l2) {
+               mean(l2[l1>=val])
+            }
+            # reorder l2
+            l2 <- data2html$quant.gene.nerror.sort[names(quant.vals.r),1]
+            err.by.expr<-sapply(quant.vals.u,my.filt,quant.vals.r,l2)
+              
+	    par(mar=c(5,5,4,11),xpd=TRUE,bty="l");#reserve space for the legend
+            plot(smooth.spline(err.by.expr),type="l",log="x",xlab="Quantification (reads)",ylab="Error ( mean(expr>=X)",ylim=c(0,100),col=methods.colors[1])
+            for ( i in seq(2,length(colnames(data2html$quant.gene.nerror.sort)))) {
+              l2 <- data2html$quant.gene.nerror.sort[names(quant.vals.r),i]
+              err.by.expr<-sapply(quant.vals.u,my.filt,quant.vals.r,l2)
+              lines(smooth.spline(err.by.expr),col=methods.colors[i])
+            }
+            # Add legend to top right, outside plot region
+	    legend("topright", inset=c(-0.6,0), legend=colnames(data2html$quant.gene.nerror.sort), lty=1, col=methods.colors[colnames(data2html$quant.gene.nerror.sort)], title="", bty='n')
+      })
+cat(r.a$html)
+}
+%>
+P<%=cur.plot%>
+</td>
+</tr>
+
+
+  
+<tr>
+<TD>
+<%
+#pinfo("Generating ",file.prefix,"_expr_acc_nerr.png")
+if ( F ) {  
+cur.plot<-cur.plot+1
+  #save.image("/homes/nf/lixo.Rdata")
+  quant.vals.u<-sort(unique(round(data2html$true.quant.mean,0)))
+  quant.vals.r<-round(data2html$true.quant.mean,0)
+  r.a<-gen.plot2report(filename=paste(file.prefix,"_expr_acc_nerr.png",sep=""),
+          width=500,
+          height=500,
+	  html=TRUE,
+	  ps=TRUE,
+          to.plot=function() {
+              my.filt<-function(val,l1,l2) {
+                sum(l2[l1>=val])
+              }
+ 	    terror<-sum(data2html$quant.gene.nerror.sort[,1])
+            err.by.expr<-sapply(quant.vals.u,my.filt,quant.vals.r,data2html$quant.gene.nerror.sort[,1])
+	    par(mar=c(5,5,4,11),xpd=TRUE,bty="l");#reserve space for the legend
+            plot(smooth.spline(err.by.expr/terror*100),type="l",log="x",xlab="Quantification (reads)",ylab="Accumulative error ( X >= error )",ylim=c(0,100),col=methods.colors[1])
+            for ( i in seq(2,length(colnames(data2html$quant.gene.nerror.sort)))) {
+ 	      terror<-sum(data2html$quant.gene.nerror.sort[,i])
+              err.by.expr<-sapply(quant.vals.u,my.filt,quant.vals.r,data2html$quant.gene.nerror.sort[,i])
+              lines(smooth.spline(err.by.expr/terror*100),col=methods.colors[i])
+            }
+            # Add legend to top right, outside plot region
+	    legend("topright", inset=c(-0.6,0), legend=colnames(data2html$quant.gene.nerror.sort), lty=1, col=methods.colors[colnames(data2html$quant.gene.nerror.sort)], title="", bty='n')
+      })
+cat(r.a$html)
+}
+%>
+P<%=cur.plot%>
+</td>
+</tr>
+
+<tr>
+<TD>
+<%
+#pinfo("Generating ",file.prefix,"_expr_acc_nerr.png")
+if ( F ) {  
+cur.plot<-cur.plot+1
+  #save.image("/homes/nf/lixo.Rdata")
+  quant.vals.u<-sort(unique(round(data2html$true.quant.mean.f,0)))
+  quant.vals.r<-round(data2html$true.quant.mean.f,0)
+  r.a<-gen.plot2report(filename=paste(file.prefix,"_expr_acc_nerr2.png",sep=""),
+          width=500,
+          height=500,
+	  html=TRUE,
+	  ps=TRUE,
+          to.plot=function() {
+              my.filt<-function(val,l1,l2) {
+                sum(l2[l1<=val])
+              }
+ 	    terror<-sum(data2html$quant.gene.nerror.sort[,1])
+            err.by.expr<-sapply(quant.vals.u,my.filt,quant.vals.r,data2html$quant.gene.nerror.sort[,1])
+	    par(mar=c(5,5,4,11),xpd=TRUE,bty="l");#reserve space for the legend
+            plot(smooth.spline(err.by.expr/terror*100),type="l",log="x",xlab="Quantification (reads)",ylab="Accumulative error ( X <= error )",ylim=c(0,100),col=methods.colors[1])
+            for ( i in seq(2,length(colnames(data2html$quant.gene.nerror.sort)))) {
+ 	      terror<-sum(data2html$quant.gene.nerror.sort[,i])
+              err.by.expr<-sapply(quant.vals.u,my.filt,quant.vals.r,data2html$quant.gene.nerror.sort[,i])
+              lines(smooth.spline(err.by.expr/terror*100),col=methods.colors[i])
+            }
+            # Add legend to top right, outside plot region
+	    legend("topright", inset=c(-0.6,0), legend=colnames(data2html$quant.gene.nerror.sort), lty=1, col=methods.colors[colnames(data2html$quant.gene.nerror.sort)], title="", bty='n')
+      })
+cat(r.a$html)
+}
+%>
+P<%=cur.plot%>
+</td>
+</tr>
+
+<tr>
+<TD>
+<%
+if ( F ) {  
+  cur.plot<-cur.plot+1
+  quant.vals.u<-sort(unique(round(data2html$true.quant.mean.f,0)))
+  quant.vals.r<-round(data2html$true.quant.mean.f,0)
+  r.a<-gen.plot2report(filename=paste(file.prefix,"_expr_nerr.png",sep=""),
+          width=500,
+          height=500,
+	  html=TRUE,
+	  ps=TRUE,
+	  caption="Average error VS expression",
+          to.plot=function() {
+              my.filt<-function(val,l1,l2) {
+                mean(l2[l1==val])
+              }
+            err.by.expr<-sapply(quant.vals.u,my.filt,quant.vals.r,data2html$quant.gene.nerror.sort[,1])
+	    par(mar=c(5,5,4,11),xpd=TRUE,bty="l");#reserve space for the legend
+            plot(smooth.spline(err.by.expr),type="l",log="x",xlab="Quantification (reads)",ylab="avg. error",ylim=c(0,100),col=methods.colors[1])
+            for ( i in seq(2,length(colnames(data2html$quant.gene.nerror.sort)))) {
+              err.by.expr<-sapply(quant.vals.u,my.filt,quant.vals.r,data2html$quant.gene.nerror.sort[,i])
+              lines(smooth.spline(err.by.expr),col=methods.colors[colnames(data2html$quant.gene.nerror.sort)[i]])
+            }
+            # Add legend to top right, outside plot region
+	    legend("topright", inset=c(-0.6,0), legend=colnames(data2html$quant.gene.nerror.sort), lty=1, col=methods.colors[colnames(data2html$quant.gene.nerror.sort)], title="", bty='n')
+      })
+cat(r.a$html)
+}
+%>
+P<%=cur.plot%>
+</td>
+</tr>
+<tr>
+<TD>
+<%
+if ( F ) {  
+  cur.plot<-cur.plot+1
+  r.a<-gen.plot2report(filename=paste(file.prefix,"_gene_methods_nerrVsexpr.png",sep=""),
+          width=500,
+          height=500,
+	  html=TRUE,
+	  ps=TRUE,
+          to.plot=function() {
+	    par(mar=c(5,5,4,11),xpd=TRUE,bty="l");#reserve space for the legend
+            plot(data2html$true.quant.mean.f,data2html$quant.gene.nerror.sort[,1],log="xy",type="p",pch=19,xlab="True gene quantification (reads)",ylab=ERR.LABEL,col=methods.colors[1],cex=0.3)
+            for ( i in seq(2,length(colnames(data2html$quant.gene.nerror.sort))) ) { points(data2html$true.quant.mean.f,data2html$quant.gene.nerror.sort[,i],col=methods.colors[i],pch=19,cex=0.3) }
+	    legend("topright", inset=c(-0.6,0), legend=colnames(data2html$quant.gene.nerror.sort), pch=19, col=methods.colors[colnames(data2html$quant.gene.nerror.sort)], title="", bty='n')
+      })
+cat(r.a$html)
+}
+%>
+P<%=cur.plot%>
+</td>
+</tr>
+
+<tr>
+<TD>
+<%
+if(F ) {
+nerrors<-diag(data2html$quant.ndiff)
+nttest<-diag(data2html$ttest.ndiff)
+cur.plot<-cur.plot+1
+r.a<-gen.plot2report(filename=paste(file.prefix,"_ttestvnserr.png",sep=""),
+          width=500,
+          height=500,
+	  html=TRUE,
+	  ps=TRUE,
+          caption="Number of significantly different values using paired-ttest adjusted using Benjamini and Hochberg
+procedure with a fdr=0.01",
+          to.plot=function() {
+	      par(mar=c(5,5,4,11),xpd=TRUE,bty="l");#reserve space for the legend
+              plot(x=nerrors,y=nttest,type="p",pch=19,xlab="Error",ylab="Sig. different",main=paste("","ttest (fdr=0.01)",sep=""),xlim=c(0,max(nerrors)),col=methods.colors[names(nerrors)])
+              # Add legend to top right, outside plot region
+	      legend("topright", inset=c(-0.6,0), legend=names(nerrors), pch=19, col=methods.colors[names(nerrors)], title="", bty='n')
+      })
+cat(r.a$html)
+}
+%>
+P<%=cur.plot%>
+</TD>
+
+<tr> <TD> <%
+if ( F ) {
+  cur.plot<-cur.plot+1
+r.a<-gen.plot2report(filename=paste(file.prefix,"_deseqvnserr.png",sep=""),
+width=500, height=500, html=TRUE, ps=TRUE,
+caption="Number of significantly different values using DEseq (fdr 0.01)",
+to.plot=function() { par(mar=c(5,5,4,11),xpd=TRUE,bty="l");#reserve space for the legend
+
+              plot(x=data2html$quant.ndiff,y=data2html$sig.diff,type="p",pch=19,xlab="Error",ylab="Sig. different",main=paste("","DESeq (fdr=0.01)",sep=""),col=methods.colors[names(nerrors)],xlim=c(0,max(data2html$quant.ndiff)))
+              # Add legend to top right, outside plot region
+              legend("topright", inset=c(-0.6,0),
+              legend=names(nerrors), pch=19,
+              col=methods.colors[names(nerrors)], title="", bty='n')
+              })
+  cat(r.a$html)
+}
+%>
+P<%=cur.plot%>
+</TD>
+</TR>
+
+<TR>
+<TD>
+
+<%
+   
+   cat("<TABLE><TR>")
+   i <- 0
+   for (d in colnames(data2html$quant.gene.nerror)) {
+        r.a<-gen.plot2report(filename=paste(file.prefix,"_errorVStrans_",d,".png",sep=""),
+              width=600,
+              height=300,
+	      html=TRUE,
+	      ps=TRUE,
+              caption=paste(d," Error & # transcripts",sep=""),
+              to.plot=function() { 
+	          par(mfrow=c(1,2))
+	          cor.scatterplot(x=databox$quant.gene.nerror[,d],y=gtrans[rownames(databox$quant.gene.nerror),2],colA="Error",colB="#transcripts",smooth="lowess",log=NULL)
+	          cor.scatterplot(x=databox$quant.gene.nerror[,d],y=annot.table[annot.table$ID %in% rownames(databox$quant.gene.nerr),"len"],colA="Error",colB="gene length",smooth="lowess",log=NULL)
+              })
+        cat("<TD>")
+        cat(r.a$html)
+        cat("</TD>")
+        i<-i+1
+        if ((i %% 4)==0 ) {
+          cat("</TR><TR>")
+        }
+      }
+  print("</TR></TABLE>")
+%>
+</TD>
+</TR>
+
+<TR>
+<TD>
+<H3 class="section">The good, the bad, and the uncertain</H3>
+<%
+
+
+# error distribution per gene for the selected subset of pipelines
+pipelines <- top.15.selection[top.15.selection %in% colnames(databox$quant.gene.nerror)]
+nerr.df <- as.data.frame(databox$quant.gene.nerror[pipelines])
+nerr.mean<-rowMeans(as.matrix(nerr.df))
+nerr.median<-apply(nerr.df,1,median)
+nerr.sd <- apply(nerr.df,1,sd)
+nerr.cv <- nerr.sd/nerr.median
+
+top.x <- 1000
+#higher variability=>cv is larger
+cv.inf<-nerr.cv[is.infinite(nerr.cv)]
+ge.hv <- append(cv.inf,sort(nerr.cv[!is.infinite(nerr.cv) & nerr.cv > 1],decreasing=T))
+# might not include very extreme cases
+ge.lv <- append(cv.inf,sort(nerr.cv[nerr.cv<1],decreasing=F))
+# very low error
+ge.lv.l <- list()
+#ge.lv.l[["50"]]  <- names(sort(nerr.median,decreasing=F)[names(ge.lv)])[1:50]
+ge.lv.l[["50"]]  <- names(sort(nerr.median[names(ge.lv)],decreasing=F)[1:50])
+ge.lv.l[["100"]] <- names(sort(nerr.median[names(ge.lv)],decreasing=F)[1:100])
+ge.lv.l[["200"]] <- names(sort(nerr.median[names(ge.lv)],decreasing=F)[1:200])
+ge.lv.l[["300"]] <- names(sort(nerr.median[names(ge.lv)],decreasing=F)[1:300])
+ge.lv.l[["400"]] <- names(sort(nerr.median[names(ge.lv)],decreasing=F)[1:400])
+
+# highest error
+ge.lv.h <- list()
+ge.lv.h[["50"]]  <- names(sort(nerr.mean[names(ge.lv)],decreasing=T)[1:50])
+ge.lv.h[["100"]]  <- names(sort(nerr.mean[names(ge.lv)],decreasing=T)[1:100])
+ge.lv.h[["200"]]  <- names(sort(nerr.mean[names(ge.lv)],decreasing=T)[1:200])
+ge.lv.h[["300"]]  <- names(sort(nerr.mean[names(ge.lv)],decreasing=T)[1:300])
+ge.lv.h[["400"]]  <- names(sort(nerr.mean[names(ge.lv)],decreasing=T)[1:400])
+
+# high variability
+ge.hv <- sort(nerr.cv[!is.infinite(nerr.cv) & nerr.cv > 1])
+ge.hv.t <- list()
+ge.hv.t[["50"]] <- names(sort(ge.hv,decreasing=T))[1:50]
+ge.hv.t[["100"]] <- names(sort(ge.hv,decreasing=T))[1:100]
+ge.hv.t[["200"]] <- names(sort(ge.hv,decreasing=T))[1:200]
+ge.hv.t[["300"]] <- names(sort(ge.hv,decreasing=T))[1:300]
+ge.hv.t[["400"]] <- names(sort(ge.hv,decreasing=T))[1:400]
+
+# high versus low
+# check if ordering is ok
+# heatmap
+# heatmap(as.matrix(nerr.df[ge.lv.l100,]))
+# heatmap(as.matrix(nerr.df[ge.lv.l50,]))
+r.a<-gen.plot2report(filename=paste(file.prefix,"_50_genes_lowest_error.png",sep=""),
+          width=800,
+          height=800,
+	  html=TRUE,
+	  ps=TRUE,
+          caption=paste("Set of genes with lowest mean rerror across ",ncol(nerr.df)," pipelines and coefficient of variation lower than 1.",low.val.col.txt,sep=""),
+      to.plot=function() {
+        gen.heatmap(as.matrix(nerr.df[ge.lv.l[["50"]],]),colors=get.heat.color.pallete(nerr.df[ge.lv.l[["50"]],]),ncolors=300,dendrogram="none",main=paste("",sep=""),density.info="none",Rowv=FALSE,Colv=FALSE, cexRow=0.60,cexCol=0.60,tracecol="white")
+      })
+cat(r.a$html)
+
+r.a<-gen.plot2report(filename=paste(file.prefix,"_50_genes_lowest_error_zoom.png",sep=""),
+          width=800,
+          height=800,
+	  html=TRUE,
+	  ps=TRUE,
+          caption=paste("Set of genes with lowest mean rerror across ",ncol(nerr.df)," pipelines and coefficient of variation lower than 1.",low.val.col.txt,sep=""),
+      to.plot=function() {
+        plot.sel.quant.comp(nerr.df[ge.lv.l[["50"]],],data2html$true.quant.mean.f)
+      })
+cat(r.a$html)
+
+
+r.a<-gen.plot2report(filename=paste(file.prefix,"_50_genes_highest_error.png",sep=""),
+          width=800,
+          height=800,
+	  html=TRUE,
+	  ps=TRUE,
+          caption=paste("Set of genes with highest mean rerror across ",ncol(nerr.df)," pipelines.",low.val.col.txt,sep=""),
+      to.plot=function() {
+        gen.heatmap(as.matrix(nerr.df[ge.lv.h[["50"]],]),colors=get.heat.color.pallete(nerr.df[ge.lv.h[["50"]],]),dendrogram="none",main=paste("",sep=""),density.info="none",Rowv=FALSE,Colv=FALSE, cexRow=0.60,cexCol=0.60,tracecol="white")
+      })
+cat(r.a$html)
+
+r.a<-gen.plot2report(filename=paste(file.prefix,"_50_genes_highest_error_zoom.png",sep=""),
+          width=800,
+          height=800,
+	  html=TRUE,
+	  ps=TRUE,
+          caption=paste("Set of genes with highest mean rerror across ",ncol(nerr.df)," pipelines and coefficient of variation lower than 1.",low.val.col.txt,sep=""),
+      to.plot=function() {
+        plot.sel.quant.comp(nerr.df[ge.lv.h[["50"]],],data2html$true.quant.mean.f)
+      })
+cat(r.a$html)
+
+r.a<-gen.plot2report(filename=paste(file.prefix,"_50_genes_variable_error.png",sep=""),
+          width=800,
+          height=800,
+	  html=TRUE,
+	  ps=TRUE,
+          caption=paste("Set of genes with highest variable rerror across ",ncol(nerr.df)," pipelines (highest coefficient of variation greater 1 ).",low.val.col.txt,sep=""),
+      to.plot=function() {
+        gen.heatmap(as.matrix(nerr.df[ge.hv.t[["50"]],]),colors=get.heat.color.pallete(nerr.df[ge.hv.t[["50"]],]),dendrogram="none",main=paste("",sep=""),density.info="none",Rowv=FALSE,Colv=FALSE, cexRow=0.60,cexCol=0.60,tracecol="white")
+      })
+#c("ENSG00000188130","ENSG00000143499","ENSG00000149443","ENSG00000187066")
+cat(r.a$html)
+r.a<-gen.plot2report(filename=paste(file.prefix,"_50_genes_variable_error_zoom.png",sep=""),
+          width=800,
+          height=800,
+	  html=TRUE,
+	  ps=TRUE,
+          caption=paste("Set of genes with highest variable mean rerror across ",ncol(nerr.df)," pipelines and coefficient of variation greater than 1.",low.val.col.txt,sep=""),
+      to.plot=function() {
+        plot.sel.quant.comp(nerr.df[ge.hv.t[["50"]],],data2html$true.quant.mean.f)
+      })
+cat(r.a$html)
+
+################################
+# check for enrichment
+# all genes
+# differentialy expressed/by set
+enrich.high <- list()
+for ( s in names(ge.lv.h) ) {
+  enrich.high[[s]] <- check.go.enrich(ge.lv.h[[s]],rownames(nerr.df),fdr=fdr)
+}
+enrich.low <- list()
+for ( s in names(ge.lv.l) ) {
+  enrich.low[[s]] <- check.go.enrich(ge.lv.l[[s]],rownames(nerr.df),fdr=fdr)
+}
+enrich.var <- list()
+for ( s in names(ge.hv.t) ) {
+  enrich.var[[s]] <- check.go.enrich(ge.hv.t[[s]],rownames(nerr.df),fdr=fdr)
+}
+#h100.set <- check.go.enrich(ge.lv.h100,rownames(nerr.df))
+#h300.set <- check.go.enrich(ge.lv.h300,rownames(nerr.df))
+#l100.set <- check.go.enrich(ge.lv.l100,rownames(nerr.df))
+
+library("RamiGO")
+# HTML tables
+
+plot.enriched <- function(enriched,txt) {
+  main <- txt
+  for ( s in names(enriched)) {
+    for ( t in c("under","over") ) {
+      n <- nrow(enriched[[s]][[t]])
+      if ( !is.null(n) && n > 0 ) {  
+        HTML(enriched[[s]][[t]],file=stdout(),
+             Border = 0, innerBorder=0,
+             classfirstline = "firstline", classfirstcolumn = "firstcolumn",
+             classcellinside = "cellinside", append = FALSE,
+             caption = paste(main," ",s," genes ",t," represented",sep=""), captionalign = "top", classcaption = "captiondataframe", classtable = "dataframe",
+             digits=2, nsmall = 0, big.mark = " ", big.interval = 3, decimal.mark = ",",
+             sortableDF=FALSE, row.names = TRUE)
+                                        # plots
+                                        #pngRes <- getAmigoTree(goIDs=enrich.var[[s]][[t]]$category, pvalues=enrich.var[[s]][[t]]$under_represented_pvalue, filename="example", picType="png")
+      }
+    }
+  }
+}
+plot.enriched(enrich.var,"Highly variable errors")
+plot.enriched(enrich.low,"Consistenly low errors")
+plot.enriched(enrich.high,"Consistenly high errors")
+
+## source("http://bioconductor.org/biocLite.R")
+## biocLite("RamiGO")
+## color <- "red"
+## pngRes <- getAmigoTree(goIDs=enrich.var[["200"]]$under[,1], pvalues=enrich.var[["200"]]$under[,"under_represented_pvalue"], filename="example", picType="png")
+
+%>
+
+<H3 class="section">"Extreme" cases</H3>
+<%
+npipelines <- 10
+k=50 ;# only applicable to the genes with highest error
+max.error=0
+sel.genes.highest.error <- list()
+sel.genes.lowest.error <- list()
+
+for ( p in colnames(databox$quant.gene.nerror) ) {
+  o <- order(databox$quant.gene.nerror[,p],decreasing=T)
+  cur.sel <- databox$quant.gene.nerror[o[c(1:k)],p]
+  names(cur.sel) <- rownames(databox$quant.gene.nerror)[o[c(1:k)]]
+  sel.genes.highest.error[[p]] <- cur.sel
+  #l <- nrow(databox$quant.gene.nerror)
+  s <- databox$quant.gene.nerror[,p]<=max.error
+  cur.sel <- databox$quant.gene.nerror[s,p]
+  names(cur.sel) <- rownames(databox$quant.gene.nerror)[s]
+  sel.genes.lowest.error[[p]] <- cur.sel
+}
+# in how many pipelines does the gene appear as being in the top/bottom
+highest.errors <- table(unlist(lapply(sel.genes.highest.error,names)))
+lowest.errors <- table(unlist(lapply(sel.genes.lowest.error,names)))
+intersection <- intersect(names(highest.errors),names(lowest.errors))
+
+#
+e <- list()
+e[["high"]] <- check.go.enrich(names(highest.errors[highest.errors>2]),rownames(nerr.df),fdr=fdr)
+e[["low"]] <- check.go.enrich(names(lowest.errors[lowest.errors>2]),rownames(nerr.df),fdr=fdr)
+e[["var"]] <- check.go.enrich(names(intersection[intersection>2]),rownames(nerr.df),fdr=fdr)
+plot.enriched(e,"Extreme cases")
+
+# looking beyond the forest
+#
+good.and.bad <- databox$quant.gene.nerror[intersection,]
+good.and.bad.sel <- top.15.selection[top.15.selection%in%colnames(good.and.bad)]
+# look only at a subset of pipelines
+good.and.bad.nerr<-good.and.bad[,good.and.bad.sel]
+good.and.bad.true<-databox$true.quant.mean[intersection] 
+e[["high"]] <- check.go.enrich(names(highest.errors[highest.errors>2]),rownames(nerr.df),fdr=fdr)
+e[["low"]] <- check.go.enrich(names(lowest.errors[lowest.errors>2]),rownames(nerr.df),fdr=fdr)
+e[["var"]] <- check.go.enrich(names(intersection[intersection>2]),rownames(nerr.df),fdr=fdr)
+plot.enriched(e,"Extreme cases")
+
+# looking beyond the forest
+#
+good.and.bad <- databox$quant.gene.nerror[intersection,]
+good.and.bad.sel <- top.15.selection[top.15.selection%in%colnames(good.and.bad)]
+# look only at a subset of pipelines
+good.and.bad.nerr<-good.and.bad[,good.and.bad.sel]
+good.and.bad.true<-databox$true.quant.mean[intersection]
+
+
+# matrix->heatmap
+# for each gene
+# distribution of highest and lowest
+m<-as.matrix(good.and.bad.nerr)
+m[m>100] <- 100
+#colors <- rainbow(n=100,start=4/6,end=1/6)
+colors <- topo.colors(100)
+col <- colors[good.and.bad.true/max(good.and.bad.true)*100]
+r.a<-gen.plot2report(filename=paste(file.prefix,"_sel_genes_pipelines.png",sep=""),
+          width=1000,
+          height=1000,
+	  html=TRUE,
+	  ps=TRUE,
+          caption=paste("Genes with rerror=0% for some pipeline and in the top ",k," genes with highest error in at least one pipeline. ",sep=""),
+      to.plot=function() {
+        gen.heatmap(m,colors=get.heat.color.pallete(m),dendrogram="none",main=paste("",sep=""),density.info="none",Rowv=FALSE,Colv=FALSE, cexRow=0.60,cexCol=0.60,tracecol="white")
+      })
+cat(r.a$html)
+r.a<-gen.plot2report(filename=paste(file.prefix,"_sel_genes_pipelines.bp.png",sep=""),
+          width=400,
+          height=1000,
+	  html=TRUE,
+	  ps=TRUE,
+          caption=paste("True quantification for the genes with rerror=0% for some pipeline and in the top ",k," genes with highest error in at least one pipeline.",sep=""),
+      to.plot=function() {
+        barplot(databox$true.quant.mean.f[rownames(good.and.bad.nerr)],horiz=T,las=2,cex.names=0.5,xlab="Number of reads",log="x")
+      })
+cat(r.a$html)
+
+####
+# HTML
+HTML(good.and.bad.nerr,file=stdout(),
+     Border = 0, innerBorder=0,
+     classfirstline = "firstline", classfirstcolumn = "firstcolumn",
+     classcellinside = "cellinside", append = FALSE,
+     caption = "", captionalign = "top", classcaption = "captiondataframe", classtable = "dataframe",
+     digits=2, nsmall = 0, big.mark = " ", big.interval = 3, decimal.mark = ",",
+     sortableDF=FALSE, row.names = TRUE)
+
+# add annot info
+
+# pick the first three  and plot the errors side by side
+good.and.bad.nerr.max <- apply(good.and.bad.nerr,1,max)
+good.and.bad.nerr.min <- apply(good.and.bad.nerr,1,min)
+good.and.bad.nerr.min <- good.and.bad.nerr.min[order(good.and.bad.nerr.min)]
+
+picked <- 0
+
+r.a<-gen.plot2report(filename=paste(file.prefix,"_selected_genes.png",sep=""),
+          width=800,
+          height=800,
+	  html=TRUE,
+	  ps=TRUE,
+          caption=paste("Genes with rerror=0% for some pipeline and in the top ",k," genes with highest error in at least one pipeline.",sep=""),
+      to.plot=function() {      
+        par(mfrow=c(3,3),mar=c(5,10,2,2))
+        for (g in names(good.and.bad.nerr.min)) {
+          if ( picked >= 9 || picked >= length(good.and.bad.nerr.min)) {
+            break
+          }
+          # 10 fold difference
+          if ( good.and.bad.nerr.max[g]>=good.and.bad.nerr.min[g]*10
+              ||good.and.bad.nerr.max[g]<=max.error ) {
+            picked <- picked+1
+            barplot(as.matrix(good.and.bad.nerr[g,]),horiz=T,las=2,main=g,sub=paste(round(good.and.bad.true[g],0)," reads"),xlab="rerror")
+          }
+        }
+      })
+cat(r.a$html)
+
+# save a rdata file with all data
+# filter by occurrences in the number of pipelines
+#highest.errors.f <- highest.errors[highest.errors>npipelines]
+#lowest.errors.f <- lowest.errors[lowest.errors>npipelines]
+save.image(paste(file.prefix,"_compare_quant_sim_all_data.Rdata",sep=""))
+# build a matrix
+#databox$quant.gene.nerror
+%>
+</TD>
+</TR>
+</TABLE>
+
+<%# Comment -- wrap up everything in a div - end %>  
+<!--</DIV>-->
+
+<% brew::brew(get.path2template("page.footer")) %>
+

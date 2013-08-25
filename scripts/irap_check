@@ -1,0 +1,138 @@
+#!/bin/sh
+
+# script to check if the files produced by irap are ok
+LSF_CMD=irap_check
+source $IRAP_DIR/scripts/lsf_shared_code.sh
+
+if [ "$name-" = "-" ]; then
+    echo "ERROR: name not defined." >&2
+    exit 1
+fi
+# 
+p_info Checking data in $name
+
+# get the fastq files
+for lib in $pe $se; do
+    #echo "*$lib*"
+    fastq_file=`get_param_value $lib $conf|sed -E "s/(.gz|.bz2)//g"|sed -E "s/(.fq|.fastq)//g"`
+    if [ "$fastq_file-" = "-" ]; then
+	echo "ERROR: file not found for lib $lib" >&2
+	exit 1
+    fi
+    declare $lib="$fastq_file"
+    echo "$lib ${!lib}"
+done
+
+function p_warn {
+    echo "[WARNING] $*" >&2
+}
+
+function check_fastq_file {
+    file=$1
+    if [ ! -e $file ] ; then
+	p_warn "$file not found" 
+    else
+	N=`wc -l $file|cut -f 1 -d\  `
+	if [ "$N-" == "0-" ]; then
+	    p_warn   "$file empty" 
+	else
+	    num_fastq_files=`expr $num_fastq_files + 1`
+	fi
+    fi
+}
+
+#####################################
+#               FASTQ
+# check for the processed fastq files
+declare num_fastq_files=0
+for lib in $pe;  do
+    file=$name/data/${lib}_1.f.fastq
+    check_fastq_file $file
+    file=$name/data/${lib}_2.f.fastq
+    check_fastq_file $file
+done
+for lib in $se;  do
+    file=$name/data/${lib}.f.fastq
+    check_fastq_file $file
+done
+
+#######################################
+# BAM FILES PER MAPPER
+
+MAPPERS=`ls -1 $name/*/*.bam | sed -E "s|$name\/([^\/]+)\/.*|\1|" | sort -u | tr "\n" " "`
+p_info "MAPPERS: $MAPPERS"
+
+function check_bam_file {
+    bam_file=$1
+    mapper=$2
+    m=`echo ${!mapper}|cut -f 1 -d,`
+    entries=`echo ${!mapper}|cut -f 2 -d,`
+    p_info $m
+    N=0
+    
+    if [ ! -e $bam_file ]; then
+	p_warn "$bam_file  not found"
+    else
+	# check if it is ok
+	N=`samtools view -c $bam_file`
+	if [ "$N-" = "-" ]; then
+	    p_warn "$bam_file empty or corrupt?"
+	else
+	    p_info "BAM ok: $bam_file"
+	    ctr=`expr $m + 1`
+	    entries=`expr $entries + $N`
+	    declare $mapper="$ctr,$entries"
+	fi
+    fi
+    echo "${!mapper}"
+}
+declare tot_mappers=0
+for m in $MAPPERS; do
+    declare $m=0
+    for lib in $se; do
+	bam_file=$name/$m/$lib.se.hits.bam
+	declare $m=`check_bam_file $bam_file $m`
+    done
+    for lib in $pe; do
+	bam_file=$name/$m/$lib.pe.hits.bam
+	declare $m=`check_bam_file $bam_file $m`
+    done
+    
+    tot_mappers=`expr $tot_mappers + 1`
+done
+
+########################################
+# Quant
+QUANTS=`ls -1 $name/*/*/raw*.tsv | sed -E "s|$name\/[^\/]+\/([^\/]+)\/.*|\1|" | sort -u | tr "\n" " "`
+p_info Quantification: $QUANTS
+
+for q in $QUANTS; do
+    declare $q=0
+    for m in $MAPPERS; do
+	qfile=$name/$m/$q/rawcounts.$q.tsv
+	if [ ! -e $qfile ]; then
+	    p_warn "$qfile not found"
+	else
+	    # check if number of columns is ok
+	    NC=`head -n 1 $qfile | tr '\t' '\n' | wc -l`
+	    if [ $NC > 2 ]; then
+		p_info "$qfile looks ok ($NC columns)"
+		declare $q=`expr ${!q} + 1`
+	    else
+		pwarn "$qfile seems not to have all columns ($NC)"
+	    fi
+	fi
+    done
+done
+########################################
+echo FASTQ_FILES,$num_fastq_files
+echo BAM_FILES,$tot_mappers
+for m in $MAPPERS; do
+    echo $m,${!m}
+done
+
+for q in $QUANTS; do
+    echo $q,${!q}
+done
+
+exit 0

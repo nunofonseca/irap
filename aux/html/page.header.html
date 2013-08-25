@@ -1,0 +1,24 @@
+<html>
+<head>
+<link media="screen" href="menu.css" type="text/css" rel="STYLESHEET">
+<link media="screen" href="<%=irap.css%>" type="text/css" rel="STYLESHEET">
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+<title>IRAP Report</title>
+</head>
+<!-- top nav bar will be included in the next line, after body...TODO: fix this-->
+<body>
+<p class='character'><script language="javascript"> 
+function toggle(showHideDiv, switchTextDiv) {
+	var ele = document.getElementById(showHideDiv);
+	var text = document.getElementById(switchTextDiv);
+	if(ele.style.display == "block") {
+    		ele.style.display = "none";
+		text.innerHTML = "+";
+  	}
+	else {
+		ele.style.display = "block";
+		text.innerHTML = "-";
+	}
+} 
+</script>
+<div id="content">

@@ -1,0 +1,8 @@
+#!/bin/bash
+
+bgadd -L 1000 $IRAP_LSF_GROUP
+#bgadd -L 1000 $IRAP_LSF_GROUP/qc
+#bgadd -L 1000 $IRAP_LSF_GROUP/map
+#bgadd -L 1000 $IRAP_LSF_GROUP/quant
+#bgadd -L 1000 $IRAP_LSF_GROUP/rep
+exit 0

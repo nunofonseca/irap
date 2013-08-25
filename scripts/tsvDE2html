@@ -1,0 +1,540 @@
+#!/bin/env Rscript
+# =========================================================
+# Copyright 2012,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#    $Id: 0.1.1$
+# =========================================================
+
+###############################################################
+suppressPackageStartupMessages(library("optparse"))
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+
+# specify our desired options in a list
+#
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+html.template <- get.path2template("tsvDE2html")
+pdebug.enabled <- TRUE
+
+#######################
+usage <- "tsvDE2html --tsv file [options]"
+filenames <- c("tsv_file","annotation") ;#filenames that must exist (if defined)
+option_list <- list(
+  make_option(c("-v", "--verbose"), action="store_true", default=TRUE, help="Print extra output [default]"),
+  make_option(c("-q", "--quietly"), action="store_false", dest="verbose", help="Print little output"),
+  make_option(c("-f", "--feature"), type="character", dest="feature", default="gene",help="Feature (gene,exon,CDS) [default %default]"),
+  make_option(c("-s", "--species"), type="character", dest="species", default="homo_sapiens",help="Species [default %default]"),
+  make_option(c("-i", "--tsv"), type="character", dest="tsv_file", default=NULL,help="TSV file name"),
+  make_option(c("-t", "--title"), type="character", dest="title", default="",help="Report title"),
+  make_option(c("-p", "--flavour"), type="character", default="cuffdiff",help="Name of the software that produced the TSV file [default %default]"),
+  make_option(c("-a", "--annotation"), type="character",default=NULL,help="Annotation file (TSV format)"),
+  make_option(c("-b", "--browser"), type="character",default="../jbrowse/",help="Relative path to the genome browser"),
+  make_option(c("-c", "--cut-off"), type="numeric",default=0.05,help="Cutoff value applied to the adjusted p-values to define if a feature is DE."),
+  make_option(c("-m", "--max"), type="numeric",default=300,help="Maximum number of genes to appear in the table."),
+  make_option(c("--css"), type="character",default="",help="Path to the irap.css file"),
+  make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
+  make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name prefix. An HTML and TSV.gz file will be created.")
+)
+
+# check multiple options values
+multiple.options = list(
+  feature=c('gene','exon','CDS'),
+  flavour=c('cuffdiff','deseq','cuffdiff1','cuffdiff2','edger','voom')
+  )
+mandatory <- c("tsv_file","out")
+opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
+
+# ensure that the path include / in the end
+opt$browser <- paste(gsub("/$","",opt$browser),"/",sep="")
+#pdebug(opt)
+  
+opt$`cut-off` <- as.numeric(opt$`cut-off`)
+opt$max <- as.numeric(opt$max)
+
+pdebug("TSVFILE=",opt$tsv_file)
+pdebug("Annotation=",opt$annotation)
+pdebug("cut-off=",opt$`cut-off`)
+
+#tsvDE2html  --tsv RT_bias/tophat2/htseq2/deseq/Brain42vs60.genes_de.tsv
+annot.table <- NULL
+if ( !is.null(opt$annotation) ) {
+  pdebug("Loading annotation=",opt$annotation)
+  annot.table <- read.tsv(opt$annotation)
+  pdebug("Loading annotation (done)")
+}
+
+# load TSV
+# TODO: trap and report errors
+table <- read.tsv(opt$tsv_file)
+pdebug("data loaded")
+
+pdebug.save.state("tsvDE2html0","p0")
+
+cols2sel <- colnames(table)
+pdebug(opt$flavour," mode")
+irap.css <- opt$css
+
+#############################
+# Fields defined per flavour
+fields <- list(
+               URL.FIELD.NAME="gene",
+               URL.FIELD.ID="id",
+               LOCUS.FIELD="locus",
+               ANNOT.ID=NA,
+               ID.in.ANNOT=NA,
+               PVALUE.FIELD=NA,
+               LOG2FOLDCHANGE=NA,
+               FOLDCHANGE_MEDIAN=NA,
+               groups=NA,
+               cols2tsv=NA,
+               cols2sel=NA              
+               )
+##########################################
+# Filter the rows depending on the flavour
+if (opt$flavour == "cuffdiff" || opt$flavour == "cuffdiff1" || opt$flavour == "cuffdiff2" ) {
+  #exclude the rows based on the status
+  table <- table[table$status=="OK",]
+  #head(table)
+  # 11=log2.fold_change.
+  log2.fold <- colnames(table)[10]
+  # features
+  if ( opt$feature ==  "gene" ) {
+    fields$cols2sel <- c("gene_id","value_1","value_2",log2.fold,"p_value","q_value")
+    fields$cols2tsv <- fields$cols2sel
+    fields$URL.FIELD.NAME="gene"
+    fields$LOCUS.FIELD <- "locus"
+  }  
+  #
+  fields$LOG2FOLDCHANGE <- log2.fold
+  fields$FOLDCHANGE_MEDIAN <- "median"
+  fields$URL.FIELD.ID <- "gene_id"
+  fields$ANNOT.ID <- "gene"
+  fields$ID.in.ANNOT <- "Name"
+  fields$PVALUE.FIELD <- "q_value"
+  # median accross the conds
+  tcols <- colnames(table)
+  tcols <- tcols[grep("value_[0-9]+",tcols)]
+  median <-apply(table[,tcols],MARGIN=1,FUN=sum)/length(tcols)
+  table[,fields$FOLDCHANGE_MEDIAN] <- log2(median)
+  fields$groups <- tcols
+}
+if ( opt$flavour == "deseq" ) {
+  # exclude the rows based on the analysis
+  # nothing to do
+
+  # features
+  if ( opt$feature ==  "gene" ) {
+    fields$cols2sel <- c("id","baseMean","baseMeanA","baseMeanB","foldChange","log2FoldChange","pval","padj")
+    fields$cols2tsv <- fields$cols2sel
+  } else {
+    perror("DESeq does only support DE analysis at gene level")    
+  }
+  fields$LOG2FOLDCHANGE <- "log2FoldChange"
+  fields$URL.FIELD.NAME <- "name"
+  fields$LOCUS.FIELD  <- "locus"
+  fields$PVALUE.FIELD <- "padj"
+  fields$FOLDCHANGE_MEDIAN <- "baseMean"
+  fields$groups <- c("baseMeanA","baseMeanB")
+  fields$ANNOT.ID <- "id"
+  fields$ID.in.ANNOT <- "ID"
+  
+  # needs annotation to get the location
+}
+if ( opt$flavour == "edger" ) {
+  # features
+  if ( opt$feature ==  "gene" ) {
+    fields$cols2sel <- c("id","logCPM","baseMeanA","baseMeanB","logFC","PValue","padj")
+    fields$cols2tsv <- fields$cols2sel
+  } else {
+    perror("edgeR does only support DE analysis at gene level")    
+  }
+  fields$LOG2FOLDCHANGE <- "logFC"
+  fields$URL.FIELD.NAME <- "name"
+  fields$LOCUS.FIELD  <- "locus"
+  fields$PVALUE.FIELD <- "padj"
+  fields$FOLDCHANGE_MEDIAN <- "logCPM"
+  fields$groups <- c("baseMeanA","baseMeanB")
+  fields$ANNOT.ID <- "id"
+  fields$ID.in.ANNOT <- "ID"
+}
+if ( opt$flavour == "voom" ) {
+  # features
+  if ( opt$feature ==  "gene" ) {
+    # remove the "extra ID col"
+    #table[,1] <- NULL
+    fields$cols2sel <- c("ID","log2FoldChange","AveExpr","foldChange","P.Value","adj.P.Val")
+    fields$cols2tsv <- fields$cols2sel
+  } else {
+    perror("VOOM does only support DE analysis at gene level")    
+  }
+  fields$LOG2FOLDCHANGE <- "log2FoldChange"
+  fields$URL.FIELD.NAME <- "name"
+  fields$LOCUS.FIELD  <- "locus"
+  fields$PVALUE.FIELD <- "adj.P.Val"
+  fields$FOLDCHANGE_MEDIAN <- "AveExpr"
+  fields$groups <- colnames(table)[c(1,2)]
+  fields$ANNOT.ID <- "ID"  
+  fields$ID.in.ANNOT <- "ID"
+}
+
+
+# double check if the required fields were defined
+for (n in names(fields) ) {
+  if ( length(fields[[n]])==1 && is.na(fields[[n]]) ) {
+    perror("Internal error, field ",n," not defined for flavour ",opt$flavour)
+    q(status=2)
+  }
+  pdebug(n,"=",fields[[n]])
+}
+
+#
+if ( !is.null(annot.table)) {
+  if ( ! "locus" %in% colnames(table) ||
+       ! "lname" %in% colnames(table) ) {      
+    table <- mergeAnnot(table,annot.table,table.field=fields$ANNOT.ID,annot.field=fields$ID.in.ANNOT)
+  }
+  # check if name ok
+  if ( sum(!is.na(table$Name)) >0 ) {
+    fields$URL.FIELD.NAME <- "Name"
+  }
+  if ( "locus" %in% colnames(table) ) {
+    fields$LOCUS.FIELD  <- "locus"
+  }
+  if ( "lname" %in% colnames(table) ) {
+    table[,"Gene name"] <- table$lname
+  }
+}
+
+
+#####################
+# applying the cutoff
+pdebug("Applying pvalue cut-off")
+before <- nrow(table)
+uncut.table <- table
+#exclude NA and empty lines
+#table <- table[!is.na(table[,fields$PVALUE.FIELD]),]
+#table <- table[table[,1]!='',]
+if (is.factor(table[,fields$PVALUE.FIELD])) {
+  table <- table[my.factor2numeric(table[,fields$PVALUE.FIELD])<=as.numeric(opt$`cut-off`),]
+} else {
+  table <- table[as.numeric(table[,fields$PVALUE.FIELD])<=as.numeric(opt$`cut-off`),]
+}
+after <- nrow(table)
+pdebug("New table with ",after, "(before ",before,")")
+
+
+DE.fold.change.plot <- function(res,
+                             col.mean="baseMean",
+                             col.foldChange="FoldChange",
+                             col.pval="padj",
+                             y.lab="log2(Fold change)",x.lab="log(Mean)",fdr=0.1,log="x",ylim=NA){
+
+  if (!(is.data.frame(res) && all(c(col.mean,col.foldChange,col.pval) %in% colnames(res))))
+    stop("'res' must be a data frame with missing columns'.")
+
+  linecol = "#ff000080"
+  
+  # sort the data (not working!!)
+  #res <- res[order(res$padj,decreasing=T),]
+
+  x = subset(res, res[,col.mean]!=0)
+  py = x[,col.foldChange]
+  
+  if(length(ylim)==1 && is.na(ylim)) {
+    ylim = c(-1,1) * quantile(abs(py[is.finite(py)]), probs=0.99) * 1.1
+    if (!is.finite(ylim[1]) ) {
+      ylim[1] <- -100
+    }
+    if (!is.finite(ylim[2]) ) {
+      ylim[2] <- 100
+    }
+  }
+  x <- subset(x, x[,col.foldChange]<=ylim[2])
+  x <- subset(x, x[,col.foldChange]>=ylim[1])
+  
+  if (missing(x.lab))
+    x.lab <- paste(x.lab," [FDR=",fdr," ]",sep="")
+  vals<-round(res[,col.pval]*100)
+  #colors<-append(colorRampPalette(c("darkred","orange"))(10),rep("darkgrey",90))
+  colors<-append(colorRampPalette(c("red"))(10),rep("darkgrey",90))
+  
+  plot(
+       x[,col.mean],
+       x[,col.foldChange],
+       log=log,pch=20,cex=0.3,
+       xlab=x.lab,ylab=y.lab,
+       col = ifelse(res[,col.pval] < fdr,"red","darkgrey") )
+  abline(h=0, lwd=3, col=linecol)
+}
+
+
+
+#head(table)
+
+# sort
+if ( nrow(table) >0 ) {
+  pdebug("sorting by ",fields$PVALUE.FIELD)
+  if (is.factor(table[,fields$PVALUE.FIELD])) {
+    table <- table[order(my.factor2numeric(table[,fields$PVALUE.FIELD]),decreasing=F),]
+  } else {
+    table <- table[order(table[,fields$PVALUE.FIELD],decreasing=F),]
+  }
+}
+# sort the "tsv" table
+if ( nrow(uncut.table) >0 ) {
+  pdebug("sorting by ",fields$PVALUE.FIELD)
+  if (is.factor(uncut.table[,fields$PVALUE.FIELD])) {
+    uncut.table <- uncut.table[order(my.factor2numeric(uncut.table[,fields$PVALUE.FIELD]),decreasing=F),]
+  } else {
+    uncut.table <- uncut.table[order(uncut.table[,fields$PVALUE.FIELD],decreasing=F),]
+  }
+}
+###########################
+#
+pdebug("Adding links column")
+
+if (nrow(table)) {
+  table[,"links"] <- NA
+  for (i in c(1:nrow(table))) {
+    #pdebug(table[i,])
+    name <- table[i,fields$URL.FIELD.NAME]
+    id <- table[i,fields$URL.FIELD.ID]
+    URL1.html <- ""
+    URL2.html <- ""
+    URL3.html <- ""
+                                        # link to ensemble (only if ID starts with ENS)
+    if ( sum(grep("^ENS",id,ignore.case=TRUE,value=FALSE))>0 ) {
+      URL1 <- paste("http://www.ensemblgenomes.org/id/",id,sep="")
+      URL1.html <- paste("<a href='",URL1,"'  target='_top'>ENS</a>",sep="")
+    }
+    locus <- gsub(":","%3A",table[i,fields$LOCUS.FIELD])
+    if ( !is.null(table[i,fields$LOCUS.FIELD]) && !is.na(table[i,fields$LOCUS.FIELD]) ) {
+      # add link to Jbrowser
+      # TODO: include DE track (use the contrast name)
+      jlocus <- paste("loc=",gsub(":","%3A",table[i,fields$LOCUS.FIELD]),"tracks=DNA%2C&",sep="")
+      URL2 <- paste(opt$browser,"index.html?",jlocus,sep="")
+      URL2.html <- paste("<a href='",URL2,"'>Browse</a>",sep="")
+    }
+    if (!is.null(name) && !is.na(name) ) {
+      URL3 <- paste("http://www.ncbi.nlm.nih.gov/gene?term=",name,sep="");
+      URL3.html <- paste("<a href='",URL3,"' target='_top'>NCBI</a>",sep="")
+    }
+    html.sep <- "&nbsp;&nbsp;&nbsp;&nbsp;"  
+    LINKS <- paste(URL2.html,html.sep,URL1.html,html.sep,URL3.html,sep="")
+    table[i,"links"] <- LINKS
+  }
+  pdebug("Adding links column...done")
+  # add links to GO terms
+  if ( "GO" %in% colnames(table) && "GOterm" %in% colnames(table) ) {
+    pdebug("Adding links to GO terms...")
+    gotermURLs <- function(GOids,GOterms) {
+      if (is.na(GOids)) { return(NA) }
+      ids <- strsplit(GOids,";")
+      terms <- strsplit(GOterms,";")
+      buildURLs <- function(id,term) {
+        paste("<a href='http://amigo.geneontology.org/cgi-bin/amigo/term_details?term=",id,"' target='_go'>",term,"</a>",sep="")
+      }
+      paste(mapply(buildURLs,ids,terms,SIMPLIFY=TRUE),collapse=";")
+    }
+    # include links to GO site from each go term
+    table[,"GO terms"] <- mapply(gotermURLs,as.character(table$GO),as.character(table$GOterm),SIMPLIFY=TRUE)
+    uncut.table[,"GO terms"] <- uncut.table[,"GOterm"]
+  }
+  if ( "KEGG" %in% colnames(table) ) {
+    # KEGG
+    keggURLs <- function(ids) {
+      if (is.na(ids)) { return(NA) }
+      ids <- strsplit(ids,";")
+      buildKeggURLs <- function(id) {
+        paste("<a href='http://www.kegg.jp/dbget-bin/www_bget?pathway+map",id,"' target='_kegg'>",id,"</a>",sep="")
+      }
+      paste(sapply(ids,buildKeggURLs),collapse=";")
+    }
+    table[,"KEGG.id"] <- table$KEGG
+    table[,"KEGG"] <- sapply(as.character(table$KEGG.id),FUN=keggURLs)
+
+  }
+#################################
+# fields to show
+
+  fields$cols2sel <- append(fields$cols2sel,"links")
+  if ( !is.null(annot.table) ) {
+    #cols2add <- colnames(annot.table)[colnames(annot.table)%in%colnames(table)]
+    cols2add <- c()
+    for ( col in c("Gene name","GO terms","KEGG") ) {
+      if ( col %in% colnames(table) ) {        
+         cols2add <- append(cols2add, col)
+       }
+    }
+    #cols2add <- cols2add[cols2add!=fields$ID.in.ANNOT]
+    fields$cols2sel <- unique(append(fields$cols2sel,cols2add))
+    fields$cols2tsv <- unique(append(fields$cols2tsv,cols2add))
+  }
+  pdebug("Fields to select (HTML):",paste(fields$cols2sel,sep="",collapse=";"),"?",colnames(table))
+  pdebug("Fields to select (TSV_:",paste(fields$cols2tsv,sep="",collapse=";"),"?",colnames(table))
+  
+  irap.assert(length(fields$cols2sel[!fields$cols2sel %in% colnames(table)]) == 0,
+               "Internal error: missing fields ",fields$cols2sel[!fields$cols2sel %in% colnames(table)])
+}  
+#pdebug(fields$cols2sel)
+table.html <- table[,fields$cols2sel]
+# link to the source file
+#cat(paste("<a href='",opt$out,".tsv.gz'>TSV</a>",sep=""))
+
+
+###########################################################
+title <- opt$title
+sources.menu <- ""
+if ( "source" %in% colnames(table) ) {
+  #save.image()
+  if ( !is.null(annot.table) ) {
+    uncut.table <- mergeAnnot(uncut.table,annot.table,table.field=fields$ANNOT.ID,annot.field=fields$ID.in.ANNOT)
+  }
+  sources <- levels(table$source)
+  pdebug(sources)
+  pseudogenes <- grep("pseudogene",sources,value=T)
+  pseudogenes.filt <- sapply(table$source,`%in%`,pseudogenes)
+  pseudogenes.filt2 <- sapply(uncut.table$source,`%in%`,pseudogenes)
+  if (length(pseudogenes.filt)>0) {
+    pdebug(sum(pseudogenes.filt))
+  }
+  protein_coding <- c("protein_coding")
+  protein_coding.filt <- sapply(table$source,`%in%`,protein_coding)
+  protein_coding.filt2 <- sapply(uncut.table$source,`%in%`,protein_coding)
+  xRNA <- grep("RNA$",sources,value=T)
+  xRNA.filt <- sapply(table$source,`%in%`,xRNA)
+  xRNA.filt2 <- sapply(uncut.table$source,`%in%`,xRNA)
+
+  filt.groups.def <- list(
+    all,
+    "pseudogenes"=pseudogenes,
+    "protein coding"=protein_coding,
+    "xRNA"=xRNA
+    )
+  filt.groups <- list(
+    all=TRUE,
+    "pseudogenes"=pseudogenes.filt,
+    "protein coding"=protein_coding.filt,
+    "xRNA"=xRNA.filt
+    )
+  filt.groups.uncut <- list(
+    all=TRUE,
+    "pseudogenes"=pseudogenes.filt2,
+    "protein coding"=protein_coding.filt2,
+    "xRNA"=xRNA.filt2
+    )
+
+  filt.groups.files <- list(
+    all=paste(opt$out,".html",sep=""),
+    "pseudogenes"=paste(opt$out,"_","pseudogenes",".html",sep=""),
+    "protein coding"=paste(opt$out,"_","protein_coding",".html",sep=""),
+    "xRNA"=paste(opt$out,"_","xRNA",".html",sep="")
+    )
+  # sources menu
+  get.source.menu.entry <- function(name) {
+    paste("<a href='",basename(filt.groups.files[[name]]),"'>",name,"</a>",sep="")
+  }
+  sources.menu=paste(sapply(names(filt.groups),get.source.menu.entry),collapse="|")
+}
+table.tsv <- uncut.table[,fields$cols2tsv]
+#head(table.tsv)
+pdebug("Generating filtered TSV file")
+
+#
+library(R2HTML)
+library(brew)
+
+# 
+#
+gen.page <- function (o.html.file) {
+
+  pdebug("Generating html ",o.html.file)
+  #
+  write.tsv(table.tsv,file=tsv.file)
+  system(paste("rm -f ",tsv.file,".gz ;gzip ",tsv.file,sep=""))
+
+  if ( nrow(uncut.table)<20 ) {
+    pdebug("Not enough data")
+    write.tsv(uncut.table,file=tsv.file)
+    system(paste("rm -f ",tsv.file,".gz ;gzip ",tsv.file,sep=""))
+    brew(get.path2template("not_enough_data"),o.html.file)
+    return
+  }
+  
+  pdebug("Generating html ",o.html.file)
+  pdebug("temp=",html.template)
+  options("R2HTML.format.decimal.mark"=".")
+  caption <- ""
+  brew(html.template,o.html.file)
+}
+
+pdebug.save.state("tsvDE2html2","p2")
+
+o.html.file <-paste(opt$out,".html",sep="")
+file.prefix <- opt$out
+tsv.file <- gsub(".html$",".tsv",o.html.file)
+tsv.file.ref <- basename(tsv.file)
+gen.page(o.html.file)
+
+if ( "source" %in% colnames(table) ) {
+  uncut.table.orig <- uncut.table
+  table.tsv.orig <- table.tsv
+  for (filt.name  in names(filt.groups) ) {
+    uncut.table <- uncut.table.orig
+    if ( filt.name!="all" ) {
+      uncut.table <- uncut.table[filt.groups.uncut[[filt.name]],]
+      if ( length(filt.groups[[filt.name]])>0 ) {
+        table.html <- table[filt.groups[[filt.name]],fields$cols2sel]
+        table.tsv <- table.tsv.orig[filt.groups[[filt.name]],fields$cols2tsv]
+      } else { # empty table
+        table.html <- table[NULL,fields$cols2sel]
+        table.tsv <- table.tsv.orig[NULL,fields$cols2tsv]
+      }
+      o.html.file <-filt.groups.files[[filt.name]]
+      tsv.file <- gsub(".html$",".tsv",o.html.file)
+      tsv.file.ref <- basename(tsv.file)
+      file.prefix <- gsub(".html","",filt.groups.files[[filt.name]])
+      gen.page(o.html.file)
+    }
+  }
+}
+
+q(status=0)
+
+tsvDE2html.debug <- function(rdata.obj) {
+  load(rdata.obj,envir=.GlobalEnv)
+  pdebug.rdata()
+  source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+  library(DESeq)
+  assign("html.template",get.path2template("tsvDE2html"),,envir = .GlobalEnv)
+}
+IRAP.DIR=getwd()
+Sys.setenv(IRAP_DIR=IRAP.DIR)
+tsvDE2html.debug("tsvDE2html0.Rdata")
+
+# tests
+tsvDE2html -i test_files/cuffdiff/varVersusnoVar.genes_de.tsv -o a
+tsvDE2html -i test_files/cuffdiff/varVersusnoVar.genes_de.tsv -o a -a test_files/dummy_annot.tsv
+tsvDE2html -i test_files/deseq/Brain37vs42.genes_de.tsv --flavour deseq -o a -a test_files/dummy_annot.tsv --css ../aux/css/irap.css 
+
+

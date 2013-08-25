@@ -1,0 +1,125 @@
+#!/bin/env Rscript
+# =========================================================
+# Copyright 2012,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#    $Id: 0.1.1$
+# =========================================================
+
+###############################################################
+suppressPackageStartupMessages(library("optparse"))
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+
+# specify our desired options in a list
+#
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+pdebug.enabled <- TRUE
+
+#library(multicore)
+
+#######################
+usage <- "irap_gff32annot --gff3 file [options]"
+option_list <- list(
+                    make_option(c("-s", "--species"),type="character",dest="species",default="homo_sapiens",help="Species [default %default]"),
+                    make_option(c("-i", "--gff3"), type="character", dest="gff3_file", default=NULL,help="GFF3 file")
+)
+
+type <- "gene"
+# irap_gff32annot -g RT_bias/data/Homo_sapiens.GRCh37.66.gff3fi
+
+filenames <- c("gff3_file") ;#filenames that must exist (if defined)
+# check multiple options values
+multiple.options = list()
+mandatory <- c("gff3_file")
+opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
+
+# gff3.file="test_files/test.gff3"
+gff3.table <- NULL
+gff3.table <- load.gff3(opt$gff3_file,type=type)
+
+# filter by type
+# get name from attributes
+# trim \.[1-9]*
+gff3.table[,"name"]<-gsub("\\.[0-9]+","",gff3.table[,"Name"])
+
+# locus
+gff3.table[,"locus"] <- paste(gff3.table$seqid,":",gff3.table$start,"..",gff3.table$end,sep="")
+
+# Ontology ids
+dbs <- species2dbs(opt$species)
+pdebug("species2dbs complete")
+pdebug("dbs=",dbs)
+if( sum(is.na(dbs))==1 && !is.vector(dbs) ) {
+  gff3.table[,"GO"] <- NA
+                                        #  gff3.table[,"Pfam"] <- NA
+  gff3.table[,"lname"] <- NA
+  gff3.table[,"GOterm"] <- NA
+  gff3.table[,"KEGG"] <- NA
+} else {
+  if ( sum(is.na(dbs))>0 ) {
+    pwarning("species DB not found")
+                                        # empty cols
+    gff3.table[,"GO"] <- NA
+                                        #  gff3.table[,"Pfam"] <- NA
+    gff3.table[,"lname"] <- NA
+    gff3.table[,"GOterm"] <- NA
+    gff3.table[,"KEGG"] <- NA
+  } else {
+    pdebug("species DB found")
+    gff3.table[,"egi"] <- sapply(gff3.table[,"name"],annot.get.egi,dbs)
+    pdebug("Entrez gene identifiers collected")
+    # GO
+    gff3.table[,"GO"] <- sapply(gff3.table[,"egi"],annot.get.go,dbs)
+    pdebug("GO identfiers collected")
+    gff3.table[,"GOterm"] <- sapply(gff3.table[,"egi"],annot.get.go.term,dbs)
+    pdebug("GO terms collected")
+    gff3.table[,"lname"] <- sapply(gff3.table[,"egi"],annot.get.lname,dbs)
+    pdebug("Gene (long) names collected")
+#  gff3.table[,"Pfam"] <- sapply(gff3.table[,"egi"],annot.get.pfam,dbs)
+    
+    gff3.table[,"KEGG"] <- sapply(gff3.table[,"egi"],annot.get.kegg,dbs)
+    pdebug("KEGG ids collected")
+  }
+}
+#
+#save.image()
+pdebug("writing file")
+cols <- c("ID","Name","locus","source","lname","GO","GOterm","KEGG")
+#write.table(file=stdout(),gff3.table[,cols],sep="\t",row.names=F,col.names=T,quote=F)
+ret <- write.tsv(file=stdout(),x=gff3.table[,cols])
+
+#if ( pdebug.enabled ) {
+#  save.image("irap_gff32annot.Rdata")
+#}
+q(status=0)
+
+# tests
+irap_gff32annot -gff3 test_files/tests.gff3 -s human
+irap_gff32annot --gff3 test_files/gff3/Saccharomyces_cerevisiae.EF4.70.gff3 -s saccharomyces_cerevisiae  
+irap_gff32annot --gff3 test_files/gff3/Mus_musculus.NCBIM37.67.gff3 -s mus_musculus
+
+dbs <- species2dbs("mouse")
+annot.get.egi("Nt5c1a",dbs)
+annot.get.kegg("Nt5c1a",dbs)
+annot.get.go("Nt5c1a",dbs)
+annot.get.go.term("Nt5c1a",dbs)

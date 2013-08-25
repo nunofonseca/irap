@@ -1,0 +1,72 @@
+#!/bin/env bash
+# =========================================================
+# Copyright 2012,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#    $Id: 0.1.1$
+# =========================================================
+#Send irap jobs on the farm - if paired end files, parallelize
+#Input: a config file and path to directory containing fastq files
+#Output: send jobs on the farm
+#A README file (fastq_qc_README.txt) with more details about each step and 
+# the general process is available in the same directory.
+
+set -e 
+
+###################################
+# load shared code
+LSF_CMD=irap_stage3_lsf
+source $IRAP_DIR/aux/sh/lsf_shared_code.sh
+
+################
+# length of jobname needs to be small otherwise lsf dependencies will not work
+declare -i s1=0
+declare -i s2=0
+
+
+#############
+# Submit jobs
+echo " * Initialization "
+submit_job "${jobname_prefix}0[1]"   $cmd conf=$conf stage0 $IRAP_PARAMS
+WAIT_FOR_IDS=
+
+# Paired end files
+echo "***********************************************"
+echo "* Step&21 (PE)"
+for p in $pe ; do 
+    let s1=s1+1
+    submit_job "${jobname_prefix}2[$s1]" -w "ended(${jobname_prefix}0*)" "$cmd conf=$conf  pe=$p se=  $IRAP_PARAMS stage1 stage2 stage3as"
+done
+
+# Single end files
+echo "***********************************************"
+echo "*Step1&2 (SE)"
+for f in $se ; do
+    let s1=s1+1
+    submit_job "${jobname_prefix}2[$s1]" -w  "ended(${jobname_prefix}0*)"  "$cmd conf=$conf pe=  se=$f  $IRAP_PARAMS stage1 stage2 stage3as"
+done
+
+submit_job "${jobname_prefix}q"  -w "ended(${jobname_prefix}2*)"  "$cmd conf=$conf  $IRAP_PARAMS stage3a"
+
+# TODO: report
+submit_job_status "${jobname_prefix}q"
+
+# 
+echo JOBS=$name/${jobname_prefix}*.out
+echo JOBNAME=${jobname_prefix}q
+exit

@@ -1,0 +1,89 @@
+H3.section {
+    font-family: Arial, Helvetica, sans-serif; 
+    font-size: 14pt; 
+    font-style: normal; 
+    font-weight: bold;
+}
+
+A.download {
+    color: white;
+    background: navy;
+    padding:2px 5px;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+div#content {
+    text-align: center;
+    padding: 10px;
+}
+
+div#footer {
+    background:gray;
+    border: 5px; 
+    padding: 5px;
+    text-align: center;
+    font-size: 10pt;
+}
+
+table.dataframe {
+    padding: 1px;  
+    background: #6389B5;
+}
+TR.firstline{
+    color: #FFFFFF; 
+    background: #6389B5;
+    text-align:center;
+    font-weight: bold;
+    padding: 3px;
+}
+
+TD.cellinside {
+    padding:2px 5px;
+    text-align:right;
+    color: navy;
+    background: white;
+}
+
+table.center {
+    margin-left:auto; 
+    margin-right:auto;
+}
+
+
+TD.cellinside A {
+    font-weight: bold
+}
+
+#body { 	background:blue;	} 
+
+p.caption{font-style:italic; color:red}
+.title2{ font-family: Arial, Helvetica, sans-serif; font-size: 14pt; font-style: normal; font-weight: bold; color: #004080  }
+
+span.done100{color:green;}
+span.done0{color:red;}
+span.donelt50{color:orange;}
+span.donegt50{color:aqua;}
+
+.partitle{
+	font-family : verdana, arial;
+	font-weight:bold
+}
+
+DIV.Sinput{background-color:#FFFAEE; color:#004080; font-family:Verdana, Arial, Helvetica, sans-serif; font-size: 10pt; padding:4px}
+
+DIV.Sinput p {margin: 0px; border: 0px; padding: 0px;}
+DIV.Sinput p xmp { margin: 0px; border: 0px; padding: 0px; }
+
+TR{font-family: Arial, Helvetica,Times, Helvetica, sans-serif; font-size: 10pt; font-style: normal  ; padding:0 0}
+
+
+TR.ListBackTitle{color: #FFFFFF; background: #6389B5;text-align:left;font-weight: bold}
+
+
+
+TD.ListBackMain{background: #E0E0E0; padding:0; }
+TD.firstcolumn{padding:5px ;background:#D6E9FF;text-align:right;}
+
+
+

@@ -1,0 +1,108 @@
+#!/bin/env bash
+# =========================================================
+# Copyright 2012,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#    $Id: 0.1.1$
+# =========================================================
+
+set -e 
+###################################
+# load shared code
+LSF_CMD=irap_report_lsf
+source $IRAP_DIR/aux/sh/lsf_shared_code.sh
+
+###################################
+
+declare -i mapper_counter=0
+declare -i counter=0
+
+
+#############
+# Submit jobs
+
+echo " * Report setup "
+submit_job "${jobname_prefix}0[1]" ""  "$cmd conf=$conf report_setup $IRAP_PARAMS"
+submit_job "${jobname_prefix}0[2]" ""  "$cmd conf=$conf $name/report/index.html $IRAP_PARAMS"
+
+
+#############
+# Alignments
+irap_path=`which irap`
+# TODO replace the following two lines with a call to irap to get the files to be generated
+supported_mappers=`grep "^SUPPORTED_MAPPERS=" $irap_path|cut -f 2 -d= |sed "s/ /|/g"`
+mappers_dirs=`ls -d -1 $name/* | grep -E "$supported_mappers"`
+#mapping_ofiles=`irap conf=$conf maping_report_files|tail -n 1`
+quant_ofiles=`irap conf=$conf $IRAP_PARAMS quant_report_files|tail -n 1`
+de_ofiles=`irap conf=$conf $IRAP_PARAMS de_report_files|tail -n 1`
+WAIT_FOR_IDS_=$WAIT_FOR_IDS
+
+for d in $mappers_dirs; do
+    mapper=`basename $d`
+    p_info "Bam files generated using $mapper..."
+    let c=1
+    FILES=$d/*.hits.bam
+    if [ "$FILES" != '$d/*.hits.bam' ]; then
+	mapper_counter=`expr $mapper_counter + 1`
+	if [ "$DEBUG-" = "1-" ]; then	    
+	    p_info "running irap_bam_report_lsf $mapper"
+	else
+	    NEW_JOB=`irap_bam_report_lsf conf=$conf $IRAP_PARAMS mapper=$mapper | grep "JOB=" | cut -f 2 -d\=`	
+	    p_info "running irap_bam_report: $NEW_JOB"
+	    if [ "$NEW_JOB-"  != "-" ] ; then		
+		WAIT_FOR_IDS=
+		submit_job "${jobname_prefix}m[$mapper_counter]"  "-w  ended($NEW_JOB)"  "irap conf=$conf $IRAP_PARAMS mapper=$mapper quant_method=none quant_norm_method=none de_method=none $name/report/mapping/$mapper.html"
+		WAIT_FOR_IDS=$WAIT_FOR_IDS_
+	    else 
+		p_info "Failed to start irap_bam_report_lsf"
+	    fi
+	fi
+    fi
+done
+
+WAIT_FOR_IDS=
+# wait for the reports of all mappers
+counter=`expr $counter + 1`
+#submit_job "${jobname_prefix}f[$counter]"  `check_dependency ${jobname_prefix}m`  "irap conf=$conf $IRAP_PARAMS $report_dir/mapping/comparison.html"
+submit_job "${jobname_prefix}f[$counter]"  "-w ended(\"${jobname_prefix}m*\")"  "irap conf=$conf $IRAP_PARAMS $report_dir/mapping/comparison.html"
+
+
+# GE
+p_info "GE: quant_report"
+counter=`expr $counter + 1`
+for f in $quant_ofiles; do
+    counter=`expr $counter + 1`
+    submit_job "${jobname_prefix}f[$counter]"  "-w ended(\"${jobname_prefix}0*\")"  "irap conf=$conf $IRAP_PARAMS $f"
+done
+
+####
+# DE
+p_info "DE"
+for f in $de_ofiles; do
+    counter=`expr $counter + 1`
+    p_info "DE: $f"
+    submit_job "${jobname_prefix}f[$counter]"  "-w ended(\"${jobname_prefix}0*\")"  "irap conf=$conf  $IRAP_PARAMS $f"
+done
+
+# update the menu 
+submit_job "${jobname_prefix}u" -w "ended(\"${jobname_prefix}f*\")"  "$cmd conf=$conf end_report  $IRAP_PARAMS"
+
+submit_job_status "${jobname_prefix}u"
+echo "JOBS=$name/${jobname_prefix}*.out"
+echo "JOBNAME=${jobname_prefix}u"
+exit

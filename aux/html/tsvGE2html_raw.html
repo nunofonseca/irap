@@ -1,0 +1,267 @@
+<% brew::brew(get.path2template("page.header")) %>
+
+<%# Comment -- wrap up everything in a div %>
+<DIV name='de_res'>
+<H1><%=title%></H1>
+<H2><%=sources.menu%></H2>
+
+<H2 class="section">Quantification (<%=opt$feature%>s/<%=opt$metric%>)</H2>
+
+<%
+# Variables:
+#  table.html - table with the data per sample + gene information
+#  groups.l - samples per group
+#  html.cols2sel - column names of gene name + samples
+#  coloursbygroup
+#  quant.data 
+#  quant.data.norm 
+#  quant.data.norm.group 
+#  quant.data.group 
+source(paste(IRAP.DIR,"aux/R","deseq_shared.R",sep="/"))
+
+my.panel.cor<-function(x,y,...) {
+       panel.cor(exp(x)-1,exp(y)-1, digits=2, prefix="",logit="NULL",...)
+}
+%>
+
+<p>Data: <a class='download' href='<%=basename(tsv.file.ref)%>.gz'>TSV</a></p>
+
+<H3 class="section">Group level analysis</H3>
+
+<%
+
+if (ncol(quant.data)>2 ) {
+  pdebug("Correlation scatterplots\n")    
+#  save(file="wip",quant.data.group)
+  p <- gen.plot2report(filename=paste(file.prefix,"_group_pairs.png",sep=""),
+                       width=600,
+                       height=600,
+                       caption="Raw counts",
+                       to.plot=function() {
+                         pairs(log(quant.data.group$mean+1),  lower.panel=panel.smooth, upper.panel=my.panel.cor,pch=".", main=paste("",sep=""))
+                       }
+                       ) 
+  cat(p$html)
+  p <- gen.plot2report(filename=paste(file.prefix,"_group_pairs_norm.png",sep=""),
+                       width=600,
+                       height=600,
+                       caption="Counts normalized by library size",
+                       to.plot=function() {
+                         pairs(log(quant.data.norm.group$mean+1),  lower.panel=panel.smooth, upper.panel=my.panel.cor,pch=".", main=paste("",sep=""))
+                       }
+                       ) 
+  cat(p$html)
+}
+%>
+
+<%
+  ####################
+  # clustering
+  if ( length(colnames(quant.data.group$mean)) > 2 ) {
+    pdebug("Clustering\n")    
+    library(agricolae)
+    d <- "euclidean"
+    m <- "complete"
+    nboot<-100
+    p <- gen.plot2report(filename=paste(file.prefix,"_group_clus.png",sep=""),
+                    width=500,
+                    height=500,
+                    caption=paste("Clustering (distance=",d,"; method=",m,";restarts= ",nboot,"): raw counts",sep=""),
+                    to.plot=function() {
+                      con<-consensus(as.data.frame(t(quant.data.group$mean)),distance=d,method=m, nboot=nboot,duplicate=TRUE, cex.text=1,xlab="",yaxt='n', ann=FALSE)      
+                    }
+                    )
+    cat(p$html)									       
+    p <- gen.plot2report(filename=paste(file.prefix,"_group_clus_norm.png",sep=""),
+                    width=500,
+                    height=500,
+                    caption=paste("Clustering (distance=",d,"; method=",m,";restarts= ",nboot,"): counts normalized by library size",sep=""),
+                    to.plot=function() {
+                      con<-consensus(as.data.frame(t(quant.data.norm.group$mean)),distance=d,method=m, nboot=nboot,duplicate=TRUE, cex.text=1,xlab="",yaxt='n', ann=FALSE)      
+                    }
+                    )										       
+    cat(p$html)
+  } else {
+    cat("<p>Insufficient data to generate the clustering</p>")
+     pdebug("Insufficient data to generate the clustering")
+  }
+%>
+
+<h4>Heatmap</h4>
+<%
+pdebug("Heatmaps(group)")
+nlim <- 100
+if (ncol(quant.data.norm.group$mean)>2) {
+p <- gen.plot2report(filename=paste(file.prefix,"_group_heatmap_s.png",sep=""),
+                     width=600,
+                     height=600,
+                     caption=paste("Heatmap: counts normalized by library size (",nlim," genes with larger variance)",sep=""),
+                     to.plot=function() {
+                       quant.heatmap(quant.data.norm.group$mean,do.cor=T,nlim=nlim,ColSideColors=coloursbygroup[colnames(quant.data.norm.group$mean)])
+                    }
+                    )
+										       
+cat(p$html)
+p <- gen.plot2report(filename=paste(file.prefix,"_group_heatmap_g.png",sep=""),
+                     width=600,
+                     height=600,
+                     caption=paste("Heatmap: counts normalized by library size (",nlim," genes with larger variance)",sep=""),
+                     to.plot=function() {
+                       quant.heatmap(quant.data.norm.group$mean,do.cor=F,nlim=nlim,ColSideColors=coloursbygroup[colnames(quant.data.norm.group$mean)])
+                    }
+                    )
+										       
+    cat(p$html)
+} else {
+    cat("<p>Insufficient data to generate heatmap</p>")
+     pdebug("Insufficient data to generate heatmap")
+}
+%>
+
+<H3 class="section">Sample level analysis</H3>
+
+<!-- samples -->
+<!-- Correlations -->
+<%
+pdebug("Sample correlations")
+pdebug("#Vars=",ncol(quant.data))
+if (ncol(quant.data)>10 ) {
+  # show by group
+  for (g in names(groups.l)) {
+    cols <- groups.l[[g]]
+    pdebug("Scatterplot for group ",g)
+    quant.data.sel <- quant.data[,cols]
+    p <- gen.plot2report(filename=paste(file.prefix,"_sample_pairs_",g,".png",sep=""),
+             width=600,
+             height=600,
+             to.plot=function() {
+                pairs(log(quant.data.sel+1),  lower.panel=panel.smooth, upper.panel=my.panel.cor,pch=".", main=paste(g,"",sep=""))
+              }
+             )
+    cat(p$html)
+	 }
+} else {
+  if (ncol(quant.data)>2 ) {
+    p <- gen.plot2report(filename=paste(file.prefix,"_sample_pairs.png",sep=""),
+                         width=600,
+                         height=600,
+                         to.plot=function() {
+			   pairs(log(quant.data+1),  lower.panel=panel.smooth, upper.panel=my.panel.cor,pch=".", main=paste("",sep=""))
+                         }
+                         ) 
+    cat(p$html)
+  } else {			   
+    cat("<p>Insufficient data to generate plot</p>")
+    pdebug("Insufficient data to generate pairs plot")   
+  }
+}
+%>
+  
+<!-- clustering -->
+<H4>Clustering</H4>
+<%
+  ####################
+  # clustering
+  if ( length(colnames(quant.data)) > 2 )   {
+    pdebug("Clustering (samples)\n")    
+    library(agricolae)
+    d <- "euclidean"
+    m <- "complete"
+    nboot<-100
+    p <- gen.plot2report(filename=paste(file.prefix,"_sample_clus.png",sep=""),
+                    width=500,
+                    height=500,
+                    caption=paste("Clustering (distance=",d,"; method=",m,";restarts= ",nboot,"): raw counts",sep=""),
+                    to.plot=function() {
+                      con<-consensus(as.data.frame(t(quant.data)),distance=d,method=m, nboot=nboot,duplicate=TRUE, cex.text=1,xlab="",yaxt='n', ann=FALSE)      
+                    }
+                    )
+    cat(p$html)										       
+    p <- gen.plot2report(filename=paste(file.prefix,"_sample_clus_norm.png",sep=""),
+                    width=500,
+                    height=500,
+                    caption=paste("Clustering (distance=",d,"; method=",m,";restarts= ",nboot,"): counts normalized by library size",sep=""),
+                    to.plot=function() {
+                      con<-consensus(as.data.frame(t(quant.data.norm)),distance=d,method=m, nboot=nboot,duplicate=TRUE, cex.text=1,xlab="",yaxt='n', ann=FALSE)      
+                    }
+                    )
+										       
+    cat(p$html)
+  }
+%>
+
+<!-- heatmap -->
+<h4>Heatmap</h4>
+<%
+pdebug("Heatmap")
+# cor for the samples
+nlim <- 100
+if (ncol(quant.data.norm)>2) {
+  p <- gen.plot2report(filename=paste(file.prefix,"_sample_heatmap_s.png",sep=""),
+                     width=800,
+                     height=800,
+                     caption=paste("Heatmap: counts normalized by library size (",nlim," genes with larger variance)",sep=""),
+                     to.plot=function() {
+                       quant.heatmap(quant.data.norm,do.cor=T,nlim=nlim,ColSideColors=coloursbygroup[conds])
+                    }
+                    )
+										       
+cat(p$html)
+p <- gen.plot2report(filename=paste(file.prefix,"_sample_heatmap_g.png",sep=""),
+                     width=800,
+                     height=800,
+                     caption=paste("Heatmap: counts normalized by library size (",nlim," genes with larger variance)",sep=""),
+                     to.plot=function() {
+                       quant.heatmap(quant.data.norm,do.cor=F,nlim=nlim,ColSideColors=coloursbygroup[conds])
+                    }
+                    )
+										       
+    cat(p$html)
+} else {
+    cat("<p>Insufficient data to generate heatmap</p>")
+    pdebug("Insufficient data to generate heatmap")
+}
+%>
+
+<%
+## # genes
+## #nlim <- 50
+## data <- quant.data.norm.group$mean
+## #coloursbygroup
+## #colnames()
+## quant.heatmap(quant.data.norm.group$mean,do.cor=F,nlim=50,ColSideColors=coloursbygroup)
+## # cor for the samples
+## quant.heatmap(quant.data.norm,do.cor=T,nlim=100,ColSideColors=coloursbysample)
+
+## quant.variation(quant.data.norm.group,coloursbygroup)
+# see  http://docs.ggplot2.org/current/stat_smooth.html
+quant.variation <- function(data,colors,nlim=100) {
+ 
+  var <- rowVariance(data$mean)
+  select <- order(var,decreasing=TRUE)[c(1:nlim)]
+  data2plot <- data$mean[select,]
+  data2plot.sd <- data$sd[select,]
+  pch1 <- c(21,22,23,24,25)
+  pchs <- rep(pch1,nlim/3)[1:nlim]
+  #log(sqrt())
+  plot(data2plot[,1],pch=pchs,type="p",cex=data2plot.sd[,1]/max(data2plot.sd)+0.8,col=colors[1],xlab=paste(nlim," genes with highest variance",sep=""),ylab="Expr",log="y")
+  for ( col in colnames(data2plot)[-1]) {
+    points(jitter(data2plot[,col]),pch=pchs,type="p",cex=data2plot.sd[,col]/max(data2plot.sd)+0.8,col=colors[col])
+  }
+}
+
+## p <- gen.plot2report(filename=paste(file.prefix,"_variance.png",sep=""),
+##                      width=500,
+##                      height=500,
+##                      caption=paste("",sep=""),
+##                      to.plot=function() {
+##                        quant.variation(quant.data.norm.group,coloursbygroup[conds])
+##                      }
+##                      )
+##cat(p$html)									   
+pdebug("page completed")
+%>
+</DIV>
+
+<% brew::brew(get.path2template("page.footer")) %>
+

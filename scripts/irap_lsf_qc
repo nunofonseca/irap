@@ -1,0 +1,58 @@
+#!/bin/env bash
+# =========================================================
+# Copyright 2012,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#    $Id
+# =========================================================
+
+#Send irap_fastq_qc jobs on the farm - if paired end files, parallelize
+#Input: a config file and path to directory containing fastq files
+#Output: send jobs on the farm
+# TODO: A README file (fastq_qc_README.txt) with more details about each step and
+# the general process is available in the same directory.
+#set -e 
+#DEBUG=1
+
+
+LSF_CMD=irap_lsf_qc
+source $IRAP_DIR/scripts/lsf_shared_code.sh
+ 
+###################################
+declare -i s1=0
+declare -i s2=0
+
+
+#############
+# Submit jobs
+
+# Single end files
+echo "***********************************************"
+echo "*Step1&2 (SE)"
+for f in $se; do
+    let s2=s2+1
+    submit_job "${jobname_prefix}2[$s2]"  "$cmd conf=$conf quality_filtering_and_report pe=  se=$f" 
+done
+
+# Paired end files
+for f in $pe; do
+    let s2=s2+1
+    submit_job "${jobname_prefix}2[$s2]"  "$cmd conf=$conf quality_filtering_and_report pe=$f se=  " 
+done
+
+exit

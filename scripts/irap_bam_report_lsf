@@ -1,0 +1,89 @@
+#!/bin/env bash
+# =========================================================
+# Copyright 2012,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#    $Id: irap.txt Nuno Fonseca Wed Jan 16 23:28:50 2013$
+# =========================================================
+set -e 
+
+###################################
+# load shared code
+LSF_CMD=irap_bam_report_lsf
+source $IRAP_DIR/aux/sh/lsf_shared_code.sh
+
+# invoke irap instead of bam_report.R
+# it is up to irap to know the dependencies
+cmd="irap conf=$conf $IRAP_PARAMS quant_method=none quant_norm_method=none de_method=none"
+
+if [ "$DEBUG-" = "1-" ]; then
+    echo mkdir -p $report_dir
+else
+    mkdir -p $report_dir
+fi
+
+###################################
+# NOTE: length of jobname needs to be small otherwise lsf dependencies will not work
+declare -i s1=0
+declare -i s2=0
+
+# function submit_job {
+#     jobname=$1
+#     shift
+#     cmd2e=$*
+
+#     if [ "$DEBUG-" = "1-" ]; then
+#         echo $cmd2e
+#     else
+# 	bsub -q $QUEUE -N -n $THREADS  -M $MEM -R "rusage[mem=$MEM]" -R  "span[ptile=$THREADS]"  -cwd `pwd` -o `pwd`/$name/$jobname.out  -J $jobname  $cmd2e
+#     fi
+# }
+
+##########
+# pe files
+# step1 parallel quality filtering
+# step2 align & counting
+echo "***********************************************"
+echo "* Step&21 (PE)"
+for p in $pe ; do 
+    let s1=s1+1
+    BAMFILE=$name/$mapper/$p.pe.hits.bam
+    submit_job "${jobname_prefix}[$s1]"  $cmd $report_dir/mapping/$mapper/$p/index.html
+done
+
+
+##########
+# se files
+echo "***********************************************"
+echo "*Step1&2 (SE)"
+for f in $se ; do
+    let s1=s1+1
+    BAMFILE="$name/$mapper/$f.se.hits.bam"
+    if [ -e $BAMFILE ]; then
+	submit_job "${jobname_prefix}[$s1]"   $cmd $report_dir/mapping/$mapper/$f/index.html
+    fi
+done
+
+WAIT_FOR_IDS=
+submit_job "${jobname_prefix}M"  `check_dependency ${jobname_prefix}`  $cmd $report_dir/mapping/$mapper.html 
+#bam_report_multi.R $report_dir/bam/$mapper $name/$mapper/*.hits.bam
+#$name/report/mapping/comparison.html
+echo JOB=${jobname_prefix}M
+
+echo JOBS=${jobname_prefix}*.out
+exit 0
