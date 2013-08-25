@@ -17,7 +17,7 @@
 #  quant.data.norm 
 #  quant.data.norm.group 
 #  quant.data.group 
-source(paste(IRAP.DIR,"aux/R","deseq_shared.R",sep="/"))
+source(paste(IRAP.DIR,"aux/R","irap_misc.R",sep="/"))
 
 my.panel.cor<-function(x,y,...) {
        panel.cor(exp(x)-1,exp(y)-1, digits=2, prefix="",logit="NULL",...)

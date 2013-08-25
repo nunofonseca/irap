@@ -1,7 +1,7 @@
 <% brew::brew(get.path2template("page.header")) %>
 
 <%
-source(paste(IRAP.DIR,"aux/R","deseq_shared.R",sep="/"))
+source(paste(IRAP.DIR,"aux/R","irap_misc.R",sep="/"))
 
 df<-raw.summary.dataframe(pe,se)
 legend <- c("Passed", "Unpaired", "Ns", "Contamination","Quality")

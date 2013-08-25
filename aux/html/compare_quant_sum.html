@@ -1,6 +1,6 @@
 <% brew::brew(get.path2template("page.header")) %>
 <%
-source(paste(IRAP.DIR,"aux/R","deseq_shared.R",sep="/"))
+source(paste(IRAP.DIR,"aux/R","irap_misc.R",sep="/"))
 cur.plot<-0
 methods.colors <- rainbow(nfiles)
 names(methods.colors)<-colnames(data2html$p.cor)

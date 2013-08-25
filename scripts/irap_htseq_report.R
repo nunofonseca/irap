@@ -31,7 +31,7 @@ if ( IRAP.DIR == "" ) {
   q(status=1)
 }
 source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
-#source(paste(IRAP.DIR,"scripts","deseq_shared.R",sep="/"))
+#source(paste(IRAP.DIR,"scripts","irap_misc.R",sep="/"))
              
 args <- commandArgs(trailingOnly=TRUE)
 out.dir <- args[1]
@@ -57,7 +57,7 @@ if (is.na(min.count)) {
 
 pinfo("starting...")
 
-source(paste(IRAP.DIR,"aux/R","deseq_shared.R",sep="/"))
+source(paste(IRAP.DIR,"aux/R","irap_misc.R",sep="/"))
 library(R2HTML)
 
 ###############################################

@@ -21,7 +21,7 @@
 # 
 #source(paste(IRAP.DIR,"aux/R","irap_compare.R",sep="/"))
 source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
-source(paste(IRAP.DIR,"aux/R","deseq_shared.R",sep="/"))
+source(paste(IRAP.DIR,"aux/R","irap_misc.R",sep="/"))
 
 #install.packages("sfsmisc")
 library(sfsmisc)

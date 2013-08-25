@@ -41,7 +41,7 @@ merge.prof.gff3 <- function(transcript.profile,mrna.gff3) {
 
 IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
 source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
-source(paste(IRAP.DIR,"aux/R","deseq_shared.R",sep="/"))
+source(paste(IRAP.DIR,"aux/R","irap_misc.R",sep="/"))
 
 
 mygff3 <- "/home/nf/Research/Projects/WIP/IRAP/irap/tests/test_files/simulation/Homo_sapiens.GRCh37.66.gff3"
