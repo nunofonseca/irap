@@ -1375,7 +1375,10 @@ INC_DIR=$IRAP_DIR/include
 
 SETUP_FILE=$IRAP_DIR/irap_setup.sh
 
-CRAN_REPO=http://cran.ma.imperial.ac.uk/
+if [ "$CRAN_REPO-" == "-" ]; then
+    #CRAN_REPO=http://cran.ma.imperial.ac.uk/
+    CRAN_REPO=http://www.stats.bris.ac.uk/R/
+fi
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LIB_DIR
 J=8
 set -e
