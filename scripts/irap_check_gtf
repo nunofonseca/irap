@@ -26,6 +26,11 @@ if ( scalar(@features) > scalar(@must_have) )  {
 	print "WARNING: File contains not mandatory features,  some programs may fail.\n";
 	exit;
 }
-
-print "File '$ARGV[0]' looks ok.\n";
+# look for '
+my $nquote=`cut -f 9- $ARGV[0]| grep -c "'"`;
+if ( $nquote > 0 ) {
+    print STDERR "WARNING!!!!!!!!!!!!!!\nWarning: File $ARGV[0] does not look ok. It contains \"'\" which may cause some errors. Please replace all  \"'\"  by some other character.\n"
+} else {
+    print "File '$ARGV[0]' looks ok.\n";
+}
 exit(0);
