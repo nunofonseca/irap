@@ -17,10 +17,10 @@ Contents
 ============
 
 1.1 Get IRAP from the repository
-   git clone https://code.google.com/p/irap/ irap_src
+   git clone https://code.google.com/p/irap/ irap_clone
 
 1.2 Install IRAP and all dependencies (3rd party software) to a directory (e.g. irap_install)
-   ./irap_src/scripts/irap_install.sh -a irap_install -s irap_src
+   ./irap_clone/scripts/irap_install.sh -a irap_install -s irap_clone
 
 1.3 Setup the shell environment using the irap_setup.sh file: e.g., assuming that you installed IRAP in irap_install you could setup the environment using
    source irap_install/irap_setup.sh
