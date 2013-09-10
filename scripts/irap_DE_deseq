@@ -86,7 +86,7 @@ pinfo("Dispersion estimation complete.")
 de <- nbinomTest(cds,opt$labels.v[1],opt$labels.v[2])
 pinfo("nbinomTest complete.")
 ## annotate the gene list
-if ( !is.na(opt$annotation)) {
+if ( !is.null(opt$annotation) && !is.na(opt$annotation)) {
    de.annot <- de[order(de$pval),];
    match.v  <- match(de.annot$id,opt$annot[,1]);
    de.annot <- cbind(de.annot,opt$annot[match.v,])
