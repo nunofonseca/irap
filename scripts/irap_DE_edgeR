@@ -130,7 +130,7 @@ de$id <- rownames(de)
 de <- de[,c("id","baseMeanA","baseMeanB","logFC","logCPM","LR","PValue","padj")]
 
 ## annotate the gene list
-if ( !is.null(opt$annotation)) {
+if ( !is.null(opt$annotation) && !is.null(opt$annotation)) {
    de.annot <- de[order(de$PValue),];
    match.v  <- match(de.annot$id,opt$annot[,1]);
    de.annot <- cbind(de.annot,opt$annot[match.v,])
@@ -148,7 +148,7 @@ de.annot <- de.annot[order(de.annot$PValue),];
 # LR: likelihood ratio statistics (only for ‘glmLRT’).
 # pvalue
 # padj: adjusted p-value
-save.de2tsv(de.annot,opt$ofile.prefix=opt$out)
+save.de2tsv(de.annot,ofile.prefix=opt$out)
 quit(save="no",status=0)
 
 ######################################

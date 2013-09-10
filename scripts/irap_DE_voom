@@ -77,7 +77,7 @@ de$log2FoldChange <- log2(de$foldChange)
 
 pinfo("Annotating DE list...")
 ## annotate the gene list
-if ( !is.null(opt$annotation)) {
+if (!is.null(opt$annotation) && !is.null(opt$annotation)) {
    de.annot <- de
    match.v  <- match(de.annot$ID,opt$annot[opt$annot[,1] %in% de.annot$ID,1]);
    de.annot <- cbind(de.annot,opt$annot[match.v,])
