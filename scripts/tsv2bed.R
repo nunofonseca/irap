@@ -47,6 +47,9 @@ chrs <- c()
 tsv<-read.table(tsv_file,sep="\t",header=F)
 # first column should have the ID
 colnames(tsv) <- c('ID','Value')
+# exclude NAs or replace by 0?
+# exclude for now
+tsv <- tsv[!is.na(tsv$Value),]
 
 # load the gff3 file in CSV format (it can take a while to do it, hence do it only once)
 gff3<-read.table(gff3_file,sep=",",header=T)
