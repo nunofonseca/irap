@@ -140,7 +140,7 @@ panel.cor <- function(x, y, cor.method="pearson", digits=2, prefix="", cex.cor=1
       if ( logit=="xy" || logit=="y") { y <- exp(y) }
     }
     # pearson correlation
-    r <- cor(x,y,method="pearson")
+    r <- cor(x,y,method=cor.method)
     txt <- round(r,digits)
     txt <- paste(prefix, txt, sep="")
     if(missing(cex.cor)) cex <- 0.8/strwidth(txt)
