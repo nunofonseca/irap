@@ -1,5 +1,5 @@
 % =========================================================
-% Copyright 2012,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+% Copyright 2012-2013,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
 %
 % This file is part of iRAP.
 %
