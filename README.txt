@@ -54,15 +54,15 @@ or, assuming that you use Bash as your shell, add the contents of the irap_setup
     o Define or override options given in the configuration file, e.g.,
        irap conf=myexp.conf mapper=tophat1 quant_method=htseq1 de_method=deseq
 
-    o To speed up the analysis by exploiting multiple computers in a
-       cluster with the LSF job scheduler use the irap_lsf command.
+    o Use the irap_lsf command to speed up the analysis by exploiting
+       multiple computers in a cluster with the LSF job scheduler.
        irap_lsf accepts the same parameters as irap but splits the
        analysis into multiple jobs with the aim of reducing the time
        to analyze the data, e.g,
+
        irap_lsf conf=myexp.conf 
        irap_lsf conf=myexp.conf mapper=tophat1 quant_method=htseq1 de_method=deseq
-  
-       
+         
 3.4. Check your results
     o Check the status of the files (created files versus expected files)
        irap [your options used to run the analysis] status
