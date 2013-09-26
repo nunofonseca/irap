@@ -1,4 +1,4 @@
-#!/bin/env Rscript
+#!/usr/bin/env Rscript
 # args = package names
 args <- commandArgs(trailingOnly=TRUE)
 

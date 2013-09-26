@@ -1,4 +1,4 @@
-#!/bin/env perl
+#!/usr/bin/env perl
 # convert gtf file from Ensembl to gff3 file useable by tophat
 # tested on ftp://ftp.ensembl.org/pub/current_gtf/homo_sapiens/Homo_sapiens.GRCh37.56.gtf.gz
 

@@ -1,4 +1,4 @@
-#!/bin/env Rscript
+#!/usr/bin/env Rscript
 # =========================================================
 # Copyright 2012-2013,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
 #

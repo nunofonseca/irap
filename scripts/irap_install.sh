@@ -1,4 +1,4 @@
-#!/bin/env bash
+#!/usr/bin/env bash
 # =========================================================
 # Copyright 2012-2013,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
 #
@@ -412,7 +412,7 @@ function soap2_install {
     #download http://soap.genomics.org.cn/down/soap2sam.tar.gz
     tar xzvf soap2sam.tar.gz
     chmod +x soap2sam.pl
-    sed "s.^#\!/usr/bin/perl.*.#\!/bin/env perl." -i soap2sam.pl
+    sed "s.^#\!/usr/bin/perl.*.#\!$ENV_FP perl." -i soap2sam.pl
     cp soap2sam.pl $BIN_DIR
     pinfo "$MAPPER installation complete."    
 }
@@ -425,7 +425,7 @@ function gem_install {
     # deps: requires ruby
     pushd `echo $GEM_FILE|sed "s/.tbz2//"`
     install_binary $MAPPER . \*
-#    sed -i "s/^#!/.*ruby/#!/bin/env ruby/" $BIN_DIR/$MAPPER/bin/gem*
+#    sed -i "s/^#!/.*ruby/#!$ENV_FP ruby/" $BIN_DIR/$MAPPER/bin/gem*
     pinfo "$MAPPER  installation complete."    
     popd
 }
@@ -961,7 +961,7 @@ function scripture_install {
     download_software SCRIPTURE
     mv scripture-$SCRIPTURE_VERSION.jar $IRAP_DIR/bin/scripture.jar
     cat <<EOF > $IRAP_DIR/scripts/scripture
-#!/bin/env bash
+#!$ENV_FP bash
 java -Xmx8000m -jar \$IRAP_DIR/bin/scripture.jar \$*
 EOF
     chmod +x $IRAP_DIR/scripts/scripture
@@ -975,7 +975,7 @@ EOF
     rm -rf IGV_$IGV_VERSION $IGV.zip
     
     cat <<EOF > $IRAP_DIR/bin/igv.sh
-#!/bin/env bash
+#!$ENV_FP bash
 java -Dapple.laf.useScreenMenuBar=true -Xmx750m -jar $IRAP_DIR/bin/igv.jar $*
 EOF
     
@@ -1019,7 +1019,7 @@ function fastq_qc_install {
     mv FastQC $IRAP_DIR/bin
     pushd $IRAP_DIR/bin/FastQC
     chmod 755 fastqc
-    sed "s.^#\!/usr/bin/perl.#\!/bin/env perl." -i fastqc
+    sed "s.^#\!/usr/bin/perl.#\!$ENV_FP perl." -i fastqc
     ln -s `pwd`/fastqc $IRAP_DIR/bin
     popd
     pinfo "Installing fastqc...done."
@@ -1046,9 +1046,13 @@ function install_core {
 	if [ ! -e $IRAP_DIR/scripts ]; then
 	    mkdir -p $IRAP_DIR/scripts
 	fi
-	cp -r $SRC_DIR/scripts/* $IRAP_DIR/scripts
+	cp -r $SRC_DIR/scripts/* $IRAP_DIR/scripts	
 	# install should always be ran from the source 
 	rm -f $IRAP_DIR/scripts/irap_install.sh
+	# update the env path
+	if [ "$DEF_ENV" != "$ENV_FP" ]; then
+	    sed -i "s|^#\!$DEF_ENV|#\!$ENV_FP|" $IRAP_DIR/scripts/*
+	fi
     fi
 
     if [ -h $IRAP_DIR/aux ]; then
@@ -1359,6 +1363,20 @@ else
     pinfo " WARNING: This script will install binaries for Linux."
 fi
 
+# Check if env is available
+DEF_ENV="/usr/bin/env"
+ENV_FP=$DEF_ENV
+if [ -x $ENV_FP ]; then
+    pinfo "env found in $ENV_FP"
+else
+    ENV_FP="/bin/env"
+    if [ -x $ENV_FP ]; then
+	pinfo "env found in $ENV_FP"
+    else
+	echo "ERROR: env command not found - please ensure that it is in the PATH"
+	exit 1
+    fi
+fi
 
 # Full path
 pinfo "Checking paths..."

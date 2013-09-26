@@ -1,4 +1,4 @@
-#!/bin/env bash
+#!/usr/bin/env bash
 
 BAM_FILE=$1
 GTF_FILE=$2

@@ -1,4 +1,4 @@
-#!/bin/env Rscript
+#!/usr/bin/env Rscript
 args <- commandArgs(trailingOnly=TRUE)
 
 IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
