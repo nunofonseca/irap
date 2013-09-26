@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl
 # FILE: gtf2bed
 # AUTHOR: William Stafford Noble
 # CREATE DATE: 10 Jan 2004
