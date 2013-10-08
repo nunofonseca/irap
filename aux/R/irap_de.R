@@ -130,6 +130,8 @@ handle.tech.replicates <- function(data,opt) {
       cols <- names(data)
       if ( sum(cols2aggr %in% cols)!=length(cols2aggr) ) {
         perror("technical replicates: some columns were not found in the file ")
+        missing.cols <- cols2aggr[!cols2aggr %in% cols]
+        perror("Columns not found: ",paste(missing.cols,sep=","))
         q(status=1)   
       }
       # sum
@@ -158,6 +160,9 @@ filter.read.counts.table <- function(data,opt) {
   cols.names <- colnames(data)
   if ( sum(! cols.used %in% cols.names)!=0 ) {
     perror("Some columns were not found in the file ",opt$tsv_file)
+    #
+    missing.cols <- cols.used[!cols.used %in% cols.names]
+    perror("Columns not found: ",paste(missing.cols,sep=","))
     q(status=1)
   }
   cols.names <- cols.names[!is.na(match(cols.names,cols.used))]
