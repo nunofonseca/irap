@@ -173,8 +173,8 @@ def_quant_method=htseq2
 def_quant_norm_method=htseq2
 
 # produce quantification per exon? default is gene level or transcript level depending on the method used
-def_exon_quant=y
-def_transcript_quant=y
+def_exon_quant=n
+def_transcript_quant=n
 
 # maximum number of hits reported by the mapper
 def_max_hits=10
