@@ -797,6 +797,7 @@ function install_R_packages {
     R --no-save <<EOF
 repo<-"$CRAN_REPO"
 install.packages("multicore",repos=repo)
+install.packages("intervals",repos=repo)
 install.packages("gclus",repo=repo)
 install.packages('R2HTML',repo=repo)
 install.packages("agricolae",repo=repo)
@@ -1048,7 +1049,7 @@ function install_core {
 	fi
 	cp -r $SRC_DIR/scripts/* $IRAP_DIR/scripts	
 	# install should always be ran from the source 
-	rm -f $IRAP_DIR/scripts/irap_install.sh
+	chmod -x $IRAP_DIR/scripts/irap_install.sh
 	# update the env path
 	if [ "$DEF_ENV" != "$ENV_FP" ]; then
 	    sed -i "s|^#\!$DEF_ENV|#\!$ENV_FP|" $IRAP_DIR/scripts/*
