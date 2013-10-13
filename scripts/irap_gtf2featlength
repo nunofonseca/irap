@@ -1,0 +1,83 @@
+#!/bin/env Rscript
+# =========================================================
+# Copyright 2012-2013,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#    $Id: 0.1.1$
+# =========================================================
+
+###############################################################
+suppressPackageStartupMessages(library("optparse"))
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+
+# specify our desired options in a list
+#
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+pdebug.enabled <- TRUE
+
+#######################
+usage <- "irap_gtf2genelength --gtf file --out outprefix"
+filenames <- c("gtf_file") ;#filenames that must exist (if defined)
+option_list <- list(
+#  make_option(c("-v", "--verbose"), action="store_true", default=TRUE, help="Print extra output [default]"),
+#  make_option(c("-q", "--quietly"), action="store_false", default=FALSE,dest="verbose", help="Print little output"),
+  make_option(c("-g", "--gtf"), type="character", dest="gtf_file", default=NULL,help="GTF file"),
+  make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name prefix. A TSV file will be created containing a matrix with two columns: 1st col containds the name  of the features and the 2nd column the respective length.")
+)
+
+mandatory <- c("gtf_file","out")
+filenames <- c("gtf_file")
+opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,mandatory=mandatory)
+
+# Load gtf file
+pinfo("Loading gtf file ",opt$gtf_file)
+gtf <- load.gtf(opt$gtf_file)
+pinfo("Loading gtf file ",opt$gtf_file," complete.")
+
+# compute the lengths
+pinfo("Computing length of genes...")
+gene.length  <- get.gene.length.from.gtf(gtf)
+pinfo("Computing length of transcripts...")
+trans.length <- get.transcript.length.from.gtf(gtf)
+pinfo("Computing length of exons...")
+exon.length  <- get.exon.length.from.gtf(gtf)
+
+# save as Rdata files
+out.file <- paste(opt$out,".Rdata",sep="")
+save(gene.length,trans.length,exon.length,file=out.file)
+pinfo("Saved length of genes, transcripts and exons to ",out.file)
+pinfo("#Genes: ",length(gene.length))
+pinfo("#Transcripts: ",length(trans.length))
+pinfo("#Exons: ",nrow(exon.length))
+q(status=0)
+
+
+
+
+
+
+
+
+
+
+
