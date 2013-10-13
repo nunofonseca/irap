@@ -954,7 +954,7 @@ phony_targets+= setup setup_files
 
 ################################################################################
 # Setup initial files
-SETUP_DATA_FILES=$(name)/data/gene_class.txt $(index_files) $(gtf_file_abspath).checked  $(gtf_file_abspath).exon_id.gtf $(juncs_file_abspath) $(name)/data/chr_sizes.txt  $(gff3_file_abspath) $(annot_tsv)
+SETUP_DATA_FILES=$(name)/data/gene_class.txt $(index_files) $(gtf_file_abspath).checked  $(gtf_file_abspath).exon_id.gtf $(juncs_file_abspath) $(name)/data/chr_sizes.txt  $(gff3_file_abspath) $(annot_tsv) $(name)/data/lengths.Rdata
 
 setup_files: $(SETUP_DATA_FILES)
 
@@ -1001,9 +1001,16 @@ $(name)/data/gene.annot.tsv: $(gff3_file_abspath)
 	irap_gff32annot --gff3 $< -s $(species) > $@.tmp && mv $@.tmp $@
 else
 $(name)/data/gene.annot.tsv: $(data_dir)/reference/$(species)/gene.annot.tsv
-	cp $< $@
+	cp $< $@.tmp && mv $@.tmp $@
 endif
 
+
+# collect genes, transcripts and exons lengths
+# generate only once
+$(gtf_file_abspath).lengths.Rdata: $(gtf_file_abspath)
+	irap_gtf2featlength --gtf $< -o $@.tmp && mv $@.tmp.Rdata $@
+$(name)/data/lengths.Rdata: $(gtf_file_abspath).lengths.Rdata
+	cp $< $@.tmp && mv $@.tmp $@
 # $(trans_file): 
 # 	$(call p_error,Missing trans_file = $(trans_file))
 
