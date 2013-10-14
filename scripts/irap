@@ -700,6 +700,8 @@ silent_targets=
 ################################################################################
 # AUXILIARY FUNCTIONS
 ################################################################################
+
+feat_length=$(name)/data/lengths.Rdata
 # FALSE=empty
 
 # return a string in the form of group1,group2,...
@@ -954,7 +956,8 @@ phony_targets+= setup setup_files
 
 ################################################################################
 # Setup initial files
-SETUP_DATA_FILES=$(name)/data/gene_class.txt $(index_files) $(gtf_file_abspath).checked  $(gtf_file_abspath).exon_id.gtf $(juncs_file_abspath) $(name)/data/chr_sizes.txt  $(gff3_file_abspath) $(annot_tsv) $(name)/data/lengths.Rdata
+# file with the length of the features (gene, isoform, exon)
+SETUP_DATA_FILES=$(name)/data/gene_class.txt $(index_files) $(gtf_file_abspath).checked  $(gtf_file_abspath).exon_id.gtf $(juncs_file_abspath) $(name)/data/chr_sizes.txt  $(gff3_file_abspath) $(annot_tsv) $(feat_length)
 
 setup_files: $(SETUP_DATA_FILES)
 
