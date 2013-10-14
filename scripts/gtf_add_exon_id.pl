@@ -53,7 +53,7 @@ while (<FILE>) {
 	    $vars{$name}=$val;	
 	    $vars{$name}=~s/"//g;
 	}
-	$vars{"exon_id"}=$vars{"gene_id"}.".".$vars{"exon_number"};
+	$vars{"exon_id"}=$vars{"gene_id"}.".".$vars{"transcript_id"}.".".$vars{"exon_number"};
 	$attr=$attr." exon_id \"".$vars{"exon_id"}."\";";
 	print join("\t",($seqname,$source,$feature,$start,$end,$score,$strand,$frame,$attr))."\n";
     } else {
