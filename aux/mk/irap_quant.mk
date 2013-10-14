@@ -136,6 +136,7 @@ ifndef htseq_params
 htseq_params= -q  --stranded=no
 endif
 
+
 define htseq_sam_output_param=
 $(if $(filter y,$(htseq_sam_output)),--samout=$(subst .tsv,.anot.sam,$(1)),)
 endef
@@ -304,13 +305,22 @@ $(name)/$(mapper)/$(quant_method)/$(name).assemblies.txt: $(foreach p,$(pe),$(na
 $(name)/$(mapper)/htseq1/genes.raw.htseq1.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.genes.raw.$(quant_method).tsv) $(foreach s,$(se), $(name)/$(mapper)/$(quant_method)/$(s).se.genes.raw.$(quant_method).tsv)
 	irap_merge_tsv.sh $^  > $@.tmp && mv $@.tmp $@
 
+$(name)/$(mapper)/htseq1/genes.rpkm.htseq1.tsv: $(name)/$(mapper)/htseq1/genes.raw.htseq1.tsv $(feat_length)
+	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature gene --metric rpkm --out $@.tmp && mv $@.tmp $@
+
 # counts per exon
 $(name)/$(mapper)/htseq1/exons.raw.htseq1.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.exons.raw.$(quant_method).tsv) $(foreach s,$(se), $(name)/$(mapper)/$(quant_method)/$(s).se.exons.raw.$(quant_method).tsv)
 	irap_merge_tsv.sh $^  > $@.tmp && mv $@.tmp $@
 
+$(name)/$(mapper)/htseq1/exons.rpkm.htseq1.tsv: $(name)/$(mapper)/htseq1/exons.raw.htseq1.tsv $(feat_length)
+	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature exon --metric rpkm --out $@.tmp && mv $@.tmp $@
+
 # counts per transcript
 $(name)/$(mapper)/htseq1/transcripts.raw.htseq1.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se), $(name)/$(mapper)/$(quant_method)/$(s).se.transcripts.raw.$(quant_method).tsv)
 	irap_merge_tsv.sh $^  > $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/htseq1/transcripts.rpkm.htseq1.tsv: $(name)/$(mapper)/htseq1/transcripts.raw.htseq1.tsv $(feat_length)
+	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature transcript --metric rpkm --out $@.tmp && mv $@.tmp $@
 
 # htseq bam file needs to be sorted by name
 $(name)/$(mapper)/htseq1/%.genes.raw.htseq1.tsv: $(name)/$(mapper)/%.hits.byname.bam $(gtf_file_abspath)
@@ -329,13 +339,22 @@ $(name)/$(mapper)/htseq1/%.transcripts.raw.htseq1.tsv: $(name)/$(mapper)/%.hits.
 $(name)/$(mapper)/htseq2/genes.raw.htseq2.tsv: $(foreach p,$(pe), $(name)/$(mapper)/$(quant_method)/$(p).pe.genes.raw.htseq2.tsv) $(foreach s,$(se), $(name)/$(mapper)/$(quant_method)/$(s).se.genes.raw.$(quant_method).tsv)
 	irap_merge_tsv.sh $^  > $@.tmp && mv $@.tmp $@
 
+$(name)/$(mapper)/htseq2/genes.rpkm.htseq2.tsv: $(name)/$(mapper)/htseq2/genes.raw.htseq2.tsv $(feat_length)
+	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature gene --metric rpkm --out $@.tmp && mv $@.tmp $@
 # counts per exon
 $(name)/$(mapper)/htseq2/exons.raw.htseq2.tsv: $(foreach p, $(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.exons.raw.$(quant_method).tsv) $(foreach s,$(se), $(name)/$(mapper)/$(quant_method)/$(s).se.exons.raw.$(quant_method).tsv)
 	irap_merge_tsv.sh $^  > $@.tmp && mv $@.tmp $@
 
+$(name)/$(mapper)/htseq2/exons.rpkm.htseq2.tsv: $(name)/$(mapper)/htseq2/exons.raw.htseq2.tsv $(feat_length)
+	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature exon --metric rpkm --out $@.tmp && mv $@.tmp $@
+
 # counts per transcript
 $(name)/$(mapper)/htseq2/transcripts.raw.htseq2.tsv: $(foreach p,$(pe), $(name)/$(mapper)/$(quant_method)/$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se), $(name)/$(mapper)/$(quant_method)/$(s).se.transcripts.raw.$(quant_method).tsv)
 	irap_merge_tsv.sh $^  > $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/htseq2/transcripts.rpkm.htseq2.tsv: $(name)/$(mapper)/htseq2/transcripts.raw.htseq2.tsv $(feat_length)
+	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature transcript --metric rpkm --out $@.tmp && mv $@.tmp $@
+
 
 $(name)/$(mapper)/htseq2/%.genes.raw.htseq2.tsv: $(name)/$(mapper)/%.hits.byname.bam $(gtf_file_abspath)
 	$(call run_htseq2,$<,$(gtf_file_abspath),$@,gene)
@@ -361,6 +380,9 @@ $(name)/$(mapper)/basic/transcripts.raw.basic.tsv:
 $(name)/$(mapper)/basic/exons.raw.basic.tsv: 
 	$(call p_info, Warning! Basic method does not produce quantification at exon level (in TODO). Generating empty file $@.)
 	@$(call empty_file,$@)
+
+#$(name)/$(mapper)/basic/exons.rpkm.basic.tsv: $(name)/$(mapper)/basic/exons.raw.basic.tsv $(feat_length)
+#	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature exon --metric rpkm --out $@.tmp && mv $@.tmp $@
 
 $(name)/$(mapper)/basic/%.genes.raw.basic.tsv $(name)/$(mapper)/basic/%.exons.raw.basic.tsv: $(name)/$(mapper)/%.se.hits.byname.bam $(gtf_file_abspath).exon_id.gtf
 	$(call run_naive_count,$<,$(gtf_file_abspath).exon_id.gtf,$(@D)/$*.genes.raw.basic.tsv,$(@D)/$*.exons.raw.basic.tsv)
