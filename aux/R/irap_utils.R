@@ -138,6 +138,87 @@ load.gtf <- function(gtf.file,feature=NULL,selected.attr=NULL) {
   gtf
 }
 
+# Given a gtf file returns a vector with the length of the genes
+get.gene.length.from.gtf.file <- function(gtf.file,filter.biotype=NULL,length.mode="union.exons") {
+  gtf <- load.gtf(gtf.file)
+  get.gene.length.from.gtf(gtf,filter.biotype,length.mode)
+}
+#
+# Given a matrix obtained from a gtf file returns a vector with the length of the genes
+get.gene.length.from.gtf <- function(gtf,filter.biotype=NULL,length.mode="union.exons") {
+  # TODO: validate gtf
+  # protein coding
+  if ( !is.null(filter.biotype) ) {
+    gtf <- gtf[gtf$gene_biotype==filter.biotype,]
+  }
+  # compute the length for each exon
+  gtf <- gtf[gtf$feature=="exon",]
+  gene.ids <- unique(gtf$gene_id)
+  glen <- unlist(lapply(gene.ids,get.gene.length,gtf,mode=length.mode))
+  names(glen) <- gene.ids
+  glen  
+}
+
+
+get.gene.length <- function(gene.id,gtf.data,mode="sum.exons",lim=+Inf,do.plot=FALSE) {
+  library("intervals")
+  #gtf.data <- gtf2
+  i <- Intervals(gtf.data[gtf.data$gene_id==gene.id,c("start","end")])
+  #
+  res <- c()
+  if ( mode != "sum.exons" ) {
+    # a) reduce -> for gene length
+    i <- reduce(i)
+    si <- size(i)
+    res <- sum(si[si<lim])
+  } else {
+    # b) interval_union
+    # size(i)    
+    si <- size(i)    
+    res <- sum(si[si<lim])    
+  }
+  if ( do.plot ) 
+    plot(i)
+  res
+}
+
+# Given a matrix obtained from a gtf file returns a vector with the length of the transcripts
+get.transcript.length.from.gtf <- function(gtf,filter.biotype=NULL) {
+  # TODO: validate gtf
+  # protein coding
+  if ( !is.null(filter.biotype) ) {
+    gtf <- gtf[gtf$gene_biotype==filter.biotype,]
+  }
+  # compute the length for each transcript
+  gtf <- gtf[gtf$feature=="exon",]
+  transcript.ids <- unique(gtf$transcript_id)
+  tlen <- unlist(lapply(transcript.ids,get.transcript.length,gtf))
+  names(tlen) <- transcript.ids
+  tlen  
+}
+
+#
+get.transcript.length <-  function(transcript.id,gtf.data) {
+  library("intervals")
+  i <- Intervals(gtf.data[gtf.data$transcript_id==transcript.id,c("start","end")])
+  sum(size(i))
+}
+
+# Given a matrix obtained from a gtf file returns a matrix with the length of the  exons of a given gene/transcript
+get.exon.length.from.gtf <- function(gtf,filter.biotype=NULL) {
+  # TODO: validate gtf
+  # protein coding
+  if ( !is.null(filter.biotype) ) {
+    gtf <- gtf[gtf$gene_biotype==filter.biotype,]
+  }
+  # compute the length for each exon
+  gtf <- gtf[gtf$feature=="exon",]  
+  elen <- abs(gtf$start-gtf$end)
+  gtf$elength <- elen
+  gtf[,c("gene_id","transcript_id","exon_number","elength")]
+}
+
+
 load.gff3 <- function(file,type="gene") {
   # load the gff3 file
   gff3<-read.table(file,sep="\t",header=F)
@@ -171,6 +252,7 @@ load.gff3 <- function(file,type="gene") {
 
 ######################################################
 # RPKMs
+# deprecated
 counts2RPKMs <- function(count.matrix,annot.table=NULL) {
 
   if (is.null(annot.table)) {
@@ -186,6 +268,25 @@ counts2RPKMs <- function(count.matrix,annot.table=NULL) {
   }
   rpkms
 }
+
+# RPKMs
+countstable2rpkms <- function(table,lens,exitonerror=TRUE) {
+  # check if there missing features
+  missing.feat <- (!rownames(table) %in% names(lens))
+
+  if ( sum(missing.feat) ) {
+    perror("Length of ",paste(rownames(table)[missing.feat],sep=",")," not found.")
+    if (exitonerror) { q(status=1) }
+    return(NULL)
+  }
+  v.compute.rpkm <-  function(l,lens) {
+    #(l*1e6)/(sum(l)*lens[names(l)]/1000)
+    10^9*l/(sum(l)*lens[names(l)])
+  }
+  round(apply(table,2,v.compute.rpkm,lens),2)
+}
+
+
 ######################################################
 # Annot
 # extract a named vector of all terms
@@ -304,7 +405,8 @@ annot.expand.fields <- function(annot.table) {
     l <- unlist(strsplit(x=s,split=":",fixed=T))
     loc <- unlist(strsplit(x=l[2],split="..",fixed=T))
     abs(as.numeric(loc[1])-as.numeric(loc[2]))
-  }                                        # expand annot info
+  }
+  # expand annot info
   # TODO: add length of longest transcript
   len <- sapply(as.character(annot.table$locus),get.gene.len)
   annot.table$len<-len
@@ -1272,4 +1374,3 @@ get.source.filter.names <- function() {
 get.source.filter.size <- function(filter.name) {
   length(source.filt.groups[[filter.name]])
 }
-###################################################  
