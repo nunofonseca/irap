@@ -315,6 +315,9 @@ trans_file?=$(cdna_file_abspath)
 $(info *       Transcripts = $(trans_file))
 #$(call file_exists,$(trans_file))
 
+
+refgeneclass_file=$(subst .gz,,$(gtf_file)).gene_class.txt
+refgeneannot_file=$(subst .gtf,,$(subst .gz,,$(gtf_file))).gene_annot.tsv
 #************
 # FASTQ files
 # SE reads
@@ -965,8 +968,8 @@ $(index_files): $(file_indexed)
 	$(call p_info,INDEXING)
 	$(call run_$(mapper)_index,$(file_indexed))
 
-# Create the file with gene classification by EnsembleId
-$(data_dir)/reference/$(species)/gene_class.txt: $(gtf_file_abspath)
+# Create the file with gene classification by GeneId
+$(data_dir)/reference/$(species)/$(refgeneclass_file): $(gtf_file_abspath)
 	gtf2geneclass.sh $< > $@.tmp && mv $@.tmp  $@
 #	$(error Missing required file $@)
 
@@ -987,7 +990,7 @@ $(gff3_file_abspath).csv: $(gff3_file_abspath)
 	gff32csv.R $<   >   $@.tmp && mv $@.tmp $@
 
 
-$(name)/data/gene_class.txt: $(data_dir)/reference/$(species)/gene_class.txt
+$(name)/data/gene_class.txt: $(data_dir)/reference/$(species)/$(refgeneclass_file)
 	cp $< $@.tmp && mv $@.tmp $@
 
 # file with chr\tchr_size
@@ -999,21 +1002,22 @@ $(reference_abspath).fai: $(reference_abspath)
 
 # automatically generated annot file
 # avoid generating file if it is in the reference directory
-ifeq ($(realpath $(data_dir)/reference/$(species)/gene.annot.tsv),)
-$(name)/data/gene.annot.tsv: $(gff3_file_abspath)
+#ifeq ($(realpath ,)
+$(data_dir)/reference/$(species)/$(refgeneannot_file): $(gff3_file_abspath)
 	irap_gff32annot --gff3 $< -s $(species) > $@.tmp && mv $@.tmp $@
-else
-$(name)/data/gene.annot.tsv: $(data_dir)/reference/$(species)/gene.annot.tsv
-	cp $< $@.tmp && mv $@.tmp $@
-endif
 
+$(name)/data/gene.annot.tsv: $(data_dir)/reference/$(species)/$(refgeneannot_file)
+	cp $< $@.tmp && mv $@.tmp $@
+#endif
 
 # collect genes, transcripts and exons lengths
 # generate only once
 $(gtf_file_abspath).lengths.Rdata: $(gtf_file_abspath)
 	irap_gtf2featlength --gtf $< -o $@.tmp && mv $@.tmp.Rdata $@
+
 $(name)/data/lengths.Rdata: $(gtf_file_abspath).lengths.Rdata
 	cp $< $@.tmp && mv $@.tmp $@
+
 # $(trans_file): 
 # 	$(call p_error,Missing trans_file = $(trans_file))
 
