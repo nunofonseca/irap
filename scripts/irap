@@ -108,8 +108,18 @@ file_exists=$(if  $(realpath $(1)),,$(call p_error,$(1) not found))
 
 check_param_ok=$(if $($(1)),$(info *	$(1)=$($(1))),$(error * Missing $(1)))
 
+
+# check  contrast name
 # 1 - param 2-param_name
 check_name=$(if $(shell echo $(1)|sed "s/[0-9]*//g"),,$(error * Invalid $(2) $(1)))
+
+
+# the library name should be different from the prefix of the fastq files
+# ex. of an invalid library name: lib1=lib1.fastq
+# 1=libname
+check_se_libname_ok=$(if $(subst $(1).fastq,,$($(1))),, $(error * Invalid libname $(1)))
+check_pe_libname_ok=$(if $(strip $(subst $(1)_2.fastq,,$(subst $(1)_1.fastq,,$($(1))))), ,$(error * Invalid libname $(1)))
+
 
 
 ################################################################################
@@ -324,13 +334,13 @@ refgeneannot_file=$(subst .gtf,,$(subst .gz,,$(gtf_file))).gene_annot.tsv
 ifdef se
  # check if file exists
  $(info *	se=$(se))
+ $(foreach l,$(se),$(call check_se_libname_ok,$(l)))
  $(foreach l,$(se),$(call check_param_ok,$(l)_rs))
  $(foreach l,$(se),$(call check_param_ok,$(l)_qual))
  ifile_given=1
 endif
 
 # PE files (libraries)
-# follow the same syntax as Abyss
 # lib=A B C
 # 
 # A=""
@@ -347,6 +357,7 @@ ifdef pe
  # for each lib
  rs_list=
  set_rs_list=$(eval rs_list+= $($(1)))
+ $(foreach l,$(pe),$(call check_pe_libname_ok,$(l)))
  $(foreach l,$(pe),$(call check_param_ok,$(l)_sd))
  $(foreach l,$(pe),$(call check_param_ok,$(l)_ins))
  $(foreach l,$(pe),$(call check_param_ok,$(l)_rs))
@@ -1322,6 +1333,33 @@ $(name)/$(mapper)/$(quant_method)/transcripts.rpkms.$(quant_norm_method).tsv: $(
 $(name)/$(mapper)/$(quant_method)/%.none.tsv:
 	$(call p_info,Quantification normalization disabled. Please set the quant_norm_method parameter if you do not want this behavior.)
 	@$(call empty_file,$@)
+
+#############
+# HTSeq
+#############
+
+# htseq1 rpkm per gene
+$(name)/$(mapper)/htseq1/genes.rpkm.htseq1.tsv: $(name)/$(mapper)/htseq1/genes.raw.htseq1.tsv $(feat_length)
+	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature gene --metric rpkm --out $@.tmp && mv $@.tmp $@
+
+# htseq1 rpkm per transcript
+$(name)/$(mapper)/htseq1/transcripts.rpkm.htseq1.tsv: $(name)/$(mapper)/htseq1/transcripts.raw.htseq1.tsv $(feat_length)
+	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature transcript --metric rpkm --out $@.tmp && mv $@.tmp $@
+
+# htseq1 rpkm per exon
+$(name)/$(mapper)/htseq1/exons.rpkm.htseq1.tsv: $(name)/$(mapper)/htseq1/exons.raw.htseq1.tsv $(feat_length)
+	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature exon --metric rpkm --out $@.tmp && mv $@.tmp $@
+
+# htseq2 rpkm per gene
+$(name)/$(mapper)/htseq2/genes.rpkm.htseq2.tsv: $(name)/$(mapper)/htseq2/genes.raw.htseq2.tsv $(feat_length)
+	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature gene --metric rpkm --out $@.tmp && mv $@.tmp $@
+
+# htseq2 rpkm per transcript
+$(name)/$(mapper)/htseq2/transcripts.rpkm.htseq2.tsv: $(name)/$(mapper)/htseq2/transcripts.raw.htseq2.tsv $(feat_length)
+	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature transcript --metric rpkm --out $@.tmp && mv $@.tmp $@
+# htseq2 rpkm per exons
+$(name)/$(mapper)/htseq2/exons.rpkm.htseq2.tsv: $(name)/$(mapper)/htseq2/exons.raw.htseq2.tsv $(feat_length)
+	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature exon --metric rpkm --out $@.tmp && mv $@.tmp $@
 
 #############
 # Cufflinks1
