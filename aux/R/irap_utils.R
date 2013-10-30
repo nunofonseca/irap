@@ -163,19 +163,20 @@ get.gene.length.from.gtf <- function(gtf,filter.biotype=NULL,length.mode="union.
 get.gene.length <- function(gene.id,gtf.data,mode="sum.exons",lim=+Inf,do.plot=FALSE) {
   library("intervals")
   #gtf.data <- gtf2
-  i <- Intervals(gtf.data[gtf.data$gene_id==gene.id,c("start","end")])
+  i <- Intervals(gtf.data[gtf.data$gene_id==gene.id  & gtf.data$feature=="exon",c("start","end")])
+  ne <- length(size(i))
   #
   res <- c()
   if ( mode != "sum.exons" ) {
     # a) reduce -> for gene length
     i <- reduce(i)
     si <- size(i)
-    res <- sum(si[si<lim])
+    res <- sum(si[si<lim])+length(si)
   } else {
     # b) interval_union
     # size(i)    
     si <- size(i)    
-    res <- sum(si[si<lim])    
+    res <- sum(si[si<lim])+ne 
   }
   if ( do.plot ) 
     plot(i)
@@ -200,8 +201,8 @@ get.transcript.length.from.gtf <- function(gtf,filter.biotype=NULL) {
 #
 get.transcript.length <-  function(transcript.id,gtf.data) {
   library("intervals")
-  i <- Intervals(gtf.data[gtf.data$transcript_id==transcript.id,c("start","end")])
-  sum(size(i))
+  i <- Intervals(gtf.data[gtf.data$transcript_id==transcript.id & gtf.data$feature=="exon",c("start","end")])
+  sum(size(i))+length(i)/2
 }
 
 # Given a matrix obtained from a gtf file returns a matrix with the length of the  exons of a given gene/transcript
@@ -213,7 +214,7 @@ get.exon.length.from.gtf <- function(gtf,filter.biotype=NULL) {
   }
   # compute the length for each exon
   gtf <- gtf[gtf$feature=="exon",]  
-  elen <- abs(gtf$start-gtf$end)
+  elen <- abs(gtf$start-gtf$end)+1
   gtf$elength <- elen
   gtf[,c("gene_id","transcript_id","exon_number","elength")]
 }
