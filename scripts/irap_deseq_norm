@@ -20,6 +20,18 @@
 #    $Id: 0.1.3 Nuno Fonseca Sat Dec 22 00:49:17 2012$
 # =========================================================
 
+suppressPackageStartupMessages(library("optparse"))
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+
+# specify our desired options in a list
+#
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+
 # normalize a matrix with counts using DESeq
 
 args <- commandArgs(trailingOnly=TRUE)
@@ -36,8 +48,7 @@ count_file <- args[1];# matrix with the counts
                       # ex. file1,file2;file3,file4
 #labels     <- args[5]
 
-data <- read.table(count_file,sep="\t",header=T)
-#annot <- read.table(annot_file,sep="\t",header=F)
+data <- read.tsv(count_file)
 conds <- colnames(data)[-1]
 
 library(DESeq)
@@ -52,7 +63,7 @@ cds <- estimateSizeFactors(cds)
 normalize=TRUE
 if (sum(is.na(sizeFactors(cds)))) { 
   normalize=FALSE
-  cat("WARNING: normalization failed")
+  pwarning("normalization failed")
 }
 #print(sizeFactors(cds))
 
