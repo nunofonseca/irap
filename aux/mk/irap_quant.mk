@@ -231,7 +231,6 @@ $(name)/$(mapper)/$(quant_method)/%xons.raw.cufflinks1_nd.tsv:
 	$(call p_info,Warning! Cufflinks produces FPKMS and does not provide counts. Generating empty file $@.)
 	@$(call empty_file,$@)
 
-
 # cufflinks2
 $(name)/$(mapper)/$(quant_method)/%.transcripts.raw.cufflinks2.tsv $(name)/$(mapper)/$(quant_method)/%.genes.raw.cufflinks2.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.isoforms.fpkm_tracking
 	$(call p_info,Warning! Cufflinks produces FPKMS and does not provide counts. Generating pseudo counts $@.)
@@ -300,68 +299,53 @@ $(name)/$(mapper)/$(quant_method)/$(name).assemblies.txt: $(foreach p,$(pe),$(na
 # HTSeq
 #*****************
 
-# HTSeq1
+# * HTSeq1
 # counts per gene
 $(name)/$(mapper)/htseq1/genes.raw.htseq1.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.genes.raw.$(quant_method).tsv) $(foreach s,$(se), $(name)/$(mapper)/$(quant_method)/$(s).se.genes.raw.$(quant_method).tsv)
 	irap_merge_tsv.sh $^  > $@.tmp && mv $@.tmp $@
-
-$(name)/$(mapper)/htseq1/genes.rpkm.htseq1.tsv: $(name)/$(mapper)/htseq1/genes.raw.htseq1.tsv $(feat_length)
-	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature gene --metric rpkm --out $@.tmp && mv $@.tmp $@
-
-# counts per exon
-$(name)/$(mapper)/htseq1/exons.raw.htseq1.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.exons.raw.$(quant_method).tsv) $(foreach s,$(se), $(name)/$(mapper)/$(quant_method)/$(s).se.exons.raw.$(quant_method).tsv)
-	irap_merge_tsv.sh $^  > $@.tmp && mv $@.tmp $@
-
-$(name)/$(mapper)/htseq1/exons.rpkm.htseq1.tsv: $(name)/$(mapper)/htseq1/exons.raw.htseq1.tsv $(feat_length)
-	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature exon --metric rpkm --out $@.tmp && mv $@.tmp $@
 
 # counts per transcript
 $(name)/$(mapper)/htseq1/transcripts.raw.htseq1.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se), $(name)/$(mapper)/$(quant_method)/$(s).se.transcripts.raw.$(quant_method).tsv)
 	irap_merge_tsv.sh $^  > $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/htseq1/transcripts.rpkm.htseq1.tsv: $(name)/$(mapper)/htseq1/transcripts.raw.htseq1.tsv $(feat_length)
-	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature transcript --metric rpkm --out $@.tmp && mv $@.tmp $@
+# counts per exon
+$(name)/$(mapper)/htseq1/exons.raw.htseq1.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.exons.raw.$(quant_method).tsv) $(foreach s,$(se), $(name)/$(mapper)/$(quant_method)/$(s).se.exons.raw.$(quant_method).tsv)
+	irap_merge_tsv.sh $^  > $@.tmp && mv $@.tmp $@
 
-# htseq bam file needs to be sorted by name
+
+## htseq bam file needs to be sorted by name
 $(name)/$(mapper)/htseq1/%.genes.raw.htseq1.tsv: $(name)/$(mapper)/%.hits.byname.bam $(gtf_file_abspath)
 	$(call run_htseq1,$<,$(gtf_file_abspath),$@,gene)
 
-# htseq bam file needs to be sorted by name
+## htseq bam file needs to be sorted by name
 $(name)/$(mapper)/htseq1/%.exons.raw.htseq1.tsv: $(name)/$(mapper)/%.hits.byname.bam $(gtf_file_abspath).exon_id.gtf
 	$(call run_htseq1,$<,$(gtf_file_abspath).exon_id.gtf,$@,exon)
 
-# htseq bam file needs to be sorted by name
+## htseq bam file needs to be sorted by name
 $(name)/$(mapper)/htseq1/%.transcripts.raw.htseq1.tsv: $(name)/$(mapper)/%.hits.byname.bam $(gtf_file_abspath)
 	$(call run_htseq1,$<,$(gtf_file_abspath),$@,transcript)
 
-# HTSeq2
+# * HTSeq2
+
 # counts per gene
 $(name)/$(mapper)/htseq2/genes.raw.htseq2.tsv: $(foreach p,$(pe), $(name)/$(mapper)/$(quant_method)/$(p).pe.genes.raw.htseq2.tsv) $(foreach s,$(se), $(name)/$(mapper)/$(quant_method)/$(s).se.genes.raw.$(quant_method).tsv)
 	irap_merge_tsv.sh $^  > $@.tmp && mv $@.tmp $@
-
-$(name)/$(mapper)/htseq2/genes.rpkm.htseq2.tsv: $(name)/$(mapper)/htseq2/genes.raw.htseq2.tsv $(feat_length)
-	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature gene --metric rpkm --out $@.tmp && mv $@.tmp $@
-# counts per exon
-$(name)/$(mapper)/htseq2/exons.raw.htseq2.tsv: $(foreach p, $(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.exons.raw.$(quant_method).tsv) $(foreach s,$(se), $(name)/$(mapper)/$(quant_method)/$(s).se.exons.raw.$(quant_method).tsv)
-	irap_merge_tsv.sh $^  > $@.tmp && mv $@.tmp $@
-
-$(name)/$(mapper)/htseq2/exons.rpkm.htseq2.tsv: $(name)/$(mapper)/htseq2/exons.raw.htseq2.tsv $(feat_length)
-	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature exon --metric rpkm --out $@.tmp && mv $@.tmp $@
 
 # counts per transcript
 $(name)/$(mapper)/htseq2/transcripts.raw.htseq2.tsv: $(foreach p,$(pe), $(name)/$(mapper)/$(quant_method)/$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se), $(name)/$(mapper)/$(quant_method)/$(s).se.transcripts.raw.$(quant_method).tsv)
 	irap_merge_tsv.sh $^  > $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/htseq2/transcripts.rpkm.htseq2.tsv: $(name)/$(mapper)/htseq2/transcripts.raw.htseq2.tsv $(feat_length)
-	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature transcript --metric rpkm --out $@.tmp && mv $@.tmp $@
+# counts per exon
+$(name)/$(mapper)/htseq2/exons.raw.htseq2.tsv: $(foreach p, $(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.exons.raw.$(quant_method).tsv) $(foreach s,$(se), $(name)/$(mapper)/$(quant_method)/$(s).se.exons.raw.$(quant_method).tsv)
+	irap_merge_tsv.sh $^  > $@.tmp && mv $@.tmp $@
 
-
+##
 $(name)/$(mapper)/htseq2/%.genes.raw.htseq2.tsv: $(name)/$(mapper)/%.hits.byname.bam $(gtf_file_abspath)
 	$(call run_htseq2,$<,$(gtf_file_abspath),$@,gene)
-
+##
 $(name)/$(mapper)/htseq2/%.exons.raw.htseq2.tsv: $(name)/$(mapper)/%.hits.byname.bam $(gtf_file_abspath).exon_id.gtf
 	$(call run_htseq2,$<,$(gtf_file_abspath).exon_id.gtf,$@,exon)
-
+##
 $(name)/$(mapper)/htseq2/%.transcripts.raw.htseq2.tsv: $(name)/$(mapper)/%.hits.byname.bam $(gtf_file_abspath)
 	$(call run_htseq2,$<,$(gtf_file_abspath),$@,transcript)
 
