@@ -16,7 +16,8 @@ fi
 mkdir -p $DIR
 pushd $DIR > /dev/null
 
-unzip -q -u $IRAP_DIR/aux/jbrowse.zip 
+rm -rf JBrowse-*
+unzip -q  -u -o $IRAP_DIR/aux/jbrowse.zip 
 #
 JBDIRS="bin docs img src"
 rm -rf $JBDIRS
@@ -26,6 +27,8 @@ if [ ! -e $JBROWSE_DIR ]; then
     exit 1
 fi
 pushd $JBROWSE_DIR > /dev/null
+# clean up before moving the new folders
+rm -rf ../plugins sample_data
 mv * ..
 popd >/dev/null
 # cleanup
@@ -46,7 +49,7 @@ menu=menu.html
 TTOPLEVEL=../
 
 if [ ! -e "$TTOPLEVEL$menu" ] ; then
-    echo "Error: $TTOPLEVEL$menu"  >&2
+    echo "Error: file $TTOPLEVEL$menu not found"  >&2
     exit 1
 fi
 
