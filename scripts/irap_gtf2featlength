@@ -42,7 +42,7 @@ option_list <- list(
 #  make_option(c("-v", "--verbose"), action="store_true", default=TRUE, help="Print extra output [default]"),
 #  make_option(c("-q", "--quietly"), action="store_false", default=FALSE,dest="verbose", help="Print little output"),
   make_option(c("-g", "--gtf"), type="character", dest="gtf_file", default=NULL,help="GTF file"),
-  make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name prefix. A TSV file will be created containing a matrix with two columns: 1st col containds the name  of the features and the 2nd column the respective length.")
+  make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name prefix. A RData file will be created containing several matrices (for genes, transcripts, and exons) with two columns: 1st col containds the name  of the features and the 2nd column the respective length.")
 )
 
 mandatory <- c("gtf_file","out")
