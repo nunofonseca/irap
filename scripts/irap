@@ -1318,47 +1318,63 @@ phony_targets+= $(quant_norm_method)_nquant
 
 $(quant_norm_method)_nquant: $(quant_method)_quant $($(quant_norm_method)_nquant_files)
 
-$(name)/$(mapper)/$(quant_method)/genes.rpkms.$(quant_norm_method).tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.genes.rpkms.$(quant_norm_method).tsv) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.genes.rpkms.$(quant_norm_method).tsv) 
+# RPKMs
+# default rule
+$(name)/$(mapper)/$(quant_method)/genes.rpkms.%.tsv: $(name)/$(mapper)/$(quant_method)/genes.nlib.%.tsv $(feat_length)
+	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature gene --metric rpkm --out $@.tmp && mv $@.tmp $@	
+
+$(name)/$(mapper)/$(quant_method)/exons.rpkms.%.tsv: $(name)/$(mapper)/$(quant_method)/exons.nlib.%.tsv $(feat_length)
+	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature exon --metric rpkm --out $@.tmp && mv $@.tmp $@	
+
+$(name)/$(mapper)/$(quant_method)/transcripts.rpkms.%.tsv: $(name)/$(mapper)/$(quant_method)/transcripts.nlib.%.tsv $(feat_length)
+	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature transcript --metric rpkm --out $@.tmp && mv $@.tmp $@	
+
+# special rules
+# cufflinks*
+$(name)/$(mapper)/$(quant_method)/genes.rpkms.cufflinks%.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.genes.rpkms.$(quant_method).tsv) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.genes.rpkms.$(quant_method).tsv) 
+	$(call merge_tsv,$(quant_method)) $^  > $@.tmp && mv $@.tmp $@
+# flux-capacitor
+$(name)/$(mapper)/$(quant_method)/genes.rpkms.flux%.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.genes.rpkms.$(quant_method).tsv) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.genes.rpkms.$(quant_method).tsv) 
 	$(call merge_tsv,$(quant_method)) $^  > $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/$(quant_method)/exons.rpkms.$(quant_norm_method).tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.exons.rpkms.$(quant_norm_method).tsv) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.exons.rpkms.$(quant_norm_method).tsv) 
-	$(call merge_tsv,$(quant_method)) $^  | sed "s/^Gene/Exon/" > $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/$(quant_method)/transcripts.rpkms.$(quant_norm_method).tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.transcripts.rpkms.$(quant_norm_method).tsv) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.transcripts.rpkms.$(quant_norm_method).tsv) 
-	$(call merge_tsv,$(quant_method)) $^  | sed "s/^Gene/Transcript/"  > $@.tmp && mv $@.tmp $@
-
-
-###########
-# Disabled
-$(name)/$(mapper)/$(quant_method)/%.none.tsv:
+#################################################################
+# Disabled: just copy the file with the raw quantification values
+$(name)/$(mapper)/$(quant_method)/%.nlib.none.tsv: $(name)/$(mapper)/$(quant_method)/%.raw.$(quant_method).tsv 
 	$(call p_info,Quantification normalization disabled. Please set the quant_norm_method parameter if you do not want this behavior.)
-	@$(call empty_file,$@)
+	cp $< $@
 
 #############
 # HTSeq
 #############
 
 # htseq1 rpkm per gene
-$(name)/$(mapper)/htseq1/genes.rpkm.htseq1.tsv: $(name)/$(mapper)/htseq1/genes.raw.htseq1.tsv $(feat_length)
+$(name)/$(mapper)/htseq1/genes.rpkms.htseq1.tsv: $(name)/$(mapper)/htseq1/genes.raw.htseq1.tsv $(feat_length)
+	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature gene --metric rpkm --out $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/htseq1/genes.rpkms.%.tsv: $(name)/$(mapper)/htseq1/genes.nlib.%.tsv $(feat_length)
 	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature gene --metric rpkm --out $@.tmp && mv $@.tmp $@
 
 # htseq1 rpkm per transcript
-$(name)/$(mapper)/htseq1/transcripts.rpkm.htseq1.tsv: $(name)/$(mapper)/htseq1/transcripts.raw.htseq1.tsv $(feat_length)
+$(name)/$(mapper)/htseq1/transcripts.rpkms.htseq1.tsv: $(name)/$(mapper)/htseq1/transcripts.raw.htseq1.tsv $(feat_length)
 	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature transcript --metric rpkm --out $@.tmp && mv $@.tmp $@
 
 # htseq1 rpkm per exon
-$(name)/$(mapper)/htseq1/exons.rpkm.htseq1.tsv: $(name)/$(mapper)/htseq1/exons.raw.htseq1.tsv $(feat_length)
+$(name)/$(mapper)/htseq1/exons.rpkms.htseq1.tsv: $(name)/$(mapper)/htseq1/exons.raw.htseq1.tsv $(feat_length)
 	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature exon --metric rpkm --out $@.tmp && mv $@.tmp $@
 
+
 # htseq2 rpkm per gene
-$(name)/$(mapper)/htseq2/genes.rpkm.htseq2.tsv: $(name)/$(mapper)/htseq2/genes.raw.htseq2.tsv $(feat_length)
+$(name)/$(mapper)/htseq2/genes.rpkms.htseq2.tsv: $(name)/$(mapper)/htseq2/genes.raw.htseq2.tsv $(feat_length)
 	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature gene --metric rpkm --out $@.tmp && mv $@.tmp $@
 
+
 # htseq2 rpkm per transcript
-$(name)/$(mapper)/htseq2/transcripts.rpkm.htseq2.tsv: $(name)/$(mapper)/htseq2/transcripts.raw.htseq2.tsv $(feat_length)
+$(name)/$(mapper)/htseq2/transcripts.rpkms.htseq2.tsv: $(name)/$(mapper)/htseq2/transcripts.raw.htseq2.tsv $(feat_length)
 	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature transcript --metric rpkm --out $@.tmp && mv $@.tmp $@
+
 # htseq2 rpkm per exons
-$(name)/$(mapper)/htseq2/exons.rpkm.htseq2.tsv: $(name)/$(mapper)/htseq2/exons.raw.htseq2.tsv $(feat_length)
+$(name)/$(mapper)/htseq2/exons.rpkms.htseq2.tsv: $(name)/$(mapper)/htseq2/exons.raw.htseq2.tsv $(feat_length)
 	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature exon --metric rpkm --out $@.tmp && mv $@.tmp $@
 
 #############
@@ -1428,17 +1444,13 @@ $(name)/$(mapper)/$(quant_method)/%.nlib.cufflinks2_nd.tsv:
 # Note: counts of technical replicates  have to be summed up into a single column
 $(name)/$(mapper)/$(quant_method)/genes.nlib.deseq.tsv: $(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv
 	irap_deseq_norm $<  > $@.tmp && mv $@.tmp $@
+
 $(name)/$(mapper)/$(quant_method)/transcripts.nlib.deseq.tsv: $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv
 	irap_deseq_norm $<  > $@.tmp && mv $@.tmp $@
 
 $(name)/$(mapper)/$(quant_method)/exons.nlib.deseq.tsv: $(name)/$(mapper)/$(quant_method)/exons.raw.$(quant_method).tsv
 	irap_deseq_norm $<  > $@.tmp && mv $@.tmp $@
 
-
-$(name)/$(mapper)/$(quant_method)/%.rpkms.deseq.tsv:  
-	$(call p_info,WIP)
-	@$(call empty_file,$@)
-	@touch $@
 
 ##################################
 # EDGER
