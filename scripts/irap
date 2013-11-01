@@ -1333,10 +1333,24 @@ $(name)/$(mapper)/$(quant_method)/transcripts.rpkms.%.tsv: $(name)/$(mapper)/$(q
 # cufflinks*
 $(name)/$(mapper)/$(quant_method)/genes.rpkms.cufflinks%.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.genes.rpkms.$(quant_method).tsv) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.genes.rpkms.$(quant_method).tsv) 
 	$(call merge_tsv,$(quant_method)) $^  > $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/$(quant_method)/transcripts.rpkms.cufflinks%.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.transcripts.rpkms.$(quant_method).tsv) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.transcripts.rpkms.$(quant_method).tsv) 
+	$(call merge_tsv,$(quant_method)) $^  > $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/$(quant_method)/exons.rpkms.cufflinks%.tsv:
+	$(call p_info, Warning! Cufflinks does not produce quantification at exon level. Generating empty file $@.)
+	@$(call empty_file,$@)
+
 # flux-capacitor
 $(name)/$(mapper)/$(quant_method)/genes.rpkms.flux%.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.genes.rpkms.$(quant_method).tsv) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.genes.rpkms.$(quant_method).tsv) 
 	$(call merge_tsv,$(quant_method)) $^  > $@.tmp && mv $@.tmp $@
 
+$(name)/$(mapper)/$(quant_method)/transcripts.rpkms.flux%.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.transcripts.rpkms.$(quant_method).tsv) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.transcripts.rpkms.$(quant_method).tsv) 
+	$(call merge_tsv,$(quant_method)) $^  > $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/$(quant_method)/exons.rpkms.flux%.tsv: 
+	$(call p_info, Warning! Flux-capacitor does not produce quantification at exon level. Generating empty file $@.)
+	@$(call empty_file,$@)
 
 #################################################################
 # Disabled: just copy the file with the raw quantification values
