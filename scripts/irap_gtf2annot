@@ -1,0 +1,152 @@
+#!/usr/bin/env Rscript
+# =========================================================
+# Copyright 2012-2013,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#    $Id: 0.1.1$
+# =========================================================
+
+###############################################################
+suppressPackageStartupMessages(library("optparse"))
+suppressPackageStartupMessages(library("optparse"))
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+
+# specify our desired options in a list
+#
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+pdebug.enabled <- TRUE
+
+#library(multicore)
+
+#######################
+usage <- "irap_gtf2annot --species species --gtf file"
+option_list <- list(
+                    make_option(c("-s", "--species"),type="character",dest="species",default=NA,help="Species [default %default]"),
+                    make_option(c("-i", "--gtf"), type="character", dest="gtf_file", default="",help="GTF file")
+)
+
+type <- "gene"
+filenames <- c("gtf_file") ;#filenames that must exist (if defined)
+# check multiple options values
+multiple.options = list()
+mandatory <- c("gtf_file")
+opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
+
+
+gtf.table <- NULL
+gtf.table <- load.gtf(opt$gtf)
+#
+
+# 
+gtf.table <- gtf.table[gtf.table$feature=="CDS",]
+
+
+# genes
+gene.ids <- unique(gtf.table$gene_id)
+
+# filter by type
+# get name from attributes
+# trim \.[1-9]*
+#gtf.table[,"name"]<-gsub("\\.[0-9]+","",gtf.table[,"gene_name"])
+
+# locus
+#gtf.table[,"locus"] <- paste(gtf.table$seqid,":",gtf.table$start,"..",gtf.table$end,sep="")
+
+
+# collect the biotype for each gene
+get.biotype <- function(gene.id,gtf) {
+  paste(unique(gtf$gene_biotype[gtf$gene_id==gene.id]),collapse=";")
+}
+biotypes <- sapply(gene.ids,get.biotype,gtf.table)
+names(biotypes) <- gene.ids
+
+# start-end
+get.gene.start <- function(gene.id,gtf) {
+  min(gtf$start[gtf$gene_id==gene.id])
+}
+get.gene.end <- function(gene.id,gtf) {
+  max(gtf$end[gtf$gene_id==gene.id])
+}
+get.chr <- function(gene.id,gtf) {
+  gtf$seqid[gtf$gene_id==gene.id][1]
+}
+get.gene.name <- function(gene.id,gtf) {
+  gsub("\\.[0-9]+","",gtf.table[gtf$gene_id==gene.id,"gene_name"])[1]
+}
+start<- sapply(gene.ids,get.gene.start,gtf.table)
+end<- sapply(gene.ids,get.gene.end,gtf.table)
+chr<- sapply(gene.ids,get.chr,gtf.table)
+names(start) <- gene.ids
+names(end) <- gene.ids
+name.v <- sapply(gene.ids,get.gene.name,gtf.table)
+
+r.table <- data.frame(ID=gene.ids,
+                      locus=paste(chr,":",start,"..",end,sep=""),
+                      source=biotypes,
+                      Name=name.v)
+rownames(r.table) <- gene.ids
+
+# Ontology ids
+dbs <- species2dbs(opt$species)
+dbs <- species2dbs("human")
+pdebug("species2dbs complete")
+pdebug("dbs=",dbs)
+if( sum(is.na(dbs))==1 && !is.vector(dbs) ) {
+  r.table[,"GO"] <- NA
+                                        #  r.table[,"Pfam"] <- NA
+  r.table[,"lname"] <- NA
+  r.table[,"GOterm"] <- NA
+  r.table[,"KEGG"] <- NA
+} else {
+  if ( sum(is.na(dbs))>0 ) {
+    pwarning("species DB not found")
+                                        # empty cols
+    r.table[,"GO"] <- NA
+                                        #  r.table[,"Pfam"] <- NA
+    r.table[,"lname"] <- NA
+    r.table[,"GOterm"] <- NA
+    r.table[,"KEGG"] <- NA
+  } else {
+    pdebug("species DB found")
+    r.table[,"egi"] <- sapply(as.character(r.table[,"ID"]),annot.get.egi,dbs)
+    pdebug("Entrez gene identifiers collected")
+    # GO
+    r.table[,"GO"] <- sapply(r.table[,"egi"],annot.get.go,dbs)
+    pdebug("GO identfiers collected")
+    r.table[,"GOterm"] <- sapply(r.table[,"egi"],annot.get.go.term,dbs)
+    pdebug("GO terms collected")
+    r.table[,"lname"] <- sapply(r.table[,"egi"],annot.get.lname,dbs)
+    pdebug("Gene (long) names collected")
+#  r.table[,"Pfam"] <- sapply(r.table[,"egi"],annot.get.pfam,dbs)
+    
+    r.table[,"KEGG"] <- sapply(r.table[,"egi"],annot.get.kegg,dbs)
+    pdebug("KEGG ids collected")
+  }
+}
+#
+#save.image()
+cols <- c("ID","Name","locus","source","lname","GO","GOterm","KEGG")
+ret <- write.tsv(file=stdout(),x=r.table[,cols])
+q(status=0)
+
+
