@@ -325,7 +325,7 @@ colnames(species2db.m)<-c("db","species")
 #
 
 species2dbs <- function(species.name) {
-  library("GO.db")
+  suppressPackageStartupMessages(library("GO.db"))
 
   if (is.na(species.name) || is.null(species.name)) {
     return(NA);
