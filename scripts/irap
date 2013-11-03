@@ -1014,8 +1014,9 @@ $(reference_abspath).fai: $(reference_abspath)
 # automatically generated annot file
 # avoid generating file if it is in the reference directory
 #ifeq ($(realpath ,)
-$(data_dir)/reference/$(species)/$(refgeneannot_file): $(gff3_file_abspath)
-	irap_gff32annot --gff3 $< -s $(species) > $@.tmp && mv $@.tmp $@
+$(data_dir)/reference/$(species)/$(refgeneannot_file): $(gtf_file_abspath)
+	irap_gtf2annot --gtf $< -s $(species) > $@.tmp && mv $@.tmp $@
+
 
 $(name)/data/gene.annot.tsv: $(data_dir)/reference/$(species)/$(refgeneannot_file)
 	cp $< $@.tmp && mv $@.tmp $@
