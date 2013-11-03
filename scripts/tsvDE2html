@@ -34,7 +34,7 @@ if ( IRAP.DIR == "" ) {
 #
 source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
 html.template <- get.path2template("tsvDE2html")
-pdebug.enabled <- TRUE
+pdebug.enabled <- FALSE
 
 #######################
 usage <- "tsvDE2html --tsv file [options]"
@@ -66,6 +66,7 @@ opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filena
 
 # ensure that the path include / in the end
 opt$browser <- paste(gsub("/$","",opt$browser),"/",sep="")
+pdebug.enabled <- opt$debug
 #pdebug(opt)
   
 opt$`cut-off` <- as.numeric(opt$`cut-off`)
@@ -412,18 +413,19 @@ if ( "source" %in% colnames(table) ) {
   }
   sources <- levels(table$source)
   pdebug(sources)
-  pseudogenes <- grep("pseudogene",sources,value=T)
-  pseudogenes.filt <- sapply(table$source,`%in%`,pseudogenes)
-  pseudogenes.filt2 <- sapply(uncut.table$source,`%in%`,pseudogenes)
-  if (length(pseudogenes.filt)>0) {
-    pdebug(sum(pseudogenes.filt))
+  grep.w <- function(target,pat) {
+    grep(pat,target)
   }
+  pseudogenes <- c("pseudogenes")
+  pseudogenes.filt <- grepl("pseudogenes",as.character(table$source))
+  pseudogenes.filt2 <- grepl("pseudogenes",as.character(uncut.table$source))
+  #pdebug(sum(pseudogenes.filt))
   protein_coding <- c("protein_coding")
-  protein_coding.filt <- sapply(table$source,`%in%`,protein_coding)
-  protein_coding.filt2 <- sapply(uncut.table$source,`%in%`,protein_coding)
-  xRNA <- grep("RNA$",sources,value=T)
-  xRNA.filt <- sapply(table$source,`%in%`,xRNA)
-  xRNA.filt2 <- sapply(uncut.table$source,`%in%`,xRNA)
+  protein_coding.filt <- grepl("protein_coding",as.character(table$source))
+  protein_coding.filt2 <- grepl("protein_coding",as.character(uncut.table$source))
+  xRNA <- c("RNA")
+  xRNA.filt <- grepl("RNA",table$source)
+  xRNA.filt2 <- grepl("RNA",uncut.table$source)
 
   filt.groups.def <- list(
     all,
@@ -503,7 +505,7 @@ if ( "source" %in% colnames(table) ) {
     uncut.table <- uncut.table.orig
     if ( filt.name!="all" ) {
       uncut.table <- uncut.table[filt.groups.uncut[[filt.name]],]
-      if ( length(filt.groups[[filt.name]])>0 ) {
+      if ( sum(filt.groups[[filt.name]])>0 ) {
         table.html <- table[filt.groups[[filt.name]],fields$cols2sel]
         table.tsv <- table.tsv.orig[filt.groups[[filt.name]],fields$cols2tsv]
       } else { # empty table
