@@ -30,11 +30,11 @@ if ( IRAP.DIR == "" ) {
   q(status=1)
 }
 
-library(DESeq)
+suppressPackageStartupMessages(library(DESeq))
 # specify our desired options in a list
 #
 source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
-pdebug.enabled <- TRUE
+pdebug.enabled <- FALSE
 
 # htseq
 # tsvGE2html -f gene -s homo_sapiens  -i test_files/htseq/genes.raw.htseq2.tsv  -x 0 -t "TITLE" -a annot.file --css css.file -o 
@@ -82,7 +82,7 @@ fields <- list(
 
 # ensure that the path include / in the end
 opt$browser <- paste(gsub("/$","",opt$browser),"/",sep="")
-pdebug(opt)
+pdebug.enabled <- opt$debug
 
 html.template <- get.path2template(paste("tsvGE2html_",opt$metric,sep=""))
 ############
@@ -141,8 +141,8 @@ table <- read.tsv(opt$tsv_file)
 pdebug("data loaded=",nrow(table)," rows ",ncol(table)," cols")
 
 if (is.irap.empty(table)) {
-  perror("Warning: ignoring 'empty' input file")
-  q(status=0)
+  perror("'empty' input file: ",opt$tsv_file)
+  q(status=1)
 }
 
 html.cols2sel <- colnames(table)
@@ -176,16 +176,19 @@ if ( "source" %in% colnames(table) ) {
   #  html filename 
   sources <- levels(table$source)
   pdebug(sources)
-  pseudogenes <- grep("pseudogene",sources,value=T)
-  pseudogenes.filt <- sapply(table$source,`%in%`,pseudogenes)
-  pseudogenes.filt2 <- sapply(uncut.table$source,`%in%`,pseudogenes)
+  grep.w <- function(target,pat) {
+    grep(pat,target)
+  }
+  pseudogenes <- c("pseudogenes")
+  pseudogenes.filt <- grepl("pseudogenes",as.character(table$source))
+  pseudogenes.filt2 <- grepl("pseudogenes",as.character(uncut.table$source))
   #pdebug(sum(pseudogenes.filt))
   protein_coding <- c("protein_coding")
-  protein_coding.filt <- sapply(table$source,`%in%`,protein_coding)
-  protein_coding.filt2 <- sapply(uncut.table$source,`%in%`,protein_coding)
-  xRNA <- grep("RNA$",sources,value=T)
-  xRNA.filt <- sapply(table$source,`%in%`,xRNA)
-  xRNA.filt2 <- sapply(uncut.table$source,`%in%`,xRNA)
+  protein_coding.filt <- grepl("protein_coding",as.character(table$source))
+  protein_coding.filt2 <- grepl("protein_coding",as.character(uncut.table$source))
+  xRNA <- c("RNA")
+  xRNA.filt <- grepl("RNA",table$source)
+  xRNA.filt2 <- grepl("RNA",uncut.table$source)
 
   filt.groups.def <- list(
     all,
@@ -305,7 +308,7 @@ if ( "source" %in% colnames(table) ) {
     if ( filt.name!="all" ) {
       #save.image()
       uncut.table <- uncut.table[filt.groups.uncut[[filt.name]],]
-      if ( length(filt.groups[[filt.name]])==0 ) {
+      if ( sum(filt.groups[[filt.name]])==0 ) {
         tsv.file<-""
         brew(get.path2template("not_enough_data"),o.html.file)  
       } else {
