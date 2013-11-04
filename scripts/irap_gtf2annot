@@ -59,7 +59,7 @@ gtf.table <- load.gtf(opt$gtf)
 # 
 gtf.table <- gtf.table[gtf.table$feature=="CDS",]
 
-
+irap.assert(nrow(gtf.table)>0,"No CDS features found in GTF file")
 # genes
 gene.ids <- unique(gtf.table$gene_id)
 
