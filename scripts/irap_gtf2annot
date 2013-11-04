@@ -63,14 +63,6 @@ gtf.table <- gtf.table[gtf.table$feature=="CDS",]
 # genes
 gene.ids <- unique(gtf.table$gene_id)
 
-# filter by type
-# get name from attributes
-# trim \.[1-9]*
-#gtf.table[,"name"]<-gsub("\\.[0-9]+","",gtf.table[,"gene_name"])
-
-# locus
-#gtf.table[,"locus"] <- paste(gtf.table$seqid,":",gtf.table$start,"..",gtf.table$end,sep="")
-
 
 # collect the biotype for each gene
 get.biotype <- function(gene.id,gtf) {
