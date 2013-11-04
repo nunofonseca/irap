@@ -23,7 +23,6 @@
 
 ###############################################################
 suppressPackageStartupMessages(library("optparse"))
-suppressPackageStartupMessages(library("optparse"))
 
 IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
 if ( IRAP.DIR == "" ) {
@@ -108,7 +107,6 @@ rownames(r.table) <- gene.ids
 
 # Ontology ids
 dbs <- species2dbs(opt$species)
-dbs <- species2dbs("human")
 pdebug("species2dbs complete")
 pdebug("dbs=",dbs)
 if( sum(is.na(dbs))==1 && !is.vector(dbs) ) {
