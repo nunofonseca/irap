@@ -367,21 +367,47 @@ species2dbs <- function(species.name) {
       symbol.db <- org.Mm.egSYMBOL
       ensembl.db <- org.Mm.egENSEMBL
       kegg.db <- org.Mm.egPATH
-    } else  if ( n.species == "ecoli" ||
-       n.species == "e coli" ||
-       n.species == "ecK" ) {
-    species <- "ecoli 12"
-    library("org.EcK12.eg.db")
-    go.db <- org.EcK12.egGO      
-    pfam.db <- org.EcK12.egPFAM
-    lgn.db <- org.EcK12.egGENENAME
-    symbol.db <- org.EcK12.egSYMBOL
-    ensembl.db <- org.EcK12.egENSEMBL
-    kegg.db <- org.EcK12.egPATH
-  } else {
-    pwarning("species2dbs: Unable to get annotation for species ",n.species,".")
-    return(NA);
-  }
+    } else  if (
+      regexpr("^ecoli.*",n.species,ignore.case=T,perl=T)!=-1 ||
+      regexpr("^e.coli.*",n.species,ignore.case=T,perl=T)!=-1 ||      
+      n.species == "ecK" ) {
+      species <- "EcK12"
+      library("org.EcK12.eg.db")
+      go.db <- org.EcK12.egGO
+      # how to get the entrez ids from the ensembl gene id?
+      pfam.db <- NA
+      lgn.db <- org.EcK12.egGENENAME
+      symbol.db <- org.EcK12.egSYMBOL
+      ensembl.db <- NA
+      kegg.db <- org.EcK12.egPATH
+    } else  if (
+      regexpr("^chicken.*",n.species,ignore.case=T,perl=T)!=-1 ||
+      regexpr("^Gg.*",n.species,ignore.case=T,perl=T)!=-1 
+      ) {
+      species <- "Chicken"
+      library('org.Gg.eg.db')
+      go.db <- org.Gg.egGO
+      pfam.db <- org.Gg.egPFAM
+      lgn.db <- org.Gg.egGENENAME
+      symbol.db <- org.Gg.egSYMBOL
+      ensembl.db <- org.Gg.egENSEMBL
+      kegg.db <- org.Gg.egPATH
+    } else  if (
+      regexpr("^pig.*",n.species,ignore.case=T,perl=T)!=-1 ||
+      regexpr("^Ss.*",n.species,ignore.case=T,perl=T)!=-1 
+      ) {
+      species <- "Pig"
+      library('org.Ss.eg.db')
+      go.db <- org.Ss.egGO
+      pfam.db <- NA
+      lgn.db <- org.Ss.egGENENAME
+      symbol.db <- org.Ss.egSYMBOL
+      ensembl.db <- NA
+      kegg.db <- org.Ss.egPATH
+    } else {
+      pwarning("species2dbs: Unable to get annotation for species ",n.species,".")
+      return(NA);
+    }
   # other species
   # Add as needed
   return(list("n.species"=n.species,
@@ -418,8 +444,6 @@ annot.expand.fields <- function(annot.table) {
 # entrez gene identifier
 annot.get.egi <- function(gid,dbs) {
   library("GO.db")
-
-
   db <- dbs$symbol.db
   egi <- revmap(db)[[gid]]
   #pdebug(gid,"---",egi)
