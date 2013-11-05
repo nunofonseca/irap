@@ -108,11 +108,10 @@ if( sum(is.na(dbs))==1 && !is.vector(dbs) ) {
   r.table[,"GOterm"] <- NA
   r.table[,"KEGG"] <- NA
 } else {
+  # Only works with ensembl ids and when the org.* package has a mapping between ensembl ids and entrez ids
   if ( sum(is.na(dbs))>0 ) {
-    pwarning("species DB not found")
-                                        # empty cols
+    pwarning("species DB information insufficient")
     r.table[,"GO"] <- NA
-                                        #  r.table[,"Pfam"] <- NA
     r.table[,"lname"] <- NA
     r.table[,"GOterm"] <- NA
     r.table[,"KEGG"] <- NA
@@ -120,7 +119,7 @@ if( sum(is.na(dbs))==1 && !is.vector(dbs) ) {
     pdebug("species DB found")
     r.table[,"egi"] <- sapply(as.character(r.table[,"ID"]),annot.get.egi,dbs)
     pdebug("Entrez gene identifiers collected")
-    # GO
+                                        # GO
     r.table[,"GO"] <- sapply(r.table[,"egi"],annot.get.go,dbs)
     pdebug("GO identfiers collected")
     r.table[,"GOterm"] <- sapply(r.table[,"egi"],annot.get.go.term,dbs)
@@ -128,7 +127,6 @@ if( sum(is.na(dbs))==1 && !is.vector(dbs) ) {
     r.table[,"lname"] <- sapply(r.table[,"egi"],annot.get.lname,dbs)
     pdebug("Gene (long) names collected")
 #  r.table[,"Pfam"] <- sapply(r.table[,"egi"],annot.get.pfam,dbs)
-    
     r.table[,"KEGG"] <- sapply(r.table[,"egi"],annot.get.kegg,dbs)
     pdebug("KEGG ids collected")
   }
