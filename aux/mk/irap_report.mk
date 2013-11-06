@@ -180,7 +180,8 @@ $(name)/report/mapping/comparison.html: $(call only_existing_files,$(foreach m,$
 
 # detailed info per bam
 $(name)/report/mapping/$(mapper)/%/index.html: FORCE
-	bam_report.R $(name)/$(mapper)/$(call bam_file_for_lib,$*) $(@D) "$(call libname2fastq,$*)"
+#	bam_report.R $(name)/$(mapper)/$(call bam_file_for_lib,$*) $(@D) "$(call libname2fastq,$*)"
+	bam_report.R --bam $(name)/$(mapper)/$(call bam_file_for_lib,$*) -d $(@D) --fastq_files "$(call libname2fastq,$*)" --cores $(max_threads)
 
 ########################
 phony_targets+=quant_report quant_report_files

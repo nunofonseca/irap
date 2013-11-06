@@ -21,21 +21,54 @@ if ( IRAP.DIR == "" ) {
 # specify our desired options in a list
 #
 source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
-pdebug.enabled <- TRUE
-
-library(R2HTML)
-library(emBAM)
-
-options("cores"=multicore:::detectCores())
+pdebug.enabled <- FALSE
 
 
-args <- commandArgs(trailingOnly=TRUE)
-bam.file <- args[1]
+# 
+usage <- "bam_report.R -b|--bam  bam_file [--htmldir -d  directory] [--fastq_files | -f fastq_file(s)] [-c|--cores num_cores]"
+option_list <- list(
+  make_option(c("-b", "--bam"), type="character", dest="bam_file", default=NULL,help="BAM file name"),
+  make_option(c("-d", "--htmldir"), type="character", dest="htmldir", default="",help="htmldir ([default %default]"),
+  make_option(c("-f", "--fastq"), type="character", dest="fastq_files",default="",help="fastq files ([default %default]"),
+  make_option(c("-c", "--cores"), type="character",default="3",dest="num_cores",help="Number of cores to use ([default %default])"),
+  make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode")
+)
+
+mandatory <- c("bam_file")
+filenames <- c("bam_file") ;#filenames that must exist (if defined)
+opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,mandatory=mandatory)
+# ensure that the path include / in the end
+opt$htmldir <- paste(gsub("/$","",opt$htmldir),"/",sep="")
+pdebug.enabled <- opt$debug
+
+suppressPackageStartupMessages(library(R2HTML))
+suppressPackageStartupMessages(library(emBAM))
+
+bam.file <- opt$bam_file
 # optional
-html.dir <- args[2]
+html.dir <- opt$htmldir
 # optional (if PE then provide the two)
-fastq.files <- args[3]
+fastq.files <- opt$fastq_files
 
+tryCatch(num.cores <- as.integer(as.numeric(opt$num_cores)),warning=
+         function(w) {
+           perror("Invalid number of cores ",opt$num_cores)
+           q(status=3)    
+       }
+)
+if (num.cores<1) {
+  perror("Invalid number of cores ",opt$num_cores)
+  q(status=3)    
+}
+
+irap.assert(num.cores>0)
+
+if ( num.cores>multicore:::detectCores()) {
+  num.cores <- multicore:::detectCores()
+  pwarning("The number of cores to use exceeds the cores available. Reducing the limit to ",multicore:::detectCores())
+}
+
+options("cores"=num.cores)
 
 # TODO: check arguments
 is.wholenumber <- function(x, tol = .Machine$double.eps^0.5)  abs(x - round(x)) < tol 
