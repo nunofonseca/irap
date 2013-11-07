@@ -1011,15 +1011,15 @@ $(name)/data/chr_sizes.txt: $(reference_abspath)
 $(reference_abspath).fai: $(reference_abspath)
 	samtools faidx $<
 
+#ifeq ($(realpath ,)
 # automatically generated annot file
 # avoid generating file if it is in the reference directory
-#ifeq ($(realpath ,)
+# Create a Rdata file to speedup loading the matrix 
 $(data_dir)/reference/$(species)/$(refgeneannot_file): $(gtf_file_abspath)
-	irap_gtf2annot --gtf $< -s $(species) > $@.tmp && mv $@.tmp $@
-
+	irap_gtf2annot --gtf $< -s $(species) --cores $(max_threads) -o $@.tmp && mv $@.tmp $@ && mv $@.tmp.Rdata $@.Rdata
 
 $(name)/data/gene.annot.tsv: $(data_dir)/reference/$(species)/$(refgeneannot_file)
-	cp $< $@.tmp && mv $@.tmp $@
+	cp $< $@.tmp && mv $@.tmp $@ && cp $@.Rdata $@.Rdata.tmp && mv $@.Rdata.tmp $@.Rdata 
 #endif
 
 # collect genes, transcripts and exons lengths

@@ -35,13 +35,17 @@ if ( IRAP.DIR == "" ) {
 source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
 pdebug.enabled <- TRUE
 
-#library(multicore)
+library(multicore)
 
 #######################
-usage <- "irap_gtf2annot --species species --gtf file"
+usage <- "irap_gtf2annot --species species --gtf file [-o outfile] [--rdata -r]"
 option_list <- list(
-                    make_option(c("-s", "--species"),type="character",dest="species",default=NA,help="Species [default %default]"),
-                    make_option(c("-i", "--gtf"), type="character", dest="gtf_file", default="",help="GTF file")
+  make_option(c("-o", "--out"),type="character",dest="out_file",default="",help="Output file [default %default]"),
+  make_option(c("-s", "--species"),type="character",dest="species",default=NA,help="Species [default %default]"),
+  make_option(c("-c", "--cores"), type="character",default="2",dest="num_cores",help="Number of cores to use ([default %default])"),
+  make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
+  make_option(c("-r","--rdata"),action="store_true",dest="gen_rdata",default=FALSE,help="Generate an rdata file"),
+  make_option(c("-i", "--gtf"), type="character", dest="gtf_file", default="",help="GTF file")
 )
 
 type <- "gene"
@@ -51,26 +55,49 @@ multiple.options = list()
 mandatory <- c("gtf_file")
 opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
 
+tryCatch(num.cores <- as.integer(as.numeric(opt$num_cores)),warning=
+         function(w) {
+           perror("Invalid number of cores ",opt$num_cores)
+           q(status=3)    
+       }
+)
+if (num.cores<1) {
+  perror("Invalid number of cores ",opt$num_cores)
+  q(status=3)    
+}
+
+irap.assert(num.cores>0)
+
+if ( num.cores>multicore:::detectCores()) {
+  num.cores <- multicore:::detectCores()
+  pwarning("The number of cores to use exceeds the cores available. Reducing the limit to ",multicore:::detectCores())
+}
+
+pdebug.enabled <- opt$debug
+options("cores"=num.cores)
+
 
 gtf.table <- NULL
-gtf.table <- load.gtf(opt$gtf)
+gtf.table <- load.gtf(opt$gtf,selected.attr=c("gene_id"))
 #
-
+pdebug.save.state("irap_gtf2annot","p0")
 # 
-gtf.table <- gtf.table[gtf.table$feature=="CDS",]
-
-irap.assert(nrow(gtf.table)>0,"No CDS features found in GTF file")
+#gtf.table <- gtf.table[gtf.table$feature=="CDS",]
+#irap.assert(nrow(gtf.table)>0,"No CDS features found in GTF file")
 # genes
 gene.ids <- unique(gtf.table$gene_id)
-
+pdebug("out_file=",opt$out_file)
 
 # collect the biotype for each gene
 get.biotype <- function(gene.id,gtf) {
   paste(unique(gtf$gene_biotype[gtf$gene_id==gene.id]),collapse=";")
 }
-biotypes <- sapply(gene.ids,get.biotype,gtf.table)
+get.source <- function(gene.id,gtf) {
+  paste(unique(gtf$source[gtf$gene_id==gene.id]),collapse=";")
+}
+biotypes <- unlist(mclapply(gene.ids,get.source,gtf.table))
 names(biotypes) <- gene.ids
-
+pdebug.save.state("irap_gtf2annot","p1")
 # start-end
 get.gene.start <- function(gene.id,gtf) {
   min(gtf$start[gtf$gene_id==gene.id])
@@ -84,13 +111,14 @@ get.chr <- function(gene.id,gtf) {
 get.gene.name <- function(gene.id,gtf) {
   gsub("\\.[0-9]+","",gtf.table[gtf$gene_id==gene.id,"gene_name"])[1]
 }
-start<- sapply(gene.ids,get.gene.start,gtf.table)
-end<- sapply(gene.ids,get.gene.end,gtf.table)
-chr<- sapply(gene.ids,get.chr,gtf.table)
+start <- unlist(mclapply(gene.ids,get.gene.start,gtf.table))
+end<- unlist(mclapply(gene.ids,get.gene.end,gtf.table))
+chr<- unlist(mclapply(gene.ids,get.chr,gtf.table))
 names(start) <- gene.ids
 names(end) <- gene.ids
-name.v <- sapply(gene.ids,get.gene.name,gtf.table)
+name.v <- unlist(mclapply(gene.ids,get.gene.name,gtf.table))
 
+pdebug.save.state("irap_gtf2annot","p2")
 r.table <- data.frame(ID=gene.ids,
                       locus=paste(chr,":",start,"..",end,sep=""),
                       source=biotypes,
@@ -132,9 +160,16 @@ if( sum(is.na(dbs))==1 && !is.vector(dbs) ) {
   }
 }
 #
-#save.image()
+pdebug.save.state("irap_gtf2annot","p3")
+
 cols <- c("ID","Name","locus","source","lname","GO","GOterm","KEGG")
-ret <- write.tsv(file=stdout(),x=r.table[,cols])
+if(opt$out_file=="") {
+  ret <- write.tsv(file=stdout(),x=r.table[,cols])
+} else {
+  pdebug("saving to file...",opt$out_file)
+  ret <- write.tsv(file=opt$out_file,x=r.table[,cols])
+  gene.annot <- r.table[,cols]
+  if ( opt$gen_rdata)
+    save(gene.annot,file=paste(opt$out_file,".Rdata",sep=""))
+}
 q(status=0)
-
-
