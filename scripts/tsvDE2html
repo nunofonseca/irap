@@ -257,7 +257,7 @@ DE.fold.change.plot <- function(res,
   
   # sort the data (not working!!)
   #res <- res[order(res$padj,decreasing=T),]
-
+  pdebug("DE.fold.change.plot")
   x = subset(res, res[,col.mean]!=0)
   py = x[,col.foldChange]
   
@@ -533,10 +533,5 @@ tsvDE2html.debug <- function(rdata.obj) {
 IRAP.DIR=getwd()
 Sys.setenv(IRAP_DIR=IRAP.DIR)
 tsvDE2html.debug("tsvDE2html0.Rdata")
-
-# tests
-tsvDE2html -i test_files/cuffdiff/varVersusnoVar.genes_de.tsv -o a
-tsvDE2html -i test_files/cuffdiff/varVersusnoVar.genes_de.tsv -o a -a test_files/dummy_annot.tsv
-tsvDE2html -i test_files/deseq/Brain37vs42.genes_de.tsv --flavour deseq -o a -a test_files/dummy_annot.tsv --css ../aux/css/irap.css 
 
 
