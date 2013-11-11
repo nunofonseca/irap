@@ -132,7 +132,7 @@ title <- opt$title
 sources.menu <- ""
 
 if ( !is.null(opt$annotation) ) {
-  annot.table <- read.tsv(opt$annotation)
+  annot.table <- load.annot(opt$annotation)
 }
 
 # load TSV
@@ -336,11 +336,4 @@ tsvGE2html.debug <- function() {
 IRAP.DIR=getwd()
 Sys.setenv(IRAP_DIR=IRAP.DIR)
 tsvGE2html.debug()
-
-# tests
-tsvDE2html -t test_files/cuffdiff/varVersusnoVar.genes_de.tsv -o a -a test_files/dummy_annot.tsv -a
-tsvGE2html -i test_files/htseq/genes.raw.htseq2.tsv -o a -m raw --gdef "Brain37R1,Brain37R2,Brain37R3,Brain37R4;Brain42R1,Brain42R2,Brain42R3,Brain42R4;Brain60R1,Brain60R2,Brain60R3,Brain60R4;UHRR37R1,UHRR37R2,UHRR37R3,UHRR37R4;UHRR42R1,UHRR42R2,UHRR42R3,UHRR42R4;UHRR60R1,UHRR60R2,UHRR60R3,UHRR60R4" --gnames "Brain37,Brain42,Brain60,UHRR37,UHRR42,UHRR60"  -a test_files/gene.annot2.tsv 
-
-tsvGE2html -i test_se_2l/tophat1/htseq1/SE1.se.transcripts.rpkms.none.tsv -o a 
-tsvGE2html -m "raw" --tsv test_se_2l/bowtie1/basic/genes.raw.basic.tsv --out test_se_2l/report/quant/bowtie1_x_basic/gene.raw.t --species homo_sapiens --feature CDS --browser ../../../../jbrowse/ --css ../../../../irap.css --title "bowtie1 x basic" -a test_se_2l/data/gene.annot.tsv  --gdef "SE1; SE2;" --gnames "C1,C2" -f "gene"
 

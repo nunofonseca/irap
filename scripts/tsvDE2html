@@ -76,12 +76,9 @@ pdebug("TSVFILE=",opt$tsv_file)
 pdebug("Annotation=",opt$annotation)
 pdebug("cut-off=",opt$`cut-off`)
 
-#tsvDE2html  --tsv RT_bias/tophat2/htseq2/deseq/Brain42vs60.genes_de.tsv
 annot.table <- NULL
 if ( !is.null(opt$annotation) ) {
-  pdebug("Loading annotation=",opt$annotation)
-  annot.table <- read.tsv(opt$annotation)
-  pdebug("Loading annotation (done)")
+  annot.table <- load.annot(opt$annotation)
 }
 
 # load TSV
