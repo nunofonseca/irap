@@ -76,7 +76,6 @@ if ( num.cores>multicore:::detectCores()) {
 pdebug.enabled <- opt$debug
 options("cores"=num.cores)
 
-
 gtf.table <- NULL
 gtf.table <- load.gtf(opt$gtf,selected.attr=c("gene_id"))
 #
