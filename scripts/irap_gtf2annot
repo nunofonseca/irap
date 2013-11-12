@@ -95,8 +95,9 @@ get.source <- function(gene.id,gtf) {
   paste(unique(gtf$source[gtf$gene_id==gene.id]),collapse=";")
 }
 biotypes <- unlist(mclapply(gene.ids,get.source,gtf.table))
-names(biotypes) <- gene.ids
+#names(biotypes) <- gene.ids
 pdebug.save.state("irap_gtf2annot","p1")
+pdebug("biotypes collected")
 # start-end
 get.gene.start <- function(gene.id,gtf) {
   min(gtf$start[gtf$gene_id==gene.id])
@@ -108,22 +109,29 @@ get.chr <- function(gene.id,gtf) {
   gtf$seqid[gtf$gene_id==gene.id][1]
 }
 get.gene.name <- function(gene.id,gtf) {
-  gsub("\\.[0-9]+","",gtf.table[gtf$gene_id==gene.id,"gene_name"])[1]
+  gsub("\\.[0-9]+$","",gtf.table[gtf$gene_id==gene.id,"gene_name"])[1]
 }
+name.v <- unlist(mclapply(gene.ids,get.gene.name,gtf.table,mc.set.seed=F))
+pdebug("names collected")
+gc(verbose=FALSE)
 start <- unlist(mclapply(gene.ids,get.gene.start,gtf.table))
 end<- unlist(mclapply(gene.ids,get.gene.end,gtf.table))
 chr<- unlist(mclapply(gene.ids,get.chr,gtf.table))
-names(start) <- gene.ids
-names(end) <- gene.ids
-name.v <- unlist(mclapply(gene.ids,get.gene.name,gtf.table))
-
-pdebug.save.state("irap_gtf2annot","p2")
-r.table <- data.frame(ID=gene.ids,
+pdebug("location collected")
+gc(verbose=FALSE)
+#pdebug.save.state("irap_gtf2annot","p2")
+r.table <- data.frame(list(ID=gene.ids,
                       locus=paste(chr,":",start,"..",end,sep=""),
                       source=biotypes,
-                      Name=name.v)
+                      Name=name.v))
 rownames(r.table) <- gene.ids
-
+# cleanup
+rm(start)
+rm(end)
+rm(chr)
+rm(biotypes)
+rm(name.v)
+gc()
 # Ontology ids
 dbs <- species2dbs(opt$species)
 pdebug("species2dbs complete")
@@ -144,17 +152,17 @@ if( sum(is.na(dbs))==1 && !is.vector(dbs) ) {
     r.table[,"KEGG"] <- NA
   } else {
     pdebug("species DB found")
-    r.table[,"egi"] <- sapply(as.character(r.table[,"ID"]),annot.get.egi,dbs)
+    r.table[,"egi"] <- unlist(mclapply(as.character(r.table[,"ID"]),annot.get.egi,dbs))
     pdebug("Entrez gene identifiers collected")
-                                        # GO
-    r.table[,"GO"] <- sapply(r.table[,"egi"],annot.get.go,dbs)
+    # GO
+    r.table[,"GO"] <- unlist(mclapply(r.table[,"egi"],annot.get.go,dbs))
     pdebug("GO identfiers collected")
-    r.table[,"GOterm"] <- sapply(r.table[,"egi"],annot.get.go.term,dbs)
+    r.table[,"GOterm"] <- unlist(mclapply(r.table[,"egi"],annot.get.go.term,dbs))
     pdebug("GO terms collected")
-    r.table[,"lname"] <- sapply(r.table[,"egi"],annot.get.lname,dbs)
+    r.table[,"lname"] <- unlist(mclapply(r.table[,"egi"],annot.get.lname,dbs))
     pdebug("Gene (long) names collected")
 #  r.table[,"Pfam"] <- sapply(r.table[,"egi"],annot.get.pfam,dbs)
-    r.table[,"KEGG"] <- sapply(r.table[,"egi"],annot.get.kegg,dbs)
+    r.table[,"KEGG"] <- unlist(mclapply(r.table[,"egi"],annot.get.kegg,dbs))
     pdebug("KEGG ids collected")
   }
 }
