@@ -203,9 +203,9 @@ BitSeq_VERSION=0.4.3
 BitSeq_FILE=BitSeq-$BitSeq_VERSION.tar.gz
 BitSeq_URL=http://bitseq.googlecode.com/files/$BitSeq_FILE
 
-MMSEQ_VERSION=1.0.0-beta2
-MMSEQ_FILE=mmseq_${MMSEQ_VERSION}.zip
-MMSEQ_URL=http://www.bgx.org.uk/software/$MMSEQ_FILE
+#MMSEQ_VERSION=1.0.0-beta2
+#MMSEQ_FILE=mmseq_${MMSEQ_VERSION}.zip
+#MMSEQ_URL=http://www.bgx.org.uk/software/$MMSEQ_FILE
 
 htseq_VERSION=0.5.3p9
 htseq_FILE=HTSeq-${htseq_VERSION}.tar.gz
@@ -991,10 +991,10 @@ EOF
 function quant_install {
     cufflinks1_install
     cufflinks2_install
-    mmseq_install
     htseq_install
     flux_capacitor_install
     scripture_install
+    #mmseq_install
     #ireckon_install
 }
 
@@ -1378,7 +1378,8 @@ else
 	exit 1
     fi
 fi
-
+# print system info
+uname -a
 # Full path
 pinfo "Checking paths..."
 IRAP_DIR=$(readlink -f "$IRAP_DIR")
