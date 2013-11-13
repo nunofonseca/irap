@@ -413,9 +413,9 @@ if ( "source" %in% colnames(table) ) {
   grep.w <- function(target,pat) {
     grep(pat,target)
   }
-  pseudogenes <- c("pseudogenes")
-  pseudogenes.filt <- grepl("pseudogenes",as.character(table$source))
-  pseudogenes.filt2 <- grepl("pseudogenes",as.character(uncut.table$source))
+  pseudogenes <- c("pseudogene")
+  pseudogenes.filt <- grepl("pseudogene",as.character(table$source))
+  pseudogenes.filt2 <- grepl("pseudogene",as.character(uncut.table$source))
   #pdebug(sum(pseudogenes.filt))
   protein_coding <- c("protein_coding")
   protein_coding.filt <- grepl("protein_coding",as.character(table$source))
