@@ -1014,9 +1014,6 @@ load.annot <- function(file) {
   cached.annot <- paste(file,".Rdata",sep="")
   if ( file.exists(cached.annot) ) {
     load(cached.annot)
-    if ( exists("gene.annot")) {
-      annot.table <- gene.annot
-    }
   } else {
     annot.table <- read.tsv(file)
     save(list=c("annot.table"),file=cached.annot)

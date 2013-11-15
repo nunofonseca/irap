@@ -47,7 +47,6 @@ exec make  -Rf "$0"  ${1+"$@"}
 .PHONY: go all setup0 stage0 stage1 stage2 stage3 stage4 stage5 stage6
 ###########################################################
 #Testing presence/absence of input files (f: single read, f1+f2: pair ends)
-f2:=
 ifdef f
 f1=$(shell echo $(f)|cut -f 1 -d\ )
 f2=$(shell echo $(f)|cut -f 2 -d\ )
@@ -57,6 +56,7 @@ ifeq ($(strip $(f2)),$(strip $(f1)))
 undefine f2
 endif
 endif
+f2:=
 $(info f1=$(f1))
 $(info f2=$(f2))
 
@@ -422,7 +422,9 @@ $(info * Starting fastq filtering...)
 ifneq ($(qual_filtering),on)
 ###############################
 $(report_dir)/%.f.csv:  $(out_dir)/%.f.fastq 
-	A=`num_reads.sh $<` && echo $*,$$A,$$A,$$A,$$A,$$A > $@.tmp && mv $@.tmp $@
+	A=`num_reads.sh $<` && echo $$A,$$A,$$A,$$A,$$A > $@.tmp && mv $@.tmp $@
+#	echo $*,$(call n_reads_noqc,$<) > $@.tmp && mv $@.tmp $@
+#	echo $*,$(call n_reads_noqc,$<) > $@.tmp && mv $@.tmp $@
 
 #Produce the same files as if fastqc has been run
 #and create symbolic link
@@ -431,6 +433,8 @@ stage3:
 stage4:
 stage5:
 
+$(report_dir)/raw_data/%.fastqc.zip: $(out_dir)/%.fastq
+	$(call run-fastqc,$<) && mv $(report_dir)/raw_data/$*_fastqc.zip $@
 
 #Paired end reads
 ifdef pe_data
@@ -439,14 +443,6 @@ ifdef pe_data
 all: setup0 stage0 $(out_dir)/$(out_prefix)_1.f.fastq $(out_dir)/$(out_prefix)_2.f.fastq $(report_dir)/$(out_prefix)_1.f.csv $(report_dir)/$(out_prefix)_2.f.csv  stage6
 	$(shell if [ -e $(f1_n).filter1.fastq.qual.png ]; then mv $(out_dir)/$(f1_n)*.png $(report_dir)/raw_data ; fi)
 	$(shell if [ -e $(f2_n).filter1.fastq.qual.png ]; then mv $(out_dir)/$(f2_n)*.png $(report_dir)/raw_data ; fi)
-	rm -f $(report_dir)/$(f1_n).f.csv
-	ln -s $(abspath $(report_dir)/$(out_prefix)_1.f.csv) $(report_dir)/$(f1_n).f.csv
-	rm -f $(report_dir)/$(f2_n).f.csv
-	ln -s $(abspath $(report_dir)/$(out_prefix)_2.f.csv) $(report_dir)/$(f2_n).f.csv
-	rm -f $(report_dir)/$(f1_n).csv
-	ln -s $(abspath $(report_dir)/$(out_prefix)_1.f.csv) $(report_dir)/$(f1_n).csv
-	rm -f $(report_dir)/$(f2_n).csv
-	ln -s $(abspath $(report_dir)/$(out_prefix)_2.f.csv) $(report_dir)/$(f2_n).csv
 	$(info Skipped fastq filtering.)
 
 $(out_dir)/$(out_prefix)_1.f.fastq:  $(data_dir)/$(f1_n).fastq
@@ -457,32 +453,19 @@ $(out_dir)/$(out_prefix)_2.f.fastq:  $(data_dir)/$(f2_n).fastq
 	rm -f $@
 	ln -s $(abspath $(data_dir))/$(f2_n).fastq $@
 
-stage6: $(out_dir)/$(out_prefix)_1.f.fastq  $(call report_file,1,$(report_dir)/raw_data/$(f1_n).fastqc.zip $(report_dir)/raw_data/$(f2_n).fastqc.zip)
-	rm -f $(report_dir)/raw_data/$(out_prefix)_1.f.fastqc.zip
-	ln -s $(report_dir)/raw_data/$(f1_n).fastqc.zip $(report_dir)/raw_data/$(out_prefix)_1.f.fastqc.zip
-	rm -f $(report_dir)/raw_data/$(out_prefix)_2.f.fastqc.zip
-	ln -s $(report_dir)/raw_data/$(f2_n).fastqc.zip $(report_dir)/raw_data/$(out_prefix)_2.f.fastqc.zip
-
+stage6:	$(call report_file,1,$(report_dir)/raw_data/$(out_prefix)_1.f.fastqc.zip $(report_dir)/raw_data/$(out_prefix)_2.f.fastqc.zip)
 
 #Single end reads
 else
 
-$(report_dir)/raw_data/%.fastqc.zip: $(out_dir)/%.fastq
-	$(call run-fastqc,$<) && mv $(report_dir)/raw_data/$*_fastqc.zip $@
+#Main call, no filtering, collect stats only
+all: setup0 stage0 $(out_dir)/$(out_prefix).f.fastq  stage6
+	$(shell if [ -e $(f1_n).filter1.fastq.qual.png ]; then mv $(out_dir)/$(f1_n)*.png $(report_dir)/raw_data ; fi)
+	$(info Skipped filtering.)
 
 $(out_dir)/$(out_prefix).f.fastq:  $(data_dir)/$(f1_n).fastq
 	rm -f $@  
 	ln -s $(abspath $(data_dir))/$(f1_n).fastq $@
-
-#Main call, no filtering, collect stats only
-all: setup0 stage0 $(out_dir)/$(out_prefix).f.fastq   $(report_dir)/$(out_prefix).f.csv    stage6
-	rm -f $(report_dir)/$(f1_n).f.csv
-	ln -s $(abspath $(report_dir)/$(out_prefix).f.csv) $(report_dir)/$(f1_n).f.csv
-	rm -f $(report_dir)/$(f1_n).csv
-	ln -s $(abspath $(report_dir)/$(out_prefix).f.csv) $(report_dir)/$(f1_n).csv
-	$(shell if [ -e $(f1_n).filter1.fastq.qual.png ]; then mv $(out_dir)/$(f1_n)*.png $(report_dir)/raw_data ; fi)
-	$(info Skipped filtering.)
-
 
 stage6: $(call report_file,1,$(report_dir)/raw_data/$(out_prefix).f.fastqc.zip)
 endif
