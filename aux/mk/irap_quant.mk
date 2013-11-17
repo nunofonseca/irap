@@ -25,10 +25,10 @@
 # Cufflinks 1 & 2
 #*****************
 ifndef cufflinks1_params
-	cufflinks1_params=
+	cufflinks1_params=--max-bundle-frags 90000000
 endif
 ifndef cufflinks2_params
-	cufflinks2_params=
+	cufflinks2_params=--max-bundle-frags 90000000
 endif
 
 #--FDR $(de_pvalue_cuffoff)
@@ -55,11 +55,11 @@ define cufflinks_g_option=
 $(if $(findstring _nd,$(quant_method)),-G,-g)
 endef
 define run_cufflinks1=
-	irap_wrapper.sh cufflinks1 cufflinks -p $(max_threads) -o $(name)/$(mapper)/cufflinks1/$(2) $(call cufflinks_g_option) $(gtf_file_abspath) $(cufflinks1_params) $(1) && mv $(name)/$(mapper)/cufflinks1/$(2)/transcripts.gtf $(3) && mv $(name)/$(mapper)/cufflinks1/$(2)/isoforms.fpkm_tracking $(4) && mv $(name)/$(mapper)/cufflinks1/$(2)/genes.fpkm_tracking $(5)
+	irap_wrapper.sh cufflinks1 cufflinks -p $(max_threads) -o $(name)/$(mapper)/$(quant_method)/$(2) $(call cufflinks_g_option) $(gtf_file_abspath) $(cufflinks1_params) $(1) && mv $(name)/$(mapper)/$(quant_method)/$(2)/transcripts.gtf $(3) && mv $(name)/$(mapper)/$(quant_method)/$(2)/isoforms.fpkm_tracking $(4) && mv $(name)/$(mapper)/$(quant_method)/$(2)/genes.fpkm_tracking $(5)
 endef
 
 define run_cufflinks2=
-	irap_wrapper.sh cufflinks2 cufflinks -p $(max_threads) -o $(name)/$(mapper)/cufflinks2/$(2)  $(call cufflinks_g_option) $(gtf_file_abspath) $(cufflinks2_params) $(1) && mv $(name)/$(mapper)/cufflinks2/$(2)/transcripts.gtf $(3) && mv $(name)/$(mapper)/cufflinks2/$(2)/isoforms.fpkm_tracking $(4) && mv $(name)/$(mapper)/cufflinks2/$(2)/genes.fpkm_tracking $(5)
+	irap_wrapper.sh cufflinks2 cufflinks -p $(max_threads) -o $(name)/$(mapper)/$(quant_method)/$(2)  $(call cufflinks_g_option) $(gtf_file_abspath) $(cufflinks2_params) $(1) && mv $(name)/$(mapper)/$(quant_method)/$(2)/transcripts.gtf $(3) && mv $(name)/$(mapper)/$(quant_method)/$(2)/isoforms.fpkm_tracking $(4) && mv $(name)/$(mapper)/$(quant_method)/$(2)/genes.fpkm_tracking $(5)
 endef
 
 # run_cuffmerge cufflinks1|cufflinks2 
