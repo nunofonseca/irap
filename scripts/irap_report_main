@@ -85,7 +85,6 @@ path2qual.report <- function(dir.name,file.prefix) {
 # bp.data
 # colnames=filenames/libname
 # rownames=filtering step
-# quality.details.matrix(bp.data,"/home/nf/Research/Projects/WIP/EBI1/aehts2/examples/marioni2008/report/riq/raw_data/")
 quality.details.matrix <- function(bp.data,dir.name) {
   data <- bp.data
   # extra row
@@ -244,6 +243,12 @@ raw.summary.dataframe <- function(pe,se) {
     ## df[i,] <- append(append(c(lib,sing.file),linfo),d[1,2:6])
     ## i <- i+1
     
+    # BAM support
+    if ( length(grep(".bam$",files)) > 0 ) {
+      pinfo("Handling bam file...",files)
+      file.prefix <- sub(".bam$","",files)
+      files <- c(paste(file.prefix,"_1",sep=""),paste(file.prefix,"_2",sep=""))
+    }
     # use / because some files use a _ or other characters in the filename
     d <- totnumreads2filtered(read.csv(file.required(paste(name,"/report/riq/",files[1],".csv",sep="")),header=FALSE))
     df[i,] <- append(append(c(paste(lib,"/1",sep=""),files[1]),linfo),d[1,2:6])
@@ -256,6 +261,12 @@ raw.summary.dataframe <- function(pe,se) {
     linfo <- as.numeric(c(myderef(paste(lib,"_rs",sep="")),myderef(paste(lib,"_qual",sep="")),0,0))
     files <- strsplit(as.character(myderef(lib))," ")[[1]]
     files <- sub("(.gz|.bzip2)","",sub("(.fastq|.fq)",".f",files,ignore.case =TRUE),ignore.case=TRUE,perl=TRUE)
+        # BAM support
+    if ( length(grep(".bam$",files)) > 0 ) {
+      pinfo("Handling bam file...",files)
+      files <- sub(".bam$","",files)
+    }
+    pinfo(files)
     d <- totnumreads2filtered(read.csv(file.required(paste(name,"/report/riq/",files[1],".csv",sep="")),header=FALSE))
 
     df[i,] <- append(append(c(lib,files[1]),linfo),d[1,2:6])
