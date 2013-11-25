@@ -167,7 +167,7 @@ $(subst .pe,,$(subst .se,,$(1)))
 endef
 
 jbrowser_stage3_targets: 
-	echo $(call bam_files,$(name))
+	echo jbrowser_stage3_tracks
 
 $(name)/$(mapper)/$(quant_method)/%.tsv.tracks: $(name)/$(mapper)/$(quant_method)/%.tsv.covd.track
 	$(call p_info,Quantification tracks $@ in browser)
