@@ -460,7 +460,8 @@ endef
 # ADD
 # --max-decoded-matches
 gem_map_params= --threads $(max_threads) $(gem_map_options)
-gem_index_params= --threads $(max_threads) --max-memory unlimited $(gem_index_options)
+gem_index_params= -t $(max_threads) --max-memory unlimited $(gem_index_options)
+#gem_index_params= -t $(max_threads)--max-memory unlimited $(gem_index_options) --for-rna-mapper
 
 define gem_qual_option=
 	$(shell if [ "$(1)" != "33" ]; then echo "-q 'offset-64'"; else echo "-q offset-33"; fi)
@@ -495,7 +496,7 @@ endef
 #	 sed -i  -e 's/\([a-zA-Z0-9]\+\) dna:/\1:/g' $(3).gem.map &&
 define run_gem_map=
 	 irap_map.sh GEM gem-mapper $(gem_map_params) $(call gem_pairing_param,$(1)) $(call gem_qual_option,$($(1)_qual)) -I $(index_files).gem -i $(2) -o $(3).gem && \
-	 irap_map.sh GEM  gem-2-sam -i $(3).gem.map -I $(index_files).gem --emit-correct-flags -T $(max_threads) $(call gem2sam_pairing_param,$(1)) $(call gem_qual_option,$($(1)_qual)) -o /dev/fd/1 | sed  -e 's/\([a-zA-Z0-9]\+\) dna/\1/g'   | \
+	 irap_map.sh GEM  gem-2-sam -i $(3).gem.map -I $(index_files) --emit-correct-flags -T $(max_threads) $(call gem2sam_pairing_param,$(1)) $(call gem_qual_option,$($(1)_qual)) -o /dev/fd/1 | sed  -e 's/\([a-zA-Z0-9]\+\) dna/\1/g'   | \
 	 samtools  view -T $(reference_abspath) -bS - > $(3).tmp2.bam &&\
 	 bam_fix_se_flag $(3).tmp2.bam - | \
 	 samtools sort -m $(SAMTOOLS_SORT_MEM) - $(3).tmp   && \
@@ -525,21 +526,22 @@ endif
 endif
 
 define gems_index_filename=
-$(1).gem.index
+$(1).gems.index
 endef
 
 define run_gems_index=
-$(call run_gem_index,$(1))
+	irap_map.sh GEM gem-indexer -i $(1) -o $(call gems_index_filename,$(1)) $(gems_index_params) && touch $(call gems_index_filename,$(1))
 endef
 
-#
+#  -J $(juncs_file_abspath)
 define run_gems_map=
-	 irap_map.sh GEM gem-rna-mapper $(gems_map_params)  -I $(index_files) -i $(2) -o $(3).gems -J $(juncs_file_abspath) && \
-	 sed -i -e 's/\([a-zA-Z0-9]\+\) dna:/\1:/g' $(3).gems.0.map && \
-	 irap_map.sh GEM gem-2-sam  -i  $(3).gems.0.map -o $(3).tmp.sam && \
-	 samtools  view -T $(reference_abspath) -bS $(3).tmp.sam | samtools sort -m $(SAMTOOLS_SORT_MEM) - $(3).tmp   && \
-	 $(call bam_fix_nh,$(3).tmp.bam,$(3).tmp2.bam) && \
-	 mv $(3).tmp2.bam $(3) && rm -rf $(3).tmp*
+	 irap_map.sh GEM gem-rna-mapper $(gems_map_params) $(call gem_qual_option,$($(1)_qual))  -I $(index_files).gem -i $(2) -o $(3).gems && \
+	 irap_map.sh GEM  gem-2-sam -i $(3).gems.map -I $(index_files) --emit-correct-flags -T $(max_threads) $(call gem2sam_pairing_param,$(1)) $(call gem_qual_option,$($(1)_qual)) -o /dev/fd/1 | sed  -e 's/\([a-zA-Z0-9]\+\) dna/\1/g'   | \
+	 samtools  view -T $(reference_abspath) -bS - > $(3).tmp2.bam &&\
+	 bam_fix_se_flag $(3).tmp2.bam - | \
+	 samtools sort -m $(SAMTOOLS_SORT_MEM) - $(3).tmp   && \
+	 mv $(3).tmp.bam $(3) && rm -rf $(3).tmp2* $(3).tmp.*
+
 endef
 
 ###########################################################################
