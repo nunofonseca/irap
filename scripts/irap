@@ -488,7 +488,8 @@ ifndef mapper
 endif
 $(info *	mapper=$(mapper))
 
-SUPPORTED_MAPPERS=tophat1 tophat2 smalt gsnap soapsplice bwa1 bwa2 bowtie1 bowtie2 gem star osa gems
+# gems
+SUPPORTED_MAPPERS=tophat1 tophat2 smalt gsnap soapsplice bwa1 bwa2 bowtie1 bowtie2 gem star osa
 ifeq (,$(filter $(mapper),$(SUPPORTED_MAPPERS)))
 $(call p_info,[ERROR] Mapping)
 $(error $(mapper) not implemented)
@@ -987,7 +988,7 @@ phony_targets+= setup setup_files
 ################################################################################
 # Setup initial files
 # file with the length of the features (gene, isoform, exon)
-SETUP_DATA_FILES=$(name)/data/gene_class.txt $(index_files) $(gtf_file_abspath).checked  $(gtf_file_abspath).exon_id.gtf $(juncs_file_abspath) $(name)/data/chr_sizes.txt  $(gff3_file_abspath) $(annot_tsv) $(feat_length)
+SETUP_DATA_FILES=$(name)/data/gene_class.txt $(index_files) $(gtf_file_abspath).checked  $(gtf_file_abspath).exon_id.gtf $(juncs_file_abspath) $(name)/data/chr_sizes.txt  $(gff3_file_abspath) $(annot_tsv) $(feat_length) $(annot_tsv).Rdata
 
 setup_files: $(SETUP_DATA_FILES)
 
