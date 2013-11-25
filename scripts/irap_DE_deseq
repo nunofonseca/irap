@@ -83,6 +83,7 @@ pinfo("Dispersion estimation complete.")
 # 0.2^2 = .04.
 
 ##
+#  exact test based on negative binomial distr (http://genomebiology.com/2010/11/10/R106)
 de <- nbinomTest(cds,opt$labels.v[1],opt$labels.v[2])
 pinfo("nbinomTest complete.")
 ## annotate the gene list
