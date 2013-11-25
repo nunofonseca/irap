@@ -203,9 +203,9 @@ BitSeq_VERSION=0.4.3
 BitSeq_FILE=BitSeq-$BitSeq_VERSION.tar.gz
 BitSeq_URL=http://bitseq.googlecode.com/files/$BitSeq_FILE
 
-MMSEQ_VERSION=1.0.0-beta2
-MMSEQ_FILE=mmseq_${MMSEQ_VERSION}.zip
-MMSEQ_URL=http://www.bgx.org.uk/software/$MMSEQ_FILE
+#MMSEQ_VERSION=1.0.0-beta2
+#MMSEQ_FILE=mmseq_${MMSEQ_VERSION}.zip
+#MMSEQ_URL=http://www.bgx.org.uk/software/$MMSEQ_FILE
 
 htseq_VERSION=0.5.3p9
 htseq_FILE=HTSeq-${htseq_VERSION}.tar.gz
@@ -584,8 +584,13 @@ function ruby_install {
 function perl_install {
     pinfo "Installing perl..."
     if [ -e  ~/.cpan ]; then
-	cp -arb ~/.cpan ~/.cpan.bak
-	rm -fr ~/.cpan
+	if [ "$INIT_CPAN-" != "no-" ]; then
+	    pinfo "Moving ~/.cpan to ~/.cpan.bak"
+	    cp -arb ~/.cpan ~/.cpan.bak
+	    rm -fr ~/.cpan
+	else
+	    pinfo "Skipping CPAN initialization (you may enable it by doing export INIT_CPAN=yes)"
+	fi
     fi
     download_software PERL
     tar -xzf $PERL_FILE
@@ -710,16 +715,22 @@ function bedtools_install {
 # TODO: move from cpan to cpanm
 function perl_cpan_install {
     pinfo "Initializing CPAN..."
+    pinfo "! Internet access required !"
     if  [ ! -e ~/.cpan/ ]; then
 	unset PERL5LIB
     else
 	cp -rab ~/.cpan  ~/.orig.cpan
 	rm -rf ~/.cpan
     fi
-    (echo y;) | perl -MCPAN -e shell
+    # only reset cpan if the user wants it
+    if [ "$INIT_CPAN-" != "no-" ]; then
+	(echo y;) | perl -MCPAN -e shell
+    else
+	pinfo "Skipping CPAN initialization (you may enable it by doing export INIT_CPAN=yes)"
+    fi
     # if myConfig.pm existed the previous command would not change it therefore force its creation
     ( echo mkmyconfig; ) | perl -MCPAN -e shell 
-    (echo o conf init urllist;echo y;echo o conf commit;) | perl -MCPAN -e shell 
+    ( echo o conf init urllist;echo y;echo o conf commit;) | perl -MCPAN -e shell 
 #    (echo o conf init urllist;echo y;echo 3;echo 31; echo 1 2 3 4 5 6;echo o conf commit;) | perl -MCPAN -e shell 
     pinfo "Initializing CPAN...done."
     pinfo "Configuring CPAN..."
@@ -991,10 +1002,10 @@ EOF
 function quant_install {
     cufflinks1_install
     cufflinks2_install
-    mmseq_install
     htseq_install
     flux_capacitor_install
     scripture_install
+    #mmseq_install
     #ireckon_install
 }
 
@@ -1230,6 +1241,16 @@ function new_jbrowse_install {
     popd
     pinfo "jbrowse installation complete."
 }
+
+function data_install {
+    pinfo "Creating data folder $IRAP_DIR/data..."
+    mkdir -p $IRAP_DIR/data
+    cp -r $SRC_DIR/data/contamination $IRAP_DIR/data
+    mkdir -p $IRAP_DIR/data/reference
+    mkdir -p $IRAP_DIR/data/raw_data
+    pinfo "Creating data folder...done."
+}
+
 #############################################
 # WIP
 function ireckon_install {
@@ -1378,7 +1399,8 @@ else
 	exit 1
     fi
 fi
-
+# print system info
+uname -a
 # Full path
 pinfo "Checking paths..."
 IRAP_DIR=$(readlink -f "$IRAP_DIR")
@@ -1488,6 +1510,12 @@ if [ "$install" == "browser" ]; then
     exit 0
 fi
 
+if [ "$install" == "data" ]; then
+    data_install
+    pinfo "Log saved to $logfile"
+    exit 0
+fi
+
 #############
 # all
 install_deps
@@ -1505,7 +1533,8 @@ fastq_qc_install
 perl_packages_install
 # report
 jbrowse_install
-
+# data directory
+data_install
 pinfo "Installation complete."
 pinfo "Log saved to $logfile"
 exit 0
