@@ -48,6 +48,7 @@ exec make  -Rf "$0"  ${1+"$@"}
 ###########################################################
 #Testing presence/absence of input files (f: single read, f1+f2: pair ends)
 f2:=
+
 ifdef f
 f1=$(shell echo $(f)|cut -f 1 -d\ )
 f2=$(shell echo $(f)|cut -f 2 -d\ )
@@ -58,8 +59,11 @@ undefine f2
 endif
 endif
 $(info f1=$(f1))
+ifdef f2
 $(info f2=$(f2))
-
+else
+$(info f2=)
+endif
 #######################################################
 ##Path to the script itself
 path?=$(shell if which irap_fastq_qc >/dev/null 2>/dev/null; then \
