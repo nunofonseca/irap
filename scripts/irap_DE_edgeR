@@ -149,6 +149,8 @@ de.annot <- de.annot[order(de.annot$PValue),];
 # pvalue
 # padj: adjusted p-value
 save.de2tsv(de.annot,ofile.prefix=opt$out)
+# save the objects
+save(opt,de.annot,res,data,data.f,file=paste(opt$out,"de.Rdata",sep="/"))
 quit(save="no",status=0)
 
 ######################################
