@@ -1604,6 +1604,9 @@ stage4_tracks: $(stage4_tracks_targets)
 	$(call p_info,[DONE] stage 4 tracks)
 #	echo $^
 
+# target to compute the targets
+get_tracks: stage2_tracks stage3_tracks stage4_tracks
+
 ########
 # Status
 include $(irap_path)/../aux/mk/irap_status.mk
