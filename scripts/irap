@@ -1611,6 +1611,19 @@ get_tracks: stage2_tracks stage3_tracks stage4_tracks
 # Status
 include $(irap_path)/../aux/mk/irap_status.mk
 
+#################
+# Upgrade cleanup
+
+cleanup_3_0: cleanup_3_0_data cleanup_3_0_reference
+
+cleanup_3_0_data:
+	rm -f $(name)/data/gene.annot.{tsv,Rdata}
+# rpkms - force regeneration
+	rm -f $(name)/*/*/*.rpkms.*
+
+cleanup_3_0_reference:
+	rm -f $(data_dir)/reference/$(species)/gene.annot.{tsv,Rdata}
+
 ##############################################################################
 # FORCE the program to run even if files haven't changed
 FORCE: 
