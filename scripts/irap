@@ -988,7 +988,7 @@ phony_targets+= setup setup_files
 ################################################################################
 # Setup initial files
 # file with the length of the features (gene, isoform, exon)
-SETUP_DATA_FILES=$(name)/data/gene_class.txt $(index_files) $(gtf_file_abspath).checked  $(gtf_file_abspath).exon_id.gtf $(juncs_file_abspath) $(name)/data/chr_sizes.txt  $(gff3_file_abspath) $(annot_tsv) $(feat_length) $(annot_tsv)
+SETUP_DATA_FILES=$(name)/data/gene_class.txt $(index_files) $(gtf_file_abspath).checked  $(gtf_file_abspath).exon_id.gtf $(juncs_file_abspath) $(name)/data/chr_sizes.txt  $(gff3_file_abspath) $(gff3_file_abspath).csv $(annot_tsv) $(feat_length) $(annot_tsv)
 
 setup_files: $(SETUP_DATA_FILES)
 
@@ -1139,9 +1139,13 @@ phony_targets+= $(mapper)_mapping mapping stage2_tracks
 
 $(mapper)_mapping: $(index_files) $(STAGE2_OUT_FILES)
 
-stage2_tracks: $(call rep_browse,$(subst .bam,.bam.tracks,$(STAGE2_OUT_FILES)))	
-	echo $^ $(mapper)
-	$(call p_info,[DONE] stage 2 tracks)
+stage2_tracks_targets=$(call rep_browse,$(subst .bam,.bam.tracks,$(STAGE2_OUT_FILES)))	
+
+stage2_tracks: $(stage2_tracks_targets)
+	$(call p_info,[DONE] Generated stage 2 tracks)
+
+stage2_upload_tracks: $(subst .tracks,.tracks.uploaded,$(stage2_tracks_targets))
+	$(call p_info,[DONE] Uploaded stage 2 tracks)
 
 # 
 mappingbyname: $(mapper)_mappingbyname
@@ -1204,7 +1208,7 @@ endef
 
 
 define nquant_files=
-$(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.genes.rpkms.$(quant_norm_method).tsv) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.genes.rpkms.$(quant_norm_method).tsv) $(call exons_quant_file,$(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.exons.rpkms.$(quant_norm_method).tsv) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.exons.rpkms.$(quant_norm_method).tsv)) $(call transcripts_quant_file,$(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.transcripts.rpkms.$(quant_norm_method).tsv) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.transcripts.rpkms.$(quant_norm_method).tsv))
+$(name)/$(mapper)/$(quant_method)/genes.rpkms.$(quant_norm_method).tsv $(call exons_quant_file,$(name)/$(mapper)/$(quant_method)/exons.rpkms.$(quant_norm_method).tsv) $(call transcripts_quant_file,$(name)/$(mapper)/$(quant_method)/transcripts.rpkms.$(quant_norm_method).tsv)
 endef
 
 # Note
@@ -1578,13 +1582,12 @@ report: $(name)/report/index.html mapping_report quant_report de_report show_cit
 ###################################################
 # Execution status
 # Creates a status.tsv file with the completion status of each stage of the pipeline based on the files created
-phony_targets+= status_html status
+phony_targets+= status_html status stage2_tracks stage3_tracks stage4_tracks
 status_html: $(name)/report/$(name).status.html
 	$(call p_info,Created $<)
 
 status: $(name)/$(name).status.tsv
 	$(call p_info,Created $<)
-
 
 ### Tracks
 define exclude_empty=
@@ -1596,16 +1599,23 @@ $(subst .tsv,.tsv.tracks,$(call exclude_empty,$(STAGE3_TSV_FILES)))
 endef
 
 stage3_tracks: $(call stage3_tracks_targets)
-	$(call p_info,[DONE] stage 3 tracks)
+	$(call p_info,[DONE] Generated stage 3 tracks)
+
+stage3_upload_tracks: $(subst .tracks,.tracks.uploaded,$(stage3_tracks_targets))
+	$(call p_info,[DONE] Uploaded stage 3 tracks)
 
 stage4_tracks_targets=$(subst .tsv,.tsv.tracks,$(STAGE4_OUT_FILES))
 
 stage4_tracks: $(stage4_tracks_targets)
-	$(call p_info,[DONE] stage 4 tracks)
-#	echo $^
+	$(call p_info,[DONE] Generated stage 4 tracks)
 
-# target to compute the targets
-get_tracks: stage2_tracks stage3_tracks stage4_tracks
+stage4_upload_tracks: $(subst .tracks,.tracks.uploaded,$(stage4_tracks_targets))
+	$(call p_info,[DONE] Uploaded stage 4 tracks)
+
+
+# target to generate some tracks
+get_tracks: stage2_tracks stage3_tracks stage4_tracks 
+
 
 ########
 # Status
