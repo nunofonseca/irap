@@ -44,7 +44,7 @@ chrs <- c()
 #tsv_file <-"test_se_2l/tophat1/htseq1/SE2.genes.htseq1.tsv"
 
 # load the tsv file (2 cols)
-tsv<-read.table(tsv_file,sep="\t",header=F)
+tsv<-read.table(tsv_file,sep="\t",header=F,quote="\"")
 # first column should have the ID
 colnames(tsv) <- c('ID','Value')
 # exclude NAs or replace by 0?
