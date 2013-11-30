@@ -106,7 +106,7 @@ $(name)/$(mapper)/%.bam.tracks: $(name)/$(mapper)/%.bam.bw
 	$(call p_info,"BAM tracks for $*.bam generated.")
 
 $(name)/$(mapper)/%.bam.tracks.uploaded: $(name)/$(mapper)/%.bam.track $(name)/$(mapper)/%.bam.cov.track $(name)/$(mapper)/%.bam.covd.track
-	$(call p_info,"BAM tracks for $*.bam in browser ")
+#	$(call p_info,"BAM tracks for $*.bam in browser ")
 
 # note: the bam files + index need to be copied/moved to the raw/bam/ directory under the jbrowser tree
 #       a symbolic link will be created in the original location
@@ -174,12 +174,15 @@ $(subst .pe,,$(subst .se,,$(1)))
 endef
 
 jbrowser_stage3_targets: 
-	echo jbrowser_stage3_tracks
+	echo $(stage3_tracks_targets)
 
 $(name)/$(mapper)/$(quant_method)/%.tsv.tracks: $(name)/$(mapper)/$(quant_method)/%.bw $(name)/$(mapper)/$(quant_method)/%.bedGraph
 	touch $@
 
 $(name)/$(mapper)/$(quant_method)/%.tsv.tracks.uploaded: $(name)/$(mapper)/$(quant_method)/%.tsv.covd.track
+	$(call p_info,Quantification tracks $@ to browser)
+
+$(name)/$(mapper)/$(quant_method)/%.tsv.tracks.uploaded: $(name)/$(mapper)/$(quant_method)/%.tsv.tracks
 	$(call p_info,Quantification tracks $@ to browser)
 
 # pure bedgraph 	track_add.sh -d wig  -l "$*-raw-$(quant_method)-$(mapper)-EE" -o $(JBROWSE_DATA) -i $< \
