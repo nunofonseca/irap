@@ -46,7 +46,7 @@ endef
 
 phony_targets+=report_browser report_browser_setup report_browser_stage1 report_browser_stage2 report_browser_stage3 report_browser_stage4
 
-report_browser: report_browser_setup report_browser_stage1 report_browser_stage2 report_browser_stage3 report_browser_stage4
+report_browser: report_browser_setup report_browser_stage1 report_browser_stage2 report_browser_stage3 report_browser_stage4 upload_tracks
 
 jbrowser_stage1_targets:
 	echo report_browser_setup
@@ -64,13 +64,16 @@ $(name)/report/menu.html:
 # NOTE: stage?_tracks should be defined elsewhere
 
 # Adds the BAM files 
-report_browser_stage2: stage2_tracks report_browser_setup
+report_browser_stage2: stage2_upload_tracks report_browser_setup
 
 # Adds the raw and norm. counts if available
-report_browser_stage3: stage3_tracks report_browser_setup
+report_browser_stage3: stage3_upload_tracks report_browser_setup
 
 # Adds a track that highlights the DE by condition
-report_browser_stage4: stage4_tracks report_browser_setup
+report_browser_stage4: stage4_upload_tracks report_browser_setup
+
+
+upload_tracks: stage2_upload_tracks stage3_upload_tracks stage4_upload_tracks report_browser_setup
 
 ####################################################
 # Initialization
@@ -94,13 +97,16 @@ $(name)/report/jbrowse/annot.ok: $(gff3_file_abspath) $(name)/report/jbrowse.set
 #########################################################
 # Track: BAM
 phony_targets+= $(name)/$(mapper)/%.bam.tracks 
-jbrowser_bam_targets=
-$(name)/$(mapper)/%.bam.tracks: $(name)/$(mapper)/%.bam.track $(name)/$(mapper)/%.bam.cov.track $(name)/$(mapper)/%.bam.covd.track
-	$(call p_info,"BAM tracks for $*.bam in browser ")
 
+jbrowser_bam_targets=
 jbrowser_stage2_targets: 
 	echo $(subst .bam,.bam.tracks,$(call bam_files,$(name)))
 
+$(name)/$(mapper)/%.bam.tracks: $(name)/$(mapper)/%.bam.bw
+	$(call p_info,"BAM tracks for $*.bam generated.")
+
+$(name)/$(mapper)/%.bam.tracks.uploaded: $(name)/$(mapper)/%.bam.track $(name)/$(mapper)/%.bam.cov.track $(name)/$(mapper)/%.bam.covd.track
+	$(call p_info,"BAM tracks for $*.bam in browser ")
 
 # note: the bam files + index need to be copied/moved to the raw/bam/ directory under the jbrowser tree
 #       a symbolic link will be created in the original location
@@ -113,6 +119,7 @@ $(name)/$(mapper)/%.pe.hits.bam.track: $(name)/$(mapper)/%.pe.hits.bam  $(name)/
 	track_add.sh -d bam -l "$*-$(mapper)-BAM" -o $(JBROWSE_DATA) -i $< \
 	-m $(call get_metadata,Mapping,$(mapper),,,,Alignment (Reads) Track,"Lib" : "$*";) &&\
 	touch $@
+
 
 # old 
 #$(name)/$(mapper)/%.se.hits.bam.track: $(name)/$(mapper)/%.se.hits.bam $(name)/$(mapper)/%.se.hits.bam.bed $(name)/$(mapper)/%.se.hits.bam.bai
@@ -169,7 +176,10 @@ endef
 jbrowser_stage3_targets: 
 	echo jbrowser_stage3_tracks
 
-$(name)/$(mapper)/$(quant_method)/%.tsv.tracks: $(name)/$(mapper)/$(quant_method)/%.tsv.covd.track
+$(name)/$(mapper)/$(quant_method)/%.tsv.tracks: $(name)/$(mapper)/$(quant_method)/%.bw $(name)/$(mapper)/$(quant_method)/%.bedGraph
+	touch $@
+
+$(name)/$(mapper)/$(quant_method)/%.tsv.tracks.uploaded: $(name)/$(mapper)/$(quant_method)/%.tsv.covd.track
 	$(call p_info,Quantification tracks $@ in browser)
 
 # pure bedgraph 	track_add.sh -d wig  -l "$*-raw-$(quant_method)-$(mapper)-EE" -o $(JBROWSE_DATA) -i $< \
@@ -217,13 +227,13 @@ $(name)/$(mapper)/$(quant_method)/%.genes.rpkms.$(quant_norm_method).tsv.covd.tr
 ######
 # TODO: combine multiple values in a single track?
 $(name)/$(mapper)/$(quant_method)/exons.%.tsv.tracks:
-	$(call p_info,WIP)
+	$(call p_info,exon tracks WIP)
 
 $(name)/$(mapper)/$(quant_method)/transcripts.%.tsv.tracks:
-	$(call p_info,WIP)
+	$(call p_info,transcripts WIP)
 
 $(name)/$(mapper)/$(quant_method)/genes.%.tsv.tracks:
-	$(call p_info,WIP)
+	$(call p_info,WIP - all libs in a single track)
 
 #: $(name)/$(mapper)/$(quant_method)/exons.%.$(quant_method).tsv.bedGraph $(gff3_file_abspath).csv
 # 	@touch $@
@@ -260,7 +270,10 @@ jbrowser_stage4_targets:
 # generic rule
 # works only for gene level visualization
 # TODO: add support for transcript and exon level visualization (change track name accordingly)
-$(name)/$(mapper)/$(quant_method)/$(de_method)/%.genes_de.tsv.tracks: $(name)/$(mapper)/$(quant_method)/$(de_method)/%.genes_de.tsv.fold.track  $(name)/$(mapper)/$(quant_method)/$(de_method)/%.genes_de.tsv.pval.track
+$(name)/$(mapper)/$(quant_method)/$(de_method)/%.genes_de.tsv.tracks: $(name)/$(mapper)/$(quant_method)/$(de_method)/%.genes_de.tsv.fold.bw  $(name)/$(mapper)/$(quant_method)/$(de_method)/%.genes_de.tsv.pval.bw $(name)/$(mapper)/$(quant_method)/$(de_method)/%.genes_de.tsv.fold.bedGraph  $(name)/$(mapper)/$(quant_method)/$(de_method)/%.genes_de.tsv.pval.bedGraph
+	$(call p_info,DE tracks $@ generated)	
+
+$(name)/$(mapper)/$(quant_method)/$(de_method)/%.genes_de.tsv.tracks.uploaded: $(name)/$(mapper)/$(quant_method)/$(de_method)/%.genes_de.tsv.fold.track  $(name)/$(mapper)/$(quant_method)/$(de_method)/%.genes_de.tsv.pval.track
 	touch $@
 
 $(name)/$(mapper)/$(quant_method)/$(de_method)/%.genes_de.tsv.fold.track: $(name)/$(mapper)/$(quant_method)/$(de_method)/%.genes_de.fold.bw  $(gff3_file_abspath).csv 
@@ -342,7 +355,6 @@ $(name)/$(mapper)/$(quant_method)/cuffdiff2/%.genes_de.pval.bedGraph: $(name)/$(
 	$(call cuffdiff_bed,$<,$@,padj,gene)
 $(name)/$(mapper)/$(quant_method)/cuffdiff2_nd/%.genes_de.pval.bedGraph: $(name)/$(mapper)/$(quant_method)/cuffdiff2_nd/%.genes_de.tsv.bedGraph $(gff3_file_abspath).csv
 	$(call cuffdiff_bed,$<,$@,padj,gene)
-
 
 #test_id gene_id gene    locus   sample_1        sample_2        status  value_1 value_2 log2(fold_change)       test_stat       p_value q_value significant?(y|n)
 
