@@ -180,7 +180,7 @@ $(name)/$(mapper)/$(quant_method)/%.tsv.tracks: $(name)/$(mapper)/$(quant_method
 	touch $@
 
 $(name)/$(mapper)/$(quant_method)/%.tsv.tracks.uploaded: $(name)/$(mapper)/$(quant_method)/%.tsv.covd.track
-	$(call p_info,Quantification tracks $@ in browser)
+	$(call p_info,Quantification tracks $@ to browser)
 
 # pure bedgraph 	track_add.sh -d wig  -l "$*-raw-$(quant_method)-$(mapper)-EE" -o $(JBROWSE_DATA) -i $< \
 # counts
