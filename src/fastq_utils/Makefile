@@ -5,10 +5,14 @@ ifdef DEBUG
 CFLAGS+= -g -DDEBUG=1
 endif
 
-TARGETS=fastq_truncate fastq_filterpair fastq_randsample fastq_trim fastq_filter_n 
+TARGETS=fastq_truncate fastq_filterpair fastq_randsample fastq_trim fastq_filter_n fastq_validator
 
 ############################################################################
 all: $(TARGETS)
+
+
+fastq_validator:  hash.o fastq_validator.o
+	gcc  $^ -o $@
 
 fastq_filterpair: hash.o fastq_filterpair.o
 	gcc  $^ -o $@
@@ -67,7 +71,23 @@ test5:
 	echo "It should not take more than 30 seconds...."
 	time -p ./fastq_filterpair tests/c18_10000_1.fastq tests/c18_10000_2.fastq  f1.fastq f2.fastq up.fastq
 
+test6:
+	./fastq_validator tests/test_e1.fastq || \
+	./fastq_validator tests/test_e2.fastq || \
+	./fastq_validator tests/test_e3.fastq || \
+	./fastq_validator tests/test_e4.fastq || \
+	./fastq_validator tests/test_e5.fastq || \
+	./fastq_validator tests/test_e6.fastq || \
+	./fastq_validator tests/test_e7.fastq || \
+	./fastq_validator tests/test_e8.fastq || \
+	./fastq_validator tests/test_e9.fastq || \
+	./fastq_validator tests/test_e10.fastq || \
+	echo "all errors detected"
+	./fastq_validator tests/test_1.fastq
+	./fastq_validator tests/test_2.fastq
+	time -p ./fastq_validator tests/c18_1M_1.fastq
+	time -p ./fastq_validator tests/c18_1M_2.fastq
+	time -p ./fastq_validator tests/c18_1M_1.fastq tests/c18_1M_2.fastq || echo "Error detected"
 
 
-
-tests: test1 test2 test3 test4 test5
+tests: test1 test2 test3 test4 test5 test6
