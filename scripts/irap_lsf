@@ -66,7 +66,7 @@ done
 
 # Normalization
 p_info "Stage3"
-submit_job "${jobname_prefix}q"  -w "ended(${jobname_prefix}2*)"  "$cmd conf=$conf  $IRAP_PARAMS stage3a"
+submit_job "${jobname_prefix}q"  -w "ended(${jobname_prefix}2*)"  "$cmd conf=$conf  $IRAP_PARAMS stage3"
 
 
 # DE
