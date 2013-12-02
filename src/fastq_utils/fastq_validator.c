@@ -40,7 +40,7 @@
 #define MAX_READ_LENGTH 1024000
 #define MIN_READ_LENGTH 15
 
-#define HASHSIZE 39000001
+#define HASHSIZE 19000001
 //#define HASHSIZE 5
 
 #define READ_LINE(fd) fgets(&read_buffer[0],MAX_READ_LENGTH,fd)
@@ -135,7 +135,7 @@ void free_indexentry(INDEX_ENTRY *e) {
 char* get_readname(char *s,int *len_p,int cline) {
   int len;
   if (s[0]!='@' ) {
-    fprintf(stderr,"line %u: error in header %s\n",cline,s);
+    fprintf(stderr,"Error line %u: error in header %s\n",cline,s);
     exit(1);
   } 
   s=&s[1]; // ignore/discard @
@@ -164,12 +164,12 @@ void copy_read(long offset,FILE *from,FILE* to) {
 void index_file(char *filename,hashtable index,long start_offset,long length) {
   FILE *fd1=fopen(filename,"r");  
   if (fd1==NULL) {
-    fprintf(stderr,"Unable to open %s\n",filename);
+    fprintf(stderr,"Error: Unable to open %s\n",filename);
     exit(1);
   }
   // move to the right position
   if(length>0) {
-    fprintf(stderr, " Not implemented\n");
+    fprintf(stderr, "Internal error: Not implemented\n");
     exit(1);
   }
   long cline=1;
@@ -188,7 +188,7 @@ void index_file(char *filename,hashtable index,long start_offset,long length) {
     char *qual=READ_LINE_QUAL(fd1);
     char* readname=get_readname(hdr,&len,cline);
     if (seq==NULL || hdr2==NULL || qual==NULL ) {
-      fprintf(stderr,"line %u: file truncated?\n",cline);
+      fprintf(stderr,"Error line %u: file truncated?\n",cline);
       exit(1);
     }
     if (validate_entry(hdr,hdr2,seq,qual,cline)!=0) {
@@ -196,11 +196,11 @@ void index_file(char *filename,hashtable index,long start_offset,long length) {
     }
     // check for duplicates
     if ( lookup_header(index,readname)!=NULL ) {
-      fprintf(stderr,"line %u: duplicated sequence %s\n",cline,readname);
+      fprintf(stderr,"Error line %u: duplicated sequence %s\n",cline,readname);
       exit(1);
     }
     if ( new_indexentry(index,readname,len,start_pos)==NULL) {
-      fprintf(stderr,"line %u: malloc failed?",cline);
+      fprintf(stderr,"Error line %u: malloc failed?",cline);
       exit(1);
     }
     
@@ -218,11 +218,11 @@ inline int validate_entry(char *hdr,char *hdr2,char *seq,char *qual,unsigned lon
   
   // Sequence identifier
   if ( hdr[0]!='@' ) {
-    fprintf(stderr,"line %u: sequence identifier should start with an @ - %s\n",linenum,hdr);
+    fprintf(stderr,"Error line %u: sequence identifier should start with an @ - %s\n",linenum,hdr);
     return 1;
   }  
   if ( hdr[1]=='\0' || hdr[1]=='\n' ) {
-    fprintf(stderr,"line %u: sequence identifier should be longer than 1\n",linenum);
+    fprintf(stderr,"Error line %u: sequence identifier should be longer than 1\n",linenum);
     return 1;
   }
   // sequence
@@ -234,19 +234,19 @@ inline int validate_entry(char *hdr,char *hdr2,char *seq,char *qual,unsigned lon
 	 seq[slen]!='a' && seq[slen]!='c' && seq[slen]!='g' && seq[slen]!='t' &&
 	 seq[slen]!='0' && seq[slen]!='1' && seq[slen]!='2' && seq[slen]!='3' &&
 	 seq[slen]!='n' && seq[slen]!='N' ) {
-      fprintf(stderr,"line %u: invalid character %c, expected: ACGTacgt0123nN\n",linenum+1,seq[slen]);
+      fprintf(stderr,"Error line %u: invalid character %c, expected ACGTacgt0123nN\n",linenum+1,seq[slen]);
       return 1;
     }
     slen++;
   }
   // check len
   if (slen < MIN_READ_LENGTH ) {
-    fprintf(stderr,"line %u: read length too small (%u)\n",linenum+1,slen);
+    fprintf(stderr,"Error line %u: read length too small - %u\n",linenum+1,slen);
     return 1;
   }
   // hdr2=@
   if (hdr2[1]!='\0' && hdr2[1]!='\n') {
-    fprintf(stderr,"line %u:  header2 too small (%u)\n",linenum+1,slen);
+    fprintf(stderr,"Error line %u:  header2 too small - %u\n",linenum+1,slen);
     return 1;
   }
   // qual length==slen
@@ -255,7 +255,7 @@ inline int validate_entry(char *hdr,char *hdr2,char *seq,char *qual,unsigned lon
     qlen++;    
   }  
   if ( qlen!=slen ) {
-    fprintf(stderr,"line %u: sequence and quality don't have the same length %u!=%u\n",linenum+1,slen,qlen);
+    fprintf(stderr,"Error line %u: sequence and quality don't have the same length %u!=%u\n",linenum+1,slen,qlen);
     return 1;
   }
   return 0;
@@ -266,7 +266,7 @@ inline FILE* open_fastq(char* filename) {
 
   FILE *fd1=fopen(filename,"r");
   if (fd1==NULL) {
-    fprintf(stderr,"Unable to open %s\n",filename);
+    fprintf(stderr,"Error: Unable to open %s\n",filename);
     exit(1);
   }
   return(fd1);
@@ -278,7 +278,7 @@ int is_casava_1_8(char *f) {
   int is_casava_1_8=0;
   reti = regcomp(&regex,"[A-Z0-9:]* [12]:[YN]:[0-9]*:.*",0);  
   if ( reti ) { 
-    fprintf(stderr, "Could not compile regex\n"); 
+    fprintf(stderr, "Error: Could not compile regex\n"); 
     exit(1); 
   }
   FILE *fd1=open_fastq(f);
@@ -356,7 +356,7 @@ int main(int argc, char **argv ) {
       char *qual=READ_LINE_QUAL(fd2);
       char* readname=get_readname(hdr,&len,cline);
       if (seq==NULL || hdr2==NULL || qual==NULL ) {
-	fprintf(stderr,"line %u: file truncated?\n",cline);
+	fprintf(stderr,"Error line %u: file truncated?\n",cline);
 	exit(1);
       }
       if (validate_entry(hdr,hdr2,seq,qual,cline)!=0) {
@@ -364,13 +364,13 @@ int main(int argc, char **argv ) {
       }
       // check for duplicates
       if ( (e=lookup_header(index,readname))==NULL ) {
-	fprintf(stderr,"line %u: unpaired read %s\n",cline,readname);
+	fprintf(stderr,"Error line %u: unpaired read - %s\n",cline,readname);
 	exit(1);
       } else {
 	unsigned long key=hashit(readname);
 	// remove entry from index
 	if (delete(index,key,e)!=e) {
-	  fprintf(stderr,"line %u: Unable to delete entry from index %s\n",cline,readname);
+	  fprintf(stderr,"Error line %u: Unable to delete entry from index - %s\n",cline,readname);
 	  exit(1);
 	}
 	free_indexentry(e);
@@ -381,7 +381,7 @@ int main(int argc, char **argv ) {
     }
     printf("\n");
     if (index->n_entries>0 ) {
-      fprintf(stderr,"Unpaired reads from file1 %u\n",index->n_entries);
+      fprintf(stderr,"Error: found %u unpaired reads from file1\n",index->n_entries);
       exit(1);
     }
   }
