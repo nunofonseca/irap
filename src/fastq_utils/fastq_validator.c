@@ -40,7 +40,7 @@
 #define MAX_READ_LENGTH 1024000
 #define MIN_READ_LENGTH 15
 
-#define HASHSIZE 19000001
+#define HASHSIZE 39000001
 //#define HASHSIZE 5
 
 #define READ_LINE(fd) fgets(&read_buffer[0],MAX_READ_LENGTH,fd)
