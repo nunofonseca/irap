@@ -54,7 +54,7 @@ if [ ! -e "$TTOPLEVEL$menu" ] ; then
 fi
 
 inject_menu=`cat $TTOPLEVEL$menu| tr "\n" " "`
-CSS_FILE='<link rel="stylesheet" href="TTOPLEVELmenu.css"  type=text/css>'
+CSS_FILE='<link rel="stylesheet" href="${TTOPLEVEL}menu.css"  type=text/css>'
 sed  -E -i "s|(<body[^>]*)>.*|\1> $inject_menu|;s|TTOPLEVEL|$TTOPLEVEL|g;" index.html
 sed  -E -i "s|<head>.*|<head>$CSS_FILE|" index.html
 
