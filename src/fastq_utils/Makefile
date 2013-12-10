@@ -1,4 +1,4 @@
-CFLAGS=-O2
+CFLAGS=-O3
 #-g
 
 ifdef DEBUG
@@ -12,7 +12,7 @@ all: $(TARGETS)
 
 
 fastq_validator:  hash.o fastq_validator.o
-	gcc  $^ -o $@
+	gcc  $(CFLAGS) $^ -o $@
 
 fastq_filterpair: hash.o fastq_filterpair.o
 	gcc  $^ -o $@
@@ -85,6 +85,8 @@ test6:
 	echo "all errors detected"
 	./fastq_validator tests/test_1.fastq
 	./fastq_validator tests/test_2.fastq
+	./fastq_validator tests/test_e11.fastq
+	time -p ./fastq_validator tests/pe_bug14.fastq tests/pe_bug14.fastq
 	time -p ./fastq_validator tests/c18_1M_1.fastq
 	time -p ./fastq_validator tests/c18_1M_2.fastq
 	time -p ./fastq_validator tests/c18_1M_1.fastq tests/c18_1M_2.fastq || echo "Error detected"

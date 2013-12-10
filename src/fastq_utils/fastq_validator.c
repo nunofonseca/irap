@@ -49,7 +49,7 @@
 #define READ_LINE_SEQ(fd) fgets(&read_buffer_seq[0],MAX_READ_LENGTH,fd)
 #define READ_LINE_QUAL(fd) fgets(&read_buffer_qual[0],MAX_READ_LENGTH,fd)
 
-#define PRINT_READS_PROCESSED(c) { if (c%500000==0) { printf("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b%ld",c);fflush(stdout); }}
+#define PRINT_READS_PROCESSED(c) { if (c%500000==0) { fprintf(stderr,"\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b%ld",c);fflush(stderr); }}
 
 struct index_entry {
   
@@ -70,6 +70,7 @@ char read_buffer_qual[MAX_READ_LENGTH];
 char read_buffer[MAX_READ_LENGTH];
 long index_mem=0;
 int is_casava_18;
+int is_paired_data;
 
 /*
 sdbm
@@ -80,9 +81,9 @@ the actual function is hash(i) = hash(i - 1) * 65599 + str[i]; what is included 
 [there is even a faster, duff-device version] the magic constant 65599 was picked out of thin air while experimenting with
 different constants, and turns out to be a prime. this is one of the algorithms used in berkeley db (see sleepycat) and elsewhere.
 */
-static unsigned long hashit(unsigned char *str) {
+static ulong hashit(unsigned char *str) {
 
-  unsigned long hash = 0;
+  ulong hash = 0;
   int c;
   
   while (c = *str++)
@@ -91,13 +92,15 @@ static unsigned long hashit(unsigned char *str) {
   return hash;
 }
 
-inline static INDEX_ENTRY* lookup_header(hashtable index,char *hdr) {
-  // lookup hdr in index
-  unsigned long key=hashit(hdr);
-  INDEX_ENTRY* e=(INDEX_ENTRY*)get_object(index,key);
+
+static INDEX_ENTRY* lookup_header(hashtable sn_index,char *hdr) {
+  // lookup hdr in sn_index
+  ulong key=hashit(hdr);
+  //printf("looking for %s: key=%lu\n",hdr,key);
+  INDEX_ENTRY* e=(INDEX_ENTRY*)get_object(sn_index,key);
   while (e!=NULL) {      // confirm that hdr are equal
     if ( !strcmp(hdr,e->hdr)) break;
-    e=(INDEX_ENTRY*)get_next_object(index,key);
+    e=(INDEX_ENTRY*)get_next_object(sn_index,key);
   }
   return e;
 }
@@ -114,9 +117,9 @@ INDEX_ENTRY* new_indexentry(hashtable ht,char*hdr,int len,long start_pos) {
   e->entry_start=start_pos;
   
   strncpy(e->hdr,hdr,len);
-  
+  e->hdr[len]='\0';
   // add to hash table
-  unsigned long key=hashit(e->hdr);
+  ulong key=hashit(e->hdr);
   //collisions[key%HASHSIZE]++;
   if(insere(ht,key,e)<0) {
     fprintf(stderr,"Error adding %s to index\n",hdr);
@@ -135,17 +138,19 @@ void free_indexentry(INDEX_ENTRY *e) {
 char* get_readname(char *s,int *len_p,int cline) {
   int len;
   if (s[0]!='@' ) {
-    fprintf(stderr,"Error line %u: error in header %s\n",cline,s);
+    fprintf(stderr,"Error line %lu: error in header %s\n",cline,s);
     exit(1);
   } 
   s=&s[1]; // ignore/discard @
   if (is_casava_18) {
     len=0;
-    while (s[len]!=' ') ++len;
+    while (s[len]!=' ' && s[len]!='\0') ++len;
     s[len]='\0';
   } else {
+    // discard last character if PE && not casava 1.8
     len=strlen(s);
-    len--;
+    if (is_paired_data) 
+      len--;
     s[len-1]='\0'; 
   }
   *len_p=len;
@@ -161,7 +166,7 @@ void copy_read(long offset,FILE *from,FILE* to) {
   fputs(READ_LINE(from),to);
 }
 
-void index_file(char *filename,hashtable index,long start_offset,long length) {
+void index_file(char *filename,hashtable sn_index,long start_offset,long length) {
   FILE *fd1=fopen(filename,"r");  
   if (fd1==NULL) {
     fprintf(stderr,"Error: Unable to open %s\n",filename);
@@ -173,14 +178,14 @@ void index_file(char *filename,hashtable index,long start_offset,long length) {
     exit(1);
   }
   long cline=1;
-  // index creation could be done in parallel
+  // sn_index creation could be done in parallel
   while(!feof(fd1)) {
     long start_pos=ftell(fd1);
     char *hdr=READ_LINE_HDR(fd1);
 
     if ( hdr==NULL) break;
     int len;
-    //fprintf(stderr,"index: =%s=\n",readname);
+    //fprintf(stderr,"sn_index: =%s=\n",readname);
     // get seq
     //printf("cline=%ld\nLEN=%ld  hdr=%s\n",cline,len,hdr);
     char *seq=READ_LINE_SEQ(fd1);
@@ -188,19 +193,19 @@ void index_file(char *filename,hashtable index,long start_offset,long length) {
     char *qual=READ_LINE_QUAL(fd1);
     char* readname=get_readname(hdr,&len,cline);
     if (seq==NULL || hdr2==NULL || qual==NULL ) {
-      fprintf(stderr,"Error line %u: file truncated?\n",cline);
+      fprintf(stderr,"Error line %lu: file truncated?\n",cline);
       exit(1);
     }
     if (validate_entry(hdr,hdr2,seq,qual,cline)!=0) {
       exit(1);
     }
     // check for duplicates
-    if ( lookup_header(index,readname)!=NULL ) {
-      fprintf(stderr,"Error line %u: duplicated sequence %s\n",cline,readname);
+    if ( lookup_header(sn_index,readname)!=NULL ) {
+      fprintf(stderr,"Error line %lu: duplicated sequence %s\n",cline,readname);
       exit(1);
     }
-    if ( new_indexentry(index,readname,len,start_pos)==NULL) {
-      fprintf(stderr,"Error line %u: malloc failed?",cline);
+    if ( new_indexentry(sn_index,readname,len,start_pos)==NULL) {
+      fprintf(stderr,"Error line %lu: malloc failed?",cline);
       exit(1);
     }
     
@@ -218,11 +223,11 @@ inline int validate_entry(char *hdr,char *hdr2,char *seq,char *qual,unsigned lon
   
   // Sequence identifier
   if ( hdr[0]!='@' ) {
-    fprintf(stderr,"Error line %u: sequence identifier should start with an @ - %s\n",linenum,hdr);
+    fprintf(stderr,"Error line %lu: sequence identifier should start with an @ - %s\n",linenum,hdr);
     return 1;
   }  
   if ( hdr[1]=='\0' || hdr[1]=='\n' || hdr[1]=='\r') {
-    fprintf(stderr,"Error line %u: sequence identifier should be longer than 1\n",linenum);
+    fprintf(stderr,"Error line %lu: sequence identifier should be longer than 1\n",linenum);
     return 1;
   }
   // sequence
@@ -234,19 +239,19 @@ inline int validate_entry(char *hdr,char *hdr2,char *seq,char *qual,unsigned lon
 	 seq[slen]!='a' && seq[slen]!='c' && seq[slen]!='g' && seq[slen]!='t' &&
 	 seq[slen]!='0' && seq[slen]!='1' && seq[slen]!='2' && seq[slen]!='3' &&
 	 seq[slen]!='n' && seq[slen]!='N' ) {
-      fprintf(stderr,"Error line %u: invalid character '%x', expected ACGTacgt0123nN\n",linenum+1,seq[slen]);
+      fprintf(stderr,"Error line %lu: invalid character '%x', expected ACGTacgt0123nN\n",linenum+1,seq[slen]);
       return 1;
     }
     slen++;
   }
   // check len
   if (slen < MIN_READ_LENGTH ) {
-    fprintf(stderr,"Error line %u: read length too small - %u\n",linenum+1,slen);
+    fprintf(stderr,"Error line %lu: read length too small - %u\n",linenum+1,slen);
     return 1;
   }
   // hdr2=@
   if (hdr2[1]!='\0' && hdr2[1]!='\n' && hdr2[1]!='\r') {
-    fprintf(stderr,"Error line %u:  header2 too small - %u\n",linenum+1,slen);
+    fprintf(stderr,"Error line %lu:  header2 too small - %u\n",linenum+1,slen);
     return 1;
   }
   // qual length==slen
@@ -255,7 +260,7 @@ inline int validate_entry(char *hdr,char *hdr2,char *seq,char *qual,unsigned lon
     qlen++;    
   }  
   if ( qlen!=slen ) {
-    fprintf(stderr,"Error line %u: sequence and quality don't have the same length %u!=%u\n",linenum+1,slen,qlen);
+    fprintf(stderr,"Error line %lu: sequence and quality don't have the same length %u!=%u\n",linenum+1,slen,qlen);
     return 1;
   }
   return 0;
@@ -301,7 +306,7 @@ int is_casava_1_8(char *f) {
 
 int main(int argc, char **argv ) {
   long paired=0;
-
+  is_paired_data=0;
   if (argc<2 || argc>3) {
     fprintf(stderr,"Usage: fastq_validator fastq1 [fastq2]\n");
     //fprintf(stderr,"%d",argc);
@@ -316,6 +321,7 @@ int main(int argc, char **argv ) {
   //fprintf(stderr,"%d\n",argc);
   //bin/fprintf(stderr,"%s\n",argv[0]);
   if (argc ==3) {
+    is_paired_data=1;
     fd2=open_fastq(argv[2]);
     fclose(fd2);
   }
@@ -323,23 +329,23 @@ int main(int argc, char **argv ) {
   // casava 1.8?
   is_casava_18=is_casava_1_8(argv[1]);
   if (is_casava_18) fprintf(stderr,"CASAVA=1.8\n");
-  fprintf(stderr,"HASHSIZE=%u\n",HASHSIZE);
+  fprintf(stderr,"HASHSIZE=%lu\n",HASHSIZE);
   // ************************************************************
   off_t cur_offset=1;
   unsigned long cline=1;
   //memset(&collisions[0],0,HASHSIZE+1);
-  hashtable index=new_hashtable(HASHSIZE);
+  hashtable sn_index=new_hashtable(HASHSIZE);
   index_mem+=sizeof(hashtable);
 
-  index_file(argv[1],index,0,-1);
-  printf("\n");
+  index_file(argv[1],sn_index,0,-1);
+  fprintf(stderr,"\n");
   // print some info
-  printf("Reads processed: %ld\n",index->n_entries);
-  printf("Memory used in indexing: ~%ld MB\n",index_mem/1024/1024);  
+  fprintf(stderr,"Reads processed: %ld\n",sn_index->n_entries);
+  fprintf(stderr,"Memory used in indexing: ~%ld MB\n",index_mem/1024/1024);  
   // pair-end
   if (argc ==3 ) {
-    printf("File %s processed\n",argv[1]);  
-    printf("Next file %s\n",argv[2]);  
+    fprintf(stderr,"File %s processed\n",argv[1]);  
+    fprintf(stderr,"Next file %s\n",argv[2]);  
     // validate the second file and check if all reads are paired
     fd2=open_fastq(argv[2]);
     INDEX_ENTRY* e;
@@ -356,21 +362,22 @@ int main(int argc, char **argv ) {
       char *qual=READ_LINE_QUAL(fd2);
       char* readname=get_readname(hdr,&len,cline);
       if (seq==NULL || hdr2==NULL || qual==NULL ) {
-	fprintf(stderr,"Error line %u: file truncated?\n",cline);
+	fprintf(stderr,"Error line %lu: file truncated?\n",cline);
 	exit(1);
       }
       if (validate_entry(hdr,hdr2,seq,qual,cline)!=0) {
 	exit(1);
       }
+      //fprintf(stderr,"Reads processed: %ld\n",sn_index->n_entries);
       // check for duplicates
-      if ( (e=lookup_header(index,readname))==NULL ) {
-	fprintf(stderr,"Error line %u: unpaired read - %s\n",cline,readname);
+      if ( (e=lookup_header(sn_index,readname))==NULL ) {
+	fprintf(stderr,"Error line %lu: unpaired read - %s\n",cline,readname);
 	exit(1);
       } else {
-	unsigned long key=hashit(readname);
-	// remove entry from index
-	if (delete(index,key,e)!=e) {
-	  fprintf(stderr,"Error line %u: Unable to delete entry from index - %s\n",cline,readname);
+	ulong key=hashit(readname);
+	// remove entry from sn_index
+	if (delete(sn_index,key,e)!=e) {
+	  fprintf(stderr,"Error line %lu: Unable to delete entry from sn_index - %s\n",cline,readname);
 	  exit(1);
 	}
 	free_indexentry(e);
@@ -380,8 +387,8 @@ int main(int argc, char **argv ) {
       cline+=4;
     }
     printf("\n");
-    if (index->n_entries>0 ) {
-      fprintf(stderr,"Error: found %u unpaired reads from file1\n",index->n_entries);
+    if (sn_index->n_entries>0 ) {
+      fprintf(stderr,"Error: found %lu unpaired reads from file1\n",sn_index->n_entries);
       exit(1);
     }
   }

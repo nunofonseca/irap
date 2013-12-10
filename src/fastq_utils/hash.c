@@ -30,7 +30,7 @@
 #define LAST_ENTRY(table,i) table->buckets_last[i]
 #define HASHSIZE(table) table->size
 
-static int mhash(hashtable,ulong);
+static unsigned int mhash(hashtable,ulong);
 static hashnode* hash_lookup(hashtable,ulong);
 
 
@@ -60,7 +60,7 @@ __ptr_t get_next_object(hashtable table,ulong key)
 __ptr_t delete(hashtable table,ulong key,__ptr_t obj)
 {
   hashnode *b,*prev=NULL;
-  int c=mhash(table,key);
+  unsigned int c=mhash(table,key);
   b=BUCKET(table,c); /* set a pointer to the first bucket */
   while( b!=NULL) {
     if( b->value==key && b->obj==obj){
@@ -121,15 +121,15 @@ hashtable new_hashtable(ulong hashsize) {
 }
 
 /* A very simple hashing function */
-static int mhash(hashtable table,ulong key)
+static unsigned int mhash(hashtable table,ulong key)
 {
-  return (int)(key%HASHSIZE(table));
+  return (unsigned int)(key%HASHSIZE(table));
 }
 
 /* inserts a new element in the hash table*/
 int insere(hashtable table,ulong key,__ptr_t obj)
 {
-   int ind;
+   unsigned int ind;
    hashnode *new;
    if((new=(hashnode *)malloc(sizeof(hashnode)))==NULL) return -1;
    ind=mhash(table,key);
