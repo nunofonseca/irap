@@ -82,14 +82,14 @@ test6:
 	./fastq_validator tests/test_e8.fastq || \
 	./fastq_validator tests/test_e9.fastq || \
 	./fastq_validator tests/test_e10.fastq || \
-	echo "all errors detected"
+	echo "OK! all errors detected"
 	./fastq_validator tests/test_1.fastq
 	./fastq_validator tests/test_2.fastq
 	./fastq_validator tests/test_e11.fastq
 	time -p ./fastq_validator tests/pe_bug14.fastq tests/pe_bug14.fastq
 	time -p ./fastq_validator tests/c18_1M_1.fastq
 	time -p ./fastq_validator tests/c18_1M_2.fastq
-	time -p ./fastq_validator tests/c18_1M_1.fastq tests/c18_1M_2.fastq || echo "Error detected"
+	time -p ./fastq_validator tests/c18_1M_1.fastq tests/c18_1M_2.fastq || echo "OK! Error detected"
 
 
 tests: test1 test2 test3 test4 test5 test6
