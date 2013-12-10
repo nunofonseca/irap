@@ -221,20 +221,20 @@ inline int validate_entry(char *hdr,char *hdr2,char *seq,char *qual,unsigned lon
     fprintf(stderr,"Error line %u: sequence identifier should start with an @ - %s\n",linenum,hdr);
     return 1;
   }  
-  if ( hdr[1]=='\0' || hdr[1]=='\n' ) {
+  if ( hdr[1]=='\0' || hdr[1]=='\n' || hdr[1]=='\r') {
     fprintf(stderr,"Error line %u: sequence identifier should be longer than 1\n",linenum);
     return 1;
   }
   // sequence
   unsigned int slen=0;
   char c;
-  while ( seq[slen]!='\0' && seq[slen]!='\n' ) {
+  while ( seq[slen]!='\0' && seq[slen]!='\n' && seq[slen]!='\r' ) {
     // check content: ACGT acgt nN 0123.
     if ( seq[slen]!='A' && seq[slen]!='C' && seq[slen]!='G' && seq[slen]!='T' &&
 	 seq[slen]!='a' && seq[slen]!='c' && seq[slen]!='g' && seq[slen]!='t' &&
 	 seq[slen]!='0' && seq[slen]!='1' && seq[slen]!='2' && seq[slen]!='3' &&
 	 seq[slen]!='n' && seq[slen]!='N' ) {
-      fprintf(stderr,"Error line %u: invalid character %c, expected ACGTacgt0123nN\n",linenum+1,seq[slen]);
+      fprintf(stderr,"Error line %u: invalid character '%x', expected ACGTacgt0123nN\n",linenum+1,seq[slen]);
       return 1;
     }
     slen++;
@@ -245,13 +245,13 @@ inline int validate_entry(char *hdr,char *hdr2,char *seq,char *qual,unsigned lon
     return 1;
   }
   // hdr2=@
-  if (hdr2[1]!='\0' && hdr2[1]!='\n') {
+  if (hdr2[1]!='\0' && hdr2[1]!='\n' && hdr2[1]!='\r') {
     fprintf(stderr,"Error line %u:  header2 too small - %u\n",linenum+1,slen);
     return 1;
   }
   // qual length==slen
   unsigned int qlen=0;
-  while ( qual[qlen]!='\0' && qual[qlen]!='\n' ) {
+  while ( qual[qlen]!='\0' && qual[qlen]!='\n' && qual[qlen]!='\r') {
     qlen++;    
   }  
   if ( qlen!=slen ) {
