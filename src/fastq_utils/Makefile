@@ -83,11 +83,11 @@ test6:
 	./fastq_validator tests/test_e9.fastq || \
 	./fastq_validator tests/test_e10.fastq || \
 	echo "OK! all errors detected"
-	./fastq_validator tests/test_1.fastq
-	./fastq_validator tests/test_2.fastq
-	./fastq_validator tests/test_e11.fastq
-	time -p ./fastq_validator tests/pe_bug14.fastq tests/pe_bug14.fastq
-	time -p ./fastq_validator tests/c18_1M_1.fastq
+	./fastq_validator tests/test_1.fastq && \
+	./fastq_validator tests/test_2.fastq && \
+	./fastq_validator tests/test_e11.fastq && \
+	time -p ./fastq_validator tests/pe_bug14.fastq tests/pe_bug14.fastq && \
+	time -p ./fastq_validator tests/c18_1M_1.fastq && \
 	time -p ./fastq_validator tests/c18_1M_2.fastq
 	time -p ./fastq_validator tests/c18_1M_1.fastq tests/c18_1M_2.fastq || echo "OK! Error detected"
 
