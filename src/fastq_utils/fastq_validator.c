@@ -135,10 +135,10 @@ void free_indexentry(INDEX_ENTRY *e) {
   return;
 }
 
-char* get_readname(char *s,int *len_p,int cline) {
+char* get_readname(char *s,int *len_p,unsigned long cline,const char *filename) {
   int len;
   if (s[0]!='@' ) {
-    fprintf(stderr,"Error line %lu: error in header %s\n",cline,s);
+    fprintf(stderr,"Error in file %s, line %lu: wrong header %s\n",filename,cline,s);
     exit(1);
   } 
   s=&s[1]; // ignore/discard @
@@ -175,7 +175,7 @@ void index_file(char *filename,hashtable sn_index,long start_offset,long length)
   // move to the right position
   if(length>0) {
     fprintf(stderr, "Internal error: Not implemented\n");
-    exit(1);
+    exit(2);
   }
   long cline=1;
   // sn_index creation could be done in parallel
@@ -191,21 +191,21 @@ void index_file(char *filename,hashtable sn_index,long start_offset,long length)
     char *seq=READ_LINE_SEQ(fd1);
     char *hdr2=READ_LINE_HDR2(fd1);
     char *qual=READ_LINE_QUAL(fd1);
-    char* readname=get_readname(hdr,&len,cline);
+    char* readname=get_readname(hdr,&len,cline,filename);
     if (seq==NULL || hdr2==NULL || qual==NULL ) {
-      fprintf(stderr,"Error line %lu: file truncated?\n",cline);
+      fprintf(stderr,"Error in file %s, line %lu: file truncated?\n",filename,cline);
       exit(1);
     }
-    if (validate_entry(hdr,hdr2,seq,qual,cline)!=0) {
+    if (validate_entry(hdr,hdr2,seq,qual,cline,filename)!=0) {
       exit(1);
     }
     // check for duplicates
     if ( lookup_header(sn_index,readname)!=NULL ) {
-      fprintf(stderr,"Error line %lu: duplicated sequence %s\n",cline,readname);
+      fprintf(stderr,"Error in file %s, line %lu: duplicated sequence %s\n",filename,cline,readname);
       exit(1);
     }
     if ( new_indexentry(sn_index,readname,len,start_pos)==NULL) {
-      fprintf(stderr,"Error line %lu: malloc failed?",cline);
+      fprintf(stderr,"Error in file %s, line %lu: malloc failed?",filename,cline);
       exit(1);
     }
     
@@ -219,15 +219,15 @@ void index_file(char *filename,hashtable sn_index,long start_offset,long length)
 }
 
 // return 0 on sucess, 1 otherwise
-inline int validate_entry(char *hdr,char *hdr2,char *seq,char *qual,unsigned long linenum) {
+inline int validate_entry(char *hdr,char *hdr2,char *seq,char *qual,unsigned long linenum,const char* filename) {
   
   // Sequence identifier
   if ( hdr[0]!='@' ) {
-    fprintf(stderr,"Error line %lu: sequence identifier should start with an @ - %s\n",linenum,hdr);
+    fprintf(stderr,"Error in file %s, line %lu: sequence identifier should start with an @ - %s\n",filename,linenum,hdr);
     return 1;
   }  
   if ( hdr[1]=='\0' || hdr[1]=='\n' || hdr[1]=='\r') {
-    fprintf(stderr,"Error line %lu: sequence identifier should be longer than 1\n",linenum);
+    fprintf(stderr,"Error in file %s, line %lu: sequence identifier should be longer than 1\n",filename,linenum);
     return 1;
   }
   // sequence
@@ -239,19 +239,19 @@ inline int validate_entry(char *hdr,char *hdr2,char *seq,char *qual,unsigned lon
 	 seq[slen]!='a' && seq[slen]!='c' && seq[slen]!='g' && seq[slen]!='t' &&
 	 seq[slen]!='0' && seq[slen]!='1' && seq[slen]!='2' && seq[slen]!='3' &&
 	 seq[slen]!='n' && seq[slen]!='N' ) {
-      fprintf(stderr,"Error line %lu: invalid character '%x', expected ACGTacgt0123nN\n",linenum+1,seq[slen]);
+      fprintf(stderr,"Error in file %s, line %lu: invalid character '%x', expected ACGTacgt0123nN\n",filename,linenum+1,seq[slen]);
       return 1;
     }
     slen++;
   }
   // check len
   if (slen < MIN_READ_LENGTH ) {
-    fprintf(stderr,"Error line %lu: read length too small - %u\n",linenum+1,slen);
+    fprintf(stderr,"Error in file %s, line %lu: read length too small - %u\n",filename,linenum+1,slen);
     return 1;
   }
   // hdr2=@
   if (hdr2[1]!='\0' && hdr2[1]!='\n' && hdr2[1]!='\r') {
-    fprintf(stderr,"Error line %lu:  header2 too small - %u\n",linenum+1,slen);
+    fprintf(stderr,"Error in file %s, line %lu:  header2 too small - %u\n",filename,linenum+1,slen);
     return 1;
   }
   // qual length==slen
@@ -260,7 +260,7 @@ inline int validate_entry(char *hdr,char *hdr2,char *seq,char *qual,unsigned lon
     qlen++;    
   }  
   if ( qlen!=slen ) {
-    fprintf(stderr,"Error line %lu: sequence and quality don't have the same length %u!=%u\n",linenum+1,slen,qlen);
+    fprintf(stderr,"Error in file %s, line %lu: sequence and quality don't have the same length %u!=%u\n",filename,linenum+1,slen,qlen);
     return 1;
   }
   return 0;
@@ -283,8 +283,8 @@ int is_casava_1_8(char *f) {
   int is_casava_1_8=0;
   reti = regcomp(&regex,"[A-Z0-9:]* [12]:[YN]:[0-9]*:.*",0);  
   if ( reti ) { 
-    fprintf(stderr, "Error: Could not compile regex\n"); 
-    exit(1); 
+    fprintf(stderr, "Internal error: Could not compile regex\n"); 
+    exit(2); 
   }
   FILE *fd1=open_fastq(f);
   char *hdr=READ_LINE(fd1);
@@ -360,24 +360,24 @@ int main(int argc, char **argv ) {
       char *seq=READ_LINE_SEQ(fd2);
       char *hdr2=READ_LINE_HDR2(fd2);
       char *qual=READ_LINE_QUAL(fd2);
-      char* readname=get_readname(hdr,&len,cline);
+      char* readname=get_readname(hdr,&len,cline,argv[2]);
       if (seq==NULL || hdr2==NULL || qual==NULL ) {
-	fprintf(stderr,"Error line %lu: file truncated?\n",cline);
+	fprintf(stderr,"Error in file %s, line %lu: file truncated?\n",argv[2],cline);
 	exit(1);
       }
-      if (validate_entry(hdr,hdr2,seq,qual,cline)!=0) {
+      if (validate_entry(hdr,hdr2,seq,qual,cline,argv[2])!=0) {
 	exit(1);
       }
       //fprintf(stderr,"Reads processed: %ld\n",sn_index->n_entries);
       // check for duplicates
       if ( (e=lookup_header(sn_index,readname))==NULL ) {
-	fprintf(stderr,"Error line %lu: unpaired read - %s\n",cline,readname);
+	fprintf(stderr,"Error in file %s, line %lu: unpaired read - %s\n",argv[2],cline,readname);
 	exit(1);
       } else {
 	ulong key=hashit(readname);
 	// remove entry from sn_index
 	if (delete(sn_index,key,e)!=e) {
-	  fprintf(stderr,"Error line %lu: Unable to delete entry from sn_index - %s\n",cline,readname);
+	  fprintf(stderr,"Error in file %s, line %lu: unable to delete entry from sn_index - %s\n",argv[2],cline,readname);
 	  exit(1);
 	}
 	free_indexentry(e);
@@ -388,7 +388,7 @@ int main(int argc, char **argv ) {
     }
     printf("\n");
     if (sn_index->n_entries>0 ) {
-      fprintf(stderr,"Error: found %lu unpaired reads from file1\n",sn_index->n_entries);
+      fprintf(stderr,"Error in file %s: found %lu unpaired reads\n",argv[1],sn_index->n_entries);
       exit(1);
     }
   }
