@@ -273,7 +273,7 @@ jbrowser_stage4_targets:
 # generic rule
 # works only for gene level visualization
 # TODO: add support for transcript and exon level visualization (change track name accordingly)
-$(name)/$(mapper)/$(quant_method)/$(de_method)/%.genes_de.tsv.tracks: $(name)/$(mapper)/$(quant_method)/$(de_method)/%.genes_de.tsv.fold.bw  $(name)/$(mapper)/$(quant_method)/$(de_method)/%.genes_de.tsv.pval.bw $(name)/$(mapper)/$(quant_method)/$(de_method)/%.genes_de.tsv.fold.bedGraph  $(name)/$(mapper)/$(quant_method)/$(de_method)/%.genes_de.tsv.pval.bedGraph
+$(name)/$(mapper)/$(quant_method)/$(de_method)/%.genes_de.tsv.tracks: $(name)/$(mapper)/$(quant_method)/$(de_method)/%.genes_de.fold.bw $(name)/$(mapper)/$(quant_method)/$(de_method)/%.genes_de.pval.bw $(name)/$(mapper)/$(quant_method)/$(de_method)/%.genes_de.fold.bedGraph $(name)/$(mapper)/$(quant_method)/$(de_method)/%.genes_de.pval.bedGraph
 	$(call p_info,DE tracks $@ generated)	
 
 $(name)/$(mapper)/$(quant_method)/$(de_method)/%.genes_de.tsv.tracks.uploaded: $(name)/$(mapper)/$(quant_method)/$(de_method)/%.genes_de.tsv.fold.track  $(name)/$(mapper)/$(quant_method)/$(de_method)/%.genes_de.tsv.pval.track
