@@ -853,6 +853,8 @@ include $(irap_path)/../aux/mk/irap_citations.mk
 include $(irap_path)/../aux/mk/irap_quant.mk
 # DE
 include $(irap_path)/../aux/mk/irap_de.mk
+# Atlas (atlas specific stuff)
+include $(irap_path)/../aux/mk/irap_atlas.mk
 #################################################################################
  
 index_files=$(call $(mapper)_index_filename,$(file_indexed),$(file_indexed))
