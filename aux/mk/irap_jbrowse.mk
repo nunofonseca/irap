@@ -303,6 +303,7 @@ $(name)/$(mapper)/$(quant_method)/deseq/%.genes_de.fold.bedGraph: $(name)/$(mapp
 $(name)/$(mapper)/$(quant_method)/deseq/%.genes_de.pval.bedGraph: $(name)/$(mapper)/$(quant_method)/deseq/%.genes_de.tsv $(gff3_file_abspath).csv
 	$(call deseq_bed,$<,$@,adjpvalue,gene)
 
+# log2foldchange
 DESEQ_FIELD_fold=6
 DESEQ_FIELD_pvalue=7
 DESEQ_FIELD_adjpvalue=8
