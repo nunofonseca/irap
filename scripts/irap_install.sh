@@ -613,7 +613,7 @@ function boost_install {
     tar xvjf $BOOST_FILE
     pushd `echo $BOOST_FILE|sed "s/.tar.bz2//"`
     ./bootstrap.sh --prefix=$IRAP_DIR
-    ./b2
+    ./b2 -q
     ./b2 install
     popd
     pinfo "Installing boost...done."
