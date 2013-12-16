@@ -63,7 +63,7 @@ if [ "$NAME-" == "-" ]; then
     exit 1
 fi
 
-if [ !-e "$FASTAFILE" ]; then
+if [ ! -e "$FASTAFILE" ]; then
     echo "ERROR: fasta file not found $FASTAFILE"
     exit 1
 fi
