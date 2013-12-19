@@ -122,9 +122,12 @@ gc(verbose=FALSE)
 #pdebug.save.state("irap_gtf2annot","p2")
 r.table <- data.frame(list(ID=gene.ids,
                       locus=paste(chr,":",start,"..",end,sep=""),
-                      source=biotypes,
-                      Name=name.v))
+                      source=biotypes))
+
 rownames(r.table) <- gene.ids
+
+r.table[,"Name"] <- name.v
+
 # cleanup
 rm(start)
 rm(end)
