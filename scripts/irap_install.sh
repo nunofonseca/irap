@@ -97,6 +97,7 @@ BFAST_VERSION=0.7.0a
 BFAST_FILE=bfast-$BFAST_VERSION.tar.gz
 BFAST_URL=http://sourceforge.net/projects/bfast/files/bfast/0.7.0/$BFAST_FILE
 
+# new 1.0.0
 bowtie1_VERSION=0.12.9
 bowtie1_FILE=bowtie-${bowtie1_VERSION}-linux-x86_64.zip
 bowtie1_URL=http://sourceforge.net/projects/bowtie-bio/files/bowtie/$bowtie1_VERSION/$bowtie1_FILE
@@ -105,6 +106,8 @@ bowtie2_VERSION=2.1.0
 bowtie2_FILE=bowtie2-${bowtie2_VERSION}-linux-x86_64.zip
 bowtie2_URL=http://sourceforge.net/projects/bowtie-bio/files/bowtie2/$bowtie2_VERSION/$bowtie2_FILE
 
+# new
+# http://sourceforge.net/projects/gemlibrary/files/gem-library/Binary%20pre-release%203/GEM-binaries-Linux-x86_64-core_i3-20130406-045632.tbz2/download
 GEM_VERSION=1.6-i3
 GEM_FILE=GEM-gemtools-${GEM_VERSION}.tar.gz
 GEM_URL=http://barnaserver.com/gemtools/$GEM_FILE
@@ -112,18 +115,21 @@ GEM_URL=http://barnaserver.com/gemtools/$GEM_FILE
 #GEM_FILE=GEM-binaries-Linux-x86_64-core_i3-$GEM_VERSION.tbz2
 #GEM_URL=http://sourceforge.net/projects/gemlibrary/files/gem-library/Binary%20pre-release%202/$GEM_FILE/download
 
-
+#
 tophat1_VERSION=1.4.1
 tophat1_FILE=tophat-${tophat1_VERSION}.Linux_x86_64.tar.gz
 tophat1_URL=http://tophat.cbcb.umd.edu/downloads/$tophat1_FILE
 
+# new 2.0.10
 tophat2_VERSION=2.0.8
 tophat2_FILE=tophat-${tophat2_VERSION}.Linux_x86_64.tar.gz
 tophat2_URL=http://tophat.cbcb.umd.edu/downloads/$tophat2_FILE
 
+# new: 0.7.5
 SMALT_VERSION=0.6.4
 SMALT_FILE=smalt-$SMALT_VERSION.tgz
 SMALT_URL=ftp://ftp.sanger.ac.uk/pub4/resources/software/smalt/$SMALT_FILE
+#http://sourceforge.net/projects/smalt/files/smalt-0.7.5.tar.gz/download
 
 SOAPsplice_VERSION=1.10
 SOAPsplice_FILE=SOAPsplice-v$SOAPsplice_VERSION.tar.gz
@@ -133,18 +139,22 @@ SOAP2_VERSION=2.21
 SOAP2_FILE=soap${SOAP2_VERSION}release.tar.gz
 SOAP2_URL=http://soap.genomics.org.cn/down/$SOAP2_FILE
 
+# new 2.3.0
 STAR_VERSION=2.2.0
 STAR_FILE=STAR_${STAR_VERSION}c.Linux_x86_64.gz
 STAR_URL=ftp://ftp2.cshl.edu/gingeraslab/tracks/STARrelease/$STAR_VERSION/$STAR_FILE
 
+#new 2013-11-27
 GSNAP_VERSION=2012-07-20
 GSNAP_FILE=gmap-gsnap-${GSNAP_VERSION}.tar.gz
 GSNAP_URL=http://research-pub.gene.com/gmap/src/$GSNAP_FILE
 
+# new 0.7.4
 bwa_VERSION=0.6.2
 bwa_FILE=bwa-${bwa_VERSION}.tar.bz2
 bwa_URL=http://sourceforge.net/projects/bio-bwa/files/$bwa_FILE
 
+# new 2.1.13
 osa_VERSION=2.0.1
 osa_FILE=OSAv$osa_VERSION.zip
 osa_URL=http://www.omicsoft.com/osa/software/$osa_FILE
@@ -157,15 +167,17 @@ RUBY_VERSION=1.9.3-p448
 RUBY_FILE=ruby-${RUBY_VERSION}.tar.gz
 RUBY_URL=http://ftp.ruby-lang.org/pub/ruby/1.9/$RUBY_FILE
 
+# new: 5.19.6
 PERL_VERSION=5.16.3
 PERL_FILE=perl-$PERL_VERSION.tar.gz
 PERL_URL=http://www.cpan.org/src/5.0/$PERL_FILE
 
+# new: 1.54
 BOOST_VERSION=1.52.0
 BOOST_FILE=boost_`echo $BOOST_VERSION|sed "s/\./_/g"`.tar.bz2
 BOOST_URL=http://sourceforge.net/projects/boost/files/boost/$BOOST_VERSION/$BOOST_FILE
 
-gnuplot_VERSION=4.6.0   
+gnuplot_VERSION=4.6.4   
 gnuplot_FILE=gnuplot-$gnuplot_VERSION.tar.gz
 gnuplot_URL=http://sourceforge.net/projects/gnuplot/files/gnuplot/$gnuplot_VERSION/$gnuplot_FILE
 
@@ -173,6 +185,7 @@ R_VERSION=2.15.2
 R_FILE=R-${R_VERSION}.tar.gz 
 R_URL=http://cran.r-project.org/src/base/R-2/$R_FILE
 
+# new: 0.1.19
 SAMTOOLS_VERSION=0.1.18
 SAMTOOLS_FILE=samtools-$SAMTOOLS_VERSION.tar.bz2
 SAMTOOLS_URL=http://sourceforge.net/projects/samtools/files/samtools/$SAMTOOLS_VERSION/$SAMTOOLS_FILE
@@ -207,10 +220,12 @@ BitSeq_URL=http://bitseq.googlecode.com/files/$BitSeq_FILE
 #MMSEQ_FILE=mmseq_${MMSEQ_VERSION}.zip
 #MMSEQ_URL=http://www.bgx.org.uk/software/$MMSEQ_FILE
 
+# new: 0.5.4p5
 htseq_VERSION=0.5.3p9
 htseq_FILE=HTSeq-${htseq_VERSION}.tar.gz
 htseq_URL=http://pypi.python.org/packages/source/H/HTSeq/$htseq_FILE
 
+# new: 1.5.3-20131213021913
 FLUX_CAPACITOR_VERSION=1.2.3-20121215021902
 FLUX_CAPACITOR_FILE=flux-capacitor-$FLUX_CAPACITOR_VERSION.tgz
 FLUX_CAPACITOR_URL=http://sammeth.net/artifactory/barna-nightly/barna/barna.capacitor/$FLUX_CAPACITOR_VERSION/$FLUX_CAPACITOR_FILE
@@ -231,6 +246,7 @@ IGV_TOOLS_VERSION=2.1.24
 IGV_TOOLS_FILE=igvtools_nogenomes_$IGV_TOOLS_VERSION.zip
 IGV_TOOLS_URL=http://www.broadinstitute.org/igv/projects/downloads/$IGV_TOOLS_FILE
 
+# new: FASTX_VERSION=0.0.13.2
 FASTX_VERSION=0.0.13
 FASTX_FILE=fastx_toolkit_${FASTX_VERSION}_binaries_Linux_2.6_amd64.tar.bz2
 FASTX_URL=http://hannonlab.cshl.edu/fastx_toolkit/$FASTX_FILE
@@ -245,12 +261,14 @@ JBROWSE_URL=http://jbrowse.org/wordpress/wp-content/plugins/download-monitor/$JB
 JBROWSE_EXTRA_UTILS="hgGcPercent bedGraphToBigWig wigCorrelate bigWigInfo bigWigSummary faToNib faToTwoBit hgWiggle"
 JBROWSE_EXTRA_UTILSURL=http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/
 
+# new: 1.10.12 id=85
 NEW_JBROWSE_VERSION=1.9.8
 NEW_JBROWSE_FILE=download.php?id=59
 NEW_JBROWSE_URL=http://jbrowse.org/wordpress/wp-content/plugins/download-monitor/$JBROWSE_FILE
 NEW_JBROWSE_EXTRA_UTILS="hgGcPercent bedGraphToBigWig wigCorrelate bigWigInfo bigWigSummary faToNib faToTwoBit hgWiggle"
 NEW_JBROWSE_EXTRA_UTILSURL=http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/
 
+# new: 2.11.4
 MONO_VERSION=2.10.8
 MONO_FILE=mono-${MONO_VERSION}.tar.gz    
 MONO_URL=http://download.mono-project.com/sources/mono/$MONO_FILE
