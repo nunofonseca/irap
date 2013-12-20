@@ -78,7 +78,7 @@ shift 1
 IRAP_PARAMS=$*
 #Data directory
 
-
+IRAP_PAR_CMD="$0 $*"
 ###################
 ## Load config file
 echo " * Trying to load configuration file $conf..."
@@ -90,6 +90,14 @@ mapper="`grep "^pe=" $conf|cut -f 2 -d=`"
 contrasts="`grep "^contrasts=" $conf|cut -f 2 -d=`"
 report_dir=$name/report
 echo " * Configuration loaded."
+
+# Check JOB_MAX_MEM
+if [ "$JOB_MAX_MEM-" != "-" ]; then 
+  if [ "$JOB_MEM_INCR-" == "-" ]; then
+    echo ERROR: JOB_MEM_INCR should be defined when JOB_MAX_MEM is defined! > /dev/stderr
+    exit 1
+  fi
+fi
 
 # override irap_params
 for p in $IRAP_PARAMS; do
@@ -161,12 +169,12 @@ function submit_job_status {
     fi
     #p_info "WAITFOR (id)=$JOB_ID $jobname   $WAITFOR"
     # in spite of the checks, the job may have finished before lunching the new one, hence catch the error and submit a new one if an error occurs
-    $ECHO bsub -M 1000 -q $QUEUE  -J "${jobname}n" $WAITFOR  irap_lsf_job_status.sh $jobname $JOB_ID $name $conf $IRAP_PARAMS
+    $ECHO bsub -M 1000 -q $QUEUE  -J "${jobname}n" $WAITFOR  irap_lsf_job_status.sh $jobname $JOB_ID $IRAP_PAR_CMD
     #2> /dev/null
     if [ $? != 0 ]; then
 	p_info "$jobname not  found...probably it has already finished"
 	WAITFOR=
-	$ECHO bsub -M 1000 -q $QUEUE  -J "${jobname}n" $WAITFOR  irap_lsf_job_status.sh $jobname $JOB_ID $name $conf $IRAP_PARAMS
+	$ECHO bsub -M 1000 -q $QUEUE  -J "${jobname}n" $WAITFOR  irap_lsf_job_status.sh $jobname $JOB_ID $IRAP_PAR_CMD 
     fi
 }
 
@@ -195,7 +203,7 @@ function submit_job {
     fi
     #########################################################
     #-R  "span[ptile=$THREADS]"
-    let MAX_MEM=($MEM/16000+1)*16000
+    let MAX_MEM=($MEM/4000+1)*4000
     if [ "$WAIT_FOR_IDS-" != "-" ]; then
 	$ECHO bsub -q $QUEUE -n $THREADS  -M $MAX_MEM -R "rusage[mem=$MEM]"  -w "$WAIT_FOR_IDS"  -cwd `pwd` -o "`pwd`/$name/$jobname-%J.out" -e "`pwd`/$name/$jobname-%J.err" -J $jobname  $cmd2e max_threads=$THREADS  data_dir=$DATA_DIR max_mem=$MEM
     else
