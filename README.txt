@@ -22,8 +22,7 @@ Contents
 1.2 Install IRAP and all dependencies (3rd party software) to a directory (e.g. irap_install)
    ./irap_clone/scripts/irap_install.sh -a irap_install -s irap_clone
 
- Dependencies: zlib-devel,python-devel,bzip2-devel,python,readline-devel,libgfortran,gcc-gfortran,libX11-devel,libXt-devel,numpy,gd-devel,libxml2,libxml2-devel,libpng, libpng-devel
-
+ Dependencies: zlib-devel python-devel bzip2-devel python readline-devel libgfortran gcc-gfortran libX11-devel libXt-devel numpy gd-devel libxml2 libxml2-devel libpng libpng-devel python java
 
 1.3 Setup the shell environment using the irap_setup.sh file: e.g., assuming that you installed IRAP in irap_install you could setup the environment using
    source irap_install/irap_setup.sh
