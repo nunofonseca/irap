@@ -3,10 +3,11 @@
 # TO BE executed by irap
 jobname=$1
 JOB_ID=$2
-shift 2
+MEM=$3
+shift 3
 JOB_CMD=$*
 if [ "$JOB_CMD-" = "-" ]; then
-    echo "ERROR! Usage: irap_lsf_job_status.sh jobname jobid job_cmd" >&2
+    echo "ERROR! Usage: irap_lsf_job_status.sh jobname jobid MEM job_cmd" >&2
     exit 1
 fi
 echo $JOB_CMD
@@ -46,13 +47,14 @@ if [  $EXIT_CODE == 1  ] &&  [ "$JOB_MAX_MEM-" != "-"  ]; then
   MEM_ERROR=`bjobs -a -l -J $jobname_prefix* | grep -c TERM_MEMLIMIT`
   echo MEM_ERROR=$MEM_ERROR
   if [ $MEM_ERROR != 0 ]; then
-     CUR_MEM=`bjobs -a -l -J  $jobname_prefix* | grep "MAX MEM" | cut -f 2 -d: | sed "s/Mbytes//"|head -n 1`
-     MEM=`expr $CUR_MEM + $JOB_MEM_INCR`
-     if [ $MEM -lt $JOB_MAX_MEM ]; then
+     CUR_MEM=$MEM
+     NEW_MAX_MEM=`expr $CUR_MEM + $JOB_MEM_INCR`
+     #echo "$NEW_MAX_MEM=$CUR_MEM + $JOB_MEM_INCR"
+     if [ $NEW_MAX_MEM -lt $JOB_MAX_MEM ]; then
        # resubmit
-       echo "Job(s) failed due to lack of memory...resubmitting job(s) with more memory ($MEM)."
-       echo $IRAP_JOB_CMD
-       MEM=$MEM $IRAP_JOB_CMD
+       echo "Job(s) failed due to lack of memory...resubmitting job(s) with more memory ($NEW_MAX_MEM)."
+       echo $JOB_CMD
+       MEM=$NEW_MAX_MEM $JOB_CMD
      fi
   fi
 fi
