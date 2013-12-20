@@ -91,6 +91,30 @@ function download2cache {
     done
     pinfo "Downloaded files in $SRC_DIR/download"
 }
+
+function check_dependencies {
+    DEVEL_LIBRARIES_REQUIRED="zlib-devel python-devel bzip2-devel python readline-devel libgfortran gcc-gfortran libX11-devel libXt-devel numpy gd-devel libxml2-devel libxml2"
+    MISSING=0
+    # Binaries that should be available
+    BINARIES="java python gcc g++ gfortran"
+    pinfo "Checking dependencies..."
+    for bin in $BINARIES; do
+	PATH2BIN=`which $bin 2> /dev/null`
+	if [ "$PATH2BIN-" == "-" ]; then
+	    pinfo " $bin not found!"
+ 	    MISSING=1
+	else
+	    pinfo " $bin found: $PATH2BIN"
+	fi
+    done
+    pinfo "Checking dependencies...done."
+    if [ $MISSING == 1 ]; then
+	pinfo "ERROR: Unable to proceed"
+	exit 1
+    fi
+    pinfo "If installation fails then please check if the following libraries are installed:"
+    pinfo "$DEVEL_LIBRARIES_REQUIRED"
+}
 #################################
 # VERSIONS, SRC file and URL
 BFAST_VERSION=0.7.0a
@@ -542,7 +566,7 @@ function irap_install_mappers {
    bowtie2_install
    tophat1_install
    tophat2_install
-   bfast_install
+   #bfast_install
    smalt_install
    soap_splice_install
    soap2_install
@@ -1419,6 +1443,8 @@ else
 fi
 # print system info
 uname -a
+# Check dependencies
+check_dependencies
 # Full path
 pinfo "Checking paths..."
 IRAP_DIR=$(readlink -f "$IRAP_DIR")
