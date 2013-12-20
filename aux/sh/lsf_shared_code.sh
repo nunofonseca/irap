@@ -169,15 +169,19 @@ function submit_job_status {
     fi
     #p_info "WAITFOR (id)=$JOB_ID $jobname   $WAITFOR"
     # in spite of the checks, the job may have finished before lunching the new one, hence catch the error and submit a new one if an error occurs
-    $ECHO bsub -M 1000 -q $QUEUE  -J "${jobname}n" $WAITFOR  irap_lsf_job_status.sh $jobname $JOB_ID $MEM $IRAP_PAR_CMD
+    $ECHO bsub -M 1000 -q $QUEUE  -J "${jobname}n" $WAITFOR  irap_lsf_job_status.sh $jobname $JOB_ID  `get_maxmem $MEM` $IRAP_PAR_CMD
     #2> /dev/null
     if [ $? != 0 ]; then
 	p_info "$jobname not  found...probably it has already finished"
 	WAITFOR=
-	$ECHO bsub -M 1000 -q $QUEUE  -J "${jobname}n" $WAITFOR  irap_lsf_job_status.sh $jobname $JOB_ID $MEM $IRAP_PAR_CMD 
+	$ECHO bsub -M 1000 -q $QUEUE  -J "${jobname}n" $WAITFOR  irap_lsf_job_status.sh $jobname $JOB_ID `get_maxmem $MEM` $IRAP_PAR_CMD 
     fi
 }
 
+function get_maxmem {
+    let MAX_MEM=($1/4000+1)*4000
+    echo $MAX_MEM
+}
 ################
 ## Job functions (computer farm)
 # length of jobname needs to be small otherwise lsf dependencies will not work
@@ -203,7 +207,7 @@ function submit_job {
     fi
     #########################################################
     #-R  "span[ptile=$THREADS]"
-    let MAX_MEM=($MEM/4000+1)*4000
+    MAX_MEM=`get_maxmem $MEM`
     if [ "$WAIT_FOR_IDS-" != "-" ]; then
 	$ECHO bsub -q $QUEUE -n $THREADS  -M $MAX_MEM -R "rusage[mem=$MEM]"  -w "$WAIT_FOR_IDS"  -cwd `pwd` -o "`pwd`/$name/$jobname-%J.out" -e "`pwd`/$name/$jobname-%J.err" -J $jobname  $cmd2e max_threads=$THREADS  data_dir=$DATA_DIR max_mem=$MEM
     else

@@ -55,6 +55,8 @@ if [  $EXIT_CODE == 1  ] &&  [ "$JOB_MAX_MEM-" != "-"  ]; then
        echo "Job(s) failed due to lack of memory...resubmitting job(s) with more memory ($NEW_MAX_MEM)."
        echo $JOB_CMD
        MEM=$NEW_MAX_MEM $JOB_CMD
+     else
+       echo "Job(s) failed due to lack of memory...not resubmitting because max. memory limit was reached."
      fi
   fi
 fi
