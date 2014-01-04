@@ -525,9 +525,8 @@ ifndef quant_method
  quant_method:=$(def_quant_method)
 endif
 
-#SUPPORTED_QUANT_METHODS=basic htseq_1 htseq_2 cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd scripture
-# temporary (backward compatibility)
-SUPPORTED_QUANT_METHODS=basic htseq1 htseq2 cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd scripture flux_cap
+#SUPPORTED_QUANT_METHODS=basic htseq1 htseq2 cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd scripture flux_cap
+SUPPORTED_QUANT_METHODS=basic htseq1 htseq2 cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd scripture flux_cap nurd rsem isoem sailfish
 ifeq (,$(filter $(quant_method),$(SUPPORTED_QUANT_METHODS) none))
 $(call p_info,[ERROR] quant_method)
 $(error $(quant_method) not supported)
@@ -567,11 +566,16 @@ ifndef quant_norm_method
     $(call info,*	overriding quant_norm_method!)
     override quant_norm_method=$(quant_method)
    else
-    quant_norm_method=$(def_quant_norm_method)
+    ifneq (,$(findstring nurd,$(quant_method)))
+     $(call info,*	overriding quant_norm_method!)
+     override quant_norm_method=$(quant_method)
+    else
+     quant_norm_method=$(def_quant_norm_method)
+    endif
    endif
   endif
 endif
-SUPPORTED_COUNT_NMETHODS=cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd deseq flux_cap edger
+SUPPORTED_COUNT_NMETHODS=cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd deseq flux_cap edger nurd
 ifeq (,$(filter $(quant_norm_method),none $(SUPPORTED_COUNT_NMETHODS)))
 $(call p_info,[ERROR] quant_norm_method)
 $(error $(quant_norm_method) not supported)
@@ -586,6 +590,11 @@ endif
 ifneq (,$(filter flux_cap,$(quant_method)))
 $(call info,*	overriding quant_norm_method!)
 override quant_norm_method=$(quant_method)
+endif
+
+ifneq (,$(filter nurd,$(quant_method)))
+$(call info,*	overriding quant_norm_method!)
+override quant_norm_method=nurd
 endif
 
 $(info *	quant_norm_method=$(quant_norm_method))
@@ -1377,6 +1386,26 @@ $(name)/$(mapper)/$(quant_method)/transcripts.rpkms.flux%.tsv: $(foreach p,$(pe)
 
 $(name)/$(mapper)/$(quant_method)/exons.rpkms.flux%.tsv: 
 	$(call p_info, Warning! Flux-capacitor does not produce quantification at exon level. Generating empty file $@.)
+	@$(call empty_file,$@)
+
+
+# nurd
+$(name)/$(mapper)/$(quant_method)/genes.rpkms.nurd.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.genes.rpkms.$(quant_method).tsv) $(foreach s,$(se), $(name)/$(mapper)/$(quant_method)/$(s).se.genes.rpkms.$(quant_method).tsv)
+	$(call merge_tsv,$(quant_method)) $^  > $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/$(quant_method)/transcripts.rpkms.nurd.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.transcripts.rpkms.$(quant_method).tsv) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.transcripts.rpkms.$(quant_method).tsv) 
+	$(call merge_tsv,$(quant_method)) $^  > $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/$(quant_method)/exons.rpkms.nurd.tsv: 
+	$(call p_info, Warning! NURD does not produce quantification at exon level. Generating empty file $@.)
+	@$(call empty_file,$@)
+
+
+$(name)/$(mapper)/$(quant_method)/%.nlib.nurd.tsv:
+	$(call p_info, Warning! Unable to generate  nlib file $@ with $(quant_method).)
+	@$(call empty_file,$@)
+$(name)/$(mapper)/$(quant_method)/%.nlib.nurd.tsv:
+	$(call p_info, Warning! Unable to generate nlib file $@ with $(quant_method).)
 	@$(call empty_file,$@)
 
 #################################################################
