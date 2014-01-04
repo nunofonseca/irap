@@ -24,6 +24,7 @@ install=all
 IRAP_DIR1=
 SRC_DIR=
 
+#
 USE_CACHE=y
 #############
 function pinfo {
@@ -120,74 +121,69 @@ function check_dependencies {
 BFAST_VERSION=0.7.0a
 BFAST_FILE=bfast-$BFAST_VERSION.tar.gz
 BFAST_URL=http://sourceforge.net/projects/bfast/files/bfast/0.7.0/$BFAST_FILE
-
-# new 1.0.0
-bowtie1_VERSION=0.12.9
+#
+bowtie1_VERSION=1.0.0
 bowtie1_FILE=bowtie-${bowtie1_VERSION}-linux-x86_64.zip
 bowtie1_URL=http://sourceforge.net/projects/bowtie-bio/files/bowtie/$bowtie1_VERSION/$bowtie1_FILE
-
+#
 bowtie2_VERSION=2.1.0
 bowtie2_FILE=bowtie2-${bowtie2_VERSION}-linux-x86_64.zip
 bowtie2_URL=http://sourceforge.net/projects/bowtie-bio/files/bowtie2/$bowtie2_VERSION/$bowtie2_FILE
 
-# new
-# http://sourceforge.net/projects/gemlibrary/files/gem-library/Binary%20pre-release%203/GEM-binaries-Linux-x86_64-core_i3-20130406-045632.tbz2/download
-GEM_VERSION=1.6-i3
-GEM_FILE=GEM-gemtools-${GEM_VERSION}.tar.gz
-GEM_URL=http://barnaserver.com/gemtools/$GEM_FILE
+#
+GEM_VERSION=20130406-045632
+GEM_FILE=GEM-binaries-Linux-x86_64-core_2-${GEM_VERSION}.tbz2
+GEM_URL=http://sourceforge.net/projects/gemlibrary/files/gem-library/Binary%20pre-release%203/$GEM_FILE/download
+#GEM_VERSION=1.6-i3
+#GEM_FILE=GEM-gemtools-${GEM_VERSION}.tar.gz
+#GEM_URL=http://barnaserver.com/gemtools/$GEM_FILE
 #GEM_VERSION=20121106-022124
 #GEM_FILE=GEM-binaries-Linux-x86_64-core_i3-$GEM_VERSION.tbz2
 #GEM_URL=http://sourceforge.net/projects/gemlibrary/files/gem-library/Binary%20pre-release%202/$GEM_FILE/download
-
 #
 tophat1_VERSION=1.4.1
 tophat1_FILE=tophat-${tophat1_VERSION}.Linux_x86_64.tar.gz
 tophat1_URL=http://tophat.cbcb.umd.edu/downloads/$tophat1_FILE
 
-# new 2.0.10
-tophat2_VERSION=2.0.8
+#
+tophat2_VERSION=2.0.10
 tophat2_FILE=tophat-${tophat2_VERSION}.Linux_x86_64.tar.gz
 tophat2_URL=http://tophat.cbcb.umd.edu/downloads/$tophat2_FILE
 
-# new: 0.7.5
-SMALT_VERSION=0.6.4
+#
+SMALT_VERSION=0.7.4
 SMALT_FILE=smalt-$SMALT_VERSION.tgz
 SMALT_URL=ftp://ftp.sanger.ac.uk/pub4/resources/software/smalt/$SMALT_FILE
-#http://sourceforge.net/projects/smalt/files/smalt-0.7.5.tar.gz/download
-
+#
 SOAPsplice_VERSION=1.10
 SOAPsplice_FILE=SOAPsplice-v$SOAPsplice_VERSION.tar.gz
 SOAPsplice_URL=http://soap.genomics.org.cn/down/$SOAPsplice_FILE
-
+#
 SOAP2_VERSION=2.21
 SOAP2_FILE=soap${SOAP2_VERSION}release.tar.gz
 SOAP2_URL=http://soap.genomics.org.cn/down/$SOAP2_FILE
-
-# new 2.3.0
-STAR_VERSION=2.2.0
-STAR_FILE=STAR_${STAR_VERSION}c.Linux_x86_64.gz
+# 
+STAR_VERSION=2.3.0
+STAR_FILE=STAR_${STAR_VERSION}e.Linux_x86_64.tgz
 STAR_URL=ftp://ftp2.cshl.edu/gingeraslab/tracks/STARrelease/$STAR_VERSION/$STAR_FILE
-
-#new 2013-11-27
-GSNAP_VERSION=2012-07-20
+#
+GSNAP_VERSION=2013-11-27
 GSNAP_FILE=gmap-gsnap-${GSNAP_VERSION}.tar.gz
 GSNAP_URL=http://research-pub.gene.com/gmap/src/$GSNAP_FILE
-
-# new 0.7.4
-bwa_VERSION=0.6.2
+#
+bwa_VERSION=0.7.4
 bwa_FILE=bwa-${bwa_VERSION}.tar.bz2
 bwa_URL=http://sourceforge.net/projects/bio-bwa/files/$bwa_FILE
-
-# new 2.1.13
-osa_VERSION=2.0.1
+# 
+osa_VERSION=2.1.14
 osa_FILE=OSAv$osa_VERSION.zip
 osa_URL=http://www.omicsoft.com/osa/software/$osa_FILE
-
+#
 EMBAM_VERSION=0.1.10
 EMBAM_FILE=emBAM_${EMBAM_VERSION}.tar.gz
 EMBAM_URL=http://embam.googlecode.com/files/$EMBAM_FILE
 
-RUBY_VERSION=1.9.3-p448
+RUBY_VERSION=1.9.3-p484
 RUBY_FILE=ruby-${RUBY_VERSION}.tar.gz
 RUBY_URL=http://ftp.ruby-lang.org/pub/ruby/1.9/$RUBY_FILE
 
@@ -196,8 +192,8 @@ PERL_VERSION=5.16.3
 PERL_FILE=perl-$PERL_VERSION.tar.gz
 PERL_URL=http://www.cpan.org/src/5.0/$PERL_FILE
 
-# new: 1.54
-BOOST_VERSION=1.52.0
+# previous: 1.52
+BOOST_VERSION=1.55.0
 BOOST_FILE=boost_`echo $BOOST_VERSION|sed "s/\./_/g"`.tar.bz2
 BOOST_URL=http://sourceforge.net/projects/boost/files/boost/$BOOST_VERSION/$BOOST_FILE
 
@@ -236,7 +232,7 @@ cufflinks2_URL=http://cufflinks.cbcb.umd.edu/downloads/$cufflinks2_FILE
 #SAVANT_FILE=Savant-${SAVANT_VERSION}-Linux-x86_64-Install 
 #SAVANT_URL=http://genomesavant.com/savant/dist/v`echo $SAVANT_VERSION|sed "s/./_/g"`/$SAVANT_FILE
 
-BitSeq_VERSION=0.4.3
+BitSeq_VERSION=0.7.0
 BitSeq_FILE=BitSeq-$BitSeq_VERSION.tar.gz
 BitSeq_URL=http://bitseq.googlecode.com/files/$BitSeq_FILE
 
@@ -244,19 +240,37 @@ BitSeq_URL=http://bitseq.googlecode.com/files/$BitSeq_FILE
 #MMSEQ_FILE=mmseq_${MMSEQ_VERSION}.zip
 #MMSEQ_URL=http://www.bgx.org.uk/software/$MMSEQ_FILE
 
-# new: 0.5.4p5
-htseq_VERSION=0.5.3p9
+#
+htseq_VERSION=0.5.4p5
 htseq_FILE=HTSeq-${htseq_VERSION}.tar.gz
 htseq_URL=http://pypi.python.org/packages/source/H/HTSeq/$htseq_FILE
 
-# new: 1.5.3-20131213021913
-FLUX_CAPACITOR_VERSION=1.2.3-20121215021902
+# latest (1.5.2) fails (same error since 1.2.4)
+# Parameter COVERAGE_STATS not found. Check the spelling!
+FLUX_CAPACITOR_VERSION=1.2.3
 FLUX_CAPACITOR_FILE=flux-capacitor-$FLUX_CAPACITOR_VERSION.tgz
-FLUX_CAPACITOR_URL=http://sammeth.net/artifactory/barna-nightly/barna/barna.capacitor/$FLUX_CAPACITOR_VERSION/$FLUX_CAPACITOR_FILE
+#FLUX_CAPACITOR_URL=http://sammeth.net/artifactory/barna-nightly/barna/barna.capacitor/$FLUX_CAPACITOR_VERSION/$FLUX_CAPACITOR_FILE
+FLUX_CAPACITOR_URL=http://sammeth.net/artifactory/barna/barna/barna.capacitor/$FLUX_CAPACITOR_VERSION/$FLUX_CAPACITOR_FILE
 
-NURD_VERSION=1.08
+#
+NURD_VERSION=1.0.8
 NURD_FILE=NURD_v${NURD_VERSION}.tar.gz
 NURD_URL=http://bioinfo.au.tsinghua.edu.cn/software/NURD/share/$NURD_FILE
+
+
+IsoEM_VERSION=1.1.1
+IsoEM_FILE=IsoEM-${IsoEM_VERSION}.zip
+IsoEM_URL=http://dna.engr.uconn.edu/software/IsoEM/$IsoEM_FILE
+
+#
+Sailfish_VERSION=0.6.2
+Sailfish_FILE=Sailfish-${Sailfish_VERSION}-Linux_x86-64.tar.gz
+Sailfish_URL=http://github.com/kingsfordgroup/sailfish/releases/download/v$Sailfish_VERSION/$Sailfish_FILE
+
+#
+rsem_VERSION=1.2.8
+rsem_FILE=rsem-${rsem_VERSION}.tar.gz
+rsem_URL=http://deweylab.biostat.wisc.edu/rsem/src/$rsem_FILE
 
 SCRIPTURE_VERSION=beta2
 SCRIPTURE_FILE=scripture-${SCRIPTURE_VERSION}.jar 
@@ -285,16 +299,16 @@ JBROWSE_URL=http://jbrowse.org/wordpress/wp-content/plugins/download-monitor/$JB
 JBROWSE_EXTRA_UTILS="hgGcPercent bedGraphToBigWig wigCorrelate bigWigInfo bigWigSummary faToNib faToTwoBit hgWiggle"
 JBROWSE_EXTRA_UTILSURL=http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/
 
-# new: 1.10.12 id=85
-NEW_JBROWSE_VERSION=1.9.8
-NEW_JBROWSE_FILE=download.php?id=59
-NEW_JBROWSE_URL=http://jbrowse.org/wordpress/wp-content/plugins/download-monitor/$JBROWSE_FILE
+# 
+NEW_JBROWSE_VERSION=1.10.12
+NEW_JBROWSE_FILE=download.php?id=85
+NEW_JBROWSE_URL=http://jbrowse.org/wordpress/wp-content/plugins/download-monitor/$NEW_JBROWSE_FILE
 NEW_JBROWSE_EXTRA_UTILS="hgGcPercent bedGraphToBigWig wigCorrelate bigWigInfo bigWigSummary faToNib faToTwoBit hgWiggle"
 NEW_JBROWSE_EXTRA_UTILSURL=http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/
 
-# new: 2.11.4
+# osa does not work with 2.10.9 up to 2.11
 MONO_VERSION=2.10.8
-MONO_FILE=mono-${MONO_VERSION}.tar.gz    
+MONO_FILE=mono-${MONO_VERSION}.tar.bz2    
 MONO_URL=http://download.mono-project.com/sources/mono/$MONO_FILE
 
 MAKE_VERSION=3.82
@@ -475,38 +489,29 @@ function gem_install {
 
 function gem2_install {
     MAPPER=GEM
-    GEM_VERSION="1.6-i3"
     pinfo "Starting $MAPPER binary installation..."
     download_software $MAPPER
     # do not install gemtools - only the gem binaries
-    tar xzvf $GEM_FILE
+    tar xjvf $GEM_FILE
     install_binary $MAPPER . gem-* gtf* splits* compute* transcri*
     pinfo "$MAPPER  installation complete."    
-    #git clone git://github.com/gemtools/gemtools
-    #pushd gemtools
-    #python setup.py install --user
-    #python setup.py install --user
-    #--prefix=$IRAP_DIR
-    # http://barnaserver.com/gemtools//GEM-gemtools-1.6-i3.tar.gz to /home/nf/Research/Projects/WIP/IRAP/irap_install/tmp/gemtools/downloads/GEM-gemtools-1.6-i3.tar.gz
-    # $HOME/usr/gemtools/bin/homes/nf/.local/lib/python2.6/site-packages/gem/gembinaries
-    #FILES=`python -m gem.__main__ 2> /dev/stdout | cut -f 2 -d\: | grep gem`
-    # TODO: copy to install folder
-    #pushd $IRAP_DIR/lib64/python*/site-packages/gem/gembinaries
-    #popd
-    #popd
+    popd
 }
 
 function star_install {
     MAPPER=star
     pinfo  "Starting $MAPPER binary installation..."
     download_software $MAPPER
-    EXECF=`echo $STAR_FILE|sed "s/.gz//"`
-    gunzip -c $STAR_FILE > $EXECF
+    EXECF=`echo $STAR_FILE|sed "s/.tgz//"`
+    #gunzip -c $STAR_FILE > $EXECF
+    tar xzvf $STAR_FILE
     mkdir -p $BIN_DIR/star/bin
-    chmod +x $EXECF
-    rm -f star
-    ln -s $EXECF star
-    cp $EXECF star $BIN_DIR/star/bin
+    #chmod +x $EXECF
+    #rm -f star
+    #ln -s $EXECF star
+    chmod +x $EXECF/STAR
+    #cp $EXECF star $BIN_DIR/star/bin
+    cp $EXECF/STAR $BIN_DIR/star/bin/star
     pinfo "$MAPPER installation complete."    
 }
 
@@ -542,16 +547,13 @@ function bwa_install {
 function osa_install {
     MAPPER=osa
     pinfo "Starting $MAPPER source installation..."
-    osa_VERSION=2.0.1
-    #osa_oldVERSION=1.13.3
-    #install mono
-    download_software MONO
-    tar xzvf $MONO_FILE
-    pushd mono-$MONO_VERSION
-    ./configure --with-large-heap=yes --prefix=$IRAP_DIR
-    make
-    make install
-    popd    
+    # download_software MONO
+    # tar xjvf $MONO_FILE
+    # pushd mono-$MONO_VERSION
+    # ./configure --with-large-heap=yes --prefix=$IRAP_DIR
+    # make
+    # make install
+    # popd    
     download_software $MAPPER
     unzip $osa_FILE
     pushd OSAv$osa_VERSION
@@ -570,8 +572,8 @@ function irap_install_mappers {
    smalt_install
    soap_splice_install
    soap2_install
-#   gem_install
-   gem2_install
+   gem_install
+#   gem2_install
    gsnap_install 
    osa_install
    star_install
@@ -950,9 +952,9 @@ function bitseq_install {
     tar xzvf $BitSeq_FILE
     pushd BitSeq-$BitSeq_VERSION
     make
-    PROGS=`grep "^PROGRAMS =" Makefile| cut -f 2 -d=`
-    mkdir -p $IRAP_DIR/bin/bitseq  
-    mv $PROGS $IRAP_DIR/bin/bitseq/
+    #PROGS=`grep "^PROGRAMS =" Makefile| cut -f 2 -d=`     
+    mkdir -p $IRAP_DIR/bin/bitseq/bin
+    find .  -maxdepth 1 -executable -type f -exec  mv {}  $IRAP_DIR/bin/bitseq/bin \; ;
     popd
     pinfo "Installing BitSeq...done."
 }
@@ -981,7 +983,7 @@ function htseq_install {
     tar xzvf $htseq_FILE
     pushd `echo $htseq_FILE|sed "s/.tar.gz//"`
 # python version needs to be equal or greater than  (2.6)
-    . ./build_it
+    #. ./build_it ;# not needed in 0.5.4p5
     python setup.py install --user
     chmod +x scripts/*
     cp scripts/* $IRAP_DIR/bin
@@ -1005,6 +1007,51 @@ function flux_capacitor_install {
     # note: $IRAP_DIR/lib/ must be in the LD_LIBRARY_PATH variable? maybe not...
     popd
     pinfo "Installing Flux_capacitor...done."
+}
+######################################################
+# IsoEM
+function IsoEM_install {
+    pinfo "Installing IsoEM..."
+    download_software IsoEM
+    unzip $IsoEM_FILE
+    pushd isoem-$IsoEM_VERSION
+    # fix the PATH
+    sed -i "s|isoEMDir=.*|isoEMDir=$IRAP_DIR|" bin/*
+    cp bin/* $IRAP_DIR/bin
+    cp lib/* $IRAP_DIR/lib
+    popd
+    pinfo "IsoEM installation complete."    
+}
+
+######################################################
+# Sailfish
+# requires boost
+function Sailfish_install {
+    pinfo "Installing Sailfish..."
+    download_software Sailfish
+    tar xzvf $Sailfish_FILE
+    pushd `echo $Sailfish_FILE|sed "s/.tar.gz//"`
+    rm -rf $IRAP_DIR/bin/Sailfish/lib/*
+    rm -rf $IRAP_DIR/bin/Sailfish/bin/*
+    mkdir -p $IRAP_DIR/bin/Sailfish/lib
+    mkdir -p $IRAP_DIR/bin/Sailfish/bin
+    mv bin/* $IRAP_DIR/bin/Sailfish/bin
+    mv lib/* $IRAP_DIR/bin/Sailfish/lib
+    popd
+    pinfo "Sailfish installation complete."    
+}
+######################################################
+# rsem
+function rsem_install {
+    pinfo "Installing rsem..."
+    download_software rsem
+    tar xzvf $rsem_FILE
+    pushd rsem-$rsem_VERSION
+    make
+    mkdir -p $IRAP_DIR/bin/rsem/bin
+    cp rsem* extract-* convert-* $IRAP_DIR/bin/rsem/bin
+    popd
+    pinfo "rsem installation complete."    
 }
 
 ######################################################
@@ -1047,6 +1094,10 @@ function quant_install {
     htseq_install
     flux_capacitor_install
     scripture_install
+    NURD_install
+    #IsoEM_install
+    #Sailfish_install
+    #rsem_install
     #mmseq_install
     #ireckon_install
 }
@@ -1158,7 +1209,7 @@ function jbrowse_install {
     perl_packages_install
     cpan -i ExtUtils::MakeMaker
     cpan -i Module::CoreList
-    cpan -i GD
+    cpan -f -i GD
     #
     download_software SAMTOOLS
     tar xvjf $SAMTOOLS_FILE
@@ -1170,7 +1221,9 @@ function jbrowse_install {
     # It is necessary to clean .cpan 
     # yes, weird!
     rm -rf $IRAP_DIR/.cpan.bak2
-    mv ~/.cpan $IRAP_DIR/.cpan.bak2
+    if [ -e ~/.cpan ]; then
+	mv ~/.cpan $IRAP_DIR/.cpan.bak2
+    fi
     #unset INSTALL_BASE
     cpanm -f -l $IRAP_DIR local::lib < /dev/null    
     set +e
@@ -1218,7 +1271,7 @@ function new_jbrowse_install {
     download_software NEW_JBROWSE
     mv $NEW_JBROWSE_FILE $IRAP_DIR/aux/jbrowse.zip
     unzip $IRAP_DIR/aux/jbrowse.zip
-    # TODO: install deps
+    # 
     pinfo "Uncompressing and installing jbrowse..."
     pushd JBrowse-*
     sed -i "s|-l extlib/| -l $IRAP_DIR|" setup.sh
@@ -1228,7 +1281,7 @@ function new_jbrowse_install {
     perl_packages_install
     cpan -i ExtUtils::MakeMaker
     cpan -i Module::CoreList
-    cpan -i GD
+    cpan -f -i GD
     #
     download_software SAMTOOLS
     tar xvjf $SAMTOOLS_FILE
@@ -1346,14 +1399,20 @@ EOF
 #     pinfo "$MAPPER installation complete."    
 #}
 function NURD_install {
+    pinfo "Installing NURD..."
     download_software NURD
     tar xzvf $NURD_FILE
     pushd release_v$NURD_VERSION
     make
     cp NURD $IRAP_DIR/bin
     popd
+    pinfo "NURD installation complete."    
 }
+
+
+
 function miso_install {
+    pinfo "Installing miso..."
     # deps problems
     download http://sourceforge.net/projects/numpy/files/latest/download
     tar xzvf download
@@ -1381,11 +1440,12 @@ function miso_install {
     pushd yarden-MISO-*
     python setup.py build
     python setup.py install   --user
+    pinfo "RSEM installation complete."    
 }
 
 ###############################
 OPTERR=0
-while getopts "s:c:a:x:gmqpruhbd"  Option
+while getopts "s:c:a:x:gmqpruhbdt"  Option
 do
     case $Option in
 # update/reinstall
@@ -1400,6 +1460,7 @@ do
         s ) SRC_DIR=$OPTARG;;# send all output to a log file
 	u ) install=core;IRAP_DIR1=$IRAP_DIR;; # update
 	x ) install=software_install;IRAP_DIR1=$IRAP_DIR;SOFTWARE=$OPTARG;;
+	t ) install=testing;IRAP_DIR1=$IRAP_DIR;;
         h ) usage; exit;;
     esac
 done
@@ -1556,6 +1617,16 @@ fi
 
 if [ "$install" == "data" ]; then
     data_install
+    pinfo "Log saved to $logfile"
+    exit 0
+fi
+
+if [ "$install" == "testing" ]; then
+    set -e
+    IsoEM_install
+    Sailfish_install
+    NURD_install
+    rsem_install
     pinfo "Log saved to $logfile"
     exit 0
 fi
