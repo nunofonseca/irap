@@ -815,7 +815,7 @@ write.tsv <- function(x,file,header=T) {
   return(1)
 }
 
-read.tsv <- function(file) {
+read.tsv <- function(file,header=T) {
   read.csv(file,sep="\t",header=T,quote="\"")
 }
 

@@ -183,6 +183,10 @@ qr('flux_cap',m(_),'').
 qr('scripture',m(_),'').
 qr('ireckon',m(_),'').
 qr('bitseq',m(_),'').
+qr('rsem',m(_),'').
+qr('nurd',m(_),'').
+qr('isoem',m(_),'').
+qr('sailfish',m(_),'').
 
 qr(none,m(_),'').
 %qr('mmseq',m(_),'').
@@ -192,9 +196,11 @@ qn(cufflinks1,qr(cufflinks1),_).
 qn(cufflinks2,qr(cufflinks2),_).
 qn(cufflinks1_nd,qr(cufflinks1_nd),_).
 qn(cufflinks2_nd,qr(cufflinks2_nd),_).
+qn(nurd,qr(nurd),_).
 qn(flux_cap,qr(flux_cap),_).
 qn(deseq,qr(QR),_):-member(QR,[flux_cap,basic,htseq1,htseq2]).
 qn(none,qr(_),_).
+
 
 de(deseq,(qr(QR),qn(QN)),_):-member(QR,[htseq1,htseq2,basic,flux_cap]),member(QN,[deseq,flux_cap,none]).
 de(dexseq,(qr(QR),qn(QN)),_):-member(QR,[htseq1,htseq2,basic,flux_cap]),member(QN,[deseq,flux_cap,none]).
