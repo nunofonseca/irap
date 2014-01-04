@@ -633,6 +633,8 @@ bfast_map_options= -A $(bfast_A)
 # --genomeLoad NoSharedMemory
 # --genomeLoad LoadAndRemove
 # note: --outSAMattributes Standard  --outSAMstrandField intronMotif (order is important?)
+#   --outSAMstrandField intronMotif - unstranded data only
+# stranded RNA-seq data: do not need to use any specific STAR options
 star_map_params=  --genomeLoad NoSharedMemory --runThreadN $(max_threads) --outSAMunmapped Within --outFilterMultimapNmax $(max_hits) --outSAMattributes Standard  --outSAMstrandField intronMotif   $(star_map_options) 
 star_index_params= --runThreadN $(max_threads) 
 

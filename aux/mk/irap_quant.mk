@@ -122,10 +122,6 @@ define run_flux_cap=
 	mv $(4).tmp2 $(4) 
 endef
 
-# gtf to fpkm
-# gtf to reads
-
-# TODO: convert the gtf file to two tsv files with the counts per gene
 
 #************
 # HTSeq-count
@@ -179,6 +175,45 @@ endef
 define run_htseq2=
 	$(call run_htseq,$(1),$(2),$(3),htseq2,$(4))
 endef
+
+#******************
+# NURD
+#******************
+
+ifndef nurd_params
+nurd_params= 
+endif
+
+# 1 bam file
+# 2 gtf
+# 3 nurd outgenes.reads.out
+# bam file needs to be sorted by name
+define run_nurd=
+        NURD $(nurd_params) -O $(3).dir -G $(2) -S $(1) && \
+	mv $(3).dir/`basename $(1)`.nurd.all_expr $(3) 
+endef
+
+
+#******************
+# IsoEM
+#******************
+
+ifndef isoem_params
+isoem_params= 
+endif
+
+#sample/genome_aligned_reads.iso_estimates     		- estimated FPKMs (Fragments Per Kilobase per Million reads) for all the isoforms in the GTF file
+#sample/genome_aligned_reads.gene_estimates    		- estimated FPKMs for genes
+#sample/genome_aligned_reads_iso_read_coverage.bed	- isoforms coverage by reads
+
+#1 bam file
+#2 gtf
+#3 SINGLE|PAIRED
+#4 output
+# bam file needs to be sorted by name
+define run_isoem=
+endef
+
 
 #************
 # 1=bam 2=gtf 3=out gene_file 4=out exon_file
@@ -424,5 +459,53 @@ $(name)/$(mapper)/flux_cap/%.exons.raw.flux_cap.tsv:
 
 $(name)/$(mapper)/flux_cap/%.exons.rpkms.flux_cap.tsv: 
 	$(call p_info, Warning! Flux_capacitor does not produce quantification at exon level. Generating empty file $@.)
+	@$(call empty_file,$@)
+
+
+#*****************
+# NURD
+#*****************
+
+$(name)/$(mapper)/nurd/genes.raw.nurd.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.genes.raw.$(quant_method).tsv) $(foreach s,$(se), $(name)/$(mapper)/$(quant_method)/$(s).se.genes.raw.$(quant_method).tsv)
+	irap_merge_tsv.sh $^  > $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/nurd/exons.raw.nurd.tsv: 
+	$(call p_info, Warning! NURD does not produce quantification at exon level. Generating empty file $@.)
+	@$(call empty_file,$@)
+
+$(name)/$(mapper)/nurd/transcripts.raw.nurd.tsv: 
+	$(call p_info, Warning! NURD does not produce raw quantification at transcript level. Generating empty file $@.)
+	@$(call empty_file,$@)
+
+#
+# Run NURD
+#
+$(name)/$(mapper)/nurd/%.se.nurd.tsv: $(name)/$(mapper)/%.se.hits.bam $(gtf_file_abspath)
+	$(call run_nurd,$<,$(gtf_file_abspath),$@)
+
+$(name)/$(mapper)/nurd/%.pe.nurd.tsv: $(name)/$(mapper)/%.pe.hits.bam $(gtf_file_abspath)
+	$(call run_nurd,$<,$(gtf_file_abspath),$@)
+
+# Process flux output
+$(name)/$(mapper)/nurd/%.genes.raw.nurd.tsv: $(name)/$(mapper)/nurd/%.nurd.tsv 
+	cut -f 1,3 $< > $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/nurd/%.genes.rpkms.nurd.tsv: $(name)/$(mapper)/nurd/%.nurd.tsv
+	cut -f 1,6 $< > $@.tmp && mv $@.tmp $@
+
+# transcripts/isoforms
+$(name)/$(mapper)/nurd/%.transcripts.raw.nurd.tsv: $(name)/$(mapper)/nurd/%.nurd.tsv
+	irap_nurd2tsv --tsv $< --out $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/nurd/%.transcripts.rpkms.nurd.tsv: $(name)/$(mapper)/nurd/%.nurd.tsv
+	irap_nurd2tsv --tsv $< --out $@.tmp && mv $@.tmp $@
+
+# exons
+$(name)/$(mapper)/nurd/%.exons.raw.nurd.tsv: 
+	$(call p_info, Warning! NURD does not produce quantification at exon level. Generating empty file $@.)
+	@$(call empty_file,$@)
+
+$(name)/$(mapper)/nurd/%.exons.rpkms.nurd.tsv: 
+	$(call p_info, Warning! NURD does not produce quantification at exon level. Generating empty file $@.)
 	@$(call empty_file,$@)
 
