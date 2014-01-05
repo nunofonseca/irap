@@ -94,7 +94,7 @@ function download2cache {
 }
 
 function check_dependencies {
-    DEVEL_LIBRARIES_REQUIRED="zlib-devel python-devel bzip2-devel python readline-devel libgfortran gcc-gfortran libX11-devel libXt-devel numpy gd-devel libxml2-devel libxml2"
+    DEVEL_LIBRARIES_REQUIRED="zlib-devel python-devel bzip2-devel python readline-devel libgfortran gcc-gfortran libX11-devel libXt-devel numpy gd-devel libxml2-devel libxml2 libpng"
     MISSING=0
     # Binaries that should be available
     BINARIES="java python gcc g++ gfortran"
@@ -763,8 +763,10 @@ function perl_cpan_install {
     if  [ ! -e ~/.cpan/ ]; then
 	unset PERL5LIB
     else
-	cp -rab ~/.cpan  ~/.orig.cpan
-	rm -rf ~/.cpan
+	if [ "$INIT_CPAN-" != "no-" ]; then
+	    cp -rab ~/.cpan  ~/.orig.cpan
+	    rm -rf ~/.cpan
+	fi
     fi
     # only reset cpan if the user wants it
     if [ "$INIT_CPAN-" != "no-" ]; then
