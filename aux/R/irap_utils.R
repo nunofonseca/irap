@@ -581,8 +581,14 @@ gen.plot2report <- function(filename=NULL,
   }
   # PNG
   png(filename=png.file,width=width.in, height=height.in,bg=bg,res=300,units="in")
-  to.plot()
+  # Catch the errors
+  err <- try(to.plot())
+  #print(err)
   dev.off()
+  if ( class(err)=="try-error") {
+    pwarning("Failed to generate plot ",png.file)
+    return(NULL);
+  }
   # PS
   if (ps==TRUE) {
     ps.file <- paste(png.file,".eps",sep="")
