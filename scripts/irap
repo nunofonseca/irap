@@ -1331,7 +1331,7 @@ $(reference_abspath)_files: $(reference_abspath)
 ################################################################################
 # Normalization
 ################################################################################
-$(quant_norm_method)_nquant_files=$(name)/$(mapper)/$(quant_norm_method)/genes.nlib.$(quant_norm_method).tsv $(name)/$(mapper)/$(quant_norm_method)/genes.rpkms.$(quant_norm_method).tsv $(call exons_quant_norm,$(name)/$(mapper)/$(quant_norm_method)/exons.nlib.$(quant_norm_method).tsv $(name)/$(mapper)/$(quant_norm_method)/exons.rpkms.$(quant_norm_method).tsv) $(call transcripts_quant_norm,$(name)/$(mapper)/$(quant_norm_method)/transcripts.nlib.$(quant_norm_method).tsv $(name)/$(mapper)/$(quant_norm_method)/transcripts.rpkms.$(quant_norm_method).tsv)
+$(quant_norm_method)_nquant_files=$(name)/$(mapper)/$(quant_method)/genes.nlib.$(quant_norm_method).tsv $(name)/$(mapper)/$(quant_method)/genes.rpkms.$(quant_norm_method).tsv $(call exons_quant_norm,$(name)/$(mapper)/$(quant_method)/exons.nlib.$(quant_norm_method).tsv $(name)/$(mapper)/$(quant_method)/exons.rpkms.$(quant_norm_method).tsv) $(call transcripts_quant_norm,$(name)/$(mapper)/$(quant_method)/transcripts.nlib.$(quant_norm_method).tsv $(name)/$(mapper)/$(quant_method)/transcripts.rpkms.$(quant_norm_method).tsv)
 
 STAGE3_OUT_FILES=$($(quant_method)_quant_files) $($(quant_norm_method)_nquant_files)
 
