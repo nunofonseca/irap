@@ -296,6 +296,7 @@ tsv.file.ref <- basename(tsv.file)
 # Main html page
 table.html <- table
 
+pdebug.save.state("tsvGE2html0","p1")
 #save.image("wip")
 gen.page(o.html.file)
 
@@ -336,4 +337,3 @@ tsvGE2html.debug <- function() {
 IRAP.DIR=getwd()
 Sys.setenv(IRAP_DIR=IRAP.DIR)
 tsvGE2html.debug()
-
