@@ -1331,7 +1331,7 @@ $(reference_abspath)_files: $(reference_abspath)
 ################################################################################
 # Normalization
 ################################################################################
-$(quant_norm_method)_nquant_files=$(name)/$(mapper)/$(quant_method)/genes.nlib.$(quant_norm_method).tsv $(name)/$(mapper)/$(quant_method)/genes.rpkms.$(quant_norm_method).tsv $(call exons_quant_norm,$(name)/$(mapper)/$(quant_method)/exons.nlib.$(quant_norm_method).tsv $(name)/$(mapper)/$(quant_method)/exons.rpkms.$(quant_norm_method).tsv) $(call transcripts_quant_norm,$(name)/$(mapper)/$(quant_method)/transcripts.nlib.$(quant_norm_method).tsv $(name)/$(mapper)/$(quant_method)/transcripts.rpkms.$(quant_norm_method).tsv)
+$(quant_norm_method)_nquant_files=$(name)/$(mapper)/$(quant_norm_method)/genes.nlib.$(quant_norm_method).tsv $(name)/$(mapper)/$(quant_norm_method)/genes.rpkms.$(quant_norm_method).tsv $(call exons_quant_norm,$(name)/$(mapper)/$(quant_norm_method)/exons.nlib.$(quant_norm_method).tsv $(name)/$(mapper)/$(quant_norm_method)/exons.rpkms.$(quant_norm_method).tsv) $(call transcripts_quant_norm,$(name)/$(mapper)/$(quant_norm_method)/transcripts.nlib.$(quant_norm_method).tsv $(name)/$(mapper)/$(quant_norm_method)/transcripts.rpkms.$(quant_norm_method).tsv)
 
 STAGE3_OUT_FILES=$($(quant_method)_quant_files) $($(quant_norm_method)_nquant_files)
 
@@ -1355,14 +1355,14 @@ phony_targets+= $(quant_norm_method)_nquant
 $(quant_norm_method)_nquant: $(quant_method)_quant $($(quant_norm_method)_nquant_files)
 
 # RPKMs
-# default rule
-$(name)/$(mapper)/$(quant_method)/genes.rpkms.%.tsv: $(name)/$(mapper)/$(quant_method)/genes.nlib.%.tsv $(feat_length)
+# none method: irap computes the RPKMs based on the raw counts
+$(name)/$(mapper)/$(quant_method)/genes.rpkms.none.tsv: $(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv $(feat_length)
 	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature gene --metric rpkm --out $@.tmp && mv $@.tmp $@	
 
-$(name)/$(mapper)/$(quant_method)/exons.rpkms.%.tsv: $(name)/$(mapper)/$(quant_method)/exons.nlib.%.tsv $(feat_length)
+$(name)/$(mapper)/$(quant_method)/exons.rpkms.none.tsv: $(name)/$(mapper)/$(quant_method)/exons.raw.$(quant_method).tsv $(feat_length)
 	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature exon --metric rpkm --out $@.tmp && mv $@.tmp $@	
 
-$(name)/$(mapper)/$(quant_method)/transcripts.rpkms.%.tsv: $(name)/$(mapper)/$(quant_method)/transcripts.nlib.%.tsv $(feat_length)
+$(name)/$(mapper)/$(quant_method)/transcripts.rpkms.none.tsv: $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv $(feat_length)
 	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature transcript --metric rpkm --out $@.tmp && mv $@.tmp $@	
 
 # special rules
@@ -1387,7 +1387,6 @@ $(name)/$(mapper)/$(quant_method)/transcripts.rpkms.flux%.tsv: $(foreach p,$(pe)
 $(name)/$(mapper)/$(quant_method)/exons.rpkms.flux%.tsv: 
 	$(call p_info, Warning! Flux-capacitor does not produce quantification at exon level. Generating empty file $@.)
 	@$(call empty_file,$@)
-
 
 # nurd
 $(name)/$(mapper)/$(quant_method)/genes.rpkms.nurd.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.genes.rpkms.$(quant_method).tsv) $(foreach s,$(se), $(name)/$(mapper)/$(quant_method)/$(s).se.genes.rpkms.$(quant_method).tsv)
