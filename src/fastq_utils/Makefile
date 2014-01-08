@@ -82,6 +82,7 @@ test6:
 	./fastq_validator tests/test_e8.fastq || \
 	./fastq_validator tests/test_e9.fastq || \
 	./fastq_validator tests/test_e10.fastq || \
+	./fastq_validator tests/test_e12.fastq || \
 	echo "OK! all errors detected"
 	./fastq_validator tests/test_1.fastq && \
 	./fastq_validator tests/test_2.fastq && \

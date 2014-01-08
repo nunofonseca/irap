@@ -249,9 +249,9 @@ inline int validate_entry(char *hdr,char *hdr2,char *seq,char *qual,unsigned lon
     fprintf(stderr,"Error in file %s, line %lu: read length too small - %u\n",filename,linenum+1,slen);
     return 1;
   }
-  // hdr2=@
+  // hdr2=+
   if (hdr2[1]!='\0' && hdr2[1]!='\n' && hdr2[1]!='\r') {
-    fprintf(stderr,"Error in file %s, line %lu:  header2 too small - %u\n",filename,linenum+1,slen);
+    fprintf(stderr,"Error in file %s, line %lu:  header2 length wrong (%u). The line should contain only '+' followed by a newline.\n",filename,linenum+2,slen);
     return 1;
   }
   // qual length==slen
@@ -260,7 +260,7 @@ inline int validate_entry(char *hdr,char *hdr2,char *seq,char *qual,unsigned lon
     qlen++;    
   }  
   if ( qlen!=slen ) {
-    fprintf(stderr,"Error in file %s, line %lu: sequence and quality don't have the same length %u!=%u\n",filename,linenum+1,slen,qlen);
+    fprintf(stderr,"Error in file %s, line %lu: sequence and quality don't have the same length %u!=%u\n",filename,linenum+3,slen,qlen);
     return 1;
   }
   return 0;
