@@ -45,7 +45,7 @@ option_list <- list(
   make_option(c("-c", "--cores"), type="character",default="2",dest="num_cores",help="Number of cores to use ([default %default])"),
   make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
   make_option(c("-r","--rdata"),action="store_true",dest="gen_rdata",default=FALSE,help="Generate an rdata file"),
-  make_option(c("-i", "--gtf"), type="character", dest="gtf_file", default="",help="GTF file")
+  make_option(c("-i", "--gtf"), type="character", dest="gtf_file", default=NULL,help="GTF file")
 )
 
 type <- "gene"
@@ -80,7 +80,7 @@ pwarning("Multi-threading is temporarily disabled due to an error with RSQLite d
 options("cores"=num.cores)
 
 gtf.table <- NULL
-gtf.table <- load.gtf(opt$gtf,selected.attr=c("gene_id"))
+gtf.table <- load.gtf(opt$gtf,selected.attr=c("gene_id","gene_name"))
 #
 pdebug.save.state("irap_gtf2annot","p0")
 # 
@@ -114,7 +114,8 @@ get.chr <- function(gene.id,gtf) {
 get.gene.name <- function(gene.id,gtf) {
   gsub("\\.[0-9]+$","",gtf.table[gtf$gene_id==gene.id,"gene_name"])[1]
 }
-name.v <- unlist(mclapply(gene.ids,get.gene.name,gtf.table,mc.set.seed=F))
+
+name.v <- unlist(mclapply(gene.ids,get.gene.name,gtf.table))
 pdebug("names collected")
 gc(verbose=FALSE)
 start <- unlist(mclapply(gene.ids,get.gene.start,gtf.table))
