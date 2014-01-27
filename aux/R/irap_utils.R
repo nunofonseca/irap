@@ -113,7 +113,7 @@ formats.cols <- list(
 # TODO: improve error handling
 load.gtf <- function(gtf.file,feature=NULL,selected.attr=NULL) {
 
-  gtf<-read.table(gtf.file,sep="\t",header=F)
+  gtf<-read.table(gtf.file,sep="\t",header=F,quote="\"")
   cnames <- formats.cols$gtf
   colnames(gtf)<-cnames[0:ncol(gtf)]
   #feature <- "CDS"
@@ -222,7 +222,7 @@ get.exon.length.from.gtf <- function(gtf,filter.biotype=NULL) {
 
 load.gff3 <- function(file,type="gene") {
   # load the gff3 file
-  gff3<-read.table(file,sep="\t",header=F)
+  gff3<-read.table(file,sep="\t",header=F,quote="\"")
   cnames <- formats.cols$gff3
   colnames(gff3)<-cnames[0:ncol(gff3)]
   gff3$attributes <- as.character(gff3$attributes)
@@ -1029,7 +1029,7 @@ load.annot <- function(file) {
   }
   annot.table <- annot.expand.fields(annot.table)
   pdebug("Loading annotation (done)")
-  annot.table
+  return(annot.table)
 }
 # load a file with a quant. matrix
 # returns NULL in case of failure

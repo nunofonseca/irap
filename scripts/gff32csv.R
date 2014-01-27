@@ -34,7 +34,7 @@ if (length(args)!=1) {
 gff3_file<-args[1]
 
 # load the gff3 file
-gff3<-read.table(gff3_file,sep="\t",header=F)
+gff3<-read.table(gff3_file,sep="\t",header=F,quote="\"")
 all_names<-c('seqname','source','feature','start','end','score','strand','frame','attributes','comments')
 colnames(gff3)<-all_names[0:ncol(gff3)]
 gff3$attributes <- as.character(gff3$attributes)
