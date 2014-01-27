@@ -52,7 +52,7 @@ colnames(tsv) <- c('ID','Value')
 tsv <- tsv[!is.na(tsv$Value),]
 
 # load the gff3 file in CSV format (it can take a while to do it, hence do it only once)
-gff3<-read.table(gff3_file,sep=",",header=T)
+gff3<-read.table(gff3_file,sep=",",header=T,quote="\"")
 
 sel<-gff3[gff3$feature==feature,]
 
