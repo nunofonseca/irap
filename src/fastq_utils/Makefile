@@ -72,7 +72,7 @@ test5:
 	time -p ./fastq_filterpair tests/c18_10000_1.fastq tests/c18_10000_2.fastq  f1.fastq f2.fastq up.fastq
 
 test6:
-	./fastq_validator tests/test_e1.fastq || \
+	@./fastq_validator tests/test_e1.fastq || \
 	./fastq_validator tests/test_e2.fastq || \
 	./fastq_validator tests/test_e3.fastq || \
 	./fastq_validator tests/test_e4.fastq || \
@@ -82,11 +82,13 @@ test6:
 	./fastq_validator tests/test_e8.fastq || \
 	./fastq_validator tests/test_e9.fastq || \
 	./fastq_validator tests/test_e10.fastq || \
-	./fastq_validator tests/test_e12.fastq || \
+	./fastq_validator tests/test_e14.fastq || \
+	./fastq_validator tests/test_e15.fastq || \
+	./fastq_validator tests/test_e16.fastq || \
 	echo "OK! all errors detected"
 	./fastq_validator tests/test_1.fastq && \
 	./fastq_validator tests/test_2.fastq && \
-	./fastq_validator tests/test_e11.fastq && \
+	./fastq_validator tests/test_13.fastq && \
 	time -p ./fastq_validator tests/pe_bug14.fastq tests/pe_bug14.fastq && \
 	time -p ./fastq_validator tests/c18_1M_1.fastq && \
 	time -p ./fastq_validator tests/c18_1M_2.fastq
