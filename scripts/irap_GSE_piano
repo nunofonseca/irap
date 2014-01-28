@@ -1,0 +1,174 @@
+#!/usr/bin/env Rscript3
+# =========================================================
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+# =========================================================
+#########################
+# PIANO
+# only works on R 3+
+# source("http://bioconductor.org/biocLite.R")
+# biocLite("piano")
+library("piano")
+
+###########################################################
+suppressPackageStartupMessages(library("optparse"))
+
+#
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+#
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+
+#######################
+usage <- "irap_GSE_piano --tsv file --go file [options]"
+option_list <- list(
+#  make_option(c("-v", "--verbose"), action="store_true", default=TRUE, help="Print extra output [default]"),
+  make_option(c("-a", "--annotation"), type="character",default=NULL,help="Annotation file (TSV format)"),
+  make_option(c("--annotation_col"), type="character",default="GOterm",help="Column in the annotation file [default %default]"),
+  make_option(c("-i", "--tsv"), type="character", dest="tsv.file", default=NULL,help="TSV file (gene ids should appear in the first column)"),
+  make_option(c("-p", "--pvalue-col"), type="numeric", dest="pval.col", default=3,help="Column with the p-values [default %default]"),
+  make_option(c("-f", "--foldchange-col"), type="numeric", dest="fold.col", default=2,help="Column with the foldchange values [default %default]"),
+  make_option(c("-l", "--pvalue"), type="numeric", dest="pvalue", default=0.05,help="p-value [default %default]"),
+  make_option(c("-s", "--minsize"), type="numeric", dest="min.size", default=5,help="Minimum size of  a cluster [default %default]"),
+  make_option(c("-m", "--method"), type="character", dest="method", default="median",help="Method [default: %default]"),
+  make_option(c("--go"), type="character", dest="go.file", default=NULL,help="TSV file with the mapping of the genes to GO terms (two columns file: geneid goterm)"),
+  make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name prefix.")
+)
+multiple.options = list(method=c("mean","median","sum","fisher","stouffer","tailStrength"))
+filenames <- c("tsv.file","go.file","annotation") ;#filenames that must exist (if defined)
+
+# check multiple options values
+mandatory <- c("tsv.file","out")
+opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
+
+pinfo("Parameters parsed.")
+
+if ( is.null(opt$annotation) && is.null(opt$go.file) ) {
+  perror("--go or --annotation needs to be defined.")
+  q(status=1)
+}
+##############################
+pinfo("Reading ",opt$tsv.file)
+df <- read.tsv(opt$tsv.file,header=T)
+if ( opt$pval.col>ncol(df) || opt$pval.col<1 ) {
+  perror("Invalid pvalue-col: ",opt$pval.col)
+  quit(status=1)
+}
+if ( opt$fold.col>ncol(df) || opt$fold.col<1 ) {
+  perror("Invalid foldchange-col: ",opt$fold.col)
+  quit(status=1)
+}
+
+fc <- df[,opt$pval.col]
+names(fc) <- df[,1]
+pval <- df[,opt$fold.col]
+names(pval) <- df[,1]
+pinfo("Data in ",opt$tsv.file," loaded: ",nrow(df)," entries")
+##############################
+
+if (!is.null(opt$go.file)) {
+  pinfo("Reading ",opt$go.file)
+  gene2go <- read.table(opt$go.file,sep="\t",header=F,comment.char="!")
+  pinfo("Data in ",opt$go.file," loaded: ",nrow(gene2go)," entries")
+  if (ncol(gene2go)!=2) {
+    perror("Error in ",opt$go.file,": expected 2 columns (id goterm)")
+    q(status=2)
+  }
+  colnames(gene2go) <- c("gene","go.id")
+} else {
+  # load annot file
+  pinfo("Loading annotation file ",opt$annotation,"...")
+  annot.table <- load.annot(opt$annotation)
+  pinfo("Loading annotation file ",opt$annotation,"...done.")
+  # check if columns exist
+  if ( ! opt$annotation_col %in% colnames(annot.table) ) {
+    perror("Selected column ",opt$annotation_col," not found in ",opt$annotation)
+    q(status=2)
+  }
+  pinfo("Generating mapping from gene to goterm/pathway",opt$go.file)
+  tmp.m <- as.data.frame(list(ID=annot.table$ID,term=annot.table[,opt$annotation_col]))
+  # which terms to use?
+  # GOterm
+  # KEGG
+  #s.tmp.m <- head(tmp.m)
+  s.tmp.m <- tmp.m
+  x <- strsplit(as.character(s.tmp.m$term),split=";")
+  lx <- lapply(x,length)
+  names(lx) <- s.tmp.m$ID
+  myrep <- function(x,n) {
+    rep(x,n[x])
+  }
+  
+  gene2go <- data.frame(list(gene=unlist(lapply(as.character(s.tmp.m$ID),myrep,lx)),
+                             go.id=unlist(x)),stringsAsFactors = F)
+}
+# Save a tsv file with the data 
+out.tsv.file <- paste(opt$out,".tsv",sep="")
+
+
+pinfo("Starting to play piano...")
+# create the genesets
+# map gene to different 
+# sets: 
+# exclude NAs
+pval <- pval[!is.na(pval)]
+fc <- fc[!is.na(fc)]
+# TODO: replace inf by a big value?
+pval.lim <- opt$pvalue
+# set of genes
+set1 <- names(pval[pval<=pval.lim])
+
+if ( length(set1)!=0 )  {
+   set1.annot <- gene2go[gene2go[,1] %in% set1,]
+   myGSC <- loadGSC(set1.annot)
+   # stats - vector fold change with names()=gene name
+   #  pass the pval and foldchange
+   minSizeLim <- opt$min.size
+
+   gsaRes <- try(runGSA(pval,fc,geneSetStat=opt$method,
+                  gsc=myGSC,gsSizeLim=c(minSizeLim,Inf)))
+
+   if ( class(gsaRes)=="try-error") {
+     perror("Failed runGSA(",opt$method,")")
+     q(status=2)  
+   }
+
+   # save the tsv file and the rdata file
+   save(gsaRes,file=paste(opt$out,".Rdata",sep=""))
+   # Save a plot
+   write.tsv(GSAsummaryTable(gsaRes),file=out.tsv.file,header=T)
+   pinfo("Created ",out.tsv.file)
+} else {
+   pwarning("No significant entries found for p-value of ",opt$pvalue)
+   # save an empty tsv file
+   gsaRes=NA
+   save(gsaRes,file=paste(opt$out,".Rdata",sep=""))
+   write.tsv(matrix(),file=out.tsv.file)
+   pinfo("Created empty ",out.tsv.file)
+}
+
+quit(save="no",status=0)
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  IRAP.DIR="/home/nf/Research/Projects/WIP/EREAP/ereap_install"
+  Sys.setenv(IRAP_DIR=IRAP.DIR)
+}
