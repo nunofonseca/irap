@@ -716,14 +716,14 @@ function R3_install {
     # wrappers
     cat <<EOF > $IRAP_DIR/scripts/R3
 #!/bin/bash
-export PATH=$IRAP_DIR/R3/bin:$PATH
-$IRAP_DIR/R3/bin/R $*
+export PATH=\$IRAP_DIR/R3/bin:\$PATH
+$IRAP_DIR/R3/bin/R \$*
 EOF
     chmod +x $IRAP_DIR/scripts/R3
     cat <<EOF > $IRAP_DIR/scripts/Rscript3
 #!/bin/bash
-export PATH=$IRAP_DIR/R3/bin:$PATH
-$IRAP_DIR/R3/bin/Rscript $*
+export PATH=\$IRAP_DIR/R3/bin:\$PATH
+$IRAP_DIR/R3/bin/Rscript \$*
 EOF
     chmod +x $IRAP_DIR/scripts/Rscript3
 
