@@ -21,12 +21,13 @@
 
 
 # plotMA
-fold.change.plot <- function(res,y.lab="log2(Fold change)",x.lab="log(Mean)",fdr=0.1,log="",ylim=NA) {
+fold.change.plot <- function(res,y.lab="log2(Fold change)",x.lab="log(Mean)",fdr=0.1,log="",ylim=NA,main=NULL) {
 
   if (!(is.data.frame(res) && all(c("baseMean", "log2FoldChange") %in% colnames(res))))
     stop("'res' must be a data frame with columns named 'baseMean', 'log2FoldChange'.")
 
   linecol = "#ff000080"
+  linecol = makeTransparent("grey10")
 
   x = subset(res, baseMean!=0)
   py = x$log2FoldChange
@@ -39,14 +40,25 @@ fold.change.plot <- function(res,y.lab="log2(Fold change)",x.lab="log(Mean)",fdr
   vals<-round(res$padj*100)
   #colors<-append(colorRampPalette(c("darkred","orange"))(10),rep("darkgrey",90))
   colors<-append(colorRampPalette(c("red"))(10),rep("darkgrey",90))
-  
+  xvals <- log(res$baseMean)
   plot(
-       log(res$baseMean),
-       res$log2FoldChange,
-       log=log,pch=20,cex=0.3,
-       xlab=x.lab,ylab=y.lab,
-       col = ifelse(res$padj < fdr,"red","darkgrey") )
+    xvals,
+    res$log2FoldChange,
+    log=log,pch=20,cex=0.3,
+    xlab=x.lab,ylab=y.lab,
+    main=main,
+    col = ifelse(res$padj <= fdr,"red","darkgrey") )  
   abline(h=0, lwd=3, col=linecol)
+
+  # show the fdr
+  if ( par("ylog") ) {
+    Sx <- 10^(par("usr")[1]+(par("usr")[2]-10^par("usr"))*0.2)
+    Sy <- 10^par("usr")[4]
+  } else {
+    Sx <- par("usr")[1]+(par("usr")[2]-par("usr")[1])*0.2
+    Sy <- par("usr")[4]
+  }
+  text(paste("FDR=",fdr,sep=""), x=Sx,y=Sy,cex=1.1,pos=1,col="red")
 }
 #       col = ifelse(res$padj < fdr,"red","black") )
 #  plot(x$baseMean, pmax(ylim[1], pmin(ylim[2], py)),
@@ -105,13 +117,15 @@ cor.scatterplot <- function(df=NULL,colA=NULL,colB=NULL,x=NULL,y=NULL,
   }
   if ( value.name =="" ) {
     if ( par("ylog") ) {
-      Sx <- min(x)+ceiling(del)
+      Sx <- 10^(par("usr")[1]+(par("usr")[2]-10^par("usr")[1])*0.2)
+        #min(x)+ceiling(del)
       Sy <- 10^par("usr")[4]
     } else {
       Sx <- min(x)+ceiling(del)
       Sy <- par("usr")[4]
     }
-    text(paste("Rs=",s,sep=""), x=Sx,y=Sy,cex=1.3,pos=1,col="grey30")    
+    #pinfo("Sx",Sx)
+    text(paste("Rs=",s,"\nRp=",p,sep=""), x=Sx,y=Sy,cex=1.3,pos=1,col="grey30")
   }  
   if (smooth=="lowess") {    
     ok <- is.finite(x) & is.finite(y)
@@ -174,3 +188,8 @@ my.html.plot <- function(filename=NULL,html.dir=NULL,rel.dir=NULL,caption=NULL,
   HTMLInsertGraph(paste(rel.dir,filename, sep=""), Caption = caption,WidthHTML=width)  
 }
 
+makeTransparent<-function(someColor, alpha=100) {
+  newColor<-col2rgb(someColor)
+  apply(newColor, 2, function(curcoldata){rgb(red=curcoldata[1], green=curcoldata[2],
+    blue=curcoldata[3],alpha=alpha, maxColorValue=255)})
+}
