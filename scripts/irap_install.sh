@@ -201,9 +201,15 @@ gnuplot_VERSION=4.6.4
 gnuplot_FILE=gnuplot-$gnuplot_VERSION.tar.gz
 gnuplot_URL=http://sourceforge.net/projects/gnuplot/files/gnuplot/$gnuplot_VERSION/$gnuplot_FILE
 
+# default
 R_VERSION=2.15.2
 R_FILE=R-${R_VERSION}.tar.gz 
 R_URL=http://cran.r-project.org/src/base/R-2/$R_FILE
+
+# 
+R3_VERSION=3.0.2
+R3_FILE=R-${R3_VERSION}.tar.gz 
+R3_URL=http://cran.r-project.org/src/base/R-3/$R_FILE
 
 # new: 0.1.19
 SAMTOOLS_VERSION=0.1.18
@@ -694,6 +700,36 @@ function R_install {
     popd
     pinfo "Installing R...done."
 }
+
+# install R-3.x
+function R3_install {
+    pinfo "Installing R-3.x..."
+    download_software R3
+    tar xzvf $R3_FILE
+    pushd R-${R3_VERSION}
+    ./configure --prefix=$IRAP_DIR/R3
+    make clean
+    make -j $J
+    make -j $J check
+    make install
+    popd
+    # wrappers
+    cat <<EOF > $IRAP_DIR/scripts/R3
+#!/bin/bash
+export PATH=$IRAP_DIR/R3/bin:$PATH
+$IRAP_DIR/R3/bin/R $*
+EOF
+    chmod +x $IRAP_DIR/scripts/R3
+    cat <<EOF > $IRAP_DIR/scripts/Rscript3
+#!/bin/bash
+export PATH=$IRAP_DIR/R3/bin:$PATH
+$IRAP_DIR/R3/bin/Rscript $*
+EOF
+    chmod +x $IRAP_DIR/scripts/Rscript3
+
+    pinfo "Installing R3-x...done."
+}
+
 ######################################################
 # Yap 
 function YAP_install {
@@ -843,11 +879,8 @@ EOF
 }
 
 ##################################
-# R and R packages
+# R packages
 # Software environment for statistical computing and graphics
-#R=R-2.15.0
-#download http://cran.ma.imperial.ac.uk/src/base/R-2/$R.tar.gz
-#tar xzvf $R.tar.gz
 function install_R_packages {
     export PATH=$IRAP_DIR/bin:$PATH
     pinfo "Installing R packages..."
@@ -916,8 +949,68 @@ q()
 EOF
     pinfo "Installing R packages...done."
 }
-# biocLite('DEXSeq',ask=FALSE, suppressUpdates=FALSE)
+# 
 # requires libcurl installed in the system
+
+function R3_packages_install {
+    export PATH=$IRAP_DIR/bin:$PATH
+    pinfo "Installing R-3.x packages..."
+    R3 --no-save <<EOF
+repo<-"$CRAN_REPO"
+packages2install<-c("multicore","intervals","gclus",'R2HTML',"agricolae",
+             "optparse","brew","reshape","gtools","gdata","caTools",
+             "sfsmisc","gplots")
+
+for (p in packages2install ) {
+   install.packages(p,repo=repo)
+}
+
+
+# bioconductor packages
+source("http://bioconductor.org/biocLite.R")
+packages2install<-c("Rsamtools",'edgeR',
+                    'DESeq','DESeq2','DEXSeq','baySeq',
+                    'limma',"piano")
+for (p in packages2install) {
+   biocLite(p,ask=FALSE, suppressUpdates=FALSE)
+}
+
+#biocLite("org.Hs.eg.db",ask=FALSE, suppressUpdates=FALSE)
+#biocLite('GO.db',ask=FALSE, suppressUpdates=FALSE)
+#biocLite("topGO",ask=FALSE, suppressUpdates=FALSE)
+#biocLite("biomaRt",ask=FALSE, suppressUpdates=FALSE)
+
+#biocLite('goseq',ask=FALSE, suppressUpdates=FALSE)
+
+species2db<-matrix(c('org.Ag.eg.db','Anopheles',
+'org.At.tair.db','Arabidopsis',
+'org.Bt.eg.db','Bovine',
+'org.Ce.eg.db','Worm',
+'org.Cf.eg.db','Canine',
+'org.Dm.eg.db','Fly',
+'org.Dr.eg.db','Zebrafish',
+'org.EcK12.eg.db','E coli strain K12',
+'org.Gg.eg.db','Chicken',
+'org.Hs.eg.db','Human',
+'org.Mm.eg.db','Mouse',
+'org.Mmu.eg.db','Rhesus',
+'org.Pf.plasmo.db','Malaria',
+'org.Pt.eg.db','Chimp',
+'org.Rn.eg.db','Rat',
+'org.Sc.sgd.db','Yeast',
+'org.Sco.eg.db','Streptomyces coelicolor',
+'org.Ss.eg.db','Pig',
+'org.Tgondii.eg.db','Toxoplasma gondii',
+'org.Xl.eg.db','Xenopus'),byrow=T,ncol=2)
+colnames(species2db)<-c("db","species")
+#for (p in species2db[,'db']) {
+#biocLite(p,ask=FALSE)
+#}
+
+q()
+EOF
+    pinfo "Installing R-3.x packages...done."
+}
 
 ######################################################
 # Cufflinks1
@@ -1473,6 +1566,7 @@ if [ "$IRAP_DIR1-" != "-" ]; then
 fi
 
 if [ "$IRAP_DIR-" = "-" ]; then
+    echo ERROR: IRAP directory not defined. > /dev/stderr
     usage
     exit 1    
 fi
@@ -1629,6 +1723,8 @@ if [ "$install" == "testing" ]; then
     Sailfish_install
     NURD_install
     rsem_install
+    R3_install
+    R3_packages_install
     pinfo "Log saved to $logfile"
     exit 0
 fi
