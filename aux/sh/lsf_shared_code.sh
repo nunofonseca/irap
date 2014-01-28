@@ -180,7 +180,7 @@ function submit_job_status {
 
 function get_maxmem {
     let MAX_MEM=($1/4000+1)*4000
-    echo $MAX_MEM
+    echo $1
 }
 ################
 ## Job functions (computer farm)
