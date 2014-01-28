@@ -92,6 +92,25 @@ static ulong hashit(unsigned char *str) {
   return hash;
 }
 
+// return 1 if the headers are the same...0 otherwise
+static inline int compare_headers(const char *hdr1,const char *hdr2) {
+
+  unsigned int slen=0;
+  char c;
+  while ( hdr1[slen]!='\0' && hdr2[slen]!='\0' ) {
+    if ( hdr1[slen]!=hdr2[slen] ) {
+      return 0;
+    }
+    slen++;
+  }
+  if ( hdr1[slen]!='\r' && hdr1[slen]!='\0') {
+    return 1;
+  }
+  if ( hdr2[slen]!='\r' && hdr2[slen]!='\0') {
+    return 1;
+  }
+  return 0;
+}
 
 static INDEX_ENTRY* lookup_header(hashtable sn_index,char *hdr) {
   // lookup hdr in sn_index
@@ -250,9 +269,24 @@ inline int validate_entry(char *hdr,char *hdr2,char *seq,char *qual,unsigned lon
     return 1;
   }
   // hdr2=+
-  if (hdr2[1]!='\0' && hdr2[1]!='\n' && hdr2[1]!='\r') {
-    fprintf(stderr,"Error in file %s, line %lu:  header2 length wrong (%u). The line should contain only '+' followed by a newline.\n",filename,linenum+2,slen);
+  // be tolerant
+  //if (hdr2[1]!='\0' && hdr2[1]!='\n' && hdr2[1]!='\r') {
+  //  fprintf(stderr,"Error in file %s, line %lu:  header2 wrong. The line should contain only '+' followed by a newline.\n",filename,linenum+2);
+  //  return 1;
+  //}  
+  if (hdr2[0]!='+') {
+    fprintf(stderr,"Error in file %s, line %lu:  header2 wrong. The line should contain only '+' followed by a newline or read name (header1).\n",filename,linenum+2);
     return 1;
+  }
+  // length of hdr2 should be 1 or be the same has the hdr1
+  // ignore the + sign
+  hdr2=&hdr2[1];
+  hdr=&hdr[1];
+  if (hdr2[0]!='\0' && hdr2[0]!='\r' ) {
+    if ( !compare_headers(&hdr[1],&hdr2[1]) ) {
+      fprintf(stderr,"Error in file %s, line %lu:  header2 differs from header1\nheader 1 \"%s\"\nheader 2 \"%s\"\n",filename,linenum,hdr,hdr2);
+      return 1;
+    }
   }
   // qual length==slen
   unsigned int qlen=0;
