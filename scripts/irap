@@ -383,9 +383,6 @@ endif
 
 # backward compatibility
 #ifdef conditions
-#ifndef contrasts
-#contrasts=conditions
-#endif
 #endif
 
 
@@ -394,6 +391,8 @@ ifdef contrasts
 # check contrast/group names
  $(foreach l,$(contrasts),$(call check_name,$(l),contrast);$(foreach g,$($(l)),$(call check_name,$(g),group/condition)))
  $(foreach l,$(contrasts),$(info *      $(l)=$($(l)));$(foreach g,$($(l)),$(call check_param_ok,$(g))))
+else
+contrasts=
 endif
 
 
@@ -846,7 +845,7 @@ endef
 
 ################################################################################
 # Default target
-all: setup quality_filtering_and_report mapping assemble DE
+all: setup quality_filtering_and_report mapping quantification DE GSE
 
 ################################################################################
 # Load extra code
@@ -863,10 +862,13 @@ include $(irap_path)/../aux/mk/irap_citations.mk
 include $(irap_path)/../aux/mk/irap_quant.mk
 # DE
 include $(irap_path)/../aux/mk/irap_de.mk
+# Gene set enrichment analysis
+include $(irap_path)/../aux/mk/irap_gse.mk
+
 # Atlas (atlas specific stuff)
 include $(irap_path)/../aux/mk/irap_atlas.mk
 #################################################################################
- 
+
 index_files=$(call $(mapper)_index_filename,$(file_indexed),$(file_indexed))
 
 #*********************
@@ -973,7 +975,7 @@ endef
 	$(call p_error,Missing cdna file $@)
 
 ################################################################################
-phony_targets+= stage0 stage1 stage2 stage3 stage3a stage3as stage3b stage4
+phony_targets+= stage0 stage1 stage2 stage3 stage3a stage3as stage3b stage4 stage5
 silent_targets+= 
 
 # alias - make it easier for the user
@@ -987,6 +989,7 @@ stage3as: setup quantification_s
 # deprecated
 stage3b: setup $(shell rm -f $(name)/$(mapper)/$(quant_method)/rawcounts.$(quant_method).tsv) stage3a
 stage4: setup DE
+stage5: setup GSE
 
 # deprecated: to be removed in the future
 assemble: quantification
@@ -1565,13 +1568,39 @@ STAGE4_OUT_FILES=
 else
 STAGE4_OUT_FILES=$(foreach cont,$(contrasts),$(name)/$(mapper)/$(quant_method)/$(de_method)/$(cont).genes_de.tsv)
 endif
-phony_targets+= DE
+phony_targets+= DE de_files
+
 
 DE: stage3 $(STAGE4_OUT_FILES)
 	$(call p_info,[DONE] Differential analysis)
 
 de_files:
 	echo $(STAGE4_OUT_FILES)
+
+#############################################################
+# GSE
+###########################################
+# IRAP targets
+ifeq (none,$(gse_tool))
+
+GSE_OUT_FILES=
+
+GSE:
+
+else
+
+GSE_OUT_FILES=$(subst _de.tsv,.$(gse_tool).$(gse_method).go.tsv,$(STAGE4_OUT_FILES)) $(subst _de.tsv,.$(gse_tool).$(gse_method).kegg.tsv,$(STAGE4_OUT_FILES))
+
+GSE: DE $(GSE_OUT_FILES)
+	$(call p_info,[DONE] GSE analysis)
+
+endif
+
+
+GSE_files:
+	echo $(GSE_OUT_FILES)
+
+phony_targets+= GSE GSE_files
 
 #############################################################
 ## Cleanup
