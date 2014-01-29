@@ -159,17 +159,45 @@ if( sum(is.na(dbs))==1 && !is.vector(dbs) ) {
     r.table[,"KEGG"] <- NA
   } else {
     pdebug("species DB found")
-    r.table[,"egi"] <- unlist(mclapply(as.character(r.table[,"ID"]),annot.get.egi,dbs))
+    r.table[,"egi"] <- unlist(lapply(as.character(r.table[,"ID"]),annot.get.egi,dbs))
     pdebug("Entrez gene identifiers collected")
+    safe.annot.get.go <- function(egi,dbs) {
+      v <- try(annot.get.go(egi,dbs))
+      if ( class(v)=="try-error" ) {
+        v <- NA
+      }
+      return(v)
+    }
+    safe.annot.get.go.term <- function(id,dbs) {
+      v <- try(annot.get.go.term(id,dbs))
+      if ( class(v)=="try-error" ) {
+        v <- NA
+      }
+      return(v)
+    }
+    safe.annot.get.lname <- function(id,dbs) {
+      v <- try(annot.get.lname(id,dbs))
+      if ( class(v)=="try-error" ) {
+        v <- NA
+      }
+      return(v)
+    }
+    safe.annot.get.kegg <- function(id,dbs) {
+      v <- try(annot.get.kegg(id,dbs))
+      if ( class(v)=="try-error" ) {
+        v <- NA
+      }
+      return(v)
+    }
     # GO
-    r.table[,"GO"] <- unlist(mclapply(r.table[,"egi"],annot.get.go,dbs))
+    r.table[,"GO"] <- unlist(lapply(r.table[,"egi"],safe.annot.get.go,dbs))
     pdebug("GO identfiers collected")
-    r.table[,"GOterm"] <- unlist(mclapply(r.table[,"egi"],annot.get.go.term,dbs))
+    r.table[,"GOterm"] <- unlist(lapply(r.table[,"egi"],safe.annot.get.go.term,dbs))
     pdebug("GO terms collected")
-    r.table[,"lname"] <- unlist(mclapply(r.table[,"egi"],annot.get.lname,dbs))
+    r.table[,"lname"] <- unlist(lapply(r.table[,"egi"],safe.annot.get.lname,dbs))
     pdebug("Gene (long) names collected")
 #  r.table[,"Pfam"] <- sapply(r.table[,"egi"],annot.get.pfam,dbs)
-    r.table[,"KEGG"] <- unlist(mclapply(r.table[,"egi"],annot.get.kegg,dbs))
+    r.table[,"KEGG"] <- unlist(lapply(r.table[,"egi"],safe.annot.get.kegg,dbs))
     pdebug("KEGG ids collected")
   }
 }
