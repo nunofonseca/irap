@@ -59,7 +59,7 @@ endef
 
 ################################
 # validate the options
-gse_piano_valid_methods=mean median sum fisher stouffer tailStrength
+gse_piano_valid_methods=mean median sum fisher stouffer tailStrength wilcoxon reporter page
 ifeq (,$(filter $(gse_method),$(gse_piano_valid_methods)))
 $(call p_info,[ERROR] gse_method)
 $(error $(gse_method) not supported)

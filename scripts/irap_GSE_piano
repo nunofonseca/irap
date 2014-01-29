@@ -52,7 +52,7 @@ option_list <- list(
   make_option(c("--go"), type="character", dest="go.file", default=NULL,help="TSV file with the mapping of the genes to GO terms (two columns file: geneid goterm)"),
   make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name prefix.")
 )
-multiple.options = list(method=c("mean","median","sum","fisher","stouffer","tailStrength"))
+multiple.options = list(method=c("mean","median","sum","fisher","stouffer","tailStrength","wilcoxon","reporter","page"))
 filenames <- c("tsv.file","go.file","annotation") ;#filenames that must exist (if defined)
 
 # check multiple options values
