@@ -663,12 +663,7 @@ ifdef compare_mappers
  endif
 endif
 
-# Check if the options provided are valid
-ifeq (invalid,$(shell irap_paths $(mapper) $(quant_method) $(quant_norm_method) $(de_method)))
-  $(error invalid combination mapper:$(mapper) -> quant_method:$(quant_method) -> quant_norm_method:$(quant_norm_method) -> de_method:$(de_method))
-endif
 
-$(info *========================================================)
 
 ifeq ($(mapper_splicing),no)
  file_indexed=$(trans_file)
@@ -867,6 +862,16 @@ include $(irap_path)/../aux/mk/irap_gse.mk
 
 # Atlas (atlas specific stuff)
 include $(irap_path)/../aux/mk/irap_atlas.mk
+
+
+
+# Check if the options provided are valid
+ifeq (invalid,$(shell irap_paths $(mapper) $(quant_method) $(quant_norm_method) $(de_method)))
+  $(error invalid combination mapper:$(mapper) -> quant_method:$(quant_method) -> quant_norm_method:$(quant_norm_method) -> de_method:$(de_method))
+endif
+
+$(info *========================================================)
+
 #################################################################################
 
 index_files=$(call $(mapper)_index_filename,$(file_indexed),$(file_indexed))
