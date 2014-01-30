@@ -44,8 +44,8 @@ option_list <- list(
   make_option(c("-a", "--annotation"), type="character",default=NULL,help="Annotation file (TSV format)"),
   make_option(c("--annotation_col"), type="character",default="GOterm",help="Column in the annotation file [default %default]"),
   make_option(c("-i", "--tsv"), type="character", dest="tsv.file", default=NULL,help="TSV file (gene ids should appear in the first column)"),
-  make_option(c("-p", "--pvalue-col"), type="numeric", dest="pval.col", default=3,help="Column with the p-values [default %default]"),
-  make_option(c("-f", "--foldchange-col"), type="numeric", dest="fold.col", default=2,help="Column with the foldchange values [default %default]"),
+  make_option(c("-p", "--pvalue-col"), type="numeric", dest="pval.col", default=8,help="Column with the p-values [default %default]"),
+  make_option(c("-f", "--foldchange-col"), type="numeric", dest="fold.col", default=5,help="Column with the foldchange values [default %default]"),
   make_option(c("-l", "--pvalue"), type="numeric", dest="pvalue", default=0.05,help="p-value [default %default]"),
   make_option(c("-s", "--minsize"), type="numeric", dest="min.size", default=5,help="Minimum size of  a cluster [default %default]"),
   make_option(c("-m", "--method"), type="character", dest="method", default="median",help="Method [default: %default]"),
@@ -77,9 +77,9 @@ if ( opt$fold.col>ncol(df) || opt$fold.col<1 ) {
   quit(status=1)
 }
 
-fc <- df[,opt$pval.col]
+fc <- df[,opt$fold.col]
 names(fc) <- df[,1]
-pval <- df[,opt$fold.col]
+pval <- as.numeric(df[,opt$pval.col])
 names(pval) <- df[,1]
 pinfo("Data in ",opt$tsv.file," loaded: ",nrow(df)," entries")
 ##############################
@@ -132,6 +132,7 @@ pinfo("Starting to play piano...")
 pval <- pval[!is.na(pval)]
 fc <- fc[!is.na(fc)]
 # TODO: replace inf by a big value?
+pval[is.infinite(pval)] <- 1
 pval.lim <- opt$pvalue
 # set of genes
 set1 <- names(pval[pval<=pval.lim])
@@ -143,7 +144,11 @@ if ( length(set1)!=0 )  {
    #  pass the pval and foldchange
    minSizeLim <- opt$min.size
 
-   gsaRes <- try(runGSA(pval,fc,geneSetStat=opt$method,
+   #if ( opt$method %in% c("fisher","stouffer","reporter","wilcoxon","page") ) {
+   #  fc <- NULL
+   #}
+   #save.image("debug.Rdata")
+   gsaRes <- try(runGSA(geneLevelStats=pval,directions=fc,geneSetStat=opt$method,
                   gsc=myGSC,gsSizeLim=c(minSizeLim,Inf)))
 
    if ( class(gsaRes)=="try-error") {

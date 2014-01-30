@@ -28,14 +28,30 @@
 # Currently only one tool is supported
 
 # default values
-gse_tool:=none
-gse_method:=fisher
+ifndef gse_tool
+gse_tool=none
+endif
 
+ifndef gse_method
+gse_method=fisher
+endif
 
+ifndef gse_pvalue
 gse_pvalue=0.05
-# minimum number of genes in a set
-gse_minsize=3
+endif
 
+# minimum number of genes in a set
+ifndef gse_minsize
+gse_minsize=3
+endif
+
+# print the parameters
+$(info *	gse_tool=$(gse_tool))
+ifneq ($(gse_tool),none) 
+$(info *	gse_method=$(gse_method))
+$(info *	gse_pvalue=$(gse_pvalue))
+$(info *	gse_minsize=$(gse_minsize)  (minimum number of genes))
+endif
 
 
 gse_valid_tools=piano none
@@ -50,11 +66,11 @@ endif
 ifeq ($(gse_tool),piano)
 
 define run_piano_goterm=
-irap_GSE_piano --tsv $1 --out $(subst .tsv,,$2) --annotation $(annot_tsv) --pvalue $(gse_pvalue) --minsize $(gse_minsize) --method $(gse_method) 
+irap_GSE_piano --tsv $1 --out $(subst .tsv,,$2) --annotation_col GOterm--annotation $(annot_tsv) --pvalue $(gse_pvalue) --minsize $(gse_minsize) --method $(gse_method) 
 endef
 
 define run_piano_kegg=
-irap_GSE_piano --tsv $1 --out $(subst .tsv,,$2) --annotation $(annot_tsv) --pvalue $(gse_pvalue) --minsize $(gse_minsize) --method $(gse_method) 
+irap_GSE_piano --tsv $1 --out $(subst .tsv,,$2) --annotation_col KEGG --annotation $(annot_tsv) --pvalue $(gse_pvalue) --minsize $(gse_minsize) --method $(gse_method) 
 endef
 
 ################################
