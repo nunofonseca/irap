@@ -66,7 +66,7 @@ endif
 ifeq ($(gse_tool),piano)
 
 define run_piano_goterm=
-irap_GSE_piano --tsv $1 --out $(subst .tsv,,$2) --annotation_col GOterm--annotation $(annot_tsv) --pvalue $(gse_pvalue) --minsize $(gse_minsize) --method $(gse_method) 
+irap_GSE_piano --tsv $1 --out $(subst .tsv,,$2) --annotation_col GOterm --annotation $(annot_tsv) --pvalue $(gse_pvalue) --minsize $(gse_minsize) --method $(gse_method) 
 endef
 
 define run_piano_kegg=
