@@ -23,7 +23,7 @@
 # only works on R 3+
 # source("http://bioconductor.org/biocLite.R")
 # biocLite("piano")
-library("piano")
+suppressPackageStartupMessages(library("piano"))
 
 ###########################################################
 suppressPackageStartupMessages(library("optparse"))
@@ -136,38 +136,43 @@ pval[is.infinite(pval)] <- 1
 pval.lim <- opt$pvalue
 # set of genes
 set1 <- names(pval[pval<=pval.lim])
-
-if ( length(set1)!=0 )  {
-   set1.annot <- gene2go[gene2go[,1] %in% set1,]
-   myGSC <- loadGSC(set1.annot)
-   # stats - vector fold change with names()=gene name
-   #  pass the pval and foldchange
-   minSizeLim <- opt$min.size
+set1.annot <- gene2go[gene2go[,1] %in% set1,]
+save.image("debug.Rdata")
+print.empty <- TRUE
+minSizeLim <- opt$min.size
+if ( length(set1)<minSizeLim )  {
+  print.empty <- FALSE
+  myGSC <- loadGSC(set1.annot)
+  # stats - vector fold change with names()=gene name
+  #  pass the pval and foldchange
 
    #if ( opt$method %in% c("fisher","stouffer","reporter","wilcoxon","page") ) {
    #  fc <- NULL
    #}
    #save.image("debug.Rdata")
-   gsaRes <- try(runGSA(geneLevelStats=pval,directions=fc,geneSetStat=opt$method,
-                  gsc=myGSC,gsSizeLim=c(minSizeLim,Inf)))
-
-   if ( class(gsaRes)=="try-error") {
-     perror("Failed runGSA(",opt$method,")")
-     q(status=2)  
+  gsaRes <- try(runGSA(geneLevelStats=pval,directions=fc,geneSetStat=opt$method,
+                       gsc=myGSC,gsSizeLim=c(minSizeLim,Inf)))
+  
+  if ( class(gsaRes)=="try-error") {
+    perror("Failed runGSA(",opt$method,")")
+    pinfo("Probably no gene sets were found.")
+    print.empty <- TRUE
+  } else {
+                                        # save the tsv file and the rdata file
+     save(gsaRes,file=paste(opt$out,".Rdata",sep=""))
+                                        # Save a plot
+     write.tsv(GSAsummaryTable(gsaRes),file=out.tsv.file,header=T)
+     pinfo("Created ",out.tsv.file)
    }
-
-   # save the tsv file and the rdata file
-   save(gsaRes,file=paste(opt$out,".Rdata",sep=""))
-   # Save a plot
-   write.tsv(GSAsummaryTable(gsaRes),file=out.tsv.file,header=T)
-   pinfo("Created ",out.tsv.file)
 } else {
-   pwarning("No significant entries found for p-value of ",opt$pvalue)
-   # save an empty tsv file
-   gsaRes=NA
-   save(gsaRes,file=paste(opt$out,".Rdata",sep=""))
-   write.tsv(matrix(),file=out.tsv.file)
-   pinfo("Created empty ",out.tsv.file)
+  pwarning("No significant entries found for p-value of ",opt$pvalue)
+  print.empty <- TRUE
+}
+if(print.empty) {
+  gsaRes=NA
+  save(gsaRes,file=paste(opt$out,".Rdata",sep=""))
+  write.tsv(matrix(),file=out.tsv.file)
+  pinfo("Created empty ",out.tsv.file)
 }
 
 quit(save="no",status=0)
