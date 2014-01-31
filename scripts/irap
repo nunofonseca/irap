@@ -440,7 +440,7 @@ ifndef tmp_dir
  tmp_dir=$(data_dir)/tmp
 endif
 
-$(shell mkdir -p tmp_dir)
+#$(shell mkdir -p tmp_dir)
 $(info *	tmp_dir=$(tmp_dir) (temporary directory))
 
 #******************
@@ -1697,7 +1697,8 @@ cleanup_3_0_data:
 	rm -f $(name)/*/*/*.rpkms.*
 
 cleanup_3_0_reference:
-	rm -f $(data_dir)/reference/$(species)/gene.annot.{tsv,Rdata}
+	rm -f $(data_dir)/reference/$(species)/*gene.annot.{tsv,Rdata}
+	rm -f $(data_dir)/reference/$(species)/*gene_annot.{tsv,Rdata}
 
 ##############################################################################
 # FORCE the program to run even if files haven't changed
