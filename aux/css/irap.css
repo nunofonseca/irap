@@ -28,11 +28,11 @@ div#footer {
 
 table.dataframe {
     padding: 1px;  
-    background: #6389B5;
+/*    background: #6389B5;*/
+    background: darkgrey;
 }
 TR.firstline{
-    color: #FFFFFF; 
-    background: #6389B5;
+    background: darkgrey;
     text-align:center;
     font-weight: bold;
     padding: 3px;
@@ -42,7 +42,7 @@ TD.cellinside {
     padding:2px 5px;
     text-align:right;
     color: navy;
-    background: white;
+/*    background: white;*/
 }
 
 table.center {
@@ -75,15 +75,15 @@ DIV.Sinput{background-color:#FFFAEE; color:#004080; font-family:Verdana, Arial, 
 DIV.Sinput p {margin: 0px; border: 0px; padding: 0px;}
 DIV.Sinput p xmp { margin: 0px; border: 0px; padding: 0px; }
 
-TR{font-family: Arial, Helvetica,Times, Helvetica, sans-serif; font-size: 10pt; font-style: normal  ; padding:0 0}
 
+TR {font-family: Arial, Helvetica,Times, Helvetica, sans-serif; font-size: 10pt; font-style: normal  ; padding:0 0}
 
 TR.ListBackTitle{color: #FFFFFF; background: #6389B5;text-align:left;font-weight: bold}
 
-
-
 TD.ListBackMain{background: #E0E0E0; padding:0; }
-TD.firstcolumn{padding:5px ;background:#D6E9FF;text-align:right;}
+TD.firstcolumn{padding:5px ; text-align:right; font-weight: bold;}
 
 
+tr:nth-child(odd) { background-color:lightgrey; }
+tr:nth-child(even) { background-color:white; }
 
