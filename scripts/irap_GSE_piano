@@ -36,6 +36,7 @@ if ( IRAP.DIR == "" ) {
 }
 #
 source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+pdebug.enabled <- FALSE
 
 #######################
 usage <- "irap_GSE_piano --tsv file --go file [options]"
@@ -49,6 +50,7 @@ option_list <- list(
   make_option(c("-l", "--pvalue"), type="numeric", dest="pvalue", default=0.05,help="p-value [default %default]"),
   make_option(c("-s", "--minsize"), type="numeric", dest="min.size", default=5,help="Minimum size of  a cluster [default %default]"),
   make_option(c("-m", "--method"), type="character", dest="method", default="median",help="Method [default: %default]"),
+  make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode (save a Rdata file for debugging purposes)"),
   make_option(c("--go"), type="character", dest="go.file", default=NULL,help="TSV file with the mapping of the genes to GO terms (two columns file: geneid goterm)"),
   make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name prefix.")
 )
@@ -59,6 +61,7 @@ filenames <- c("tsv.file","go.file","annotation") ;#filenames that must exist (i
 mandatory <- c("tsv.file","out")
 opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
 
+pdebug.enabled <- opt$debug
 pinfo("Parameters parsed.")
 
 if ( is.null(opt$annotation) && is.null(opt$go.file) ) {
@@ -123,6 +126,15 @@ if (!is.null(opt$go.file)) {
 # Save a tsv file with the data 
 out.tsv.file <- paste(opt$out,".tsv",sep="")
 
+# print options
+pinfo("Options")
+pinfo("method=",opt$method)
+pinfo("p-value=",opt$pvalue)
+pinfo("minimum size=",opt$min.size)
+pinfo("annotation col=",opt$annotation_col)
+pinfo("...............................")
+##############################################
+pdebug.save.state("irap_GSE_piano","p0")
 
 pinfo("Starting to play piano...")
 # create the genesets
@@ -131,16 +143,21 @@ pinfo("Starting to play piano...")
 # exclude NAs
 pval <- pval[!is.na(pval)]
 fc <- fc[!is.na(fc)]
+pinfo("FC mean",round(mean(abs(fc),na.rm=T),2),"+-",round(sd(fc,na.rm=T),2))
 # TODO: replace inf by a big value?
 pval[is.infinite(pval)] <- 1
 pval.lim <- opt$pvalue
+pinfo("p-value mean ",round(mean(abs(pval),na.rm=T),2),"+-",round(sd(pval,na.rm=T),2))
 # set of genes
 set1 <- names(pval[pval<=pval.lim])
 set1.annot <- gene2go[gene2go[,1] %in% set1,]
-save.image("debug.Rdata")
+#save.image("debug.Rdata")
 print.empty <- TRUE
 minSizeLim <- opt$min.size
-if ( length(set1)<minSizeLim )  {
+pinfo("#Genes=",length(pval)," #genes (pvalue<=",pval.lim,")=",length(set1))
+#pinfo(minSizeLim)
+pdebug.save.state("irap_GSE_piano","p1")
+if ( length(set1)>=minSizeLim )  {
   print.empty <- FALSE
   myGSC <- loadGSC(set1.annot)
   # stats - vector fold change with names()=gene name
@@ -152,15 +169,36 @@ if ( length(set1)<minSizeLim )  {
    #save.image("debug.Rdata")
   gsaRes <- try(runGSA(geneLevelStats=pval,directions=fc,geneSetStat=opt$method,
                        gsc=myGSC,gsSizeLim=c(minSizeLim,Inf)))
-  
+  pdebug.save.state("irap_GSE_piano","p2")
   if ( class(gsaRes)=="try-error") {
     perror("Failed runGSA(",opt$method,")")
     pinfo("Probably no gene sets were found.")
     print.empty <- TRUE
   } else {
-                                        # save the tsv file and the rdata file
-     save(gsaRes,file=paste(opt$out,".Rdata",sep=""))
-                                        # Save a plot
+     # Create the plots
+     #
+     gen.plot2report(filename=paste(opt$out,"_class_distinct_dir_both.png",sep=""),
+                     width=450,
+                     height=450,
+                     html=FALSE,
+                     ps=TRUE,
+                     to.plot = function () {
+                       nw1 <- networkPlot(gsaRes,class="distinct",direction="both",edgeWidth=c(3,Inf))
+                     }                     
+                     )
+     
+     gen.plot2report(filename=paste(opt$out,"_class_non_dir_both.png",sep=""),
+                     width=550,
+                     height=550,
+                     html=FALSE,
+                     ps=TRUE,
+                     to.plot = function () {
+                       nw1 <- networkPlot(gsaRes,class="non",edgeWidth=c(3,Inf))
+                     }                     
+                     )
+
+     # save the tsv file and the rdata file
+     save(gsaRes,file=paste(opt$out,".Rdata",sep=""),envir=sys.frame())
      write.tsv(GSAsummaryTable(gsaRes),file=out.tsv.file,header=T)
      pinfo("Created ",out.tsv.file)
    }
@@ -168,12 +206,14 @@ if ( length(set1)<minSizeLim )  {
   pwarning("No significant entries found for p-value of ",opt$pvalue)
   print.empty <- TRUE
 }
+
 if(print.empty) {
   gsaRes=NA
   save(gsaRes,file=paste(opt$out,".Rdata",sep=""))
   write.tsv(matrix(),file=out.tsv.file)
   pinfo("Created empty ",out.tsv.file)
 }
+pdebug.save.state("irap_GSE_piano","p3")
 
 quit(save="no",status=0)
 
