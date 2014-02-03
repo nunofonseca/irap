@@ -82,10 +82,10 @@ $(error $(gse_method) not supported)
 endif
 
 
-$(name)/$(mapper)/$(quant_method)/$(de_method)/%.$(gse_tool).$(gse_method).go.tsv: $(name)/$(mapper)/$(quant_method)/$(de_method)/%_de.tsv $(annot_tsv)
+$(name)/$(mapper)/$(quant_method)/$(de_method)/%.gse.$(gse_tool).$(gse_method).go.tsv: $(name)/$(mapper)/$(quant_method)/$(de_method)/%_de.tsv $(annot_tsv)
 	$(call run_piano_goterm,$<,$@)
 
-$(name)/$(mapper)/$(quant_method)/$(de_method)/%.$(gse_tool).$(gse_method).kegg.tsv: $(name)/$(mapper)/$(quant_method)/$(de_method)/%_de.tsv $(annot_tsv)
+$(name)/$(mapper)/$(quant_method)/$(de_method)/%.gse.$(gse_tool).$(gse_method).kegg.tsv: $(name)/$(mapper)/$(quant_method)/$(de_method)/%_de.tsv $(annot_tsv)
 	$(call run_piano_kegg,$<,$@)
 
 else
