@@ -69,11 +69,8 @@ p_info "Stage3"
 submit_job "${jobname_prefix}q"  -w "ended(${jobname_prefix}2*)"  "$cmd conf=$conf  $IRAP_PARAMS stage3"
 
 
+#####
 # DE
-#submit_job "${jobname_prefix}f"  -w "ended(${jobname_prefix}q)"  "$cmd conf=$conf  $IRAP_PARAMS stage3a stage4"
-
-# ####
-# # DE
 de_ofiles=`irap conf=$conf de_files|tail -n 1`
 let s2=1
 for f in $de_ofiles; do
@@ -81,17 +78,33 @@ for f in $de_ofiles; do
     p_info "DE: $f"
     submit_job "${jobname_prefix}de[$s2]"  `check_dependency ${jobname_prefix}q`  "irap conf=$conf  $IRAP_PARAMS $f"
 done
-
-#########################################
-# To finalize, run the whole pipeline
-# If everything went ok then nothing should be done
-# otherwise it should fail and an email will be sent
 if [ "$de_ofiles-" = "-" ]; then
     DEP=`check_dependency ${jobname_prefix}q`
 else
     DEP=`check_dependency ${jobname_prefix}de`
 fi
 
+######
+# GSE
+if [ "$de_ofiles-" != "-" ]; then
+    #####
+    # GSE
+    gse_ofiles=`irap conf=$conf GSE_files|tail -n 1`
+    let s2=1
+    for f in $gse_ofiles; do
+	let s2=s2+1
+	p_info "GSE: $f"
+	submit_job "${jobname_prefix}gse[$s2]" $DEP  "irap conf=$conf  $IRAP_PARAMS $f"
+    done
+    if [ "$gse_ofiles-" != "-" ]; then
+	DEP=`check_dependency ${jobname_prefix}gse`
+    fi    
+fi
+
+#########################################
+# To finalize, run the whole pipeline
+# If everything went ok then nothing should be done
+# otherwise it should fail and an email will be sent
 submit_job "${jobname_prefix}f" $DEP   "irap conf=$conf  $IRAP_PARAMS -n -q"
     
 # send an email to the user
