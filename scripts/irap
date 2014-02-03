@@ -1594,7 +1594,7 @@ GSE:
 
 else
 
-GSE_OUT_FILES=$(subst _de.tsv,.$(gse_tool).$(gse_method).go.tsv,$(STAGE4_OUT_FILES)) $(subst _de.tsv,.$(gse_tool).$(gse_method).kegg.tsv,$(STAGE4_OUT_FILES))
+GSE_OUT_FILES=$(subst _de.tsv,.gse.$(gse_tool).$(gse_method).go.tsv,$(STAGE4_OUT_FILES)) $(subst _de.tsv,.gse.$(gse_tool).$(gse_method).kegg.tsv,$(STAGE4_OUT_FILES))
 
 GSE: DE $(GSE_OUT_FILES)
 	$(call p_info,[DONE] GSE analysis)
