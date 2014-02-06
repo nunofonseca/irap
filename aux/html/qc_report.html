@@ -1,0 +1,95 @@
+<% brew::brew(get.path2template("page.header")) %>
+
+<%
+library(xtable)
+%>
+  
+<%# Comment -- wrap up everything in a div %>
+<DIV name='qc_res'>
+<H1>QC Report</H1>
+
+<H2 class="section">Information about the data passed to mapping stage</H2>
+<%
+# anchor: qc_sum_table
+table2.rows <- c("reads","length","median.base.qual","mean.base.qual","sd.base.qual","GC")
+rownames(etdf)
+table2 <- etdf[table2.rows,]
+rownames(table2) <- c("Reads","Read Length","Median quality","Mean quality","Quality SD","GC%")
+xt <- xtable(table2,
+             caption="",
+             label="qc_sum_table")
+
+html <- print.xtable(file="/dev/null",
+                     xt,
+                     type="html",
+                     sanitize.text.function=function(x) {x},
+                     include.colnames=TRUE,
+                     include.rownames=TRUE,
+                     html.table.attributes = "")
+
+irap.output.html(html, "The following table shows information, per
+                 library, of the data used in the later steps of the
+                 analysis. The following information per library is
+                 presented: median, mean and standard deviation
+                 of <a href=\"http://en.wikipedia.org/wiki/Phred_quality_score\"
+                 target='_top'>Phred quality scores</a>,GC content,
+                 number of reads and read length. The first three
+                 columns provide the median, mean and standard
+                 deviation of the values observed on all libraries.")
+
+%>
+<DIV> <%=qc.tsv.download.html%></DIV>
+
+
+<H2 class="section">QC Filtering Summary<A NAME='plot'/></H2>
+<%
+file <- "read_filtering_plot.png"
+filepath <- paste(out.dir,sep="")
+n <- length(colnames(df))
+if (conf.is.qc.enabled(conf)) {
+  html <- gen.plot2report(filename=file,
+                          dir=filepath,
+                          bg="white",
+                          width=(480*round(0.5+n/12,0)),
+                          height=480,
+                          html=TRUE,
+                          ps=TRUE,
+                          data.table=df,
+                          caption="",
+                          to.plot= function() {
+                            gen.qc.plot(df)
+                          }
+                          )
+  irap.output.html(html$html,"Number of reads per library that passed the filtering process and that were filtered out because of quality, contamination, having uncalled bases (Ns), unpaired reads (only applicable to paired-end libraries).")
+} else {
+  irap.output.html("<p>Filtering disabled.</p>")
+}
+	  
+%>
+
+<!--<H3 class="section">QC Filtering Summary Table</H3>-->
+<%
+
+if (conf.is.qc.enabled(conf)) {
+   xt <- xtable(out.table1,
+                caption="",
+                label="qc_filt_table")
+   
+   html <- print.xtable(xt,
+                        file="/dev/null",
+                        type="html",
+                        sanitize.text.function=function(x) {x}, include.colnames=TRUE,
+                        include.rownames=TRUE, html.table.attributes = "")
+   irap.output.html(html,
+                    "Number of reads per library that passed the filtering process and that were filtered out because of quality, contamination, having uncalled bases (Ns), unpaired reads (only applicable to paired-end libraries). The first three columns have the median, mean and standard deviation values observed across all libraries. QR links: FastQC reports per library for the initially provided data and for the data that passed the filter.The quality plots row allows to compare the quality score distribution over all sequences and bases before and after filtering.")
+   } else {
+     irap.output.html("<p>Filtering disabled.</p>")
+   }
+
+%>
+
+
+</DIV>
+
+<% brew::brew(get.path2template("page.footer")) %>
+
