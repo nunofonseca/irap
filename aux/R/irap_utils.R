@@ -522,6 +522,28 @@ annot.get.kegg <- function(egi,dbs) {
 ######################################################
 # HTML Templates
 
+irap.output.html <- function(html,info.msg=NULL) {
+  if ( !is.null(info.msg) && info.msg!="") {
+    cat(irap.info2html(info.msg))
+  }
+  cat(html)
+}
+    
+
+# Return a message in HTML format
+irap.info2html.msgs.counts <- 0
+irap.info2html <- function(msg) {
+  assign("irap.info2html.msgs.counts",irap.info2html.msgs.counts+1,envir = .GlobalEnv)
+  return(paste("<div class=\"info_wrapper\"><a href=\"javascript:void(0)\" onclick=\"document.getElementById('light",irap.info2html.msgs.counts,"').style.display='block';document.getElementById('fade",irap.info2html.msgs.counts,"').style.display='block'\" class=\"button_info\">?</a></div>
+               <div id=\"light",irap.info2html.msgs.counts,"\" class=\"info_content\">",
+               "<H2>Information</H2>",
+               "<p>",
+               msg,
+               "</p><a href=\"javascript:void(0)\" onclick=\"document.getElementById('light",irap.info2html.msgs.counts,"').style.display='none';document.getElementById('fade",irap.info2html.msgs.counts,"').style.display='none'\" class=\"button\">X</a></div><div id=\"fade",irap.info2html.msgs.counts,"\" class=\"black_overlay\"></div>
+               ",
+               sep=""))
+}
+
 get.path2template <- function(template) {
   p<-paste(IRAP.DIR,"aux/html",template,sep="/")
   if ( length(grep(".html",p,fixed=T))==0 ) {
@@ -609,18 +631,37 @@ gen.plot2report <- function(filename=NULL,
   png.file
   # HTML
   if ( html == TRUE ) {
-    html <- paste("<DIV name='dplot'><IMG src='",basename(png.file),"' border =0 width=",width," height=",height,">",sep="")
-    if (ps==TRUE)
-      html <- paste(html,"&nbsp;<a class='download' href='",basename(ps.file),"'>PS</a>",sep="")
-    if (!is.na(data.file)) 
-      html <- paste(html,"&nbsp;<a class='download' href='",basename(data.file),"'>TSV</a>",sep="")
-    html <- paste(html,"</DIV>",sep="")
+    html <- paste("<DIV class=\"dplot\"><IMG src='",basename(png.file),"' border =0 width=",width," height=",height,"><BR/>",sep="")
+    files <- c()
+    if (ps==TRUE) {
+      files <- append(files,basename(ps.file))
+      names(files)[length(files)] <- "PS"
+    }
+    if (!is.na(data.file)) {
+      files <- append(files,basename(ps.file))
+      names(files)[length(files)] <- "TSV"
+    }
+    #
+    html <- paste(html,html.download.bar(files),"</DIV>",sep="")
     html <- paste(html,"<p class='caption'>",caption,"</p>",sep="")
   } else {
     HTML=FALSE
   }
   return(list(png.file=png.file,html=html,data.file=data.file,ps.file=ps.file))
 }
+
+html.download.bar <- function(files) {
+
+  if( length(files) ==0 ) { return("") }
+  html <- "<DIV class=\"downbar\"> Download: "
+  
+  for ( f in names(files) ) {
+    html <- paste(html,"&nbsp;<a class='download' href='",basename(files[f]),"'>",f,"</a>",sep="")
+  }
+  html <- paste(html,"</DIV>",sep="")
+  return(html)
+}
+
 # deprecated
 gen.plot <- function(filename=NULL,
                      dir=".",
@@ -777,9 +818,9 @@ HTML.toogle.div <- function(visible.text, hidden.text) {
   assign("div.ids",div.ids+1,envir = .GlobalEnv)
   idon  <- paste("t",div.ids,"on",sep="")
   idoff <- paste("t",div.ids,"off",sep="")
-  paste(visible.text,
-        "<a id='",idoff,"' href='javascript:toggle(\"",idon,"\",\"",idoff,"\");'>+</a>",
-        "<div id='",idon,"' style='display: none'>",hidden.text,"</div>",sep="")
+  paste(
+        "<a class=\"button\" id='",idoff,"' href='javascript:toggle(\"",idon,"\",\"",idoff,"\");'>",visible.text,"</a>",
+        "<div class=\"button\" id='",idon,"' style='display: none'>",hidden.text,"</div>",sep="")
 }
 ######################################################
 #Mem
@@ -1259,9 +1300,34 @@ myParseArgs <- function(usage,option_list,filenames.exist=NULL,multiple.options=
 #
 #################################################################################################
 conf.get.value <- function(conf,val) {
+  #pinfo(">>>>>>>>>>>",val)
   idx <- grep(paste("^",val,"$",sep=""),conf[,1],ignore.case=TRUE,value=FALSE,perl=TRUE)
-  if (is.null(idx)) { return(NULL) }
+  
+  #pinfo("AAAAAAAAAAAAAAA:",val,idx,is.null(idx),typeof(idx))
+  if (is.null(idx) || length(idx)==0) {
+    #
+    if ( length(grep(".*_strand$",val,ignore.case=TRUE,value=FALSE,perl=TRUE))>0 ) {
+      return(NA)
+    }
+    return(NULL)
+  }
   return(myread.list(conf[idx,2]))
+}
+
+conf.set.value <- function(var,value,conf) {
+  if ( ! var %in% rownames(conf) ) {
+    conf <- rbind(c(var,value),conf)
+    rownames(conf)[nrow(conf)] <- var
+  } else {
+    pinfo(conf[var,])
+    conf[var,] <- c(var,value)
+  }
+  return(conf)
+}
+
+conf.is.qc.enabled <- function(conf) {
+  qc.enabled <- as.logical(conf.get.value(conf,"qc.enabled"))
+  return(qc.enabled)
 }
 
 conf.get.default.value <- function(var) {
@@ -1288,20 +1354,30 @@ pe.lib2rawfilename <- function(s) {
   files <- myderef(lib)
   myread.list(files)[as.numeric(id)]
 }
+
+
+pe.lib2rawfilename2 <- function(s,conf) {
+  id <- sub(".*/","",s)
+  lib <- get.libname(s)
+  files <- conf.get.value(conf,lib)
+  return(files[as.numeric(id)])
+}
 #
 load.configuration.file <- function(conf_file) {
 
+  # 
   pinfo("Loading configuration file...")
   conf.table <- read.delim(conf_file,sep="=",comment.char="#",header=FALSE,stringsAsFactors=FALSE)
   pinfo("Loading conf_file...done")
   pinfo("Configuration:")
   for ( i in 1:nrow(conf.table) ) {
     assign(as.character(conf.table[i,1]),mytrim(conf.table[i,2]))
-    pinfo("          ",conf.table[i,1],"=",conf.table[i,2])
+    pinfo("",conf.table[i,1],"=",conf.table[i,2])
   }
+  pinfo("Loading default parameters...")
   #################
   # Default values
-  vars <- c("mapper","quant_method","de_method","qual_filtering")
+  vars <- c("mapper","quant_method","de_method","qual_filtering","qual_filtering")
   for ( v in vars ) {
     if ( sum(as.character(conf.table[,1])==v)==0 ) {
       # get default value from IRAP main file
@@ -1310,7 +1386,16 @@ load.configuration.file <- function(conf_file) {
     }
   }
   rownames(conf.table) <- conf.table[,1]
-
+  pinfo("Loading default parameters...done.")
+  conf.table[nrow(conf.table)+1,] <- c("toplevel.dir",paste(dirname(conf_file),conf.table["name",2],sep="/"))
+  #alias
+  if ( ! "qc" %in%  rownames(conf.table) ) {
+    conf.table[nrow(conf.table)+1,] <- c("qc",conf.table["qual_filtering",2])
+  }
+  conf.table[nrow(conf.table)+1,] <- c("qc.enabled",(conf.get.value(conf.table,"qc")=="on"||conf.get.value(conf.table,"qc")=="yes"))
+  #
+  rownames(conf.table) <- conf.table[,1]
+  
   conf.table
 }
 
@@ -1320,6 +1405,14 @@ import.conf.variables <- function(conf.table) {
   for ( i in 1:nrow(conf) ) {
     assign(as.character(conf[i,1]),mytrim(conf[i,2]),envir = .GlobalEnv)
   }
+}
+
+irap.conf2list<- function(conf.table) {
+  irap.conf <- list()
+  for ( i in 1:nrow(conf) ) {
+    irap.conf[[as.character(conf[i,1])]] <- mytrim(conf[i,2])
+  }
+  return(irap.conf)
 }
 
 #####################################################3
