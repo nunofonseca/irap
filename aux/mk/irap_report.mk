@@ -133,6 +133,8 @@ $(name)/report/quant/:
 #########################
 #mapping_report de_report
 # TODO: remove/fix this in the future (currently necessary to update the menu)
+phony_targets+=end_report
+
 end_report: report_setup $(conf) $(name)/report/mapping/comparison.html
 	irap_report_main $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(name)/report -m "$(call mapping_dirs,$(name))" -q "$(call quant_dirs,$(name))" -d "$(call de_dirs,$(name))"
 
@@ -140,7 +142,23 @@ $(name)/report/index.html: report_setup $(conf)
 	irap_report_main $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(name)/report -m "$(call mapping_dirs,$(name))" -q "$(call quant_dirs,$(name))" -d "$(call de_dirs,$(name))" && \
 	cp $(name)/report/info.html $@
 
+#############################
+# QC
+phony_targets+=qc_report
+qc_report: $(name)/report/qc.html
 
+$(name)/report/qc.html: report_setup $(conf) 
+	irap_report_qc $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(name)/report 
+
+#############################
+# TODO: info.html
+phony_targets+=info_report
+info_report: $(name)/report/info.html
+
+$(name)/report/info.html: report_setup $(conf) 
+#	irap_report_qc $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(name)/report 
+
+#############################
 phony_targets+=mapping_report quant_report
 
 mapping_report_targets=$(foreach m,$(call mapping_dirs,$(name)), $(name)/report/mapping/$(shell basename $(m)).html) $(name)/report/mapping/comparison.html 
@@ -246,6 +264,7 @@ de_report: report_setup $(call de_html_files,$(name))
 # just print the name of the files that will be produced
 de_report_files:
 	echo $(call de_html_files,$(name))
+
 #############################
 # Report
 
