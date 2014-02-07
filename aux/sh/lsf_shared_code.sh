@@ -48,7 +48,9 @@ if [ "$DEBUG-" = "1-" ]; then
 fi
 #Queue
 if [ "$QUEUE-" = "-" ]; then
-    QUEUE="research-rh6"
+    #QUEUE="research-rh6"
+    echo "ERROR in irap_lsf: LSF queue not defined. Please check the  irap_setup.sh file." > /dev/stderr
+    exit 1
 fi
 
 
