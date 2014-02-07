@@ -48,7 +48,7 @@ option_list <- list(
   make_option(c("-s", "--species"), type="character", dest="species", default="homo_sapiens",help="Species [default %default]"),
   make_option(c("-i", "--tsv"), type="character", dest="tsv_file", default=NULL,help="TSV file name with ge values"),
   make_option(c("-m", "--metric"), type="character", dest="metric", default="",help="Metric used in the normalized matrix  (raw, rpkm, nlib, ...)"),
-  make_option(c("-x", "--min-value"), type="numeric", dest="min_value", default=0,help="Discard entries with  values lower than the one provided. [default $default]"),
+  make_option(c("-x", "--min-value"), type="numeric", dest="min_value", default=0,help="Discard entries with  values lower than the one provided. [default %default]"),
   make_option(c("-t", "--title"), type="character", dest="title", default="",help="Report title"),
   make_option(c("-a", "--annotation"), type="character",default=NULL,help="Annotation file (TSV format)"),
   make_option(c("-b", "--browser"), type="character",default="../jbrowse/",help="Relative path to the genome browser"),
