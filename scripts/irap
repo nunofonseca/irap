@@ -1642,7 +1642,7 @@ clean_data_files:
 # Reporting
 
 phony_targets+= report
-report: $(name)/report/index.html mapping_report quant_report de_report show_citations end_report
+report: $(name)/report/index.html qc_report mapping_report quant_report de_report show_citations end_report
 
 ###################################################
 # Execution status
