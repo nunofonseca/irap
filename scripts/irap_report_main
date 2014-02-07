@@ -31,7 +31,6 @@ source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
 
 # Generates the main report page
 #
-cat("-------------------------")
 usage <- "irap_report_main --conf file --rep_dir report_dir --mapping_dirs map_dirs --quant_dirs dirs --de_dirs dirs [options]"
 option_list <- list(
                     make_option(c("-v", "--verbose"), action="store_true", default=TRUE, help="Print extra output [default]"),
@@ -47,240 +46,13 @@ filenames <- c("conf_file") ;#filenames that must exist (if defined)
 mandatory <- c("conf_file","rep_dir",'map_dirs','de_dirs','quant_dirs')
 opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
 
-#######################################################
-# 
-path2qual.report <- function(dir.name,file.prefix) {
-  root.dir <- dir.name
-  #print(root.dir)
-  #print(file.prefix)
-  #pinfo(">>>>>",dir.name,"----",file.prefix)
-  filt.qual.dir <- paste(root.dir,file.prefix,"_fastqc/",sep="")
-  filt.qual.zip <- paste(root.dir,file.prefix,".fastqc.zip",sep="")
-  filt.qual.index <- paste(filt.qual.dir,"fastqc_report.html",sep="")
-  filt.qual.plot.base.quality <- paste(filt.qual.dir,"Images/per_base_quality.png",sep="")
-  filt.qual.plot.seq.quality<- paste(filt.qual.dir,"Images/per_sequence_quality.png",sep="")
-  #print(filt.qual.dir)
-  #print("------------------")
-  # check if dir exists
-  if (!file.exists(filt.qual.dir)) {
-    pinfo("Report directory ",filt.qual.dir," not found. Looking for zip file...")
-    if (!file.exists(filt.qual.zip)) {
-      pmissing(filt.qual.zip)
-      return(NULL)
-    }
-    # unzip file
-    unzip.cmd <- paste("unzip -d ",root.dir," ",filt.qual.zip,sep="")
-    system(unzip.cmd)
-    if (!file.exists(filt.qual.dir)) {
-      pwarning("Unzip file ",filt.qual.zip," apparently failed.")
-      return(NULL)
-    }
-  }
-  files <- c(filt.qual.index,filt.qual.plot.base.quality,filt.qual.plot.seq.quality)
-  names(files) <- c("index","base.quality","seq.quality")
-  #print(files)
-  return(files)
-}
-
-# bp.data
-# colnames=filenames/libname
-# rownames=filtering step
-quality.details.matrix <- function(bp.data,dir.name) {
-  data <- bp.data
-  # extra row
-  data<-rbind(data,rep("",ncol(data)))
-  rownames(data)[length(rownames(data))]<-"Initial data (quality report)"
-  # another row with the links for the qual plots
-  data<-rbind(data,rep("",ncol(data)))
-  rownames(data)[length(rownames(data))]<-"Quality plots"
-  id <- 1
-  #print(bp.data)
-  for ( lib in colnames(bp.data) ) {
-    lib <- mytrim(lib)
-    # Handle the special case (filename) of Paired-end libraries
-    if (is.pe.lib(lib)) {
-      #pinfo("PE")
-      filtered.file <- paste(libname2filename(lib),".f",sep="")
-      #pinfo("filtered.file ",filtered.file)
-      unfiltered.prefix <- sub("^.*/","",sub(".(fastq|fq).*$","",pe.lib2rawfilename(lib)))
-      #unfilt.qual.plot <- file.required(paste(dir.name,unfiltered.prefix,".qual.png",sep=""),fatal=FALSE)
-      files.unfilt <- path2qual.report(paste(dir.name,"raw_data/",sep=""),unfiltered.prefix)
-      pinfo(files.unfilt)
-    } else {
-      pinfo("SE")
-      filtered.file <- paste(lib,".f",sep="")
-      #filt.qual.plot <- file.required(paste(dir.name,lib,".f.qual.png",sep=""),fatal=FALSE)
-      #unfilt.qual.plot <- file.required(paste(dir.name,sub(".fastq.*","",myderef(lib)),".qual.png",sep=""),fatal=FALSE)
-      #pinfo(myderef(lib),"--->",sub("^.*/","",sub(".(fastq|fq).*$","",myderef(lib))))
-      files.unfilt <- path2qual.report(paste(dir.name,"raw_data/",sep=""),sub("^.*/","",sub(".(fastq|fq).*$","",myderef(lib))))
-    }
-    #
-    #trace(path2qual.report)
-    #debug(path2qual.report)
-    files.filt   <- path2qual.report(paste(dir.name,"raw_data/",sep=""),filtered.file)
-    # add a link to the the detailed report
-    data["Passed",lib] <- paste(bp.data["Passed",lib],"&nbsp;<a class='qrl' href='",files.filt["index"],"' target='_top'>QR</a>",sep="")
-    data["Initial data (quality report)",lib] <- paste("<a class='qrl' href='",files.unfilt["index"],"' target='_top'>QR</a>",sep="")
-    # Add a div to show the plots before and after filtering
-    #idon  <- paste("qual",id,"on",sep="")
-    #idoff <- paste("qual",id,"off",sep="")
-    width <- 450
-    visible.text <- "Quality plots"
-    hidden.text <- paste("<table class='plots' style='text-align: center'><tr><td>Raw data</td><td>Filtered</td></tr>",
-                   "<tr><td><img  width='",width,"' src='",files.unfilt["seq.quality"],"' alt='Quality plot'></td><td><img  width='",width,"' src='",files.filt["seq.quality"],"' alt='Quality plot'></td></tr>",
-                   "<tr><td><img width='",width,"' src='",files.unfilt["base.quality"],"' alt='Per base quality plot'></td><td><img width='",width,"' src='",files.filt["base.quality"],"' alt='Per base quality plot'></td></tr>",
-                   "</table>",sep="")
-    
-    html  <- HTML.toogle.div(visible.text,hidden.text)
-    
-    data["Quality plots",lib] <- html
-    
-    id <- id+1
-  }
-  data
-}
-
-########################################################3
-# Report
-# 1)Table with the number of reads filtered per file
-# 2)Plot (showing all files)
-# 3)Quality plots (base and sequence level) for each file
-# 4)Link to the detailed report generated by fastqc
-# return a matrix with the data
-filtering.stats <- function(pe.v,se.v) {
-
-  pinfo("Generating quality report")
-  ######################################
-  # reads info
-  df <- raw.summary.dataframe(pe.v,se.v)
-  ########################
-  # Plot 
-  legend <- c("Passed", "Unpaired", "Ns", "Contamination","Quality")
-  cols <- c("green","yellow","purple","blue","red")
-    #rainbow(length(legend))
-  bp.data <- t(as.matrix(df[,c("Reads4","Reads3","Reads2","Reads1","Reads0")]))
-  colnames(bp.data) <- as.character(df[,c("Lib")])
-  rownames(bp.data) <- legend
-# TODO: reduce font with the number of cols
-  n <- length(colnames(bp.data))
-  cex <- NULL
-  if ( n>10 ) { cex <- 0.6 } else { cex=0.5}
-  
-  file <- "read_filtering_plot.png"
-  filepath <- paste(opt$rep_dir,file,sep="/")
-  
-  width=(480*round(0.5+n/6/2,0))
-  png(filepath,width=width,height=480)
-                                        #bp.data
-  bp <- barplot( bp.data, beside = FALSE, col=cols, ylab="Number of reads", las=2 , cex.axis=cex, cex.names=0.8)
-                                        #par( xpd=NA )
-  par( xpd=NA )
-  
-  legend( "bottomright", legend=legend, fill=cols,horiz=TRUE, cex=0.7)
-                                        # print the %
-  for( i in c(1:length(colnames(bp.data))) ) {
-    total <- sum(bp.data[,i])
-    f <- c()
-    y <- c()
-    f[1] <- round(bp.data[1,i]*100/total)
-    y[1] <- bp.data[1,i]
-    f[2] <- round(bp.data[2,i]*100/total)
-    y[2] <- sum(bp.data[c(1:2),i])  
-    f[3] <- round(bp.data[3,i]*100/total)
-    y[3] <- sum(bp.data[c(1:3),i])
-    f[4] <- round(bp.data[4,i]*100/total)
-    y[4] <- sum(bp.data[c(1:4),i])
-    f[5] <- round(bp.data[5,i]*100/total)
-    y[5] <- sum(bp.data[c(1:5),i])
-    for( r in c(1:5) ){
-      if (f[r]>0.01) {
-        #pinfo(f[r])
-        legend( bp[i], y[r]-bp.data[r,i]/2, paste("~",f[r], "%", sep=""), bty="n", xjust=0.5, yjust=0.5)      
-      }
-    }
-  }
-  dev.off()
-
-  HTML("<H1>QC Report<A NAME='plot'/></H1>")
-  HTMLInsertGraph(file, Caption = "Quality Control",WidthHTML=width)
-  #
-  #
-  #df
-  
-  dir.name <- paste(name,"/report/riq/",sep="")
-  # change table to have links to the detailed quality reports
-  tab <- quality.details.matrix(bp.data,dir.name)
-  #print(tab)
-  # Change full pathnames to relative
-  HTML("<A NAME='sum'/>")
-  tab <- gsub(paste(name,"/report/",sep=""),"",tab)
-  HTML(tab, big.mark='.')
-}
-
-totnumreads2filtered <- function(v) {
-  v2 <- v
-  v2[1,2] <- v[1,2]-v[1,3]
-  v2[1,3] <- v[1,3]-v[1,4]
-  v2[1,4] <- v[1,4]-v[1,5]
-  v2[1,5] <- v[1,5]-v[1,6]
-  v2
-}
-# stats
-# lib, file, csv data
-raw.summary.dataframe <- function(pe,se) {  
-  filt_stats <- matrix(ncol=11,nrow=0, dimnames = list(NULL,c("Lib","File", "length","qual","ins","sd", "Reads0","Reads1","Reads2","Reads3","Reads4")))
-  df <- data.frame(filt_stats)
-  i <- 1
-  for (lib in pe ) {
-    linfo <- as.numeric(c(myderef(paste(lib,"_rs",sep="")),myderef(paste(lib,"_qual",sep="")),myderef(paste(lib,"_ins",sep="")),myderef(paste(lib,"_sd",sep=""))))
-    
-    files <- myread.list(myderef(lib))
-                                        #libfiles[lib] <- files
-    files <- sub("(.gz|.bzip2)","",sub("(.fastq|.fq)",".f",files,ignore.case =TRUE),ignore.case=TRUE,perl=TRUE)
-                                        #filteredlibfiles[lib] <- files
-    ## sing.file <- sub("_1.f.fastq","_1.sing.fastq",files[1])
-    ## d <- read.csv(paste(name,"/report/riq/",sing.file,".csv",sep=""),header=FALSE)
-    ## df[i,] <- append(append(c(lib,sing.file),linfo),d[1,2:6])
-    ## i <- i+1
-    
-    # BAM support
-    if ( length(grep(".bam$",files)) > 0 ) {
-      pinfo("Handling bam file...",files)
-      file.prefix <- sub(".bam$","",files)
-      files <- c(paste(file.prefix,"_1",sep=""),paste(file.prefix,"_2",sep=""))
-    }
-    # use / because some files use a _ or other characters in the filename
-    d <- totnumreads2filtered(read.csv(file.required(paste(name,"/report/riq/",files[1],".csv",sep="")),header=FALSE))
-    df[i,] <- append(append(c(paste(lib,"/1",sep=""),files[1]),linfo),d[1,2:6])
-    i <- i+1
-    d <- totnumreads2filtered(read.csv(file.required(paste(name,"/report/riq/",files[2],".csv",sep="")),header=FALSE))
-    df[i,] <- append(append(c(paste(lib,"/2",sep=""),files[2]),linfo),d[1,2:6])
-    i <- i+1
-  }
-  for (lib in se ) {
-    linfo <- as.numeric(c(myderef(paste(lib,"_rs",sep="")),myderef(paste(lib,"_qual",sep="")),0,0))
-    files <- strsplit(as.character(myderef(lib))," ")[[1]]
-    files <- sub("(.gz|.bzip2)","",sub("(.fastq|.fq)",".f",files,ignore.case =TRUE),ignore.case=TRUE,perl=TRUE)
-        # BAM support
-    if ( length(grep(".bam$",files)) > 0 ) {
-      pinfo("Handling bam file...",files)
-      files <- sub(".bam$","",files)
-    }
-    pinfo(files)
-    d <- totnumreads2filtered(read.csv(file.required(paste(name,"/report/riq/",files[1],".csv",sep="")),header=FALSE))
-
-    df[i,] <- append(append(c(lib,files[1]),linfo),d[1,2:6])
-    i <- i+1
-  }
-  df
-}
-
-#################################################################################################
+#####################################################################
 qual_filtering <- "yes"
 conditions <- NULL
 contrasts <- NULL
 pe <-
 se <- 
+
 
 pinfo("conf_file=",opt$conf_file)
 
@@ -298,28 +70,12 @@ file.required(opt$rep_dir)
 #
 library(R2HTML)
 
-#irap.HTMLInit(outdir=report_dir, filename="index", title=paste("Report ",name,sep=""))
-
 irap.HTMLInit(outdir=opt$rep_dir, filename="info", title=paste("Report ",name,sep=""))
 
 HTML.pprint.conf(conf,name)
 
 irap.HTMLEnd()
 
-##############################################################################
-# QC
-
-irap.HTMLInit(outdir=opt$rep_dir, filename="qc", title=paste("Report ",name,sep=""))
-qual_filt=conf.get.value(conf,"qual_filtering")
-pinfo(qual_filt)
-if (qual_filt!="on") {
-
-} else {
-  pinfo("QUAL filtering")
-  t <- filtering.stats(conf.get.value(conf,"pe"),conf.get.value(conf,"se"))
-  print(t)
-}
-irap.HTMLEnd()
 
 #############################################################################################
 # Alignment stats
@@ -511,4 +267,4 @@ cmd <- paste("cd ",opt$rep_dir,"; fix_html.sh", sep="")
 system(cmd)
 q()
 
-reap_report_main --conf test_se_2l.conf --rep_dir test_se_2l/report -m "test_se_2l/bowtie1 test_se_2l/bowtie2 test_se_2l/bwa1 test_se_2l/bwa2 test_se_2l/gem test_se_2l/gsnap test_se_2l/osa test_se_2l/smalt test_se_2l/soapsplice test_se_2l/star test_se_2l/tophat1 test_se_2l/tophat2" -q "test_se_2l/bowtie1/basic test_se_2l/bowtie1/cufflinks2 test_se_2l/bowtie1/htseq1 test_se_2l/bowtie2/htseq1 test_se_2l/bwa1/htseq1 test_se_2l/bwa2/htseq2 test_se_2l/gem/flux_cap test_se_2l/gsnap/cufflinks1 test_se_2l/gsnap/cufflinks2 test_se_2l/osa/basic test_se_2l/osa/flux_cap test_se_2l/osa/htseq1 test_se_2l/smalt/cufflinks1 test_se_2l/smalt/flux_cap test_se_2l/smalt/htseq2 test_se_2l/soapsplice/flux_cap test_se_2l/star/flux_cap test_se_2l/tophat1/cufflinks1 test_se_2l/tophat1/cufflinks2 test_se_2l/tophat1/cufflinks2_nd test_se_2l/tophat1/flux_cap test_se_2l/tophat1/htseq1 test_se_2l/tophat1/htseq2 test_se_2l/tophat2/basic test_se_2l/tophat2/cufflinks1 test_se_2l/tophat2/cufflinks1_nd test_se_2l/tophat2/cufflinks2" -d "test_se_2l/bowtie1/htseq1/deseq test_se_2l/smalt/htseq2/deseq test_se_2l/tophat1/cufflinks2_nd/cuffdiff2 test_se_2l/tophat1/cufflinks2_nd/cuffdiff2_nd test_se_2l/tophat2/cufflinks2/cuffdiff2" --reuse_menu
+
