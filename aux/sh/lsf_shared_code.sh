@@ -171,12 +171,12 @@ function submit_job_status {
     fi
     #p_info "WAITFOR (id)=$JOB_ID $jobname   $WAITFOR"
     # in spite of the checks, the job may have finished before lunching the new one, hence catch the error and submit a new one if an error occurs
-    $ECHO bsub -M 1000 -q $QUEUE  -J "${jobname}n" $WAITFOR  irap_lsf_job_status.sh $jobname $JOB_ID  `get_maxmem $MEM` $IRAP_PAR_CMD
+    $ECHO bsub -M 1000 -R "rusage[mem>1000]" -q $QUEUE  -J "${jobname}n" $WAITFOR  irap_lsf_job_status.sh $jobname $JOB_ID  `get_maxmem $MEM` $IRAP_PAR_CMD
     #2> /dev/null
     if [ $? != 0 ]; then
 	p_info "$jobname not  found...probably it has already finished"
 	WAITFOR=
-	$ECHO bsub -M 1000 -q $QUEUE  -J "${jobname}n" $WAITFOR  irap_lsf_job_status.sh $jobname $JOB_ID `get_maxmem $MEM` $IRAP_PAR_CMD 
+	$ECHO bsub -M 1000 -R "rusage[mem>1000]" -q $QUEUE  -J "${jobname}n" $WAITFOR  irap_lsf_job_status.sh $jobname $JOB_ID `get_maxmem $MEM` $IRAP_PAR_CMD 
     fi
 }
 
@@ -211,8 +211,8 @@ function submit_job {
     #-R  "span[ptile=$THREADS]"
     MAX_MEM=`get_maxmem $MEM`
     if [ "$WAIT_FOR_IDS-" != "-" ]; then
-	$ECHO bsub -q $QUEUE -n $THREADS  -M $MAX_MEM -R "rusage[mem=$MEM]"  -w "$WAIT_FOR_IDS"  -cwd `pwd` -o "`pwd`/$name/$jobname-%J.out" -e "`pwd`/$name/$jobname-%J.err" -J $jobname  $cmd2e max_threads=$THREADS  data_dir=$DATA_DIR max_mem=$MEM
+	$ECHO bsub -q $QUEUE -n $THREADS  -M $MAX_MEM -R "rusage[mem>$MEM]"  -w "$WAIT_FOR_IDS"  -cwd `pwd` -o "`pwd`/$name/$jobname-%J.out" -e "`pwd`/$name/$jobname-%J.err" -J $jobname  $cmd2e max_threads=$THREADS  data_dir=$DATA_DIR max_mem=$MEM
     else
-	$ECHO bsub -q $QUEUE  $GROUP -n $THREADS  -M $MAX_MEM -R "rusage[mem=$MEM]"   -cwd `pwd` -o "`pwd`/$name/$jobname-%J.out" -e "`pwd`/$name/$jobname-%J.err" -J $jobname  $cmd2e max_threads=$THREADS  data_dir=$DATA_DIR max_mem=$MEM	
+	$ECHO bsub -q $QUEUE  $GROUP -n $THREADS  -M $MAX_MEM -R "rusage[mem>$MEM]"   -cwd `pwd` -o "`pwd`/$name/$jobname-%J.out" -e "`pwd`/$name/$jobname-%J.err" -J $jobname  $cmd2e max_threads=$THREADS  data_dir=$DATA_DIR max_mem=$MEM	
     fi
 }
