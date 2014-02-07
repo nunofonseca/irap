@@ -313,6 +313,9 @@ go: all
 %.fastq: %.fastq.gz
 	gunzip -f -c $< > $@.tmp && mv $@.tmp $@
 
+%.fastq.stats: %.fastq
+	fastx_quality_stats -Q $(qual) -i $< -o $@.tmp && mv $@.tmp $@
+
 # 
 ifeq ($(PE),OFF)
 # generate the fastq from BAM
@@ -440,7 +443,7 @@ stage5:
 ifdef pe_data
 
 #Main call, no filtering, collect stats, cleaning at the end (rm files)
-all: setup0 stage0 $(out_dir)/$(out_prefix)_1.f.fastq $(out_dir)/$(out_prefix)_2.f.fastq $(report_dir)/$(out_prefix)_1.f.csv $(report_dir)/$(out_prefix)_2.f.csv  stage6
+all: setup0 stage0 $(out_dir)/$(out_prefix)_1.f.fastq.stats $(out_dir)/$(out_prefix)_2.f.fastq.stats $(out_dir)/$(out_prefix)_1.f.fastq $(out_dir)/$(out_prefix)_2.f.fastq $(report_dir)/$(out_prefix)_1.f.csv $(report_dir)/$(out_prefix)_2.f.csv  stage6
 	$(shell if [ -e $(f1_n).filter1.fastq.qual.png ]; then mv $(out_dir)/$(f1_n)*.png $(report_dir)/raw_data ; fi)
 	$(shell if [ -e $(f2_n).filter1.fastq.qual.png ]; then mv $(out_dir)/$(f2_n)*.png $(report_dir)/raw_data ; fi)
 	rm -f $(report_dir)/$(f1_n).f.csv
@@ -479,7 +482,7 @@ $(out_dir)/$(out_prefix).f.fastq:  $(data_dir)/$(f1_n).fastq
 	ln -s $(abspath $(data_dir))/$(f1_n).fastq $@
 
 #Main call, no filtering, collect stats only
-all: setup0 stage0 $(out_dir)/$(out_prefix).f.fastq   $(report_dir)/$(out_prefix).f.csv    stage6
+all: setup0 stage0 $(out_dir)/$(out_prefix).f.fastq $(out_dir)/$(out_prefix).f.fastq.stats   $(report_dir)/$(out_prefix).f.csv    stage6
 	rm -f $(report_dir)/$(f1_n).f.csv
 	ln -s $(abspath $(report_dir)/$(out_prefix).f.csv) $(report_dir)/$(f1_n).f.csv
 	rm -f $(report_dir)/$(f1_n).csv
@@ -654,6 +657,8 @@ $(report_dir)/%.qual.png $(report_dir)/%.nuc.distr.png: $(out_dir)/%.fastq
 
 $(report_dir)/%.qual.png $(report_dir)/%.nuc.distr.png: $(data_dir)/%.fastq
 	$(call gen_stats,$^,$*)
+
+
 
 
 $(report_dir)/raw_data/%.fastqc.zip: $(out_dir)/%.fastq
