@@ -43,12 +43,8 @@ DIV.dplot {
     margin: 10px;
 }
 
-TABLE.fixed {
-    table-layout: fixed;
-    width: 100%;
-}
 
-TD {
+td {
     overflow: hidden;
     text-overflow: ellipsis;
     vertical-align: top;
@@ -56,7 +52,6 @@ TD {
     white-space: nowrap;
 }
 
-tr:hover td { white-space: normal; }
 
 div#content {
     text-align: left;
@@ -73,9 +68,13 @@ div#footer {
 
 table.dataframe {
     padding: 1px;  
-/*    background: #6389B5;*/
     background: darkgrey;
+    table-layout: fixed;
+    width: 100%;
 }
+
+table.dataframe tr:hover td { white-space: normal; }
+
 TR.firstline{
     background: darkgrey;
     text-align:center;
