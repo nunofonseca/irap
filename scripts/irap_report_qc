@@ -33,7 +33,7 @@ source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
 pdebug.enabled <- FALSE
 html.temp <- get.path2template("qc_report")
 #######################
-usage <- "irap_qc_report.R --conf conf.file [options]"
+usage <- "irap_report_qc --conf conf.file [options]"
 option_list <- list(
   make_option(c("-c", "--conf"), type="character",dest="conf.file",help="iRAP's experiment configuration file"),
   make_option(c("--css"), type="character",default="irap.css",help="Path to the irap.css file relative to the location of the produced html file [default: %default"),
@@ -43,7 +43,7 @@ option_list <- list(
 )
 
 multiple.options = list()
-filenames <- c("conf.file","html.file") ;#filenames that must exist (if defined)
+filenames <- c("conf.file","html_template") ;#filenames that must exist (if defined)
 
 # check multiple options values
 mandatory <- c("conf.file","rep_dir","html_template")
@@ -55,7 +55,7 @@ pdebug.enabled <- opt$debug
 pinfo("Parameters parsed.")
 
 ###########################
-# CODE
+# Functions
 ###########################
 
 
@@ -413,8 +413,6 @@ library(brew)
 ####################################
 out.dir <- report.dir
 out.html.file <- paste(out.dir,"/qc.html",sep="")
-#dir.name <- "/home/nf/EBI_SHARE_nf/marioni/rnaseq/FKRP/fkrp_up/"
-#dir.name <- "/home/nf/Research/Projects/WIP/EREAP/ereap/tests/"
 brew(opt$html_template,out.html.file)
 warnings()
 q()
