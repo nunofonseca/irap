@@ -227,7 +227,7 @@ gene.tsv.download.html <- html.download.bar(gene.download.files)
 <%
 # percentages
 tot <- colSums(mapping.genes)
-p.mapping.genes <- round(100*mapping.genes/tot,2)
+p.mapping.genes <- round(sweep(mapping.genes,MARGIN=2,100*1/tot,`*`),2)
 
 xt <- xtable(p.mapping.genes,
              caption="",
