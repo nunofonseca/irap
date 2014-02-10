@@ -226,6 +226,14 @@ get.mapping.feature.stats <- function(mapper,pe.bam.v,se.bam.v,pe.labels.v,se.la
   if ( ncol(aln.stats)!=nlibs) {
     pwarning("unable to find all .bam.stats file")
   }
+  aln.stats.median <- apply(aln.stats,MARGIN=1,FUN=median)
+  aln.stats.mean <- apply(aln.stats,MARGIN=1,FUN=mean)
+  aln.stats.sd <- apply(aln.stats,MARGIN=1,FUN=sd)
+  cols.names <- colnames(aln.stats) 
+  aln.stats <- cbind(aln.stats,aln.stats.median,aln.stats.mean,aln.stats.sd)
+  colnames(aln.stats) <- append(cols.names,c("Median","Mean","SD"))
+  aln.stats <- aln.stats[,append(c("Median","Mean","SD"),cols.names)]
+
   return(aln.stats)
 }
 
@@ -257,6 +265,15 @@ get.mapping.gene.stats <- function(mapper,pe.bam.v,se.bam.v,pe.labels.v,se.label
   if ( ncol(gene.stats)!=nlibs) {
     pwarning("unable to find all .bam.gene.stats file")
   }
+  #
+  gene.stats.median <- apply(gene.stats,MARGIN=1,FUN=median)
+  gene.stats.mean <- apply(gene.stats,MARGIN=1,FUN=mean)
+  gene.stats.sd <- apply(gene.stats,MARGIN=1,FUN=sd)
+  cols.names <- colnames(gene.stats) 
+  gene.stats <- cbind(gene.stats,gene.stats.median,gene.stats.mean,gene.stats.sd)
+  colnames(gene.stats) <- append(cols.names,c("Median","Mean","SD"))
+  gene.stats <- gene.stats[,append(c("Median","Mean","SD"),cols.names)]
+
   return(gene.stats)
 }
 
@@ -280,12 +297,13 @@ pinfo("Saved ",raw.stats.file)
 perc.stats.file <- paste(out.prefix,"_mapping_stats_perc.tsv",sep="")
 r <- write.tsv(mapping.dfs$perc,file=perc.stats.file)
 pinfo("Saved ",perc.stats.file)
+
 feat.stats.file <- paste(out.prefix,"_mapping_stats_feat.tsv",sep="")
 r <- write.tsv(mapping.feat,file=feat.stats.file)
 pinfo("Saved ",feat.stats.file)
 
 gene.stats.file <- paste(out.prefix,"_mapping_stats_gene.tsv",sep="")
-r <- write.tsv(gene.feat,file=mapping.genes)
+r <- write.tsv(mapping.genes,file=gene.stats.file)
 pinfo("Saved ",gene.stats.file)
 
 

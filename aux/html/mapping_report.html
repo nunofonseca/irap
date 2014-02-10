@@ -103,6 +103,7 @@ rownames(mapping.feat)<-gsub("_"," ",rownames(mapping.feat))
 
 file <- paste(out.prefix,"_aln_bio",sep="")
 n <- length(colnames(mapping.feat))
+mapping.feat2plot <- mapping.feat[,!colnames(mapping.feat) %in% c("Median","Mean","SD")]
 html <- gen.plot2report(filename=file,
                         dir=out.dir,
                         bg="white",
@@ -112,15 +113,15 @@ html <- gen.plot2report(filename=file,
                         ps=TRUE,
                         caption="",
                         to.plot= function() {
-                          cols <- rainbow(ncol(mapping.feat))
+                          cols <- rainbow(ncol(mapping.feat2plot))
                           par(mar=c(8,16,4,8))
-                          barplot(t(mapping.feat),las=2,
+                          barplot(t(mapping.feat2plot),las=2,
                                   beside=T,col=cols,
                                   xlab="Number of alignments",
                                   horiz=T,cex.axis=0.8)
-                                  if (ncol(mapping.feat<20) ) {
+                                  if (ncol(mapping.feat2plot<20) ) {
                                       par( xpd=NA )
-                                      legend("topright",inset=c(-0.40,0),legend=colnames(mapping.feat),fill=cols,horiz=FALSE, cex=0.70,bty='n')
+                                      legend("topright",inset=c(-0.40,0),legend=colnames(mapping.feat2plot),fill=cols,horiz=FALSE, cex=0.70,bty='n')
                                   }
 
                           
@@ -135,7 +136,7 @@ irap.output.html(html$html,"Number of alignments overlapping annotated features.
 
 <%
 
-xt <- xtable(mapping.feat,
+xt <- xtable(mapping.feat2plot,
              caption="",
              label="map_feat_table")
 
@@ -180,7 +181,8 @@ irap.output.html(html, "Percentage of alignments overlapping annotated features.
 <!-- number of reads mapping to exonic regions, intronic regions, other -->
 <%
 file <- paste(out.prefix,"_aln_genes",sep="")
-n <- length(colnames(mapping.genes))
+mapping.genes2plot <- mapping.genes[,!colnames(mapping.genes) %in% c("Median","Mean","SD")]
+n <- length(colnames(mapping.genes2plot))
 html <- gen.plot2report(filename=file,
                         dir=out.dir,
                         bg="white",
@@ -190,11 +192,11 @@ html <- gen.plot2report(filename=file,
                         ps=TRUE,
                         caption="",
                         to.plot= function() {
-                          cols <- rainbow(nrow(mapping.genes))
+                          cols <- rainbow(nrow(mapping.genes2plot))
                           par(mar=c(10,5,5,4))                          
-                          barplot(mapping.genes,las=2,col=cols,)
+                          barplot(mapping.genes2plot,las=2,col=cols,)
                           par( xpd=NA )
-                          legend("top",inset=c(0,-0.05),legend=rownames(mapping.genes),fill=cols,horiz=TRUE, cex=0.80,bty='n')                            
+                          legend("top",inset=c(0,-0.05),legend=rownames(mapping.genes2plot),fill=cols,horiz=TRUE, cex=0.80,bty='n')                            
                         }
                         )
 
@@ -205,7 +207,7 @@ irap.output.html(html$html,"Number of alignments overlapping introns and exons. 
 
 <%
 
-xt <- xtable(mapping.genes,
+xt <- xtable(round(mapping.genes[,!colnames(mapping.genes) %in% c("Median","Mean","SD")],0),
              caption="",
              label="map_genes_table")
 
@@ -217,7 +219,7 @@ html <- print.xtable(file="/dev/null",
                      include.rownames=TRUE,
                      html.table.attributes = "")
 
-irap.output.html(html, "Number of alignments overlapping annotated exons and introns. Values obtained with bedtools.")
+irap.output.html(html, "Number of alignments overlapping  exons and introns. Values obtained with bedtools.")
 
 gene.download.files <- c("mapping_genes.tsv")
 names(gene.download.files) <- "TSV"
@@ -242,7 +244,7 @@ html <- print.xtable(file="/dev/null",
                      include.rownames=TRUE,
                      html.table.attributes = "")
 
-irap.output.html(html, "Percentage of alignments overlapping annotated exons and introns. Values obtained with bedtools.")
+irap.output.html(html, "Percentage of alignments overlapping exons and introns. Values obtained with bedtools.")
 
 %>
 
