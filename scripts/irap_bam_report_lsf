@@ -63,7 +63,7 @@ echo "* Step&21 (PE)"
 for p in $pe ; do 
     let s1=s1+1
     BAMFILE=$name/$mapper/$p.pe.hits.bam
-    submit_job "${jobname_prefix}[$s1]"  $cmd $report_dir/mapping/$mapper/$p/index.html
+    submit_job "${jobname_prefix}[$s1]"  $cmd $report_dir/mapping/$mapper/$p/index.html $BAMFILE.stats
 done
 
 
@@ -75,7 +75,7 @@ for f in $se ; do
     let s1=s1+1
     BAMFILE="$name/$mapper/$f.se.hits.bam"
     if [ -e $BAMFILE ]; then
-	submit_job "${jobname_prefix}[$s1]"   $cmd $report_dir/mapping/$mapper/$f/index.html
+	submit_job "${jobname_prefix}[$s1]"   $cmd $report_dir/mapping/$mapper/$f/index.html $BAMFILE.stats
     fi
 done
 
