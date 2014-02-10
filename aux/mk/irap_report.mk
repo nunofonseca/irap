@@ -168,16 +168,38 @@ mapping_report_files:
 
 mapping_report: report_setup $(mapping_report_targets)
 
-
-$(name)/report/mapping/%.html: $(name)/%/  $(foreach p,$(pe),$(name)/%/$(p).pe.hits.bam) $(foreach s,$(se),$(name)/%/$(s).se.hits.bam)
-	irap_report_mapping $@.tmp $* "$(foreach p,$(pe),;$(name)/$*/$(p).pe.hits.bam)" "$(foreach s,$(se),;$(name)/$*/$(s).se.hits.bam)"  "$(foreach p,$(pe),;$(p))" "$(foreach s,$(se),;$(s))"  && \
-	mv $@.tmp.html $(name)/report/mapping/$*.html 
+$(name)/report/mapping/%.html: $(name)/%/  $(foreach p,$(pe),$(name)/%/$(p).pe.hits.bam) $(foreach s,$(se),$(name)/%/$(s).se.hits.bam) $(foreach p,$(pe),$(name)/%/$(p).pe.hits.bam.stats) $(foreach s,$(se),$(name)/%/$(s).se.hits.bam.stats) $(foreach p,$(pe),$(name)/%/$(p).pe.hits.bam.gene.stats) $(foreach s,$(se),$(name)/%/$(s).se.hits.bam.gene.stats)
+	irap_report_mapping --out $@ --mapper $* --pe "$(foreach p,$(pe),;$(name)/$*/$(p).pe.hits.bam)" --se "$(foreach s,$(se),;$(name)/$*/$(s).se.hits.bam)"  --pe_labels "$(foreach p,$(pe),;$(p))" --se_labels "$(foreach s,$(se),;$(s))"
 
 
-#$(name)/report/mapping/%/align_overall_comparison.png.tsv: 
-#	$(call p_error, BAM files missing? Unable to generate $(name)/report/mapping/$*.html)
+# statistics per bam file
+%.bam.stats: %.bam $(gff3_file_abspath)
+	bedtools coverage -abam $< -counts -b $(gff3_file_abspath) > $@.tmp && \
+	mv $@.tmp $@
 
-$(name)/report/mapping/%/align_overall_comparison.png.tsv: $(name)/report/mapping/%.html
+$(name)/report/mapping/%.stats: $(name)/%/  $(foreach p,$(pe),$(name)/%/$(p).pe.hits.bam.stats) $(foreach s,$(se),$(name)/%/$(s).se.hits.bam.stats) $(foreach p,$(pe),$(name)/%/$(p).pe.hits.bam.gene.stats) $(foreach s,$(se),$(name)/%/$(s).se.hits.bam.gene.stats)
+
+%.bam.gene.stats: %.bam $(name)/data/exons.bed $(name)/data/introns.bed
+	echo -n "Exons	" > $@.tmp &&\
+	bedtools intersect -abam $<  -b $(name)/data/exons.bed |samtools view -c - >> $@.tmp && echo >> $@ &&\
+	echo -n "Introns	" >> $@.tmp &&\
+	bedtools intersect -abam $<  -b $(name)/data/introns.bed |samtools view -c - >> $@.tmp && echo >> $@ && \
+	mv $@.tmp $@
+
+# bed files required to get some extra stats
+# exons.bed
+$(name)/data/exons.bed: $(gff3_file_abspath) 
+	cat $< | awk 'BEGIN{OFS="\t";} $$3=="exon" {print $$1,$$4,$$5}' | bedtools sort -i /dev/stdin | bedtools merge -i /dev/stdin > $@.tmp && \
+	mv $@.tmp $@
+
+# genes.bed
+$(name)/data/genes.bed: $(gff3_file_abspath)
+	cat $< | awk 'BEGIN{OFS="\t";} $$3=="gene" {print $$1,$$4,$$5}' |  bedtools sort -i /dev/stdin | bedtools merge -i /dev/stdin > $@.tmp && \
+	mv $@.tmp $@
+
+# introns
+$(name)/data/introns.bed: $(name)/data/genes.bed $(name)/data/exons.bed
+	bedtools subtract -a $< -b $(name)/data/exons.bed > $@.tmp && mv $@.tmp $@
 
 
 # M
