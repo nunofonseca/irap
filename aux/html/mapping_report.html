@@ -158,7 +158,8 @@ feat.tsv.download.html <- html.download.bar(feat.download.files)
 
 <%
 mapping.feat.sum <- colSums(mapping.feat)
-mapping.feat.per <- round(100*mapping.feat/mapping.feat.sum,2)
+mapping.feat.per <- round(sweep(mapping.feat,MARGIN=2,100*1/mapping.feat.sum,`*`),2)
+
 
 xt <- xtable(mapping.feat.per,
              caption="",

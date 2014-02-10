@@ -282,9 +282,12 @@ r <- write.tsv(mapping.dfs$perc,file=perc.stats.file)
 pinfo("Saved ",perc.stats.file)
 feat.stats.file <- paste(out.prefix,"_mapping_stats_feat.tsv",sep="")
 r <- write.tsv(mapping.feat,file=feat.stats.file)
-pinfo("Saved ",perc.stats.file)
+pinfo("Saved ",feat.stats.file)
 
-barplot(t(mapping.feat),las=2)
+gene.stats.file <- paste(out.prefix,"_mapping_stats_gene.tsv",sep="")
+r <- write.tsv(gene.feat,file=mapping.genes)
+pinfo("Saved ",gene.stats.file)
+
 
 out.html.file <- paste(opt$out,sep="")
 brew(opt$html_template,opt$out)
