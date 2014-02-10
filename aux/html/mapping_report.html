@@ -221,12 +221,13 @@ html <- print.xtable(file="/dev/null",
 
 irap.output.html(html, "Number of alignments overlapping  exons and introns. Values obtained with bedtools.")
 
-gene.download.files <- c("mapping_genes.tsv")
+gene.download.files <- gene.stats.file
 names(gene.download.files) <- "TSV"
 gene.tsv.download.html <- html.download.bar(gene.download.files)
 
 %>
-
+<DIV> <%=gene.tsv.download.html%></DIV>
+  
 <%
 # percentages
 tot <- colSums(mapping.genes)
@@ -248,7 +249,7 @@ irap.output.html(html, "Percentage of alignments overlapping exons and introns. 
 
 %>
 
-<!--<DIV> <%=gene.tsv.download.html%></DIV>-->
+
 
 
 </DIV>
