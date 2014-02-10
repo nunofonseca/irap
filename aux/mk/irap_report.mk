@@ -23,6 +23,7 @@
 # Rules for creating the reports
 
 BROWSER_DIR=jbrowse
+CSS_FILE=irap.css
 
 # useful functions
 define mapping_dirs=
@@ -69,7 +70,7 @@ endef
 # --anotation ....
 #
 define DE_tsv2html=
-	tsvDE2html --flavour $(1) --tsv $(2) --out $(3)/$(4) --cut-off $(de_pvalue_cutoff) --species $(species) --feature $(call DEfilename2AL,$(2)) --browser ../../../$(BROWSER_DIR)/ --css ../../../irap.css --title "$(5)" -a $(annot_tsv) -m $(de_num_genes_per_table)
+	tsvDE2html --flavour $(1) --tsv $(2) --out $(3)/$(4) --cut-off $(de_pvalue_cutoff) --species $(species) --feature $(call DEfilename2AL,$(2)) --browser ../../../$(BROWSER_DIR)/ --css ../../../$(CSS_FILE) --title "$(5)" -a $(annot_tsv) -m $(de_num_genes_per_table)
 endef
 
 
@@ -81,7 +82,7 @@ endef
 # 6 feature
 # --anotation ....
 define GE_tsv2html=
-	tsvGE2html -m $(1) --tsv $(2) --out $(3)/$(4) --species $(species) --feature $(call DEfilename2AL,$(2)) --browser ../../../../$(BROWSER_DIR)/ --css ../../../../irap.css --title "$(5)" -a $(annot_tsv)  --gdef "$(call groupsdef2str)" --gnames "$(call groups2str)" -f $(6)
+	tsvGE2html -m $(1) --tsv $(2) --out $(3)/$(4) --species $(species) --feature $(call DEfilename2AL,$(2)) --browser ../../../../$(BROWSER_DIR)/ --css ../../../../$(CSS_FILE) --title "$(5)" -a $(annot_tsv)  --gdef "$(call groupsdef2str)" --gnames "$(call groups2str)" -f $(6)
 endef
 
 #-x min value
@@ -169,7 +170,7 @@ mapping_report_files:
 mapping_report: report_setup $(mapping_report_targets)
 
 $(name)/report/mapping/%.html: $(name)/%/  $(foreach p,$(pe),$(name)/%/$(p).pe.hits.bam) $(foreach s,$(se),$(name)/%/$(s).se.hits.bam) $(foreach p,$(pe),$(name)/%/$(p).pe.hits.bam.stats) $(foreach s,$(se),$(name)/%/$(s).se.hits.bam.stats) $(foreach p,$(pe),$(name)/%/$(p).pe.hits.bam.gene.stats) $(foreach s,$(se),$(name)/%/$(s).se.hits.bam.gene.stats) $(conf)
-	irap_report_mapping --out $@ --mapper $* --pe "$(foreach p,$(pe),;$(name)/$*/$(p).pe.hits.bam)" --se "$(foreach s,$(se),;$(name)/$*/$(s).se.hits.bam)"  --pe_labels "$(foreach p,$(pe),;$(p))" --se_labels "$(foreach s,$(se),;$(s))"
+	irap_report_mapping --out $@ --mapper $* --pe "$(foreach p,$(pe),;$(name)/$*/$(p).pe.hits.bam)" --se "$(foreach s,$(se),;$(name)/$*/$(s).se.hits.bam)"  --pe_labels "$(foreach p,$(pe),;$(p))" --se_labels "$(foreach s,$(se),;$(s))" -css ../$(CSS_FILE)
 
 
 # statistics per bam file
@@ -214,7 +215,7 @@ endef
 
 # only perform the comparison on the existing TSV files
 $(name)/report/mapping/comparison.html: $(call only_existing_files,$(foreach m,$(call mapping_dirs,$(name)), $(name)/report/mapping/$(shell basename $(m))/align_overall_comparison.png.tsv))
-	mappers_comp_sum.R --tsv "$^" --labels "$(foreach f,$^, $(call mappersFromReportPath,$(f)))" --out $(@D)/comparison --css  ../../irap.css && touch $@
+	mappers_comp_sum.R --tsv "$^" --labels "$(foreach f,$^, $(call mappersFromReportPath,$(f)))" --out $(@D)/comparison --css  ../../$(CSS_FILE) && touch $@
 #	mappers_comp_sum.R --tsv "$^" --labels "$(foreach m,$(call mapping_dirs,$(name)), $(shell basename $(m)))" --out $(@D)/comparison --css  ../irap.css && touch $@
 
 
