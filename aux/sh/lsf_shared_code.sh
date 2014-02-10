@@ -171,12 +171,12 @@ function submit_job_status {
     fi
     #p_info "WAITFOR (id)=$JOB_ID $jobname   $WAITFOR"
     # in spite of the checks, the job may have finished before lunching the new one, hence catch the error and submit a new one if an error occurs
-    $ECHO bsub -M 1000 -R "select[mem>=$MEM]  rusage[mem=1000]" -q $QUEUE  -J "${jobname}n" $WAITFOR  irap_lsf_job_status.sh $jobname $JOB_ID  `get_maxmem $MEM` $IRAP_PAR_CMD
+    $ECHO bsub -M 1000 -R "select[mem>=1000]  rusage[mem=1000]" -q $QUEUE  -J "${jobname}n" $WAITFOR  irap_lsf_job_status.sh $jobname $JOB_ID  `get_maxmem $MEM` $IRAP_PAR_CMD
     #2> /dev/null
     if [ $? != 0 ]; then
 	p_info "$jobname not  found...probably it has already finished"
 	WAITFOR=
-	$ECHO bsub -M 1000 -R "select[mem>=$MEM]  rusage[mem=1000]" -q $QUEUE  -J "${jobname}n" $WAITFOR  irap_lsf_job_status.sh $jobname $JOB_ID `get_maxmem $MEM` $IRAP_PAR_CMD 
+	$ECHO bsub -M 1000 -R "select[mem>=1000]  rusage[mem=1000]" -q $QUEUE  -J "${jobname}n" $WAITFOR  irap_lsf_job_status.sh $jobname $JOB_ID `get_maxmem $MEM` $IRAP_PAR_CMD 
     fi
 }
 
