@@ -1,0 +1,254 @@
+<% brew::brew(get.path2template("page.header")) %>
+
+<%
+library(xtable)
+%>
+  
+<%# Comment -- wrap up everything in a div %>
+<DIV name='mapping_res'>
+<H1>Mapping report for <%=opt$mapper%></H1>
+
+<H2 class="section">Mapping statistics<A NAME='plot'/></H2>
+<%
+file <- paste(out.prefix,"_aln",sep="")
+n <- length(colnames(mapping.dfs$raw))
+html <- gen.plot2report(filename=file,
+                        dir=out.dir,
+                        bg="white",
+                        width=(480*round(0.5+n/12,0)),
+                        height=480,
+                        html=TRUE,
+                        ps=TRUE,
+                        caption="",
+                        to.plot= function() {
+                          mapping.plot(mapping.dfs$raw)
+                        }
+                        )
+
+irap.output.html(html$html,"Alignment statistics per library: number of alignments, number of reads mapped, number of reads not mapped, number of reads that map to a single locus (uniquely mapped), and number of reads spliced.")
+
+%>
+
+<%
+file <- paste(out.prefix,"_diff",sep="")
+n <- length(colnames(mapping.dfs$raw))
+html <- gen.plot2report(filename=file,
+                        dir=out.dir,
+                        bg="white",
+                        width=(480*round(0.5+n/12,0)),
+                        height=480,
+                        html=TRUE,
+                        ps=TRUE,
+                        caption="",
+                        to.plot= function() {
+                          mapping.qual(mapping.dfs$raw)
+                        }
+                        )
+
+irap.output.html(html$html,"Number of alignments per library where a read aligns pefectly (no mismatches), 1 mismatch, 2 mismatches and more than 2 mismatches. The values are obtained from the BAM file(s).")
+%>
+
+<%
+
+xt <- xtable(mapping.dfs$perc,
+             caption="",
+             label="map_perc_table")
+
+html <- print.xtable(file="/dev/null",
+                     xt,
+                     type="html",
+                     sanitize.text.function=function(x) {x},
+                     include.colnames=TRUE,
+                     include.rownames=TRUE,
+                     html.table.attributes = "")
+
+irap.output.html(html, "Alignment statistics per library (percentage):  percentage of reads mapped, unmapped, uniquely mapped, multimaps and spliced; percentage of alignments where a read aligns pefectly (no mismatches), 1 mismatch, 2 mismatches, more than 2 mismatches, and spliced.")
+
+tsv.download.files <- c("mapping_perc.tsv")
+names(tsv.download.files) <- "TSV"
+perc.tsv.download.html <- html.download.bar(tsv.download.files)
+
+%>
+<DIV> <%=perc.tsv.download.html%></DIV>
+
+<%
+
+xt <- xtable(mapping.dfs$raw,
+             caption="",
+             label="map_perc_table")
+
+html <- print.xtable(file="/dev/null",
+                     xt,
+                     type="html",
+                     sanitize.text.function=function(x) {x},
+                     include.colnames=TRUE,
+                     include.rownames=TRUE,
+                     html.table.attributes = "")
+
+irap.output.html(html, "Alignment statistics per library: number of reads mapped, unmapped, uniquely mapped, multimaps and spliced; percentage of alignments where a read aligns pefectly (no mismatches), 1 mismatch, 2 mismatches, more than 2 mismatches, and spliced.")
+
+tsv.download.files <- c("mapping_abs.tsv")
+names(tsv.download.files) <- "TSV"
+abs.tsv.download.html <- html.download.bar(tsv.download.files)
+
+%>
+<DIV> <%=abs.tsv.download.html%></DIV>
+
+  
+<H3 class="section">Mapping profile</H3>
+  
+
+<%
+rownames(mapping.feat)<-gsub("_"," ",rownames(mapping.feat))
+
+file <- paste(out.prefix,"_aln_bio",sep="")
+n <- length(colnames(mapping.feat))
+html <- gen.plot2report(filename=file,
+                        dir=out.dir,
+                        bg="white",
+                        width=480,
+                        height=(480*round(0.5+n/12,0)),
+                        html=TRUE,
+                        ps=TRUE,
+                        caption="",
+                        to.plot= function() {
+                          cols <- rainbow(ncol(mapping.feat))
+                          par(mar=c(8,16,4,8))
+                          barplot(t(mapping.feat),las=2,
+                                  beside=T,col=cols,
+                                  xlab="Number of alignments",
+                                  horiz=T,cex.axis=0.8)
+                                  if (ncol(mapping.feat<20) ) {
+                                      par( xpd=NA )
+                                      legend("topright",inset=c(-0.40,0),legend=colnames(mapping.feat),fill=cols,horiz=FALSE, cex=0.70,bty='n')
+                                  }
+
+                          
+                        }
+                        )
+
+irap.output.html(html$html,"Number of alignments overlapping annotated features. Values obtained with bedtools. ")
+
+%>
+
+
+
+<%
+
+xt <- xtable(mapping.feat,
+             caption="",
+             label="map_feat_table")
+
+html <- print.xtable(file="/dev/null",
+                     xt,
+                     type="html",
+                     sanitize.text.function=function(x) {x},
+                     include.colnames=TRUE,
+                     include.rownames=TRUE,
+                     html.table.attributes = "")
+
+irap.output.html(html, "Number of alignments overlapping annotated features. Values obtained with bedtools.")
+
+feat.download.files <- c("mapping_feat.tsv")
+names(feat.download.files) <- "TSV"
+feat.tsv.download.html <- html.download.bar(feat.download.files)
+
+%>
+<DIV> <%=feat.tsv.download.html%></DIV>
+
+<%
+mapping.feat.sum <- colSums(mapping.feat)
+mapping.feat.per <- round(100*mapping.feat/mapping.feat.sum,2)
+
+xt <- xtable(mapping.feat.per,
+             caption="",
+             label="map_feat_table_per")
+
+html <- print.xtable(file="/dev/null",
+                     xt,
+                     type="html",
+                     sanitize.text.function=function(x) {x},
+                     include.colnames=TRUE,
+                     include.rownames=TRUE,
+                     html.table.attributes = "")
+
+irap.output.html(html, "Percentage of alignments overlapping annotated features. Values obtained with bedtools.")
+
+%>
+
+<!-- number of reads mapping to exonic regions, intronic regions, other -->
+<%
+file <- paste(out.prefix,"_aln_genes",sep="")
+n <- length(colnames(mapping.genes))
+html <- gen.plot2report(filename=file,
+                        dir=out.dir,
+                        bg="white",
+                        width=(480*round(0.5+n/12,0)),
+                        height=480,
+                        html=TRUE,
+                        ps=TRUE,
+                        caption="",
+                        to.plot= function() {
+                          cols <- rainbow(nrow(mapping.genes))
+                          par(mar=c(10,5,5,4))                          
+                          barplot(mapping.genes,las=2,col=cols,)
+                          par( xpd=NA )
+                          legend("top",inset=c(0,-0.05),legend=rownames(mapping.genes),fill=cols,horiz=TRUE, cex=0.80,bty='n')                            
+                        }
+                        )
+
+irap.output.html(html$html,"Number of alignments overlapping introns and exons. Values obtained with bedtools. ")
+
+%>
+
+
+<%
+
+xt <- xtable(mapping.genes,
+             caption="",
+             label="map_genes_table")
+
+html <- print.xtable(file="/dev/null",
+                     xt,
+                     type="html",
+                     sanitize.text.function=function(x) {x},
+                     include.colnames=TRUE,
+                     include.rownames=TRUE,
+                     html.table.attributes = "")
+
+irap.output.html(html, "Number of alignments overlapping annotated exons and introns. Values obtained with bedtools.")
+
+gene.download.files <- c("mapping_genes.tsv")
+names(gene.download.files) <- "TSV"
+gene.tsv.download.html <- html.download.bar(gene.download.files)
+
+%>
+
+<%
+# percentages
+tot <- colSums(mapping.genes)
+p.mapping.genes <- round(100*mapping.genes/tot,2)
+
+xt <- xtable(p.mapping.genes,
+             caption="",
+             label="map_genes_table.p")
+
+html <- print.xtable(file="/dev/null",
+                     xt,
+                     type="html",
+                     sanitize.text.function=function(x) {x},
+                     include.colnames=TRUE,
+                     include.rownames=TRUE,
+                     html.table.attributes = "")
+
+irap.output.html(html, "Percentage of alignments overlapping annotated exons and introns. Values obtained with bedtools.")
+
+%>
+
+<!--<DIV> <%=gene.tsv.download.html%></DIV>-->
+
+
+</DIV>
+
+<% brew::brew(get.path2template("page.footer")) %>
+
