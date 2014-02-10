@@ -43,9 +43,20 @@ DIV.dplot {
     margin: 10px;
 }
 
-TABLE {
-    text-align: center;
+TABLE.fixed {
+    table-layout: fixed;
+    width: 100%;
 }
+
+TD {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: top;
+    text-align: center;
+    white-space: nowrap;
+}
+
+tr:hover td { white-space: normal; }
 
 div#content {
     text-align: left;
