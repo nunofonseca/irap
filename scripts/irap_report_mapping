@@ -27,126 +27,109 @@ if ( IRAP.DIR == "" ) {
   cat("ERROR: environment variable IRAP_DIR is not set\n")
   q(status=1)
 }
-
 # specify our desired options in a list
 #
 source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
-pdebug.enabled <- TRUE
+pdebug.enabled <- FALSE
+html.temp <- get.path2template("mapping_report")
 
-css_file <- "aehts.css"
+#######################
+usage <- "irap_report_mapping --out html_file [options]"
+option_list <- list(
+  make_option(c("--css"), type="character",default="irap.css",help="Path to the irap.css file relative to the location of the produced html file [default: %default"),
+  make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
+  make_option(c("-o","--out"),type="character",default=NULL,help="Output html file"),
+  make_option(c("-m","--mapper"),type="character",dest="mapper",default=NULL,help="Name of the mapper"),
+  make_option(c("--pe"),type="character",dest="pe_bams",default=NULL,help="BAM files generated from paired-end libraries"),
+  make_option(c("--se"),type="character",dest="se_bams",default=NULL,help="BAM files generated from single-end libraries"),
+  make_option(c("-p","--pe_labels"),type="character",dest="pe_labels",default=NULL,help="Labels for the BAM files generated from paired-end libraries"),
+  make_option(c("-s","--se_labels"),type="character",dest="se_labels",default=NULL,help="Labels for the BAM files generated from single-end libraries"),
+  make_option(c("-t","--html"),type="character",dest="html_template",default=html.temp,help="HTML template file [default: %default]")
+)
 
-args <- commandArgs(trailingOnly=TRUE)
-html_file <- args[1]
-mapper <- args[2]
-pe.bam <- args[3]
-se.bam <- args[4]
-pe.labels <- args[5]
-se.labels <- args[6]
+multiple.options = list()
+filenames <- c("html_template") ;#filenames that must exist (if defined)
 
-if (length(args)!=6) {
-  cat("Usage: irap_report_mapping output_html_file mapper_name pe_bam_list se_bam_list pe_labels se_labels\n")
-  cat("example: irap_report_mapping dirA/index.html myMapper \";pe1.bam ;p2.bam\" \"\" \"; PE1; Fancy namese\" \"\"\n")
-  q("no",status=1);
+# check multiple options values
+mandatory <- c("out","mapper","se_bams","pe_bams","se_labels","pe_labels","html_template")
+opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
+
+
+irap.css <- opt$css
+pdebug.enabled <- opt$debug
+
+pe.bam.v <- strsplit(gsub(" *; *",";",gsub("^;","",opt$pe_bams)),split="[; ]")[[1]]
+se.bam.v <- strsplit(gsub(" *; *",";",gsub("^;","",opt$se_bams)),split="[; ]")[[1]]
+
+pe.labels.v <- strsplit(gsub(" *; *",";",gsub("^;","",opt$pe_labels)),split="[; ]")[[1]]
+se.labels.v <- strsplit(gsub(" *; *",";",gsub("^;","",opt$se_labels)),split="[; ]")[[1]]
+
+if (sum(length(pe.bam.v)+length(se.bam.v))==0) {
+  perror("At least one bam file needs to be provided.")
+  q(status=1)
 }
 
-pe.bam.v <- strsplit(gsub(" *; *",";",gsub("^;","",pe.bam)),";")[[1]]
-se.bam.v <- strsplit(gsub(" *; *",";",gsub("^;","",se.bam)),";")[[1]]
+if (length(pe.bam.v)!=length(pe.labels.v)) {
+  perror("Number of PE bams and labels differ.")
+  q(status=1)
+}
+if (length(se.bam.v)!=length(se.labels.v)) {
+  perror("Number of SE bams and labels differ.")
+  q(status=1)
+}
 
-pe.labels.v <- strsplit(gsub(" *; *",";",gsub("^;","",pe.labels)),";")[[1]]
-se.labels.v <- strsplit(gsub(" *; *",";",gsub("^;","",se.labels)),";")[[1]]
+pinfo("Parameters parsed.")
 
-#print(pe.bam.v)
-#source("myUtils.R")
 library("emBAM")
 
-################################################################################################
-# Useful functions
+###########################################
+# Functions
+###########################################
 
-pinfo <- function(...) {
-  cat(paste("[INFO] ",...,"\n",sep=""))
-}
+mapping.plot <- function(df) {
 
-pwarning <- function(...) {
-  cat(paste("[WARNING] ",...,"\n",sep=""))
-}
-pmissing <- function(...) {
-  cat(paste("[MISSING FILE] ",...,"\n",sep=""))
-}
-
-###########################
-mytrim <- function(s) {
-  sub("^[[:blank:]]+", "",sub("[[:blank:]]+$", "",s))
-}
-
-myread.list <- function (s) {
-  if(!length(s)) { return(c()) }
-  strsplit(mytrim(as.character(s))," +")[[1]]
-}
-
-myread.string <- function (s) {
-  mytrim(as.character(s))
-}
-
-myderef <- function(s) {
-  v <- myread.list(s)
-  r <- c()
-  for ( i in v) {
-    #pinfo(i,"=",get(i))
-    r <- append(as.character(get(i)),r)
-  }
-  r
-}
-
-# duplicated code (see irap_report_mapping)
-bam.compare.plots <- function(html.dir,bam.files) {
-
-  data <- lapply(bam.files,em.bam.counts.df,use.cache=TRUE)
-  df <- as.data.frame(data[[1]][,1])
-  rownames(df)<-rownames(data[[1]])
-
-  if(length(data)>1) {
-    for (i in c(2:length(data))) {
-      df <- cbind(df,data[[i]]$Count)
-    }
-  }
-  colnames(df) <- gsub(".*/","",gsub("(\\.pe|\\.se).*","",bam.files))
-
-  ########
-  #
-  legend <- c("Alignments","Reads mapped","Unmapped","Uniquely mapped","Spliced reads")
-  a.data <- df[c("Alignments","Primary","Unmapped","Uniquely mapped reads","Spliced reads"),]
-  rownames(a.data) <- legend
-  file <- "align_overall_comparison.png"
-  filepath <- paste(html.dir,file,sep="/")
-  cols <- rainbow(length(rownames(a.data)))
+  df.rows <- c("Alignments","Reads mapped","Unmapped","Uniquely mapped","Spliced reads")
+  cols <- rainbow(length(df.rows))
   cex <- 0.95
 
-  n <- length(colnames(a.data))
-  width=(480*round(0.5+n/6/2,0))
-  png(filepath,width=width,height=480)
-  bp <- barplot(as.matrix(a.data),ylab="Number of alignments",las=2 , cex.axis=cex, cex.names=cex*0.90,col=cols,beside=T)
+  n <- length(colnames(df))
+  bp <- barplot(as.matrix(df[df.rows,]),ylab="Number of alignments/reads",las=2 , cex.axis=cex, cex.names=cex*0.90,col=cols,beside=T)
 
-  par( xpd=NA )  
-  legend( "top", legend=rownames(a.data),fill=cols,horiz=TRUE, cex=0.90)
-
-  # save TSV file
-  data2file <- as.matrix(a.data)
-  data2file <- cbind(rownames(data2file),data2file)
-  write.tsv(data2file,paste(filepath,".tsv",sep=""))
-
-  # Add %
-  #
-  dev.off()
+  par( xpd=NA )
+  
+  legend("top",inset=c(0,-0.05),legend=rownames(df[df.rows,]),fill=cols,horiz=TRUE, cex=0.70,bty='n')  
 }
 
+
+mapping.qual <- function(df) {
+
+  df.rows <- c("Alignments (perfect)","Alignments (1-difference)","Alignments (2-difference)","Alignments")
+  
+  cex <- 0.95
+  sliced.df <- df[df.rows,]
+  sliced.df["Alignments",] <- sliced.df["Alignments",]-apply(sliced.df[c("Alignments (perfect)","Alignments (1-difference)","Alignments (2-difference)"),],2,sum)
+  rownames(sliced.df)[4] <- "Alignments (>2-differences)"
+
+  n <- length(colnames(sliced.df))
+  cols <- topo.colors(length(df.rows))
+  cex <- 0.95
+  bp <- barplot(as.matrix(sliced.df),ylab="Number of alignments",las=2,cex.axis=cex, cex.names=cex*0.90,col=cols,beside=T)
+
+  par( xpd=NA )
+  
+  legend("top",inset=c(0,-0.05),legend=gsub("\\)","",gsub("Alignments \\(","",rownames(sliced.df))),fill=cols,horiz=TRUE, cex=0.70,bty='n')  
+}
+
+
+
 ##################################################
-
-mapping.report <- function(outdir,mapper,pe.bam.v,se.bam.v,pe.labels.v,se.labels.v) {
-
+get.mapping.stats <- function(mapper,pe.bam.v,se.bam.v,pe.labels.v,se.labels.v) {
 
   libs <- unique(append(pe.labels.v,se.labels.v))
   nlibs <- length(libs)
-  # an individual report for each bam file is available in bam
+  pinfo("Processing ",nlibs," BAM files")
+  
+  # an individual report for each bam file is available in bam  
   dir.prefix <- paste(mapper,sep="/")
   pe.bam.urls <- c()
   se.bam.urls <- c()
@@ -154,33 +137,19 @@ mapping.report <- function(outdir,mapper,pe.bam.v,se.bam.v,pe.labels.v,se.labels
   if (length(se.labels.v)>0) { se.bam.urls <- paste("<a href='",dir.prefix,"/",se.labels.v,"/index.html'>Align. Details</a>",sep="") }
 
   urls <- append(pe.bam.urls,se.bam.urls)
-
+  urls
 
   m <- matrix(c(urls),nrow=1,byrow=T)
   colnames(m) <- libs
 
-  system(paste("mkdir -p ",outdir,"/",mapper,sep=""));  
-  HTML("<H2>Alignments</H2>")
-  
-  overall.plot <- paste(outdir,"/align_overall_comparison.png",sep="")
-  html <- paste("<img src='",mapper,"/align_overall_comparison.png' alt=''>",sep="")
-  HTML(html)
-
-  ###############
-  # Overall table
-  #                          lib1   lib2     ... libk
-  # Reads Mapped           value (%)                      | average (%)
-  # Reads not mapped       value (%) ...                  |
-  # Reads uniquely mapped
-  # Reads spiced
-  #  
   bam.files <- append(pe.bam.v,se.bam.v)
   #print(bam.files)
   #cat("--------------------------------------------")
   data <- lapply(bam.files,em.bam.counts.df,use.cache=TRUE)
-
-  bam.compare.plots(paste(outdir,mapper,sep="/"),bam.files)
-  
+  data[[2]]
+  # listOflists2matrix only takes the first column
+  #df <- as.data.frame(listOflists2matrix(data))
+  #df <- df[c(1:length(data[[1]]$Count)),]
   df <- as.data.frame(data[[1]][,1])
   rownames(df)<-rownames(data[[1]])
   if(length(data)>1) {
@@ -188,63 +157,143 @@ mapping.report <- function(outdir,mapper,pe.bam.v,se.bam.v,pe.labels.v,se.labels
       df <- cbind(df,data[[i]]$Count)
     }
   }
-  colnames(df) <- gsub(".*/","",gsub("(\\.pe|\\.se).*","",bam.files))
 
-  n.reads <- df[c("Unmapped","Primary","Uniquely mapped reads","Multimap reads","Spliced reads"),]
-  table.rnames <- c("Unmapped","Mapped","Uniquely mapped","Multimaps","Spliced")
-  rownames(n.reads) <- table.rnames
-
-  tot.reads <- apply(n.reads[c(1,2),],MARGIN=2,FUN=sum)
-
-  #%
-  p.reads <- n.reads
-  p.reads[1,] <- round(p.reads[1,]/tot.reads*100,2)
-  p.reads[2,] <- round(p.reads[2,]/tot.reads*100,2)
-  p.reads["Uniquely mapped",] <- round(n.reads["Uniquely mapped",]/as.numeric(n.reads["Mapped",])*100,2)
-  p.reads["Multimaps",] <- round(n.reads["Multimaps",]/n.reads["Mapped",]*100,2)
-  p.reads["Spliced",] <- round(n.reads["Spliced",]/n.reads["Mapped",]*100,2)
-  # average
-  p.reads<-cbind(p.reads,apply(p.reads,MARGIN=1,FUN=median))
-  colnames(p.reads) <- append(colnames(n.reads),"Median")
-
-  p.reads <- rbind(p.reads,append(as.vector(m),NA))
-  n.reads <- rbind(n.reads,append(as.vector(m),NA))
-  rownames(p.reads) <- append(table.rnames," ")
-  rownames(n.reads) <- append(table.rnames," ")
-
-  # add a link for details
-  HTML(data.frame(p.reads),align="left", big.mark='.',caption="Percentage of reads")
-  HTML(data.frame(n.reads),align="left", big.mark='.')
+  rownames(df) <- rownames(data[[1]])
+  colnames(df) <- append(pe.labels.v,se.labels.v)
   
+  irap.assert(sum(df[,1]!=data[[1]]$Count,na.rm=T)==0)
+  
+  # slice some rows
+  sliced.data <- df[c("Alignments","Primary","Unmapped","Uniquely mapped reads","Multimap reads","Spliced reads","Not primary","Alignments (perfect)","Alignments (1-difference)","Alignments (2-difference)"),]
+  rownames(sliced.data) <- c("Alignments","Reads mapped","Unmapped","Uniquely mapped","Multimap reads","Spliced reads","Multimaps","Alignments (perfect)","Alignments (1-difference)","Alignments (2-difference)")
+  sliced.data <- sliced.data[c("Alignments","Reads mapped","Unmapped","Uniquely mapped","Multimap reads","Spliced reads","Alignments (perfect)","Alignments (1-difference)","Alignments (2-difference)"),]
+
+  # compute the percentages
+  tot.reads <- apply(sliced.data[c("Reads mapped","Unmapped"),],MARGIN=2,FUN=sum)
+  p.sliced.data <- sliced.data[c("Reads mapped","Unmapped","Uniquely mapped","Multimap reads","Spliced reads","Alignments (perfect)","Alignments (1-difference)","Alignments (2-difference)"),]
+
+  reads.mapped <- as.numeric(sliced.data["Reads mapped",])
+  reads.unmapped <- as.numeric(sliced.data["Unmapped",])
+  num.alignments <- as.numeric(sliced.data["Alignments",])
+  p.sliced.data["Reads mapped",] <- round(reads.mapped/tot.reads*100,2)
+  p.sliced.data["Unmapped",] <- round(reads.unmapped/tot.reads*100,2)
+  p.sliced.data["Uniquely mapped",] <- round(as.numeric(sliced.data["Uniquely mapped",])/reads.mapped*100,2)
+  p.sliced.data["Multimap reads",] <- round(as.numeric(sliced.data["Multimap reads",])/reads.mapped*100,2)
+  p.sliced.data["Spliced",] <- round(as.numeric(sliced.data["Spliced",])/reads.mapped*100,2)
+  p.sliced.data["Spliced reads",] <- round(as.numeric(sliced.data["Spliced reads",])/reads.mapped*100,2)
+  p.sliced.data["Alignments (perfect)",] <- round(as.numeric(sliced.data["Alignments (perfect)",])/num.alignments*100,2)
+  p.sliced.data["Alignments (1-difference)",] <- round(as.numeric(sliced.data["Alignments (1-difference)",])/num.alignments*100,2)
+  p.sliced.data["Alignments (2-difference)",] <- round(as.numeric(sliced.data["Alignments (2-difference)",])/num.alignments*100,2)
+  p.sliced.data["Multimaps",] <- round(as.numeric(sliced.data["Multimaps",])/num.alignments*100,2)
+  
+  # average
+  p.sliced.data.median <- apply(p.sliced.data,MARGIN=1,FUN=median)
+  p.sliced.data.mean <- apply(p.sliced.data,MARGIN=1,FUN=mean)
+  p.sliced.data.sd <- apply(p.sliced.data,MARGIN=1,FUN=sd)
+  median(as.numeric(p.sliced.data[1,]))
+  p.sliced.data <- cbind(p.sliced.data,p.sliced.data.median,p.sliced.data.mean,p.sliced.data.sd)
+  colnames(p.sliced.data) <- append(colnames(sliced.data),c("Median","Mean","SD"))
+  p.sliced.data <- p.sliced.data[,append(c("Median","Mean","SD"),colnames(sliced.data))]
+
+  return(list(perc=p.sliced.data,raw=sliced.data))
 }
 
-#
-library(R2HTML)
+get.mapping.feature.stats <- function(mapper,pe.bam.v,se.bam.v,pe.labels.v,se.labels) {
+  # raw<-mapping.dfs$raw
+  libs <- unique(append(pe.labels.v,se.labels.v))
+  bams <- append(pe.bam.v,se.bam.v)
+  nlibs <- length(libs)
+  pinfo("Processing ",nlibs," BAM files")
 
-HTMLInitFile( outdir=dirname(html_file), filename=basename(html_file), Title=paste("Mapping Report ",mapper,sep=""), CSSFile=css_file, useGrid=FALSE)
-# Javascript code
-HTML( '<script language="javascript"> 
-function toggle(showHideDiv, switchTextDiv) {
-	var ele = document.getElementById(showHideDiv);
-	var text = document.getElementById(switchTextDiv);
-	if(ele.style.display == "block") {
-    		ele.style.display = "none";
-		text.innerHTML = "show";
-  	}
-	else {
-		ele.style.display = "block";
-		text.innerHTML = "hide";
-	}
-} 
-</script>
-')
+  bams.stats.files <- paste(bams,".stats",sep="")
+  names(bams.stats.files) <- libs
+  stats <- list()
+  # Check if file exists
+  for ( n in names(bams.stats.files) ) {
+    f <- bams.stats.files[n]
+    pinfo(f)
+    if ( !is.null(file.required(f,fatal=F)) ) {
+      # load file
+      x <- load.gff3(f,"gene")
+      # slice some columns
+      type.genes <- x[x$type=="gene",c("source","comments")]
+      x <- aggregate(type.genes$comments,list(source=type.genes$source),sum)
+      stats[[n]] <- x$x
+      names(stats[[n]]) <- x$source
+    }
+  }
+  aln.stats <- do.call("cbind",stats)
+  if ( ncol(aln.stats)!=nlibs) {
+    pwarning("unable to find all .bam.stats file")
+  }
+  return(aln.stats)
+}
 
-HTML( "<h1>Mapping Report</h1>" )
-HTML( paste("Mapper:", mapper) )
-HTML( paste("Project:", "<a href='../index.html'>go to main page</a>") )
+get.mapping.gene.stats <- function(mapper,pe.bam.v,se.bam.v,pe.labels.v,se.labels) {
+  # raw<-mapping.dfs$raw
+  libs <- unique(append(pe.labels.v,se.labels.v))
+  bams <- append(pe.bam.v,se.bam.v)
+  nlibs <- length(libs)
+  pinfo("Processing ",nlibs," BAM files")
 
-mapping.report(paste(dirname(html_file),sep=""),mapper,pe.bam.v,se.bam.v,pe.labels.v,se.labels.v)
+  bams.stats.files <- paste(bams,".gene.stats",sep="")
+  names(bams.stats.files) <- libs
+  stats <- list()
+  # Check if file exists
+  for ( n in names(bams.stats.files) ) {
+    f <- bams.stats.files[n]
+    if ( !is.null(file.required(f,fatal=F)) ) {
+      # load file
+      x <- read.tsv(f,header=F)
+      names(x$V2) <- x$V1
+      if (length(names(stats))==0 ) {
+        stats[["feat"]] <- as.character(x$V1)
+      }
+      stats[[n]] <- x$V2
+    }
+  }
+  gene.stats <- do.call("cbind",stats[-1])
+  rownames(gene.stats) <- stats[[1]]
+  if ( ncol(gene.stats)!=nlibs) {
+    pwarning("unable to find all .bam.gene.stats file")
+  }
+  return(gene.stats)
+}
 
-HTMLEndFile()
+
+# Only report the count of overlaps
+# export variables
+#opt$mapper_name="tophat1"
+mapper <- opt$mapper
+mapping.dfs <- get.mapping.stats(mapper,pe.bam.v,se.bam.v,pe.labels.v,se.labels.v)
+mapping.feat <- get.mapping.feature.stats(mapper,pe.bam.v,se.bam.v,pe.labels.v,se.labels.v)
+mapping.genes <- get.mapping.gene.stats(mapper,pe.bam.v,se.bam.v,pe.labels.v,se.labels.v)
+
+library(brew)
+####################################
+out.dir <- dirname(opt$out)
+out.prefix <- sub(".htm.*","",basename(opt$out))
+# save files
+raw.stats.file <- paste(out.prefix,"_mapping_stats_raw.tsv",sep="")
+r <- write.tsv(mapping.dfs$raw,file=raw.stats.file)
+pinfo("Saved ",raw.stats.file)
+perc.stats.file <- paste(out.prefix,"_mapping_stats_perc.tsv",sep="")
+r <- write.tsv(mapping.dfs$perc,file=perc.stats.file)
+pinfo("Saved ",perc.stats.file)
+feat.stats.file <- paste(out.prefix,"_mapping_stats_feat.tsv",sep="")
+r <- write.tsv(mapping.feat,file=feat.stats.file)
+pinfo("Saved ",perc.stats.file)
+
+barplot(t(mapping.feat),las=2)
+
+out.html.file <- paste(opt$out,sep="")
+brew(opt$html_template,opt$out)
+warnings()
 q()
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  IRAP.DIR="/home/nf/Research/Projects/WIP/EREAP/ereap_install"
+  Sys.setenv(IRAP_DIR=IRAP.DIR)
+}
 
