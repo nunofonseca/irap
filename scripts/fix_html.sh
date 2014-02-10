@@ -35,7 +35,7 @@ function fix_html_files {
     #bash does not have a stack when invoking a function recursively
     if [ "$path-" != "../../../../../-" ]; then
 	echo $path > .path
-	for d in `find .  -maxdepth 1 -type d -name  "*"`; do	
+	for d in `find -L .  -maxdepth 1  -type d -name  "*"`; do	
 	    if [ "$d" != "." ] ; then
 		pushd $d > /dev/null
 		if [ "$d" != "./data" ]; then
