@@ -494,6 +494,7 @@ gen.page <- function (o.html.file) {
 
 pdebug.save.state("tsvDE2html2","p2")
 
+filt.name <- "All"
 o.html.file <-paste(opt$out,".html",sep="")
 file.prefix <- opt$out
 tsv.file <- gsub(".html$",".tsv",o.html.file)
