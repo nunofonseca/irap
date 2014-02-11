@@ -294,6 +294,7 @@ out.prefix <- sub(".htm.*","",basename(opt$out))
 raw.stats.file <- paste(out.prefix,"_mapping_stats_raw.tsv",sep="")
 r <- write.tsv(mapping.dfs$raw,file=raw.stats.file)
 pinfo("Saved ",raw.stats.file)
+
 perc.stats.file <- paste(out.prefix,"_mapping_stats_perc.tsv",sep="")
 r <- write.tsv(mapping.dfs$perc,file=perc.stats.file)
 pinfo("Saved ",perc.stats.file)
