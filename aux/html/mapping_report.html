@@ -45,7 +45,7 @@ html <- gen.plot2report(filename=file,
                         }
                         )
 
-irap.output.html(html$html,"Number of alignments per library where a read aligns pefectly (no mismatches), 1 mismatch, 2 mismatches and more than 2 mismatches. The values are obtained from the BAM file(s).")
+irap.output.html(html$html,"Number of alignments per library where a read aligns perfectly (no mismatches), 1 mismatch, 2 mismatches and more than 2 mismatches. The values are obtained from the BAM file(s).")
 %>
 
 <%
@@ -136,7 +136,7 @@ irap.output.html(html$html,"Number of alignments overlapping annotated features.
 
 <%
 
-xt <- xtable(mapping.feat2plot,
+xt <- xtable(round(mapping.feat2plot,0),
              caption="",
              label="map_feat_table")
 
