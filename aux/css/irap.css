@@ -5,6 +5,30 @@ H1 {
     font-weight: bold;
 }
 
+DIV.de_report_bar {
+    text-align: left;
+}
+
+DIV.source_filter {
+    padding: 3px;
+    font-family: Arial, Helvetica, sans-serif; 
+    font-size: 12pt; 
+    background: darkgrey;
+    border-radius: 3px;  
+    font-style: normal; 
+    text-align: center;
+    z-index: 999;
+    width: 600px;
+}
+
+DIV.source_filter a  {
+    padding: 10px 30px;
+    color: #757575; 
+    text-decoration: none;
+    font-weight: bold;
+}
+
+
 H2.section {
     padding-top: 35px;
     font-family: Arial, Helvetica, sans-serif; 
@@ -26,6 +50,7 @@ A.download {
     background: black;
     padding:2px 5px;
     font-weight: bold;
+    border-radius: 5px;  
     text-decoration: none;
 }
 
@@ -34,6 +59,7 @@ DIV.downbar {
     width: 160px;
     color: black;
     padding: 10px;
+    border-radius: 5px;  
     font-weight: bold;
     font-size: 10pt; 
     background: lightgrey;
@@ -147,6 +173,7 @@ A.button_info {
     font-weight: bold;
     text-decoration: none;
     text-align: left;
+    border-radius: 5px;  
 }
 
 div.info_wrapper {

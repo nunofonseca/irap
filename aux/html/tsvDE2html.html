@@ -3,16 +3,31 @@
 <%# Comment -- wrap up everything in a div %>
 <DIV name='de_res'>
 <H1><%=title%></H1>
-<H2><%=sources.menu%></H2>
-<H3 class="section">Differential Expression (<%=opt$feature%> level)</H3>
+<H2 class="section">Differential Expression (<%=opt$feature%> level)</H2>
 
+<p>FDR=<%=opt$`cut-off`%></p>
+
+<DIV class="de_report_bar">Set of genes considered: <%=filt.name%>
+<DIV class="source_filter"> <%=sources.menu%>
+</DIV>
+</DIV>
+
+
+<OL> Contents
+  <LI> <A href="#table">Table with the results of DE analysis</A>
+  <LI> <A href="#ma">MA plot</A>
+  <LI> <A href="#dist">Distribution of adjusted p-value and fold-change</A>
+</OL>
+
+<HR/>
 <%
 tsv.download.files <- c(paste(basename(tsv.file.ref),".gz",sep=""))
 names(tsv.download.files) <- "TSV"
 tsv.download.html <- html.download.bar(tsv.download.files)
 %>
 
-<p>FDR=<%=opt$`cut-off`%><%=tsv.download.html%></p>
+<A name="table"/>
+<%=tsv.download.html%>
 
 <% 
 pdebug("Generating DE table...")
@@ -37,6 +52,7 @@ pdebug("Generating DE table...done.")
 
 <!-- plots -->
 <H3 class="section">MA plot</H3>
+<A name="ma"/>
 <%
 pdebug("Generating fold change plot...")
 html <- gen.plot2report(filename=paste(file.prefix,"_fold.png",sep=""),
@@ -58,6 +74,7 @@ pdebug("Generating fold change plot...done.")
 %>
 
 
+<A name="dist"/>
 <H3 class="section">Adjusted p-value distribution</H3>
 <%
 
@@ -84,7 +101,7 @@ pdebug("Generating hist...done.")
 %>
 <!--  <p><IMG src='<%=basename(file.prefix)%>_hist.png' border=0 width=600 height=300><a class='download' href='<%=basename(file.prefix)%>_hist.png.pdf'>PDF</a></p>-->
   
-<H3 class="section"><%=pprint.fieldname(fields$LOG2FOLDCHANGE)%></H3>  
+<H3 class="section"><%=pprint.fieldname(fields$LOG2FOLDCHANGE)%> distribution</H3>  
 <%
 pdebug("Generating hist...")
 inf.value <- 1.79769e+308
@@ -99,7 +116,7 @@ html <- gen.plot2report(filename=paste(file.prefix,"_l2fc_hist.png",sep=""),
                         to.plot=function() {
                           par(mfrow=c(1,2))
                           fc <- uncut.table[,fields$LOG2FOLDCHANGE]
-                          fc2 <- fc
+		          fc2 <- fc[!is.na(fc)]
                           fc2 <- fc2[fc2<=fc.cutoff]
                           fc2 <- fc2[fc2>=-fc.cutoff]
                           hist(fc2, breaks=100, col="skyblue", border="slateblue", xlab=pprint.fieldname(fields$LOG2FOLDCHANGE),main="All")
@@ -108,15 +125,15 @@ html <- gen.plot2report(filename=paste(file.prefix,"_l2fc_hist.png",sep=""),
                           legend("topright",
                                  inset=c(0,-0.10),
                                  c(
-                                   paste("#genes >",fc.cutoff,"=",sum(fc>=fc.cutoff),sep=""),
-                                   paste("#genes <",fc.cutoff,"=",sum(fc<=-fc.cutoff),sep="")                                  
+                                   paste("#genes >",fc.cutoff,"=",sum(fc>=fc.cutoff,na.rm=T),sep=""),
+                                   paste("#genes <",fc.cutoff,"=",sum(fc<=-fc.cutoff,na.rm=T),sep="")                                  
                                    ),
                                  text.col="skyblue",
                                  bty="n")
 
                           if ( nrow(table.html) > 0 ) {
                             fc <- table.html[,fields$LOG2FOLDCHANGE]
-                            fc2 <- fc
+                            fc2 <- fc[!is.na(fc)]
                             fc2 <- fc2[fc2<=fc.cutoff]
                             fc2 <- fc2[fc2>=-fc.cutoff]                            
                             hist(fc2, breaks=100, col="skyblue", border="slateblue", xlab=pprint.fieldname(fields$LOG2FOLDCHANGE),main=paste(fields$PVALUE.FIELD,"<=",opt$`cut-off`,sep=""))
@@ -125,8 +142,8 @@ html <- gen.plot2report(filename=paste(file.prefix,"_l2fc_hist.png",sep=""),
                             legend("topright",
                                    inset=c(0,-0.10),
                                    c(
-                                     paste("#genes >",fc.cutoff,"=",sum(fc>=fc.cutoff),sep=""),
-                                     paste("#genes <",fc.cutoff,"=",sum(fc<=-fc.cutoff),sep="")                                  
+                                     paste("#genes >",fc.cutoff,"=",sum(fc>=fc.cutoff,na.rm=T),sep=""),
+                                     paste("#genes <",fc.cutoff,"=",sum(fc<=-fc.cutoff,na.rm=T),sep="")                                  
                                    ),
                                    text.col="skyblue",
                                    bty="n")                            
