@@ -4,8 +4,15 @@
 <DIV name='de_res'>
 <H1><%=title%></H1>
 <H2><%=sources.menu%></H2>
-<H3 class="section">DE <%=opt$feature%>s</H3>
-<p>FDR=<%=opt$`cut-off`%> <a class='download' href='<%=basename(tsv.file.ref)%>.gz'>TSV</a></p>
+<H3 class="section">Differential Expression (<%=opt$feature%> level)</H3>
+
+<%
+tsv.download.files <- c(paste(basename(tsv.file.ref),".gz",sep=""))
+names(tsv.download.files) <- "TSV"
+tsv.download.html <- html.download.bar(tsv.download.files)
+%>
+
+<p>FDR=<%=opt$`cut-off`%><%=tsv.download.html%></p>
 
 <% 
 pdebug("Generating DE table...")
@@ -16,7 +23,7 @@ if ( nrow(table.html)>0 ) {
     table.html.out <- table.html.out[c(1:opt$max),]    
     truncated.info <- paste("(truncated list to ",opt$max,sep="")
   }
-  caption <- paste("# DE genes:",nrow(table.html),sep="")
+  caption <- paste("Number of differential expressed genes: ",nrow(table.html),sep="")
   HTML(table.html.out, file = stdout(),
      Border = 0, innerBorder=0,
         classfirstline = "firstline", classfirstcolumn = "firstcolumn",
@@ -32,63 +39,105 @@ pdebug("Generating DE table...done.")
 <H3 class="section">Fold Change</H3>
 <%
 pdebug("Generating fold change plot...")
-gen.plot(filename=paste(file.prefix,"_fold.png",sep=""),
-	width=500,
-	height=500,
-	to.plot=function() {
-	   DE.fold.change.plot(uncut.table,
-                 col.mean=fields$FOLDCHANGE_MEDIAN,
-                 col.foldChange=fields$LOG2FOLDCHANGE,
-                 col.pval=fields$PVALUE.FIELD,
-                 fdr=opt$`cut-off`)
-         }
-)
+html <- gen.plot2report(filename=paste(file.prefix,"_fold.png",sep=""),
+                        width=500,
+                        height=500,
+                        html=TRUE,
+                        ps=TRUE,
+                        to.plot=function() {
+                          DE.fold.change.plot(uncut.table,
+                                              col.mean=fields$FOLDCHANGE_MEDIAN,
+                                              col.foldChange=fields$LOG2FOLDCHANGE,
+                                              col.pval=fields$PVALUE.FIELD,
+                                              fdr=opt$`cut-off`)
+                        }
+                        )
+irap.output.html(html$html,paste("Genes with a p-value <=",opt$`cut-off`," are plotted in red.",sep=""))
+
 pdebug("Generating fold change plot...done.")
 %>
 
-<p><IMG src='<%=basename(file.prefix)%>_fold.png' border=0 width=500 height=500><a class='download' href='<%=basename(file.prefix)%>_fold.png.pdf'>PDF</a></p>
 
-
+<H3 class="section">Adjusted p-value distribution</H3>
 <%
+
 pdebug("Generating hist...")
-gen.plot(filename=paste(file.prefix,"_hist.png",sep=""),
-   width=600,
-   height=300,
-   to.plot=function() {
-   par(mfrow=c(1,2)) 
-   hist(uncut.table[,fields$PVALUE.FIELD], breaks=100, col="skyblue", border="slateblue", xlab=fields$PVALUE.FIELD,main="All")
-   if ( nrow(table.html) > 0 ) {
-        hist(table.html[,fields$PVALUE.FIELD], breaks=100, col="skyblue", border="slateblue", xlab=fields$PVALUE.FIELD,main=paste(fields$PVALUE.FIELD,"<=",opt$`cut-off`,sep=""))
-     }
-   }
-)
+html <- gen.plot2report(filename=paste(file.prefix,"_hist.png",sep=""),
+                        bg="white",
+                        width=900,
+                        height=450,
+                        html=TRUE,
+                        ps=TRUE,
+                        to.plot=function() {
+                          par(mfrow=c(1,2))                          
+                          hist(uncut.table[,fields$PVALUE.FIELD], breaks=100, col="skyblue", border="slateblue", xlab=fields$PVALUE.FIELD,main="All")
+                          plot.panel.label("A")
+                          if ( nrow(table.html) > 0 ) {
+                            hist(table.html[,fields$PVALUE.FIELD], breaks=100, col="skyblue", border="slateblue", xlab=fields$PVALUE.FIELD,main=paste(fields$PVALUE.FIELD,"<=",opt$`cut-off`,sep=""))
+                            plot.panel.label("B")
+                          }
+                        }
+                        )
+irap.output.html(html$html,paste("Histogram with observed values of the adjusted p-value (column ",fields$PVALUE.FIELD,") for all genes (panel A) and for the genes with a adjusted p-value below or equal to ",opt$`cut-off`," (panel B).",sep=""))
+
 pdebug("Generating hist...done.")
 %>
-<H3 class="section">P-values</H3>
-<p><IMG src='<%=basename(file.prefix)%>_hist.png' border=0 width=600 height=300><a class='download' href='<%=basename(file.prefix)%>_hist.png.pdf'>PDF</a></p>
-
-<!--<H3 class="section">Heatmap</H3>-->
+<!--  <p><IMG src='<%=basename(file.prefix)%>_hist.png' border=0 width=600 height=300><a class='download' href='<%=basename(file.prefix)%>_hist.png.pdf'>PDF</a></p>-->
+  
+<H3 class="section"><%=pprint.fieldname(fields$LOG2FOLDCHANGE)%></H3>  
 <%
-## selected.de <- nrow(table.html)
-## ns <- c(20,40,60)
-## if ( length(fields$groups)==2 &&
-##      length(duplicated(table.html[,fields$ANNOT.ID]))==0 ) {
-##   ns <- ns[ns<=selected.de]
-##   for (n in ns ) {
-##     rownames(table.html) <- table.html[,fields$ANNOT.ID]
-##     select <- table.html[1:n,]
-##     colors <- colorRampPalette(c("white","darkblue"))(selected.de*10)
-##     gen.plot(filename=paste(file.prefix,"_",n,"_heat.png",sep=""),
-##     	width=400,
-## 	height=400,
-## 	to.plot=function() {
-## 	   heatmap(table.html[n,fields$groups],col = colors, scale = "none")
-## 	}
-##     )
-##     cat(paste("<p><IMG src='",basename(file.prefix),"_",n,"_heat.png' border=0 width=400 height=400><a href='",basename(file.prefix),"_",n,"_heat.png.pdf'>PDF</a></p>",sep=""),sep="")
-##   }
-## }
+pdebug("Generating hist...")
+inf.value <- 1.79769e+308
+fc.cutoff <- 1000
+#                           sum(fc<=.Machine$double.xmin)
+html <- gen.plot2report(filename=paste(file.prefix,"_l2fc_hist.png",sep=""),
+                        bg="white",
+                        width=900,
+                        height=450,
+                        html=TRUE,
+                        ps=TRUE,
+                        to.plot=function() {
+                          par(mfrow=c(1,2))
+                          fc <- uncut.table[,fields$LOG2FOLDCHANGE]
+                          fc2 <- fc
+                          fc2 <- fc2[fc2<=fc.cutoff]
+                          fc2 <- fc2[fc2>=-fc.cutoff]
+                          hist(fc2, breaks=100, col="skyblue", border="slateblue", xlab=pprint.fieldname(fields$LOG2FOLDCHANGE),main="All")
+                          plot.panel.label("A")
+                          par( xpd=NA )                          
+                          legend("topright",
+                                 inset=c(0,-0.10),
+                                 c(
+                                   paste("#genes >",fc.cutoff,"=",sum(fc>=fc.cutoff),sep=""),
+                                   paste("#genes <",fc.cutoff,"=",sum(fc<=-fc.cutoff),sep="")                                  
+                                   ),
+                                 text.col="skyblue",
+                                 bty="n")
+
+                          if ( nrow(table.html) > 0 ) {
+                            fc <- table.html[,fields$LOG2FOLDCHANGE]
+                            fc2 <- fc
+                            fc2 <- fc2[fc2<=fc.cutoff]
+                            fc2 <- fc2[fc2>=-fc.cutoff]                            
+                            hist(fc2, breaks=100, col="skyblue", border="slateblue", xlab=pprint.fieldname(fields$LOG2FOLDCHANGE),main=paste(fields$PVALUE.FIELD,"<=",opt$`cut-off`,sep=""))
+                            plot.panel.label("B")
+                            par( xpd=NA )                          
+                            legend("topright",
+                                   inset=c(0,-0.10),
+                                   c(
+                                     paste("#genes >",fc.cutoff,"=",sum(fc>=fc.cutoff),sep=""),
+                                     paste("#genes <",fc.cutoff,"=",sum(fc<=-fc.cutoff),sep="")                                  
+                                   ),
+                                   text.col="skyblue",
+                                   bty="n")                            
+                          }
+                        }
+                        )
+
+irap.output.html(html$html,paste("Histogram with observed values of ",pprint.fieldname(fields$LOG2FOLDCHANGE)," for all genes (panel A) and for the genes with a adjusted p-value below or equal to ",opt$`cut-off`," (panel B).",sep=""))
+pdebug("Generating hist...done.")
 %>
+
 
 </DIV>
 

@@ -50,7 +50,7 @@ option_list <- list(
   make_option(c("-a", "--annotation"), type="character",default=NULL,help="Annotation file (TSV format)"),
   make_option(c("-b", "--browser"), type="character",default="../jbrowse/",help="Relative path to the genome browser"),
   make_option(c("-c", "--cut-off"), type="numeric",default=0.05,help="Cutoff value applied to the adjusted p-values to define if a feature is DE."),
-  make_option(c("-m", "--max"), type="numeric",default=300,help="Maximum number of genes to appear in the table."),
+  make_option(c("-m", "--max"), type="numeric",default=Inf,help="Maximum number of genes to appear in the table."),
   make_option(c("--css"), type="character",default="",help="Path to the irap.css file"),
   make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
   make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name prefix. An HTML and TSV.gz file will be created.")
@@ -107,6 +107,11 @@ fields <- list(
                cols2tsv=NA,
                cols2sel=NA              
                )
+
+pprint.fieldname <- function(x) {
+  return(gsub("\\."," ",x))
+}
+
 ##########################################
 # Filter the rows depending on the flavour
 if (opt$flavour == "cuffdiff" || opt$flavour == "cuffdiff1" || opt$flavour == "cuffdiff2" ) {
@@ -528,7 +533,10 @@ tsvDE2html.debug <- function(rdata.obj) {
   assign("html.template",get.path2template("tsvDE2html"),,envir = .GlobalEnv)
 }
 IRAP.DIR=getwd()
-Sys.setenv(IRAP_DIR=IRAP.DIR)
-tsvDE2html.debug("tsvDE2html0.Rdata")
+if ( IRAP.DIR == "" ) {
+  IRAP.DIR="/home/nf/Research/Projects/WIP/EREAP/ereap_install"
+  Sys.setenv(IRAP_DIR=IRAP.DIR)
+}
+tsvDE2html.debug("tsvDE2html2.Rdata")
 
 
