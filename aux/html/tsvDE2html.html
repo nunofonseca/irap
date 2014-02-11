@@ -36,7 +36,7 @@ pdebug("Generating DE table...done.")
 %>
 
 <!-- plots -->
-<H3 class="section">Fold Change</H3>
+<H3 class="section">MA plot</H3>
 <%
 pdebug("Generating fold change plot...")
 html <- gen.plot2report(filename=paste(file.prefix,"_fold.png",sep=""),
@@ -52,7 +52,7 @@ html <- gen.plot2report(filename=paste(file.prefix,"_fold.png",sep=""),
                                               fdr=opt$`cut-off`)
                         }
                         )
-irap.output.html(html$html,paste("Genes with a p-value <=",opt$`cut-off`," are plotted in red.",sep=""))
+irap.output.html(html$html,paste("The MA plot allows you to look at the relationship between intensity of expression and difference of expression between two conditions. The x-axis represents the average expression value across the conditions, and the y axis shows the foldchange between them. Each gene is represented as a dot. Genes with an adjusted p-value <=",opt$`cut-off`," are plotted in red.",sep=""))
 
 pdebug("Generating fold change plot...done.")
 %>
