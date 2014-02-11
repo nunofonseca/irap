@@ -128,7 +128,7 @@ html <- gen.plot2report(filename=file,
                         }
                         )
 
-irap.output.html(html$html,"Number of alignments overlapping annotated features. Values obtained with bedtools. ")
+irap.output.html(html$html,"Number of alignments overlapping annotated features. Values obtained with bedtools (coverage). ")
 
 %>
 
@@ -148,7 +148,7 @@ html <- print.xtable(file="/dev/null",
                      include.rownames=TRUE,
                      html.table.attributes = "")
 
-irap.output.html(html, "Number of alignments overlapping annotated features. Values obtained with bedtools.")
+irap.output.html(html, "Number of alignments overlapping annotated features. Values obtained with bedtools (coverage).")
 
 feat.download.files <- c("mapping_feat.tsv")
 names(feat.download.files) <- "TSV"
@@ -174,7 +174,7 @@ html <- print.xtable(file="/dev/null",
                      include.rownames=TRUE,
                      html.table.attributes = "")
 
-irap.output.html(html, "Percentage of alignments overlapping annotated features. Values obtained with bedtools.")
+irap.output.html(html, "Percentage of alignments overlapping annotated features. Values obtained with bedtools (coverage).")
 
 %>
 
@@ -200,7 +200,7 @@ html <- gen.plot2report(filename=file,
                         }
                         )
 
-irap.output.html(html$html,"Number of alignments overlapping introns and exons. Values obtained with bedtools. ")
+irap.output.html(html$html,"Number of alignments overlapping introns and exons. Values obtained with bedtools (intersect).")
 
 %>
 
@@ -219,7 +219,7 @@ html <- print.xtable(file="/dev/null",
                      include.rownames=TRUE,
                      html.table.attributes = "")
 
-irap.output.html(html, "Number of alignments overlapping  exons and introns. Values obtained with bedtools.")
+irap.output.html(html, "Number of alignments overlapping  exons and introns. Values obtained with bedtools (intersect).")
 
 gene.download.files <- gene.stats.file
 names(gene.download.files) <- "TSV"
