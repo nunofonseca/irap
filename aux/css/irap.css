@@ -45,6 +45,15 @@ H3.section {
     font-weight: bold;
 }
 
+A.button {
+    color: white;
+    background: black;
+    padding:2px 5px;
+    font-weight: bold;
+    border-radius: 5px;  
+    text-decoration: none;
+}
+
 A.download {
     color: white;
     background: black;
@@ -74,7 +83,7 @@ td {
     overflow: hidden;
     text-overflow: ellipsis;
     vertical-align: top;
-    text-align: center;
+    text-align: right;
     white-space: nowrap;
 }
 
@@ -154,9 +163,25 @@ TD.ListBackMain{background: #E0E0E0; padding:0; }
 TD.firstcolumn{padding:5px ; text-align:right; font-weight: bold;}
 
 
-tr:nth-child(odd) { background-color:lightgrey; }
-tr:nth-child(even) { background-color:white; }
 
+tr:nth-child(odd) { background-color:lightgrey; }
+tr:nth-child(even) { background-color:lightyellow; }
+tr:first-child { 
+    font-family: Arial, Helvetica,Times, Helvetica, sans-serif; 
+    font-size: 10pt;
+    text-align: center; 
+    color: black;
+    background-color: white;
+    font-weight: bold;
+    padding: 2px;
+}
+td:first-child { 
+    font-family: Arial, Helvetica,Times, Helvetica, sans-serif; 
+    font-size: 10pt;
+    text-align: left; 
+    font-weight: bold;
+    padding: 2px;
+}
 /* Info */
 A.button {
     color: white;

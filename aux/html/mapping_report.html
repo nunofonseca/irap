@@ -8,7 +8,9 @@ library(xtable)
 <DIV name='mapping_res'>
 <H1>Mapping report for <%=opt$mapper%></H1>
 
-<H2 class="section">Mapping statistics<A NAME='plot'/></H2>
+<H2class="section">Mapping statistics<A NAME='plot'/></H2>
+
+<H3 class="section"><%=irap.ctr("Figure")%></H3>
 <%
 file <- paste(out.prefix,"_aln",sep="")
 n <- length(colnames(mapping.dfs$raw))
@@ -29,6 +31,7 @@ irap.output.html(html$html,"Alignment statistics per library: number of alignmen
 
 %>
 
+<H3 class="section"><%=irap.ctr("Table")%></H3>
 <%
 file <- paste(out.prefix,"_diff",sep="")
 n <- length(colnames(mapping.dfs$raw))
@@ -48,6 +51,7 @@ html <- gen.plot2report(filename=file,
 irap.output.html(html$html,"Number of alignments per library where a read aligns perfectly (no mismatches), 1 mismatch, 2 mismatches and more than 2 mismatches. The values are obtained from the BAM file(s).")
 %>
 
+<H3 class="section"><%=irap.ctr("Table")%></H3>
 <%
 
 xt <- xtable(mapping.dfs$perc,
@@ -71,6 +75,7 @@ perc.tsv.download.html <- html.download.bar(tsv.download.files)
 %>
 <DIV> <%=perc.tsv.download.html%></DIV>
 
+<H3 class="section"><%=irap.ctr("Table")%></H3>
 <%
 
 xt <- xtable(mapping.dfs$raw,
@@ -95,9 +100,9 @@ abs.tsv.download.html <- html.download.bar(tsv.download.files)
 <DIV> <%=abs.tsv.download.html%></DIV>
 
   
-<H3 class="section">Mapping profile</H3>
+<H2 class="section">Mapping profile</H2>
   
-
+<H3 class="section"><%=irap.ctr("Figure")%></H3>
 <%
 rownames(mapping.feat)<-gsub("_"," ",rownames(mapping.feat))
 
@@ -133,9 +138,8 @@ irap.output.html(html$html,"Number of alignments overlapping annotated features.
 %>
 
 
-
+<H3 class="section"><%=irap.ctr("Table")%></H3>
 <%
-
 xt <- xtable(round(mapping.feat2plot,0),
              caption="",
              digits=0,
@@ -159,6 +163,7 @@ feat.tsv.download.html <- html.download.bar(feat.download.files)
 <DIV> <%=feat.tsv.download.html%></DIV>
 
 
+<H3 class="section"><%=irap.ctr("Table")%></H3>
 <%
 mapping.feat.sum <- colSums(mapping.feat)
 mapping.feat.per <- round(sweep(mapping.feat,MARGIN=2,100*1/mapping.feat.sum,`*`),2)
@@ -181,6 +186,7 @@ irap.output.html(html, "Percentage of alignments overlapping annotated features.
 %>
 
 <!-- number of reads mapping to exonic regions, intronic regions, other -->
+<H3 class="section"><%=irap.ctr("Figure")%></H3>
 <%
 file <- paste(out.prefix,"_aln_genes",sep="")
 mapping.genes2plot <- mapping.genes[,!colnames(mapping.genes) %in% c("Median","Mean","SD")]
@@ -206,7 +212,7 @@ irap.output.html(html$html,"Number of alignments overlapping introns and exons. 
 
 %>
 
-
+<H3 class="section"><%=irap.ctr("Table")%></H3>
 <%
 save.image("debug.Rdata")
 head(mapping.genes)
@@ -231,7 +237,8 @@ gene.tsv.download.html <- html.download.bar(gene.download.files)
 
 %>
 <DIV> <%=gene.tsv.download.html%></DIV>
-  
+
+<H3 class="section"><%=irap.ctr("Table")%></H3>  
 <%
 # percentages
 tot <- colSums(mapping.genes)

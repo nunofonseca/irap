@@ -522,6 +522,29 @@ annot.get.kegg <- function(egi,dbs) {
 ######################################################
 # HTML Templates
 
+irap.ctrs.Figure <- 0
+irap.ctrs.Table  <- 0
+
+irap.ctr <- function(c.name,add.label=TRUE) {
+  if ( !c.name %in% c("Figure","Table") ) {
+    return(NULL);
+  }
+  if ( c.name == "Figure" ) {
+    x <- irap.ctrs.Figure
+    var <- "irap.ctrs.Figure"
+    lab <- "Figure"
+  } else {
+    x <- irap.ctrs.Table
+    var <- "irap.ctrs.Table"
+    lab <- "Table"
+  }
+  x <- x+1
+  assign(var, x, env=globalenv())
+  if (add.label) return(paste(lab," ",x,sep=""))
+  return(x)
+}
+
+
 irap.output.html <- function(html,info.msg=NULL) {
   if ( !is.null(info.msg) && info.msg!="") {
     cat(irap.info2html(info.msg))
