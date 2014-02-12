@@ -525,6 +525,12 @@ annot.get.kegg <- function(egi,dbs) {
 irap.ctrs.Figure <- 0
 irap.ctrs.Table  <- 0
 
+reset.irap.ctr <- function() {
+  assign("irap.ctrs.Table", 0, env=globalenv())
+  assign("irap.ctrs.Figure", 0, env=globalenv())
+  return(TRUE)
+}
+
 irap.ctr <- function(c.name,add.label=TRUE) {
   if ( !c.name %in% c("Figure","Table") ) {
     return(NULL);
