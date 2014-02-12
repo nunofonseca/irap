@@ -8,7 +8,9 @@ library(xtable)
 <DIV name='qc_res'>
 <H1>QC Report</H1>
 
-<H2 class="section">Reads passed to mapping stage</H2>
+<H2 class="section">Reads passed QC</H2>
+
+<H3><%=irap.ctr("Table")%></H3>
 <%
 # anchor: qc_sum_table
 table2.rows <- c("reads","length","median.base.qual","mean.base.qual","sd.base.qual","GC")
@@ -42,6 +44,8 @@ irap.output.html(html, "The following table shows information, per
 
 
 <H2 class="section">QC Filtering Summary<A NAME='plot'/></H2>
+
+<H3 class="section"><%=irap.ctr("Figure")%></H3>
 <%
 file <- "read_filtering_plot.png"
 filepath <- paste(out.dir,sep="")
@@ -68,6 +72,7 @@ if (conf.is.qc.enabled(conf)) {
 %>
 
 <!--<H3 class="section">QC Filtering Summary Table</H3>-->
+<H3><%=irap.ctr("Table")%></H3>
 <%
 
 if (conf.is.qc.enabled(conf)) {
