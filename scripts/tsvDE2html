@@ -472,6 +472,7 @@ library(brew)
 #
 gen.page <- function (o.html.file) {
 
+  reset.irap.ctr()
   pdebug("Generating html ",o.html.file)
   #
   write.tsv(table.tsv,file=tsv.file)
