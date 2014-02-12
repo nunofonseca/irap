@@ -23,6 +23,7 @@
 install=all
 IRAP_DIR1=
 SRC_DIR=
+IRAP_VERSION=0.3.3
 
 #
 USE_CACHE=y
@@ -1591,6 +1592,8 @@ else
     pinfo " WARNING: This script will install binaries for Linux."
 fi
 
+# 
+pinfo "iRAP $IRAP_VERSION"
 # Check if env is available
 DEF_ENV="/usr/bin/env"
 ENV_FP=$DEF_ENV
