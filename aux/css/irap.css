@@ -101,9 +101,9 @@ div#footer {
     font-size: 10pt;
 }
 
+/*    background: darkgrey;*/
 table.dataframe {
     padding: 1px;  
-    background: darkgrey;
     table-layout: fixed;
     width: 100%;
 }
