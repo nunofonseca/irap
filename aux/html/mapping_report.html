@@ -112,23 +112,34 @@ mapping.feat2plot <- mapping.feat[,!colnames(mapping.feat) %in% c("Median","Mean
 html <- gen.plot2report(filename=file,
                         dir=out.dir,
                         bg="white",
-                        width=900,
-                        height=(480*round(0.5+n/12,0)),
+                        width=(480*round(0.5+n/12,0)),
+                        height=900,
                         html=TRUE,
                         ps=TRUE,
                         caption="",
                         to.plot= function() {
-                          cols <- rainbow(ncol(mapping.feat2plot))
-                          par(mar=c(8,16,4,8))
-                          barplot(t(mapping.feat2plot),las=2,
-                                  beside=T,col=cols,
-                                  xlab="Number of alignments",
-                                  horiz=T,cex.axis=0.8)
-                                  if (ncol(mapping.feat2plot<20) ) {
-                                      par( xpd=NA )
-                                      legend("topright",inset=c(-0.40,0),legend=colnames(mapping.feat2plot),fill=cols,horiz=FALSE, cex=0.70,bty='n')
-                                  }
+                          ## cols <- rainbow(ncol(mapping.feat2plot))
+                          ## par(mar=c(8,16,4,8))
+                          ## barplot(t(mapping.feat2plot),las=2,
+                          ##         beside=T,col=cols,
+                          ##         xlab="Number of alignments",
+                          ##         horiz=T,cex.axis=0.8)
+                          ## if (ncol(mapping.feat2plot<20) ) {
+                          ##   par( xpd=NA )
+                          ##   legend("topright",inset=c(-0.40,0),legend=colnames(mapping.feat2plot),fill=cols,horiz=FALSE, cex=0.70,bty='n')
+                          ## }
+                          # sort rows based on mean values
+                          feat.order <- names(sort(mapping.feat[,"Mean"],decreasing=T))
+                          v <- mapping.feat2plot[feat.order,]
+                          par(mar=c(9,5,4,10))
+                          cols <- rainbow(nrow(mapping.feat2plot))
+                          barplot(v,las=2,
+                                  beside=F,col=cols,
+                                  ylab="Number of alignments",
+                                  horiz=F,cex.axis=0.8)
 
+                          par( xpd=NA )
+                          legend("topright",inset=c(-1*ncol(v)*0.13,0),legend=pprint.fieldname(rownames(v)),fill=cols,horiz=FALSE, cex=0.70,bty='n')
                           
                         }
                         )
@@ -185,9 +196,46 @@ irap.output.html(html, "Percentage of alignments overlapping annotated features.
 
 %>
 
+<H3 class="section"><%=irap.ctr("Figure")%></H3>
+<%
+rownames(mapping.feat.per)<-gsub("_"," ",rownames(mapping.feat.per))
+
+file <- paste(out.prefix,"_paln_bio",sep="")
+n <- length(colnames(mapping.feat.per))
+mapping.feat2plot <- mapping.feat.per[,!colnames(mapping.feat.per) %in% c("Median","Mean","SD")]
+html <- gen.plot2report(filename=file,
+                        dir=out.dir,
+                        bg="white",
+                        width=(480*round(0.5+n/12,0)),
+                        height=900,
+                        html=TRUE,
+                        ps=TRUE,
+                        caption="",
+                        to.plot= function() {
+                          # sort rows based on mean values
+                          feat.order <- names(sort(mapping.feat.per[,"Mean"],decreasing=T))
+                          v <- mapping.feat2plot[feat.order,]
+                          par(mar=c(9,5,4,10))
+                          cols <- rainbow(nrow(mapping.feat2plot))
+                          barplot(v,las=2,
+                                  beside=F,col=cols,
+                                  ylab="Percentage of alignments (%)",
+                                  horiz=F,cex.axis=0.8)
+
+                          par( xpd=NA )
+                          legend("topright",inset=c(-1*ncol(mapping.feat2plot)*0.13,0),legend=pprint.fieldname(rownames(v)),fill=cols,horiz=FALSE, cex=0.70,bty='n')                          
+                        }
+                        )
+
+irap.output.html(html$html,"Percentage of alignments per library overlapping annotated features. Values obtained with bedtools (coverage). ")
+
+%>
+
+  
 <!-- number of reads mapping to exonic regions, intronic regions, other -->
 <H3 class="section"><%=irap.ctr("Figure")%></H3>
 <%
+
 file <- paste(out.prefix,"_aln_genes",sep="")
 mapping.genes2plot <- mapping.genes[,!colnames(mapping.genes) %in% c("Median","Mean","SD")]
 n <- length(colnames(mapping.genes2plot))
@@ -259,6 +307,7 @@ html <- print.xtable(file="/dev/null",
 irap.output.html(html, "Percentage of alignments overlapping exons and introns. Values obtained with bedtools.")
 
 %>
+
 
 
 

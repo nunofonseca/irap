@@ -108,9 +108,6 @@ fields <- list(
                cols2sel=NA              
                )
 
-pprint.fieldname <- function(x) {
-  return(gsub("\\."," ",x))
-}
 
 ##########################################
 # Filter the rows depending on the flavour

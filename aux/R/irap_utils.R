@@ -851,6 +851,11 @@ HTML.toogle.div <- function(visible.text, hidden.text) {
         "<a class=\"button\" id='",idoff,"' href='javascript:toggle(\"",idon,"\",\"",idoff,"\");'>",visible.text,"</a>",
         "<div class=\"button\" id='",idon,"' style='display: none'>",hidden.text,"</div>",sep="")
 }
+
+pprint.fieldname <- function(x) {
+  return(gsub("\\."," ",x))
+}
+
 ######################################################
 #Mem
 my.ls <- function (pos = 1, sorted = FALSE, envir = as.environment(pos))
