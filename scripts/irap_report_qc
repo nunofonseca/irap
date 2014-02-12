@@ -308,8 +308,8 @@ quality.details.matrix <- function(bp.data,conf) {
     #debug(path2qual.report)
     files.filt   <- path2qual.report(paste(dir.name,"raw_data/",sep=""),filtered.file)
     # add a link to the the detailed report
-    data["Passed",lib] <- paste(data["Passed",lib]," <a class='qrl' href='",files.filt["index"],"' target='_top'>QR</a>",sep="")
-    data["Initial data (quality report)",lib] <- paste("<a class='qrl' href='",files.unfilt["index"],"' target='_top'>QR</a>",sep="")
+    data["Passed",lib] <- paste(data["Passed",lib]," <a class='download' href='",files.filt["index"],"' target='_top'>QR</a>",sep="")
+    data["Initial data (quality report)",lib] <- paste("<a class='download' href='",files.unfilt["index"],"' target='_top'>QR</a>",sep="")
     # Add a div to show the plots before and after filtering
     width <- 450
     visible.text <- "+"
