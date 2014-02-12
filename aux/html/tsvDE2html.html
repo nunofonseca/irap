@@ -26,6 +26,8 @@ names(tsv.download.files) <- "TSV"
 tsv.download.html <- html.download.bar(tsv.download.files)
 %>
 
+
+<H3><%=irap.ctr("Table")%></H3>
 <A name="table"/>
 <%=tsv.download.html%>
 
@@ -51,7 +53,7 @@ pdebug("Generating DE table...done.")
 %>
 
 <!-- plots -->
-<H3 class="section">MA plot</H3>
+<H3 class="section"><%=irap.ctr("Figure")%>: MA plot</H3>
 <A name="ma"/>
 <%
 pdebug("Generating fold change plot...")
@@ -74,8 +76,8 @@ pdebug("Generating fold change plot...done.")
 %>
 
 
-<A name="dist"/>
-<H3 class="section">Adjusted p-value distribution</H3>
+
+<H3 class="section"><%=irap.ctr("Figure")%>: Adjusted p-value distribution<A name="dist"/></H3>
 <%
 
 pdebug("Generating hist...")
@@ -101,7 +103,7 @@ pdebug("Generating hist...done.")
 %>
 <!--  <p><IMG src='<%=basename(file.prefix)%>_hist.png' border=0 width=600 height=300><a class='download' href='<%=basename(file.prefix)%>_hist.png.pdf'>PDF</a></p>-->
   
-<H3 class="section"><%=pprint.fieldname(fields$LOG2FOLDCHANGE)%> distribution</H3>  
+<H3 class="section"><H3><%=irap.ctr("Figure")%>: <%=pprint.fieldname(fields$LOG2FOLDCHANGE)%> distribution</H3>  
 <%
 pdebug("Generating hist...")
 inf.value <- 1.79769e+308
