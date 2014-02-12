@@ -8,7 +8,7 @@ library(xtable)
 <DIV name='mapping_res'>
 <H1>Mapping report for <%=opt$mapper%></H1>
 
-<H2class="section">Mapping statistics<A NAME='plot'/></H2>
+<H2 class="section">Mapping statistics<A NAME='plot'/></H2>
 
 <H3 class="section"><%=irap.ctr("Figure")%></H3>
 <%
@@ -31,7 +31,7 @@ irap.output.html(html$html,"Alignment statistics per library: number of alignmen
 
 %>
 
-<H3 class="section"><%=irap.ctr("Table")%></H3>
+<H3 class="section"><%=irap.ctr("Figure")%></H3>
 <%
 file <- paste(out.prefix,"_diff",sep="")
 n <- length(colnames(mapping.dfs$raw))
@@ -80,7 +80,7 @@ perc.tsv.download.html <- html.download.bar(tsv.download.files)
 
 xt <- xtable(mapping.dfs$raw,
              caption="",
-             label="map_perc_table")
+             label="map_num_align_table")
 
 html <- print.xtable(file="/dev/null",
                      xt,
