@@ -888,13 +888,18 @@ fix.cufflinks.fpkms <- function(t,id.col=1,value.col=2) {
 
 #######################################################
 #
-write.tsv <- function(x,file,header=T) {
+write.tsv <- function(x,file,header=TRUE,rownames.label=NULL) {
   #
   if (!is.null(x)) {
     if (!is.matrix(x)) {
       x <- as.matrix(x)
     }
-    x <- gsub("'","",x)
+    x <- apply(x,c(1,2),gsub,pattern="'",replacement="")
+    if ( !is.null(rownames.label) ) {
+      y <- cbind(rownames(x),x)
+      colnames(y) <- append(rownames.label,colnames(x))
+      x <- y
+    }
   }
   write.table(x,file,sep="\t",row.names=F,col.names=header,quote=F)
   return(1)
