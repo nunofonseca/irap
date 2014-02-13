@@ -7,19 +7,19 @@
 
 <p>FDR=<%=opt$`cut-off`%></p>
 
-<DIV class="de_report_bar">Set of genes considered: <%=filt.name%>
+<DIV class="de_report_bar">Set of genes considered: <b><%=filt.name%></b>
 <DIV class="source_filter"> <%=sources.menu%>
 </DIV>
 </DIV>
 
-
-<OL> Contents
+<OL class="contents"> Contents
   <LI> <A href="#table">Table with the results of DE analysis</A>
   <LI> <A href="#ma">MA plot</A>
   <LI> <A href="#dist">Distribution of adjusted p-value and fold-change</A>
 </OL>
 
 <HR/>
+
 <%
 tsv.download.files <- c(paste(basename(tsv.file.ref),".gz",sep=""))
 names(tsv.download.files) <- "TSV"
