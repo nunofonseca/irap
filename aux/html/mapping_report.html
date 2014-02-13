@@ -8,9 +8,13 @@ library(xtable)
 <DIV name='mapping_res'>
 <H1>Mapping report for <%=opt$mapper%></H1>
 
-<H2 class="section">Mapping statistics<A NAME='plot'/></H2>
+<OL class="contents"> Contents
+  <LI> <A href="#ms">Mapping statistics</A>
+  <LI> <A href="#mp">Mapping profile</A>
+</OL>
 
 
+<H2 class="section">Mapping statistics<A NAME='ms'/></H2>
 
 <H3 class="section"><%=irap.ctr("Figure")%></H3>
 <%
@@ -79,7 +83,7 @@ abs.tsv.download.html <- html.download.bar(tsv.download.files)
 <DIV> <%=abs.tsv.download.html%></DIV>
 
   
-<H2 class="section">Mapping profile</H2>
+<H2 class="section">Mapping profile<a name="mp"/></H2>
   
 <H3 class="section"><%=irap.ctr("Figure")%></H3>
 <%
@@ -97,16 +101,6 @@ html <- gen.plot2report(filename=file,
                         ps=TRUE,
                         caption="",
                         to.plot= function() {
-                          ## cols <- rainbow(ncol(mapping.feat2plot))
-                          ## par(mar=c(8,16,4,8))
-                          ## barplot(t(mapping.feat2plot),las=2,
-                          ##         beside=T,col=cols,
-                          ##         xlab="Number of alignments",
-                          ##         horiz=T,cex.axis=0.8)
-                          ## if (ncol(mapping.feat2plot<20) ) {
-                          ##   par( xpd=NA )
-                          ##   legend("topright",inset=c(-0.40,0),legend=colnames(mapping.feat2plot),fill=cols,horiz=FALSE, cex=0.70,bty='n')
-                          ## }
                           # sort rows based on mean values
                           feat.order <- names(sort(mapping.feat[,"Mean"],decreasing=T))
                           v <- mapping.feat2plot[feat.order,]
