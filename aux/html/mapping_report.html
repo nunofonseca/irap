@@ -3,17 +3,61 @@
 <%
 library(xtable)
 %>
-  
+ 
 <%# Comment -- wrap up everything in a div %>
-<DIV name='gse_res'>
-<H1>Gene set enrichment analysis</H1>
-<H2>Contrast: <%=opt$contrast%></H2>
-<H2>Methods:  <%=opt$pipeline%></H2>
+<DIV name='mapping_res'>
+<H1>Mapping report for <%=opt$mapper%></H1>
+
+<H2 class="section">Mapping statistics<A NAME='plot'/></H2>
+<% brew::brew(get.path2template("page.header")) %>
+
+
+<H3 class="section"><%=irap.ctr("Figure")%></H3>
+<%
+file <- paste(out.prefix,"_aln",sep="")
+n <- length(colnames(mapping.dfs$raw))
+html <- gen.plot2report(filename=file,
+                        dir=out.dir,
+                        bg="white",
+                        width=(480*round(0.5+n/12,0)),
+                        height=480,
+                        html=TRUE,
+                        ps=TRUE,
+                        caption="",
+                        to.plot= function() {
+                          mapping.plot(mapping.dfs$raw)
+                        }
+                        )
+
+irap.output.html(html$html,"Alignment statistics per library: number of alignments, number of reads mapped, number of reads not mapped (unmapped), number of reads that map to a single locus (uniquely mapped), and number of reads spliced.")
+
+%>
+
+<H3 class="section"><%=irap.ctr("Figure")%></H3>
+<%
+file <- paste(out.prefix,"_diff",sep="")
+n <- length(colnames(mapping.dfs$raw))
+html <- gen.plot2report(filename=file,
+                        dir=out.dir,
+                        bg="white",
+                        width=(480*round(0.5+n/12,0)),
+                        height=480,
+                        html=TRUE,
+                        ps=TRUE,
+                        caption="",
+                        to.plot= function() {
+                          mapping.qual(mapping.dfs$raw)
+                        }
+                        )
+
+irap.output.html(html$html,"Number of alignments per library where a read aligns perfectly (no mismatches), 1 mismatch, 2 mismatches and more than 2 mismatches. The values are obtained from the BAM file(s).")
+%>
 
 <H3 class="section"><%=irap.ctr("Table")%></H3>
 <%
 
-xt <- xtable(gse.res,
+
+xt <- xtable(mapping.dfs$perc,
              caption="",
              label="map_perc_table")
 
