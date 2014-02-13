@@ -5,10 +5,34 @@ library(xtable)
 %>
   
 <%# Comment -- wrap up everything in a div %>
-<DIV name='mapping_res'>
-<H1>Mapping report for <%=opt$mapper%></H1>
+<DIV name='gse_res'>
+<H1>Gene set enrichment analysis</H1>
+<H2>Contrast: <%=opt$contrast%></H2>
+<H2>Methods:  <%=opt$pipeline%></H2>
 
-<H2 class="section">Mapping statistics<A NAME='plot'/></H2>
+<H3 class="section"><%=irap.ctr("Table")%></H3>
+<%
+
+xt <- xtable(gse.res,
+             caption="",
+             label="map_perc_table")
+
+html <- print.xtable(file="/dev/null",
+                     xt,
+                     type="html",
+                     sanitize.text.function=function(x) {x},
+                     include.colnames=TRUE,
+                     include.rownames=TRUE,
+                     html.table.attributes = "")
+
+irap.output.html(html, "Alignment statistics per library (percentage):  percentage of reads mapped, unmapped, uniquely mapped, multimaps and spliced; percentage of alignments where a read aligns pefectly (no mismatches), 1 mismatch, 2 mismatches, more than 2 mismatches, and spliced.")
+
+tsv.download.files <- c(perc.stats.file)
+names(tsv.download.files) <- "TSV"
+perc.tsv.download.html <- html.download.bar(tsv.download.files)
+
+%>
+<DIV> <%=perc.tsv.download.html%></DIV>
 
 <H3 class="section"><%=irap.ctr("Figure")%></H3>
 <%
@@ -51,29 +75,6 @@ html <- gen.plot2report(filename=file,
 irap.output.html(html$html,"Number of alignments per library where a read aligns perfectly (no mismatches), 1 mismatch, 2 mismatches and more than 2 mismatches. The values are obtained from the BAM file(s).")
 %>
 
-<H3 class="section"><%=irap.ctr("Table")%></H3>
-<%
-
-xt <- xtable(mapping.dfs$perc,
-             caption="",
-             label="map_perc_table")
-
-html <- print.xtable(file="/dev/null",
-                     xt,
-                     type="html",
-                     sanitize.text.function=function(x) {x},
-                     include.colnames=TRUE,
-                     include.rownames=TRUE,
-                     html.table.attributes = "")
-
-irap.output.html(html, "Alignment statistics per library (percentage):  percentage of reads mapped, unmapped, uniquely mapped, multimaps and spliced; percentage of alignments where a read aligns pefectly (no mismatches), 1 mismatch, 2 mismatches, more than 2 mismatches, and spliced.")
-
-tsv.download.files <- c(perc.stats.file)
-names(tsv.download.files) <- "TSV"
-perc.tsv.download.html <- html.download.bar(tsv.download.files)
-
-%>
-<DIV> <%=perc.tsv.download.html%></DIV>
 
 <H3 class="section"><%=irap.ctr("Table")%></H3>
 <%
@@ -139,7 +140,7 @@ html <- gen.plot2report(filename=file,
                                         horiz=F,cex.axis=0.8)
 
                           par( xpd=NA )
-                          legend(max(bp),max(colSums(v)),legend=pprint.fieldname(rownames(v)),fill=cols,horiz=FALSE, cex=0.70,bty='n')                          
+                          legend(ceiling(max(bp)),max(colSums(v)),legend=pprint.fieldname(rownames(v)),fill=cols,horiz=FALSE, cex=0.70,bty='n')                          
                         }
                         )
 
@@ -222,7 +223,7 @@ html <- gen.plot2report(filename=file,
                                         horiz=F,cex.axis=0.8)
 
                           par( xpd=NA )
-                          legend(max(bp),max(colSums(v)),legend=pprint.fieldname(rownames(v)),fill=cols,horiz=FALSE, cex=0.70,bty='n')                          
+                          legend(ceiling(max(bp)),max(colSums(v)),legend=pprint.fieldname(rownames(v)),fill=cols,horiz=FALSE, cex=0.70,bty='n')                          
                         }
                         )
 
