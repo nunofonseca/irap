@@ -292,19 +292,19 @@ out.dir <- dirname(opt$out)
 out.prefix <- sub(".htm.*","",basename(opt$out))
 # save files
 raw.stats.file <- paste(out.prefix,"_mapping_stats_raw.tsv",sep="")
-r <- write.tsv(mapping.dfs$raw,file=paste(out.prefix,"/",raw.stats.file,sep=""))
+r <- write.tsv(mapping.dfs$raw,file=paste(out.dir,"/",raw.stats.file,sep=""))
 pinfo("Saved ",raw.stats.file)
 
 perc.stats.file <- paste(out.prefix,"_mapping_stats_perc.tsv",sep="")
-r <- write.tsv(mapping.dfs$perc,file=paste(out.prefix,"/",perc.stats.file,sep=""))
+r <- write.tsv(mapping.dfs$perc,file=paste(out.dir,"/",perc.stats.file,sep=""))
 pinfo("Saved ",perc.stats.file)
 
 feat.stats.file <- paste(out.prefix,"_mapping_stats_feat.tsv",sep="")
-r <- write.tsv(mapping.feat,file=paste(out.prefix,"/",feat.stats.file,sep=""))
+r <- write.tsv(mapping.feat,file=paste(out.dir,"/",feat.stats.file,sep=""))
 pinfo("Saved ",feat.stats.file)
 
 gene.stats.file <- paste(out.prefix,"_mapping_stats_gene.tsv",sep="")
-r <- write.tsv(mapping.genes,file=paste(out.prefix,"/",gene.stats.file,sep=""))
+r <- write.tsv(mapping.genes,file=paste(out.dir,"/",gene.stats.file,sep=""))
 pinfo("Saved ",gene.stats.file)
 
 
