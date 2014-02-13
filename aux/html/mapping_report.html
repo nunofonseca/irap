@@ -133,14 +133,13 @@ html <- gen.plot2report(filename=file,
                           v <- mapping.feat2plot[feat.order,]
                           par(mar=c(9,5,4,10))
                           cols <- rainbow(nrow(mapping.feat2plot))
-                          barplot(v,las=2,
-                                  beside=F,col=cols,
-                                  ylab="Number of alignments",
-                                  horiz=F,cex.axis=0.8)
+                          bp <- barplot(v,las=2,
+                                        beside=F,col=cols,
+                                        ylab="Number of alignments",
+                                        horiz=F,cex.axis=0.8)
 
                           par( xpd=NA )
-                          legend("topright",inset=c(-1*ncol(v)*0.13,0),legend=pprint.fieldname(rownames(v)),fill=cols,horiz=FALSE, cex=0.70,bty='n')
-                          
+                          legend(max(bp),max(colSums(v)),legend=pprint.fieldname(rownames(v)),fill=cols,horiz=FALSE, cex=0.70,bty='n')                          
                         }
                         )
 
@@ -217,13 +216,13 @@ html <- gen.plot2report(filename=file,
                           v <- mapping.feat2plot[feat.order,]
                           par(mar=c(9,5,4,10))
                           cols <- rainbow(nrow(mapping.feat2plot))
-                          barplot(v,las=2,
-                                  beside=F,col=cols,
-                                  ylab="Percentage of alignments (%)",
-                                  horiz=F,cex.axis=0.8)
+                          bp <- barplot(v,las=2,
+                                        beside=F,col=cols,
+                                        ylab="Percentage of alignments (%)",
+                                        horiz=F,cex.axis=0.8)
 
                           par( xpd=NA )
-                          legend("topright",inset=c(-1*ncol(mapping.feat2plot)*0.13,0),legend=pprint.fieldname(rownames(v)),fill=cols,horiz=FALSE, cex=0.70,bty='n')                          
+                          legend(max(bp),max(colSums(v)),legend=pprint.fieldname(rownames(v)),fill=cols,horiz=FALSE, cex=0.70,bty='n')                          
                         }
                         )
 
@@ -250,9 +249,9 @@ html <- gen.plot2report(filename=file,
                         to.plot= function() {
                           cols <- rainbow(nrow(mapping.genes2plot))
                           par(mar=c(10,5,5,4))                          
-                          barplot(mapping.genes2plot,las=2,col=cols,)
-                          par( xpd=NA )
-                          legend("top",inset=c(0,-0.05),legend=rownames(mapping.genes2plot),fill=cols,horiz=TRUE, cex=0.80,bty='n')                            
+                          bp <- barplot(mapping.genes2plot,las=2,col=cols,)
+                          par( xpd=NA )                          
+                          legend("top",inset=c(0,-0.08),legend=rownames(mapping.genes2plot),fill=cols,horiz=TRUE, cex=0.80,bty='n')                            
                         }
                         )
 
