@@ -47,6 +47,11 @@ define de_html_files=
 $(subst $(name)/,$(name)/report/,$(foreach d,$(call de_dirs,$(1)),$(subst .tsv,.html,$(call quiet_ls,$(d)/*_de.tsv))))
 endef
 
+# 1 - exp name
+define gse_html_files=
+$(subst $(name)/,$(name)/report/,$(foreach d,$(call de_dirs,$(1)),$(subst .tsv,.html,$(call quiet_ls,$(d)/*.gse.*.tsv))))
+endef
+
 #1 HTML FILE 
 #2 OUTDIR
 #3 cuffdiff files
@@ -288,10 +293,21 @@ de_report: report_setup $(call de_html_files,$(name))
 de_report_files:
 	echo $(call de_html_files,$(name))
 
-#############################
-# Report
 
 $(name)/report/%.genes_de.html: $(name)/%.genes_de.tsv $(annot_tsv)
 	mkdir -p $(@D)
 	$(call DE_tsv2html,$(subst _nd,,$(call DEfilepath2demethod,$@)),$<,$(@D),$(subst .html,,$(shell basename $@)),$(subst /, x ,$*))
+
+
+
+############################
+# GSE
+phony_targets+=gse_report gse_report_files
+silent_targets+=gse_report_files
+
+gse_report: report_setup $(call gse_html_files,$(name))
+# just print the name of the files that will be produced
+gse_report_files:
+	echo $(call gse_html_files,$(name))
+
 

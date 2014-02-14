@@ -71,7 +71,12 @@ irap_GSE_piano --tsv $1 --out $(subst .tsv,,$2) --foldchange-col 6 --annotation_
 endef
 
 define run_piano_kegg=
-irap_GSE_piano --tsv $1 --out $(subst .tsv,,$2) --annotation_col KEGG --annotation $(annot_tsv) --pvalue $(gse_pvalue) --minsize $(gse_minsize) --method $(gse_method) 
+irap_GSE_piano --tsv $1 --out $(subst .tsv,,$2) --foldchange-col 6 --annotation_col KEGG --annotation $(annot_tsv) --pvalue $(gse_pvalue) --minsize $(gse_minsize) --method $(gse_method) 
+endef
+
+# input,output,options,pipeline,contrast
+define run_gse_report=
+irap_report_gse --tsv $1 --out $2 $3  --gse_method "$(gse_tool):$(gse_method)" --pipeline $4 --contrast $5 --pvalue $(gse_pvalue)
 endef
 
 ################################
@@ -89,10 +94,23 @@ $(name)/$(mapper)/$(quant_method)/$(de_method)/%.gse.$(gse_tool).$(gse_method).g
 $(name)/$(mapper)/$(quant_method)/$(de_method)/%.gse.$(gse_tool).$(gse_method).kegg.tsv: $(name)/$(mapper)/$(quant_method)/$(de_method)/%_de.tsv $(annot_tsv)
 	$(call run_piano_kegg,$<,$@)
 
+$(name)/report/$(mapper)/$(quant_method)/$(de_method)/%.gse.$(gse_tool).$(gse_method).go.html: $(name)/$(mapper)/$(quant_method)/$(de_method)/%.gse.$(gse_tool).$(gse_method).go.tsv
+	$(call run_gse_report,$<,$@,,"$(mapper)x$(quant_method)x$(de_method)",$*)
+
+$(name)/report/$(mapper)/$(quant_method)/$(de_method)/%.gse.$(gse_tool).$(gse_method).kegg.html: $(name)/$(mapper)/$(quant_method)/$(de_method)/%.gse.$(gse_tool).$(gse_method).kegg.tsv
+	$(call run_gse_report,$<,$@,--pathway,"$(mapper)x$(quant_method)x$(de_method)",$*)
+
 else
 # nothing to do
 gse_stage:  
 
+%.go.html:
+
+%.kegg.html:
+
 endif
+
+
+
 
 phony_targets+= gse_stage

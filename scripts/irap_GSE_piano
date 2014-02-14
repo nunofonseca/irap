@@ -144,6 +144,9 @@ pinfo("Starting to play piano...")
 pval <- pval[!is.na(pval)]
 fc <- fc[!is.na(fc)]
 pinfo("FC mean",round(mean(abs(fc),na.rm=T),2),"+-",round(sd(fc,na.rm=T),2))
+#fc.dir <- fc
+#fc.dir[fc.dir<0] <- "down"
+#fc.dir[fc.dir>0] <- "up"
 # TODO: replace inf by a big value?
 pval[is.infinite(pval)] <- 1
 pval.lim <- opt$pvalue
