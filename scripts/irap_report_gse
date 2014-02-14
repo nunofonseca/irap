@@ -1,0 +1,205 @@
+#!/usr/bin/env Rscript
+# =========================================================
+# Copyright 2012-2013,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#    $Id: irap.txt Nuno Fonseca Wed Feb 6 00:51:29 2013$
+# =========================================================
+suppressPackageStartupMessages(library("optparse"))
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+# specify our desired options in a list
+#
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+pdebug.enabled <- FALSE
+html.temp <- get.path2template("gse_report")
+
+#######################
+usage <- "irap_report_gse --tsv tsv.file --out html_file [options]"
+option_list <- list(
+  make_option(c("--css"), type="character",default="irap.css",help="Path to the irap.css file relative to the location of the produced html file [default: %default]"),
+  make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
+  make_option(c("-o","--out"),type="character",default=NULL,help="Output prefix file name (for the html and plots)"),  
+  make_option(c("-c","--contrast"),type="character",dest="contrast",default="Not provided",help="Contrast name [default: %default]"),
+  make_option(c("-m","--gse_method"),type="character",dest="gse_method",default="Not provided",help="GSE method [default: %default]"),
+  make_option(c("--pvalue"),type="character",dest="pvalue",default="Not provided",help="P-value [default: %default]"),
+  make_option(c("--tsv"),type="character",dest="tsv",default=NULL,help="TSV file name (file should contain the GSE analysis results)"),
+  make_option(c("-p","--pipeline"),type="character",dest="pipeline",default="Not provided",help="Pipeline used to produce the results [default: %default]"),
+  make_option(c("--pathway"),action="store_true",dest="is.pathway.analysis",default=FALSE,help="Pathway analysis input?"),
+  make_option(c("-t","--html"),type="character",dest="html_template",default=html.temp,help="HTML template file [default: %default]")
+)
+
+multiple.options = list()
+filenames <- c("html_template","tsv") ;#filenames that must exist (if defined)
+
+# check multiple options values
+mandatory <- c("out","tsv","html_template")
+opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
+
+irap.css <- opt$css
+pdebug.enabled <- opt$debug
+out.dir <- dirname(opt$out)
+out.prefix <- sub(".htm.*","",basename(opt$out))
+
+
+pinfo("CSS=",irap.css)
+pinfo("Parameters parsed.")
+
+# Only report the count of overlaps
+# export variables
+#opt$mapper_name="tophat1"
+#file <- "test_files/gse/WildTypeVsMutant.genes.gse.piano.fisher.go.tsv"
+gse.res <- read.tsv(opt$tsv)
+
+pdebug.save.state("irap_report_gse","p0")
+pinfo("Parsing parameters...")
+# check if plots exists (png and eps exist)
+gse.png.file.nd <- sub("\\.tsv$","_class_non_dir_both.png",opt$tsv)
+gse.eps.file.nd <- paste(gse.png.file.nd,".eps",sep="")
+gse.png.file.dd <- sub("\\.tsv$","_class_distinct_dir_both.png",opt$tsv)
+gse.png.file.mix <- sub("\\.tsv$","_class_mix_dir_both.png",opt$tsv)
+
+gse.rdata.file <- sub("\\.tsv$",".Rdata",opt$tsv)
+
+if ( file.exists(gse.png.file.nd) ) {
+  pinfo("Found and reusing plot ",gse.png.file.nd)
+  system(paste("cp -f ",gse.png.file.nd," ",out.dir,sep=""))
+  gse.png.file.nd <- basename(gse.png.file.nd)
+} else {
+  gse.png.file <- NULL
+}
+if ( file.exists(gse.png.file.dd) ) {
+  pinfo("Found and reusing plot ",gse.png.file.dd)
+  system(paste("cp -f ",gse.png.file.dd," ",out.dir,sep=""))
+  gse.png.file.dd <- basename(gse.png.file.dd)
+
+} else {
+  gse.png.file <- NULL
+}
+
+#if ( file.exists(gse.eps.file.nd) ) {
+#  pinfo("Found and reusing plot ",gse.eps.file.nd)
+#} else {
+#  gse.eps.file <- NULL
+#}
+
+rdata.loaded <- FALSE
+gse.info <- NULL
+gse.info <- matrix(c("GSE method",opt$gse_method,"p-value",opt$pvalue),byrow=T,ncol=2)
+
+if (file.exists(gse.rdata.file)) {
+  pinfo("Found and loading ",gse.rdata.file)
+  load(gse.rdata.file)
+  rdata.loaded <- TRUE
+  pdebug.save.state("irap_report_gse","p1")
+  # fill matrix
+  # Show these fields in the HTML 
+  gsaRes.fields <- c("signifMethod","adjMethod")
+  new.vals <- unlist(gsaRes[gsaRes.fields])
+  new.vals <- matrix(append(gsaRes.fields,new.vals),byrow=F,ncol=2)
+  gse.info <- rbind(gse.info,new.vals)
+} else {
+  pinfo("File not found ",gse.rdata.file)
+}
+
+pdebug.save.state("irap_report_gse","p2")
+
+# Piano information
+info <- "The total number of genes in each gene set (Genes tot.). The number of up-regulated genes in each gene set (Genes up.).  The number of down-regulated genes in each gene set (Genes down.). Gene set adjusted p-values of the non-directional class Adjusted gene set p-values of the mixed-directional class."
+tool.url <- "http://bioconductor.org/packages/release/bioc/html/piano.html"
+
+# columns to keep (# genes+padj pvalue)
+cols.to.keep <- c("Name","Genes..tot.","Genes..up.","Genes..down.",
+                           "p.adj..dist.dir.up.","p.adj..dist.dir.dn.",
+                           "p.adj..non.dir..")
+#                           "p.adj..mix.dir.up.",
+#                           "p.adj..mix.dir.dn.")]
+
+#if ( length(colnames(gse.res)) != 19 ) {
+#  perror("expected 19 columns in ",opt$tsv," but found ",length(colnames(gse.res)))
+#  q(status=1)
+#}
+not.in <- ! cols.to.keep %in% colnames(gse.res)
+if (sum(not.in) > 0 ) {
+  pinfo("Columns found")
+  pinfo(colnames(gse.res))
+  pwarning("columns missing from ",opt$tsv)
+  pwarning("Missing ",cols.to.keep[not.in])
+  for (c in cols.to.keep[not.in]) {
+    print(nrow(gse.res))
+    x <- rep(1,nrow(gse.res),NA)
+    gse.res  <- cbind(gse.res,x)
+    colnames(gse.res)[ncol(gse.res)] <- c
+  }
+  print(colnames(gse.res))
+}
+gse.res.filt <- gse.res[,cols.to.keep]
+colnames(gse.res.filt) <- sub("Genes\\.\\.","Genes ",colnames(gse.res.filt))
+colnames(gse.res.filt) <- gsub("\\.\\."," ",colnames(gse.res.filt))
+
+
+library(brew)
+
+# check if the columns are present
+#expected.cols <- c("geneStatType","geneSetStat", "signifMethod", "adjMethod","info", "gsSizeLim", "gsStatName",  "nPerm","gseaParam", "geneLevelStats","directions","gsc", "nGenesTot","nGenesUp","nGenesDn",  "statDistinctDir","statDistinctDirUp","statDistinctDirDn","statNonDirectional","statMixedDirUp","statMixedDirDn","pDistinctDirUp","pDistinctDirDn","pNonDirectional","pMixedDirUp", "pMixedDirDn", "pAdjDistinctDirUp", "pAdjDistinctDirDn","pAdjNonDirectional", "pAdjMixedDirUp", "pAdjMixedDirDn","runtime")
+
+if (rdata.loaded ) {
+  # add genes
+  Genes <- unlist(lapply(gsaRes$gsc,paste,collapse=" "))
+  Genes <- Genes[gse.res.filt$Name]
+  gse.res.filt <- cbind(gse.res.filt,Genes)
+  #reorder the columns
+  if (!opt$is.pathway.analysis) {
+    f.col.name <- "GO"
+  } else {
+    f.col.name <- "Pathway"
+  }
+  gse.res.filt <- gse.res.filt[append(c(1,ncol(gse.res.filt)),seq(2,ncol(gse.res.filt)-1))]
+  colnames(gse.res.filt)[1] <- f.col.name
+}
+
+if (opt$is.pathway.analysis) {
+  # add column with link to kegg
+  #head(gse.res)
+  perror("COMPLETE THE CODE!!!")
+}
+
+####################################
+
+pinfo("Saving TSV file...")
+raw.tsv.file <- paste(out.prefix,".tsv",sep="")
+r <- write.tsv(gse.res.filt,file=paste(out.dir,"/",raw.tsv.file,sep=""))
+pinfo("Saved ",out.dir,"/",raw.tsv.file)
+
+pinfo("Generating HTML...")
+out.html.file <- paste(opt$out,sep="")
+brew(opt$html_template,opt$out)
+warnings()
+q()
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  IRAP.DIR="/home/nf/Research/Projects/WIP/EREAP/ereap_install"
+  Sys.setenv(IRAP_DIR=IRAP.DIR)
+}
+
+
