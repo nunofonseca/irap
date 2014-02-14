@@ -65,8 +65,9 @@ endif
 
 ifeq ($(gse_tool),piano)
 
+# foldchange column corresponds to logfoldchange
 define run_piano_goterm=
-irap_GSE_piano --tsv $1 --out $(subst .tsv,,$2) --annotation_col GOterm --annotation $(annot_tsv) --pvalue $(gse_pvalue) --minsize $(gse_minsize) --method $(gse_method) 
+irap_GSE_piano --tsv $1 --out $(subst .tsv,,$2) --foldchange-col 6 --annotation_col GOterm --annotation $(annot_tsv) --pvalue $(gse_pvalue) --minsize $(gse_minsize) --method $(gse_method) 
 endef
 
 define run_piano_kegg=
