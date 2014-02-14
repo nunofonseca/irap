@@ -108,6 +108,26 @@ table.dataframe {
     width: 100%;
 }
 
+table.info {
+    font-family: Arial, Helvetica,Times, Helvetica, sans-serif; 
+    background: white;
+    padding: 3px;
+    font-size: 10pt;
+}
+table.info tr:nth-child(odd) { background-color:white; }
+table.info tr:nth-child(even) { background-color:white; }
+table.info tr:first-child { 
+    background-color: white;
+    font-weight: normal;
+}
+table.info td:first-child { 
+    font-family: Arial, Helvetica,Times, Helvetica, sans-serif; 
+    font-size: 10pt;
+    text-align: right; 
+    font-weight: bold;
+    padding: 2px;
+}
+
 table.dataframe tr:hover td { white-space: normal; }
 
 TR.firstline{
