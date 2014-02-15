@@ -1,0 +1,93 @@
+<% brew::brew(get.path2template("page.header")) %>
+
+<%
+library(xtable)
+%>
+  
+<%# Comment -- wrap up everything in a div %>
+<DIV name='gse_res'>
+<H1>Gene set enrichment analysis</H1>
+
+<%
+
+gse.info.basic <- c(opt$contrast,opt$pipeline)
+gse.info.basic <- matrix(append(c("Contrast","Analysis pipeline"),gse.info.basic),byrow=F,ncol=2)
+if (!is.null(gse.info)) {
+  gse.info.basic <- rbind(gse.info.basic,gse.info)
+}
+
+xt <- xtable(gse.info.basic,
+             caption="",
+             label="gse_info")
+
+html <- print.xtable(file="/dev/null",
+                     xt,
+                     type="html",
+	             html.table.attributes="class=info",
+                     sanitize.text.function=function(x) {x},
+                     include.colnames=FALSE,
+                     include.rownames=FALSE)
+
+irap.output.html(html, "")
+
+%>
+
+<OL class="contents"> Contents
+  <LI> <A href="#gst">Gene sets table</A>
+  <LI> <A href="#np">Network plots</A>
+</OL>
+
+
+<H3 class="section"><%=irap.ctr("Table")%> <a name="gst"/></H3>
+
+<%
+if ( !is.null(gse.res.filt) ) {
+  tsv.download.file <- c(raw.tsv.file)
+  names(tsv.download.file) <- "TSV"
+  tsv.download.html <- html.download.bar(tsv.download.file)
+} else {
+  tsv.download.html <- ""
+}
+%>
+<DIV><%=tsv.download.html%></DIV>
+<%
+
+if ( !is.null(gse.res.filt) ) {
+  xt <- xtable(gse.res.filt,
+               caption="",
+               label="gse_table")
+  
+  html <- print.xtable(file="/dev/null",
+                       xt,
+                       type="html",
+                       sanitize.text.function=function(x) {x},
+                       include.colnames=TRUE,
+                       include.rownames=FALSE,
+                       html.table.attributes = "class=dataframe")
+  
+  irap.output.html(html, "TODO")
+} else {
+  cat("<p>No sets found</p>")
+}
+%>
+
+<a name="np"/>
+<H3 class="section"><%=irap.ctr("Figure")%> Non-directional</H3>
+<%
+html<-paste("<IMG width=\"800\" src=\"",gse.png.file.nd,"\"></IMG>",sep="")
+irap.output.html(html,"TODO")
+
+%>
+
+<H3 class="section"><%=irap.ctr("Figure")%> Distinct directional</H3>
+<%
+html<-paste("<IMG width=\"800\" src=\"",gse.png.file.dd,"\"></IMG>",sep="")
+irap.output.html(html,"TODO")
+
+%>
+
+
+</DIV>
+
+<% brew::brew(get.path2template("page.footer")) %>
+
