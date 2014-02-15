@@ -236,9 +236,9 @@ div.info_wrapper {
     background-color: black;
     z-index:1001;
     -moz-opacity: 0.8;
-    opacity:.80;
-    filter: alpha(opacity=80);
+    opacity: 0.80;
 }
+/*    filter: alpha(opacity=80); IE */
 
 .info_content {
     display: none;
