@@ -94,11 +94,16 @@ else
 # nothing to do
 gse_stage:  
 
-%.go.html:
-
-%.kegg.html:
 
 endif
 
 
 phony_targets+= gse_stage
+
+
+# reports
+$(name)/report/$(mapper)/$(quant_method)/$(de_method)/%.gse.$(gse_tool).$(gse_method).go.html: $(name)/$(mapper)/$(quant_method)/$(de_method)/%.gse.$(gse_tool).$(gse_method).go.tsv
+	$(call run_gse_report,$<,$@,,"$(mapper)x$(quant_method)x$(de_method)",$*)
+
+$(name)/report/$(mapper)/$(quant_method)/$(de_method)/%.gse.$(gse_tool).$(gse_method).kegg.html: $(name)/$(mapper)/$(quant_method)/$(de_method)/%.gse.$(gse_tool).$(gse_method).kegg.tsv
+	$(call run_gse_report,$<,$@,--pathway,"$(mapper)x$(quant_method)x$(de_method)",$*)
