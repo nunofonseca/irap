@@ -88,10 +88,9 @@ if ( file.exists(gse.png.file.nd) ) {
   gse.png.file <- NULL
 }
 if ( file.exists(gse.png.file.dd) ) {
-  pinfo("Found and reusing plot ",gse.png.file.dd)
   system(paste("cp -f ",gse.png.file.dd," ",out.dir,sep=""))
   gse.png.file.dd <- basename(gse.png.file.dd)
-
+  pinfo("Found and reusing plot ",gse.png.file.dd)
 } else {
   gse.png.file <- NULL
 }
@@ -138,23 +137,29 @@ cols.to.keep <- c("Name","Genes..tot.","Genes..up.","Genes..down.",
 #  perror("expected 19 columns in ",opt$tsv," but found ",length(colnames(gse.res)))
 #  q(status=1)
 #}
-not.in <- ! cols.to.keep %in% colnames(gse.res)
-if (sum(not.in) > 0 ) {
-  pinfo("Columns found")
-  pinfo(colnames(gse.res))
-  pwarning("columns missing from ",opt$tsv)
-  pwarning("Missing ",cols.to.keep[not.in])
-  for (c in cols.to.keep[not.in]) {
-    print(nrow(gse.res))
-    x <- rep(1,nrow(gse.res),NA)
-    gse.res  <- cbind(gse.res,x)
-    colnames(gse.res)[ncol(gse.res)] <- c
+if ( length(colnames(gse.res))==1 ) {
+  gse.res.filt <- NULL
+  gse.res <- NULL
+} else {
+  not.in <- ! cols.to.keep %in% colnames(gse.res)
+  if (sum(not.in) > 0 ) {
+    pinfo("Columns found")
+    pinfo(colnames(gse.res))
+    pwarning("columns missing from ",opt$tsv)
+    pwarning("Missing ",cols.to.keep[not.in])
+    for (c in cols.to.keep[not.in]) {
+      print(nrow(gse.res))
+      x <- rep(1,nrow(gse.res),NA)
+      gse.res  <- cbind(gse.res,x)
+      colnames(gse.res)[ncol(gse.res)] <- c
+    }
+    print(colnames(gse.res))
   }
-  print(colnames(gse.res))
+  gse.res.filt <- gse.res[,cols.to.keep]
+  colnames(gse.res.filt) <- sub("Genes\\.\\.","Genes ",colnames(gse.res.filt))
+  colnames(gse.res.filt) <- gsub("\\.\\."," ",colnames(gse.res.filt))
+
 }
-gse.res.filt <- gse.res[,cols.to.keep]
-colnames(gse.res.filt) <- sub("Genes\\.\\.","Genes ",colnames(gse.res.filt))
-colnames(gse.res.filt) <- gsub("\\.\\."," ",colnames(gse.res.filt))
 
 
 library(brew)
@@ -162,7 +167,7 @@ library(brew)
 # check if the columns are present
 #expected.cols <- c("geneStatType","geneSetStat", "signifMethod", "adjMethod","info", "gsSizeLim", "gsStatName",  "nPerm","gseaParam", "geneLevelStats","directions","gsc", "nGenesTot","nGenesUp","nGenesDn",  "statDistinctDir","statDistinctDirUp","statDistinctDirDn","statNonDirectional","statMixedDirUp","statMixedDirDn","pDistinctDirUp","pDistinctDirDn","pNonDirectional","pMixedDirUp", "pMixedDirDn", "pAdjDistinctDirUp", "pAdjDistinctDirDn","pAdjNonDirectional", "pAdjMixedDirUp", "pAdjMixedDirDn","runtime")
 
-if (rdata.loaded ) {
+if (rdata.loaded && !is.null(gse.res) ) {
   # add genes
   Genes <- unlist(lapply(gsaRes$gsc,paste,collapse=" "))
   Genes <- Genes[gse.res.filt$Name]
@@ -177,19 +182,21 @@ if (rdata.loaded ) {
   colnames(gse.res.filt)[1] <- f.col.name
 }
 
-if (opt$is.pathway.analysis) {
+if (!is.null(gse.res) ) {
+  if (opt$is.pathway.analysis) {
   # add column with link to kegg
   #head(gse.res)
-  perror("COMPLETE THE CODE!!!")
-}
+    perror("COMPLETE THE CODE!!!")
+  }
 
 ####################################
 
-pinfo("Saving TSV file...")
-raw.tsv.file <- paste(out.prefix,".tsv",sep="")
-r <- write.tsv(gse.res.filt,file=paste(out.dir,"/",raw.tsv.file,sep=""))
-pinfo("Saved ",out.dir,"/",raw.tsv.file)
+  pinfo("Saving TSV file...")
+  raw.tsv.file <- paste(out.prefix,".tsv",sep="")
+  r <- write.tsv(gse.res.filt,file=paste(out.dir,"/",raw.tsv.file,sep=""))
+  pinfo("Saved ",out.dir,"/",raw.tsv.file)
 
+}
 pinfo("Generating HTML...")
 out.html.file <- paste(opt$out,sep="")
 brew(opt$html_template,opt$out)
