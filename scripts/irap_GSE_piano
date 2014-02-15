@@ -154,6 +154,15 @@ pinfo("p-value mean ",round(mean(abs(pval),na.rm=T),2),"+-",round(sd(pval,na.rm=
 # set of genes
 set1 <- names(pval[pval<=pval.lim])
 set1.annot <- gene2go[gene2go[,1] %in% set1,]
+if(nrow(set1.annot)==0) {
+  err.file <- opt
+  ifile <- opt$annotation
+  if ( !is.null(opt$go) ) {
+    ifile <- opt$go
+  }
+  perror("No gene annotation found...giving up. Please check if you have GO/Pathway information for each gene in ",ifile,".")
+  q(status=2)
+}
 #save.image("debug.Rdata")
 print.empty <- TRUE
 minSizeLim <- opt$min.size
