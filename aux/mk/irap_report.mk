@@ -23,7 +23,10 @@
 # Rules for creating the reports
 
 BROWSER_DIR=jbrowse
+
+ifndef CSS_FILE
 CSS_FILE=irap.css
+endif
 
 # useful functions
 define mapping_dirs=
@@ -316,10 +319,3 @@ gse_report: report_setup $(call gse_html_files,$(name))
 gse_report_files:
 	echo $(call gse_html_files,$(name))
 
-
-# reports
-$(name)/report/$(mapper)/$(quant_method)/$(de_method)/%.gse.$(gse_tool).$(gse_method).go.html: $(name)/$(mapper)/$(quant_method)/$(de_method)/%.gse.$(gse_tool).$(gse_method).go.tsv
-	$(call run_gse_report,$<,$@,,"$(mapper)x$(quant_method)x$(de_method)",$*)
-
-$(name)/report/$(mapper)/$(quant_method)/$(de_method)/%.gse.$(gse_tool).$(gse_method).kegg.html: $(name)/$(mapper)/$(quant_method)/$(de_method)/%.gse.$(gse_tool).$(gse_method).kegg.tsv
-	$(call run_gse_report,$<,$@,--pathway,"$(mapper)x$(quant_method)x$(de_method)",$*)
