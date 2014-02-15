@@ -79,6 +79,12 @@ define DE_tsv2html=
 endef
 
 
+# input,output,options,pipeline,contrast
+define run_gse_report=
+irap_report_gse --tsv $1 --out $2 $3  --gse_method "$(gse_tool):$(gse_method)" --pipeline $4 --contrast $5 --pvalue $(gse_pvalue)  --css ../../../$(CSS_FILE)
+endef
+
+
 # 1 metric
 # 2 TSV file
 # 3 out dir
@@ -311,3 +317,9 @@ gse_report_files:
 	echo $(call gse_html_files,$(name))
 
 
+# reports
+$(name)/report/$(mapper)/$(quant_method)/$(de_method)/%.gse.$(gse_tool).$(gse_method).go.html: $(name)/$(mapper)/$(quant_method)/$(de_method)/%.gse.$(gse_tool).$(gse_method).go.tsv
+	$(call run_gse_report,$<,$@,,"$(mapper)x$(quant_method)x$(de_method)",$*)
+
+$(name)/report/$(mapper)/$(quant_method)/$(de_method)/%.gse.$(gse_tool).$(gse_method).kegg.html: $(name)/$(mapper)/$(quant_method)/$(de_method)/%.gse.$(gse_tool).$(gse_method).kegg.tsv
+	$(call run_gse_report,$<,$@,--pathway,"$(mapper)x$(quant_method)x$(de_method)",$*)

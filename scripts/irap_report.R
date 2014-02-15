@@ -455,7 +455,7 @@ rownames(conf.table) <- conf.table[,1]
 ############################################333
 #print(conf.table)
 report_dir <- paste(name,"/report/",sep="")
-css_file <- "aehts.css"
+css_file <- "irap.css"
 
 ###########################
 # Check if directory exists
