@@ -28,7 +28,8 @@ html <- print.xtable(file="/dev/null",
                      include.colnames=FALSE,
                      include.rownames=FALSE)
 
-irap.output.html(html, "")
+info.txt <- paste(info, "More information about Piano is available in <a href='",tool.url,"'>here</a>",sep="")
+irap.output.html(html,info.txt)
 
 %>
 
