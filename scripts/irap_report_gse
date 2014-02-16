@@ -123,7 +123,9 @@ if (file.exists(gse.rdata.file)) {
 pdebug.save.state("irap_report_gse","p2")
 
 # Piano information
-info <- "The total number of genes in each gene set (Genes tot.). The number of up-regulated genes in each gene set (Genes up.).  The number of down-regulated genes in each gene set (Genes down.). Gene set adjusted p-values of the non-directional class Adjusted gene set p-values of the mixed-directional class."
+
+info.msg <- "<p>The total number of genes in each gene set (Genes tot.). The number of up-regulated genes in each gene set (Genes up.). The number of down-regulated genes in each gene set (Genes down.). </p> <p>Each gene set has p-values that may be calculated in different ways to take into account different aspects of regulation directionality: distinct-directional and non-directional. The non-directional p-values (non.dir) are calculated based on absolute values of the gene statistics (or p-values without sign information). The distinct-directional p-values (dist.dir) are calculated from statistics with sign information (e.g. t-statistics).</p>"
+
 tool.url <- "http://bioconductor.org/packages/release/bioc/html/piano.html"
 
 # columns to keep (# genes+padj pvalue)
@@ -170,26 +172,31 @@ library(brew)
 if (rdata.loaded && !is.null(gse.res) ) {
   # add genes
   Genes <- unlist(lapply(gsaRes$gsc,paste,collapse=" "))
-  Genes <- Genes[gse.res.filt$Name]
-  gse.res.filt <- cbind(gse.res.filt,Genes)
   #reorder the columns
   if (!opt$is.pathway.analysis) {
     f.col.name <- "GO"
+    Genes <- Genes[gse.res.filt$Name]
+    gse.res.filt <- cbind(gse.res.filt,Genes)
   } else {
     f.col.name <- "Pathway"
+    kegg.ids <- names(Genes)
+    names(kegg.ids) <- as.numeric(kegg.ids)
+    #names(kegg.ids) <- 
+    names(Genes) <- as.numeric(names(Genes))
+    Genes <- Genes[as.character(gse.res.filt$Name)]
+    gse.res[,"Name"] <- kegg.ids[gse.res$Name]
+    gse.res.filt <- cbind(gse.res.filt,Genes)
+
   }
   gse.res.filt <- gse.res.filt[append(c(1,ncol(gse.res.filt)),seq(2,ncol(gse.res.filt)-1))]
   colnames(gse.res.filt)[1] <- f.col.name
 }
 
 if (!is.null(gse.res) ) {
-  if (opt$is.pathway.analysis) {
+  #if (opt$is.pathway.analysis) {
   # add column with link to kegg
-  #head(gse.res)
-    perror("COMPLETE THE CODE!!!")
-  }
-
-####################################
+  #  perror("COMPLETE THE CODE!!!")
+  #}
 
   pinfo("Saving TSV file...")
   raw.tsv.file <- paste(out.prefix,".tsv",sep="")
