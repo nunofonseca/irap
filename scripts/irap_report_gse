@@ -85,14 +85,14 @@ if ( file.exists(gse.png.file.nd) ) {
   system(paste("cp -f ",gse.png.file.nd," ",out.dir,sep=""))
   gse.png.file.nd <- basename(gse.png.file.nd)
 } else {
-  gse.png.file <- NULL
+  gse.png.file.nd <- NULL
 }
 if ( file.exists(gse.png.file.dd) ) {
   system(paste("cp -f ",gse.png.file.dd," ",out.dir,sep=""))
   gse.png.file.dd <- basename(gse.png.file.dd)
   pinfo("Found and reusing plot ",gse.png.file.dd)
 } else {
-  gse.png.file <- NULL
+  gse.png.file.dd <- NULL
 }
 
 #if ( file.exists(gse.eps.file.nd) ) {
