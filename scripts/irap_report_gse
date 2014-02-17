@@ -127,6 +127,7 @@ pdebug.save.state("irap_report_gse","p2")
 info.msg <- "<p>The total number of genes in each gene set (Genes tot.). The number of up-regulated genes in each gene set (Genes up.). The number of down-regulated genes in each gene set (Genes down.). </p> <p>Each gene set has p-values that may be calculated in different ways to take into account different aspects of regulation directionality: distinct-directional and non-directional. The non-directional p-values (non.dir) are calculated based on absolute values of the gene statistics (or p-values without sign information). The distinct-directional p-values (dist.dir) are calculated from statistics with sign information (e.g. t-statistics).</p>"
 
 tool.url <- "http://bioconductor.org/packages/release/bioc/html/piano.html"
+network.plot.info <- "Each node in the network corresponds to a gene set and its size is proportional the size of the gene set. Two nodes are connected if  the gene sets share genes. The width of an edge is proportional to the number of genes shared between the two connected nodes."
 
 # columns to keep (# genes+padj pvalue)
 cols.to.keep <- c("Name","Genes..tot.","Genes..up.","Genes..down.",

@@ -76,15 +76,22 @@ if ( !is.null(gse.res.filt) ) {
 <a name="np"/>
 <H3 class="section"><%=irap.ctr("Figure")%> Non-directional</H3>
 <%
-html<-paste("<IMG width=\"800\" src=\"",gse.png.file.nd,"\"></IMG>",sep="")
-irap.output.html(html,"TODO")
-
+if ( !is.null(gse.png.file.nd) && gse.png.file.nd!="" ) {
+   html<-paste(c("<IMG width=\"800\" src=\"",gse.png.file.nd,"\"></IMG>"),sep="")
+} else {
+   html<-"<p>Not enough data to generate the plot.</p>"
+}
+irap.output.html(html,network.plot.info)
 %>
 
 <H3 class="section"><%=irap.ctr("Figure")%> Distinct directional</H3>
 <%
-html<-paste("<IMG width=\"800\" src=\"",gse.png.file.dd,"\"></IMG>",sep="")
-irap.output.html(html,"TODO")
+if ( !is.null(gse.png.file.dd) && gse.png.file.dd!="" ) {
+   html<-paste("<IMG width=\"800\" src=\"",gse.png.file.dd,"\"></IMG>",sep="")
+} else {
+   html<-"<p>Not enough data to generate the plot.</p>"
+}
+irap.output.html(html,network.plot.info)
 
 %>
 
