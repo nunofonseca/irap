@@ -53,7 +53,6 @@ contrasts <- NULL
 pe <-
 se <- 
 
-
 pinfo("conf_file=",opt$conf_file)
 
 # 
@@ -77,8 +76,7 @@ HTML.pprint.conf(conf,name)
 irap.HTMLEnd()
 
 
-#############################################################################################
-# Alignment stats
+####################################
 #
 # alignments.report(conf,report_dir)
 path2name  <- function(dirs) {
@@ -91,27 +89,44 @@ path2name  <- function(dirs) {
   pnames
 }
 
+# add report to the path (assuming that the first folder is the exp. name)
+path2report <- function(file) {
+  l <- strsplit(file,"/")[[1]]
+  perror(l)
+  l1 <- l[1]
+  lr <- paste(l[-1],collapse="/")
+  path2file <- paste(l1,"/","report/",lr,sep="")
+  return(path2file)
+}
+
+# remove the everything up to the filename
+path2reporthtml <- function(file) {
+  l <- strsplit(file,"/")[[1]]
+  lr <- paste("TTOPLEVEL",paste(l[c(-1,-2)],collapse="/"),sep="")
+  return(lr)
+}
+
 # do mot fix fastqc files
 gen.toplevel.menu <- function(menufile) {
   # TODO run versions to get the software used
   sink(menufile)
   cat("<div style='position: relative;z-index=999;'>
-<!--Just to keep a record on the number of visits :) -->
+<!--Just to keep a record on the number of people using iRAP :) -->
 <img style='border:0;width:1px;height:1px' src='http://cracs.fc.up.pt/~nf/hit.php' alt=''>
 <nav>
  <ul>
   <li><a href='TTOPLEVELinfo.html' >Info</a>
-<!--     <ul>
-         <li><a href='TTOPLEVELinfo.html#contrasts'>Contrasts</a></li>
+     <ul>
+         <li><a href='TTOPLEVELinfo.html#contrasts'>Exp. design</a></li>
 	 <li><a href='TTOPLEVELstatus.html'>Status</a></li>
 	 <li><a href='TTOPLEVELversions.html'>Software</a></li>
-     </ul>-->
+     </ul>
   </li>
   <li><a href='TTOPLEVELjbrowse/index.html'>Genome Browser</a>
   <li><a href='TTOPLEVELqc.html'>QC</a>
     <ul>
-      <li><a href='TTOPLEVELqc.html'>Summary plot</a></li>
-      <li><a href='TTOPLEVELqc.html#sum'>Summary table</a></li>
+      <li><a href='TTOPLEVELqc.html'>Summary</a></li>
+      <li><a href='TTOPLEVELqc.html#plot'>QC Filtering Summary</a></li>
     </ul>
  </li>
  <li><a name=''>Mapping</a>
@@ -122,8 +137,8 @@ gen.toplevel.menu <- function(menufile) {
     html="
    <li><a href='TTOPLEVELmapping/$mapper.html'>$mapper</a>
     <ul>
-      <li><a href='TTOPLEVELmapping/$mapper.html#summary'>Alignments summary</a></li>
-      <li><a href='TTOPLEVELmapping/$mapper.html#prof'>Mapping profile</a></li>
+      <li><a href='TTOPLEVELmapping/$mapper.html#ms'>Mapping statistics</a></li>
+      <li><a href='TTOPLEVELmapping/$mapper.html#mp'>Mapping profile</a></li>
     </ul>
    </li>
      "
@@ -231,10 +246,29 @@ gen.toplevel.menu <- function(menufile) {
             html.file.href <- sub(".tsv",".html",sub("[^/]*/","",file))
             html <- '
          	<li><a href="TTOPLEVEL__FILE__">__LEVEL__ DE</a></li>
-'
+'            
             html<-gsub("__FILE__",html.file.href,html,fixed=T)
             html<-gsub("__LEVEL__",level,html,fixed=T)
             cat(html)
+            ############
+            # GSE links
+            # GO terms
+            gse.go.file <- path2report(sub("_de.tsv",".gse.piano.fisher.go.html",file))
+            # KEGG Pathway
+            gse.kegg.file <- path2report(sub("_de.tsv",".gse.piano.fisher.kegg.html",file))
+            if ( file.exists(gse.go.file) || file.exists(gse.kegg.file) ) {
+              # GSE submenu
+              cat(paste('<li><a name="">GSE</a><ul>',sep=''))
+              gse.files <- c(gse.go.file,gse.kegg.file)
+              names(gse.files) <- c("GO","KEGG")
+              for ( f in names(gse.files)) {
+                if ( file.exists(gse.files[f]) ) {
+                  html <- paste("<li><a href=",path2reporthtml(gse.files[f]),">",f,"</a></li> ",sep="")
+                  cat(html)
+                }
+              }
+              cat("</ul>");              
+            }
           }
         }
         if (!first) {
