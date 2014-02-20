@@ -189,10 +189,14 @@ endif
 # 3 nurd outgenes.reads.out
 # bam file needs to be sorted by name
 define run_nurd=
-        NURD $(nurd_params) -O $(3).dir -G $(2) -S $(1) && \
-	mv $(3).dir/`basename $(1)`.nurd.all_expr $(3) 
+        samtools view $(1) > $(1).sam && \
+	NURD $(nurd_params) -O $(3).dir -G $(2) -S $(1).sam && \
+	mv $(3).dir/`basename $(1).sam`.nurd.all_expr $(3) 
 endef
-
+# ideally nurd should support BAM
+# or accept SAM from stdin...
+# but the following does not work
+# samtools view test1/tophat1/SE1.se.hits.bam | NURD  -O test1/tophat1/nurd/SE1.se.nurd.tsv.dir -G test_files/Homo_sapiens.GRCh37.66.gtf -S /dev/fd/1
 
 #******************
 # IsoEM
