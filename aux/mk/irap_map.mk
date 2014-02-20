@@ -390,7 +390,7 @@ endef
 
 define bwa1_map_se=
 	irap_map.sh bwa bwa aln $(bwa1_aln_params)  $(call qual_bwa,$(1)) $(subst .amb,,$(index_files)) $(2) | \
-	irap_map.sh bwa bwa samse $(bwa1_map_params)  $(subst .amb,,$(index_files)) /dev/stdin $(2) > $(3).sam
+	irap_map.sh bwa bwa samse $(bwa1_map_params)  $(subst .amb,,$(index_files)) /dev/fd/1 $(2) > $(3).sam
 endef
 
 define bwa1_map_pe=
