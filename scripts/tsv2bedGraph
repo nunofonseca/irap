@@ -1,0 +1,263 @@
+#!/usr/bin/env Rscript
+# =========================================================
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#    $Id$
+# =========================================================
+suppressPackageStartupMessages(library("optparse"))
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+# specify our desired options in a list
+#
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+pdebug.enabled <- FALSE
+
+usage<-"tsv2bedGraph --tsv tsv_file --gtf gtf_file --chr_file chr_file [--feature feature@(gene,transcript)] [--id_col 1] --value_col colname --out prefix [--name name] [--description description] [--bw] [--track_header \"extra info to include in the header \"]\n";
+
+#######################
+option_list <- list(
+  make_option(c("-g","--gtf_file"), type="character", default=NULL,help="GTF/GFF3 file name."),
+  make_option(c("--chr_file"), type="character", default=NULL,help="Name of the file with the size of the chromossomes/contigs/scaffolds. The file should contain one line per chr/contig/scaffold containing two values separated by a tab: chr_name\tsize in base pairs"),  
+  make_option(c("--id_col"), type="character", default="1",help="Column in the TSV file with the ID of the features to consider [default %default]"),
+  make_option(c("--value_col"), type="character", default=NULL,help="Column in the TSV file with the values to include in the bedGraph files."),
+  make_option(c("--label"), type="character", default=NULL,help="Track label/name."),
+  make_option(c("--description"), type="character", default=NULL,help="Track description."),
+  make_option(c("-o", "--out"), type="character", default=NULL,help="Output file name prefix."),
+  make_option(c("--track_header"), type="character", dest="track_header", default="",help="Extra information to include in the header [default %default]"),
+  make_option(c("--bw"), action="store_true", default=FALSE, dest="bw", help="Also generate a bigWigFile (.bw extension)"),
+  make_option(c("-f", "--feature"), type="character", dest="feature", default="gene",help="Feature (gene) [default %default]"),
+  make_option(c("-i", "--tsv"), type="character", dest="tsv_file", default=NULL,help="TSV file name"),
+  make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode")
+)
+filenames <- c("tsv_file","gtf_file","chr_file") ;#filenames that must exist (if defined)
+# check multiple options values
+multiple.options = list(
+  feature=c('gene','transcript')
+)
+mandatory <- c("tsv_file","out","value_col","gtf_file")
+opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
+
+
+pdebug.enabled <- opt$debug
+
+pdebug.save.state("tsv2bedGraph","p0")
+
+##################################################  
+# Check arguments
+pdebug("TSVFILE=",opt$tsv_file)
+pdebug("gtf/gff=",opt$gtf_file)
+pdebug("chr=",opt$chr_file)
+
+is.gff <- grepl(".gff3*$",opt$gtf_file)
+
+###################
+# Read the chr file
+# load the tsv file (2 cols)
+chr.sizes <- NULL
+if (!is.null(opt$chr.file)) {
+  chr.sizes <-read.table(opt$chr_file,sep="\t",header=F)
+# sanity check
+  if ( ncol(chr.sizes) != 2 ) {
+    perror("Invalid format of ",opt$tsv_file,". Expected 2 columns but found ",ncol(chr.sizes))
+    q(status=2)
+  }
+# first column should have the ID
+  colnames(chr.sizes) <- c('ID','Value')
+  pinfo("Loaded chr file. Found ",nrow(chr.sizes)," chr/scaffolds/contigs")
+}
+
+pdebug.save.state("tsv2bedGraph","p1")
+###################
+# GTF
+gtf <- NULL
+# filter the entries based on the feature wanted (gene,transcript)
+if ( opt$feature == "gene" ) {
+  if ( is.gff ) {
+    gtf <- load.gff3(opt$gtf_file,type="gene")
+    pinfo("GFF file loaded: ",nrow(gtf)," entries.")
+    sel<-gtf[,c("seqid","source","type","start","end","ID")]
+    gtf.id.cols <- c("ID")
+    names(gtf.id.cols) <- c("gene")
+    # remove chr prefix
+    sel$seqid <- gsub("^chr","",sel$seqid)
+  } else {
+    # gtf
+    gtf <- load.gtf(opt$gtf_file,selected.attr=c("gene_id"))
+    pinfo("GTF file loaded: ",nrow(gtf)," entries.")
+    gtf <- addGeneFeature2gtf(gtf)
+    pinfo("Added features")
+    sel<-gtf[gtf$feature==opt$feature,]
+    gtf.id.cols <- c("gene_id","transcript_id")
+    names(gtf.id.cols) <- c("gene","transcript")
+  }
+}
+
+gtf <- NULL
+
+sel<-sel[,c(gtf.id.cols[opt$feature],'seqid','start','end')]
+
+if ( nrow(sel)==0 ) {
+  pwarning("No entries found in GTF file when filtering for feature ",opt$feature)
+}
+
+
+######################################
+#
+get.col <- function(table,col,fatal=TRUE) {
+  #
+  if ( col %in% colnames(table) ) {
+    return(col)
+  }
+  if (!is.na(as.numeric(col))) {
+    return(as.numeric(col))
+  }
+  if (fatal) {
+    perror("Column ",col," not found")
+    q(status=2)
+  }
+  return(NULL)
+}
+# load values
+tsv <- read.table(opt$tsv_file,sep="\t",header=TRUE,quote="\"")
+tsv.sel.id <- tsv[,get.col(tsv,opt$id_col)]
+#
+not.found <- tsv.sel.id[!as.character(tsv.sel.id) %in% sel[,1]]
+if ( length(not.found) ) {
+  pwarning("Missing feature(s) from gtf file (",length(not.found),"). Ex., ",not.found[1])
+}
+
+# values
+tsv.sel.val <- tsv[,get.col(tsv,opt$value_col)]
+names(tsv.sel.val) <- tsv.sel.id
+#tsv.sel.val[2] <- factor("+Inf")
+# load(".RData")
+# Duplicated entries?
+dups <- duplicated(as.character(tsv.sel.id))
+if (sum(dups) > 0) {
+  pwarning("Found ",sum(dups)," duplicates. E.g., ",as.character(tsv.sel.id[dups][1]))
+  pinfo("Ignoring duplicates")
+}
+
+pdebug.save.state("tsv2bedGraph","p3")
+
+# genes that are in the GTF file
+sel.genes <- as.character(tsv.sel.id[as.character(tsv.sel.id) %in% as.character(sel[,1])])
+
+sel <- sel[sel[,1] %in% sel.genes,]
+
+# Merge in such a way that duplicated genes are kept
+rownames(sel) <- sel$ID
+values <- tsv.sel.val
+t1 <- cbind(sel[sel.genes,-1],values)
+rownames(t1) <- NULL
+# sort
+t1 <- t1[do.call(order,t1),]
+
+# how to handle NA and Inf?
+# How many entries with a non numerical value or != and +-Inf
+#sapply(levels(t1$values),FUN=is.numeric)
+t1$values <- as.numeric(levels(t1$values)[as.numeric(t1$values)])
+
+inf.values <- unlist(lapply(t1$values,is.infinite))
+na.values <- unlist(lapply(t1$values,is.na))
+pinfo("Found ",sum(na.values)," NA values; ",sum(inf.values)," +-Inf")
+if (sum(na.values)>1) {
+  t1 <- t1[!is.na(t1$values),]
+  pinfo("entries with NAs removed")
+}
+
+#####################################
+# track info
+track_label<- opt$label
+if ( is.null(track_label)) {
+  track_label="track"
+}
+track_description <- opt$description
+if ( is.null(track_description) ) {
+  track_description <- track_label
+}
+
+
+# filter
+if ( ! is.null(chr.sizes) ) {
+  selection <- (t1$seqid %in% chr.sizes$ID)
+  t1 <- t1[selection,]
+}
+
+
+#################################################
+# Generate the bedGraph
+# bedgraph does not support overlapping features
+# 
+# However it is possible to have different values for the same coordinate (genes may overlap)... how is this handled by ensembl?
+
+# gtf/gff start at 1 (1-based coordinate)
+# bedgraph coordinates start at 0 (0-based coordinate
+t1$start <- t1$start-1
+t1$end <- t1$end-1
+# GTF coordinates start at ?
+# TODO: subtract 1 to start/end
+bedgraph.file <- paste(opt$out,".bedGraph",sep="")
+bw.file <- paste(opt$out,".bw",sep="")
+
+pdebug.save.state("tsv2bedGraph","p4")
+cat(paste("track type=bedGraph name=\"",track_label,"\" description=\"",track_description,"\" ",opt$track_header," visibility=full\n",sep=""),file=bedgraph.file,append=FALSE)
+#chr star end val
+write.table(file=bedgraph.file,append=TRUE,t1,sep='\t',row.names=F,col.names=F,quote=F)
+
+##################################################
+#
+
+if (opt$bw) {
+  if ( nrow(t1)==0 ) {
+    perror("Unable to create a bigWig file from an empty bedGRaph file")
+    q(status=1)
+  }
+  # generate a bigWig file
+  cmd <- paste("bedGraphToBigWig ",bedgraph.file," ",opt$chr_file," ",bw.file,sep="")
+  pinfo("Converting bedGraph to BigWig\n",cmd)
+  
+  status <- system(cmd,intern=F)
+  if ( status!=0 ) {
+    perror("Failed to create BigWig file")
+    q(status=2)
+  }
+}
+pinfo("All done!")
+q(status=0)
+
+
+if ( IRAP.DIR == "" ) {
+  IRAP.DIR="/home/nf/Research/Projects/WIP/EREAP/ereap_install"
+  Sys.setenv(IRAP_DIR=IRAP.DIR)
+}
+
+opt <- list()
+opt$feature <- "gene"
+opt$id_col <- "1"
+opt$value_col <- "foldChange"
+opt$gtf_file <- "test_files/Homo_sapiens.GRCh37.66.gtf"
+opt$gtf_file <- "test_files/Homo_sapiens.GRCh37.66.gff3"
+opt$gtf_file <- "test_files/gtf/chr19.gtf"
+opt$tsv_file <- "test_files/quant/r_sim.flux.100.nde.10.se.star.flux.raw.tsv"
+opt$tsv_file <- "test_files/deseq/Brain42vs60.genes_de.tsv"
+opt$tsv_file <- "test_files/deseq/dup_genes.tsv"
+opt$chr_file <- "test_files/chr_sizes.txt"
