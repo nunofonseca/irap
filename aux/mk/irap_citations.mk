@@ -36,7 +36,7 @@ qc_off=empty
 quant_norm_none=empty
 de_none=empty
 quant_none=empty
-
+gse_none=empty
 # tophat1 tophat2 smalt gsnap soapsplice bwa1 bwa2 bowtie1 bowtie2 gem star
 mapper_tophat1=tophat1
 mapper_tophat2=tophat2
@@ -81,6 +81,8 @@ de_deseq=DESeq
 de_dexseq=DEXSeq
 de_bayseq=baySeq
 
+# GSE
+gse_piano=piano
 # TODO: analysis/reports
 
 ################################################################
@@ -105,8 +107,8 @@ tophat1_bibtex=tophat1.bib
 
 
 #### 
-tophat2_citation=
-tophat2_bibtex=
+tophat2_citation=Kim, Daehwan, et al. "TopHat2: accurate alignment of transcriptomes in the presence of insertions, deletions and gene fusions." Genome Biol 14.4 (2013): R36.
+tophat2_bibtex=tophat2.bib
 
 #### 
 SMALT_citation=http://www.sanger.ac.uk/resources/software/smalt/
@@ -114,7 +116,7 @@ SMALT_bibtex=
 
 #### 
 GSNAP_citation=Thomas D. Wu and Serban Nacu.Fast and SNP-tolerant detection of complex variants and splicing in short reads Bioinformatics (2010) 26(7): 873-881 
-GSNAP_bibtex=
+GSNAP_bibtex=gsnap.bib
 
 #### 
 SOAPsplice_citation=Huang, Songbo, Jinbo Zhang, Ruiqiang Li, Wenqian Zhang, Zengquan He, Tak-Wah Lam, Zhiyu Peng, and Siu-Ming Yiu. "SOAPsplice: genome-wide ab initio detection of splice junctions from RNA-Seq data." Frontiers in genetics 2 (2011).
@@ -158,8 +160,8 @@ cufflinks1_citation=Trapnell, Cole, Brian A. Williams, Geo Pertea, Ali Mortazavi
 cufflinks1_bibtex=cufflinks1.bib
 
 ####
-cufflinks2_citation=
-cufflinks2_bibtex=
+cufflinks2_citation=Trapnell, Cole, et al. "Differential gene and transcript expression analysis of RNA-seq experiments with TopHat and Cufflinks." Nature protocols 7.3 (2012): 562-578.
+cufflinks2_bibtex=cufflinks2.bib
 
 ####
 htseq_citation=http://www-huber.embl.de/users/anders/HTSeq/doc/index.html
@@ -208,6 +210,9 @@ baySeq_citation=Hardcastle, Thomas J., and Krystyna A. Kelly. "baySeq: empirical
 baySeq_bibtex=bayseq.bib
 
 
+piano_citation=Väremo, Leif, Jens Nielsen, and Intawat Nookaew. "Enriching the gene set analysis of genome-wide data by incorporating directionality of gene expression and combining statistical hypotheses and methods". Nucleic acids research 41.8 (2013): 4378-4391.
+piano_bibtex=piano.bib
+
 #################################################################
 phony_targets+= show_citations
 
@@ -220,7 +225,6 @@ define pprint_prog_info=
 echo "* $(1) ; Version:  $(4) ; Citation: $(2)"
 
 endef
-#$(if $(strip $(3)),$(info Bibtex entry: $(shell cat $(3))),)
 
 # prog_name - 1
 define prog_info=
@@ -228,10 +232,23 @@ $(if $($(1)_citation),$(call pprint_prog_info,$(1),$($(1)_citation),$($(1)_bibte
 endef
 
 # Scientific software
-progs_used=$(qc_$(qual_filtering))  $(mapper_$(mapper)) $(quant_$(quant_method))  $(quant_norm_$(quant_norm_method))  $(de_$(de_method)) IRAP
+progs_used=$(qc_$(qual_filtering))  $(mapper_$(mapper)) $(quant_$(quant_method))  $(quant_norm_$(quant_norm_method))  $(de_$(de_method)) $(gse_$(gse_tool)) IRAP
 
-silent_targets+= show_citations
+silent_targets+= show_citations citations_file
 
 show_citations: 
 	$(info Summary of software used:)
 	$(foreach p,$(sort $(progs_used)),$(call prog_info,$(p)))
+
+citations_file: $(name)/report/software.txt
+
+#.PHONY: $(name)/report/software.txt
+# it is only dependent on the configuration file
+$(name)/report/software.txt: $(conf)
+	rm -f $(name)/report/software.txt
+	touch $@.tmp && \
+	( $(foreach p,$(sort $(progs_used)),$(call prog_info,$(p))) ) >> $@.tmp &&\
+	mv $@.tmp $@
+
+
+
