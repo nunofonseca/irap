@@ -24,7 +24,7 @@
 tsv.download.files <- c(paste(basename(tsv.file.ref),".gz",sep=""))
 names(tsv.download.files) <- "TSV"
 tsv.download.html <- html.download.bar(tsv.download.files)
-c(1,2
+
 %>
 
 
@@ -58,6 +58,7 @@ pdebug("Generating DE table...done.")
 <A name="ma"/>
 <%
 pdebug("Generating fold change plot...")
+if ( nrow(uncut.table) > 0 ) {
 html <- gen.plot2report(filename=paste(file.prefix,"_fold.png",sep=""),
                         width=500,
                         height=500,
@@ -71,7 +72,11 @@ html <- gen.plot2report(filename=paste(file.prefix,"_fold.png",sep=""),
                                               fdr=opt$`cut-off`)
                         }
                         )
-irap.output.html(html$html,paste("The MA plot allows you to look at the relationship between intensity of expression and difference of expression between two conditions. The x-axis represents the average (logarithmic) expression value across the conditions, and the y axis shows the fold-change between them. Each gene is represented as a dot. Genes with an adjusted p-value <=",opt$`cut-off`," are plotted in red.",sep=""))
+	html<-html$html
+} else {
+	html<-"No data."
+}
+irap.output.html(html,paste("The MA plot allows you to look at the relationship between intensity of expression and difference of expression between two conditions. The x-axis represents the average (logarithmic) expression value across the conditions, and the y axis shows the fold-change between them. Each gene is represented as a dot. Genes with an adjusted p-value <=",opt$`cut-off`," are plotted in red.",sep=""))
 
 pdebug("Generating fold change plot...done.")
 %>
@@ -82,6 +87,7 @@ pdebug("Generating fold change plot...done.")
 <%
 
 pdebug("Generating hist...")
+if (nrow(uncut.table)>0 ) {
 html <- gen.plot2report(filename=paste(file.prefix,"_hist.png",sep=""),
                         bg="white",
                         width=900,
@@ -98,7 +104,11 @@ html <- gen.plot2report(filename=paste(file.prefix,"_hist.png",sep=""),
                           }
                         }
                         )
-irap.output.html(html$html,paste("Histogram with observed values of the adjusted p-value (column ",fields$PVALUE.FIELD,") for all genes (panel A) and for the genes with a adjusted p-value below or equal to ",opt$`cut-off`," (panel B).",sep=""))
+        html<-html$html
+} else {
+	html<-"No data."
+}
+irap.output.html(html,paste("Histogram with observed values of the adjusted p-value (column ",fields$PVALUE.FIELD,") for all genes (panel A) and for the genes with a adjusted p-value below or equal to ",opt$`cut-off`," (panel B).",sep=""))
 
 pdebug("Generating hist...done.")
 %>
@@ -110,6 +120,7 @@ pdebug("Generating hist...")
 inf.value <- 1.79769e+308
 fc.cutoff <- 1000
 #                           sum(fc<=.Machine$double.xmin)
+if ( nrow(uncut.table) >0 ) {
 html <- gen.plot2report(filename=paste(file.prefix,"_l2fc_hist.png",sep=""),
                         bg="white",
                         width=900,
@@ -153,8 +164,11 @@ html <- gen.plot2report(filename=paste(file.prefix,"_l2fc_hist.png",sep=""),
                           }
                         }
                         )
-
-irap.output.html(html$html,paste("Histogram with observed values of ",pprint.fieldname(fields$LOG2FOLDCHANGE)," for all genes (panel A) and for the genes with a adjusted p-value below or equal to ",opt$`cut-off`," (panel B).",sep=""))
+        html<-html$html
+} else {
+	html<-"No data."
+}
+irap.output.html(html,paste("Histogram with observed values of ",pprint.fieldname(fields$LOG2FOLDCHANGE)," for all genes (panel A) and for the genes with a adjusted p-value below or equal to ",opt$`cut-off`," (panel B).",sep=""))
 pdebug("Generating hist...done.")
 %>
 
