@@ -190,7 +190,7 @@ get.mapping.stats <- function(mapper,pe.bam.v,se.bam.v,pe.labels.v,se.labels.v) 
   p.sliced.data.median <- apply(p.sliced.data,MARGIN=1,FUN=median)
   p.sliced.data.mean <- apply(p.sliced.data,MARGIN=1,FUN=mean)
   p.sliced.data.sd <- apply(p.sliced.data,MARGIN=1,FUN=sd)
-  median(as.numeric(p.sliced.data[1,]))
+  #median(as.numeric(p.sliced.data[1,]))
   p.sliced.data <- cbind(p.sliced.data,p.sliced.data.median,p.sliced.data.mean,p.sliced.data.sd)
   colnames(p.sliced.data) <- append(colnames(sliced.data),c("Median","Mean","SD"))
   p.sliced.data <- p.sliced.data[,append(c("Median","Mean","SD"),colnames(sliced.data))]
@@ -233,6 +233,9 @@ get.mapping.feature.stats <- function(mapper,pe.bam.v,se.bam.v,pe.labels.v,se.la
   aln.stats <- cbind(aln.stats,aln.stats.median,aln.stats.mean,aln.stats.sd)
   colnames(aln.stats) <- append(cols.names,c("Median","Mean","SD"))
   aln.stats <- aln.stats[,append(c("Median","Mean","SD"),cols.names)]
+  # sort
+  t.order <- names(sort(aln.stats[,"Mean"],decreasing=T))
+  aln.stats <- aln.stats[t.order,]  
 
   return(aln.stats)
 }
@@ -273,7 +276,6 @@ get.mapping.gene.stats <- function(mapper,pe.bam.v,se.bam.v,pe.labels.v,se.label
   gene.stats <- cbind(gene.stats,gene.stats.median,gene.stats.mean,gene.stats.sd)
   colnames(gene.stats) <- append(cols.names,c("Median","Mean","SD"))
   gene.stats <- gene.stats[,append(c("Median","Mean","SD"),cols.names)]
-
   return(gene.stats)
 }
 
@@ -309,7 +311,7 @@ pinfo("Saved ",gene.stats.file)
 
 
 out.html.file <- paste(opt$out,sep="")
-brew(opt$html_template,opt$out)
+brew.wrapper(opt$html_template,opt$out)
 warnings()
 q()
 

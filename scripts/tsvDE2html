@@ -405,6 +405,8 @@ table.html <- table[,fields$cols2sel]
 ###########################################################
 title <- opt$title
 sources.menu <- ""
+#init.source.filter <- function(table)
+# tbl<-apply.source.filter <- function(table,filter.name)
 if ( "source" %in% colnames(table) ) {
   #save.image()
   if ( !is.null(annot.table) ) {
@@ -479,7 +481,7 @@ gen.page <- function (o.html.file) {
     pdebug("Not enough data")
     write.tsv(uncut.table,file=tsv.file)
     system(paste("rm -f ",tsv.file,".gz ;gzip ",tsv.file,sep=""))
-    brew(get.path2template("not_enough_data"),o.html.file)
+    brew.wrapper(get.path2template("not_enough_data"),o.html.file)
     return
   }
   
@@ -487,7 +489,7 @@ gen.page <- function (o.html.file) {
   pdebug("temp=",html.template)
   options("R2HTML.format.decimal.mark"=".")
   caption <- ""
-  brew(html.template,o.html.file)
+  brew.wrapper(html.template,o.html.file)
 }
 
 pdebug.save.state("tsvDE2html2","p2")

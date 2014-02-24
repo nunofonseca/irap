@@ -239,7 +239,7 @@ gen.page <- function (o.html.file) {
     pdebug("Not enough data")
     write.tsv(uncut.table,file=tsv.file)
     system(paste("rm -f ",tsv.file,".gz ;gzip ",tsv.file,sep=""))
-    brew(get.path2template("not_enough_data"),o.html.file)
+    brew.wrapper(get.path2template("not_enough_data"),o.html.file)
     return
   }
   # setup variables
@@ -286,7 +286,7 @@ gen.page <- function (o.html.file) {
   pdebug("temp=",html.template)
   options("R2HTML.format.decimal.mark"=".")
   caption <- ""
-  brew(html.template,o.html.file)
+  brew.wrapper(html.template,o.html.file)
 }
 
 o.html.file <-paste(opt$out,".html",sep="")
@@ -311,7 +311,7 @@ if ( "source" %in% colnames(table) ) {
       uncut.table <- uncut.table[filt.groups.uncut[[filt.name]],]
       if ( sum(filt.groups[[filt.name]])==0 ) {
         tsv.file<-""
-        brew(get.path2template("not_enough_data"),o.html.file)  
+        brew.wrapper(get.path2template("not_enough_data"),o.html.file)  
       } else {
         table.html <- table[filt.groups[[filt.name]],html.cols2sel]        
         tsv.file <- gsub(".html$",".tsv",o.html.file)

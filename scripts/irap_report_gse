@@ -207,7 +207,7 @@ if (!is.null(gse.res) ) {
 }
 pinfo("Generating HTML...")
 out.html.file <- paste(opt$out,sep="")
-brew(opt$html_template,opt$out)
+brew.wrapper(opt$html_template,opt$out)
 warnings()
 q()
 

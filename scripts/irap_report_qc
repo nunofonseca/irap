@@ -413,7 +413,7 @@ library(brew)
 ####################################
 out.dir <- report.dir
 out.html.file <- paste(out.dir,"/qc.html",sep="")
-brew(opt$html_template,out.html.file)
+brew.wrapper(opt$html_template,out.html.file)
 warnings()
 q()
 
