@@ -135,7 +135,7 @@ load.gtf <- function(gtf.file,feature=NULL,selected.attr=NULL) {
     vals<-matrix(unlist(x),ncol=2,byrow=T,)[,2]
     gtf[,tag]<-vals
   }
-  gtf
+  return(gtf[,! colnames(gtf) %in% c("attributes")])
 }
 
 # Given a gtf file returns a vector with the length of the genes
@@ -181,6 +181,39 @@ get.gene.length <- function(gene.id,gtf.data,mode="sum.exons",lim=+Inf,do.plot=F
   if ( do.plot ) 
     plot(i)
   res
+}
+#
+addGeneFeature2gtf <- function(gtf) {
+  #
+  save.image()
+  #gtf <- gtf2
+  gtf2 <- gtf
+  levels(gtf2$feature) <- append(levels(gtf2$feature),"gene")
+  gtf2 <- gtf2[FALSE,]
+  genes <- unique(gtf$gene_id)
+  #g <- genes[200]
+  for (g in genes ) {
+    cat(".")
+    sel <- as.character(gtf$gene_id)==g
+    gene.sel <- gtf[sel,]
+    gtf <- gtf[!sel,]
+    #print(gene.sel)
+    start <- min(min(gene.sel$start),min(gene.sel$end))
+    end <- max(max(gene.sel$end),max(gene.sel$start))
+    new.entry <- c(gene.sel[1,])
+    new.entry$feature <- "gene"
+    new.entry$start <- start
+    new.entry$end <- end
+    # reset values
+    vals2reset <- c("transcript_id","exon_number","transcript_name")
+    for (val  in vals2reset) {
+      if ( val %in% names(new.entry) ) {
+        new.entry[val] <- ""
+      }
+    }
+    gtf2 <- rbind(gtf2,new.entry)
+  }
+  return(gtf2)
 }
 
 # Given a matrix obtained from a gtf file returns a vector with the length of the transcripts
@@ -550,6 +583,13 @@ irap.ctr <- function(c.name,add.label=TRUE) {
   return(x)
 }
 
+brew.wrapper <- function(...) {
+  x <- try(brew(...,envir=parent.frame()))
+  if ( inherits(x,"try-error") ) {
+    perror("Failed to generate HTML.",attr(x,"condtion"))
+    q(status=2)
+  }
+}
 
 irap.output.html <- function(html,info.msg=NULL) {
   if ( !is.null(info.msg) && info.msg!="") {
