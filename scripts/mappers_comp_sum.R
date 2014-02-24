@@ -109,7 +109,7 @@ title <- opt$title
 file.prefix <- opt$out
 #save.image()
 pdebug("Generating html ",o.html.file)
-brew(html.template,o.html.file)
+brew.wrapper(html.template,o.html.file)
 
 
 q(status=0)
