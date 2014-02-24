@@ -28,9 +28,9 @@ atlas_wrap_up: get_tracks $(name)/atlas_html.tar.gz
 
 #######################
 # Get a tarball with the plots and HTML files without irap's menu, HTML head and CSS.
-ATLAS_REPORT_FILES=$(name)/report/qc.html $(name)/report/mapping/$(mapper).html $(name)/report/mapping/$(mapper)/*.png $(name)/report/qc.html $(name)/report/read_filtering_plot.png $(name)/report/riq/raw_data/*/fastqc_report.html $(name)/report/riq/raw_data/*/Images $(name)/report/riq/raw_data/*/Icons/
+ATLAS_REPORT_FILES=$(name)/report/qc.html $(name)/report/mapping/$(mapper).html $(name)/report/mapping/$(mapper)/*.png $(name)/report/qc.html $(name)/report/read_filtering_plot.png $(name)/report/riq/raw_data/*/fastqc_report.html $(name)/report/riq/raw_data/*/Images $(name)/report/riq/raw_data/*/Icons/ $(name)/report/software.txt
 
-$(name)/atlas_html.tar.gz: $(name)/report
+$(name)/atlas_html.tar.gz: $(name)/report $(name)/report/software.txt
 	mkdir -p $(name)/atlas && rm -rf $(name)/atlas/*
 	tar czvf $(name)/tmp.atlas.tgz  $(ATLAS_REPORT_FILES)
 	cd $(name)/atlas && tar xzvf ../tmp.atlas.tgz && rm ../tmp.atlas.tgz && mv $(name)/report/* . && rm -rf $(name)
