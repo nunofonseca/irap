@@ -225,12 +225,17 @@ if ( !is.null(annot.table)) {
   }
 }
 
+# exclude genes with no expression
+no.expr <- (table[,fields$groups[1]]<=0 & table[,fields$groups[2]]<=0)
+table <- table[!no.expr,]
+pinfo("Excluded ",sum(no.expr)," genes with no expression")
 
 #####################
 # applying the cutoff
 pdebug("Applying pvalue cut-off")
 before <- nrow(table)
 uncut.table <- table
+
 #exclude NA and empty lines
 #table <- table[!is.na(table[,fields$PVALUE.FIELD]),]
 #table <- table[table[,1]!='',]
@@ -241,6 +246,7 @@ if (is.factor(table[,fields$PVALUE.FIELD])) {
 }
 after <- nrow(table)
 pdebug("New table with ",after, "(before ",before,")")
+
 
 
 DE.fold.change.plot <- function(res,
@@ -396,7 +402,7 @@ if (nrow(table)) {
   irap.assert(length(fields$cols2sel[!fields$cols2sel %in% colnames(table)]) == 0,
                "Internal error: missing fields ",fields$cols2sel[!fields$cols2sel %in% colnames(table)])
 }  
-#pdebug(fields$cols2sel)
+
 table.html <- table[,fields$cols2sel]
 # link to the source file
 #cat(paste("<a href='",opt$out,".tsv.gz'>TSV</a>",sep=""))
@@ -405,63 +411,11 @@ table.html <- table[,fields$cols2sel]
 ###########################################################
 title <- opt$title
 sources.menu <- ""
-#init.source.filter <- function(table)
-# tbl<-apply.source.filter <- function(table,filter.name)
-if ( "source" %in% colnames(table) ) {
-  #save.image()
-  if ( !is.null(annot.table) ) {
-    uncut.table <- mergeAnnot(uncut.table,annot.table,table.field=fields$ANNOT.ID,annot.field=fields$ID.in.ANNOT)
-  }
-  sources <- levels(table$source)
-  pdebug(sources)
-  grep.w <- function(target,pat) {
-    grep(pat,target)
-  }
-  pseudogenes <- c("pseudogene")
-  pseudogenes.filt <- grepl("pseudogene",as.character(table$source))
-  pseudogenes.filt2 <- grepl("pseudogene",as.character(uncut.table$source))
-  #pdebug(sum(pseudogenes.filt))
-  protein_coding <- c("protein_coding")
-  protein_coding.filt <- grepl("protein_coding",as.character(table$source))
-  protein_coding.filt2 <- grepl("protein_coding",as.character(uncut.table$source))
-  xRNA <- c("RNA")
-  xRNA.filt <- grepl("RNA",table$source)
-  xRNA.filt2 <- grepl("RNA",uncut.table$source)
-
-  filt.groups.def <- list(
-    all,
-    "pseudogenes"=pseudogenes,
-    "protein coding"=protein_coding,
-    "xRNA"=xRNA
-    )
-  filt.groups <- list(
-    all=TRUE,
-    "pseudogenes"=pseudogenes.filt,
-    "protein coding"=protein_coding.filt,
-    "xRNA"=xRNA.filt
-    )
-  filt.groups.uncut <- list(
-    all=TRUE,
-    "pseudogenes"=pseudogenes.filt2,
-    "protein coding"=protein_coding.filt2,
-    "xRNA"=xRNA.filt2
-    )
-
-  filt.groups.files <- list(
-    all=paste(opt$out,".html",sep=""),
-    "pseudogenes"=paste(opt$out,"_","pseudogenes",".html",sep=""),
-    "protein coding"=paste(opt$out,"_","protein_coding",".html",sep=""),
-    "xRNA"=paste(opt$out,"_","xRNA",".html",sep="")
-    )
-  # sources menu
-  get.source.menu.entry <- function(name) {
-    paste("<a href='",basename(filt.groups.files[[name]]),"'>",name,"</a>",sep="")
-  }
-  sources.menu=paste(sapply(names(filt.groups),get.source.menu.entry),collapse="|")
-}
+init.source.filter(table)
+sources.menu=get.source.filter.menu(opt$out)
 table.tsv <- uncut.table[,fields$cols2tsv]
+
 #head(table.tsv)
-pdebug("Generating filtered TSV file")
 
 #
 library(R2HTML)
@@ -472,7 +426,7 @@ library(brew)
 gen.page <- function (o.html.file) {
 
   reset.irap.ctr()
-  pdebug("Generating html ",o.html.file)
+  pdebug("Starting to generate html ",o.html.file)
   #
   write.tsv(table.tsv,file=tsv.file)
   system(paste("rm -f ",tsv.file,".gz ;gzip ",tsv.file,sep=""))
@@ -492,6 +446,7 @@ gen.page <- function (o.html.file) {
   brew.wrapper(html.template,o.html.file)
 }
 
+
 pdebug.save.state("tsvDE2html2","p2")
 
 filt.name <- "All"
@@ -501,28 +456,33 @@ tsv.file <- gsub(".html$",".tsv",o.html.file)
 tsv.file.ref <- basename(tsv.file)
 gen.page(o.html.file)
 
-if ( "source" %in% colnames(table) ) {
-  uncut.table.orig <- uncut.table
-  table.tsv.orig <- table.tsv
-  for (filt.name  in names(filt.groups) ) {
-    uncut.table <- uncut.table.orig
-    if ( filt.name!="all" ) {
-      uncut.table <- uncut.table[filt.groups.uncut[[filt.name]],]
-      if ( sum(filt.groups[[filt.name]])>0 ) {
-        table.html <- table[filt.groups[[filt.name]],fields$cols2sel]
-        table.tsv <- table.tsv.orig[filt.groups[[filt.name]],fields$cols2tsv]
-      } else { # empty table
-        table.html <- table[NULL,fields$cols2sel]
-        table.tsv <- table.tsv.orig[NULL,fields$cols2tsv]
-      }
-      o.html.file <-filt.groups.files[[filt.name]]
-      tsv.file <- gsub(".html$",".tsv",o.html.file)
-      tsv.file.ref <- basename(tsv.file)
-      file.prefix <- gsub(".html","",filt.groups.files[[filt.name]])
-      gen.page(o.html.file)
+#head(uncut.table[,c(1,2,3,4)])
+#tail(uncut.table[,c(1,2,3,4)])
+
+uncut.table.orig <- uncut.table
+table.tsv.orig <- table.tsv
+for (filt.name  in get.source.filter.names() ) {
+  uncut.table <- uncut.table.orig
+  if ( filt.name!="all" ) {
+    if (! "source" %in% colnames(table.tsv)) {
+      table.html <- table[NULL,fields$cols2sel]
+      table.tsv <- table.tsv.orig[NULL,fields$cols2tsv]
+      uncut.table <- table.tsv
+    } else {
+      filt.table <- apply.source.filter(uncut.table,filt.name)
+      uncut.table <- filt.table
+      table.html <- filt.table[,fields$cols2sel]
+      table.tsv <- filt.table[filt.name,fields$cols2tsv]
     }
+    pdebug("Filter:",filt.name)
+    o.html.file <- get.source.filename(opt$out,filt.name)
+    tsv.file <- gsub(".html$",".tsv",o.html.file)
+    tsv.file.ref <- basename(tsv.file)
+    file.prefix <- gsub(".html","",o.html.file)
+    gen.page(o.html.file)
   }
 }
+
 
 q(status=0)
 
