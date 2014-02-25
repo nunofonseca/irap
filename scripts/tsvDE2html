@@ -85,6 +85,7 @@ if ( !is.null(opt$annotation) ) {
 # TODO: trap and report errors
 table <- read.tsv(opt$tsv_file)
 pdebug("data loaded")
+rownames(table) <- table[,1]
 
 pdebug.save.state("tsvDE2html0","p0")
 
@@ -229,6 +230,7 @@ if ( !is.null(annot.table)) {
 no.expr <- (table[,fields$groups[1]]<=0 & table[,fields$groups[2]]<=0)
 table <- table[!no.expr,]
 pinfo("Excluded ",sum(no.expr)," genes with no expression")
+pinfo("Using ",nrow(table)," genes.")
 
 #####################
 # applying the cutoff
@@ -294,9 +296,6 @@ DE.fold.change.plot <- function(res,
 }
 
 
-
-#head(table)
-
 # sort
 if ( nrow(table) >0 ) {
   pdebug("sorting by ",fields$PVALUE.FIELD)
@@ -328,7 +327,7 @@ if (nrow(table)) {
     URL1.html <- ""
     URL2.html <- ""
     URL3.html <- ""
-                                        # link to ensemble (only if ID starts with ENS)
+    # link to ensemble (only if ID starts with ENS)
     if ( sum(grep("^ENS",id,ignore.case=TRUE,value=FALSE))>0 ) {
       URL1 <- paste("http://www.ensemblgenomes.org/id/",id,sep="")
       URL1.html <- paste("<a href='",URL1,"'  target='_top'>ENS</a>",sep="")
@@ -407,13 +406,15 @@ table.html <- table[,fields$cols2sel]
 # link to the source file
 #cat(paste("<a href='",opt$out,".tsv.gz'>TSV</a>",sep=""))
 
-
 ###########################################################
+#save.image()
 title <- opt$title
 sources.menu <- ""
 init.source.filter(table)
-sources.menu=get.source.filter.menu(opt$out)
+sources.menu <- get.source.filter.menu(opt$out)
 table.tsv <- uncut.table[,fields$cols2tsv]
+uncut.table.orig <- uncut.table
+otable.tsv.orig <- table.tsv
 
 #head(table.tsv)
 
@@ -449,6 +450,7 @@ gen.page <- function (o.html.file) {
 
 pdebug.save.state("tsvDE2html2","p2")
 
+
 filt.name <- "All"
 o.html.file <-paste(opt$out,".html",sep="")
 file.prefix <- opt$out
@@ -459,17 +461,15 @@ gen.page(o.html.file)
 #head(uncut.table[,c(1,2,3,4)])
 #tail(uncut.table[,c(1,2,3,4)])
 
-uncut.table.orig <- uncut.table
-table.tsv.orig <- table.tsv
 for (filt.name  in get.source.filter.names() ) {
   uncut.table <- uncut.table.orig
-  if ( filt.name!="all" ) {
-    if (! "source" %in% colnames(table.tsv)) {
+  if ( filt.name!="All" && filt.name!="all") {
+    if (! "source" %in% colnames(otable.tsv.orig)) {
       table.html <- table[NULL,fields$cols2sel]
-      table.tsv <- table.tsv.orig[NULL,fields$cols2tsv]
+      table.tsv <- otable.tsv.orig[NULL,fields$cols2tsv]
       uncut.table <- table.tsv
     } else {
-      filt.table <- apply.source.filter(uncut.table,filt.name)
+      filt.table <- apply.source.filter(otable.tsv.orig,filt.name)
       uncut.table <- filt.table
       table.html <- filt.table[,fields$cols2sel]
       table.tsv <- filt.table[filt.name,fields$cols2tsv]
