@@ -1525,25 +1525,25 @@ init.source.filter <- function(table) {
     #pdebug(sources)
     # all
     source.filt.groups.def$"all" <- sources
-    source.filt.groups$"all" <- table[,"ID"]
+    source.filt.groups$"all" <- as.character(table[,"ID"])
 
     protein_coding <- c("protein_coding")
     source.filt.groups.def$"protein coding" <- protein_coding
     protein_coding.filt <- sapply(table$source,grepl,pattern=paste("(",paste(protein_coding,collapse="|"),")",sep=""))
-    source.filt.groups$"protein coding" <- table[protein_coding.filt,"ID"]
+    source.filt.groups$"protein coding" <- as.character(table[protein_coding.filt,"ID"])
 
     pseudogenes <- grep("pseudogene",sources,value=T)
     source.filt.groups.def$pseudogenes <- pseudogenes
     pseudogenes.filt <- sapply(table$source,grepl,grepl,pattern=paste("(",paste(pseudogenes,collapse="|"),")",sep=""))
-    source.filt.groups$pseudogenes <- table[pseudogenes.filt,"ID"]
+    source.filt.groups$pseudogenes <- as.character(table[pseudogenes.filt,"ID"])
     if (length(pseudogenes.filt)>0) {
       pdebug(sum(pseudogenes.filt))
     }
     
     xRNA <- grep("RNA$",sources,value=T)
-    source.filt.groups.def$"xRNA" <- table[xRNA,"ID"]
+    source.filt.groups.def$"xRNA" <- as.character(table[xRNA,"ID"])
     xRNA.filt <- sapply(table$source,grepl,grepl,perl=TRUE,pattern=paste("(",paste(xRNA,collapse="|"),")",sep=""))
-    source.filt.groups$"xRNA" <- table[xRNA.filt,"ID"]
+    source.filt.groups$"xRNA" <- as.character(table[xRNA.filt,"ID"])
     # update the global variable
     assign("source.filt.groups.def",source.filt.groups.def, envir = .GlobalEnv)
     assign("source.filt.groups",source.filt.groups, envir = .GlobalEnv)
@@ -1553,8 +1553,7 @@ init.source.filter <- function(table) {
 #
 apply.source.filter <- function(table,filter.name) {
 
-  #ids<-annot.table[sapply(annot.table$source,`%in%`, source.filt.groups[[filter.name]]),"ID"]  
-  ids <- as.character(source.filt.groups[[filter.name]])
+  ids <- source.filt.groups[[filter.name]]
   if (is.matrix(table) || is.data.frame(table) ) {
     table <- table[rownames(table) %in% ids,]
   } else {
@@ -1562,7 +1561,6 @@ apply.source.filter <- function(table,filter.name) {
       table <- table[names(table) %in% ids]
     }
   }
-  #aggr.data.annot <- mergeAnnot(aggr.data,annot.table[,c("ID","source")],table.field="row.names",annot.field="ID")
   return(table)
 }
 #
