@@ -405,7 +405,7 @@ if (nrow(table)) {
 table.html <- table[,fields$cols2sel]
 # link to the source file
 #cat(paste("<a href='",opt$out,".tsv.gz'>TSV</a>",sep=""))
-
+colnames(table.html)
 ###########################################################
 #save.image()
 title <- opt$title
@@ -415,6 +415,7 @@ sources.menu <- get.source.filter.menu(opt$out)
 table.tsv <- uncut.table[,fields$cols2tsv]
 uncut.table.orig <- uncut.table
 otable.tsv.orig <- table.tsv
+table.html.orig <- table.html
 
 #head(table.tsv)
 
@@ -459,19 +460,20 @@ tsv.file.ref <- basename(tsv.file)
 gen.page(o.html.file)
 
 #head(uncut.table[,c(1,2,3,4)])
-#tail(uncut.table[,c(1,2,3,4)])
-
+# tail(uncut.table[,c(1,2,3,4)])
+# filt.name <- get.source.filter.names()[2]
 for (filt.name  in get.source.filter.names() ) {
   uncut.table <- uncut.table.orig
   if ( filt.name!="All" && filt.name!="all") {
-    if (! "source" %in% colnames(otable.tsv.orig)) {
+    if (! "source" %in% colnames(table)) {
       table.html <- table[NULL,fields$cols2sel]
       table.tsv <- otable.tsv.orig[NULL,fields$cols2tsv]
       uncut.table <- table.tsv
     } else {
-      filt.table <- apply.source.filter(otable.tsv.orig,filt.name)
+      filt.table <- apply.source.filter(uncut.table.orig,filt.name)
       uncut.table <- filt.table
-      table.html <- filt.table[,fields$cols2sel]
+      colnames(filt.table)
+      table.html <- table.html.orig[rownames(filt.table),fields$cols2sel]
       table.tsv <- filt.table[filt.name,fields$cols2tsv]
     }
     pdebug("Filter:",filt.name)
