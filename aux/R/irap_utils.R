@@ -587,6 +587,10 @@ brew.wrapper <- function(...) {
   x <- try(brew(...,envir=parent.frame()))
   if ( inherits(x,"try-error") ) {
     perror("Failed to generate HTML.",attr(x,"condtion"))
+    if (pdebug.enabled) {
+      code <- brew(...,envir=parent.frame(),run=FALSE,parseCode=FALSE)
+      cat(paste(unlist(code),collapse="\n",sep="\n"))
+    }
     q(status=2)
   }
 }
@@ -1525,12 +1529,12 @@ init.source.filter <- function(table) {
 
     protein_coding <- c("protein_coding")
     source.filt.groups.def$"protein coding" <- protein_coding
-    protein_coding.filt <- sapply(table$source,`%in%`,protein_coding)
+    protein_coding.filt <- sapply(table$source,grepl,pattern=paste("(",paste(protein_coding,collapse="|"),")",sep=""))
     source.filt.groups$"protein coding" <- table[protein_coding.filt,"ID"]
 
     pseudogenes <- grep("pseudogene",sources,value=T)
     source.filt.groups.def$pseudogenes <- pseudogenes
-    pseudogenes.filt <- sapply(table$source,`%in%`,pseudogenes)
+    pseudogenes.filt <- sapply(table$source,grepl,grepl,pattern=paste("(",paste(pseudogenes,collapse="|"),")",sep=""))
     source.filt.groups$pseudogenes <- table[pseudogenes.filt,"ID"]
     if (length(pseudogenes.filt)>0) {
       pdebug(sum(pseudogenes.filt))
@@ -1538,19 +1542,19 @@ init.source.filter <- function(table) {
     
     xRNA <- grep("RNA$",sources,value=T)
     source.filt.groups.def$"xRNA" <- table[xRNA,"ID"]
-    xRNA.filt <- sapply(table$source,`%in%`,xRNA)
+    xRNA.filt <- sapply(table$source,grepl,grepl,perl=TRUE,pattern=paste("(",paste(xRNA,collapse="|"),")",sep=""))
     source.filt.groups$"xRNA" <- table[xRNA.filt,"ID"]
     # update the global variable
     assign("source.filt.groups.def",source.filt.groups.def, envir = .GlobalEnv)
     assign("source.filt.groups",source.filt.groups, envir = .GlobalEnv)
   }
-  T
+  return(T)
 }
 #
 apply.source.filter <- function(table,filter.name) {
 
   #ids<-annot.table[sapply(annot.table$source,`%in%`, source.filt.groups[[filter.name]]),"ID"]  
-  ids <- source.filt.groups[[filter.name]]
+  ids <- as.character(source.filt.groups[[filter.name]])
   if (is.matrix(table) || is.data.frame(table) ) {
     table <- table[rownames(table) %in% ids,]
   } else {
