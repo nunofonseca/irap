@@ -123,6 +123,7 @@ if ( nrow(sel)==0 ) {
 #
 get.col <- function(table,col,fatal=TRUE) {
   #
+  col <- gsub("[- ]",".",col)
   if ( col %in% colnames(table) ) {
     return(col)
   }
