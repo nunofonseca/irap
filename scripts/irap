@@ -1252,11 +1252,11 @@ $(quant_method)_quant: mapping $($(quant_method)_quant_files)
 
 
 # do not create the final matrix file (used by lsf wrapper)
-ifeq ($(shell echo -n $(quant_method)|sed -E "s/[12].*//"),cufflinks)
-quantification_s: setup mapping $(call nquant_files)
-else
+#ifeq ($(shell echo -n $(quant_method)|sed -E "s/[12].*//"),cufflinks)
+#quantification_s: setup mapping $(call nquant_files)
+#else
 quantification_s: setup mapping $(call genes_quant_files) $(call transcripts_quant_files)  $(call exons_quant_files) 
-endif
+#endif
 
 
 #*****************
@@ -1701,7 +1701,21 @@ cleanup_3_0_reference:
 	rm -f $(data_dir)/reference/$(species)/*gene.annot.{tsv,Rdata}
 	rm -f $(data_dir)/reference/$(species)/*gene_annot.{tsv,Rdata}
 
-##############################################################################
+###################################################
+# 
+#$(name)/report/all_options.txt:
+#	( $(foreach v, $(call interesting_vars), $(v) = $($(v)))) ) > /dev/stdout
+
+#define pprint_var
+#
+#echo "$(1) = $($(1))"
+#
+#endef
+#define interesting_vars=
+#$(filter-out %_sd %_rs $(se) $(pe),$(foreach v,$(.VARIABLES),$(if $(subst file,,$(#origin $(v))),,$(v) )))
+#endef
+
+###################################################
 # FORCE the program to run even if files haven't changed
 FORCE: 
 
