@@ -1,12 +1,5 @@
 <% brew::brew(get.path2template("page.header")) %>
 
-<%# Comment -- wrap up everything in a div %>
-<DIV name='de_res'>
-<H1><%=title%></H1>
-<H2><%=sources.menu%></H2>
-
-<H2 class="section">Quantification (<%=opt$feature%>s/<%=opt$metric%>)</H2>
-
 <%
 # Variables:
 #  table.html - table with the data per sample + gene information
@@ -16,140 +9,257 @@
 #  quant.data 
 #  quant.data.norm 
 #  quant.data.norm.group 
-#  quant.data.group 
-source(paste(IRAP.DIR,"aux/R","irap_misc.R",sep="/"))
+#  quant.data.group
+%>
 
-my.panel.cor<-function(x,y,...) {
-       panel.cor(exp(x)-1,exp(y)-1, digits=2, prefix="",logit="NULL",...)
+<%# Comment -- wrap up everything in a div %>
+<DIV name='de_res'>
+<H1><%=title%></H1>
+
+<H2 class="section">Quantification</H2>
+
+<UL>
+  <LI><%=pprint.feat(opt$feature,cap=T)%> level analysis
+  <LI>Metric: <%=pprint.metric(opt$metric)%>
+</UL>
+<DIV class="de_report_bar">Set of <%=pprint.feat(opt$feature,cap=F)%>s considered: <b><%=filt.name%></b>
+<DIV class="source_filter"> <%=sources.menu%>
+</DIV>
+</DIV>
+
+<OL class="contents"> Contents
+  <LI> <A href="#data">TSV file with the data</A>
+  <LI> <A href="#gl">Group level analysis</A>
+  <LI> <A href="#sl">Sample level analysis</A>
+</OL>
+
+<HR/>
+
+<%
+tsv.download.files <- c(paste(basename(tsv.file.ref),".gz",sep=""))
+names(tsv.download.files) <- "TSV"
+tsv.download.html <- html.download.bar(tsv.download.files)
+file.prefix <- paste(file.prefix,opt$metric,sep="_")
+# global variables
+# clustering
+library(agricolae)
+d <- "euclidean"
+m <- "complete"
+nboot<-100
+# when should the values be log2
+dolog2 <- function(d) {
+  if(opt$metric=="raw" || opt$metric=="nlib" ) {
+    return(log2(d+1))
+  }
+  return(d)
 }
 %>
 
-<p>Data: <a class='download' href='<%=basename(tsv.file.ref)%>.gz'>TSV</a></p>
+ <H2 class="section">Data<A NAME="data"></H2>
+ <%=tsv.download.html%>
+ <p> Number of <%=pprint.feat(opt$feature)%>s:<%=nrow(quant.data)%>
 
-<H3 class="section">Group level analysis</H3>
+  
+<H2 class="section">Group level analysis<A NAME="gl"></H2>
+
+
+<H3><%=irap.ctr("Figure")%>: Correlation scatterplot</H3>
 
 <%
-
-if (ncol(quant.data)>2 ) {
+if (ncol(quant.data)>=2 ) {
   pdebug("Correlation scatterplots\n")    
-#  save(file="wip",quant.data.group)
   p <- gen.plot2report(filename=paste(file.prefix,"_group_pairs.png",sep=""),
                        width=600,
                        height=600,
-                       caption="Raw counts",
+                       caption=pprint.metric(opt$metric),
                        to.plot=function() {
-                         pairs(log(quant.data.group$mean+1),  lower.panel=panel.smooth, upper.panel=my.panel.cor,pch=".", main=paste("",sep=""))
+                         pairs(dolog2(quant.data.group$mean),  lower.panel=panel.smooth, upper.panel=my.panel.cor,pch=".", main=paste("",sep=""))
                        }
                        ) 
-  cat(p$html)
-  p <- gen.plot2report(filename=paste(file.prefix,"_group_pairs_norm.png",sep=""),
+  html <- p$html
+  if ( opt$metric=="raw") {  
+       p <- gen.plot2report(filename=paste(file.prefix,"_group_pairs_norm.png",sep=""),
                        width=600,
                        height=600,
-                       caption="Counts normalized by library size",
+                       caption=pprint.metric("nlib"),
                        to.plot=function() {
-                         pairs(log(quant.data.norm.group$mean+1),  lower.panel=panel.smooth, upper.panel=my.panel.cor,pch=".", main=paste("",sep=""))
+                         pairs(dolog2(quant.data.norm.group$mean),  lower.panel=panel.smooth, upper.panel=my.panel.cor,pch=".", main=paste("",sep=""))
                        }
-                       ) 
-  cat(p$html)
+                       )
+       html <- paste(html,p$html,sep=" ")      
+     }
+  irap.output.html(html,paste("Pairwise comparison across all groups. Panels above the diagonal show the Pearson correlation between two groups. Panels below the diagonal show the log2 expression of each ",pprint.feat(opt$feature,cap=F)," for each pair of groups. A regression  (computed using the R lowess function) line is plotted in red.",sep=""))
+
+} else {
+  cat("Insufficient data")
 }
 %>
 
+<H3><%=irap.ctr("Figure")%>: Clustering </H3>
 <%
   ####################
   # clustering
   if ( length(colnames(quant.data.group$mean)) > 2 ) {
     pdebug("Clustering\n")    
-    library(agricolae)
-    d <- "euclidean"
-    m <- "complete"
-    nboot<-100
     p <- gen.plot2report(filename=paste(file.prefix,"_group_clus.png",sep=""),
                     width=500,
                     height=500,
-                    caption=paste("Clustering (distance=",d,"; method=",m,";restarts= ",nboot,"): raw counts",sep=""),
+                         caption=paste("Clustering (distance=",d,"; method=",m,";restarts= ",nboot,"): ",pprint.metric(opt$metric),sep=""),
                     to.plot=function() {
-                      con<-consensus(as.data.frame(t(quant.data.group$mean)),distance=d,method=m, nboot=nboot,duplicate=TRUE, cex.text=1,xlab="",yaxt='n', ann=FALSE)      
+                      con<-irap.consensus(as.data.frame(t(dolog2(quant.data.group$mean))),distance=d,method=m, nboot=nboot,duplicate=TRUE,xlab="",yaxt='n', ann=FALSE,leafsColours=coloursbygroup)      
                     }
                     )
-    cat(p$html)									       
-    p <- gen.plot2report(filename=paste(file.prefix,"_group_clus_norm.png",sep=""),
+    html <- p$html
+    
+    if ( opt$metric=="raw") {  
+       p <- gen.plot2report(filename=paste(file.prefix,"_group_clus_norm.png",sep=""),
                     width=500,
                     height=500,
-                    caption=paste("Clustering (distance=",d,"; method=",m,";restarts= ",nboot,"): counts normalized by library size",sep=""),
+                    caption=paste("Clustering (distance=",d,"; method=",m,";restarts= ",nboot,"): ",pprint.metric("nlib"),sep=""),
                     to.plot=function() {
-                      con<-consensus(as.data.frame(t(quant.data.norm.group$mean)),distance=d,method=m, nboot=nboot,duplicate=TRUE, cex.text=1,xlab="",yaxt='n', ann=FALSE)      
+                      con<-irap.consensus(as.data.frame(t(dolog2(quant.data.norm.group$mean))),distance=d,method=m, nboot=nboot,duplicate=TRUE, xlab="",yaxt='n', ann=FALSE,leafsColours=coloursbygroup)      
                     }
-                    )										       
-    cat(p$html)
+                    )
+       html <- paste(html,p$html,sep=" ")
+     }
+    irap.output.html(html,paste("Clustering of the groups by taking the mean values of the samples belonging to each group. The plot shows the consensus of ",nboot," trees computed using the ",m," method and distance ",d,".",sep=""))
+     
   } else {
     cat("<p>Insufficient data to generate the clustering</p>")
-     pdebug("Insufficient data to generate the clustering")
+    pdebug("Insufficient data to generate the clustering")
   }
 %>
 
-<h4>Heatmap</h4>
+<H3><%=irap.ctr("Figure")%>: Heatmap</H3>
 <%
+# all genes/exons/trans
 pdebug("Heatmaps(group)")
 nlim <- 100
-if (ncol(quant.data.norm.group$mean)>2) {
-p <- gen.plot2report(filename=paste(file.prefix,"_group_heatmap_s.png",sep=""),
-                     width=600,
-                     height=600,
-                     caption=paste("Heatmap: counts normalized by library size (",nlim," genes with larger variance)",sep=""),
-                     to.plot=function() {
-                       quant.heatmap(quant.data.norm.group$mean,do.cor=T,nlim=nlim,ColSideColors=coloursbygroup[colnames(quant.data.norm.group$mean)])
-                    }
+if (ncol(quant.data.group$mean)>=2) {
+  p <- gen.plot2report(filename=paste(file.prefix,"allg","_group_heatmap_s.png",sep=""),
+                       width=600,
+                       height=600,
+                       caption=pprint.metric(opt$metric),
+                       to.plot=function() {
+                         quant.heatmap(dolog2(quant.data.group$mean),do.cor=T,nlim=nrow(quant.data.group$mean),ColSideColors=coloursbygroup[colnames(quant.data.group$mean)],srtCol=45)
+                       }
                     )
-										       
-cat(p$html)
-p <- gen.plot2report(filename=paste(file.prefix,"_group_heatmap_g.png",sep=""),
-                     width=600,
-                     height=600,
-                     caption=paste("Heatmap: counts normalized by library size (",nlim," genes with larger variance)",sep=""),
-                     to.plot=function() {
-                       quant.heatmap(quant.data.norm.group$mean,do.cor=F,nlim=nlim,ColSideColors=coloursbygroup[colnames(quant.data.norm.group$mean)])
-                    }
+  
+  html <- p$html
+
+  if ( opt$metric=="raw") {  
+    p <- gen.plot2report(filename=paste(file.prefix,"allg_group_heatmap_s.png",sep=""),
+                       width=600,
+                       height=600,
+                       caption=pprint.metric("nlib"),
+                       to.plot=function() {
+                         quant.heatmap(quant.data.norm.group$mean,do.cor=T,nlim=nrow(quant.data.norm.group$mean),ColSideColors=coloursbygroup[colnames(quant.data.norm.group$mean)],srtCol=45)
+                       }
                     )
-										       
-    cat(p$html)
+  
+    html <- paste(html,p$html,sep=" ")
+  }
+  irap.output.html(html,paste("",sep=""))
+
 } else {
-    cat("<p>Insufficient data to generate heatmap</p>")
-     pdebug("Insufficient data to generate heatmap")
+  cat("<p>Insufficient data to generate heatmap</p>")
+  pdebug("Insufficient data to generate heatmap")
 }
 %>
 
-<H3 class="section">Sample level analysis</H3>
+<H3><%=irap.ctr("Figure")%>: Heatmap (subset of <%=pprint.feat(opt$feature,cap=F)%>s)</H3>
+<%
+pdebug("Heatmaps(group)")
+nlim <- 100
+if (ncol(quant.data.group$mean)>=2) {
+  p <- gen.plot2report(filename=paste(file.prefix,nlim,"_group_heatmap_s.png",sep=""),
+                       width=600,
+                       height=600,
+                       caption=paste("Heatmap: ",pprint.metric(opt$metric)," for (",nlim," ) ",pprint.feat(opt$feature,cap=F)," with larger variance",sep=""),
+                       to.plot=function() {
+                         quant.heatmap(dolog2(quant.data.group$mean),do.cor=T,nlim=nlim,ColSideColors=coloursbygroup[colnames(quant.data.group$mean)],srtCol=45)
+                       }
+                    )
+  html <- p$html
+  p <- gen.plot2report(filename=paste(file.prefix,nlim,"_group_heatmap_s2.png",sep=""),
+                       width=600,
+                       height=600,
+                       caption=paste("Heatmap: ",pprint.metric(opt$metric)," (",nlim," ",pprint.feat(opt$feature,cap=T),"s with larger variance)",sep=""),
+                       to.plot=function() {
+                         #
+                         quant.heatmap(dolog2(quant.data.group$mean),do.cor=F,nlim=nlim,ColSideColors=coloursbygroup[colnames(quant.data.group$mean)],srtCol=45)
+                       }
+                    )
+  html <- paste(html,p$html,sep=" ")
+  if ( opt$metric=="raw") {  
+    p <- gen.plot2report(filename=paste(file.prefix,nlim,"_group_heatmap_s.png",sep=""),
+                       width=600,
+                       height=600,
+                       caption=paste("Heatmap: ",pprint.metric("nlib")," (",nlim," ",pprint.feat(opt$feature,cap=T),"s with larger variance)",sep=""),
+                       to.plot=function() {
+                         quant.heatmap(dolog2(quant.data.norm.group$mean),do.cor=T,nlim=nlim,ColSideColors=coloursbygroup[colnames(quant.data.norm.group$mean)],srtCol=45)
+                       }
+                    )
+    
+    html <- paste(html,p$html,sep=" ")
+        
+    p <- gen.plot2report(filename=paste(file.prefix,nlim,"_group_heatmap_g.png",sep=""),
+                     width=600,
+                     height=600,
+                     caption=paste("Heatmap: ",pprint.metric("nlib")," (",nlim," ",pprint.feat(opt$feature,cap=T),"s with larger variance)",sep=""),
+                     to.plot=function() {
+                       quant.heatmap(dolog2(quant.data.norm.group$mean),do.cor=F,nlim=nlim,ColSideColors=coloursbygroup[colnames(quant.data.norm.group$mean)],srtCol=45)
+                    }
+                    )
+  }
+  html <- paste(html,p$html,sep=" ")
+  
+  irap.output.html(html,paste("",sep=""))
+} else {
+    cat("<p>Insufficient data to generate heatmap</p>")
+    pdebug("Insufficient data to generate heatmap")
+  }
+%>
+
+  
+<H2 class="section">Sample level analysis<A NAME="sl"/></H2>
 
 <!-- samples -->
 <!-- Correlations -->
+
+<H3><%=irap.ctr("Figure")%>: Correlation between the samples</H3>
 <%
 pdebug("Sample correlations")
 pdebug("#Vars=",ncol(quant.data))
-if (ncol(quant.data)>10 ) {
+# split the plot if two many samples
+if (ncol(quant.data)>=10 ) {
   # show by group
   for (g in names(groups.l)) {
+    #g <- names(groups.l)[1]
     cols <- groups.l[[g]]
     pdebug("Scatterplot for group ",g)
     quant.data.sel <- quant.data[,cols]
-    p <- gen.plot2report(filename=paste(file.prefix,"_sample_pairs_",g,".png",sep=""),
-             width=600,
-             height=600,
-             to.plot=function() {
-                pairs(log(quant.data.sel+1),  lower.panel=panel.smooth, upper.panel=my.panel.cor,pch=".", main=paste(g,"",sep=""))
-              }
-             )
-    cat(p$html)
-	 }
+    if (length(cols)>1) {
+      p <- gen.plot2report(filename=paste(file.prefix,"_sample_pairs_",g,".png",sep=""),
+                           width=600,
+                           height=600,
+                           to.plot=function() {
+                             pairs(dolog2(quant.data.sel),lower.panel=panel.smooth, upper.panel=my.panel.cor,pch=".", main=paste(g,"",sep=""))
+                           }
+                           )
+      irap.output.html(p$html,paste("Pearson correlation",sep=""))
+    }
+  }
 } else {
-  if (ncol(quant.data)>2 ) {
+  if (ncol(quant.data)>=2 ) {
     p <- gen.plot2report(filename=paste(file.prefix,"_sample_pairs.png",sep=""),
                          width=600,
                          height=600,
                          to.plot=function() {
-			   pairs(log(quant.data+1),  lower.panel=panel.smooth, upper.panel=my.panel.cor,pch=".", main=paste("",sep=""))
+			   pairs(dolog2(quant.data),  lower.panel=panel.smooth, upper.panel=my.panel.cor,pch=".", main=paste("",sep=""))
                          }
-                         ) 
-    cat(p$html)
+                         )
+    irap.output.html(p$html,paste("Pearson correlation",sep=""))
   } else {			   
     cat("<p>Insufficient data to generate plot</p>")
     pdebug("Insufficient data to generate pairs plot")   
@@ -158,109 +268,155 @@ if (ncol(quant.data)>10 ) {
 %>
   
 <!-- clustering -->
-<H4>Clustering</H4>
+<H3><%=irap.ctr("Figure")%>: Clustering (samples)</H3>
 <%
   ####################
   # clustering
   if ( length(colnames(quant.data)) > 2 )   {
     pdebug("Clustering (samples)\n")    
-    library(agricolae)
-    d <- "euclidean"
-    m <- "complete"
-    nboot<-100
     p <- gen.plot2report(filename=paste(file.prefix,"_sample_clus.png",sep=""),
                     width=500,
                     height=500,
-                    caption=paste("Clustering (distance=",d,"; method=",m,";restarts= ",nboot,"): raw counts",sep=""),
+                    caption=paste("Clustering (distance=",d,"; method=",m,";restarts= ",nboot,"):",pprint.metric(opt$metric),sep=""),
                     to.plot=function() {
-                      con<-consensus(as.data.frame(t(quant.data)),distance=d,method=m, nboot=nboot,duplicate=TRUE, cex.text=1,xlab="",yaxt='n', ann=FALSE)      
+                      con<-irap.consensus(as.data.frame(t(dolog2(quant.data))),distance=d,method=m, nboot=nboot,duplicate=TRUE,xlab="",yaxt='n', ann=FALSE, leafsColours=coloursbysample)
                     }
                     )
-    cat(p$html)										       
-    p <- gen.plot2report(filename=paste(file.prefix,"_sample_clus_norm.png",sep=""),
-                    width=500,
-                    height=500,
-                    caption=paste("Clustering (distance=",d,"; method=",m,";restarts= ",nboot,"): counts normalized by library size",sep=""),
-                    to.plot=function() {
-                      con<-consensus(as.data.frame(t(quant.data.norm)),distance=d,method=m, nboot=nboot,duplicate=TRUE, cex.text=1,xlab="",yaxt='n', ann=FALSE)      
-                    }
-                    )
-										       
-    cat(p$html)
+    html <- p$html
+    if ( opt$metric=="raw") {  
+      p <- gen.plot2report(filename=paste(file.prefix,"_sample_clus_norm.png",sep=""),
+                           width=500,
+                           height=500,
+                           caption=paste("Clustering (distance=",d,"; method=",m,";restarts= ",nboot,"): ",pprint.metric("nlib"),sep=""),
+                           to.plot=function() {
+                             con<-irap.consensus(as.data.frame(t(dolog2(quant.data.norm))),distance=d,method=m, nboot=nboot,duplicate=TRUE,xlab="",yaxt='n', ann=FALSE,leafsColours=coloursbysample)      
+                           }
+                           )
+      html <- paste(html,p$html, sep=" ")
+    }
+    irap.output.html(html,paste("Clustering of all samples. The plot shows the consensus of ",nboot," trees computed using the ",m," method and distance ",d,".",sep=""))
+  } else {
+    cat("<p>Insufficient data to generate the clustering</p>")
+    pdebug("Insufficient data to generate the clustering")
   }
 %>
 
 <!-- heatmap -->
-<h4>Heatmap</h4>
+<%
+  nlim <- 100
+%>
+<H3><%=irap.ctr("Figure")%>: Heatmap for <%=nlim%> <%=pprint.feat(opt$feature,cap=T)%>s with larger variance (samples)</H3>
 <%
 pdebug("Heatmap")
 # cor for the samples
-nlim <- 100
-if (ncol(quant.data.norm)>2) {
-  p <- gen.plot2report(filename=paste(file.prefix,"_sample_heatmap_s.png",sep=""),
+if (ncol(quant.data)>=2) {
+  p <- gen.plot2report(filename=paste(file.prefix,"_sample_heatmap_s",nlim,".png",sep=""),
                      width=800,
                      height=800,
-                     caption=paste("Heatmap: counts normalized by library size (",nlim," genes with larger variance)",sep=""),
+                     caption=paste("Heatmap: ",pprint.metric(opt$metric),"(",nlim," ",pprint.feat(opt$feature,cap=F),"s with larger variance)",sep=""),
                      to.plot=function() {
-                       quant.heatmap(quant.data.norm,do.cor=T,nlim=nlim,ColSideColors=coloursbygroup[conds])
+                       quant.heatmap(dolog2(quant.data),do.cor=T,nlim=nlim,ColSideColors=coloursbygroup[conds])
                     }
                     )
 										       
-cat(p$html)
-p <- gen.plot2report(filename=paste(file.prefix,"_sample_heatmap_g.png",sep=""),
-                     width=800,
-                     height=800,
-                     caption=paste("Heatmap: counts normalized by library size (",nlim," genes with larger variance)",sep=""),
-                     to.plot=function() {
-                       quant.heatmap(quant.data.norm,do.cor=F,nlim=nlim,ColSideColors=coloursbygroup[conds])
-                    }
-                    )
-										       
-    cat(p$html)
-} else {
-    cat("<p>Insufficient data to generate heatmap</p>")
-    pdebug("Insufficient data to generate heatmap")
-}
-%>
+  html <- p$html
+  p <- gen.plot2report(filename=paste(file.prefix,"_sample_heatmap_g",nlim,".png",sep=""),
+                       width=800,
+                       height=800,
+                       caption=paste("Heatmap: ",pprint.metric(opt$metric),"(",nlim," ",pprint.feat(opt$feature,cap=F),"s with larger variance)",sep=""),
+                       to.plot=function() {
+                         quant.heatmap(dolog2(quant.data),do.cor=F,nlim=nlim,ColSideColors=coloursbygroup[conds])
+                       }
+                       )
 
-<%
-## # genes
-## #nlim <- 50
-## data <- quant.data.norm.group$mean
-## #coloursbygroup
-## #colnames()
-## quant.heatmap(quant.data.norm.group$mean,do.cor=F,nlim=50,ColSideColors=coloursbygroup)
-## # cor for the samples
-## quant.heatmap(quant.data.norm,do.cor=T,nlim=100,ColSideColors=coloursbysample)
-
-## quant.variation(quant.data.norm.group,coloursbygroup)
-# see  http://docs.ggplot2.org/current/stat_smooth.html
-quant.variation <- function(data,colors,nlim=100) {
- 
-  var <- rowVariance(data$mean)
-  select <- order(var,decreasing=TRUE)[c(1:nlim)]
-  data2plot <- data$mean[select,]
-  data2plot.sd <- data$sd[select,]
-  pch1 <- c(21,22,23,24,25)
-  pchs <- rep(pch1,nlim/3)[1:nlim]
-  #log(sqrt())
-  plot(data2plot[,1],pch=pchs,type="p",cex=data2plot.sd[,1]/max(data2plot.sd)+0.8,col=colors[1],xlab=paste(nlim," genes with highest variance",sep=""),ylab="Expr",log="y")
-  for ( col in colnames(data2plot)[-1]) {
-    points(jitter(data2plot[,col]),pch=pchs,type="p",cex=data2plot.sd[,col]/max(data2plot.sd)+0.8,col=colors[col])
+  html <- paste(html,p$html,sep=" ")
+  if ( opt$metric=="raw") {  
+    p <- gen.plot2report(filename=paste(file.prefix,"_norm_sample_heatmap_s",nlim,".png",sep=""),
+                         width=800,
+                         height=800,
+                         caption=paste("Heatmap: ",pprint.metric("nlib")," (",nlim," ",pprint.feat(opt$feature,cap=F),"s with larger variance)",sep=""),
+                         to.plot=function() {
+                           quant.heatmap(dolog2(quant.data.norm),do.cor=T,nlim=nlim,ColSideColors=coloursbygroup[conds])
+                         }
+                         )
+    html <- paste(html,p$html,sep=" ")
+    p <- gen.plot2report(filename=paste(file.prefix,"_norm_sample_heatmap_g",nlim,".png",sep=""),
+                       width=800,
+                       height=800,
+                       caption=paste("Heatmap: ",pprint.metric("nlib")," (",nlim,"  ",pprint.feat(opt$feature,cap=F),"s with larger variance)",sep=""),
+                       to.plot=function() {
+                         quant.heatmap(dolog2(quant.data.norm),do.cor=F,nlim=nlim,ColSideColors=coloursbygroup[conds])
+                       }
+                       )
+    html <- paste(html,p$html,sep=" ")
   }
+  irap.output.html(html,paste("",sep=""))
+  
+} else {
+  cat("<p>Insufficient data to generate heatmap</p>")
+  pdebug("Insufficient data to generate heatmap")
 }
-
-## p <- gen.plot2report(filename=paste(file.prefix,"_variance.png",sep=""),
-##                      width=500,
-##                      height=500,
-##                      caption=paste("",sep=""),
-##                      to.plot=function() {
-##                        quant.variation(quant.data.norm.group,coloursbygroup[conds])
-##                      }
-##                      )
-##cat(p$html)									   
-pdebug("page completed")
 %>
+
+<H3><%=irap.ctr("Figure")%>: Principal components Analysis (PCA) applied to the expression values of all <%=pprint.feat(opt$feature,cap=F)%>s and all samples</H3>  
+<%
+if (ncol(quant.data)>=2) {
+  require("lattice")
+  p <- gen.plot2report(filename=paste(file.prefix,"_sample_pca_g.png",sep=""),
+                       width=600,
+                       height=600,
+                       caption="",
+                       to.plot=function() {                           
+                         pca <- prcomp(t(dolog2(quant.data)),center=T)
+                         pca.sum <- summary(pca)
+                         p <- xyplot(PC1 ~ PC2,data=as.data.frame(pca$x),
+                                     cex=2,aspect="iso",
+                                     col=coloursbysample[rownames(pca$x)],
+                                     pch=16,
+                                     xlab=paste("PC2 (",round(pca.sum$importance["Proportion of Variance","PC2"],2)*100,"% of variance)",sep=""),
+                                     ylab=paste("PC1 (",round(pca.sum$importance["Proportion of Variance","PC1"],2)*100,"% of variance)",sep=""),
+                                     main = suppressWarnings(draw.key(key = list(                             
+                                                       rect = list(col = coloursbygroup),
+                                                       text = list(names(coloursbygroup)),
+                                                       columns=3
+                                                       ))))
+                         print(p)
+                       }
+                       )
+  html <- p$html
+  if ( opt$metric=="raw") {  
+    p <- gen.plot2report(filename=paste(file.prefix,"_norm_sample_pca_g.png",sep=""),
+                         width=600,
+                         height=600,
+                         caption=paste("PCA: ",pprint.metric("nlib")," (",nlim," ",pprint.feat(opt$feature,cap=F),"s with larger variance)",sep=""),
+
+                         to.plot=function() {                           
+                           pca <- prcomp(t(dolog2(quant.data.norm)),center=T)
+                           pca.sum <- summary(pca)
+                           p <- xyplot(PC1 ~ PC2,data=as.data.frame(pca$x),
+                                       cex=2,aspect="iso",
+                                       col=coloursbysample[rownames(pca$x)],
+                                       pch=16,
+                                       xlab=paste("PC2 (",round(pca.sum$importance["Proportion of Variance","PC2"],2)*100,"% of variance)",sep=""),
+                                       ylab=paste("PC1 (",round(pca.sum$importance["Proportion of Variance","PC1"],2)*100,"% of variance)",sep=""),
+                                       main = suppressWarnings(draw.key(key = list(                             
+                                                         rect = list(col = coloursbygroup),
+                                                         text = list(names(coloursbygroup)),
+                                                         columns=3
+                                                         ))))
+                           print(p)
+                         }
+                         )
+    html <- paste(html,p$html,sep=" ")    
+  }
+  irap.output.html(html,paste(" Principal Components Analysis (PCA) was applied to the matrix with the expression values by ",pprint.feat(opt$feature,cap=F)," and by sample.",sep=""))    
+} else {
+  cat("<p>Insufficient data to generate PCA</p>")
+  pdebug("Insufficient data to generate PCA")
+}
+%>
+    
+
 </DIV>
 
 <% brew::brew(get.path2template("page.footer")) %>
