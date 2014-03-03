@@ -85,7 +85,7 @@ if ( !is.null(opt$annotation) ) {
 # TODO: trap and report errors
 table <- read.tsv(opt$tsv_file)
 pdebug("data loaded")
-rownames(table) <- table[,1]
+rownames(table) <- as.character(table[,1])
 
 pdebug.save.state("tsvDE2html0","p0")
 
@@ -459,9 +459,7 @@ tsv.file <- gsub(".html$",".tsv",o.html.file)
 tsv.file.ref <- basename(tsv.file)
 gen.page(o.html.file)
 
-#head(uncut.table[,c(1,2,3,4)])
-# tail(uncut.table[,c(1,2,3,4)])
-# filt.name <- get.source.filter.names()[2]
+
 for (filt.name  in get.source.filter.names() ) {
   uncut.table <- uncut.table.orig
   if ( filt.name!="All" && filt.name!="all") {
