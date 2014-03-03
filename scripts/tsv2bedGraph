@@ -111,7 +111,7 @@ if ( opt$feature == "gene" ) {
 }
 
 gtf <- NULL
-
+#head(sel)
 sel<-sel[,c(gtf.id.cols[opt$feature],'seqid','start','end')]
 
 if ( nrow(sel)==0 ) {
@@ -144,10 +144,10 @@ not.found <- tsv.sel.id[!as.character(tsv.sel.id) %in% sel[,1]]
 if ( length(not.found) ) {
   pwarning("Missing feature(s) from gtf file (",length(not.found),"). Ex., ",not.found[1])
 }
-
+pdebug.save.state("tsv2bedGraph","p2")
 # values
 tsv.sel.val <- tsv[,get.col(tsv,opt$value_col)]
-names(tsv.sel.val) <- tsv.sel.id
+names(tsv.sel.val) <- as.character(tsv.sel.id)
 #tsv.sel.val[2] <- factor("+Inf")
 # load(".RData")
 # Duplicated entries?
@@ -160,9 +160,9 @@ if (sum(dups) > 0) {
 pdebug.save.state("tsv2bedGraph","p3")
 
 # genes that are in the GTF file
-sel.genes <- as.character(tsv.sel.id[as.character(tsv.sel.id) %in% as.character(sel[,1])])
-
-sel <- sel[sel[,1] %in% sel.genes,]
+sel.genes <- as.character(tsv.sel.id[as.character(tsv.sel.id) %in%
+                                     as.character(sel[,1])])
+sel <- sel[as.character(sel$ID) %in% sel.genes,]
 
 # Merge in such a way that duplicated genes are kept
 rownames(sel) <- sel$ID
@@ -175,7 +175,8 @@ t1 <- t1[do.call(order,t1),]
 # how to handle NA and Inf?
 # How many entries with a non numerical value or != and +-Inf
 #sapply(levels(t1$values),FUN=is.numeric)
-t1$values <- as.numeric(levels(t1$values)[as.numeric(t1$values)])
+#x <- as.numeric(levels(t1$values)[as.numeric(t1$values)])
+t1$values <- as.numeric(t1$values)
 
 inf.values <- unlist(lapply(t1$values,is.infinite))
 na.values <- unlist(lapply(t1$values,is.na))
