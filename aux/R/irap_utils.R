@@ -1206,13 +1206,21 @@ quant.heatmap <- function(data,nlim=50,key.xlabel="Expression",do.cor=FALSE,dens
   suppressPackageStartupMessages(library("gplots"))
   #data <- log2(quant.data.group$mean+1)
   var <- rowVariance(data)
-  if (nlim==nrow(data) && nlim>300) {
-    nlim <- 300
+  if (is.na(nlim)) {
+    ncol <- max(100,nrow(data))
+  }
+  if (is.na(nlim) && do.cor==FALSE) {
+    ncol <- nlim
+    if (is.na(nlim) || (nlim==nrow(data) && nlim>500)) {    
+      nlim <- 500
+    }
   }
   # select a subset of rows
-  select <- order(var,decreasing=TRUE)[c(1:nlim)]
-  colors <- topo.colors(nlim)
-  data <- data[select,]            
+  if (!is.na(nlim)) {
+    select <- order(var,decreasing=TRUE)[c(1:nlim)]
+      data <- data[select,]
+  }
+  colors <- topo.colors(ncol)
   if ( do.cor ) {
     data <- cor(data)
     key.xlabel <- paste(key.xlabel," correlation",sep="")

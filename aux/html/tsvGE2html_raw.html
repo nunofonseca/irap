@@ -30,7 +30,7 @@
 <OL class="contents"> Contents
   <LI> <A href="#data">TSV file with the data</A>
   <LI> <A href="#gl">Group level analysis</A>
-  <LI> <A href="#sl">Sample level analysis</A>
+  <LI> <A href="#sl">Library level analysis</A>
 </OL>
 
 <HR/>
@@ -140,7 +140,7 @@ if (ncol(quant.data)>=2 && nrow(quant.data)>20 ) {
                     )
        html <- paste(html,p$html,sep=" ")
      }
-    irap.output.html(html,paste("Clustering of the groups by taking the mean values of the samples belonging to each group. The plot shows the consensus of ",nboot," trees computed using the ",m," method and distance ",d,".",sep=""))
+    irap.output.html(html,paste("Clustering of the groups by taking the mean values of the libraries belonging to each group. The plot shows the consensus of ",nboot," trees computed using the ",m," method and distance ",d,".",sep=""))
      
   } else {
     cat("<p>Insufficient data to generate the clustering</p>")
@@ -159,7 +159,7 @@ if (do_heatmap(quant.data.group$mean)) {
                        height=600,
                        caption=pprint.metric(opt$metric),
                        to.plot=function() {
-                         quant.heatmap(dolog2(quant.data.group$mean),do.cor=T,nlim=nrow(quant.data.group$mean),ColSideColors=coloursbygroup[colnames(quant.data.group$mean)],srtCol=45)
+                         quant.heatmap(dolog2(quant.data.group$mean),do.cor=T,nlim=NA,ColSideColors=coloursbygroup[colnames(quant.data.group$mean)],srtCol=45)
                        }
                     )
   
@@ -171,13 +171,18 @@ if (do_heatmap(quant.data.group$mean)) {
                        height=600,
                        caption=pprint.metric("nlib"),
                        to.plot=function() {
-                         quant.heatmap(quant.data.norm.group$mean,do.cor=T,nlim=nrow(quant.data.norm.group$mean),ColSideColors=coloursbygroup[colnames(quant.data.norm.group$mean)],srtCol=45)
+                         quant.heatmap(quant.data.norm.group$mean,do.cor=T,nlim=NA,ColSideColors=coloursbygroup[colnames(quant.data.norm.group$mean)],srtCol=45)
                        }
                     )
   
     html <- paste(html,p$html,sep=" ")
   }
-  irap.output.html(html,paste("",sep=""))
+  heatmap.cor.group.info <- paste("Heatmap(s) with the Pearson correlation of ",pprint.feat(opt$feature),"s' expression values between each  group of libraries. The expression value for a ",pprint.feat(opt$feature)," in a group corresponds to the mean values observed in the libraries of the group.",sep="")
+  heatmap.group.info <- paste("First heatmap is based on the Pearson correlation of ",pprint.feat(opt$feature),"s' expression values between each group of libraries. Second heatmap is based  on the ",pprint.feat(opt$feature),"s' expression values for each library. The expression value for a ",pprint.feat(opt$feature)," in a group corresponds to the mean values observed in the groups' libraries. Only the subset with ",nlim," genes with largest variance was considered.",sep="")
+  heatmap.sample.info <- paste("Heatmaps based on ",pprint.feat(opt$feature),"s expression values for each library. Only the subset with ",nlim," genes with largest variance was considered.",sep="")
+
+  #heatmap.cor <- "Heatmap with the Pearson correlation of the expression by a group of libraries (the expression values by group corresponds to the mean values observed in the libraries of the group)."
+  irap.output.html(html,paste(heatmap.cor.group.info,sep=""))
 
 } else {
   cat("<p>Insufficient data to generate heatmap</p>")
@@ -190,7 +195,7 @@ if (do_heatmap(quant.data.group$mean)) {
 pdebug("Heatmaps(group)")
 nlim <- 100
 if (do_heatmap(quant.data.group$mean)) {
-  p <- gen.plot2report(filename=paste(file.prefix,nlim,"_group_heatmap_s.png",sep=""),
+  p <- gen.plot2report(filename=paste(file.prefix,nlim,"_group_heatmap_s1.png",sep=""),
                        width=600,
                        height=600,
                        caption=paste("Heatmap: ",pprint.metric(opt$metric)," for (",nlim," ) ",pprint.feat(opt$feature,cap=F)," with larger variance",sep=""),
@@ -210,7 +215,7 @@ if (do_heatmap(quant.data.group$mean)) {
                     )
   html <- paste(html,p$html,sep=" ")
   if ( opt$metric=="raw") {  
-    p <- gen.plot2report(filename=paste(file.prefix,nlim,"_group_heatmap_s.png",sep=""),
+    p <- gen.plot2report(filename=paste(file.prefix,nlim,"_group_heatmap_s3.png",sep=""),
                        width=600,
                        height=600,
                        caption=paste("Heatmap: ",pprint.metric("nlib")," (",nlim," ",pprint.feat(opt$feature,cap=T),"s with larger variance)",sep=""),
@@ -221,7 +226,7 @@ if (do_heatmap(quant.data.group$mean)) {
     
     html <- paste(html,p$html,sep=" ")
         
-    p <- gen.plot2report(filename=paste(file.prefix,nlim,"_group_heatmap_g.png",sep=""),
+    p <- gen.plot2report(filename=paste(file.prefix,nlim,"_group_heatmap_s4.png",sep=""),
                      width=600,
                      height=600,
                      caption=paste("Heatmap: ",pprint.metric("nlib")," (",nlim," ",pprint.feat(opt$feature,cap=T),"s with larger variance)",sep=""),
@@ -232,7 +237,7 @@ if (do_heatmap(quant.data.group$mean)) {
   }
   html <- paste(html,p$html,sep=" ")
   
-  irap.output.html(html,paste("",sep=""))
+  irap.output.html(html,paste(heatmap.group.info,sep=""))
 } else {
     cat("<p>Insufficient data to generate heatmap</p>")
     pdebug("Insufficient data to generate heatmap")
@@ -242,14 +247,14 @@ if (do_heatmap(quant.data.group$mean)) {
   
 <H2 class="section">Sample level analysis<A NAME="sl"/></H2>
 
-<!-- samples -->
+<!-- libraries -->
 <!-- Correlations -->
 
-<H3><%=irap.ctr("Figure")%>: Correlation between the samples</H3>
+<H3><%=irap.ctr("Figure")%>: Correlation between the libraries</H3>
 <%
 pdebug("Sample correlations")
 pdebug("#Vars=",ncol(quant.data))
-# split the plot if two many samples
+# split the plot if two many libraries
 if (ncol(quant.data)>=10 ) {
   # show by group
   for (g in names(groups.l)) {
@@ -286,13 +291,13 @@ if (ncol(quant.data)>=10 ) {
 %>
   
 <!-- clustering -->
-<H3><%=irap.ctr("Figure")%>: Clustering (samples)</H3>
+<H3><%=irap.ctr("Figure")%>: Clustering (libraries)</H3>
 <%
   ####################
   # clustering
 
   if ( do_clustering(quant.data))   {
-    pdebug("Clustering (samples)\n")    
+    pdebug("Clustering (libraries)\n")    
     p <- gen.plot2report(filename=paste(file.prefix,"_sample_clus.png",sep=""),
                     width=500,
                     height=500,
@@ -313,7 +318,7 @@ if (ncol(quant.data)>=10 ) {
                            )
       html <- paste(html,p$html, sep=" ")
     }
-    irap.output.html(html,paste("Clustering of all samples. The plot shows the consensus of ",nboot," trees computed using the ",m," method and distance ",d,".",sep=""))
+    irap.output.html(html,paste("Clustering of all libraries. The plot shows the consensus of ",nboot," trees computed using the ",m," method and distance ",d,".",sep=""))
   } else {
     cat("<p>Insufficient data to generate the clustering</p>")
     pdebug("Insufficient data to generate the clustering")
@@ -324,12 +329,12 @@ if (ncol(quant.data)>=10 ) {
 <%
   nlim <- 100
 %>
-<H3><%=irap.ctr("Figure")%>: Heatmap for <%=nlim%> <%=pprint.feat(opt$feature,cap=T)%>s with larger variance (samples)</H3>
+<H3><%=irap.ctr("Figure")%>: Heatmap for <%=nlim%> <%=pprint.feat(opt$feature,cap=T)%>s with larger variance (libraries)</H3>
 <%
 pdebug("Heatmap")
-# cor for the samples
+# cor for the libraries
 if (do_heatmap(quant.data)) {
-  p <- gen.plot2report(filename=paste(file.prefix,"_sample_heatmap_s",nlim,".png",sep=""),
+  p <- gen.plot2report(filename=paste(file.prefix,"_sample_heatmap_s1",nlim,".png",sep=""),
                      width=800,
                      height=800,
                      caption=paste("Heatmap: ",pprint.metric(opt$metric),"(",nlim," ",pprint.feat(opt$feature,cap=F),"s with larger variance)",sep=""),
@@ -339,7 +344,7 @@ if (do_heatmap(quant.data)) {
                     )
 										       
   html <- p$html
-  p <- gen.plot2report(filename=paste(file.prefix,"_sample_heatmap_g",nlim,".png",sep=""),
+  p <- gen.plot2report(filename=paste(file.prefix,"_sample_heatmap_g1",nlim,".png",sep=""),
                        width=800,
                        height=800,
                        caption=paste("Heatmap: ",pprint.metric(opt$metric),"(",nlim," ",pprint.feat(opt$feature,cap=F),"s with larger variance)",sep=""),
@@ -350,7 +355,7 @@ if (do_heatmap(quant.data)) {
 
   html <- paste(html,p$html,sep=" ")
   if ( opt$metric=="raw") {  
-    p <- gen.plot2report(filename=paste(file.prefix,"_norm_sample_heatmap_s",nlim,".png",sep=""),
+    p <- gen.plot2report(filename=paste(file.prefix,"_norm_sample_heatmap_s2",nlim,".png",sep=""),
                          width=800,
                          height=800,
                          caption=paste("Heatmap: ",pprint.metric("nlib")," (",nlim," ",pprint.feat(opt$feature,cap=F),"s with larger variance)",sep=""),
@@ -359,7 +364,7 @@ if (do_heatmap(quant.data)) {
                          }
                          )
     html <- paste(html,p$html,sep=" ")
-    p <- gen.plot2report(filename=paste(file.prefix,"_norm_sample_heatmap_g",nlim,".png",sep=""),
+    p <- gen.plot2report(filename=paste(file.prefix,"_norm_sample_heatmap_g2",nlim,".png",sep=""),
                        width=800,
                        height=800,
                        caption=paste("Heatmap: ",pprint.metric("nlib")," (",nlim,"  ",pprint.feat(opt$feature,cap=F),"s with larger variance)",sep=""),
@@ -369,7 +374,7 @@ if (do_heatmap(quant.data)) {
                        )
     html <- paste(html,p$html,sep=" ")
   }
-  irap.output.html(html,paste("",sep=""))
+  irap.output.html(html,paste(heatmap.sample.info,sep=""))
   
 } else {
   cat("<p>Insufficient data to generate heatmap</p>")
@@ -377,7 +382,7 @@ if (do_heatmap(quant.data)) {
 }
 %>
 
-<H3><%=irap.ctr("Figure")%>: Principal components Analysis (PCA) applied to the expression values of all <%=pprint.feat(opt$feature,cap=F)%>s and all samples</H3>  
+<H3><%=irap.ctr("Figure")%>: Principal components Analysis (PCA) applied to the expression values of all <%=pprint.feat(opt$feature,cap=F)%>s and all libraries</H3>  
 <%
 if (ncol(quant.data)>=2) {
   require("lattice")
