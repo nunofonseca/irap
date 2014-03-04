@@ -25,6 +25,8 @@
 ###############################################################
 suppressPackageStartupMessages(library("optparse"))
 suppressPackageStartupMessages(library(DESeq))
+library(R2HTML)
+library(brew)
 
 IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
 if ( IRAP.DIR == "" ) {
@@ -150,6 +152,8 @@ annot.table <- NULL
 irap.css <- opt$css
 title <- opt$title
 sources.menu <- ""
+o.html.file <-paste(opt$out,".html",sep="")
+file.prefix <- opt$out
 
 
 # load TSV
@@ -158,8 +162,10 @@ table <- read.tsv(opt$tsv_file)
 pinfo("data loaded=",nrow(table)," rows ",ncol(table)," cols")
 
 if (is.irap.empty(table)) {
-  perror("'empty' input file: ",opt$tsv_file)
-  q(status=1)
+  pwarning("'empty' input file: ",opt$tsv_file)
+  # generate an empty file
+  brew.wrapper(get.path2template("no_data"),o.html.file)  
+  q(status=0)
 }
 # fix id column name
 colnames(table)[1] <- "ID"
@@ -174,7 +180,6 @@ rownames(table) <- as.character(table[,"ID"])
 html.cols2sel <- colnames(table)
 pdebug.save.state("tsvGE2html0","p0")
 
-save.image()
 ##########################
 # if feat!=gene
 if ( opt$feature != "gene" ) {
@@ -239,8 +244,6 @@ sources.menu <- get.source.filter.menu(opt$out)
 table.tsv <- uncut.table
 
 #
-library(R2HTML)
-library(brew)
 
 # 
 #
@@ -308,8 +311,6 @@ gen.page <- function (o.html.file) {
   brew.wrapper(html.template,o.html.file)
 }
 
-o.html.file <-paste(opt$out,".html",sep="")
-file.prefix <- opt$out
 filt.name <- "All"
 tsv.file <- gsub(".html$",".tsv",o.html.file)
 tsv.file.ref <- basename(tsv.file)

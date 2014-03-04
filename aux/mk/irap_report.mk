@@ -264,7 +264,7 @@ $(name)/report/quant/%/gene.nlib.html:
 	$(call GE_tsv2html,"nlib",$(call quiet_ls,$(name)/$(subst _x_,/,$*)/genes.nlib.*.tsv),$(@D),gene.nlib.t,$(subst _x_, x ,$*),"gene") && \
 	cp $(subst .html,,$@).t.html $@
 
-# TODO: level: exon+transcript
+
 # Transcript
 $(name)/report/quant/%/transcript.raw.html: 
 	$(call GE_tsv2html,"raw",$(call quiet_ls,$(name)/$(subst _x_,/,$*)/transcripts.raw.$(shell echo $*|sed "s/.*_x_//").tsv),$(@D),transcript.raw.t,$(subst _x_, x ,$*),"CDS") && \
@@ -352,7 +352,26 @@ $(name)/report/quant/%_x_nurd.transcript.html: $(name)/report/quant/%_x_nurd/tra
 	touch $@
 
 ## quant report: exons
+$(name)/report/quant/%_x_htseq1.exon.html: $(name)/report/quant/%_x_htseq1/exon.raw.html $(name)/report/quant/%_x_htseq1/exon.rpkm.html  $(name)/report/quant/%_x_htseq1/exon.nlib.html
+	touch $@
 $(name)/report/quant/%_x_htseq2.exon.html: $(name)/report/quant/%_x_htseq2/exon.raw.html $(name)/report/quant/%_x_htseq2/exon.rpkm.html  $(name)/report/quant/%_x_htseq2/exon.nlib.html
+	touch $@
+$(name)/report/quant/%_x_flux_cap.exon.html: $(name)/report/quant/%_x_flux_cap/exon.raw.html $(name)/report/quant/%_x_flux_cap/exon.rpkm.html  $(name)/report/quant/%_x_flux_cap/exon.nlib.html
+	touch $@
+
+$(name)/report/quant/%_x_cufflinks1.exon.html: $(name)/report/quant/%_x_cufflinks1/exon.raw.html $(name)/report/quant/%_x_cufflinks1/exon.rpkm.html  $(name)/report/quant/%_x_cufflinks1/exon.nlib.html
+	touch $@
+
+$(name)/report/quant/%_x_cufflinks1_nd.exon.html: $(name)/report/quant/%_x_cufflinks1_nd/exon.raw.html $(name)/report/quant/%_x_cufflinks1_nd/exon.rpkm.html  $(name)/report/quant/%_x_cufflinks1_nd/exon.nlib.html
+	touch $@
+
+$(name)/report/quant/%_x_cufflinks2.exon.html: $(name)/report/quant/%_x_cufflinks2/exon.raw.html $(name)/report/quant/%_x_cufflinks2/exon.rpkm.html  $(name)/report/quant/%_x_cufflinks2/exon.nlib.html
+	touch $@
+
+$(name)/report/quant/%_x_cufflinks2_nd.exon.html: $(name)/report/quant/%_x_cufflinks2_nd/exon.raw.html $(name)/report/quant/%_x_cufflinks2_nd/exon.rpkm.html  $(name)/report/quant/%_x_cufflinks2_nd/exon.nlib.html
+	touch $@
+
+$(name)/report/quant/%_x_nurd.exon.html: $(name)/report/quant/%_x_nurd/exon.raw.html $(name)/report/quant/%_x_nurd/exon.rpkm.html  $(name)/report/quant/%_x_nurd/exon.nlib.html
 	touch $@
 
 ############################
