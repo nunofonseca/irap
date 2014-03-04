@@ -1206,6 +1206,7 @@ quant.heatmap <- function(data,nlim=50,key.xlabel="Expression",do.cor=FALSE,dens
   suppressPackageStartupMessages(library("gplots"))
   #data <- log2(quant.data.group$mean+1)
   var <- rowVariance(data)
+  ncol <- nlim
   if (is.na(nlim)) {
     ncol <- max(100,nrow(data))
   }
@@ -1218,7 +1219,7 @@ quant.heatmap <- function(data,nlim=50,key.xlabel="Expression",do.cor=FALSE,dens
   # select a subset of rows
   if (!is.na(nlim)) {
     select <- order(var,decreasing=TRUE)[c(1:nlim)]
-      data <- data[select,]
+    data <- data[select,]
   }
   colors <- topo.colors(ncol)
   if ( do.cor ) {
@@ -1561,7 +1562,7 @@ init.source.filter <- function(table,id.col="ID") {
       if (f!="all") {
         q <- source.filt.query[f]
         qr <- grep(q,sources,value=T)
-        pinfo("Filter: ",f," ",q,"->",paste(qr,collapse="|"))
+        #pinfo("Filter: ",f," ",q,"->",paste(qr,collapse="|"))
         source.filt.groups.def[[f]] <- qr
         re <- paste("(",paste(qr,collapse="|"),")",sep="")
         filt <- NULL
