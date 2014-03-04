@@ -24,7 +24,7 @@ source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
 source(paste(IRAP.DIR,"aux/R","irap_misc.R",sep="/"))
 
 #install.packages("sfsmisc")
-library(sfsmisc)
+#library(sfsmisc)
 
 # pprint irap names
 pprint_irap_names <- function(label) {
@@ -33,7 +33,7 @@ pprint_irap_names <- function(label) {
   label <- sub("cufflinks2_nd","cufflinks2",label)
   label <- sub("htseq1","htseq-u",label)
   label <- sub("htseq2","htseq-ine",label)
-  label
+  return(sub("#"," x ",sub("_-_"," x ",label)))
 }
 
 ens2geneNames <- function(v,annot.table) {
@@ -179,7 +179,7 @@ plot.selection.auto <- function(file.prefix,cor.data,counts.data,de.base.mean,de
     p<-get.comparison(cor.data,bp$stats[3],sel.pipelines)
     if (!is.null(p)) {      
       sel.pipelines <- unique(append(sel.pipelines,append(p$row,p$col)))
-      pinfo("plotting to file with prefix",file.prefix)
+      pinfo("plotting to file with prefix ",file.prefix)
       file <- NULL
       if ( !is.null(file.prefix) ) {
         file <- paste(file.prefix,"_median",sel.pipes,sep="")
@@ -292,3 +292,145 @@ plot.selection <- function(comp1,comp2,genes,counts,baseMean,fold.change,p.value
   legend("topright", inset=c(-0.2,0), legend=c(comp1,comp2), pch=20, col=bcolors, title="", bty='n')
 }
 
+
+irap.compare.raw.quant <- function(tsv1.data,tsv2.data,annot.table) {
+# fix colnames of simulated quantification (remove the suffix .true)
+  colnames(tsv1.data) <- gsub(".true","",colnames(tsv1.data))
+  colnames(tsv2.data) <- gsub(".true","",colnames(tsv2.data))
+
+  if ( nrow(tsv1.data)!=nrow(tsv2.data) ) {
+    pinfo("Processing simulated data? #rows:",nrow(tsv1.data),"!=",nrow(tsv2.data))
+  }
+  # change the column names
+  colnames(tsv2.data) <- paste(colnames(tsv2.data),".y",sep="")
+  # merge (consider only the rows that appear on both files)
+  i <- intersect(rownames(tsv1.data),rownames(tsv2.data))
+  aggr.data <- cbind(tsv1.data[i,], tsv2.data[i,])
+  #head(aggr.data)
+
+  labels.v<-c("A","B")   
+#
+  tsv1.data <-tsv1.data[i,]
+  tsv2.data <-tsv2.data[i,]
+
+  ###################################
+  # Compute the paired t-test for each gene
+  # to check if the means are the sam
+  ttest.wrapper <- function(row,m1,m2) {
+    x <- tryCatch(t.test(as.numeric(m1[row,]),as.numeric(m2[row,]),paired=T)$p.value,error=function(x) 1.0)
+    if ( is.na(x) ) { return(1.0) }
+    return(x)
+  }
+################################################
+# 
+#N1 <- colSums(tsv1.data+1)
+#N2 <- colSums(tsv2.data+1)
+# transform the data by adding one
+# normalize by library size and get the value in millions
+# get the value in millions to use the matrix with deseq
+# Note: quant.nerr may contain NAs (add 1)
+#       prop.table(matrix,2) ==< by column
+  tsv1.data.n <- round(prop.table(as.matrix(tsv1.data+1),2)*10^6,0)
+  tsv2.data.n <- round(prop.table(as.matrix(tsv2.data+1),2)*10^6,0)
+
+###############################
+  pinfo("Checking for sign. different values using DESeq...")
+  suppressPackageStartupMessages(library(DESeq))
+  conds <- append(rep(labels.v[1],ncol(tsv1.data)),rep(labels.v[2],ncol(tsv2.data)))
+# TODO: aggregate the cols from the same sample?
+#rows.sel <- apply(aggr.data[,-1],1,max)>min_count ;# filter out the rows with the maximum number of reads under the given threshold
+#cds <- newCountDataSet(aggr.data[rows.sel,-1],conds)
+  pinfo(conds)
+  cds <- newCountDataSet(aggr.data,conds)
+  cds <- estimateSizeFactors(cds)
+
+  if ( sum(is.na(sizeFactors(cds))) > 0 ) {
+    save.image("err.debug.Rdata")
+    perror("Unable to estimate size factors")
+    q(status=1)
+  }
+
+# from the manual first computes for each gene an empirical dispersion
+#value (a.k.a. a raw SCV value), then fits by regression a
+#dispersion-mean relationship and finally chooses for each gene a
+#dispersion parameter that will be used in subsequent tests from the
+#empirical and the fitted value according to the 'sharingMode'
+#argument.
+# pooled Use the samples from all conditions with replicates
+#to estimate a single pooled empirical dispersion value, called
+#"pooled", and assign it to all samples.
+# blind - ‘blind’ - Ignore the
+#sample labels and compute a gene's empirical dispersion value as if
+#all samples were replicates of a single condition. This can be done
+#even if there are no biological replicates. This method can lead to
+#loss of power; see the vignette for details. The single estimated
+#dispersion condition is called "blind" and used for all samples.
+#Use the samples from all conditions with replicates
+#to estimate a single pooled empirical dispersion value
+# sharing: After the empirical dispersion values have been computed for
+# each gene, a dispersion-mean relationship is fitted for sharing
+# information across genes in order to reduce variability of the
+# dispersion estimates. After that, for each gene, we have two values:
+# the empirical value (derived only from this gene's data), and the
+# fitted value (i.e., the dispersion value typical for genes with an
+# average expression similar to those of this gene).
+
+# SharingMode="maximum"
+  result <- try(cds <- estimateDispersions(cds,method="pooled",fitType="local",sharingMode="maximum"));
+  if(class(result) == "try-error") {
+   # pooled-CR: crossed factors
+    print("Ooops, it seems that you need to manually tune DEseq  to estimate the dispersion.")
+    q("no",status=1)
+  }
+  t<-counts(cds,normalized=TRUE)
+  de <- nbinomTest(cds,labels.v[1],labels.v[2])
+  rownames(de) <- de$id
+  pinfo("Checking for sign. different values using DESeq...done.")
+##################################################################
+#
+  pdebug.save.state("compare_raw_quant","stage3")
+  if (!init.source.filter(annot.table)) {
+    perror("Internal error while initializing gene filter.")
+    q(status=1)
+  }
+#head(annot.table)
+# for debugging
+####################################
+  filter.name <- "protein coding"
+  pinfo("Filter: ",filter.name)
+
+  tsv1.data.f <- apply.source.filter(tsv1.data,filter.name)
+  tsv2.data.f <- apply.source.filter(tsv2.data,filter.name)
+  
+  tsv1.data.n.f <- apply.source.filter(tsv1.data.n,filter.name)
+  tsv2.data.n.f <- apply.source.filter(tsv2.data.n,filter.name)
+  
+##############################################
+  comp.data <- list()
+  comp.data[["labels"]] <- labels.v
+  comp.data[["filter"]] <- filter.name
+  comp.data[["pearson"]] <- cor(apply(tsv1.data.f,1,sum),apply(tsv2.data.f,1,sum),method="pearson")
+  comp.data[["pearson.n"]] <- cor(apply(tsv1.data.n.f,1,sum),apply(tsv2.data.n.f,1,sum),method="pearson")
+  comp.data[["spearman"]] <- cor(apply(tsv1.data.f,1,sum),apply(tsv2.data.f,1,sum),method="spearman")
+  comp.data[["spearman.n"]] <- cor(apply(tsv1.data.n.f,1,sum),apply(tsv2.data.n.f,1,sum),method="spearman")
+  comp.data[["de"]] <- apply.source.filter(de,filter.name)
+  comp.data[["normalized.counts"]] <- apply.source.filter(t,filter.name)
+  return(comp.data)
+}
+
+#debug
+## setwd("/home/nf/Research/WorkingDocs/RNA_comp/ibm/")
+## load("/home/nf/Research/WorkingDocs/RNA_comp/ibm/ibm.html_data.Rdata")
+## oprefix="test"
+## plot.selection.auto(oprefix,p.cor,gene.nexpr,base.mean.deseq,log2.fold.change.deseq,p.val.deseq,fdr)
+## p.cor
+## p.cor
+## spearman.corr
+## pearson.corr
+## gene.nexpr
+## base.mean.deseeq
+## names(log2.fold.change.deseq)
+## # comparisons
+## names(p.val.deseq)
+## fdr
+## ls()

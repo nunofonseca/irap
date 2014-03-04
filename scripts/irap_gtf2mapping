@@ -1,0 +1,128 @@
+#!/usr/bin/env Rscript
+# =========================================================
+# Copyright 2012-2013,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#    $Id: 0.1.1$
+# =========================================================
+
+###############################################################
+suppressPackageStartupMessages(library("optparse"))
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+
+# specify our desired options in a list
+#
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+pdebug.enabled <- TRUE
+
+library(multicore)
+
+#######################
+usage <- "irap_gtf2mapping --gtf file [-o outfile] [--rdata -r]"
+option_list <- list(
+  make_option(c("-o", "--out"),type="character",dest="out_file",default="",help="Output file [default %default]"),
+  make_option(c("-c", "--cores"), type="character",default="2",dest="num_cores",help="Number of cores to use ([default %default])"),
+  make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
+  make_option(c("-r","--rdata"),action="store_true",dest="gen_rdata",default=FALSE,help="Generate an rdata file"),
+  make_option(c("-i", "--gtf"), type="character", dest="gtf_file", default=NULL,help="GTF file")
+)
+
+
+filenames <- c("gtf_file") ;#filenames that must exist (if defined)
+# check multiple options values
+multiple.options = list()
+mandatory <- c("gtf_file","out_file")
+opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
+
+tryCatch(num.cores <- as.integer(as.numeric(opt$num_cores)),warning=
+         function(w) {
+           perror("Invalid number of cores ",opt$num_cores)
+           q(status=3)    
+       }
+)
+if (num.cores<1) {
+  perror("Invalid number of cores ",opt$num_cores)
+  q(status=3)    
+}
+
+irap.assert(num.cores>0)
+
+if ( num.cores>multicore:::detectCores()) {
+  num.cores <- multicore:::detectCores()
+  pwarning("The number of cores to use exceeds the cores available. Reducing the limit to ",multicore:::detectCores())
+}
+
+
+
+pdebug.enabled <- opt$debug
+# Disabling multicores due to an error with  RSQLite driver (mm)
+#num.cores <- 1
+#pwarning("Multi-threading is temporarily disabled due to an error with RSQLite driver that occurs when processing some GTF files.")
+options("cores"=num.cores)
+
+gtf.table <- NULL
+gtf.table <- load.gtf(opt$gtf)
+#
+pdebug.save.state("irap_gtf2mapping","p0")
+
+# check if we have all columns
+cols.needed <- c("transcript_id","gene_id","seqid","start","end","strand","source","exon_number")
+cols.missing <- cols.needed[!cols.needed %in% colnames(gtf.table)]
+if (length(cols.missing)>0) {
+  perror("Information missing from GTF file:",cols.missing)
+  q(status=1)
+}
+#
+# exon table
+# exon id=gene+trans+exon number
+exons.f <- gtf.table[gtf.table$feature=="exon",]
+exons.f$ID <- apply(exons.f[,c("gene_id","exon_number")],1,paste,collapse=".")
+# add the sources
+get.source <- function(id,gtf) paste(unique(gtf$source[gtf$ID==id]),collapse=";")
+# transcripts
+get.transcripts <- function(id,gtf) paste(unique(gtf$transcript_id[gtf$ID==id]),collapse=";")
+exons.f$source <- unlist(mclapply(exons.f$ID,get.source,exons.f))
+exons.f$transcript_ids<- unlist(mclapply(exons.f$ID,get.transcripts,exons.f))
+# filter and reorder the columns
+exons.f <- exons.f[,c("ID","gene_id","exon_number","seqid","start","end","strand","source","transcript_ids")]
+exons.f <- unique(exons.f)
+##############
+# transcripts
+trans.f <- gtf.table[gtf.table$feature=="CDS",]
+trans.f$ID <- trans.f$transcript_id
+trans.f <- trans.f[,c("ID","gene_id","seqid","start","end","strand","source")]
+
+#
+pdebug.save.state("irap_gtf2annot","p3")
+#
+exons.file <- paste(opt$out_file,"_exons.tsv",sep="")
+trans.file <- paste(opt$out_file,"_trans.tsv",sep="")
+
+pinfo("saving ",exons.file,"...")
+ret <- write.tsv(file=exons.file,x=exons.f)
+pinfo("saving ",trans.file,"...")
+ret <- write.tsv(file=trans.file,x=trans.f)
+pinfo("saving ",opt$out_file,".Rdata...")
+save(exons.f,trans.f,file=paste(opt$out_file,".Rdata",sep=""))
+
+q(status=0)

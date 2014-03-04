@@ -96,7 +96,7 @@ endef
 # 6 feature
 # --anotation ....
 define GE_tsv2html=
-	tsvGE2html -m $(1) --tsv $(2) --out $(3)/$(4) --species $(species) --feature $(call DEfilename2AL,$(2)) --browser ../../../../$(BROWSER_DIR)/ --css ../../../../$(CSS_FILE) --title "$(5)" -a $(annot_tsv)  --gdef "$(call groupsdef2str)" --gnames "$(call groups2str)" -f $(6)
+	tsvGE2html -m $(1) --tsv $(2) --out $(3)/$(4) --species $(species)  --browser ../../../../$(BROWSER_DIR)/ --css ../../../../$(CSS_FILE) --title "$(5)" -a $(annot_tsv)  --gdef "$(call groupsdef2str)" --gnames "$(call groups2str)" -f $(6) --feat_mapping $(feat_mapping_file)
 endef
 
 #-x min value
@@ -242,7 +242,8 @@ $(name)/report/mapping/$(mapper)/%/index.html: FORCE
 phony_targets+=quant_report quant_report_files
 silent_targets+=quant_report quant_report_files
 
-quant_html_files=$(foreach m,$(call quant_dirs,$(name)), $(if $(call quiet_ls,$(m)/genes.raw.*.tsv),$(name)/report/quant/$(subst /,_x_,$(subst $(name)/,,$(m))).html,))
+# TODO check  the existence of each file (rpkm,nlib,raw)x(gene,trans,exon)
+quant_html_files=$(foreach m,$(call quant_dirs,$(name)), $(if $(call quiet_ls,$(m)/genes.raw.*.tsv),$(name)/report/quant/$(subst /,_x_,$(subst $(name)/,,$(m))).html,)) $(foreach m,$(call quant_dirs,$(name)), $(if $(call quiet_ls,$(m)/transcripts.raw.*.tsv),$(name)/report/quant/$(subst /,_x_,$(subst $(name)/,,$(m))).transcript.html,)) $(foreach m,$(call quant_dirs,$(name)), $(if $(call quiet_ls,$(m)/exons.raw.*.tsv),$(name)/report/quant/$(subst /,_x_,$(subst $(name)/,,$(m))).exon.html,))
 
 quant_report: report_setup $(quant_html_files)
 
@@ -256,40 +257,102 @@ $(name)/report/quant/%/gene.raw.html:
 	cp $(subst .html,,$@).t.html $@
 
 $(name)/report/quant/%/gene.rpkm.html: 
-	$(call GE_tsv2html,"rpkm",$(call quiet_ls,$(name)/$(subst _x_,/,$*)/genes.rpkm.$(shell echo $*|sed "s/.*_x_//").tsv),$(@D),gene.rpkm.t,$(subst _x_, x ,$*),"gene") && \
+	$(call GE_tsv2html,"rpkm",$(call quiet_ls,$(name)/$(subst _x_,/,$*)/genes.rpkms.*.tsv),$(@D),gene.rpkm.t,$(subst _x_, x ,$*),"gene") && \
 	cp $(subst .html,,$@).t.html $@
 
-# TODO: nlib
+$(name)/report/quant/%/gene.nlib.html: 
+	$(call GE_tsv2html,"nlib",$(call quiet_ls,$(name)/$(subst _x_,/,$*)/genes.nlib.*.tsv),$(@D),gene.nlib.t,$(subst _x_, x ,$*),"gene") && \
+	cp $(subst .html,,$@).t.html $@
+
 # TODO: level: exon+transcript
+# Transcript
+$(name)/report/quant/%/transcript.raw.html: 
+	$(call GE_tsv2html,"raw",$(call quiet_ls,$(name)/$(subst _x_,/,$*)/transcripts.raw.$(shell echo $*|sed "s/.*_x_//").tsv),$(@D),transcript.raw.t,$(subst _x_, x ,$*),"CDS") && \
+	cp $(subst .html,,$@).t.html $@
+
+$(name)/report/quant/%/transcript.rpkm.html: 
+	$(call GE_tsv2html,"rpkm",$(call quiet_ls,$(name)/$(subst _x_,/,$*)/transcripts.rpkms.*.tsv),$(@D),transcript.rpkm.t,$(subst _x_, x ,$*),"CDS") && \
+	cp $(subst .html,,$@).t.html $@
+
+$(name)/report/quant/%/transcript.nlib.html: 
+	$(call GE_tsv2html,"nlib",$(call quiet_ls,$(name)/$(subst _x_,/,$*)/transcripts.nlib.*.tsv),$(@D),transcript.nlib.t,$(subst _x_, x ,$*),"CDS") && \
+	cp $(subst .html,,$@).t.html $@
+
+# exon
+$(name)/report/quant/%/exon.raw.html: 
+	$(call GE_tsv2html,"raw",$(call quiet_ls,$(name)/$(subst _x_,/,$*)/exons.raw.$(shell echo $*|sed "s/.*_x_//").tsv),$(@D),exon.raw.t,$(subst _x_, x ,$*),"exon") && \
+	cp $(subst .html,,$@).t.html $@
+
+$(name)/report/quant/%/exon.rpkm.html: 
+	$(call GE_tsv2html,"rpkm",$(call quiet_ls,$(name)/$(subst _x_,/,$*)/exons.rpkms.*.tsv),$(@D),exon.rpkm.t,$(subst _x_, x ,$*),"exon") && \
+	cp $(subst .html,,$@).t.html $@
+
+$(name)/report/quant/%/exon.nlib.html: 
+	$(call GE_tsv2html,"nlib",$(call quiet_ls,$(name)/$(subst _x_,/,$*)/exons.nlib.*.tsv),$(@D),exon.nlib.t,$(subst _x_, x ,$*),"exon") && \
+	cp $(subst .html,,$@).t.html $@
+
 
 ##########################
 # one rule by quant option
-$(name)/report/quant/%_x_htseq1.html: $(name)/report/quant/%_x_htseq1/gene.raw.html
+$(name)/report/quant/%_x_htseq1.html: $(name)/report/quant/%_x_htseq1/gene.raw.html $(name)/report/quant/%_x_htseq1/gene.rpkm.html $(name)/report/quant/%_x_htseq1/gene.nlib.html
 	touch $@
 
-$(name)/report/quant/%_x_htseq2.html: $(name)/report/quant/%_x_htseq2/gene.raw.html
+$(name)/report/quant/%_x_htseq2.html: $(name)/report/quant/%_x_htseq2/gene.raw.html $(name)/report/quant/%_x_htseq2/gene.rpkm.html  $(name)/report/quant/%_x_htseq2/gene.nlib.html
 	touch $@
 
-$(name)/report/quant/%_x_flux_cap.html: $(name)/report/quant/%_x_flux_cap/gene.raw.html
+
+$(name)/report/quant/%_x_flux_cap.html: $(name)/report/quant/%_x_flux_cap/gene.raw.html $(name)/report/quant/%_x_flux_cap/gene.rpkm.html $(name)/report/quant/%_x_flux_cap/gene.nlib.html
 	touch $@
 
-$(name)/report/quant/%_x_basic.html: $(name)/report/quant/%_x_basic/gene.raw.html
+$(name)/report/quant/%_x_basic.html: $(name)/report/quant/%_x_basic/gene.raw.html $(name)/report/quant/%_x_basic/gene.rpkm.html $(name)/report/quant/%_x_basic/gene.nlib.html
 	touch $@
 
-$(name)/report/quant/%_x_cufflinks1_nd.html: $(name)/report/quant/%_x_cufflinks1_nd/gene.raw.html
+$(name)/report/quant/%_x_cufflinks1_nd.html: $(name)/report/quant/%_x_cufflinks1_nd/gene.raw.html $(name)/report/quant/%_x_cufflinks1_nd/gene.rpkm.html $(name)/report/quant/%_x_cufflinks1_nd/gene.nlib.html
 	touch $@
 
-$(name)/report/quant/%_x_cufflinks1.html: $(name)/report/quant/%_x_cufflinks1/gene.raw.html
+$(name)/report/quant/%_x_cufflinks1.html: $(name)/report/quant/%_x_cufflinks1/gene.raw.html $(name)/report/quant/%_x_cufflinks1/gene.rpkm.html $(name)/report/quant/%_x_cufflinks1/gene.nlib.html
 	touch $@
 
-$(name)/report/quant/%_x_cufflinks2.html: $(name)/report/quant/%_x_cufflinks2/gene.raw.html
+$(name)/report/quant/%_x_cufflinks2.html: $(name)/report/quant/%_x_cufflinks2/gene.raw.html $(name)/report/quant/%_x_cufflinks2/gene.rpkm.html $(name)/report/quant/%_x_cufflinks2/gene.nlib.html
 	touch $@
 
-$(name)/report/quant/%_x_cufflinks2_nd.html: $(name)/report/quant/%_x_cufflinks2/gene.raw.html
+$(name)/report/quant/%_x_cufflinks2_nd.html: $(name)/report/quant/%_x_cufflinks2/gene.raw.html $(name)/report/quant/%_x_cufflinks2/gene.rpkm.html $(name)/report/quant/%_x_cufflinks2/gene.nlib.html
 	touch $@
 
 $(name)/report/quant/%_x_scripture.html: 
 	$(info TODO: complete $@)
+	touch $@
+
+$(name)/report/quant/%_x_nurd.html: $(name)/report/quant/%_x_nurd/gene.raw.html $(name)/report/quant/%_x_nurd/gene.rpkm.html $(name)/report/quant/%_x_nurd/gene.nlib.html
+	touch $@
+
+## quant report: transcripts
+$(name)/report/quant/%_x_htseq1.transcript.html: $(name)/report/quant/%_x_htseq1/transcript.raw.html $(name)/report/quant/%_x_htseq1/transcript.rpkm.html  $(name)/report/quant/%_x_htseq1/transcript.nlib.html
+	touch $@
+
+$(name)/report/quant/%_x_htseq2.transcript.html: $(name)/report/quant/%_x_htseq2/transcript.raw.html $(name)/report/quant/%_x_htseq2/transcript.rpkm.html  $(name)/report/quant/%_x_htseq2/transcript.nlib.html
+	touch $@
+
+$(name)/report/quant/%_x_flux_cap.transcript.html: $(name)/report/quant/%_x_flux_cap/transcript.raw.html $(name)/report/quant/%_x_flux_cap/transcript.rpkm.html  $(name)/report/quant/%_x_flux_cap/transcript.nlib.html
+	touch $@
+
+$(name)/report/quant/%_x_cufflinks1.transcript.html: $(name)/report/quant/%_x_cufflinks1/transcript.raw.html $(name)/report/quant/%_x_cufflinks1/transcript.rpkm.html  $(name)/report/quant/%_x_cufflinks1/transcript.nlib.html
+	touch $@
+
+$(name)/report/quant/%_x_cufflinks1_nd.transcript.html: $(name)/report/quant/%_x_cufflinks1_nd/transcript.raw.html $(name)/report/quant/%_x_cufflinks1_nd/transcript.rpkm.html  $(name)/report/quant/%_x_cufflinks1_nd/transcript.nlib.html
+	touch $@
+
+$(name)/report/quant/%_x_cufflinks2.transcript.html: $(name)/report/quant/%_x_cufflinks2/transcript.raw.html $(name)/report/quant/%_x_cufflinks2/transcript.rpkm.html  $(name)/report/quant/%_x_cufflinks2/transcript.nlib.html
+	touch $@
+
+$(name)/report/quant/%_x_cufflinks2_nd.transcript.html: $(name)/report/quant/%_x_cufflinks2_nd/transcript.raw.html $(name)/report/quant/%_x_cufflinks2_nd/transcript.rpkm.html  $(name)/report/quant/%_x_cufflinks2_nd/transcript.nlib.html
+	touch $@
+
+$(name)/report/quant/%_x_nurd.transcript.html: $(name)/report/quant/%_x_nurd/transcript.raw.html $(name)/report/quant/%_x_nurd/transcript.rpkm.html  $(name)/report/quant/%_x_nurd/transcript.nlib.html
+	touch $@
+
+## quant report: exons
+$(name)/report/quant/%_x_htseq2.exon.html: $(name)/report/quant/%_x_htseq2/exon.raw.html $(name)/report/quant/%_x_htseq2/exon.rpkm.html  $(name)/report/quant/%_x_htseq2/exon.nlib.html
 	touch $@
 
 ############################

@@ -164,8 +164,8 @@ cufflinks2_citation=Trapnell, Cole, et al. "Differential gene and transcript exp
 cufflinks2_bibtex=cufflinks2.bib
 
 ####
-htseq_citation=http://www-huber.embl.de/users/anders/HTSeq/doc/index.html
-htseq_bibtex=
+htseq_citation=Simon Anders, Paul Theodor Pyl, Wolfgang Huber: HTSeq – A Python framework to work with high-throughput sequencing data. bioRxiv, 20 Feb 2014, http://doi.org/10.1101/002824.
+htseq_bibtex=htseq.bib
 
 ####
 FLUX_CAPACITOR_citation=Montgomery, Stephen B., Micha Sammeth, Maria Gutierrez-Arcelus, Radoslaw P. Lach, Catherine Ingle, James Nisbett, Roderic Guigo, and Emmanouil T. Dermitzakis. "Transcriptome genetics using second generation sequencing in a Caucasian population." Nature 464, no. 7289 (2010): 773-777.

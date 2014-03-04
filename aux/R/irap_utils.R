@@ -595,6 +595,7 @@ brew.wrapper <- function(...) {
   }
 }
 
+
 irap.output.html <- function(html,info.msg=NULL) {
   if ( !is.null(info.msg) && info.msg!="") {
     cat(irap.info2html(info.msg))
@@ -1201,18 +1202,23 @@ quant.check.quant.matrix.OK <- function(filename) {
 ################################################
 #
 
-quant.heatmap <- function(data,nlim=50,do.cor=FALSE,density.info="histogram",...) {
+quant.heatmap <- function(data,nlim=50,key.xlabel="Expression",do.cor=FALSE,density.info="histogram",...) {
   suppressPackageStartupMessages(library("gplots"))
+  #data <- log2(quant.data.group$mean+1)
   var <- rowVariance(data)
+  if (nlim==nrow(data) && nlim>300) {
+    nlim <- 300
+  }
   # select a subset of rows
   select <- order(var,decreasing=TRUE)[c(1:nlim)]
   colors <- topo.colors(nlim)
   data <- data[select,]            
   if ( do.cor ) {
     data <- cor(data)
+    key.xlabel <- paste(key.xlabel," correlation",sep="")
   }
   # sort the genes by variability
-  heatmap.2(data,col = colors, scale = "none",cexCol=0.9,cexRow=0.6,keysize=1,density.info=density.info,trace="none",...)
+  suppressWarnings(irap.heatmap.2(x=as.matrix(data),col = colors, scale = "none",cexCol=0.9,cexRow=0.6,keysize=1,density.info=density.info,trace="none",key.xlabel=key.xlabel,...))
 }
 
 # general function to plot an heatmap
@@ -1381,7 +1387,7 @@ myParseArgs <- function(usage,option_list,filenames.exist=NULL,multiple.options=
   return(opt)
 }
 #
-#################################################################################################
+#############################################################
 conf.get.value <- function(conf,val) {
   #pinfo(">>>>>>>>>>>",val)
   idx <- grep(paste("^",val,"$",sep=""),conf[,1],ignore.case=TRUE,value=FALSE,perl=TRUE)
@@ -1505,45 +1511,76 @@ source.filt.groups.def <- list(
   "all"=NA,
   "protein coding"=NA,
   "pseudogenes"=NA,
-  "xRNA"=NA
-)
+  "tRNA"=NA,
+  "rRNA"=NA,
+  "lincRNA"=NA,
+  "retained intron"=NA
+  )
 # Ids of the genes on each group
 source.filt.groups <- list("all"=TRUE,
-                    "pseudogenes"=NA,
-                    "protein coding"=NA,
-                    "xRNA"=NA
+                           "pseudogenes"=NA,
+                           "protein coding"=NA,
+                           "tRNA"=NA,
+                           "rRNA"=NA,
+                           "retained intron"=NA,
+                           "lincRNA"=NA
                     )
 
-
+source.filt.query <- list("all"=TRUE,
+                          "pseudogenes"=c("pseudogene"),
+                          "protein coding"=c("protein_coding"),
+                          "tRNA"=c("tRNA"),
+                          "retained intron"=c("retained_intron"),
+                          "lincRNA"=c("lincRNA")
+                          )
+#                          "rRNA"=c("rRNA"),
 
 # Initialization
-init.source.filter <- function(table) {
+init.source.filter <- function(table,id.col="ID") {
   if ( "source" %in% colnames(table) ) {
     source.filt.groups.def <- list()
     source.filt.groups <- list()
-    sources <- levels(table$source)
-    #pdebug(sources)
+    # slower
+    sources <- unique(as.character(table$source))
+    
+    pinfo("#Sources:",length(sources))
+    pinfo(sources)
     # all
     source.filt.groups.def$"all" <- sources
-    source.filt.groups$"all" <- as.character(table[,"ID"])
+    source.filt.groups$"all" <- as.character(table[,id.col])
 
-    protein_coding <- c("protein_coding")
-    source.filt.groups.def$"protein coding" <- protein_coding
-    protein_coding.filt <- sapply(table$source,grepl,pattern=paste("(",paste(protein_coding,collapse="|"),")",sep=""))
-    source.filt.groups$"protein coding" <- as.character(table[protein_coding.filt,"ID"])
-
-    pseudogenes <- grep("pseudogene",sources,value=T)
-    source.filt.groups.def$pseudogenes <- pseudogenes
-    pseudogenes.filt <- sapply(table$source,grepl,grepl,pattern=paste("(",paste(pseudogenes,collapse="|"),")",sep=""))
-    source.filt.groups$pseudogenes <- as.character(table[pseudogenes.filt,"ID"])
-    if (length(pseudogenes.filt)>0) {
-      pdebug(sum(pseudogenes.filt))
+    for (f in names(source.filt.query) ) {
+      if (f!="all") {
+        q <- source.filt.query[f]
+        qr <- grep(q,sources,value=T)
+        pinfo("Filter: ",f," ",q,"->",paste(qr,collapse="|"))
+        source.filt.groups.def[[f]] <- qr
+        re <- paste("(",paste(qr,collapse="|"),")",sep="")
+        filt <- NULL
+        if (length(qr)!=0) 
+          filt <- sapply(table$source,grepl,pattern=re)
+        source.filt.groups[[f]] <- as.character(table[filt,id.col])
+        pinfo("Filter ",f,": found ",length(source.filt.groups[[f]]))
+      }
     }
+    ## pseudogenes <- grep("pseudogene",sources,value=T)
+    ## source.filt.groups.def$pseudogenes <- pseudogenes
+    ## pseudogenes.filt <- sapply(table$source,grepl,grepl,pattern=paste("(",paste(pseudogenes,collapse="|"),")",sep=""))
+    ## source.filt.groups$pseudogenes <- as.character(table[pseudogenes.filt,id.col])
+    ## if (length(pseudogenes.filt)>0) {
+    ##   pdebug(sum(pseudogenes.filt))
+    ## }
     
-    xRNA <- grep("RNA$",sources,value=T)
-    source.filt.groups.def$"xRNA" <- as.character(table[xRNA,"ID"])
-    xRNA.filt <- sapply(table$source,grepl,grepl,perl=TRUE,pattern=paste("(",paste(xRNA,collapse="|"),")",sep=""))
-    source.filt.groups$"xRNA" <- as.character(table[xRNA.filt,"ID"])
+    #xRNA <- grep("RNA$",sources,value=T)
+    #source.filt.groups.def$"xRNA" <- as.character(table[xRNA,id.col])
+    #xRNA.filt <- sapply(table$source,grepl,grepl,perl=TRUE,pattern=paste("(",paste(xRNA,collapse="|"),")",sep=""))
+    #source.filt.groups$"xRNA" <- as.character(table[xRNA.filt,id.col])
+
+    ## tRNA <- grep("tRNA$",sources,value=T)
+    ## source.filt.groups.def$"tRNA" <- as.character(table[tRNA,id.col])
+    ## tRNA.filt <- sapply(table$source,grepl,grepl,perl=TRUE,pattern=paste("(",paste(tRNA,collapse="|"),")",sep=""))
+    ## source.filt.groups$"tRNA" <- as.character(table[tRNA.filt,id.col])
+
     # update the global variable
     assign("source.filt.groups.def",source.filt.groups.def, envir = .GlobalEnv)
     assign("source.filt.groups",source.filt.groups, envir = .GlobalEnv)
@@ -1575,7 +1612,7 @@ get.source.filter.menu <- function(file.prefix) {
    get.source.menu.entry <- function(name,file.prefix) {
      paste("<a href='",basename(get.source.filename(file.prefix,name)),"'>",name,"</a>",sep="")
    }
-   sources.menu <- paste(sapply(names(source.filt.groups.def),get.source.menu.entry,file.prefix),collapse="|")
+   sources.menu <- paste(sapply(sort(names(source.filt.groups.def)),get.source.menu.entry,file.prefix),collapse="|")
    sources.menu
  }
 

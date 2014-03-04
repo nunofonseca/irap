@@ -167,9 +167,11 @@ gen.toplevel.menu <- function(menufile) {
   #quantification
   levels <- c("gene", "exon" , "transcript")
   # list name=extension
-  metrics <- list("RPKM"=c('rpkm'),
-                  "Counts"=c('raw'),
-                  "Counts/lib size"=c('nlib'))
+  metrics <- list(
+    "Counts"=c('raw'),
+    "RPKM"=c('rpkm'),
+    "Counts/lib size"=c('nlib')
+    )
   
   # Quantification
   for (quant in strsplit(opt$quant_dirs," +")[[1]] ) {

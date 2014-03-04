@@ -10,15 +10,15 @@ DIV.de_report_bar {
 }
 
 DIV.source_filter {
-    padding: 3px;
+    padding: 2px;
     font-family: Arial, Helvetica, sans-serif; 
-    font-size: 12pt; 
+    font-size: 11pt; 
     background: darkgrey;
-    border-radius: 3px;  
+    border-radius: 2px;  
     font-style: normal; 
     text-align: center;
     z-index: 999;
-    width: 600px;
+    width: 1000px;
 }
 
 DIV.source_filter a  {

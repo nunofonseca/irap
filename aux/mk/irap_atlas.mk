@@ -23,7 +23,7 @@
 # Atlas specific 
 # all variable, functions, and rules should contain a atlas suffix or prefix
 
-atlas_wrap_up: get_tracks $(name)/atlas_html.tar.gz
+atlas_wrap_up: $(name)/atlas_html.tar.gz
 
 
 #######################

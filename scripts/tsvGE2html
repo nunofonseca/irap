@@ -1,4 +1,5 @@
-#!/usr/bin/env Rscript
+#!/usr/bin/env Rscript3
+#; -*- mode: R;-*-
 # =========================================================
 # Copyright 2012-2013,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
 #
@@ -23,6 +24,7 @@
 
 ###############################################################
 suppressPackageStartupMessages(library("optparse"))
+suppressPackageStartupMessages(library(DESeq))
 
 IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
 if ( IRAP.DIR == "" ) {
@@ -30,23 +32,24 @@ if ( IRAP.DIR == "" ) {
   q(status=1)
 }
 
-suppressPackageStartupMessages(library(DESeq))
 # specify our desired options in a list
 #
 source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+source(paste(IRAP.DIR,"aux/R","irap_misc.R",sep="/"))
 pdebug.enabled <- FALSE
 
 # htseq
 # tsvGE2html -f gene -s homo_sapiens  -i test_files/htseq/genes.raw.htseq2.tsv  -x 0 -t "TITLE" -a annot.file --css css.file -o 
 #######################
 usage <- "tsvGE2html --tsv file [options]"
-filenames <- c("tsv_file","annotation") ;#filenames that must exist (if defined)
+filenames <- c("tsv_file","annotation","feat_mapping_file") ;#filenames that must exist (if defined)
 option_list <- list(
   make_option(c("-v", "--verbose"), action="store_true", default=TRUE, help="Print extra output [default]"),
   make_option(c("-q", "--quietly"), action="store_false", dest="verbose", help="Print little output"),
   make_option(c("-f", "--feature"), type="character", dest="feature", default="gene",help="Feature (gene,exon,CDS) [default %default]"),
   make_option(c("-s", "--species"), type="character", dest="species", default="homo_sapiens",help="Species [default %default]"),
   make_option(c("-i", "--tsv"), type="character", dest="tsv_file", default=NULL,help="TSV file name with ge values"),
+  make_option(c("--feat_mapping"), type="character", dest="feat_mapping_file", default=NULL,help="Rdata file with the mappings between exons/transcripts to gene ids."),
   make_option(c("-m", "--metric"), type="character", dest="metric", default="",help="Metric used in the normalized matrix  (raw, rpkm, nlib, ...)"),
   make_option(c("-x", "--min-value"), type="numeric", dest="min_value", default=0,help="Discard entries with  values lower than the one provided. [default %default]"),
   make_option(c("-t", "--title"), type="character", dest="title", default="",help="Report title"),
@@ -59,27 +62,16 @@ option_list <- list(
   make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
   make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name prefix. An HTML and TSV.gz file will be created.")
 )
-#make_option(c("-p", "--flavour"), type="character", default="cuffdiff",help="Name of the software that produced the TSV file [default %default]"),
 
 # check multiple options values
 multiple.options = list(
   feature=c('gene','exon','CDS'),
-  metric=c('norm','raw')
+  metric=c('rpkm','raw',"nlib")
 )
 mandatory <- c("tsv_file","out",'metric')
 opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
 
 #############################
-# Fields defined per feature
-# Gene ok
-fields <- list(
-               URL.FIELD.NAME="Gene",
-               URLFIELD.ID="Gene",
-               LOCUS.FIELD="locus",
-               ANNOT.ID="Gene",
-               ID.in.ANNOT="ID"
-               )
-
 # ensure that the path include / in the end
 opt$browser <- paste(gsub("/$","",opt$browser),"/",sep="")
 pdebug.enabled <- opt$debug
@@ -114,6 +106,34 @@ lib2group <- function(groups.l,files) {
   g2files
 }
 
+# Pearson correlation by default
+my.panel.cor<-function(x,y,...) {
+       panel.cor(x,y, digits=2, prefix="",logit="NULL",...)
+}
+
+pprint.metric<-function(x) {
+   str<-list("raw"="Number of reads",
+             "rpkm"="RPKM",
+             "nlib"="Number of reads normalized by library size")
+   return(str[[x]])
+}
+
+capitalize <- function(x, strict = FALSE) {
+    cap <- function(s) { paste(toupper(substring(s, 1, 1)),
+                  {s <- substring(s, 2); if(strict) tolower(s) else s},
+                             sep = "", collapse = " " ) }
+    sapply(strsplit(x, split = " "), cap, USE.NAMES = !is.null(names(x)))
+}
+
+pprint.feat<-function(x,cap=FALSE) {
+   str<-list("gene"="gene",
+             "exon"="exon",
+             "CDS"="transcript")
+   if (cap) return(capitalize(str[[x]]))
+   return(str[[x]])
+}
+
+##################################
 # check if output directory exists
 #
 out.dir <- dirname(opt$out)
@@ -125,15 +145,12 @@ pdebug("groups=",groups.names)
 pdebug("TSVFILE=",opt$tsv_file)
 pdebug("Annotation=",opt$annotation)
 
-#tsvDE2html  --tsv RT_bias/tophat2/htseq2/deseq/Brain42vs60.genes_de.tsv
+#
 annot.table <- NULL
 irap.css <- opt$css
 title <- opt$title
 sources.menu <- ""
 
-if ( !is.null(opt$annotation) ) {
-  annot.table <- load.annot(opt$annotation)
-}
 
 # load TSV
 # TODO: trap and report errors
@@ -144,83 +161,83 @@ if (is.irap.empty(table)) {
   perror("'empty' input file: ",opt$tsv_file)
   q(status=1)
 }
+# fix id column name
+colnames(table)[1] <- "ID"
+
+# add rownames table
+# feature=gene=> gene_id
+#         transcript=>transcriptid
+#         exon => gene+exon#
+#
+rownames(table) <- as.character(table[,"ID"])
 
 html.cols2sel <- colnames(table)
 pdebug.save.state("tsvGE2html0","p0")
-# annotation should be mandatory
-if ( !is.null(annot.table)) {
-  table <- mergeAnnot(table,annot.table,table.field=fields$ANNOT.ID,annot.field=fields$ID.in.ANNOT)
-  # check if name ok
-  if ( sum(!is.na(table$Name)) >0 ) {
-    fields$URL.FIELD.NAME <- "Name"
-  }
-  if ( "locus" %in% colnames(table) ) {
-    fields$LOCUS.FIELD  <- "locus"
-  }
-  if ( "lname" %in% colnames(table) ) {
-    table[,"Gene name"] <- table$lname
-  }
-}
 
+save.image()
+##########################
+# if feat!=gene
+if ( opt$feature != "gene" ) {
+  pinfo("Loading mapping...")
+  # LOAD the mapping
+  load(opt$feat_mapping_file)
+  # Apply the mapping to the quant table
+  if (opt$feature == "exon" ) {
+    annot.table <- exons.f
+  } else {
+    annot.table <- trans.f
+  }
+  pinfo(colnames(annot.table))
+  pinfo("Loaded mapping ",nrow(annot.table)," entries")
+  table2 <- cbind(table,annot.table[table$ID,])
+  table2 <- table2[,unique(colnames(table2))]
+  #table2$source <- as.character(table2$source)
+  pinfo("Data merged with mapping ",nrow(table)," -> ",nrow(table2)," rows")
+  table <- table2
+} else {
+# feat==gene
+  if ( !is.null(opt$annotation) ) {
+    annot.table <- load.annot(opt$annotation)
+  }
+  # Annotation should be mandatory
+  fields <- list(
+    URL.FIELD.NAME="ID",
+    URLFIELD.ID="ID",
+    LOCUS.FIELD="locus",
+    ANNOT.ID="ID",
+    ID.in.ANNOT="ID"
+    )
+  if ( !is.null(annot.table)) {
+    table2 <- mergeAnnot(table,annot.table,table.field=fields$ANNOT.ID,annot.field=fields$ID.in.ANNOT)
+    rownames(table2) <- rownames(table)
+    pinfo("Data merged with annot. ",nrow(table)," -> ",nrow(table2)," rows")
+    table <- table2
+    if ( sum(!is.na(table$Name)) >0 ) {
+      fields$URL.FIELD.NAME <- "Name"
+    }
+    if ( "locus" %in% colnames(table) ) {
+      fields$LOCUS.FIELD  <- "locus"
+    }
+    if ( "lname" %in% colnames(table) ) {
+      table[,"Gene name"] <- table$lname
+    }    
+  }
+# add some annot fields to the table
+}
+#save.image()
+#load(".RData")
+
+#########################
 # copies of original matrix
 table.orig  <- table
 uncut.table <- table
 uncut.table.orig <- table
 
+sources.menu <- ""
+init.source.filter(table,colnames(table)[1])
+sources.menu <- get.source.filter.menu(opt$out)
+table.tsv <- uncut.table
 
-###########################################################
-if ( "source" %in% colnames(table) ) {
-  # generate filt.groups.files and filt.groups.def
-  # with for each list (all, pseudogene,...)
-  #  list with the elements from the table that should be included in a specific list
-  #  html filename 
-  sources <- levels(table$source)
-  pdebug(sources)
-  grep.w <- function(target,pat) {
-    grep(pat,target)
-  }
-  pseudogenes <- c("pseudogene")
-  pseudogenes.filt <- grepl("pseudogene",as.character(table$source))
-  pseudogenes.filt2 <- grepl("pseudogenes",as.character(uncut.table$source))
-  #pdebug(sum(pseudogenes.filt))
-  protein_coding <- c("protein_coding")
-  protein_coding.filt <- grepl("protein_coding",as.character(table$source))
-  protein_coding.filt2 <- grepl("protein_coding",as.character(uncut.table$source))
-  xRNA <- c("RNA")
-  xRNA.filt <- grepl("RNA",table$source)
-  xRNA.filt2 <- grepl("RNA",uncut.table$source)
-
-  filt.groups.def <- list(
-    all,
-    "pseudogenes"=pseudogenes,
-    "protein coding"=protein_coding,
-    "xRNA"=xRNA
-    )
-  filt.groups <- list(
-    all=TRUE,
-    "pseudogenes"=pseudogenes.filt,
-    "protein coding"=protein_coding.filt,
-    "xRNA"=xRNA.filt
-    )
-  filt.groups.uncut <- list(
-    all=TRUE,
-    "pseudogenes"=pseudogenes.filt2,
-    "protein coding"=protein_coding.filt2,
-    "xRNA"=xRNA.filt2
-    )
-
-  filt.groups.files <- list(
-    all=paste(opt$out,".html",sep=""),
-    "pseudogenes"=paste(opt$out,"_","pseudogenes",".html",sep=""),
-    "protein coding"=paste(opt$out,"_","protein_coding",".html",sep=""),
-    "xRNA"=paste(opt$out,"_","xRNA",".html",sep="")
-    )
-  # sources menu
-  get.source.menu.entry <- function(name) {
-    paste("<a href='",basename(filt.groups.files[[name]]),"'>",name,"</a>",sep="")
-  }
-  sources.menu=paste(sapply(names(filt.groups),get.source.menu.entry),collapse="|")
-}
 #
 library(R2HTML)
 library(brew)
@@ -230,11 +247,12 @@ library(brew)
 gen.page <- function (o.html.file) {
   #save.image()
   pinfo("Generating html ",o.html.file)
+  reset.irap.ctr()
 
   write.tsv(table.html,file=tsv.file)
   system(paste("rm -f ",tsv.file,".gz ;gzip ",tsv.file,sep=""))
 
-  irap.assert(ncol(table.html)>0,"unexpected empty table")
+
   if ( nrow(uncut.table)<1 ) {
     pdebug("Not enough data")
     write.tsv(uncut.table,file=tsv.file)
@@ -242,6 +260,7 @@ gen.page <- function (o.html.file) {
     brew.wrapper(get.path2template("not_enough_data"),o.html.file)
     return
   }
+  irap.assert(ncol(table.html)>0,"unexpected empty table")
   # setup variables
   quant.data<-table.html[,html.cols2sel]
   rownames(quant.data)<-quant.data[,1]
@@ -268,18 +287,18 @@ gen.page <- function (o.html.file) {
      cds <- estimateSizeFactors(cds)
      if (sum(is.na(sizeFactors(cds)))[1]==0) {
        quant.data.norm <-counts(cds,normalized=T)
+       quant.data.norm.group <- data2groups(quant.data.norm,conds)
      } else {
        quant.data.norm <-counts(cds,normalized=F)
-     }
+       pinfo("Failed to normalize using deseq")
+     }     
    } else {
-     pdebug("Report for metric ",opt$metric," not implemented")
-     q(status=1)
+     quant.data.norm <- NULL
   }
   # data per group
   pdebug("conds=",conds)
   pdebug("dim(quant.data.norm)=",dim(quant.data.norm))
   #save(file="wip",quant.data.norm,conds)
-  quant.data.norm.group <- data2groups(quant.data.norm,conds)
   quant.data.group <- data2groups(quant.data,conds)
   ##############################################
   pdebug("Generating html ",o.html.file)
@@ -291,37 +310,42 @@ gen.page <- function (o.html.file) {
 
 o.html.file <-paste(opt$out,".html",sep="")
 file.prefix <- opt$out
+filt.name <- "All"
 tsv.file <- gsub(".html$",".tsv",o.html.file)
 tsv.file.ref <- basename(tsv.file)
 # Main html page
 table.html <- table
 
 pdebug.save.state("tsvGE2html0","p1")
-#save.image("wip")
 gen.page(o.html.file)
 
-
-if ( "source" %in% colnames(table) ) {
-  for (filt.name  in names(filt.groups) ) {
-    uncut.table <-  uncut.table.orig
-    table <- table.orig
-    o.html.file <-filt.groups.files[[filt.name]]
-    if ( filt.name!="all" ) {
-      #save.image()
-      uncut.table <- uncut.table[filt.groups.uncut[[filt.name]],]
-      if ( sum(filt.groups[[filt.name]])==0 ) {
-        tsv.file<-""
-        brew.wrapper(get.path2template("not_enough_data"),o.html.file)  
-      } else {
-        table.html <- table[filt.groups[[filt.name]],html.cols2sel]        
-        tsv.file <- gsub(".html$",".tsv",o.html.file)
-        tsv.file.ref <- basename(tsv.file)
-        file.prefix <- gsub(".html","",filt.groups.files[[filt.name]])
-        gen.page(o.html.file)
-      }
+# ok
+for (filt.name  in get.source.filter.names() ) {
+  uncut.table <- uncut.table.orig
+  if ( filt.name!="All" && filt.name!="all") {
+    if (! "source" %in% colnames(table)) {
+      table <- table.orig[NULL,]
+      uncut.table <- table.tsv[NULL,]                               
+    } else {
+      table <- apply.source.filter(table.orig,filt.name)
+      uncut.table <- table.tsv
     }
+    table.html <- table
+    pdebug("Filter:",filt.name)
+    o.html.file <- get.source.filename(opt$out,filt.name)
+    tsv.file <- gsub(".html$",".tsv",o.html.file)
+    tsv.file.ref <- basename(tsv.file)
+    file.prefix <- gsub(".html","",o.html.file)
+    if ( nrow(table)==0 ) {
+      tsv.file<-""
+      brew.wrapper(get.path2template("not_enough_data"),o.html.file)  
+    } else {
+      gen.page(o.html.file)
+    }
+
   }
 }
+
 warnings()
 q(status=0)
 

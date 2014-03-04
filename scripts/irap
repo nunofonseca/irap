@@ -307,6 +307,9 @@ juncs_file_abspath=$(name)/data/$(juncs_file)
 # GFF3 file obtained from the gtf file
 gff3_file=$(subst .gz,,$(subst .gtf,.gff3,$(gtf_file)))
 
+# mapping (exon/transcript to gene) file obtained from the gtf file
+feat_mapping_file?=$(subst .gz,,$(subst .gtf,.mapping.Rdata,$(gtf_file_abspath)))
+
 $(info *       gff3_file  = $(gff3_file))
 gff3_file_abspath=$(name)/data/$(gff3_file)
 #**********
@@ -985,10 +988,14 @@ endef
 	bedtools merge -scores mean -i - > $@.tmp &&\
 	mv $@.tmp $@
 
-
 # give an error
 %.cdna.fa:
 	$(call p_error,Missing cdna file $@)
+
+# feat_mapping_file
+%.mapping.Rdata %.mapping_exons.tsv %.mapping_trans.tsv: %.gtf
+	irap_gtf2mapping --gtf $(gtf_file_abspath) --out $*.mapping.tmp --cores $(max_threads) && \
+	rename $*.mapping.tmp $*.mapping $*.mapping.*
 
 ################################################################################
 phony_targets+= stage0 stage1 stage2 stage3 stage3a stage3as stage3b stage4 stage5
@@ -1019,7 +1026,7 @@ phony_targets+= setup setup_files
 ################################################################################
 # Setup initial files
 # file with the length of the features (gene, isoform, exon)
-SETUP_DATA_FILES=$(name)/data/gene_class.txt $(index_files) $(gtf_file_abspath).checked  $(gtf_file_abspath).exon_id.gtf $(juncs_file_abspath) $(name)/data/chr_sizes.txt  $(gff3_file_abspath) $(gff3_file_abspath).csv $(annot_tsv) $(feat_length) $(annot_tsv) $(name)/data/exons.bed $(name)/data/introns.bed $(name)/data/genes.bed
+SETUP_DATA_FILES=$(name)/data/gene_class.txt $(index_files) $(gtf_file_abspath).checked  $(gtf_file_abspath).exon_id.gtf $(juncs_file_abspath) $(feat_mapping_file) $(name)/data/chr_sizes.txt  $(gff3_file_abspath) $(gff3_file_abspath).csv $(annot_tsv) $(feat_length) $(annot_tsv) $(name)/data/exons.bed $(name)/data/introns.bed $(name)/data/genes.bed
 
 setup_files: $(SETUP_DATA_FILES)
 

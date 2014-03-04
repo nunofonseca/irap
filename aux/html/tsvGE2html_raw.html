@@ -53,6 +53,24 @@ dolog2 <- function(d) {
   }
   return(d)
 }
+# enough data to generate a set of trees
+do_clustering<-function(m) {
+  if ( length(colnames(m)) >= 3 && nrow(m)>=3 )
+    return(TRUE)
+  return(FALSE)
+}
+# enough data to generate a heatmap
+do_heatmap<-function(m) {
+  if ( length(colnames(m)) >= 2 && nrow(m)>=5 )
+    return(TRUE)
+  return(FALSE)
+}
+do_cor_heatmap<-function(m) {
+  if ( length(colnames(m)) >= 2 && nrow(m)>=30 )
+    return(TRUE)
+  return(FALSE)
+}
+
 %>
 
  <H2 class="section">Data<A NAME="data"></H2>
@@ -66,7 +84,7 @@ dolog2 <- function(d) {
 <H3><%=irap.ctr("Figure")%>: Correlation scatterplot</H3>
 
 <%
-if (ncol(quant.data)>=2 ) {
+if (ncol(quant.data)>=2 && nrow(quant.data)>20 ) {
   pdebug("Correlation scatterplots\n")    
   p <- gen.plot2report(filename=paste(file.prefix,"_group_pairs.png",sep=""),
                        width=600,
@@ -99,7 +117,7 @@ if (ncol(quant.data)>=2 ) {
 <%
   ####################
   # clustering
-  if ( length(colnames(quant.data.group$mean)) > 2 ) {
+  if ( do_clustering(quant.data.group$mean)){
     pdebug("Clustering\n")    
     p <- gen.plot2report(filename=paste(file.prefix,"_group_clus.png",sep=""),
                     width=500,
@@ -135,7 +153,7 @@ if (ncol(quant.data)>=2 ) {
 # all genes/exons/trans
 pdebug("Heatmaps(group)")
 nlim <- 100
-if (ncol(quant.data.group$mean)>=2) {
+if (do_heatmap(quant.data.group$mean)) {
   p <- gen.plot2report(filename=paste(file.prefix,"allg","_group_heatmap_s.png",sep=""),
                        width=600,
                        height=600,
@@ -171,7 +189,7 @@ if (ncol(quant.data.group$mean)>=2) {
 <%
 pdebug("Heatmaps(group)")
 nlim <- 100
-if (ncol(quant.data.group$mean)>=2) {
+if (do_heatmap(quant.data.group$mean)) {
   p <- gen.plot2report(filename=paste(file.prefix,nlim,"_group_heatmap_s.png",sep=""),
                        width=600,
                        height=600,
@@ -239,7 +257,7 @@ if (ncol(quant.data)>=10 ) {
     cols <- groups.l[[g]]
     pdebug("Scatterplot for group ",g)
     quant.data.sel <- quant.data[,cols]
-    if (length(cols)>1) {
+    if (length(cols)>1 &&  nrow(quant.data.sel)>20 ) {
       p <- gen.plot2report(filename=paste(file.prefix,"_sample_pairs_",g,".png",sep=""),
                            width=600,
                            height=600,
@@ -251,7 +269,7 @@ if (ncol(quant.data)>=10 ) {
     }
   }
 } else {
-  if (ncol(quant.data)>=2 ) {
+  if (ncol(quant.data)>=2  && nrow(quant.data)>20 ) {
     p <- gen.plot2report(filename=paste(file.prefix,"_sample_pairs.png",sep=""),
                          width=600,
                          height=600,
@@ -272,7 +290,8 @@ if (ncol(quant.data)>=10 ) {
 <%
   ####################
   # clustering
-  if ( length(colnames(quant.data)) > 2 )   {
+
+  if ( do_clustering(quant.data))   {
     pdebug("Clustering (samples)\n")    
     p <- gen.plot2report(filename=paste(file.prefix,"_sample_clus.png",sep=""),
                     width=500,
@@ -309,7 +328,7 @@ if (ncol(quant.data)>=10 ) {
 <%
 pdebug("Heatmap")
 # cor for the samples
-if (ncol(quant.data)>=2) {
+if (do_heatmap(quant.data)) {
   p <- gen.plot2report(filename=paste(file.prefix,"_sample_heatmap_s",nlim,".png",sep=""),
                      width=800,
                      height=800,
