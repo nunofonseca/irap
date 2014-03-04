@@ -1718,6 +1718,19 @@ cleanup_3_0_reference:
 	rm -f $(data_dir)/reference/$(species)/*gene.annot.{tsv,Rdata}
 	rm -f $(data_dir)/reference/$(species)/*gene_annot.{tsv,Rdata}
 
+##
+cleanup_4_0: cleanup_4_0_data cleanup_4_0_reference
+
+cleanup_4_0_data:
+	rm -rf $(name)/report/quant/*
+#	rm -rf $(name)/report/qc*
+#	rm -rf $(name)/report/mapping/*
+
+
+# the ids changed
+cleanup_4_0_reference:
+	rm -f $(gtf_file_abspath).exon_id.gtf
+
 ###################################################
 # 
 #$(name)/report/all_options.txt:
