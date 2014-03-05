@@ -49,7 +49,7 @@ fi
 #Queue
 if [ "$QUEUE-" = "-" ]; then
     #QUEUE="research-rh6"
-    echo "ERROR in irap_lsf: LSF queue not defined. Please check the  $IRAP_DIR/irap_setup.sh file." > /dev/stderr
+    echo "ERROR in irap_lsf: LSF queue not defined. Please check the  $IRAP_DIR/irap_setup.sh file."
     exit 1
 fi
 
@@ -96,7 +96,7 @@ echo " * Configuration loaded."
 # Check JOB_MAX_MEM
 if [ "$JOB_MAX_MEM-" != "-" ]; then 
   if [ "$JOB_MEM_INCR-" == "-" ]; then
-    echo ERROR: JOB_MEM_INCR should be defined when JOB_MAX_MEM is defined! > /dev/stderr
+    echo ERROR: JOB_MEM_INCR should be defined when JOB_MAX_MEM is defined! 
     exit 1
   fi
 fi
