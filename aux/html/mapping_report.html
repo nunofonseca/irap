@@ -151,7 +151,8 @@ feat.tsv.download.html <- html.download.bar(feat.download.files)
 mapping.feat.sum <- colSums(mapping.feat)
 mapping.feat.per <- round(sweep(mapping.feat,MARGIN=2,100*1/mapping.feat.sum,`*`),2)
 SD<-apply(mapping.feat.per[,-c(1,2,3)],1,FUN=sd)
-mapping.feat.per<-cbind(mapping.feat.per,SD)
+mapping.feat.per[,"SD"]<-SD
+#cbind(mapping.feat.per,SD)
 
 
 xt <- xtable(mapping.feat.per,
@@ -267,7 +268,8 @@ tot <- colSums(mapping.genes)
 p.mapping.genes <- round(sweep(mapping.genes,MARGIN=2,100*1/tot,`*`),2)
 # recompute sd
 SD<-apply(p.mapping.genes[,-c(1,2,3)],1,FUN=sd)
-p.mapping.genes<-cbind(p.mapping.genes,SD)
+p.mapping.genes[,"SD"] <- SD
+#p.mapping.genes<-cbind(p.mapping.genes,SD)
 xt <- xtable(p.mapping.genes,
              caption="",
              label="map_genes_table.p")
