@@ -45,12 +45,25 @@ ifndef gse_minsize
 gse_minsize=3
 endif
 
+################
+# plots
+ifndef gse_minedge
+gse_minedge=3
+endif
+
+ifndef gse_top
+gse_top=Inf
+endif
+################
+
 # print the parameters
 $(info *	gse_tool=$(gse_tool))
 ifneq ($(gse_tool),none) 
 $(info *	gse_method=$(gse_method))
 $(info *	gse_pvalue=$(gse_pvalue))
 $(info *	gse_minsize=$(gse_minsize)  (minimum number of genes))
+$(info *	gse_minedge=$(gse_minedge)  (used in the GSE related plots))
+$(info *	gse_top=$(gse_top)  (used in the GSE related plots))
 endif
 
 
@@ -67,11 +80,11 @@ ifeq ($(gse_tool),piano)
 
 # foldchange column corresponds to logfoldchange
 define run_piano_goterm=
-irap_GSE_piano --tsv $1 --out $(subst .tsv,,$2) --foldchange-col 6 --annotation_col GOterm --annotation $(annot_tsv) --pvalue $(gse_pvalue) --minsize $(gse_minsize) --method $(gse_method) 
+irap_GSE_piano --tsv $1 --out $(subst .tsv,,$2) --foldchange-col 6 --annotation_col GOterm --annotation $(annot_tsv) --pvalue $(gse_pvalue) --minsize $(gse_minsize) --method $(gse_method) --minedge $(gse_minedge) --top $(gse_top)
 endef
 
 define run_piano_kegg=
-irap_GSE_piano --tsv $1 --out $(subst .tsv,,$2) --foldchange-col 6 --annotation_col KEGG --annotation $(annot_tsv) --pvalue $(gse_pvalue) --minsize $(gse_minsize) --method $(gse_method) 
+irap_GSE_piano --tsv $1 --out $(subst .tsv,,$2) --foldchange-col 6 --annotation_col KEGG --annotation $(annot_tsv) --pvalue $(gse_pvalue) --minsize $(gse_minsize) --method $(gse_method) --minedge $(gse_minedge) --top $(gse_top)
 endef
 
 

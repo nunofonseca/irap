@@ -50,6 +50,8 @@ option_list <- list(
   make_option(c("-l", "--pvalue"), type="numeric", dest="pvalue", default=0.05,help="p-value [default %default]"),
   make_option(c("-s", "--minsize"), type="numeric", dest="min.size", default=5,help="Minimum size of  a cluster [default %default]"),
   make_option(c("-m", "--method"), type="character", dest="method", default="median",help="Method [default: %default]"),
+  make_option(c("-e", "--minedge"), type="numeric", dest="minedge", default=3,help="Minimum number of genes shared between two gene sets (used only in the plots) [default: %default]"),
+  make_option(c("-t", "--top"), type="numeric", dest="top", default=Inf,help="Top gene sets used in the plot [default: %default]"),
   make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode (save a Rdata file for debugging purposes)"),
   make_option(c("--go"), type="character", dest="go.file", default=NULL,help="TSV file with the mapping of the genes to GO terms (two columns file: geneid goterm)"),
   make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name prefix.")
@@ -64,6 +66,14 @@ opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filena
 pdebug.enabled <- opt$debug
 pinfo("Parameters parsed.")
 
+if ( opt$minedge < 1 ) {
+  perror("--minedge value should be greater or equal than 1")
+  q(status=1)
+}
+if ( opt$top < 1 ) {
+  perror("--top value should be greater or equal than 1")
+  q(status=1)
+}
 if ( is.null(opt$annotation) && is.null(opt$go.file) ) {
   perror("--go or --annotation needs to be defined.")
   q(status=1)
@@ -130,6 +140,8 @@ out.tsv.file <- paste(opt$out,".tsv",sep="")
 pinfo("Options")
 pinfo("method=",opt$method)
 pinfo("p-value=",opt$pvalue)
+pinfo("top=",opt$top)
+pinfo("minedge=",opt$minedge)
 pinfo("minimum size=",opt$min.size)
 pinfo("annotation col=",opt$annotation_col)
 pinfo("...............................")
@@ -188,24 +200,41 @@ if ( length(set1)>=minSizeLim )  {
     print.empty <- TRUE
   } else {
      # Create the plots
-     #
+     # 
+     # which sets to include
+     sel <- NULL
+     if ( !is.infinite(opt$top) ) {
+       v1 <- as.numeric(gsaRes$pAdjDistinctDirDn)
+       v2 <- as.numeric(gsaRes$pAdjDistinctDirUp)
+       names(v1) <- names(gsaRes$gsc)
+       names(v2) <- names(gsaRes$gsc)
+       v <- apply(cbind(v1,v2),1,min,na.rm=TRUE)       
+       sel <- names(head(sort(v),opt$top))
+     }
      gen.plot2report(filename=paste(opt$out,"_class_distinct_dir_both.png",sep=""),
                      width=450,
                      height=450,
                      html=FALSE,
                      ps=TRUE,
                      to.plot = function () {
-                       nw1 <- networkPlot(gsaRes,class="distinct",direction="both",edgeWidth=c(3,Inf))
+                       nw1 <- networkPlot(gsaRes,class="distinct",direction="both",edgeWidth=c(opt$minedge,100000),adjusted=T,significance=opt$pvalue,geneSets=sel)
                      }                     
                      )
-     
+
+     # which sets to include
+     sel <- NULL
+     if ( !is.infinite(opt$top) ) {
+       v <- as.numeric(gsaRes$pAdjNonDirectional)
+       names(v) <- names(gsaRes$gsc)
+       sel <- names(head(sort(v),opt$top))
+     }
      gen.plot2report(filename=paste(opt$out,"_class_non_dir_both.png",sep=""),
                      width=550,
                      height=550,
                      html=FALSE,
                      ps=TRUE,
                      to.plot = function () {
-                       nw1 <- networkPlot(gsaRes,class="non",edgeWidth=c(3,Inf))
+                       nw1 <- networkPlot(gsaRes,class="non",edgeWidth=c(opt$minedge,10000),adjusted=T,significance=opt$pvalue,geneSets=sel)
                      }                     
                      )
 
