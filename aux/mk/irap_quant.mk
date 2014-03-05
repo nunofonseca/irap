@@ -252,7 +252,7 @@ $(name)/$(mapper)/$(quant_method)/transcripts.raw.cufflinks1.tsv: $(foreach p,$(
 
 #exons
 $(name)/$(mapper)/$(quant_method)/%xons.raw.cufflinks1.tsv: 
-	$(call p_info,Warning! Cufflinks produces quantification at gene and isoform level. Generating empty file $@.)
+	$(call p_info,Warning! Cufflinks does not provide quantification at exon level. Generating empty file $@.)
 	@$(call empty_file,$@)
 
 #
@@ -283,7 +283,7 @@ $(name)/$(mapper)/$(quant_method)/transcripts.raw.cufflinks2.tsv: $(foreach p,$(
 	$(call merge_tsv,$(quant_method)) $^  > $@.tmp && mv $@.tmp $@
 
 $(name)/$(mapper)/$(quant_method)/%xons.raw.cufflinks2.tsv: 
-	$(call p_info,Warning! Cufflinks produces FPKMS and does not provide counts. Generating empty file $@.)
+	$(call p_info,Warning! Cufflinks does not provide quantification at exon level. Generating empty file $@.)
 	@$(call empty_file,$@)
 
 
