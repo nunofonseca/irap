@@ -115,6 +115,12 @@ define quiet_ls=
 $(shell ls -1 $(1) 2>/dev/null)
 endef
 
+# 1 - pat
+# return only the the first file (most recent file)
+define quiet_ls1=
+$(shell ls -1 -T $(1)| head -n 1  2>/dev/null)
+endef
+
 ifndef IRAP_REPORT_MAIN_OPTIONS
 IRAP_REPORT_MAIN_OPTIONS=
 endif
@@ -253,42 +259,42 @@ quant_report_files:
 #######################################
 # Quant. at gene level
 $(name)/report/quant/%/gene.raw.html: 
-	$(call GE_tsv2html,"raw",$(call quiet_ls,$(name)/$(subst _x_,/,$*)/genes.raw.$(shell echo $*|sed "s/.*_x_//").tsv),$(@D),gene.raw.t,$(subst _x_, x ,$*),"gene") && \
+	$(call GE_tsv2html,"raw",$(call quiet_ls1,$(name)/$(subst _x_,/,$*)/genes.raw.$(shell echo $*|sed "s/.*_x_//").tsv),$(@D),gene.raw.t,$(subst _x_, x ,$*),"gene") && \
 	cp $(subst .html,,$@).t.html $@
 
 $(name)/report/quant/%/gene.rpkm.html: 
-	$(call GE_tsv2html,"rpkm",$(call quiet_ls,$(name)/$(subst _x_,/,$*)/genes.rpkms.*.tsv),$(@D),gene.rpkm.t,$(subst _x_, x ,$*),"gene") && \
+	$(call GE_tsv2html,"rpkm",$(call quiet_ls1,$(name)/$(subst _x_,/,$*)/genes.rpkms.*.tsv),$(@D),gene.rpkm.t,$(subst _x_, x ,$*),"gene") && \
 	cp $(subst .html,,$@).t.html $@
 
 $(name)/report/quant/%/gene.nlib.html: 
-	$(call GE_tsv2html,"nlib",$(call quiet_ls,$(name)/$(subst _x_,/,$*)/genes.nlib.*.tsv),$(@D),gene.nlib.t,$(subst _x_, x ,$*),"gene") && \
+	$(call GE_tsv2html,"nlib",$(call quiet_ls1,$(name)/$(subst _x_,/,$*)/genes.nlib.*.tsv),$(@D),gene.nlib.t,$(subst _x_, x ,$*),"gene") && \
 	cp $(subst .html,,$@).t.html $@
 
 
 # Transcript
 $(name)/report/quant/%/transcript.raw.html: 
-	$(call GE_tsv2html,"raw",$(call quiet_ls,$(name)/$(subst _x_,/,$*)/transcripts.raw.$(shell echo $*|sed "s/.*_x_//").tsv),$(@D),transcript.raw.t,$(subst _x_, x ,$*),"CDS") && \
+	$(call GE_tsv2html,"raw",$(call quiet_ls1,$(name)/$(subst _x_,/,$*)/transcripts.raw.$(shell echo $*|sed "s/.*_x_//").tsv),$(@D),transcript.raw.t,$(subst _x_, x ,$*),"CDS") && \
 	cp $(subst .html,,$@).t.html $@
 
 $(name)/report/quant/%/transcript.rpkm.html: 
-	$(call GE_tsv2html,"rpkm",$(call quiet_ls,$(name)/$(subst _x_,/,$*)/transcripts.rpkms.*.tsv),$(@D),transcript.rpkm.t,$(subst _x_, x ,$*),"CDS") && \
+	$(call GE_tsv2html,"rpkm",$(call quiet_ls1,$(name)/$(subst _x_,/,$*)/transcripts.rpkms.*.tsv),$(@D),transcript.rpkm.t,$(subst _x_, x ,$*),"CDS") && \
 	cp $(subst .html,,$@).t.html $@
 
 $(name)/report/quant/%/transcript.nlib.html: 
-	$(call GE_tsv2html,"nlib",$(call quiet_ls,$(name)/$(subst _x_,/,$*)/transcripts.nlib.*.tsv),$(@D),transcript.nlib.t,$(subst _x_, x ,$*),"CDS") && \
+	$(call GE_tsv2html,"nlib",$(call quiet_ls1,$(name)/$(subst _x_,/,$*)/transcripts.nlib.*.tsv),$(@D),transcript.nlib.t,$(subst _x_, x ,$*),"CDS") && \
 	cp $(subst .html,,$@).t.html $@
 
 # exon
 $(name)/report/quant/%/exon.raw.html: 
-	$(call GE_tsv2html,"raw",$(call quiet_ls,$(name)/$(subst _x_,/,$*)/exons.raw.$(shell echo $*|sed "s/.*_x_//").tsv),$(@D),exon.raw.t,$(subst _x_, x ,$*),"exon") && \
+	$(call GE_tsv2html,"raw",$(call quiet_ls1,$(name)/$(subst _x_,/,$*)/exons.raw.$(shell echo $*|sed "s/.*_x_//").tsv),$(@D),exon.raw.t,$(subst _x_, x ,$*),"exon") && \
 	cp $(subst .html,,$@).t.html $@
 
 $(name)/report/quant/%/exon.rpkm.html: 
-	$(call GE_tsv2html,"rpkm",$(call quiet_ls,$(name)/$(subst _x_,/,$*)/exons.rpkms.*.tsv),$(@D),exon.rpkm.t,$(subst _x_, x ,$*),"exon") && \
+	$(call GE_tsv2html,"rpkm",$(call quiet_ls1,$(name)/$(subst _x_,/,$*)/exons.rpkms.*.tsv),$(@D),exon.rpkm.t,$(subst _x_, x ,$*),"exon") && \
 	cp $(subst .html,,$@).t.html $@
 
 $(name)/report/quant/%/exon.nlib.html: 
-	$(call GE_tsv2html,"nlib",$(call quiet_ls,$(name)/$(subst _x_,/,$*)/exons.nlib.*.tsv),$(@D),exon.nlib.t,$(subst _x_, x ,$*),"exon") && \
+	$(call GE_tsv2html,"nlib",$(call quiet_ls1,$(name)/$(subst _x_,/,$*)/exons.nlib.*.tsv),$(@D),exon.nlib.t,$(subst _x_, x ,$*),"exon") && \
 	cp $(subst .html,,$@).t.html $@
 
 
