@@ -61,7 +61,7 @@ for f in $se ; do
     submit_job "${jobname_prefix}2[$s1]" -w  "ended(${jobname_prefix}0*)"  "$cmd conf=$conf pe=  se=$f  $IRAP_PARAMS stage1 stage2 stage3as"
 done
 
-submit_job "${jobname_prefix}q"  -w "ended(${jobname_prefix}2*)"  "$cmd conf=$conf  $IRAP_PARAMS stage3a"
+submit_job "${jobname_prefix}q"  -w "ended(${jobname_prefix}2*)"  "$cmd conf=$conf  $IRAP_PARAMS stage3"
 
 # TODO: report
 submit_job_status "${jobname_prefix}q"
