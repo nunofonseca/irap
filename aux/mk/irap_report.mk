@@ -70,6 +70,12 @@ define  gen_deseq_reports=
 	$(foreach tsv,$(3),$(call DE_tsv2html,deseq,$(3),$(2),$(subst .tsv,.html,$(basename $(tsv)))))
 endef
 
+# mapper quant raw|nlib|rpkm gene|exon|trans
+define quant_target=
+$(if $(call quiet_ls1,$(name)/$(1)/$(2)/$(4)s.$(3).*.tsv), $(name)/report/quant/$(1)_x_$(2)/$(4).$(3).html, )
+endef
+
+
 # 1 metric
 # 2 TSV file
 # 3 out dir
@@ -118,7 +124,7 @@ endef
 # 1 - pat
 # return only the the first file (most recent file)
 define quiet_ls1=
-$(shell ls -1 -T $(1)| head -n 1  2>/dev/null)
+$(shell ls -1 -t $(1) 2>/dev/null| head -n 1)
 endef
 
 ifndef IRAP_REPORT_MAIN_OPTIONS
@@ -248,8 +254,8 @@ $(name)/report/mapping/$(mapper)/%/index.html: FORCE
 phony_targets+=quant_report quant_report_files
 silent_targets+=quant_report quant_report_files
 
-# TODO check  the existence of each file (rpkm,nlib,raw)x(gene,trans,exon)
-quant_html_files=$(foreach m,$(call quant_dirs,$(name)), $(if $(call quiet_ls,$(m)/genes.raw.*.tsv),$(name)/report/quant/$(subst /,_x_,$(subst $(name)/,,$(m))).html,)) $(foreach m,$(call quant_dirs,$(name)), $(if $(call quiet_ls,$(m)/transcripts.raw.*.tsv),$(name)/report/quant/$(subst /,_x_,$(subst $(name)/,,$(m))).transcript.html,)) $(foreach m,$(call quant_dirs,$(name)), $(if $(call quiet_ls,$(m)/exons.raw.*.tsv),$(name)/report/quant/$(subst /,_x_,$(subst $(name)/,,$(m))).exon.html,))
+quant_html_files=$(foreach q,$(SUPPORTED_QUANT_METHODS),$(foreach m,$(SUPPORTED_MAPPERS),$(foreach f,gene exon transcript,$(foreach metric,raw nlib rpkm,$(call quant_target,$(m),$(q),$(metric),$(f)) ))))
+
 
 quant_report: report_setup $(quant_html_files)
 
@@ -297,6 +303,7 @@ $(name)/report/quant/%/exon.nlib.html:
 	$(call GE_tsv2html,"nlib",$(call quiet_ls1,$(name)/$(subst _x_,/,$*)/exons.nlib.*.tsv),$(@D),exon.nlib.t,$(subst _x_, x ,$*),"exon") && \
 	cp $(subst .html,,$@).t.html $@
 
+#
 
 ##########################
 # one rule by quant option
