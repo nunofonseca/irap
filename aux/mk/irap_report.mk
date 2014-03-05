@@ -55,21 +55,6 @@ define gse_html_files=
 $(subst $(name)/,$(name)/report/,$(foreach d,$(call de_dirs,$(1)),$(subst .tsv,.html,$(call quiet_ls,$(d)/*.gse.*.tsv))))
 endef
 
-#1 HTML FILE 
-#2 OUTDIR
-#3 cuffdiff files
-#	$(if $(3),irap_cuffdiff_plots.R $(annot_tsv) $(2) $(1).tmp "$(3)" && mv $(1).tmp $(1),)
-define  gen_cuffdiff1_report=
-	$(info TODO: cuffdiff report)
-endef
-
-#1 HTML FILE 
-#2 OUTDIR
-#3 TSV files
-define  gen_deseq_reports=
-	$(foreach tsv,$(3),$(call DE_tsv2html,deseq,$(3),$(2),$(subst .tsv,.html,$(basename $(tsv)))))
-endef
-
 # mapper quant raw|nlib|rpkm gene|exon|trans
 define quant_target=
 $(if $(call quiet_ls1,$(name)/$(1)/$(2)/$(4)s.$(3).*.tsv), $(name)/report/quant/$(1)_x_$(2)/$(4).$(3).html, )
@@ -155,7 +140,6 @@ $(name)/report/de/:
 
 $(name)/report/quant/:
 	mkdir -p $@
-
 
 #########################
 #mapping_report de_report
@@ -247,7 +231,6 @@ $(name)/report/mapping/comparison.html: $(call only_existing_files,$(foreach m,$
 
 # detailed info per bam
 $(name)/report/mapping/$(mapper)/%/index.html: FORCE
-#	bam_report.R $(name)/$(mapper)/$(call bam_file_for_lib,$*) $(@D) "$(call libname2fastq,$*)"
 	bam_report.R --bam $(name)/$(mapper)/$(call bam_file_for_lib,$*) -d $(@D) --fastq "$(call libname2fastq,$*)" --cores $(max_threads)
 
 ########################
@@ -302,8 +285,6 @@ $(name)/report/quant/%/exon.rpkm.html:
 $(name)/report/quant/%/exon.nlib.html: 
 	$(call GE_tsv2html,"nlib",$(call quiet_ls1,$(name)/$(subst _x_,/,$*)/exons.nlib.*.tsv),$(@D),exon.nlib.t,$(subst _x_, x ,$*),"exon") && \
 	cp $(subst .html,,$@).t.html $@
-
-#
 
 ##########################
 # one rule by quant option
@@ -393,6 +374,7 @@ phony_targets+=de_report de_report_files
 silent_targets+=de_report_files
 
 de_report: report_setup $(call de_html_files,$(name))
+
 # just print the name of the files that will be produced
 de_report_files:
 	echo $(call de_html_files,$(name))
@@ -401,8 +383,6 @@ de_report_files:
 $(name)/report/%.genes_de.html: $(name)/%.genes_de.tsv $(annot_tsv)
 	mkdir -p $(@D)
 	$(call DE_tsv2html,$(subst _nd,,$(call DEfilepath2demethod,$@)),$<,$(@D),$(subst .html,,$(shell basename $@)),$(subst /, x ,$*))
-
-
 
 ############################
 # GSE
