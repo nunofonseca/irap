@@ -164,8 +164,9 @@ endef
 #####################################################
 # Tophat 1 & 2
 
+#--solexa-quals
 define tophat_qual_option=
-	$(shell if [ "$(1)" == "33" ]; then echo "--solexa-quals"; else echo "--phred64-quals"; fi)
+	$(shell if [ "$(1)" == "33" ]; then echo ""; else echo "--solexa-quals"; fi)
 endef
 
 define tophat_seglength_option=
