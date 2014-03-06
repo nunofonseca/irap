@@ -54,6 +54,7 @@ endif
 ifndef gse_top
 gse_top=Inf
 endif
+
 ################
 
 # print the parameters
@@ -65,6 +66,9 @@ $(info *	gse_minsize=$(gse_minsize)  (minimum number of genes))
 $(info *	gse_minedge=$(gse_minedge)  (used in the GSE related plots))
 $(info *	gse_top=$(gse_top)  (used in the GSE related plots))
 endif
+
+#gene2go_mapping
+#gene2pathway_mapping
 
 
 gse_valid_tools=piano none
@@ -79,15 +83,43 @@ endif
 ifeq ($(gse_tool),piano)
 
 # foldchange column corresponds to logfoldchange
+
+# if the user defines a file with the mapping between genes and go terms then
+# use it instead of the annot. file (gene ids are in the first column, go term id or description in the second
+ifdef gene2go_mapping
+$(call file_exists,$(gene2go_mapping))
+$(info *	Using gene to go terms mapping file $(gene2go_mapping))
+gse_go_mapping=$(gene2go_mapping)
+gse_go_annot_col=2
+gse_go_map_file_option=--go
+else
+# use gene annot file
+gse_go_mapping=$(annot_tsv)
+gse_go_annot_col=GOterm
+gse_go_map_file_option=--annotation
+endif
+
 define run_piano_goterm=
-irap_GSE_piano --tsv $1 --out $(subst .tsv,,$2) --foldchange-col 6 --annotation_col GOterm --annotation $(annot_tsv) --pvalue $(gse_pvalue) --minsize $(gse_minsize) --method $(gse_method) --minedge $(gse_minedge) --top $(gse_top)
+irap_GSE_piano --tsv $1 --out $(subst .tsv,,$2) --foldchange-col 6 --annotation_col $(gse_go_annot_col) $(gse_go_map_file_option) $(gse_go_mapping) --pvalue $(gse_pvalue) --minsize $(gse_minsize) --method $(gse_method) --minedge $(gse_minedge) --top $(gse_top)
 endef
+
+#########
+# Pathway
+ifdef gene2pathway_mapping
+$(call file_exists,$(gene2pathway_mapping))
+$(info *	Using gene to go terms mapping file $(gene2pathway_mapping))
+gse_pathway_mapping=$(gene2pathway_mapping)
+gse_pathway_annot_col=2
+gse_pathway_map_file_option=--go
+else
+gse_pathway_mapping=$(annot_tsv)
+gse_pathway_annot_col=KEGG
+gse_pathway_map_file_option=--annotation
+endif
 
 define run_piano_kegg=
-irap_GSE_piano --tsv $1 --out $(subst .tsv,,$2) --foldchange-col 6 --annotation_col KEGG --annotation $(annot_tsv) --pvalue $(gse_pvalue) --minsize $(gse_minsize) --method $(gse_method) --minedge $(gse_minedge) --top $(gse_top)
+irap_GSE_piano --tsv $1 --out $(subst .tsv,,$2) --foldchange-col 6 --annotation_col $(gse_pathway_annot_col) $(gse_pathway_map_file_option) $(gse_pathway_mapping) --pvalue $(gse_pvalue) --minsize $(gse_minsize) --method $(gse_method) --minedge $(gse_minedge) --top $(gse_top)
 endef
-
-
 ################################
 # validate the options
 gse_piano_valid_methods=mean median sum fisher stouffer tailStrength wilcoxon reporter page
@@ -97,10 +129,10 @@ $(error $(gse_method) not supported)
 endif
 
 
-$(name)/$(mapper)/$(quant_method)/$(de_method)/%.gse.$(gse_tool).$(gse_method).go.tsv: $(name)/$(mapper)/$(quant_method)/$(de_method)/%_de.tsv $(annot_tsv)
+$(name)/$(mapper)/$(quant_method)/$(de_method)/%.gse.$(gse_tool).$(gse_method).go.tsv: $(name)/$(mapper)/$(quant_method)/$(de_method)/%_de.tsv $(gse_go_mapping)
 	$(call run_piano_goterm,$<,$@)
 
-$(name)/$(mapper)/$(quant_method)/$(de_method)/%.gse.$(gse_tool).$(gse_method).kegg.tsv: $(name)/$(mapper)/$(quant_method)/$(de_method)/%_de.tsv $(annot_tsv)
+$(name)/$(mapper)/$(quant_method)/$(de_method)/%.gse.$(gse_tool).$(gse_method).kegg.tsv: $(name)/$(mapper)/$(quant_method)/$(de_method)/%_de.tsv $(gse_pathway_mapping)
 	$(call run_piano_kegg,$<,$@)
 
 else
