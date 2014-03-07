@@ -170,7 +170,7 @@ define tophat_qual_option=
 endef
 
 define tophat_seglength_option=
-	$(shell if [ $(1) \< 45 ]; then echo "--segment-length 20"; else echo ""; fi)
+	$(shell if [ $(1) \< 40 ]; then echo "--segment-length 20"; else echo ""; fi)
 endef
 
 
