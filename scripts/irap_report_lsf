@@ -50,6 +50,7 @@ mappers_dirs=`ls -d -1 $name/* | grep -E "$supported_mappers"`
 #mapping_ofiles=`irap conf=$conf maping_report_files|tail -n 1`
 quant_ofiles=`irap conf=$conf $IRAP_PARAMS quant_report_files|tail -n 1`
 de_ofiles=`irap conf=$conf $IRAP_PARAMS de_report_files|tail -n 1`
+gse_ofiles=`irap conf=$conf $IRAP_PARAMS gse_report_files|tail -n 1`
 WAIT_FOR_IDS_=$WAIT_FOR_IDS
 
 for d in $mappers_dirs; do
@@ -96,6 +97,15 @@ p_info "DE"
 for f in $de_ofiles; do
     counter=`expr $counter + 1`
     p_info "DE: $f"
+    submit_job "${jobname_prefix}f[$counter]"  "-w ended(\"${jobname_prefix}0*\")"  "irap conf=$conf  $IRAP_PARAMS $f"
+done
+
+#####
+# GSE
+p_info "GSE"
+for f in $de_ofiles; do
+    counter=`expr $counter + 1`
+    p_info "GSE: $f"
     submit_job "${jobname_prefix}f[$counter]"  "-w ended(\"${jobname_prefix}0*\")"  "irap conf=$conf  $IRAP_PARAMS $f"
 done
 
