@@ -83,7 +83,8 @@ if (! exists("exon.length")) {
 pdebug("data loaded")
 
 if (opt$feature=="exon" ) {
-  eids <- paste(exon.length$gene_id,exon.length$transcript_id,exon.length$exon_number,sep=".")
+  #eids <- paste(exon.length$gene_id,exon.length$transcript_id,exon.length$exon_number,sep=".")
+  eids <- paste(exon.length$gene_id,exon.length$exon_number,sep=".")
   exon.length <- exon.length[,"elength"]
   names(exon.length) <- eids
 }
