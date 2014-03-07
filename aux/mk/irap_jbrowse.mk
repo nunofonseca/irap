@@ -77,7 +77,7 @@ upload_tracks: stage2_upload_tracks stage3_upload_tracks stage4_upload_tracks re
 
 ####################################################
 # Initialization
-$(name)/report/jbrowse.setup.ok $(name)/report/jbrowse/ $(name)/report/jbrowse/data: $(IRAP_DIR)/aux/jbrowse.zip
+$(name)/report/jbrowse.setup.ok $(name)/report/jbrowse/ $(name)/report/jbrowse/data $(name)/report/jbrowse/index.html: $(IRAP_DIR)/aux/jbrowse.zip
 	irap_setup_jbrowser.sh $(JBROWSE_RDIR) $(name) &&
 	touch $(name)/report/jbrowse.setup.ok
 
@@ -106,6 +106,7 @@ $(name)/$(mapper)/%.bam.tracks: $(name)/$(mapper)/%.bam.bw
 	$(call p_info,"BAM tracks for $*.bam generated.")
 
 $(name)/$(mapper)/%.bam.tracks.uploaded: $(name)/$(mapper)/%.bam.track $(name)/$(mapper)/%.bam.cov.track $(name)/$(mapper)/%.bam.covd.track
+	touch $@
 #	$(call p_info,"BAM tracks for $*.bam in browser ")
 
 # note: the bam files + index need to be copied/moved to the raw/bam/ directory under the jbrowser tree
