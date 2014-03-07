@@ -103,7 +103,7 @@ done
 #####
 # GSE
 p_info "GSE"
-for f in $de_ofiles; do
+for f in $gse_ofiles; do
     counter=`expr $counter + 1`
     p_info "GSE: $f"
     submit_job "${jobname_prefix}f[$counter]"  "-w ended(\"${jobname_prefix}0*\")"  "irap conf=$conf  $IRAP_PARAMS $f"
