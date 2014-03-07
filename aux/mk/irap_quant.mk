@@ -449,20 +449,20 @@ $(name)/$(mapper)/flux_cap/%.pe.flux_cap.tsv: $(name)/$(mapper)/%.pe.hits.bam $(
 $(name)/$(mapper)/flux_cap/%.genes.raw.flux_cap.tsv: $(name)/$(mapper)/flux_cap/%.flux_cap.tsv 
 	tsv.aggrbygene $< counts $@.tmp && mv $@.tmp $@ 
 
-$(name)/$(mapper)/flux_cap/%.genes.rpkms.flux_cap.tsv: $(name)/$(mapper)/flux_cap/%.flux_cap.tsv
+$(name)/$(mapper)/flux_cap/%.genes.rpkm.flux_cap.tsv: $(name)/$(mapper)/flux_cap/%.flux_cap.tsv
 	tsv.aggrbygene $< RPKM $@.tmp && mv  $@.tmp $@
 
 $(name)/$(mapper)/flux_cap/%.transcripts.raw.flux_cap.tsv: $(name)/$(mapper)/flux_cap/%.flux_cap.tsv
 	cut -f 1,4 $< |tail -n +2 > $@.tmp && mv  $@.tmp $@
 
-$(name)/$(mapper)/flux_cap/%.transcripts.rpkms.flux_cap.tsv: $(name)/$(mapper)/flux_cap/%.flux_cap.tsv
+$(name)/$(mapper)/flux_cap/%.transcripts.rpkm.flux_cap.tsv: $(name)/$(mapper)/flux_cap/%.flux_cap.tsv
 	cut -f 1,6 $< | tail -n +2  > $@.tmp && mv  $@.tmp $@
 
 $(name)/$(mapper)/flux_cap/%.exons.raw.flux_cap.tsv: 
 	$(call p_info, Warning! Flux_capacitor does not produce quantification at exon level. Generating empty file $@.)
 	@$(call empty_file,$@)
 
-$(name)/$(mapper)/flux_cap/%.exons.rpkms.flux_cap.tsv: 
+$(name)/$(mapper)/flux_cap/%.exons.rpkm.flux_cap.tsv: 
 	$(call p_info, Warning! Flux_capacitor does not produce quantification at exon level. Generating empty file $@.)
 	@$(call empty_file,$@)
 
@@ -495,14 +495,14 @@ $(name)/$(mapper)/nurd/%.pe.nurd.tsv: $(name)/$(mapper)/%.pe.hits.bam $(gtf_file
 $(name)/$(mapper)/nurd/%.genes.raw.nurd.tsv: $(name)/$(mapper)/nurd/%.nurd.tsv 
 	cut -f 1,3 $< > $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/nurd/%.genes.rpkms.nurd.tsv: $(name)/$(mapper)/nurd/%.nurd.tsv
+$(name)/$(mapper)/nurd/%.genes.rpkm.nurd.tsv: $(name)/$(mapper)/nurd/%.nurd.tsv
 	cut -f 1,6 $< > $@.tmp && mv $@.tmp $@
 
 # transcripts/isoforms
 $(name)/$(mapper)/nurd/%.transcripts.raw.nurd.tsv: $(name)/$(mapper)/nurd/%.nurd.tsv
 	irap_nurd2tsv --tsv $< --out $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/nurd/%.transcripts.rpkms.nurd.tsv: $(name)/$(mapper)/nurd/%.nurd.tsv
+$(name)/$(mapper)/nurd/%.transcripts.rpkm.nurd.tsv: $(name)/$(mapper)/nurd/%.nurd.tsv
 	irap_nurd2tsv --tsv $< --out $@.tmp && mv $@.tmp $@
 
 # exons
@@ -510,7 +510,7 @@ $(name)/$(mapper)/nurd/%.exons.raw.nurd.tsv:
 	$(call p_info, Warning! NURD does not produce quantification at exon level. Generating empty file $@.)
 	@$(call empty_file,$@)
 
-$(name)/$(mapper)/nurd/%.exons.rpkms.nurd.tsv: 
+$(name)/$(mapper)/nurd/%.exons.rpkm.nurd.tsv: 
 	$(call p_info, Warning! NURD does not produce quantification at exon level. Generating empty file $@.)
 	@$(call empty_file,$@)
 

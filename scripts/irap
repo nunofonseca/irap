@@ -1246,12 +1246,12 @@ endef
 
 
 define nquant_files=
-$(name)/$(mapper)/$(quant_method)/genes.rpkms.$(quant_norm_method).tsv $(call exons_quant_file,$(name)/$(mapper)/$(quant_method)/exons.rpkms.$(quant_norm_method).tsv) $(call transcripts_quant_file,$(name)/$(mapper)/$(quant_method)/transcripts.rpkms.$(quant_norm_method).tsv)
+$(name)/$(mapper)/$(quant_method)/genes.rpkm.$(quant_norm_method).tsv $(call exons_quant_file,$(name)/$(mapper)/$(quant_method)/exons.rpkm.$(quant_norm_method).tsv) $(call transcripts_quant_file,$(name)/$(mapper)/$(quant_method)/transcripts.rpkm.$(quant_norm_method).tsv)
 endef
 
 # Note
 # The quantification may be produced at the level of genes, exons  or transcripts/isoforms
-# The quantification can be simply counts (raw), f/rpkms (rpkm), or normalized by library size (nlib)
+# The quantification can be simply counts (raw), f/rpkm (rpkm), or normalized by library size (nlib)
 # The names of the TSV files produced have the format: <quant.level>.<type of quantification>.quant_method.tsv
 # Ex. genes.raw.htseq1.tsv
 #     exons.raw.htseq1.tsv
@@ -1358,7 +1358,7 @@ $(reference_abspath)_files: $(reference_abspath)
 ################################################################################
 # Normalization
 ################################################################################
-$(quant_norm_method)_nquant_files=$(name)/$(mapper)/$(quant_method)/genes.nlib.$(quant_norm_method).tsv $(name)/$(mapper)/$(quant_method)/genes.rpkms.$(quant_norm_method).tsv $(call exons_quant_norm,$(name)/$(mapper)/$(quant_method)/exons.nlib.$(quant_norm_method).tsv $(name)/$(mapper)/$(quant_method)/exons.rpkms.$(quant_norm_method).tsv) $(call transcripts_quant_norm,$(name)/$(mapper)/$(quant_method)/transcripts.nlib.$(quant_norm_method).tsv $(name)/$(mapper)/$(quant_method)/transcripts.rpkms.$(quant_norm_method).tsv)
+$(quant_norm_method)_nquant_files=$(name)/$(mapper)/$(quant_method)/genes.nlib.$(quant_norm_method).tsv $(name)/$(mapper)/$(quant_method)/genes.rpkm.$(quant_norm_method).tsv $(call exons_quant_norm,$(name)/$(mapper)/$(quant_method)/exons.nlib.$(quant_norm_method).tsv $(name)/$(mapper)/$(quant_method)/exons.rpkm.$(quant_norm_method).tsv) $(call transcripts_quant_norm,$(name)/$(mapper)/$(quant_method)/transcripts.nlib.$(quant_norm_method).tsv $(name)/$(mapper)/$(quant_method)/transcripts.rpkm.$(quant_norm_method).tsv)
 
 STAGE3_OUT_FILES=$($(quant_method)_quant_files) $($(quant_norm_method)_nquant_files)
 
@@ -1381,48 +1381,48 @@ phony_targets+= $(quant_norm_method)_nquant
 
 $(quant_norm_method)_nquant: $(quant_method)_quant $($(quant_norm_method)_nquant_files)
 
-# RPKMs
+# RPKM
 # none method: irap computes the RPKMs based on the raw counts
-$(name)/$(mapper)/$(quant_method)/genes.rpkms.none.tsv: $(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv $(feat_length)
+$(name)/$(mapper)/$(quant_method)/genes.rpkm.none.tsv: $(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv $(feat_length)
 	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature gene --metric rpkm --out $@.tmp && mv $@.tmp $@	
 
-$(name)/$(mapper)/$(quant_method)/exons.rpkms.none.tsv: $(name)/$(mapper)/$(quant_method)/exons.raw.$(quant_method).tsv $(feat_length)
+$(name)/$(mapper)/$(quant_method)/exons.rpkm.none.tsv: $(name)/$(mapper)/$(quant_method)/exons.raw.$(quant_method).tsv $(feat_length)
 	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature exon --metric rpkm --out $@.tmp && mv $@.tmp $@	
 
-$(name)/$(mapper)/$(quant_method)/transcripts.rpkms.none.tsv: $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv $(feat_length)
+$(name)/$(mapper)/$(quant_method)/transcripts.rpkm.none.tsv: $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv $(feat_length)
 	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature transcript --metric rpkm --out $@.tmp && mv $@.tmp $@	
 
 # special rules
 # cufflinks*
-$(name)/$(mapper)/$(quant_method)/genes.rpkms.cufflinks%.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.genes.rpkms.$(quant_method).tsv) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.genes.rpkms.$(quant_method).tsv) 
+$(name)/$(mapper)/$(quant_method)/genes.rpkm.cufflinks%.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.genes.rpkm.$(quant_method).tsv) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.genes.rpkm.$(quant_method).tsv) 
 	$(call merge_tsv,$(quant_method)) $^  > $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/$(quant_method)/transcripts.rpkms.cufflinks%.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.transcripts.rpkms.$(quant_method).tsv) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.transcripts.rpkms.$(quant_method).tsv) 
+$(name)/$(mapper)/$(quant_method)/transcripts.rpkm.cufflinks%.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.transcripts.rpkm.$(quant_method).tsv) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.transcripts.rpkm.$(quant_method).tsv) 
 	$(call merge_tsv,$(quant_method)) $^  > $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/$(quant_method)/exons.rpkms.cufflinks%.tsv:
+$(name)/$(mapper)/$(quant_method)/exons.rpkm.cufflinks%.tsv:
 	$(call p_info, Warning! Cufflinks does not produce quantification at exon level. Generating empty file $@.)
 	@$(call empty_file,$@)
 
 # flux-capacitor
-$(name)/$(mapper)/$(quant_method)/genes.rpkms.flux%.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.genes.rpkms.$(quant_method).tsv) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.genes.rpkms.$(quant_method).tsv) 
+$(name)/$(mapper)/$(quant_method)/genes.rpkm.flux%.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.genes.rpkm.$(quant_method).tsv) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.genes.rpkm.$(quant_method).tsv) 
 	$(call merge_tsv,$(quant_method)) $^  > $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/$(quant_method)/transcripts.rpkms.flux%.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.transcripts.rpkms.$(quant_method).tsv) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.transcripts.rpkms.$(quant_method).tsv) 
+$(name)/$(mapper)/$(quant_method)/transcripts.rpkm.flux%.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.transcripts.rpkm.$(quant_method).tsv) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.transcripts.rpkm.$(quant_method).tsv) 
 	$(call merge_tsv,$(quant_method)) $^  > $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/$(quant_method)/exons.rpkms.flux%.tsv: 
+$(name)/$(mapper)/$(quant_method)/exons.rpkm.flux%.tsv: 
 	$(call p_info, Warning! Flux-capacitor does not produce quantification at exon level. Generating empty file $@.)
 	@$(call empty_file,$@)
 
 # nurd
-$(name)/$(mapper)/$(quant_method)/genes.rpkms.nurd.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.genes.rpkms.$(quant_method).tsv) $(foreach s,$(se), $(name)/$(mapper)/$(quant_method)/$(s).se.genes.rpkms.$(quant_method).tsv)
+$(name)/$(mapper)/$(quant_method)/genes.rpkm.nurd.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.genes.rpkm.$(quant_method).tsv) $(foreach s,$(se), $(name)/$(mapper)/$(quant_method)/$(s).se.genes.rpkm.$(quant_method).tsv)
 	$(call merge_tsv,$(quant_method)) $^  > $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/$(quant_method)/transcripts.rpkms.nurd.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.transcripts.rpkms.$(quant_method).tsv) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.transcripts.rpkms.$(quant_method).tsv) 
+$(name)/$(mapper)/$(quant_method)/transcripts.rpkm.nurd.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.transcripts.rpkm.$(quant_method).tsv) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.transcripts.rpkm.$(quant_method).tsv) 
 	$(call merge_tsv,$(quant_method)) $^  > $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/$(quant_method)/exons.rpkms.nurd.tsv: 
+$(name)/$(mapper)/$(quant_method)/exons.rpkm.nurd.tsv: 
 	$(call p_info, Warning! NURD does not produce quantification at exon level. Generating empty file $@.)
 	@$(call empty_file,$@)
 
@@ -1445,55 +1445,55 @@ $(name)/$(mapper)/$(quant_method)/%.nlib.none.tsv: $(name)/$(mapper)/$(quant_met
 #############
 
 # htseq1 rpkm per gene
-$(name)/$(mapper)/htseq1/genes.rpkms.htseq1.tsv: $(name)/$(mapper)/htseq1/genes.raw.htseq1.tsv $(feat_length)
+$(name)/$(mapper)/htseq1/genes.rpkm.htseq1.tsv: $(name)/$(mapper)/htseq1/genes.raw.htseq1.tsv $(feat_length)
 	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature gene --metric rpkm --out $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/htseq1/genes.rpkms.%.tsv: $(name)/$(mapper)/htseq1/genes.nlib.%.tsv $(feat_length)
+$(name)/$(mapper)/htseq1/genes.rpkm.%.tsv: $(name)/$(mapper)/htseq1/genes.nlib.%.tsv $(feat_length)
 	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature gene --metric rpkm --out $@.tmp && mv $@.tmp $@
 
 # htseq1 rpkm per transcript
-$(name)/$(mapper)/htseq1/transcripts.rpkms.htseq1.tsv: $(name)/$(mapper)/htseq1/transcripts.raw.htseq1.tsv $(feat_length)
+$(name)/$(mapper)/htseq1/transcripts.rpkm.htseq1.tsv: $(name)/$(mapper)/htseq1/transcripts.raw.htseq1.tsv $(feat_length)
 	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature transcript --metric rpkm --out $@.tmp && mv $@.tmp $@
 
 # htseq1 rpkm per exon
-$(name)/$(mapper)/htseq1/exons.rpkms.htseq1.tsv: $(name)/$(mapper)/htseq1/exons.raw.htseq1.tsv $(feat_length)
+$(name)/$(mapper)/htseq1/exons.rpkm.htseq1.tsv: $(name)/$(mapper)/htseq1/exons.raw.htseq1.tsv $(feat_length)
 	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature exon --metric rpkm --out $@.tmp && mv $@.tmp $@
 
 
 # htseq2 rpkm per gene
-$(name)/$(mapper)/htseq2/genes.rpkms.htseq2.tsv: $(name)/$(mapper)/htseq2/genes.raw.htseq2.tsv $(feat_length)
+$(name)/$(mapper)/htseq2/genes.rpkm.htseq2.tsv: $(name)/$(mapper)/htseq2/genes.raw.htseq2.tsv $(feat_length)
 	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature gene --metric rpkm --out $@.tmp && mv $@.tmp $@
 
 
 # htseq2 rpkm per transcript
-$(name)/$(mapper)/htseq2/transcripts.rpkms.htseq2.tsv: $(name)/$(mapper)/htseq2/transcripts.raw.htseq2.tsv $(feat_length)
+$(name)/$(mapper)/htseq2/transcripts.rpkm.htseq2.tsv: $(name)/$(mapper)/htseq2/transcripts.raw.htseq2.tsv $(feat_length)
 	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature transcript --metric rpkm --out $@.tmp && mv $@.tmp $@
 
 # htseq2 rpkm per exons
-$(name)/$(mapper)/htseq2/exons.rpkms.htseq2.tsv: $(name)/$(mapper)/htseq2/exons.raw.htseq2.tsv $(feat_length)
+$(name)/$(mapper)/htseq2/exons.rpkm.htseq2.tsv: $(name)/$(mapper)/htseq2/exons.raw.htseq2.tsv $(feat_length)
 	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature exon --metric rpkm --out $@.tmp && mv $@.tmp $@
 
 #############
 # Cufflinks1
 #############
-$(name)/$(mapper)/$(quant_method)/%.genes.rpkms.cufflinks1.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.genes.fpkm_tracking
+$(name)/$(mapper)/$(quant_method)/%.genes.rpkm.cufflinks1.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.genes.fpkm_tracking
 	cut -f 1,10 $<  | tail -n +2  | grep -v CUFF  > $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/cufflinks1_nd/%.genes.rpkms.cufflinks1_nd.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.genes.fpkm_tracking
+$(name)/$(mapper)/cufflinks1_nd/%.genes.rpkm.cufflinks1_nd.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.genes.fpkm_tracking
 	cut -f 1,10 $< | tail -n +2 > $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/$(quant_method)/%.exons.rpkms.cufflinks1.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.gtf
+$(name)/$(mapper)/$(quant_method)/%.exons.rpkm.cufflinks1.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.gtf
 	grep -w exon $< | grep -v CUFF | sed -e 's/.*gene_id .\([^\"]*\).; transcript_id .\([^\"]*\).; exon_number .\([^\"]*\).; FPKM .\([^\"]*\)..*/\1.\2.\3\t\4/' > $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/$(quant_method)/%.exons.rpkms.cufflinks1_nd.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.gtf
+$(name)/$(mapper)/$(quant_method)/%.exons.rpkm.cufflinks1_nd.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.gtf
 	grep -w exon $<  | grep -v CUFF | sed -e 's/.*gene_id .\([^\"]*\).; transcript_id .\([^\"]*\).; exon_number .\([^\"]*\).; FPKM .\([^\"]*\)..*/\1.\2.\3\t\4/' > $@.tmp && mv $@.tmp $@
 
 #
-$(name)/$(mapper)/$(quant_method)/%.transcripts.rpkms.cufflinks1.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.isoforms.fpkm_tracking
+$(name)/$(mapper)/$(quant_method)/%.transcripts.rpkm.cufflinks1.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.isoforms.fpkm_tracking
 	cut -f 1,10 $<  | tail -n +2  | grep -v CUFF > $@.tmp && mv $@.tmp $@
 # 'new' genes can't appear in the tsv file otherwise the different files can't be merged
 
-$(name)/$(mapper)/$(quant_method)/%.transcripts.rpkms.cufflinks1_nd.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.isoforms.fpkm_tracking
+$(name)/$(mapper)/$(quant_method)/%.transcripts.rpkm.cufflinks1_nd.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.isoforms.fpkm_tracking
 	cut -f 1,10 $<  | tail -n +2 > $@.tmp && mv $@.tmp $@
 
 $(name)/$(mapper)/$(quant_method)/%.nlib.cufflinks1.tsv:
@@ -1506,22 +1506,22 @@ $(name)/$(mapper)/$(quant_method)/%.nlib.cufflinks1_nd.tsv:
 ############
 # Cufflinks2
 ############
-$(name)/$(mapper)/$(quant_method)/%.genes.rpkms.cufflinks2.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.genes.fpkm_tracking
+$(name)/$(mapper)/$(quant_method)/%.genes.rpkm.cufflinks2.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.genes.fpkm_tracking
 	cut -f 1,10 $<  | tail -n +2  |grep -v CUFF > $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/cufflinks2/%.exons.rpkms.cufflinks2.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.gtf
+$(name)/$(mapper)/cufflinks2/%.exons.rpkm.cufflinks2.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.gtf
 	grep -w exon $<  | grep -v CUFF | sed -e 's/.*gene_id .\([^\"]*\).; transcript_id .\([^\"]*\).; exon_number .\([^\"]*\).; FPKM .\([^\"]*\)..*/\1.\2.\3\t\4/' > $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/$(quant_method)/%.transcripts.rpkms.cufflinks2.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.isoforms.fpkm_tracking
+$(name)/$(mapper)/$(quant_method)/%.transcripts.rpkm.cufflinks2.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.isoforms.fpkm_tracking
 	cut -f 1,10 $<  | tail -n +2  |grep -v CUFF  > $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/$(quant_method)/%.genes.rpkms.cufflinks2_nd.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.genes.fpkm_tracking
+$(name)/$(mapper)/$(quant_method)/%.genes.rpkm.cufflinks2_nd.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.genes.fpkm_tracking
 	cut -f 1,10 $<  | tail -n +2  |grep -v CUFF > $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/$(quant_method)/%.exons.rpkms.cufflinks2_nd.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.gtf
+$(name)/$(mapper)/$(quant_method)/%.exons.rpkm.cufflinks2_nd.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.gtf
 	grep -w exon $<  | grep -v CUFF | sed -e 's/.*gene_id .\([^\"]*\).; transcript_id .\([^\"]*\).; exon_number .\([^\"]*\).; FPKM .\([^\"]*\)..*/\1.\2.\3\t\4/' > $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/$(quant_method)/%.transcripts.rpkms.cufflinks2_nd.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.isoforms.fpkm_tracking
+$(name)/$(mapper)/$(quant_method)/%.transcripts.rpkm.cufflinks2_nd.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.isoforms.fpkm_tracking
 	cut -f 1,10 $<  | tail -n +2  |grep -v CUFF  > $@.tmp && mv $@.tmp $@
 
 
@@ -1604,6 +1604,7 @@ de_files:
 # GSE
 ###########################################
 # IRAP targets
+# todo: mv this to the irap_gse file
 ifeq (none,$(gse_tool))
 
 GSE_OUT_FILES=
@@ -1618,7 +1619,6 @@ GSE: DE $(GSE_OUT_FILES)
 	$(call p_info,[DONE] GSE analysis)
 
 endif
-
 
 GSE_files:
 	echo $(GSE_OUT_FILES)
@@ -1711,8 +1711,8 @@ cleanup_3_0: cleanup_3_0_data cleanup_3_0_reference
 
 cleanup_3_0_data:
 	rm -f $(name)/data/gene.annot.{tsv,Rdata}
-# rpkms - force regeneration
-	rm -f $(name)/*/*/*.rpkms.*
+# rpkm - force regeneration
+	rm -f $(name)/*/*/*.rpkm.*
 
 cleanup_3_0_reference:
 	rm -f $(data_dir)/reference/$(species)/*gene.annot.{tsv,Rdata}
