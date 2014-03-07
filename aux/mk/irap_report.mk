@@ -252,7 +252,7 @@ $(name)/report/quant/%/gene.raw.html:
 	cp $(subst .html,,$@).t.html $@
 
 $(name)/report/quant/%/gene.rpkm.html: 
-	$(call GE_tsv2html,"rpkm",$(call quiet_ls1,$(name)/$(subst _x_,/,$*)/genes.rpkms.*.tsv),$(@D),gene.rpkm.t,$(subst _x_, x ,$*),"gene") && \
+	$(call GE_tsv2html,"rpkm",$(call quiet_ls1,$(name)/$(subst _x_,/,$*)/genes.rpkm.*.tsv),$(@D),gene.rpkm.t,$(subst _x_, x ,$*),"gene") && \
 	cp $(subst .html,,$@).t.html $@
 
 $(name)/report/quant/%/gene.nlib.html: 
@@ -266,7 +266,7 @@ $(name)/report/quant/%/transcript.raw.html:
 	cp $(subst .html,,$@).t.html $@
 
 $(name)/report/quant/%/transcript.rpkm.html: 
-	$(call GE_tsv2html,"rpkm",$(call quiet_ls1,$(name)/$(subst _x_,/,$*)/transcripts.rpkms.*.tsv),$(@D),transcript.rpkm.t,$(subst _x_, x ,$*),"CDS") && \
+	$(call GE_tsv2html,"rpkm",$(call quiet_ls1,$(name)/$(subst _x_,/,$*)/transcripts.rpkm.*.tsv),$(@D),transcript.rpkm.t,$(subst _x_, x ,$*),"CDS") && \
 	cp $(subst .html,,$@).t.html $@
 
 $(name)/report/quant/%/transcript.nlib.html: 
@@ -279,7 +279,7 @@ $(name)/report/quant/%/exon.raw.html:
 	cp $(subst .html,,$@).t.html $@
 
 $(name)/report/quant/%/exon.rpkm.html: 
-	$(call GE_tsv2html,"rpkm",$(call quiet_ls1,$(name)/$(subst _x_,/,$*)/exons.rpkms.*.tsv),$(@D),exon.rpkm.t,$(subst _x_, x ,$*),"exon") && \
+	$(call GE_tsv2html,"rpkm",$(call quiet_ls1,$(name)/$(subst _x_,/,$*)/exons.rpkm.*.tsv),$(@D),exon.rpkm.t,$(subst _x_, x ,$*),"exon") && \
 	cp $(subst .html,,$@).t.html $@
 
 $(name)/report/quant/%/exon.nlib.html: 
