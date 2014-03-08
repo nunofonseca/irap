@@ -38,7 +38,7 @@ declare -i counter=0
 
 echo " * Report setup "
 submit_job "${jobname_prefix}0[1]" ""  "$cmd conf=$conf report_setup $IRAP_PARAMS"
-submit_job "${jobname_prefix}0[2]" ""  "$cmd conf=$conf $name/report/index.html $IRAP_PARAMS"
+submit_job "${jobname_prefix}0[2]" ""  "$cmd conf=$conf $name/report/index.html qc_report $IRAP_PARAMS"
 
 
 #############
