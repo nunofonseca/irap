@@ -389,8 +389,7 @@ $(name)/report/%.genes_de.html: $(name)/%.genes_de.tsv $(annot_tsv)
 phony_targets+=gse_report gse_report_files
 silent_targets+=gse_report_files
 
-# only generates the html iff the respective GSE tsv file exists
-
+# only generates the html iff the respective GSE tsv file exist
 gse_report: report_setup $(call gse_html_files,$(name))
 # just print the name of the files that will be produced
 gse_report_files:
