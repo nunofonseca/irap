@@ -189,7 +189,7 @@ if ( length(set1)>=minSizeLim )  {
 
    #if ( opt$method %in% c("fisher","stouffer","reporter","wilcoxon","page") ) {
    #  fc <- NULL
-   #}
+   #}adjMethod="none
    #save.image("debug.Rdata")
   gsaRes <- try(runGSA(geneLevelStats=pval,directions=fc,geneSetStat=opt$method,
                        gsc=myGSC,gsSizeLim=c(minSizeLim,Inf)))
@@ -217,7 +217,7 @@ if ( length(set1)>=minSizeLim )  {
                      html=FALSE,
                      ps=TRUE,
                      to.plot = function () {
-                       nw1 <- networkPlot(gsaRes,class="distinct",direction="both",edgeWidth=c(opt$minedge,100000),adjusted=T,significance=opt$pvalue,geneSets=sel)
+                       nw1 <- networkPlot(gsaRes,class="distinct",direction="both",edgeWidth=c(2,20),adjusted=T,significance=opt$pvalue,geneSets=sel,overlap=opt$minedge)
                      }                     
                      )
 
@@ -234,7 +234,7 @@ if ( length(set1)>=minSizeLim )  {
                      html=FALSE,
                      ps=TRUE,
                      to.plot = function () {
-                       nw1 <- networkPlot(gsaRes,class="non",edgeWidth=c(opt$minedge,10000),adjusted=T,significance=opt$pvalue,geneSets=sel)
+                       nw1 <- networkPlot(gsaRes,class="non",edgeWidth=c(2,20),adjusted=T,significance=opt$pvalue,geneSets=sel,overlap=opt$minedge)
                      }                     
                      )
 
