@@ -664,7 +664,8 @@ gen.plot2report <- function(filename=NULL,
   }
   ps.file <- NA
   data.file <- NA
-  png.file <- paste(dir,filename,sep="")
+  png.file <- paste(dir,filename,".png",sep="")
+  png.file <- sub(".png.png$",".png",png.file)
   # width and height is in pixels
   # convert to in
   if ( size.unit == "px" ) {
