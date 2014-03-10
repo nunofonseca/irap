@@ -128,7 +128,8 @@ phony_targets+=report_setup clean_report
 
 
 clean_report: 
-	rm -f $(name)/report/mapping/* $(name)/report/quant/* $(name)/report/de/* $(name)/report/qc*
+	@find $(name)/report/mapping/ $(name)/report/quant/ $(name)/report/de/  -maxdepth 1 -type f -exec rm -f {} \; 
+	$(call p_info,Report folder partially cleaned up)
 
 report_setup: $(name)/report/ $(name)/report/mapping/ $(name)/report/de/ $(name)/report/quant/ $(call rep_browse,report_browser_setup)
 
