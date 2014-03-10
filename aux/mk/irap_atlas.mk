@@ -37,7 +37,8 @@ $(name)/atlas_html.tar.gz: $(name)/report $(name)/report/software.txt
 	tar czvf $(name)/tmp.atlas.tgz  $(ATLAS_REPORT_FILES) &&\
 	cd $(name)/atlas && tar xzvf ../tmp.atlas.tgz && rm ../tmp.atlas.tgz && mv $(name)/report/* . && rm -rf $(name) && \
 	for html_file in `find . -name "*.htm*"`; do atlas_clean_html.sh $$html_file; done && \
-	cd .. && tar czvf $(@F).tmp  atlas/ && mv $(@F).tmp $(@F)
+	cd .. && tar czvf $(@F).tmp  atlas/ && mv $(@F).tmp $(@F) &&\
+	echo Created $@
 # remove header, footer and menu
 
 
