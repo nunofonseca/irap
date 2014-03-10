@@ -146,7 +146,7 @@ if ( length(not.found) ) {
 }
 pdebug.save.state("tsv2bedGraph","p2")
 # values
-tsv.sel.val <- tsv[,get.col(tsv,opt$value_col)]
+tsv.sel.val <- my.factor2numeric(tsv[,get.col(tsv,opt$value_col)])
 names(tsv.sel.val) <- as.character(tsv.sel.id)
 #tsv.sel.val[2] <- factor("+Inf")
 # load(".RData")
