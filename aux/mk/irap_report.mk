@@ -124,8 +124,11 @@ endif
 ##############################################################################
 # Produce a HTML report
 #report: $(name)/report/index.html mapping_report quant_report de_report
-phony_targets+=report_setup
+phony_targets+=report_setup clean_report
 
+
+clean_report: 
+	rm -f $(name)/report/mapping/* $(name)/report/quant/* $(name)/report/de/* $(name)/report/qc*
 
 report_setup: $(name)/report/ $(name)/report/mapping/ $(name)/report/de/ $(name)/report/quant/ $(call rep_browse,report_browser_setup)
 
