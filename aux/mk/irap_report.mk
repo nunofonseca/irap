@@ -120,6 +120,12 @@ ifdef reuse_menu
 IRAP_REPORT_MAIN_OPTIONS += --reuse-menu
 endif
 
+dir_must_exist=$(if  $(realpath $(1)),,$(1))
+
+
+clean_report: 
+	@find $(name)/report/mapping/ $(name)/report/quant/ $(name)/report/de/  -maxdepth 1 -type f -exec rm -f {} \; 
+	$(call p_info,Report folder partially cleaned up)
 
 ##############################################################################
 # Produce a HTML report
@@ -127,11 +133,7 @@ endif
 phony_targets+=report_setup clean_report
 
 
-clean_report: 
-	@find $(name)/report/mapping/ $(name)/report/quant/ $(name)/report/de/  -maxdepth 1 -type f -exec rm -f {} \; 
-	$(call p_info,Report folder partially cleaned up)
-
-report_setup: $(name)/report/ $(name)/report/mapping/ $(name)/report/de/ $(name)/report/quant/ $(call rep_browse,report_browser_setup)
+report_setup: $(call dir_must_exist,$(name)/report) $(call dir_must_exist,$(name)/report/mapping/) $(call dir_must_exist,$(name)/report/de/) $(call dir_must_exist,$(name)/report/quant/) $(call rep_browse,report_browser_setup)
 
 $(name)/report/:
 	mkdir -p $@
@@ -145,24 +147,16 @@ $(name)/report/de/:
 $(name)/report/quant/:
 	mkdir -p $@
 
-#########################
-#mapping_report de_report
-# TODO: remove/fix this in the future (currently necessary to update the menu)
-phony_targets+=end_report
-
-end_report: report_setup $(conf) $(name)/report/mapping/comparison.html
-	irap_report_main $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(name)/report -m "$(call mapping_dirs,$(name))" -q "$(call quant_dirs,$(name))" -d "$(call de_dirs,$(name))"
-
-$(name)/report/index.html: report_setup $(conf) 
-	irap_report_main $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(name)/report -m "$(call mapping_dirs,$(name))" -q "$(call quant_dirs,$(name))" -d "$(call de_dirs,$(name))" && \
-	cp $(name)/report/info.html $@
 
 #############################
 # QC
 phony_targets+=qc_report
-qc_report: $(name)/report/qc.html
 
-$(name)/report/qc.html: report_setup $(conf) 
+qc_html_files=$(name)/report/qc.html
+
+qc_report: $(qc_html_files)
+
+$(name)/report/qc.html: $(conf) $(name)/data/
 	irap_report_qc $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(name)/report 
 
 #############################
@@ -170,7 +164,7 @@ $(name)/report/qc.html: report_setup $(conf)
 phony_targets+=info_report
 info_report: $(name)/report/info.html
 
-$(name)/report/info.html: report_setup $(conf) 
+$(name)/report/info.html: report_setup $(conf) $(name)/report/software.txt
 #	irap_report_qc $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(name)/report 
 
 #############################
@@ -404,3 +398,16 @@ gse_report_files:
 # all targets
 phony_targets+= report_all_targets
 report_all_targets:  $(name)/report/index.html qc_report mapping_report quant_report de_report gse_report show_citations end_report
+
+
+#########################
+#mapping_report de_report
+# TODO: remove/fix this in the future (currently necessary to update the menu)
+phony_targets+=end_report
+
+end_report: $(name)/report/index.html
+#	irap_report_main $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(name)/report -m "$(call mapping_dirs,$(name))" -q "$(call quant_dirs,$(name))" -d "$(call de_dirs,$(name))"
+
+$(name)/report/index.html: $(conf) $(quant_html_files) $(qc_html_files) $(mapping_report_targets) $(call de_html_files,$(name)) $(call gse_html_files,$(name))
+	irap_report_main $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(name)/report -m "$(call mapping_dirs,$(name))" -q "$(call quant_dirs,$(name))" -d "$(call de_dirs,$(name))" && \
+	cp $(name)/report/info.html $@

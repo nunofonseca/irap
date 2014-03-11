@@ -410,11 +410,14 @@ colnames(table.html)
 #save.image()
 title <- opt$title
 sources.menu <- ""
-init.source.filter(table)
+init.source.filter(uncut.table)
 sources.menu <- get.source.filter.menu(opt$out)
+
+# uncut - no pvalue threshold was applied
 table.tsv <- uncut.table[,fields$cols2tsv]
 uncut.table.orig <- uncut.table
 otable.tsv.orig <- table.tsv
+# table.html - filtered by pvalue
 table.html.orig <- table.html
 
 #head(table.tsv)
@@ -468,11 +471,9 @@ for (filt.name  in get.source.filter.names() ) {
       table.tsv <- otable.tsv.orig[NULL,fields$cols2tsv]
       uncut.table <- table.tsv
     } else {
-      filt.table <- apply.source.filter(uncut.table.orig,filt.name)
-      uncut.table <- filt.table
-      colnames(filt.table)
-      table.html <- table.html.orig[rownames(filt.table),fields$cols2sel]
-      table.tsv <- filt.table[filt.name,fields$cols2tsv]
+      uncut.table <- apply.source.filter(uncut.table.orig,filt.name)
+      table.html <- table.html.orig[rownames(table.html.orig) %in% rownames(uncut.table),fields$cols2sel]
+      table.tsv <- otable.tsv.orig[rownames(otable.tsv.orig) %in% rownames(uncut.table),fields$cols2tsv]
     }
     pdebug("Filter:",filt.name)
     o.html.file <- get.source.filename(opt$out,filt.name)
