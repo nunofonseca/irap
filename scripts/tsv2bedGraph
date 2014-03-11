@@ -97,20 +97,19 @@ if ( opt$feature == "gene" ) {
     gtf.id.cols <- c("ID")
     names(gtf.id.cols) <- c("gene")
     # remove chr prefix
-    sel$seqid <- gsub("^chr","",sel$seqid)
+    sel$seqid <- gsub("^chr","",as.character(sel$seqid))
   } else {
     # gtf
     gtf <- load.gtf(opt$gtf_file,selected.attr=c("gene_id"))
     pinfo("GTF file loaded: ",nrow(gtf)," entries.")
-    gtf <- addGeneFeature2gtf(gtf)
+    gtf <- addGeneFeature2gtf(gtf)    
     pinfo("Added features")
     sel<-gtf[gtf$feature==opt$feature,]
     gtf.id.cols <- c("gene_id","transcript_id")
     names(gtf.id.cols) <- c("gene","transcript")
   }
 }
-
-gtf <- NULL
+#gtf <- NULL
 #head(sel)
 sel<-sel[,c(gtf.id.cols[opt$feature],'seqid','start','end')]
 
@@ -138,37 +137,55 @@ get.col <- function(table,col,fatal=TRUE) {
 }
 # load values
 tsv <- read.table(opt$tsv_file,sep="\t",header=TRUE,quote="\"")
-tsv.sel.id <- tsv[,get.col(tsv,opt$id_col)]
+tsv.sel.id <- as.character(tsv[,get.col(tsv,opt$id_col)])
 #
-not.found <- tsv.sel.id[!as.character(tsv.sel.id) %in% sel[,1]]
+not.found <- tsv.sel.id[!as.character(tsv.sel.id) %in% as.character(sel[,1])]
 if ( length(not.found) ) {
-  pwarning("Missing feature(s) from gtf file (",length(not.found),"). Ex., ",not.found[1])
+  pwarning("Feature(s) from gtf file without values (",length(not.found)," out of ",nrow(tsv),"). Ex., ",not.found[1])
 }
 pdebug.save.state("tsv2bedGraph","p2")
 # values
-tsv.sel.val <- my.factor2numeric(tsv[,get.col(tsv,opt$value_col)])
+if (is.factor(tsv[,get.col(tsv,opt$value_col)])) {
+  tsv.sel.val <- my.factor2numeric(tsv[,get.col(tsv,opt$value_col)])
+  pinfo("factor")
+} else {
+  tsv.sel.val <- as.numeric(tsv[,get.col(tsv,opt$value_col)])
+  pinfo("numeric")
+}
+irap.assert(length(tsv.sel.val)==length(tsv.sel.id),"Internal error processing tsv file")
 names(tsv.sel.val) <- as.character(tsv.sel.id)
-#tsv.sel.val[2] <- factor("+Inf")
+# values need to have the correspondent information in the gtf file
+tsv.sel.val <- tsv.sel.val[tsv.sel.id %in% sel[,1]]
+
 # load(".RData")
 # Duplicated entries?
 dups <- duplicated(as.character(tsv.sel.id))
 if (sum(dups) > 0) {
   pwarning("Found ",sum(dups)," duplicates. E.g., ",as.character(tsv.sel.id[dups][1]))
-  pinfo("Ignoring duplicates")
+  pinfo("Keeping duplicates")
 }
-
 pdebug.save.state("tsv2bedGraph","p3")
 
-# genes that are in the GTF file
-sel.genes <- as.character(tsv.sel.id[as.character(tsv.sel.id) %in%
+# entries that are in the GTF file
+sel.entries <- as.character(tsv.sel.id[as.character(tsv.sel.id) %in%
                                      as.character(sel[,1])])
-sel <- sel[as.character(sel$ID) %in% sel.genes,]
+sel <- sel[as.character(sel[,1]) %in% sel.entries,]
 
-# Merge in such a way that duplicated genes are kept
-rownames(sel) <- sel$ID
+pinfo("#Features with data:",nrow(sel))
+if ( nrow(sel) == 0 ) {
+  perror("No overlap between the feature ids and the ids in the gtf file.")
+  q(status=1)
+}
+# Merge in such a way that duplicated entries are kept
+rownames(sel) <- as.character(sel[,1])
 values <- tsv.sel.val
-t1 <- cbind(sel[sel.genes,-1],values)
+#pinfo(sel.entries)
+pinfo(length(values))
+head(values)
+irap.assert(length(sel.entries)==length(values),"Internal error")
+t1 <- cbind(sel[sel.entries,-1],values)
 rownames(t1) <- NULL
+#head(sel)
 # sort
 t1 <- t1[do.call(order,t1),]
 
@@ -180,10 +197,10 @@ t1$values <- as.numeric(t1$values)
 
 inf.values <- unlist(lapply(t1$values,is.infinite))
 na.values <- unlist(lapply(t1$values,is.na))
-pinfo("Found ",sum(na.values)," NA values; ",sum(inf.values)," +-Inf")
+pinfo("Found ",sum(na.values)," NA values and ",sum(inf.values)," +-Inf")
 if (sum(na.values)>1) {
   t1 <- t1[!is.na(t1$values),]
-  pinfo("entries with NAs removed")
+  pinfo("Entries with NAs removed")
 }
 
 #####################################
@@ -209,14 +226,12 @@ if ( ! is.null(chr.sizes) ) {
 # Generate the bedGraph
 # bedgraph does not support overlapping features
 # 
-# However it is possible to have different values for the same coordinate (genes may overlap)... how is this handled by ensembl?
+# However it is possible to have different values for the same coordinate (entries may overlap)... how is this handled by ensembl?
 
 # gtf/gff start at 1 (1-based coordinate)
 # bedgraph coordinates start at 0 (0-based coordinate
 t1$start <- t1$start-1
 t1$end <- t1$end-1
-# GTF coordinates start at ?
-# TODO: subtract 1 to start/end
 bedgraph.file <- paste(opt$out,".bedGraph",sep="")
 bw.file <- paste(opt$out,".bw",sep="")
 
@@ -246,20 +261,3 @@ if (opt$bw) {
 pinfo("All done!")
 q(status=0)
 
-
-if ( IRAP.DIR == "" ) {
-  IRAP.DIR="/home/nf/Research/Projects/WIP/EREAP/ereap_install"
-  Sys.setenv(IRAP_DIR=IRAP.DIR)
-}
-
-opt <- list()
-opt$feature <- "gene"
-opt$id_col <- "1"
-opt$value_col <- "foldChange"
-opt$gtf_file <- "test_files/Homo_sapiens.GRCh37.66.gtf"
-opt$gtf_file <- "test_files/Homo_sapiens.GRCh37.66.gff3"
-opt$gtf_file <- "test_files/gtf/chr19.gtf"
-opt$tsv_file <- "test_files/quant/r_sim.flux.100.nde.10.se.star.flux.raw.tsv"
-opt$tsv_file <- "test_files/deseq/Brain42vs60.genes_de.tsv"
-opt$tsv_file <- "test_files/deseq/dup_genes.tsv"
-opt$chr_file <- "test_files/chr_sizes.txt"

@@ -185,21 +185,37 @@ get.gene.length <- function(gene.id,gtf.data,mode="sum.exons",lim=+Inf,do.plot=F
 #
 addGeneFeature2gtf <- function(gtf) {
   #
-  save.image()
+  #save.image()
   #gtf <- gtf2
+  if (!is.data.frame(gtf)) {
+    perror("Internal error: expected a data.frame and got ",typeof(gtf))
+    q(status=1)
+  }
   gtf2 <- gtf
   levels(gtf2$feature) <- append(levels(gtf2$feature),"gene")
   gtf2 <- gtf2[FALSE,]
-  genes <- unique(gtf$gene_id)
-  #g <- genes[200]
+  genes <- unique(as.character(gtf$gene_id))
+  #g <- genes[1]
   for (g in genes ) {
     cat(".")
     sel <- as.character(gtf$gene_id)==g
+    #print(gtf[sel,])
     gene.sel <- gtf[sel,]
     gtf <- gtf[!sel,]
     #print(gene.sel)
-    start <- min(min(gene.sel$start),min(gene.sel$end))
-    end <- max(max(gene.sel$end),max(gene.sel$start))
+    ###print(gene.sel[,"start"])
+    if (is.factor(gene.sel[,"start"]) ) {
+      start <- min(min(my.factor2numeric(gene.sel[,"start"])),min(my.factor2numeric(gene.sel[,"end"])))
+      pdebug("factor")
+    } else {
+      start <- min(min(gene.sel$start),min(gene.sel$end))
+      pdebug("not factor")
+    }
+    if (is.factor(gene.sel[,"end"]) ) {
+      end <- max(max(my.factor2numeric(gene.sel[,"end"])),max(my.factor2numeric(gene.sel[,"start"])))
+    } else {
+      end <- max(max(gene.sel[,"start"]),max(gene.sel[,"end"]))
+    }
     new.entry <- c(gene.sel[1,])
     new.entry$feature <- "gene"
     new.entry$start <- start
@@ -211,8 +227,11 @@ addGeneFeature2gtf <- function(gtf) {
         new.entry[val] <- ""
       }
     }
-    gtf2 <- rbind(gtf2,new.entry)
+    #gtf2 <- rbind(gtf2,new.entry)
+    #pinfo(new.entry)
+    gtf2[nrow(gtf2)+1,] <- new.entry
   }
+  #pinfo("GTF2:",nrow(gtf2))
   return(gtf2)
 }
 
