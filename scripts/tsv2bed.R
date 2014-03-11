@@ -44,7 +44,7 @@ chrs <- c()
 #tsv_file <-"test_se_2l/tophat1/htseq1/SE2.genes.htseq1.tsv"
 
 # load the tsv file (2 cols)
-tsv<-read.table(tsv_file,sep="\t",header=F,quote="\"")
+tsv<-read.table(tsv_file,sep="\t",header=F,quote="\"",comment.char="")
 # first column should have the ID
 colnames(tsv) <- c('ID','Value')
 # exclude NAs or replace by 0?
@@ -52,7 +52,7 @@ colnames(tsv) <- c('ID','Value')
 tsv <- tsv[!is.na(tsv$Value),]
 
 # load the gff3 file in CSV format (it can take a while to do it, hence do it only once)
-gff3<-read.table(gff3_file,sep=",",header=T,quote="\"")
+gff3<-read.table(gff3_file,sep=",",header=T,quote="\"",comment.char="")
 
 sel<-gff3[gff3$feature==feature,]
 

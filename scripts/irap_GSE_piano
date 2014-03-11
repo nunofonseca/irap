@@ -99,7 +99,7 @@ pinfo("Data in ",opt$tsv.file," loaded: ",nrow(df)," entries")
 
 if (!is.null(opt$go.file)) {
   pinfo("Reading ",opt$go.file)
-  gene2go <- read.table(opt$go.file,sep="\t",header=F,comment.char="!")
+  gene2go <- read.table(opt$go.file,sep="\t",header=F,comment.char="!",quote="\"")
   pinfo("Data in ",opt$go.file," loaded: ",nrow(gene2go)," entries")
   if (ncol(gene2go)!=2) {
     perror("Error in ",opt$go.file,": expected 2 columns (id goterm)")

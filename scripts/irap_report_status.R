@@ -67,7 +67,7 @@ if ( is.na(out.file) ) {
 conf <- load.configuration.file(conf.file)
 import.conf.variables(conf)
 
-data<-read.table(status.file,sep=",")
+data<-read.table(status.file,sep=",",comment.char="",quote="\"")
 names(data) <- c("exp","stage","qc","mapper","quant","de","exp.files","comp.files","comp.perc")
 
 

@@ -33,7 +33,7 @@ if ( is.na(out_file)) {
 } 
 
 
-x<-read.table(tsv_file,header=T)
+x<-read.table(tsv_file,header=T,quote="\"",comment.char="")
 a<-aggregate(x[,c("reads","RPKM")], by=list(x$gene), "sum")
 a$reads<-round(a$reads,0)
 names(a)<-c("gene","counts","RPKM")

@@ -19,11 +19,11 @@ if (length(args)<1) {
 files <- args
 f1<-files[1]
 files<-files[-1]
-t1<-read.table(f1,sep="\t",as.is=c(T,F))
+t1<-read.table(f1,sep="\t",as.is=c(T,F),comment.char="",quote="\"")
 t1 <- fix.cufflinks.fpkms(t1)
 colnames(t1)<-c("Gene",basename(f1))
 for ( f in  files ) {
-	t2<-read.table(f,sep="\t",as.is=c(T,F))
+	t2<-read.table(f,sep="\t",as.is=c(T,F),comment.char="",quote="\"")
         t2 <- fix.cufflinks.fpkms(t2)
         colnames(t2) <- c("Gene",basename(f))
 	m<-merge(t1,t2,by="Gene",all=TRUE)

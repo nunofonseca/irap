@@ -73,7 +73,7 @@ is.gff <- grepl(".gff3*$",opt$gtf_file)
 # load the tsv file (2 cols)
 chr.sizes <- NULL
 if (!is.null(opt$chr.file)) {
-  chr.sizes <-read.table(opt$chr_file,sep="\t",header=F)
+  chr.sizes <-read.table(opt$chr_file,sep="\t",header=F,comment.char="")
 # sanity check
   if ( ncol(chr.sizes) != 2 ) {
     perror("Invalid format of ",opt$tsv_file,". Expected 2 columns but found ",ncol(chr.sizes))
@@ -136,7 +136,7 @@ get.col <- function(table,col,fatal=TRUE) {
   return(NULL)
 }
 # load values
-tsv <- read.table(opt$tsv_file,sep="\t",header=TRUE,quote="\"")
+tsv <- read.table(opt$tsv_file,sep="\t",header=TRUE,quote="\"",comment.char="")
 tsv.sel.id <- as.character(tsv[,get.col(tsv,opt$id_col)])
 #
 not.found <- tsv.sel.id[!as.character(tsv.sel.id) %in% as.character(sel[,1])]
