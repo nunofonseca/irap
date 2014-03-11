@@ -1,4 +1,4 @@
-#!/usr/bin/env Rscript
+#!/usr/bin/env Rscript3
 # =========================================================
 #
 # This file is part of iRAP.
@@ -192,11 +192,13 @@ gen.qc.plot <- function(df) {
   rownames(bp.data) <- legend
   n <- length(colnames(bp.data))
   cex <- NULL
-  par(mar=c(9,4,4,2))
-  if ( n>10 ) { cex <- 0.6 } else { cex=0.5}   
-  bp <- barplot( bp.data, beside = FALSE, col=cols, ylab="Number of reads", las=2 , cex.axis=cex, cex.names=0.8)
-  par( xpd=NA )
-  legend( "bottomleft", legend=legend, fill=cols,horiz=TRUE, cex=0.7, bg="white")
+  if ( n>10 ) { cex <- 0.6 } else { cex=0.7}
+  par( xpd=NA , mar=c(9,6,4,4))
+  bp <- barplot( bp.data, beside = FALSE, col=cols, las=2 , cex.axis=cex, cex.names=0.8)
+  par( xpd=NA , mar=c(8,6,4,4))
+  title(ylab="Number of reads",mgp=c(5,1,0))
+  legend("top",inset=c(0,-0.08),legend=legend,fill=cols,horiz=TRUE, cex=0.70,bty='n')                          
+  #legend( "bottomleft", legend=legend, fill=cols,horiz=TRUE, cex=0.7, bg="white")
   for( i in c(1:length(colnames(bp.data))) ) {
     total <- sum(bp.data[,i])
     f <- c()
@@ -413,8 +415,10 @@ library(brew)
 ####################################
 out.dir <- report.dir
 out.html.file <- paste(out.dir,"/qc.html",sep="")
+pinfo("Generating ",out.dir,"/qc.html")
 brew.wrapper(opt$html_template,out.html.file)
 warnings()
+pinfo("All done.")
 q()
 
 IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
