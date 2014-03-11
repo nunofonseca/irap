@@ -180,8 +180,8 @@ if ( nrow(sel) == 0 ) {
 rownames(sel) <- as.character(sel[,1])
 values <- tsv.sel.val
 #pinfo(sel.entries)
-pinfo(length(values))
-head(values)
+pinfo("# values:",length(values))
+#head(values)
 irap.assert(length(sel.entries)==length(values),"Internal error")
 t1 <- cbind(sel[sel.entries,-1],values)
 rownames(t1) <- NULL
