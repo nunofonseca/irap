@@ -118,7 +118,11 @@ gen.toplevel.menu <- function(menufile) {
   <li><a href='TTOPLEVELinfo.html' >Info</a>
      <ul>
          <li><a href='TTOPLEVELinfo.html#contrasts'>Exp. design</a></li>
-	 <li><a href='TTOPLEVELstatus.html'>Status</a></li>
+")
+  if (!file.exists(path2report("status.html"))) {
+    cat("	 <li><a href='TTOPLEVELstatus.html'>Status</a></li>")
+  }
+  cat("
 	 <li><a href='TTOPLEVELversions.html'>Software</a></li>
      </ul>
   </li>
@@ -195,18 +199,6 @@ gen.toplevel.menu <- function(menufile) {
         #print(file=stderr(),file)
         if (file.exists(path2file)) {
           cat(paste("<li><a href='TTOPLEVEL",file,"'>",m,"</a></li>",sep=""))
-          #cat(paste("<li><a name=''>",m,"</a></li>",sep=""))
-          #html <- '
-          #      <ul>
-          #  	<li><a href="TTOPLEVEL__FILE__#sum">Summary</a></li>
-          #	<li><a href="TTOPLEVEL__FILE__#gc">Group\'s Clustering</a></li>
-          #	<li><a href="TTOPLEVEL__FILE__#gpc">Group\'s Pairwise comparisons</a></li>
-          #	<li><a href="TTOPLEVEL__FILE__#libc">Library Clustering</a></li>
-          #	<li><a href="TTOPLEVEL__FILE__#libpc">Library Pairwise comparisons</a></li>
-          #      </ul>
-          #     </li>'
-          #html<-gsub("__FILE__",file,html,fixed=T)
-          #cat(html)
         } else {
           cat(paste("<li><a name=''>",m," X</a></li>",sep=""))
         }

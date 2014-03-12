@@ -38,7 +38,7 @@ endef
 
 ##################################################################
 
-$(name)/report/$(name).status.html: $(name)/$(name).status.tsv
+$(name)/report/status.html: $(name)/$(name).status.tsv
 	irap_report_status.R $(conf) $< $@.tmp && mv $@.tmp.html $@
 
 $(name)/$(name).status.tsv: $(name)/stage1.status $(name)/$(mapper)/stage2.status $(name)/$(mapper)/$(quant_method)/stage3.status $(name)/$(mapper)/$(quant_method)/$(de_method)/stage4.status

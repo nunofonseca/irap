@@ -74,11 +74,6 @@ names(data) <- c("exp","stage","qc","mapper","quant","de","exp.files","comp.file
 # 
 HTML.pprint.table <- function(table,caption="") {
   css.class <- table
-  #this does not work :(
-  #css.class[table==100] <- "done100"
-  #css.class[table<100 & table>=50] <- "donegt50"
-  #css.class[table<50 & table>0] <- "donelt50"
-  #css.class[table==0] <- "done0"
   css.class[table==100] <- paste("<span class='done100'>",table[table==100],"</SPAN>",sep="")
   css.class[table<100 & table>=50] <- paste("<span class='donegt50'>",table[table<100 & table>=50],"</SPAN>",sep="")
   css.class[table>0 & table<50] <- paste("<span class='donelt50'>",table[table>0 & table<50],"</SPAN>",sep="")

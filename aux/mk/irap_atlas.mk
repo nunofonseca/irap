@@ -30,9 +30,9 @@ atlas_wrap_up: $(name)/atlas_html.tar.gz
 # Get a tarball with the plots and HTML files without irap's menu, HTML head and CSS.
 
 # TODO: add the plots for mapping...check if all files are there!
-ATLAS_REPORT_FILES=$(name)/report/qc.html $(name)/report/read_filtering_plot.png $(name)/report/mapping/$(mapper).html $(name)/report/mapping/$(mapper)*.png $(name)/report/qc.html $(name)/report/riq/raw_data/*/fastqc_report.html $(name)/report/riq/raw_data/*/Images $(name)/report/riq/raw_data/*/Icons/ $(name)/report/software.txt
+ATLAS_REPORT_FILES=$(name)/report/qc.html $(name)/report/read_filtering_plot.png $(name)/report/mapping/$(mapper).html $(name)/report/mapping/$(mapper)*.png $(name)/report/qc.html $(name)/report/riq/raw_data/*/fastqc_report.html $(name)/report/riq/raw_data/*/Images $(name)/report/riq/raw_data/*/Icons/ $(name)/report/software.tsv
 
-$(name)/atlas_html.tar.gz: $(name)/report $(name)/report/software.txt
+$(name)/atlas_html.tar.gz: $(name)/report $(name)/report/software.tsv
 	mkdir -p $(name)/atlas && rm -rf $(name)/atlas/* && \
 	tar czvf $(name)/tmp.atlas.tgz  $(ATLAS_REPORT_FILES) &&\
 	cd $(name)/atlas && tar xzvf ../tmp.atlas.tgz && rm ../tmp.atlas.tgz && mv $(name)/report/* . && rm -rf $(name) && \

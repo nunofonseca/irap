@@ -1666,7 +1666,7 @@ report: report_all_targets
 # Execution status
 # Creates a status.tsv file with the completion status of each stage of the pipeline based on the files created
 phony_targets+= status_html status stage2_tracks stage3_tracks stage4_tracks
-status_html: $(name)/report/$(name).status.html
+status_html: $(name)/report/status.html
 	$(call p_info,Created $<)
 
 status: $(name)/$(name).status.tsv

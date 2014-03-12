@@ -120,7 +120,7 @@ ifdef reuse_menu
 IRAP_REPORT_MAIN_OPTIONS += --reuse-menu
 endif
 
-dir_must_exist=$(if  $(realpath $(1)),,$(1))
+must_exist=$(if  $(realpath $(1)),,$(1))
 
 
 clean_report: 
@@ -133,7 +133,7 @@ clean_report:
 phony_targets+=report_setup clean_report
 
 
-report_setup: $(call dir_must_exist,$(name)/report) $(call dir_must_exist,$(name)/report/mapping/) $(call dir_must_exist,$(name)/report/de/) $(call dir_must_exist,$(name)/report/quant/) $(call rep_browse,report_browser_setup)
+report_setup: $(call must_exist,$(name)/report) $(call must_exist,$(name)/report/mapping/) $(call must_exist,$(name)/report/de/) $(call must_exist,$(name)/report/quant/) $(call rep_browse,report_browser_setup)
 
 $(name)/report/:
 	mkdir -p $@
@@ -164,8 +164,14 @@ $(name)/report/qc.html: $(conf) $(name)/data/
 phony_targets+=info_report
 info_report: $(name)/report/info.html
 
-$(name)/report/info.html: report_setup $(conf) $(name)/report/software.txt
+$(name)/report/info.html: report_setup $(conf) $(name)/report/versions.html
 #	irap_report_qc $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(name)/report 
+
+#
+$(name)/report/versions.html: $(name)/report/software.tsv
+	tsvSoftware2html -i $< -o $@.tmp && mv $@.tmp.html $@
+
+$(name)/report/status.html:
 
 #############################
 phony_targets+=mapping_report quant_report
@@ -397,7 +403,7 @@ gse_report_files:
 ############################
 # all targets
 phony_targets+= report_all_targets
-report_all_targets:  $(name)/report/index.html qc_report mapping_report quant_report de_report gse_report show_citations end_report
+report_all_targets:  $(name)/report/index.html qc_report mapping_report quant_report de_report gse_report  end_report
 
 
 #########################
@@ -408,6 +414,6 @@ phony_targets+=end_report
 end_report: $(name)/report/index.html
 #	irap_report_main $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(name)/report -m "$(call mapping_dirs,$(name))" -q "$(call quant_dirs,$(name))" -d "$(call de_dirs,$(name))"
 
-$(name)/report/index.html: $(conf) $(quant_html_files) $(qc_html_files) $(mapping_report_targets) $(call de_html_files,$(name)) $(call gse_html_files,$(name))
+$(name)/report/index.html: $(conf) $(quant_html_files) $(qc_html_files) $(mapping_report_targets) $(call de_html_files,$(name)) $(call gse_html_files,$(name)) $(name)/report/versions.html $(call must_exist,$(name)/report/status.html)
 	irap_report_main $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(name)/report -m "$(call mapping_dirs,$(name))" -q "$(call quant_dirs,$(name))" -d "$(call de_dirs,$(name))" && \
 	cp $(name)/report/info.html $@

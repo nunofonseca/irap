@@ -63,6 +63,7 @@ quant_flux_cap=FLUX_CAPACITOR
 quant_scripture=scripture
 quant_bitseq=BitSeq
 quant_ireckon=Ireckon
+quant_nurd=NURD
 
 # quant_norm_method cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd deseq flux_cap edger 
 quant_norm_cufflinks1=cufflinks1
@@ -70,7 +71,7 @@ quant_norm_cufflinks1_nd=cufflinks1
 quant_norm_cufflinks2=cufflinks2
 quant_norm_cufflinks2_nd=cufflinks2
 quant_norm_flux_cap=FLUX_CAPACITOR
-quant_norm_deseq=deseq
+quant_norm_deseq=DESeq
 
 # DE
 de_cuffdiff1=cuffdiff1
@@ -80,6 +81,7 @@ de_cuffdiff2_nd=cuffdiff2
 de_deseq=DESeq
 de_dexseq=DEXSeq
 de_bayseq=baySeq
+de_voom=baySeq
 
 # GSE
 gse_piano=piano
@@ -93,126 +95,149 @@ empty_citation=
 empty_bibtex=
 
 # first and foremost, IRAP :)
-IRAP_citation="IRAP 2012-2013"
+IRAP_citation="IRAP 2012-2014"
 IRAP_bibtex=irap.bib
 IRAP_version=$(version)
+IRAP_analysis="Pipeline"
 
 #TODO: update
 STAR_citation="Alexander Dobin, Carrie A. Davis, Felix Schlesinger, Jorg Drenkow, Chris Zaleski, Sonali Jha, Philippe Batut, Mark Chaisson, and Thomas R. Gingeras. STAR: ultrafast universal RNA-seq aligner Bioinformatics first published online October 25, 2012"
 STAR_bibtex=STAR.bib
+STAR_analysis="Reads alignment"
 
 #### 
 tophat1_citation=Cole Trapnell, Lior Pachter, and Steven L. Salzberg. TopHat: discovering splice junctions with RNA-Seq Bioinformatics (2009) 25(9): 1105-1111
 tophat1_bibtex=tophat1.bib
-
+tophat1_analysis="Reads alignment"
 
 #### 
 tophat2_citation=Kim, Daehwan, et al. "TopHat2: accurate alignment of transcriptomes in the presence of insertions, deletions and gene fusions." Genome Biol 14.4 (2013): R36.
 tophat2_bibtex=tophat2.bib
+tophat2_analysis="Reads alignment"
 
 #### 
 SMALT_citation=http://www.sanger.ac.uk/resources/software/smalt/
 SMALT_bibtex= 
+SMALT_analysis="Reads alignment"
 
 #### 
 GSNAP_citation=Thomas D. Wu and Serban Nacu.Fast and SNP-tolerant detection of complex variants and splicing in short reads Bioinformatics (2010) 26(7): 873-881 
 GSNAP_bibtex=gsnap.bib
+GSNAP_analysis="Reads alignment"
 
 #### 
 SOAPsplice_citation=Huang, Songbo, Jinbo Zhang, Ruiqiang Li, Wenqian Zhang, Zengquan He, Tak-Wah Lam, Zhiyu Peng, and Siu-Ming Yiu. "SOAPsplice: genome-wide ab initio detection of splice junctions from RNA-Seq data." Frontiers in genetics 2 (2011).
 SOAPsplice_bibtex=soapsplice.bib
+SOAPsplice_analysis="Reads alignment"
 
 #### 
 bwa1_citation=Li, Heng, and Richard Durbin. "Fast and accurate short read alignment with Burrows–Wheeler transform." Bioinformatics 25, no. 14 (2009): 1754-1760.
 bwa1_bibtex=bwa1.bib
+bwa1_analysis="Reads alignment"
 
 #### 
 bwa2_citation=Li, Heng, and Richard Durbin. "Fast and accurate long-read alignment with Burrows–Wheeler transform." Bioinformatics 26, no. 5 (2010): 589-595.
 bwa2_bibtex=bwa2.bib
+bwa2_analysis="Reads alignment"
 
 #### 
 bowtie1_citation=Langmead, Ben, Cole Trapnell, Mihai Pop, and Steven L. Salzberg. "Ultrafast and memory-efficient alignment of short DNA sequences to the human genome." Genome Biol 10, no. 3 (2009): R25.
 bowtie1_bibtex=bowtie1.bib
+bowtie1_analysis="Reads alignment"
 
 #### 
 bowtie2_citation=Langmead, Ben, and Steven L. Salzberg. "Fast gapped-read alignment with Bowtie 2." Nature methods 9, no. 4 (2012): 357-359.
 bowtie2_bibtex=bowtie2.bib
+bowtie2_analysis="Reads alignment"
 
 #### 
 osa_citation=Hu, Jun, Huanying Ge, Matt Newman, and Kejun Liu. "OSA: a fast and accurate alignment tool for RNA-Seq." Bioinformatics 28, no. 14 (2012): 1933-1934.
 osa_bibtex=osa.bib
-
+osa_analysis="Reads alignment"
 
 #### 
 GEM_citation=Marco-Sola, Santiago, Michael Sammeth, Roderic Guigó, and Paolo Ribeca. "The GEM mapper: fast, accurate and versatile alignment by filtration." Nature Methods 9, no. 12 (2012): 1185-1188.
 GEM_bibtex=gem.bib
+GEM_analysis="Reads alignment"
 
 #### 
 FASTQC_citation=http://www.bioinformatics.babraham.ac.uk/projects/fastqc/
 FASTQC_bibtex=
+FASTQC_analysis="QC"
 
 #### 
 FASTX_citation=http://hannonlab.cshl.edu/fastx_toolkit/
 FASTX_bibtex=
+FASTX_analysis="Filtering and trimming"
 
 #### 
 cufflinks1_citation=Trapnell, Cole, Brian A. Williams, Geo Pertea, Ali Mortazavi, Gordon Kwan, Marijke J. Van Baren, Steven L. Salzberg, Barbara J. Wold, and Lior Pachter. "Transcript assembly and quantification by RNA-Seq reveals unannotated transcripts and isoform switching during cell differentiation." Nature biotechnology 28, no. 5 (2010): 511-515.
 cufflinks1_bibtex=cufflinks1.bib
+cufflinks1_analysis="Gene and transcript quantification"
 
 ####
 cufflinks2_citation=Trapnell, Cole, et al. "Differential gene and transcript expression analysis of RNA-seq experiments with TopHat and Cufflinks." Nature protocols 7.3 (2012): 562-578.
 cufflinks2_bibtex=cufflinks2.bib
+cufflinks2_analysis="Gene and transcript quantification"
 
 ####
 htseq_citation=Simon Anders, Paul Theodor Pyl, Wolfgang Huber: HTSeq – A Python framework to work with high-throughput sequencing data. bioRxiv, 20 Feb 2014, http://doi.org/10.1101/002824.
 htseq_bibtex=htseq.bib
+htseq_analysis="Gene, transcript and exon quantification"
 
 ####
 FLUX_CAPACITOR_citation=Montgomery, Stephen B., Micha Sammeth, Maria Gutierrez-Arcelus, Radoslaw P. Lach, Catherine Ingle, James Nisbett, Roderic Guigo, and Emmanouil T. Dermitzakis. "Transcriptome genetics using second generation sequencing in a Caucasian population." Nature 464, no. 7289 (2010): 773-777.
 FLUX_CAPACITOR_bibtex=flux_capacitor.bib
-
+FLUX_CAPACITOR_analysis="Gene and transcript quantification"
 
 ####
 BitSeq_citation=Glaus, Peter, Antti Honkela, and Magnus Rattray. "Identifying differentially expressed transcripts from RNA-seq data with biological variation." Bioinformatics 28, no. 13 (2012): 1721-1728.
 BitSeq_bibtex=bitseq.bib
+BitSeq_analysis="Differential transcript expression"
 
 ####
 Ireckon_citation=Mezlini, Aziz M., Eric JM Smith, Marc Fiume, Orion Buske, Gleb Savich, Sohrab Shah, Sam Aparicion, Derek Chiang, Anna Goldenberg, and Michael Brudno. "iReckon: Simultaneous isoform discovery and abundance estimation from RNA-seq data." Genome Research (2012).
 Ireckon_bibtex=ireckon.bib
-
+Ireckon_analysis="Transcript quantification"
 
 ####
 cuffdiff1_citation=Trapnell, Cole, Brian A. Williams, Geo Pertea, Ali Mortazavi, Gordon Kwan, Marijke J. Van Baren, Steven L. Salzberg, Barbara J. Wold, and Lior Pachter. "Transcript assembly and quantification by RNA-Seq reveals unannotated transcripts and isoform switching during cell differentiation." Nature biotechnology 28, no. 5 (2010): 511-515.
 cuffdiff1_bibtex=cuffdiff1.bib
+cuffdiff1_analysis="Differential gene expression"
 
 ####
 cuffdiff2_citation=Trapnell, Cole, David G. Hendrickson, Martin Sauvageau, Loyal Goff, John L. Rinn, and Lior Pachter. "Differential analysis of gene regulation at transcript resolution with RNA-seq." Nature Biotechnology (2012).
 cuffdiff2_bibtex=cuffdiff2.bib
+cuffdiff2_analysis="Differential gene expression"
 
 ####
 DESeq_citation=Anders, Simon, and Wolfgang Huber. "Differential expression analysis for sequence count data." Genome Biol 11, no. 10 (2010): R106.
 DESeq_bibtex=deseq.bib
+DESeq_analysis="Differential gene expression"
 
 ####
 edgeR_citation=Robinson, Mark D., Davis J. McCarthy, and Gordon K. Smyth. "edgeR: a Bioconductor package for differential expression analysis of digital gene expression data." Bioinformatics 26, no. 1 (2010): 139-140.
 edgeR_bibtex=edger.bib
+edgeR_analysis="Differential gene expression"
 
 ####
 mmseq_citation=Turro, Ernest, Shu-Yi Su, Angela Gonçalves, L. J. Coin, Sylvia Richardson, and Alex Lewin. "Haplotype and isoform specific expression estimation using multi-mapping RNA-seq reads." Genome Biol 12, no. 2 (2011): R13.
 mmseq_bibtex=
 
+
 ####
 DEXSeq_citation=Anders, Simon, Alejandro Reyes, and Wolfgang Huber. "Detecting differential usage of exons from RNA-seq data." Genome Research (2012).
 DEXSeq_bibtex=dexseq.bib
+DEX_analysis="Differential exon usage"
 
 ####
 baySeq_citation=Hardcastle, Thomas J., and Krystyna A. Kelly. "baySeq: empirical Bayesian methods for identifying differential expression in sequence count data." BMC bioinformatics 11, no. 1 (2010): 422.
 baySeq_bibtex=bayseq.bib
-
+baySeq_analysis="Differential gene expression"
 
 piano_citation=Väremo, Leif, Jens Nielsen, and Intawat Nookaew. "Enriching the gene set analysis of genome-wide data by incorporating directionality of gene expression and combining statistical hypotheses and methods". Nucleic acids research 41.8 (2013): 4378-4391.
 piano_bibtex=piano.bib
-
+piano_analysis="Enrichment analysis" 
 #################################################################
 phony_targets+= show_citations
 
@@ -222,13 +247,13 @@ phony_targets+= show_citations
 # prog version 4
 define pprint_prog_info=
 
-echo "* $(1) ; Version:  $(4) ; Citation: $(2)"
+echo "$(5)	$(1)	$(4)	$(2)"
 
 endef
 
 # prog_name - 1
 define prog_info=
-$(if $($(1)_citation),$(call pprint_prog_info,$(1),$($(1)_citation),$($(1)_bibtex),$($(1)_version)),)
+$(if $($(1)_citation),$(call pprint_prog_info,$(1),$($(1)_citation),$($(1)_bibtex),$($(1)_version),$($(1)_analysis)))
 endef
 
 # Scientific software
@@ -238,15 +263,17 @@ silent_targets+= show_citations citations_file
 
 show_citations: 
 	$(info Summary of software used:)
+	echo "Analysis	Software	Version	Citation" > $@.tmp && \
 	$(foreach p,$(sort $(progs_used)),$(call prog_info,$(p)))
 
-citations_file: $(name)/report/software.txt
+citations_file: $(name)/report/software.tsv
 
-#.PHONY: $(name)/report/software.txt
 # it is only dependent on the configuration file
-$(name)/report/software.txt: $(conf)
-	rm -f $(name)/report/software.txt
+# software.tsv is a tab separated value file
+$(name)/report/software.tsv: $(conf)
+	rm -f $@
 	touch $@.tmp && \
+	echo "Analysis	Software	Version	Citation" > $@.tmp && \
 	( $(foreach p,$(sort $(progs_used)),$(call prog_info,$(p))) ) >> $@.tmp &&\
 	mv $@.tmp $@
 
