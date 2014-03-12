@@ -1,0 +1,72 @@
+#!/usr/bin/env Rscript
+# =========================================================
+# Copyright 2012-2013,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#    $Id: 0.1.1$
+# =========================================================
+
+###############################################################
+suppressPackageStartupMessages(library("optparse"))
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+
+# specify our desired options in a list
+#
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+html.template <- get.path2template("tsvSoftware")
+pdebug.enabled <- FALSE
+
+#######################
+usage <- "tsvSoftware2html --tsv file [options]"
+filenames <- c("tsv_file") ;#filenames that must exist (if defined)
+option_list <- list(
+  make_option(c("-v", "--verbose"), action="store_true", default=TRUE, help="Print extra output [default]"),
+  make_option(c("-i", "--tsv"), type="character", dest="tsv_file", default=NULL,help="TSV file name"),
+  make_option(c("--css"), type="character",default="",help="Path to the irap.css file"),
+  make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
+  make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name prefix.")
+)
+
+# check multiple options values
+multiple.options = NULL
+mandatory <- c("tsv_file","out")
+opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
+
+#
+pdebug.enabled <- opt$debug
+
+pdebug("TSVFILE=",opt$tsv_file)
+
+pdebug.save.state("tsvSoftware2html0","p0")
+# load TSV
+# TODO: trap and report errors
+software.table <- read.tsv(opt$tsv_file,header=T)
+
+pdebug("data loaded")
+pdebug.save.state("tsvSoftware2html0","p1")
+library(brew)
+o.html.file <-paste(opt$out,".html",sep="")
+brew.wrapper(html.template,o.html.file)
+
+q(status=0)
+
