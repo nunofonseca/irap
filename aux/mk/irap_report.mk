@@ -162,13 +162,14 @@ $(name)/report/qc.html: $(conf) $(name)/data/
 #############################
 # TODO: info.html
 phony_targets+=info_report
-info_report: $(name)/report/info.html
+info_report: $(name)/report/info.html $(name)/report/versions.html
 
-$(name)/report/info.html: report_setup $(conf) $(name)/report/versions.html
+$(name)/report/info.html: report_setup $(conf)
+	touch $@
 #	irap_report_qc $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(name)/report 
 
 #
-$(name)/report/versions.html: $(name)/report/software.tsv
+$(name)/report/versions.html: $(conf) $(name)/report/software.tsv
 	tsvSoftware2html -i $< -o $@.tmp && mv $@.tmp.html $@
 
 $(name)/report/status.html:
@@ -414,6 +415,7 @@ phony_targets+=end_report
 end_report: $(name)/report/index.html
 #	irap_report_main $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(name)/report -m "$(call mapping_dirs,$(name))" -q "$(call quant_dirs,$(name))" -d "$(call de_dirs,$(name))"
 
-$(name)/report/index.html: $(conf) $(quant_html_files) $(qc_html_files) $(mapping_report_targets) $(call de_html_files,$(name)) $(call gse_html_files,$(name)) $(name)/report/versions.html $(call must_exist,$(name)/report/status.html)
+# TODO: replace versions.html by info_report
+$(name)/report/index.html: $(conf) $(name)/report/versions.html $(quant_html_files) $(qc_html_files) $(mapping_report_targets) $(call de_html_files,$(name)) $(call gse_html_files,$(name))  $(call must_exist,$(name)/report/status.html)
 	irap_report_main $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(name)/report -m "$(call mapping_dirs,$(name))" -q "$(call quant_dirs,$(name))" -d "$(call de_dirs,$(name))" && \
 	cp $(name)/report/info.html $@
