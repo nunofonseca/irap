@@ -1,0 +1,17 @@
+<% brew::brew(get.path2template("page.header")) %>
+
+<%
+source(paste(IRAP.DIR,"aux/R","irap_misc.R",sep="/"))
+%>
+
+<H1>Software<A NAME='software'/></H1>
+  
+<!-- Table -->
+<A NAME='sum'/>
+
+<%
+HTML(software.table)
+%>
+
+<% brew::brew(get.path2template("page.footer")) %>
+
