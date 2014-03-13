@@ -169,7 +169,7 @@ $(name)/report/info.html: report_setup $(conf)
 #	irap_report_qc $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(name)/report 
 
 #
-$(name)/report/versions.html: $(conf) $(name)/report/software.tsv
+$(name)/report/versions.html: $(name)/report/software.tsv $(conf) 
 	tsvSoftware2html -i $< -o $@.tmp && mv $@.tmp.html $@
 
 $(name)/report/status.html:
