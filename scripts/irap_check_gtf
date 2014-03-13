@@ -8,6 +8,28 @@ if ($ARGV[0] eq "")  {
 	    exit(1);
 }
 
+# look for '
+my $nquote=`cut -f 9- $ARGV[0]| grep -c "'"`;
+if ( $nquote > 0 ) {
+    print STDERR "WARNING!!!!!!!!!!!!!!\nWarning: File $ARGV[0] does not look ok. It contains \"'\" which may cause some errors. Please replace all  \"'\"  by some other character.\n";
+    exit(2);
+} 
+
+# 
+my $num_comments=`grep -c "^#" $ARGV[0]`;
+$num_comments=~s/\n//g;
+
+if ( $num_comments > 0 ) {
+    print STDERR "ERROR: GTF file contains $num_comments comments (lines starting with #). This will break some scripts.\n";
+    exit(2);
+}
+#  check if there are ; within ""
+my $semi_colon_in_names=`grep -c -E '\"[^"]*;[^"]*\";' $ARGV[0]`;
+if ( $semi_colon_in_names > 0 ) {
+    print STDERR "ERROR: GTF file contains ';' in gene names or transcript names. This will break some scripts/tools.\n";
+    exit(2);
+}
+
 my $FEATURES=`cut -f 3 $ARGV[0]|sort -u`;
 $FEATURES=~s/\n/ /g;
 print "Features found: $FEATURES\n";
@@ -23,14 +45,8 @@ foreach my $feat (@must_have) {
 }
 
 if ( scalar(@features) > scalar(@must_have) )  {
-	print "WARNING: File contains not mandatory features,  some programs may fail.\n";
-	exit;
+	print "WARNING: File contains  features not mandatory,  some programs may fail.\n";
 }
-# look for '
-my $nquote=`cut -f 9- $ARGV[0]| grep -c "'"`;
-if ( $nquote > 0 ) {
-    print STDERR "WARNING!!!!!!!!!!!!!!\nWarning: File $ARGV[0] does not look ok. It contains \"'\" which may cause some errors. Please replace all  \"'\"  by some other character.\n"
-} else {
-    print "File '$ARGV[0]' looks ok.\n";
-}
+
+print "File '$ARGV[0]' looks ok.\n";
 exit(0);
