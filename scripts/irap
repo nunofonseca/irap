@@ -147,7 +147,7 @@ endif
 #************************
 #Version and license info
 pname=IRAP
-version=0.3.3
+version=0.4.0-devel
 contact=Developed by Nuno Fonseca (authorname (at) acm.org)
 license=This pipeline is distributed  under the terms of the GNU General Public License 3
 
@@ -406,6 +406,18 @@ endif
 # contrast1=g1 g2
 # g1=Lib1 Lib2
 # g2=Lib3 Lib4
+
+########
+# groups
+# list of groups defined (only used during html report generation)
+# ex.
+# groups=group1 group2 group3 
+ifndef groups
+$(info *	 groups=  parameter not defined, using the groups in the contrasts (if defined).)
+else
+ $(foreach g,$(groups),$(call check_param_ok,$(g)))
+$(info *	groups=$(groups))
+endif
 
 #*********************
 # Technical replicates

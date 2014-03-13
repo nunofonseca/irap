@@ -20,7 +20,7 @@
 # =========================================================
 # TODO: create an object for the conf. information
 
-irap_version<-"0.3.3"
+irap_version<-"0.4.0-devel"
 
 IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
 if ( IRAP.DIR == "" ) {
@@ -1480,6 +1480,76 @@ pe.lib2rawfilename2 <- function(s,conf) {
   files <- conf.get.value(conf,lib)
   return(files[as.numeric(id)])
 }
+
+tech.replicates2list <- function(val) {
+  if (is.null(val)) {
+    return(val)
+  }
+  l <- list()  
+  for ( s in strsplit(val,";")[[1]]) {
+    l[[paste(",",s,",",sep="")]] <- strsplit(s,",")[[1]]
+  }
+  return(l)
+}
+groups2matrix <- function(exp.conf) {
+
+  groups.val <- conf.get.value(exp.conf,"groups")
+  if ( is.null(groups.val) ) {
+    # get the groups used in the contrasts
+    contrasts.val <- conf.get.value(exp.conf,"contrasts")
+    if ( is.null(contrasts.val) ) {
+      return(NULL)
+    }
+    # gather all groups from the contrasts
+    groups.val <- unique(unlist(lapply(contrasts.val,FUN=conf.get.value,conf=exp.conf)))    
+  }
+  # all libraries
+  libs <- sort(unique(append(conf.get.value(exp.conf,"se"),conf.get.value(exp.conf,"pe"))))
+  # technical replicates
+  tech.replicates.l <-   tech.replicates2list(conf.get.value(exp.conf,"technical.replicates"))
+  m <- matrix(ncol=length(libs),nrow=length(groups.val),dimnames=list(groups.val,libs))
+  #
+  if ( is.null(tech.replicates.l)) {
+    libs.ids <- seq(1,length(libs))
+    names(libs.ids) <- libs    
+  } else {
+    x <- seq(1,length(names(tech.replicates.l)))  
+    xtimes <- unlist(lapply(tech.replicates.l,length))
+    print(xtimes)
+    libs.ids <- rep(x,times=xtimes)
+    names(libs.ids) <- unlist(tech.replicates.l)    
+  }
+  for ( g in groups.val ) {
+    group.def <- conf.get.value(exp.conf,g)
+    sel <- colnames(m) %in% group.def
+    m[g,] <- libs.ids[colnames(m)]
+    m[g,!sel] <- NA
+  }  
+  m
+}
+
+contrasts2matrix <- function(exp.conf) {
+
+   # get the groups used in the contrasts
+  contrasts.val <- conf.get.value(exp.conf,"contrasts")
+  if ( is.null(contrasts.val) ) {
+    return(NULL)
+  }
+  # gather all groups from the contrasts  
+  groups.val <- unique(unlist(lapply(contrasts.val,FUN=conf.get.value,conf=exp.conf)))    
+  m <- as.data.frame(matrix(ncol=length(groups.val)+1,nrow=length(contrasts.val),dimnames=list(contrasts.val,append("Contrast",groups.val))))
+  #
+  groups.ids <- seq(1,length(groups.val))
+  names(groups.ids) <- groups.val
+  for ( v in contrasts.val ) {
+    cont.def <- conf.get.value(exp.conf,v)
+    sel <- colnames(m)[-1] %in% cont.def
+    m[v,] <- append(paste(cont.def,collapse=" - "),groups.ids[colnames(m)[-1]])
+    m[v,!sel] <- NA
+  }  
+  m
+}
+
 #
 load.configuration.file <- function(conf_file) {
 
