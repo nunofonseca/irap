@@ -791,12 +791,13 @@ HTML.pprint.conf <- function(conf,names=NULL) {
 
   contrasts <- conf.get.value(conf,"contrasts")
   if ( is.null(contrasts) ) {
-     # default (deprecated)
-    if (!is.null(conditions)) {
-      contrasts <- "conditions"
-    } else {
+    # default (deprecated)
+    #conditions <- conf.get.value(conf,"conditions")
+    #if (!is.null(conditions)) {
+    #  contrasts <- "conditions"
+    #} else {
       contrasts <- NULL
-    }
+    #}
   }
   if (is.null(contrasts)) {
     HTML( paste("Contrasts:", "-") )
