@@ -759,6 +759,7 @@ function install_deps {
     boost_install
     gnuplot_install
     R_install
+    R3_install
     YAP_install
     # 
     samtools_install
@@ -889,7 +890,7 @@ EOF
 ##################################
 # R packages
 # Software environment for statistical computing and graphics
-function install_R_packages {
+function R_packages_install {
     export PATH=$IRAP_DIR/bin:$PATH
     pinfo "Installing R packages..."
     R --no-save <<EOF
@@ -1698,7 +1699,8 @@ if [ "$install" == "mappers" ]; then
 fi
 
 if [ "$install" == "r_pack" ]; then
-    install_R_packages    
+    R_packages_install
+    R3_packages_install
     pinfo "Log saved to $logfile"
     exit 0
 fi
@@ -1731,10 +1733,10 @@ if [ "$install" == "testing" ]; then
     set -e
     IsoEM_install
     Sailfish_install
-    NURD_install
+    #NURD_install
     rsem_install
-    R3_install
-    R3_packages_install
+    #R3_install
+    #R3_packages_install
     pinfo "Log saved to $logfile"
     exit 0
 fi
@@ -1742,7 +1744,8 @@ fi
 #############
 # all
 install_deps
-install_R_packages
+R_packages_install
+R3_packages_install
 install_core
 pinfo "Loading environment $SETUP_FILE..."
 source $SETUP_FILE
