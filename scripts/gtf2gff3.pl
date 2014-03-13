@@ -12,10 +12,11 @@ my @trs=();
 my $counter = 0;
 
 while (<>) {
+        next if ( /^#/ ); # ignore comments
 	@v = split /\t/;
 	next unless $v[2] eq 'exon';
 	$v[0] = 'chr' . $v[0] unless index($v[0], 'chr') == 0;
-	($g,$tr) = $v[8] =~ /gene_id "([^"]+)"; transcript_id "([^"]+)/;
+	($g,$tr) = $v[8] =~ /gene_id "([^"]+)";.* transcript_id "([^"]+)/;
 	if ($tr ne $last_tr) {
 		push @trs, [@exons];
 		if ($g ne $last_g) {
