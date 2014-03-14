@@ -1627,12 +1627,12 @@ lib.info <- function(exp.conf,lib) {
     info <- ""
   }
   v <- c(lib,
-         conf.get.value(exp.conf,lib),
+         paste(conf.get.value(exp.conf,lib),collapse=",",sep=","),
          ifelse(lib %in% conf.get.value(exp.conf,"pe"),"PE","SE"),
          conf.get.value(exp.conf,paste(lib,"_rs",sep="")),
          conf.get.value(exp.conf,paste(lib,"_qual",sep="")),
          info)
-  names(v) <- c("Name","File","Type","Read Size","Quality encoding","Notes/Info")
+  names(v) <- c("Name","File(s)","Type","Read Size","Quality encoding","Notes/Info")
   return(v)
 }
 
