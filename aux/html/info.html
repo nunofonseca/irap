@@ -8,7 +8,15 @@ library(xtable)
 <DIV name='info'>
 <H1>Information</H1>
 
-<H2 class="section">Data</H2>
+<OL class="contents"> Contents
+  <LI> <A href="#data">Data</A>
+  <LI> <A href="#design">Experiment design</A>
+  <LI> <A href="#settings">Main analysis settings</A>
+</OL>
+
+
+
+<H2 class="section">Data<A name="data"/></H2>
 
   
 <H3><%=irap.ctr("Table")%>: Experiment name and data used</H3>
@@ -35,7 +43,7 @@ irap.output.html(html,
 %>
 
 
-<H2 class="section">Exp. Design</H2>
+<H2 class="section">Experiment Design<a name="design"/></H2>
 
 <H3><%=irap.ctr("Table")%>: Groups</H3>
 <%
@@ -73,7 +81,7 @@ irap.output.html(html, "")
 %>
 
 
-<H2 class="section">Main settings</H2>
+<H2 class="section">Main settings<a name="settings"/></H2>
 
 <%
 files<-c(conf.file)
