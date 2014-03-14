@@ -1,0 +1,136 @@
+#!/usr/bin/env Rscript
+# =========================================================
+# Copyright 2012-2013,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#    $Id: irap.txt Nuno Fonseca Sun Jan 13 14:04:31 2013$
+# =========================================================
+
+suppressPackageStartupMessages(library("optparse"))
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+pdebug.enabled <- FALSE
+html.temp <- get.path2template("info")
+#
+usage <- "irap_report_expinfo --conf file  [options]"
+option_list <- list(
+  make_option(c("-v", "--verbose"), action="store_true", default=TRUE, help="Print extra output [default]"),
+  make_option(c("-c", "--conf"), type="character", dest="conf_file", default="",help="configuration filename"),
+  make_option(c("-o", "--out"), type="character", dest="out_file", default="info.html",help="Output file name."),
+  make_option(c("--css"), type="character",default="",help="Path to the irap.css file"),
+  make_option(c("--reuse_menu"), action="store_true", default=FALSE, help="Reuse menu.html file")
+)
+multiple.options = NULL
+filenames <- c("conf_file") ;#filenames that must exist (if defined)
+mandatory <- c("conf_file")
+opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
+
+#####################################################################
+pinfo("conf_file=",opt$conf_file)
+#opt$conf_file <- "test3_qc.conf"
+# 
+exp.conf <- load.configuration.file(opt$conf_file)
+pinfo("Experiment configuration loaded.")
+# set the variables
+#import.conf.variables(conf)
+
+
+# Exp. design
+groups.m <- groups2matrix(exp.conf)
+contrasts.m <- contrasts2matrix(exp.conf)
+
+library(xtable)
+
+pdebug.save.state("irap_report_expinfo","p1")
+
+libs.ids <- libraries2ids(exp.conf)
+libs <- names(libs.ids)
+lib.colours.mapping <- ids2colours.mapping(libs.ids)
+all.lib.colours <- libids2colours(libs.ids)
+#print(all.lib.colours)
+
+# table with fastq,alias,libtype,RL,QC link,note
+libs.m <- sapply(libs,lib.info,exp.conf=exp.conf)
+# apply bg color to name row
+libs.m["Name",] <- table.set.bgcolor(libs.m["Name",],all.lib.colours)
+
+##############################################
+# Exp. info irap_report_expinfo --conf test3_qc.conf -r /tmp/
+#head(exp.conf)
+stages <- c("QC","Mapper","Quantification","DGE","GSE")
+exp.info.data.vars <- c("name","species","reference","gtf_file")
+#exp.info.data.vars <- c("max_threads","max_mem")
+
+exp.info.vars <- list()
+exp.info.vars[["QC"]] <- c("qc","min_read_quality","trim_reads","cont_index")
+exp.info.vars[["DGE"]] <- c("de_method","de_pvalue_cutoff")
+# _aln_options
+# _map_options
+exp.info.vars[["Mapping"]] <- c("mapper","max_hits")
+exp.info.vars[["Quantification"]] <- c("quant_method","exon_quant","transcript_quant")
+exp.info.vars[["GSE"]] <- c("gse_tool","gse_method","gse_pvalue","gse_minsize")
+
+# libraries excluded + info labels
+library(brew)
+####################################
+#lib.colours <- gsub("..$","",rainbow(max(as.numeric(groups.m),na.rm=T)))
+lib.colours <- all.lib.colours[colnames(groups.m)[-1]]
+group.colours <- append(NA,gsub("..$","",rainbow(ncol(contrasts.m[,-1]))))
+names(group.colours) <- colnames(contrasts.m)
+
+groups.m.html <- ifelse(is.na(groups.m),NA,"&nbsp;&nbsp;&nbsp;&nbsp;")
+groups.m.colours <- apply(groups.m,c(1,2),table.get.colour,lib.colours.mapping)
+groups.m.colours <- rbind(lib.colours.mapping[apply(groups.m,2,max,na.rm=T)],groups.m.colours)
+rownames(groups.m.colours)[1] <- "Group name"
+# add first row
+groups.m.html <- rbind(colnames(groups.m.html),groups.m.html)
+rownames(groups.m.html)[1] <- "Group name"
+groups.m.html <- table.set.bgcolor(groups.m.html,groups.m.colours)
+
+# contrasts
+contrasts.m.html <- contrasts.m
+contrasts.m.html[apply(contrasts.m,2,grepl,pattern="^[0-9]*$",perl=T)] <- "&nbsp;&nbsp;&nbsp;&nbsp;"
+
+contrasts.m.colours <- ifelse(is.na(contrasts.m),NA,"black")
+contrasts.m.colours[,1] <- NA
+# add the colors for the first row
+contrasts.m.colours <- rbind(rep(NA,length(group.colours)),contrasts.m.colours)
+rownames(contrasts.m.colours)[1] <- "Contrast name"
+# add first row
+contrasts.m.html <- rbind(colnames(contrasts.m.html),contrasts.m.html)
+rownames(contrasts.m.html)[1] <- "Contrast name"
+contrasts.m.html <- table.set.bgcolor(contrasts.m.html,contrasts.m.colours)
+
+####################################
+pdebug.save.state("irap_report_expinfo","p2")
+irap.css <- opt$css
+out.dir <- dirname(opt$out_file)
+# Check if directory exists
+file.required(out.dir)
+out.html.file <- paste(opt$out_file,sep="")
+pinfo("Generating ",out.html.file)
+brew.wrapper(html.temp,out.html.file)
+warnings()
+pinfo("All done.")
+q()
+
+

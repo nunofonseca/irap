@@ -1,0 +1,113 @@
+<% brew::brew(get.path2template("page.header")) %>
+
+<%
+library(xtable)
+%>
+  
+<%# Comment -- wrap up everything in a div %>
+<DIV name='info'>
+<H1>Information</H1>
+
+<H2 class="section">Data</H2>
+
+  
+<H3><%=irap.ctr("Table")%>: Experiment name and data used</H3>
+<%
+html <- vars2table.html(exp.conf,exp.info.data.vars)
+irap.output.html(html, "")
+%>
+
+
+<H3><%=irap.ctr("Table")%>: Libraries details</H3>
+<%
+xt <- xtable(t(libs.m),
+             caption="",
+             label="libs")
+
+html <- print.xtable(print.results=FALSE, xt, type="html",
+                     sanitize.text.function=function(x) {x},
+                     include.colnames=TRUE, include.rownames=FALSE,
+                     html.table.attributes = " class='expinfo'")
+
+irap.output.html(html,
+                     "Information about each library: file name with the raw data, library type (single-end SE or paired-end PE), read length, PHRED quality encoding, and notes kept for each library (e.g., why it was not used in the analysis). Technical replicates have the same color.")
+
+%>
+
+
+<H2 class="section">Exp. Design</H2>
+
+<H3><%=irap.ctr("Table")%>: Groups</H3>
+<%
+
+xt <- xtable(groups.m.html,
+             caption="",
+             label="groups_libs")
+
+html <- print.xtable(print.results=FALSE, xt, type="html",
+                     sanitize.text.function=function(x) {x},
+                     include.colnames=FALSE, include.rownames=TRUE,
+                     html.table.attributes = " class='expinfo'")
+                     irap.output.html(html,
+                     "A group corresponds to a set of libraries. Libraries (columns) with the same color represent technical replicates.")
+
+%>
+
+<H3><%=irap.ctr("Table")%>: Contrasts</H3>
+<%
+
+
+xt <- xtable(contrasts.m.html,
+             caption="",
+             label="groups_libs")
+
+html <- print.xtable(print.results=FALSE,
+                     xt,
+                     type="html",
+                     sanitize.text.function=function(x) {x},
+                     include.colnames=FALSE,
+                     include.rownames=TRUE,
+                     html.table.attributes = " class='expinfo'")
+irap.output.html(html, "")
+
+%>
+
+
+<H2 class="section">Main settings</H2>
+
+<H3><%=irap.ctr("Table")%>: QC/filtering options</H3>
+<%
+html <- vars2table.html(exp.conf,exp.info.vars[["QC"]],colnames=c("Parameter","Value"))
+irap.output.html(html, "")
+%>
+
+  <H3><%=irap.ctr("Table")%>: Mapping options</H3>
+<%
+html <- vars2table.html(exp.conf,exp.info.vars[["Mapping"]],colnames=c("Parameter","Value"))
+irap.output.html(html, "")
+%>
+
+    <H3><%=irap.ctr("Table")%>: Quantification</H3>
+<%
+html <- vars2table.html(exp.conf,exp.info.vars[["Quantification"]],colnames=c("Parameter","Value"))
+irap.output.html(html, "")
+%>
+
+
+  <H3><%=irap.ctr("Table")%>: Differential Gene Expression</H3>
+<%
+html <- vars2table.html(exp.conf,exp.info.vars[["DGE"]],colnames=c("Parameter","Value"))
+irap.output.html(html, "")
+%>
+
+  <H3><%=irap.ctr("Table")%>: Gene set enrichment analysis</H3>
+<%
+html <- vars2table.html(exp.conf,exp.info.vars[["GSE"]],colnames=c("Parameter","Value"))
+irap.output.html(html, "")
+%>
+
+
+</DIV>
+
+<% brew::brew(get.path2template("page.footer")) %>
+
