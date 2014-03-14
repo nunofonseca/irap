@@ -95,7 +95,7 @@ empty_citation=
 empty_bibtex=
 
 # first and foremost, IRAP :)
-IRAP_citation="IRAP 2012-2014"
+IRAP_citation="IRAP - http://code.google.com/p/irap/"
 IRAP_bibtex=irap.bib
 IRAP_version=$(version)
 IRAP_analysis="Pipeline"

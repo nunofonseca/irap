@@ -49,6 +49,10 @@ perror <- function(...) {
   cat(paste("[ERROR] ",...,"\n",sep=""),file=stderr())
 }
 
+capitalize <- function(s) {
+  if ( is.na(s) || is.null(s) ) { return(s); }
+  return(paste(toupper(substring(s, 1,1)),substring(s,2),sep=""))
+}
 ##################################################
 # debugging
 pdebug.enabled <- FALSE
@@ -1418,7 +1422,7 @@ myParseArgs <- function(usage,option_list,filenames.exist=NULL,multiple.options=
 }
 #
 #############################################################
-conf.get.value <- function(conf,val) {
+conf.get.value <- function(conf,val,get.default=FALSE) {
   #pinfo(">>>>>>>>>>>",val)
   idx <- grep(paste("^",val,"$",sep=""),conf[,1],ignore.case=TRUE,value=FALSE,perl=TRUE)
   
@@ -1428,9 +1432,16 @@ conf.get.value <- function(conf,val) {
     if ( length(grep(".*_strand$",val,ignore.case=TRUE,value=FALSE,perl=TRUE))>0 ) {
       return(NA)
     }
+    if ( get.default ) {
+      return(conf.get.default.value(val))
+    }
     return(NULL)
   }
-  return(myread.list(conf[idx,2]))
+  v <- myread.list(conf[idx,2])
+  if ( sum(is.null(v))>0 && get.default ) {
+    v <- conf.get.default.value(val)
+  }
+  return(v)
 }
 
 conf.set.value <- function(var,value,conf) {
@@ -1450,11 +1461,11 @@ conf.is.qc.enabled <- function(conf) {
 }
 
 conf.get.default.value <- function(var) {
-  cmd <- paste("grep -i '^def_",var,"' ",IRAP.DIR,"/scripts/irap | cut -f 2 -d= | tail -n 1",sep="")
+  cmd <- paste("grep -i '^def_",var,"' ",IRAP.DIR,"/{scripts/irap,aux/mk/*.mk} | cut -f 2 -d= |head -n 1",sep="")
   #pinfo(cmd)
   val <- system(cmd,intern=TRUE)
-  #pinfo("default ",var,"=",val)
-  if (is.null(val)) { return(NULL) }
+  if ( is.null(val)) { return(NULL); }
+  if ( length(val)==0 ) { return(NULL); }
   return(val)
 }
 
@@ -1504,22 +1515,11 @@ groups2matrix <- function(exp.conf) {
     # gather all groups from the contrasts
     groups.val <- unique(unlist(lapply(contrasts.val,FUN=conf.get.value,conf=exp.conf)))    
   }
-  # all libraries
-  libs <- sort(unique(append(conf.get.value(exp.conf,"se"),conf.get.value(exp.conf,"pe"))))
-  # technical replicates
-  tech.replicates.l <-   tech.replicates2list(conf.get.value(exp.conf,"technical.replicates"))
+
+  libs.ids <- libraries2ids(exp.conf)
+  libs <- names(libs.ids)
   m <- matrix(ncol=length(libs),nrow=length(groups.val),dimnames=list(groups.val,libs))
   #
-  if ( is.null(tech.replicates.l)) {
-    libs.ids <- seq(1,length(libs))
-    names(libs.ids) <- libs    
-  } else {
-    x <- seq(1,length(names(tech.replicates.l)))  
-    xtimes <- unlist(lapply(tech.replicates.l,length))
-    print(xtimes)
-    libs.ids <- rep(x,times=xtimes)
-    names(libs.ids) <- unlist(tech.replicates.l)    
-  }
   for ( g in groups.val ) {
     group.def <- conf.get.value(exp.conf,g)
     sel <- colnames(m) %in% group.def
@@ -1527,6 +1527,113 @@ groups2matrix <- function(exp.conf) {
     m[g,!sel] <- NA
   }  
   m
+}
+libraries2ids <- function(exp.conf) {
+                                        # all libraries
+  libs <- sort(unique(append(conf.get.value(exp.conf,"se"),conf.get.value(exp.conf,"pe"))))
+     # technical replicates
+  tech.replicates.l <-   tech.replicates2list(conf.get.value(exp.conf,"technical.replicates"))
+  if ( is.null(tech.replicates.l)) {
+    libs.ids <- seq(1,length(libs))
+    names(libs.ids) <- libs    
+  } else {
+    x <- seq(1,length(names(tech.replicates.l)))  
+    xtimes <- unlist(lapply(tech.replicates.l,length))
+                                        #print(xtimes)
+    libs.ids <- rep(x,times=xtimes)
+    names(libs.ids) <- unlist(tech.replicates.l)    
+  }
+  return(libs.ids)
+}
+
+ids2colours.mapping <- function(libs.ids) {
+
+  mapping <- gsub("..$","",rainbow(max(libs.ids)))
+  names(mapping) <- seq(1,length(mapping))  
+  return(mapping)
+}
+libids2colours <- function(libs.ids) {
+
+  all.lib.colours <- ids2colours.mapping(libs.ids)
+  libs.colours <- sapply(libs.ids,FUN=table.get.colour,palette=all.lib.colours)
+  names(libs.colours) <- names(libs.ids)
+  return(libs.colours)
+}
+
+table.get.colour <- function(val,palette) {
+  if (is.na(val) || is.null(NA) ) { return(NA); }
+  return(palette[as.numeric(as.character(val))])
+}
+
+#
+#table <- groups.m.html
+#table.col <- groups.m.colours
+#table <- contrasts.m.html
+#table.col <- contrasts.m.colours
+table.set.bgcolor <- function(table,table.col) {
+  if ( is.matrix(table) || is.data.frame(table) ) {
+    table.v <- as.vector(apply(table,c(1,2),as.character))
+    table.col.v <- as.vector(table.col)
+  } else {
+    table.v <- table
+    table.col.v <- table.col
+  }
+  irap.assert(length(table.v)==length(table.col.v))
+  # html
+  html.v <- paste("<div style=\"border: 0px; padding: 0px; background-color: ",table.col.v,";\">",table.v,"</div>",sep="")
+  # exclude NA
+  html.v[is.na(table.v)] <- NA
+  # rebuild the matrix
+  if ( is.matrix(table) || is.data.frame(table) ) {
+    newm <- matrix(html.v,ncol=ncol(table),nrow=nrow(table),byrow=F)
+    rownames(newm) <- rownames(table)
+    colnames(newm) <- colnames(table)
+  } else {
+    newm <- html.v
+    names(newm) <- names(table)
+  }
+  return(newm)
+}
+
+vars2table.html <- function(conf,vars,table.label="",colnames2add=NULL) {
+  values <- sapply(vars,conf.get.value,conf=conf,get.default=TRUE)
+  #vars.with.vals <- sapply(vars[!unlist(lapply(values,is.null))],capitalize)
+  vars.with.vals <- vars[!unlist(lapply(values,is.null))]
+  #pinfo(length(append(vars.with.vals,unlist(values))))
+  vals <- matrix(append(vars.with.vals,unlist(values)),byrow=F,ncol=2,dimnames=NULL)
+  #vals[,1] <- gsub("_"," ",vals[,1])
+  if ( !is.null(colnames2add)) {
+    vals <- rbind(colnames2add,vals)
+    rownames(vals) <- NULL
+  }
+  vals <- as.matrix(vals)
+  xt <- xtable(vals,
+               caption="",
+               label=table.label)
+  
+  html <- print.xtable(print.results=FALSE,
+                       xt,
+                       type="html",
+                       sanitize.text.function=function(x) {x},
+                       include.colnames=FALSE,
+                       include.rownames=FALSE,
+                       html.table.attributes = " class='expinfo'")
+  return(html)
+}
+
+lib.info <- function(exp.conf,lib) {
+  info <- conf.get.value(exp.conf,paste(lib,"_info",sep=""))
+  if ( is.null(info) || is.na(info)) {
+    info <- ""
+  }
+  v <- c(lib,
+         conf.get.value(exp.conf,lib),
+         ifelse(lib %in% conf.get.value(exp.conf,"pe"),"PE","SE"),
+         conf.get.value(exp.conf,paste(lib,"_rs",sep="")),
+         conf.get.value(exp.conf,paste(lib,"_qual",sep="")),
+         info)
+  names(v) <- c("Name","File","Type","Read Size","Quality encoding","Notes/Info")
+  return(v)
 }
 
 contrasts2matrix <- function(exp.conf) {
@@ -1538,17 +1645,18 @@ contrasts2matrix <- function(exp.conf) {
   }
   # gather all groups from the contrasts  
   groups.val <- unique(unlist(lapply(contrasts.val,FUN=conf.get.value,conf=exp.conf)))    
-  m <- as.data.frame(matrix(ncol=length(groups.val)+1,nrow=length(contrasts.val),dimnames=list(contrasts.val,append("Contrast",groups.val))))
+  m <- as.data.frame(matrix(ncol=length(groups.val)+1,byrow=T,nrow=length(contrasts.val),dimnames=list(contrasts.val,append("Contrast",groups.val))))
   #
   groups.ids <- seq(1,length(groups.val))
   names(groups.ids) <- groups.val
+  #v <- contrasts.val[2]
   for ( v in contrasts.val ) {
     cont.def <- conf.get.value(exp.conf,v)
-    sel <- colnames(m)[-1] %in% cont.def
+    sel <- names(groups.ids) %in% cont.def
     m[v,] <- append(paste(cont.def,collapse=" - "),groups.ids[colnames(m)[-1]])
-    m[v,!sel] <- NA
+    m[v,!append(TRUE,sel)] <- NA
   }  
-  m
+  return(m)
 }
 
 #
@@ -1566,7 +1674,7 @@ load.configuration.file <- function(conf_file) {
   pinfo("Loading default parameters...")
   #################
   # Default values
-  vars <- c("mapper","quant_method","de_method","qual_filtering","qual_filtering")
+  vars <- c("mapper","quant_method","de_method","qual_filtering","qual_filtering","gse_tool")
   for ( v in vars ) {
     if ( sum(as.character(conf.table[,1])==v)==0 ) {
       # get default value from IRAP main file

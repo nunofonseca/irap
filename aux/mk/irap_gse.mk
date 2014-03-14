@@ -26,23 +26,26 @@
 #************
 
 # Currently only one tool is supported
+def_gse_method=fisher
+def_gse_pvalue=0.05
+def_gse_minsize=3
 
 # default values
 ifndef gse_tool
-gse_tool=none
+gse_tool=$(def_gse_tool)
 endif
 
 ifndef gse_method
-gse_method=fisher
+gse_method=$(def_gse_method)
 endif
 
 ifndef gse_pvalue
-gse_pvalue=0.05
+gse_pvalue=$(def_gse_pvalue)
 endif
 
 # minimum number of genes in a set
 ifndef gse_minsize
-gse_minsize=3
+gse_minsize=$(def_gse_min_size)
 endif
 
 ################

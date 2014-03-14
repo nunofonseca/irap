@@ -155,6 +155,8 @@ license=This pipeline is distributed  under the terms of the GNU General Public 
 ################################################################################
 # Default values
 ################################################################################
+def_gse_tool=none
+
 # max. memory (in MB)
 def_max_mem=6000
 

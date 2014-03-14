@@ -162,11 +162,12 @@ $(name)/report/qc.html: $(conf) $(name)/data/
 #############################
 # TODO: info.html
 phony_targets+=info_report
-info_report: $(name)/report/info.html $(name)/report/versions.html
+info_targets=$(name)/report/info.html $(name)/report/versions.html
 
-$(name)/report/info.html: report_setup $(conf)
-	touch $@
-#	irap_report_qc $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(name)/report 
+info_report: $(info_targets)
+
+$(name)/report/info.html: $(conf)
+	irap_report_expinfo --conf $(conf)  --css $(CSS_FILE) --out $@.tmp && mv $@.tmp $@
 
 #
 $(name)/report/versions.html: $(name)/report/software.tsv $(conf) 
@@ -404,8 +405,12 @@ gse_report_files:
 ############################
 # all targets
 phony_targets+= report_all_targets
-report_all_targets:  $(name)/report/index.html qc_report mapping_report quant_report de_report gse_report  end_report
+report_all_targets:  $(info_targets) qc_report mapping_report quant_report de_report gse_report  end_report $(name)/report/about.html
 
+
+
+$(name)/report/about.html: $(IRAP_DIR)/aux/html/page.header.html $(IRAP_DIR)/aux/html/about.html  $(IRAP_DIR)/aux/html/page.footer.html
+	cat $^ >  $@
 
 #########################
 #mapping_report de_report
@@ -413,9 +418,10 @@ report_all_targets:  $(name)/report/index.html qc_report mapping_report quant_re
 phony_targets+=end_report
 
 end_report: $(name)/report/index.html
-#	irap_report_main $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(name)/report -m "$(call mapping_dirs,$(name))" -q "$(call quant_dirs,$(name))" -d "$(call de_dirs,$(name))"
+
 
 # TODO: replace versions.html by info_report
-$(name)/report/index.html: $(conf) $(name)/report/versions.html $(quant_html_files) $(qc_html_files) $(mapping_report_targets) $(call de_html_files,$(name)) $(call gse_html_files,$(name))  $(call must_exist,$(name)/report/status.html)
-	irap_report_main $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(name)/report -m "$(call mapping_dirs,$(name))" -q "$(call quant_dirs,$(name))" -d "$(call de_dirs,$(name))" && \
-	cp $(name)/report/info.html $@
+$(name)/report/index.html: $(conf) $(info_targets)  $(quant_html_files) $(qc_html_files) $(mapping_report_targets) $(call de_html_files,$(name)) $(call gse_html_files,$(name))  $(call must_exist,$(name)/report/status.html) $(name)/report/about.html
+	cp  $(name)/report/info.html $@ &&
+	irap_report_main $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(name)/report -m "$(call mapping_dirs,$(name))" -q "$(call quant_dirs,$(name))" -d "$(call de_dirs,$(name))" &&
+	touch $@

@@ -63,18 +63,6 @@ import.conf.variables(conf)
 # Check if directory exists
 file.required(opt$rep_dir)
 
-#####################
-#          1
-# General information
-#
-library(R2HTML)
-
-irap.HTMLInit(outdir=opt$rep_dir, filename="info", title=paste("Report ",name,sep=""))
-
-HTML.pprint.conf(conf,name)
-
-irap.HTMLEnd()
-
 
 ####################################
 #
@@ -117,7 +105,7 @@ gen.toplevel.menu <- function(menufile) {
  <ul>
   <li><a href='TTOPLEVELinfo.html' >Info</a>
      <ul>
-         <li><a href='TTOPLEVELinfo.html#contrasts'>Exp. design</a></li>
+         <li><a href='TTOPLEVELinfo.html'>Data and Settings</a></li>
 ")
   if (!file.exists(path2report("status.html"))) {
     cat("	 <li><a href='TTOPLEVELstatus.html'>Status</a></li>")
@@ -277,7 +265,7 @@ gen.toplevel.menu <- function(menufile) {
   cat('
    </ul>
   </li>
-  <li><a name="">About IRAP</a></li>
+  <li><a href="about.html">About IRAP</a></li>
   </ul>
 </nav></div>')
   sink()

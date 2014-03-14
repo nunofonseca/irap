@@ -128,6 +128,26 @@ table.info td:first-child {
     padding: 2px;
 }
 
+table.expinfo {
+    font-family: Arial, Helvetica,Times, Helvetica, sans-serif; 
+    padding: 2px;
+    border: 2px;
+    background-color: darkgrey;
+    font-size: 10pt;
+    text-align: center;
+    table-layout: fixed;
+}
+table.expinfo tr:nth-child(odd) { background-color:white; }
+table.expinfo tr:nth-child(even) { background-color:white; }
+table.expinfo tr:first-child { 
+    background-color: white;
+    font-weight: bold;
+}
+table.expinfo td {
+    width: 50px;
+    text-align: center; 
+}
+
 table.dataframe tr:hover td { white-space: normal; }
 
 TR.firstline{
