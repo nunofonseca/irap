@@ -166,14 +166,17 @@ info_targets=$(name)/report/info.html $(name)/report/versions.html
 
 info_report: $(info_targets)
 
-$(name)/report/info.html: $(conf)
-	irap_report_expinfo --conf $(conf)  --css $(CSS_FILE) --out $@.tmp && mv $@.tmp $@
+$(name)/report/info.html: $(name)/report/$(call notdir,$(conf))
+	irap_report_expinfo --conf $<  --css $(CSS_FILE) --out $@.tmp && mv $@.tmp $@
 
 #
 $(name)/report/versions.html: $(name)/report/software.tsv $(conf) 
 	tsvSoftware2html -i $< -o $@.tmp && mv $@.tmp.html $@
 
 $(name)/report/status.html:
+
+$(name)/report/$(call notdir,$(conf)): $(conf)
+	cp $< $@.tmp && mv $@.tmp $@
 
 #############################
 phony_targets+=mapping_report quant_report
@@ -411,6 +414,7 @@ report_all_targets:  $(info_targets) qc_report mapping_report quant_report de_re
 
 $(name)/report/about.html: $(IRAP_DIR)/aux/html/page.header.html $(IRAP_DIR)/aux/html/about.html  $(IRAP_DIR)/aux/html/page.footer.html
 	cat $^ >  $@
+
 
 #########################
 #mapping_report de_report

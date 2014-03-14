@@ -92,7 +92,6 @@ exp.info.vars[["GSE"]] <- c("gse_tool","gse_method","gse_pvalue","gse_minsize")
 # libraries excluded + info labels
 library(brew)
 ####################################
-#lib.colours <- gsub("..$","",rainbow(max(as.numeric(groups.m),na.rm=T)))
  
 lib.colours <- all.lib.colours[colnames(groups.m)[-1]]
 group.colours <- append(NA,gsub("..$","",irap.get.palette(ncol(contrasts.m[,-1]))))
@@ -125,6 +124,7 @@ contrasts.m.html <- table.set.bgcolor(contrasts.m.html,contrasts.m.colours)
 pdebug.save.state("irap_report_expinfo","p2")
 irap.css <- opt$css
 out.dir <- dirname(opt$out_file)
+conf.file <- basename(opt$conf_file)
 # Check if directory exists
 file.required(out.dir)
 out.html.file <- paste(opt$out_file,sep="")

@@ -15,8 +15,8 @@ library(xtable)
 <%
 html <- vars2table.html(exp.conf,exp.info.data.vars)
 irap.output.html(html, "")
-%>
 
+%>
 
 <H3><%=irap.ctr("Table")%>: Libraries details</H3>
 <%
@@ -74,6 +74,13 @@ irap.output.html(html, "")
 
 
 <H2 class="section">Main settings</H2>
+
+<%
+files<-c(conf.file)
+names(files)<-c("Settings")
+dl<-html.download.bar(files)
+%>
+<%=dl%>
 
 <H3><%=irap.ctr("Table")%>: QC/filtering options</H3>
 <%
