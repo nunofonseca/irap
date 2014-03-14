@@ -40,13 +40,13 @@ irap.output.html(html,
 <H3><%=irap.ctr("Table")%>: Groups</H3>
 <%
 
-xt <- xtable(groups.m.html,
+xt <- xtable(t(groups.m.html),
              caption="",
              label="groups_libs")
 
 html <- print.xtable(print.results=FALSE, xt, type="html",
                      sanitize.text.function=function(x) {x},
-                     include.colnames=FALSE, include.rownames=TRUE,
+                     include.colnames=TRUE, include.rownames=FALSE,
                      html.table.attributes = " class='expinfo'")
                      irap.output.html(html,
                      "A group corresponds to a set of libraries. Libraries (columns) with the same color represent technical replicates.")

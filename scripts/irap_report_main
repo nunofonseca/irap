@@ -265,7 +265,7 @@ gen.toplevel.menu <- function(menufile) {
   cat('
    </ul>
   </li>
-  <li><a href="about.html">About IRAP</a></li>
+  <li><a href="TTOPLEVELabout.html">About IRAP</a></li>
   </ul>
 </nav></div>')
   sink()
