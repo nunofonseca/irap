@@ -1546,9 +1546,17 @@ libraries2ids <- function(exp.conf) {
   return(libs.ids)
 }
 
-ids2colours.mapping <- function(libs.ids) {
+irap.get.palette <- function(n) {
+  library(gplots)
+  library(RColorBrewer)
+  #
+  getPalette = colorRampPalette(brewer.pal(9, "Set1"))
+  return(getPalette(n))
+}
 
-  mapping <- gsub("..$","",rainbow(max(libs.ids)))
+ids2colours.mapping <- function(libs.ids) {
+  #mapping <- gsub("..$","",irap.get.palette(max(libs.ids)))
+  mapping <- irap.get.palette(max(libs.ids))
   names(mapping) <- seq(1,length(mapping))  
   return(mapping)
 }
