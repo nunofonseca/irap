@@ -984,11 +984,10 @@ for (p in packages2install ) {
 source("http://bioconductor.org/biocLite.R")
 packages2install<-c("Rsamtools",'edgeR',
                     'DESeq','DESeq2','DEXSeq','baySeq',
-                    'limma',"piano")
-for (p in packages2install) {
-   biocLite(p,ask=FALSE, suppressUpdates=FALSE)
-}
+                    'limma')
 
+biocLite(packages2install,ask=FALSE, suppressUpdates=FALSE)
+biocLite("piano",ask=FALSE, suppressUpdates=FALSE)
 #biocLite("org.Hs.eg.db",ask=FALSE, suppressUpdates=FALSE)
 #biocLite('GO.db',ask=FALSE, suppressUpdates=FALSE)
 #biocLite("topGO",ask=FALSE, suppressUpdates=FALSE)
