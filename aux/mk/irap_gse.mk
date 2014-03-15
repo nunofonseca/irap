@@ -45,7 +45,7 @@ endif
 
 # minimum number of genes in a set
 ifndef gse_minsize
-gse_minsize=$(def_gse_min_size)
+gse_minsize=$(def_gse_minsize)
 endif
 
 ################
