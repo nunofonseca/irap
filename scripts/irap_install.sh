@@ -576,7 +576,7 @@ function osa_install {
     pinfo "$MAPPER installation complete."    
 }
 
-function irap_install_mappers {
+function mappers_install {
    bwa_install
    bowtie1_install
    bowtie2_install
@@ -600,6 +600,11 @@ function embam_install {
     download_software EMBAM
     $IRAP_DIR/bin/R  CMD INSTALL $EMBAM_FILE
     pinfo "Starting emBAM source installation...done."
+}
+function  collect_software_versions {
+    pinfo "Collecting software versions..."
+    irap_gen_version_mk.sh
+    pinfo "Collecting software versions...done."
 }
 
 ######################################################
@@ -725,13 +730,13 @@ function R3_install {
     cat <<EOF > $IRAP_DIR/scripts/R3
 #!/bin/bash
 export PATH=\$IRAP_DIR/R3/bin:\$PATH
-$IRAP_DIR/R3/bin/R "\$@"
+\$IRAP_DIR/R3/bin/R "\$@"
 EOF
     chmod +x $IRAP_DIR/scripts/R3
     cat <<EOF > $IRAP_DIR/scripts/Rscript3
 #!/bin/bash
 export PATH=\$IRAP_DIR/R3/bin:\$PATH
-$IRAP_DIR/R3/bin/Rscript "\$@"
+\$IRAP_DIR/R3/bin/Rscript "\$@"
 EOF
     chmod +x $IRAP_DIR/scripts/Rscript3
 
@@ -752,7 +757,7 @@ function YAP_install {
     pinfo "Installing YAP...done."
 }
 
-function install_deps {
+function deps_install {
     make_install
     perl_install
     ruby_install
@@ -1234,7 +1239,7 @@ function fastq_qc_install {
     pinfo "Installing fastqc...done."
 }
 ######################################
-function install_core {
+function core_install {
 
     pinfo "*******************************************************"
     pinfo "IRAP_INSTALL_TOPLEVEL_DIRECTORY=$IRAP_DIR"
@@ -1275,10 +1280,6 @@ function install_core {
     embam_install    
     pinfo "installing EMBAM...done."
 
-    pinfo "Collecting software versions..."
-    irap_gen_version_mk.sh
-    pinfo "Collecting software versions...done."
-
     #############
     # fastq utils
     # Fastq processing utilities
@@ -1294,6 +1295,7 @@ function install_core {
     popd
     pinfo "Compiling and installing fastq/bam processing programs...done."
 
+    collect_software_versions
     pinfo "Core installation complete."
 }
 ###############################################
@@ -1687,13 +1689,13 @@ fi
 
 if [ "$install" == "core" ]; then
     # TODO: check if IRAP is installed (otherwise it will fail)
-    install_core
+    core_install
     pinfo "Log saved to $logfile"
     exit 0
 fi
 
 if [ "$install" == "mappers" ]; then
-    irap_install_mappers
+    mappers_install
     pinfo "Log saved to $logfile"
     exit 0
 fi
@@ -1743,22 +1745,24 @@ fi
 
 #############
 # all
-install_deps
-R_packages_install
-R3_packages_install
-install_core
+deps_install
+core_install
 pinfo "Loading environment $SETUP_FILE..."
 source $SETUP_FILE
 pinfo "PATH=$PATH"
 pinfo "IRAP_DIR=$IRAP_DIR"
 env |  grep IRAP_DIR
 pinfo "Loading environment $SETUP_FILE...done."
-irap_install_mappers
+R_packages_install
+R3_packages_install
+mappers_install
 quant_install
 fastq_qc_install
 perl_packages_install
 # report
 jbrowse_install
+#
+collect_software_versions
 # data directory
 data_install
 pinfo "Installation complete."
