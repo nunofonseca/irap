@@ -107,7 +107,7 @@ gen.toplevel.menu <- function(menufile) {
      <ul>
          <li><a href='TTOPLEVELinfo.html'>Data and Settings</a></li>
 ")
-  if (!file.exists(path2report("status.html"))) {
+  if (file.exists(path2report("status.html"))) {
     cat("	 <li><a href='TTOPLEVELstatus.html'>Status</a></li>")
   }
   cat("
