@@ -44,6 +44,7 @@ function usage {
     echo " -q : update quantifiers.";
     echo " -b : update jbrowser.";
     echo " Advanced options:";
+    echo " -f : check/fix file permissions"
     echo " -d : only download all software and libraries (except R and Perl packages).";
     echo " -x software: install/update software.";
 }
@@ -1552,8 +1553,9 @@ function miso_install {
 }
 
 ###############################
+UPDATE_FILE_PERMS=n
 OPTERR=0
-while getopts "s:c:a:x:gmqpruhbdt"  Option
+while getopts "s:c:a:x:gmqpruhbdtf"  Option
 do
     case $Option in
 # update/reinstall
@@ -1561,6 +1563,7 @@ do
 	b ) install=browser;IRAP_DIR1=$IRAP_DIR;;
 	c ) install=core;IRAP_DIR1=$OPTARG;;  # run irap up to the given stage
 	d ) USE_CACHE=n;install=download;IRAP_DIR1=$IRAP_DIR;; # download all the source packages
+        f ) UPDATE_FILE_PERMS=y;;
 	m ) install=mappers;IRAP_DIR1=$IRAP_DIR;;
 	p ) install=p_pack;IRAP_DIR1=$IRAP_DIR;;
 	q ) install=quant;IRAP_DIR1=$IRAP_DIR;;
@@ -1667,10 +1670,11 @@ exec &> ${logfile}.pipe
 rm ${logfile}.pipe
 
 # ensure that all files can be modified
-pinfo "Fixing permissions..."
-chmod -R +w $IRAP_DIR
-pinfo "Fixing permissions...done."
-
+if [ $UPDATE_FILE_PERMS == "y" ]; then
+    pinfo "Fixing permissions..."
+    chmod -R +w $IRAP_DIR
+    pinfo "Fixing permissions...done."
+fi
 
 #if [  "$install" == "all"   &&  ! -e $IRAP_DIR  ]; then
 #    echo "Directory $IRAP_DIR already exists. Please delete it before proceeding with the installation"
