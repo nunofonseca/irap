@@ -961,6 +961,9 @@ biocLite(p,ask=FALSE)
 
 q()
 EOF
+    pinfo "Installing EMBAM..."
+    embam_install    
+    pinfo "installing EMBAM...done."
     pinfo "Installing R packages...done."
 }
 # 
@@ -1022,6 +1025,9 @@ colnames(species2db)<-c("db","species")
 
 q()
 EOF
+    pinfo "Installing EMBAM..."
+    embam_install    
+    pinfo "installing EMBAM...done."
     pinfo "Installing R-3.x packages...done."
 }
 
@@ -1275,9 +1281,6 @@ function core_install {
     fi
     pinfo "Installing irap files...done."
 
-    pinfo "Installing EMBAM..."
-    embam_install    
-    pinfo "installing EMBAM...done."
 
     #############
     # fastq utils
