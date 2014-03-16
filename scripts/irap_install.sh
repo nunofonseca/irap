@@ -43,6 +43,7 @@ function usage {
     echo " -p : update Perl packages.";
     echo " -q : update quantifiers.";
     echo " -b : update jbrowser.";
+    echo " -v : collect software versions.";
     echo " Advanced options:";
     echo " -f : check/fix file permissions"
     echo " -d : only download all software and libraries (except R and Perl packages).";
@@ -1298,7 +1299,6 @@ function core_install {
     popd
     pinfo "Compiling and installing fastq/bam processing programs...done."
 
-    collect_software_versions
     pinfo "Core installation complete."
 }
 ###############################################
@@ -1555,7 +1555,7 @@ function miso_install {
 ###############################
 UPDATE_FILE_PERMS=n
 OPTERR=0
-while getopts "s:c:a:x:gmqpruhbdtf"  Option
+while getopts "s:c:a:x:gmqpruhbdtfv"  Option
 do
     case $Option in
 # update/reinstall
@@ -1572,6 +1572,7 @@ do
 	u ) install=core;IRAP_DIR1=$IRAP_DIR;; # update
 	x ) install=software_install;IRAP_DIR1=$IRAP_DIR;SOFTWARE=$OPTARG;;
 	t ) install=testing;IRAP_DIR1=$IRAP_DIR;;
+	v ) install=collect_software_versions;IRAP_DIR1=$IRAP_DIR;;
         h ) usage; exit;;
     esac
 done
@@ -1682,6 +1683,12 @@ fi
 #fi
 if [ "$install" == "download" ]; then
     download2cache
+    pinfo "Log saved to $logfile"
+    exit 0
+fi
+
+if [ "$install" == "collect_software_versions" ]; then
+    collect_software_versions
     pinfo "Log saved to $logfile"
     exit 0
 fi
