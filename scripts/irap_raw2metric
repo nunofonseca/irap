@@ -94,7 +94,7 @@ if ( opt$metric == "rpkm" ) {
   #(read count  * 1,000,000) / (total number of reads * kilobase of gene/transcript/exon)
   rpkms <- countstable2rpkms(table,lengths[[opt$feature]])
   rpkms <- data.frame(cbind(rownames(rpkms),rpkms))
-  colnames(rpkms) <- append(opt$feature,colnames(rpkms)[-1]) 
+  colnames(rpkms) <- append(capitalize(opt$feature),colnames(rpkms)[-1])
   # save
   write.tsv(rpkms,file=opt$out)
   pinfo("Saved ",opt$out)
