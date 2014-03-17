@@ -189,7 +189,7 @@ def_mapper_comparison=no
 def_quant_method=htseq2
 
 # default method to normalize the counts
-def_quant_norm_method=htseq2
+def_quant_norm_method=deseq
 
 # produce quantification per exon? default is gene level or transcript level depending on the method used
 def_exon_quant=n
