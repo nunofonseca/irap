@@ -99,6 +99,8 @@ function download2cache {
 function check_dependencies {
     DEVEL_LIBRARIES_REQUIRED="zlib-devel python-devel bzip2-devel python readline-devel libgfortran gcc-gfortran libX11-devel libXt-devel numpy gd-devel libxml2-devel libxml2 libpng libcurl-devel"
     MISSING=0
+    pinfo "If installation fails then please check if the following libraries are installed:"
+    pinfo "$DEVEL_LIBRARIES_REQUIRED"
     # Binaries that should be available
     BINARIES="java python gcc g++ gfortran curl-config"
     pinfo "Checking dependencies..."
@@ -116,8 +118,7 @@ function check_dependencies {
 	pinfo "ERROR: Unable to proceed"
 	exit 1
     fi
-    pinfo "If installation fails then please check if the following libraries are installed:"
-    pinfo "$DEVEL_LIBRARIES_REQUIRED"
+
 }
 #################################
 # VERSIONS, SRC file and URL
