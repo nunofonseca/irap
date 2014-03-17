@@ -152,20 +152,21 @@ get.gene.length.from.gtf.file <- function(gtf.file,filter.biotype=NULL,length.mo
 get.gene.length.from.gtf <- function(gtf,filter.biotype=NULL,length.mode="union.exons") {
   # TODO: validate gtf
   # protein coding
+  suppressPackageStartupMessages(library(multicore))
   if ( !is.null(filter.biotype) ) {
     gtf <- gtf[gtf$gene_biotype==filter.biotype,]
   }
   # compute the length for each exon
   gtf <- gtf[gtf$feature=="exon",]
   gene.ids <- unique(gtf$gene_id)
-  glen <- unlist(lapply(gene.ids,get.gene.length,gtf,mode=length.mode))
+  glen <- unlist(mclapply(gene.ids,get.gene.length,gtf,mode=length.mode))
   names(glen) <- gene.ids
   glen  
 }
 
 
 get.gene.length <- function(gene.id,gtf.data,mode="sum.exons",lim=+Inf,do.plot=FALSE) {
-  library("intervals")
+  suppressPackageStartupMessages(library("intervals"))
   #gtf.data <- gtf2
   i <- Intervals(gtf.data[gtf.data$gene_id==gene.id  & gtf.data$feature=="exon",c("start","end")])
   ne <- length(size(i))
@@ -243,20 +244,21 @@ addGeneFeature2gtf <- function(gtf) {
 get.transcript.length.from.gtf <- function(gtf,filter.biotype=NULL) {
   # TODO: validate gtf
   # protein coding
+  suppressPackageStartupMessages(library(multicore))
   if ( !is.null(filter.biotype) ) {
     gtf <- gtf[gtf$gene_biotype==filter.biotype,]
   }
   # compute the length for each transcript
   gtf <- gtf[gtf$feature=="exon",]
   transcript.ids <- unique(gtf$transcript_id)
-  tlen <- unlist(lapply(transcript.ids,get.transcript.length,gtf))
+  tlen <- unlist(mclapply(transcript.ids,get.transcript.length,gtf))
   names(tlen) <- transcript.ids
   tlen  
 }
 
 #
 get.transcript.length <-  function(transcript.id,gtf.data) {
-  library("intervals")
+  suppressPackageStartupMessages(library("intervals"))
   i <- Intervals(gtf.data[gtf.data$transcript_id==transcript.id & gtf.data$feature=="exon",c("start","end")])
   sum(size(i))+length(i)/2
 }
@@ -1547,8 +1549,8 @@ libraries2ids <- function(exp.conf) {
 }
 
 irap.get.palette <- function(n) {
-  library(gplots)
-  library(RColorBrewer)
+  suppressPackageStartupMessages(library(gplots))
+  suppressPackageStartupMessages(library(RColorBrewer))
   #
   getPalette = colorRampPalette(brewer.pal(9, "Set1"))
   return(getPalette(n))
