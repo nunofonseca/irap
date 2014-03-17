@@ -871,6 +871,7 @@ fforce install DB_File
 fforce install Test 
 fforce install Test::Requisites
 fforce install Test::Fatal
+fforce install Test::Run
 fforce install Test::NoWarnings
 fforce install Error
 fforce install XML::Parser
