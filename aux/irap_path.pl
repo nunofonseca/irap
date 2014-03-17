@@ -107,23 +107,27 @@ type2label(m,'Mappers','style=filled; color=lightgrey;').
 type2label(qr, 'Quantification','style=filled; color=lightgrey;').
 type2label(qn,'Normalization','style=filled; color=lightgrey;').
 type2label(de, 'DE','style=filled; color=lightgrey;').
+type2label(gse, 'GSE','style=filled; color=lightgrey;').
 
-%node(+nodeType,NodeName,Label,Style)
+%node(+nodeType,NodeName,-Label,-Style)
 node(m,N,N,'[color=salmon2,style=filled]'):-
     m(N,_,_).
 node(qr,N,N,'[color=coral3,style=filled]'):-
     qr(N,_,_).
 node(qn,NDE,N,Style):-
-    qn(N,_,_),
-    atom_concat(['[color=cyan,style=filled,label=',N,']'],Style),
-    atom_concat([N,qn],NDE).
-node(de,NDE,N,Style):-
-    de(N,_,_),
-    atom_concat(['[color=lightsteelblue1,style=filled,label=',N,']'],Style),
-    atom_concat([N,de],NDE).
+    qn(NDE,_,_),
+    atom_concat(['[color=cyan,style=filled,label=',NDE,']'],Style),
+    atom_concat([NDE,'_qn'],N).
+node(de,DE,DE,Style):-
+    de(DE,_,_),
+    atom_concat(['[color=lightsteelblue1,style=filled,label=',DE,']'],Style).
+node(gse,GSE,GSE,Style):-
+    gse(GSE,_,_),
+    atom_concat(['[color=lightsteelblue1,style=filled,label=',GSE,']'],Style).
+
 
 save_nodes:-
-    member(T,[m,qr,qn,de]),
+    member(T,[m,qr,qn,de,gse]),
     (start_cluster(T);end_cluster,fail),
     all(Label,node(T,_NodeName,Label,_),Ls),
     member(L,Ls),
@@ -135,21 +139,24 @@ save_nodes.
 save_edges:-
     all((QR1,Map1),(m(Map1,_,_),qr(QR1,m(Map1),_)),L),
     member((QR,Map),L),
+    qr(QR,m(Map),_),
     graph_format('~w -> ~w;~n',[Map,QR]),
     fail.
 save_edges:-
     all((QN1,QR1),(qr(QR1,_,_),qn(QN1,qr(QR1),_)),L),
+    format('~w~n',L),
     member((QN,QR),L),
-    once(node(qn,QNE,QN,_)),
-    graph_format('~w -> ~w;~n',[QR,QNE]),
+    qn(QN,qr(QR),_),
+    once(node(qn,QN,QNL,_)),
+    once(node(qr,QR,QRL,_)),
+    graph_format('~w -> ~w;~n',[QRL,QNL]),
     fail.
 
 save_edges:-
-    all((DE1,QN1),(qn(QN1,_,_),de(DE1,(_,qn(QN1)),_)),L),
-    member((DE,QN),L),
-    once(node(qn,QNE,QN,_)),
-    once(node(de,NDE,DE,_)),
-    graph_format('~w -> ~w;~n',[QNE,NDE]),
+    all((DE1,QR1,QN1),(qr(QR1,_,_),qn(QN1,qr(QR1),_),de(DE1,(_,(qr(QR1),qn(QN1))),_)),L),
+    member((DE,QR,QN),L),
+    de(DE,(qr(QR),qn(QN)),_),
+    graph_format('~w -> ~w;~n',[QN,DE]),
     fail.
 
 save_edges:-
@@ -190,25 +197,23 @@ m('gems',_,'').%RNA-version
 m('star',_,'').
 m('osa',_,'').
 
-qr('htseq1',m(_),'Only requires the NH flag defined').
-qr('htseq2',m(_),'Only requires the NH flag defined').
-qr('basic',m(_),'').
+qr('htseq1',m(M),'Only requires the NH flag defined'):-m(M,_,_).
+qr('htseq2',m(M),'Only requires the NH flag defined'):-m(M,_,_).
+qr('basic',m(M),''):-m(M,_,_).
 qr('cufflinks1',m(M),'BAM flags...'):-m(M,_,_),not member(M,[soapsplice]).
 qr('cufflinks1_nd',m(M),'BAM flags...'):-m(M,_,_),not member(M,[soapsplice]).
 qr('cufflinks2',m(M),'BAM flags...'):-m(M,_,_),not member(M,[soapsplice]).
 qr('cufflinks2_nd',m(M),'BAM flags...'):-m(M,_,_),not member(M,[soapsplice]).
-qr('flux_cap',m(_),'').
-qr('scripture',m(_),'').
-qr('ireckon',m(_),'').
-qr('bitseq',m(_),'').
-qr('rsem',m(_),'').
-qr('nurd',m(_),'').
-qr('isoem',m(_),'').
-qr('sailfish',m(_),'').
+qr('flux_cap',m(M),''):-m(M,_,_).
+qr('scripture',m(M),''):-m(M,_,_).
+qr('ireckon',m(M),''):-m(M,_,_).
+qr('bitseq',m(M),''):-m(M,_,_).
+qr('rsem',m(M),''):-m(M,_,_).
+qr('nurd',m(M),''):-m(M,_,_).
+qr('isoem',m(M),''):-m(M,_,_).
+qr('sailfish',m(M),''):-m(M,_,_).
 
-qr(none,m(_),'').
-%qr('mmseq',m(_),'').
-
+qr(none,m(M),''):-m(M,_,_).
 
 qn(cufflinks1,qr(cufflinks1),_).
 qn(cufflinks2,qr(cufflinks2),_).
@@ -234,4 +239,4 @@ de(none,(qr(_),qn(_)),_).
 
 
 gse(none,_,_).
-gse(piano,de(DE),_):- not member(DE,[none]).
+gse(piano,de(DE),_):- (ground(DE)->not member(DE,[none]);true).
