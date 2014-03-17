@@ -1,4 +1,4 @@
 #!/bin/sh
 set -e
-yap -q -L $IRAP_DIR/aux/irap_path.pl -- $* 
+yap -q -l $IRAP_DIR/aux/irap_path.pl -- $* 
 exit 0
