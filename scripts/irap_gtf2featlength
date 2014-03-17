@@ -23,7 +23,7 @@
 
 ###############################################################
 suppressPackageStartupMessages(library("optparse"))
-
+suppressPackageStartupMessages(library(multicore))
 IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
 if ( IRAP.DIR == "" ) {
   cat("ERROR: environment variable IRAP_DIR is not set\n")
@@ -41,6 +41,7 @@ filenames <- c("gtf_file") ;#filenames that must exist (if defined)
 option_list <- list(
 #  make_option(c("-v", "--verbose"), action="store_true", default=TRUE, help="Print extra output [default]"),
 #  make_option(c("-q", "--quietly"), action="store_false", default=FALSE,dest="verbose", help="Print little output"),
+    make_option(c("-c", "--cores"), type="character",default="2",dest="num_cores",help="Number of cores to use ([default %default])"),
   make_option(c("-g", "--gtf"), type="character", dest="gtf_file", default=NULL,help="GTF file"),
   make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name prefix. A RData file will be created containing several matrices (for genes, transcripts, and exons) with two columns: 1st col containds the name  of the features and the 2nd column the respective length.")
 )
@@ -48,6 +49,27 @@ option_list <- list(
 mandatory <- c("gtf_file","out")
 filenames <- c("gtf_file")
 opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,mandatory=mandatory)
+
+tryCatch(num.cores <- as.integer(as.numeric(opt$num_cores)),warning=
+         function(w) {
+           perror("Invalid number of cores ",opt$num_cores)
+           q(status=3)    
+       }
+)
+if (num.cores<1) {
+  perror("Invalid number of cores ",opt$num_cores)
+  q(status=3)    
+}
+
+irap.assert(num.cores>0)
+
+if ( num.cores>multicore:::detectCores()) {
+  num.cores <- multicore:::detectCores()
+  pwarning("The number of cores to use exceeds the cores available. Reducing the limit to ",multicore:::detectCores())
+}
+
+#pdebug.enabled <- opt$debug
+options("cores"=num.cores)
 
 # Load gtf file
 pinfo("Loading gtf file ",opt$gtf_file)

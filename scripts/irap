@@ -531,7 +531,11 @@ endif
 endif
 
 ifndef quant_norm_method
+ifndef quant_method
+quant_norm_method=$(def_quant_norm_method)
+else
 quant_norm_method=none
+endif
 endif
 
 
@@ -603,7 +607,7 @@ ifndef quant_norm_method
    endif
   endif
 endif
-SUPPORTED_COUNT_NMETHODS=cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd deseq flux_cap edger nurd
+SUPPORTED_COUNT_NMETHODS=cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd deseq flux_cap  nurd
 ifeq (,$(filter $(quant_norm_method),none $(SUPPORTED_COUNT_NMETHODS)))
 $(call p_info,[ERROR] quant_norm_method)
 $(error $(quant_norm_method) not supported)
@@ -1097,7 +1101,7 @@ $(name)/data/gene.annot.tsv.Rdata: $(data_dir)/reference/$(species)/$(refgeneann
 # collect genes, transcripts and exons lengths
 # generate only once
 $(gtf_file_abspath).lengths.Rdata: $(gtf_file_abspath)
-	irap_gtf2featlength --gtf $< -o $@.tmp && mv $@.tmp.Rdata $@
+	irap_gtf2featlength --gtf $< -o $@.tmp --cores $(max_threads) && mv $@.tmp.Rdata $@
 
 $(name)/data/lengths.Rdata: $(gtf_file_abspath).lengths.Rdata
 	cp $< $@.tmp && mv $@.tmp $@
@@ -1487,11 +1491,13 @@ $(name)/$(mapper)/htseq2/exons.rpkm.htseq2.tsv: $(name)/$(mapper)/htseq2/exons.r
 
 
 # rpkm+norm
+ifneq ($(quant_norm_method),none)
 $(name)/$(mapper)/htseq1/genes.rpkm.$(quant_norm_method).tsv: $(name)/$(mapper)/htseq1/genes.nlib.$(quant_norm_method).tsv $(feat_length)
 	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature gene --metric rpkm --out $@.tmp && mv $@.tmp $@
 
 $(name)/$(mapper)/htseq2/genes.rpkm.$(quant_norm_method).tsv: $(name)/$(mapper)/htseq1/genes.nlib.$(quant_norm_method).tsv $(feat_length)
 	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature gene --metric rpkm --out $@.tmp && mv $@.tmp $@
+endif
 
 #############
 # Cufflinks1
