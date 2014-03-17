@@ -160,6 +160,15 @@ save_edges:-
     once(node(de,NDE,DE,_)),
     graph_format('~w -> ~w;~n',[QRE,NDE]),
     fail.
+
+save_edges:-
+    all((DE1,GSE1),(de(DE1,_,_),gse(GSE1,de(DE1),_)),L),
+    member((DE,GSE),L),
+    once(node(de,DE,_,_)),
+    once(node(gse,GSE,de(DE),_)),
+    graph_format('~w -> ~w;~n',[DE,GSE]),
+    fail.
+
 save_edges.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
