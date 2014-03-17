@@ -23,7 +23,7 @@
 
 :-prolog_initialization(go).
 
-% checks if a path (Mapper, Quant, Norm, DE) is valid
+% checks if a combination of parameters (Mapper, Quant, Norm, DE) is valid
 % or
 % produces a plot with all the possible paths
 
@@ -36,19 +36,28 @@ handle_args([File]):-!,
     start_graph(File).
 
 handle_args([M,Q,N,D]):-!,
-    (valid_combination([M,Q,N,D])->
+    (valid_combination([M,Q,N,D,none])->
      format("valid~n",[])
     ;
      format("invalid~n",[])
     ).
-handle_args(_):-
-    format("ERROR! usage: irap_paths [ FILENAME | Mapper Quant Norm DE ]~n",[]).
+handle_args([M,Q,N,D,G]):-!,
+    (valid_combination([M,Q,N,D,G])->
+     format("valid~n",[])
+    ;
+     format("invalid~n",[])
+    ).
 
-valid_combination([Map,QR,QN,DE]):-
+handle_args(_):-
+    format("ERROR! usage: irap_paths [ FILENAME | Mapper Quant Norm DE | Mapper Quant Norm DE GSE]~n",[]).
+
+
+valid_combination([Map,QR,QN,DE,GSE]):-
     m(Map,_,_),
     qr(QR,m(Map),_),
     qn(QN,qr(QR),_),
-    de(DE,(qr(QR),qn(QN)),_).
+    de(DE,(qr(QR),qn(QN)),_),
+    gse(GSE,de(DE),_).
 
 member(X,[X|_]).
 member(X,[_|R]):-
@@ -215,4 +224,5 @@ de(none,(qr(_),qn(_)),_).
 %de(edger,(qr(QR),_),_):-member(QR,[htseq1,htseq2,basic,flux_cap]).
 
 
-
+gse(none,_,_).
+gse(piano,de(DE),_):- not member(DE,[none]).
