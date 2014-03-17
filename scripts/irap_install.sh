@@ -97,12 +97,12 @@ function download2cache {
 }
 
 function check_dependencies {
-    DEVEL_LIBRARIES_REQUIRED="zlib-devel python-devel bzip2-devel python readline-devel libgfortran gcc-gfortran libX11-devel libXt-devel numpy gd-devel libxml2-devel libxml2 libpng libcurl-devel"
+    DEVEL_LIBRARIES_REQUIRED="zlib-devel python-devel bzip2-devel python readline-devel libgfortran gcc-gfortran libX11-devel libXt-devel numpy gd-devel libxml2-devel libxml2 libpng libcurl-devel expat-devel db4-utils db4-devel"
     MISSING=0
     pinfo "If installation fails then please check if the following libraries are installed:"
     pinfo "$DEVEL_LIBRARIES_REQUIRED"
     # Binaries that should be available
-    BINARIES="java python gcc g++ gfortran curl-config"
+    BINARIES="java python gcc g++ gfortran curl-config db4_sql"
     pinfo "Checking dependencies..."
     for bin in $BINARIES; do
 	PATH2BIN=`which $bin 2> /dev/null`
@@ -863,8 +863,23 @@ fforce install  Algorithm::Munkres
 fforce install  Array::Compare
 fforce install  Math::Random
 fforce install  Sort::Naturally
+fforce install Sub::Install
+fforce install Params::Util
 fforce install List::MoreUtils
 fforce install Math::Round
+fforce install DB_File
+fforce install Test 
+fforce install Test::Requisites
+fforce install Test::Fatal
+fforce install Test::NoWarnings
+fforce install Error
+fforce install XML::Parser
+fforce install XML::Simple
+fforce install XML::SAX
+fforce install XML::SAX::Writer
+fforce install XML::Writer
+fforce install Array::Compare
+
 EOF
 #fforce install Bio::SeqIO
     #    # SAMTOOLS needs to be recompiled :(
