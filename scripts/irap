@@ -1495,7 +1495,7 @@ ifneq ($(quant_norm_method),none)
 $(name)/$(mapper)/htseq1/genes.rpkm.$(quant_norm_method).tsv: $(name)/$(mapper)/htseq1/genes.nlib.$(quant_norm_method).tsv $(feat_length)
 	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature gene --metric rpkm --out $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/htseq2/genes.rpkm.$(quant_norm_method).tsv: $(name)/$(mapper)/htseq1/genes.nlib.$(quant_norm_method).tsv $(feat_length)
+$(name)/$(mapper)/htseq2/genes.rpkm.$(quant_norm_method).tsv: $(name)/$(mapper)/htseq2/genes.nlib.$(quant_norm_method).tsv $(feat_length)
 	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature gene --metric rpkm --out $@.tmp && mv $@.tmp $@
 endif
 
