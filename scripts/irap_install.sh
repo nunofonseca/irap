@@ -23,7 +23,7 @@
 install=all
 IRAP_DIR1=
 SRC_DIR=
-IRAP_VERSION=0.4.0d1
+IRAP_VERSION=0.4.0d2
 
 #
 USE_CACHE=y
@@ -751,7 +751,7 @@ EOF
 function YAP_install {
     pinfo "Installing YAP..."
     rm -rf mainline
-    git clone git://gitorious.org/yap-git/mainline.git
+    git clone http://gitorious.org/yap-git/mainline.git
     pushd mainline
     ./configure --prefix=$IRAP_DIR --disable-myddas
     make
@@ -880,7 +880,6 @@ fforce install XML::SAX
 fforce install XML::SAX::Writer
 fforce install XML::Writer
 fforce install Array::Compare
-
 EOF
 #fforce install Bio::SeqIO
     #    # SAMTOOLS needs to be recompiled :(
@@ -1535,17 +1534,20 @@ function NURD_install {
     pinfo "NURD installation complete."    
 }
 
+function numpy_install {
+    download http://sourceforge.net/projects/numpy/files/NumPy/1.8.1rc1/numpy-1.8.1rc1.tar.gz/download
+    #download http://sourceforge.net/projects/numpy/files/latest/download
+    tar xzvf numpy-1.8.1rc1.tar.gz
+    pushd numpy-1.8.1rc1
+    python setup.py build
+    python setup.py install --user
+    popd
 
+}
 
 function miso_install {
     pinfo "Installing miso..."
     # deps problems
-    download http://sourceforge.net/projects/numpy/files/latest/download
-    tar xzvf download
-    pushd numpy-1.6.2
-    python setup.py build
-    python setup.py install --user
-    popd
     
     download http://sourceforge.net/projects/scipy/files/scipy/0.11.0/scipy-0.11.0.tar.gz
     tar xzvf scipy-0.11.0.tar.gz
