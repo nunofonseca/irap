@@ -1013,7 +1013,12 @@ endef
 # feat_mapping_file
 %.mapping.Rdata %.mapping_exons.tsv %.mapping_trans.tsv: %.gtf
 	irap_gtf2mapping --gtf $(gtf_file_abspath) --out $*.mapping.tmp --cores $(max_threads) && \
-	rename $*.mapping.tmp $*.mapping $*.mapping.*
+	mv $*.mapping.tmp.Rdata $*.mapping.Rdata && \
+	mv $*.mapping.tmp_exons.tsv $*.mapping_exons.tsv && \
+	mv $*.mapping.tmp_trans.tsv $*.mapping_trans.tsv 
+
+# rename does not work on some distros :(
+#	rename $*.mapping.tmp $*.mapping $*.mapping.*
 
 ################################################################################
 phony_targets+= stage0 stage1 stage2 stage3 stage3a stage3as stage3b stage4 stage5
