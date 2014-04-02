@@ -48,34 +48,41 @@ irap.output.html(html,
 <H3><%=irap.ctr("Table")%>: Groups</H3>
 <%
 
-xt <- xtable(t(groups.m.html),
-             caption="",
-             label="groups_libs")
-
-html <- print.xtable(print.results=FALSE, xt, type="html",
-                     sanitize.text.function=function(x) {x},
-                     include.colnames=TRUE, include.rownames=FALSE,
-                     html.table.attributes = " class='expinfo'")
-                     irap.output.html(html,
-                     "A group corresponds to a set of libraries. Libraries (columns) with the same color represent technical replicates.")
+if ( is.null(groups.m.html) ) {
+  html <- "No groups defined."
+} else {
+   xt <- xtable(t(groups.m.html),
+         caption="",
+         label="groups_libs")
+	 
+   html <- print.xtable(print.results=FALSE, xt, type="html",
+                        sanitize.text.function=function(x) {x},
+                        include.colnames=TRUE, include.rownames=FALSE,
+                        html.table.attributes = " class='expinfo'")
+ }
+irap.output.html(html,
+                    "A group corresponds to a set of libraries. Libraries (columns) with the same color represent technical replicates.")
 
 %>
 
 <H3><%=irap.ctr("Table")%>: Contrasts</H3>
 <%
 
-
-xt <- xtable(contrasts.m.html,
-             caption="",
-             label="groups_libs")
-
-html <- print.xtable(print.results=FALSE,
-                     xt,
-                     type="html",
-                     sanitize.text.function=function(x) {x},
-                     include.colnames=FALSE,
-                     include.rownames=TRUE,
-                     html.table.attributes = " class='expinfo'")
+if ( is.null(contrasts.m.html) ) {
+  html <- "No contrasts defined."
+} else {
+  xt <- xtable(contrasts.m.html,
+               caption="",
+               label="groups_libs")
+  
+  html <- print.xtable(print.results=FALSE,
+                       xt,
+                       type="html",
+                       sanitize.text.function=function(x) {x},
+                       include.colnames=FALSE,
+                       include.rownames=TRUE,
+                       html.table.attributes = " class='expinfo'")
+}
 irap.output.html(html, "")
 
 %>

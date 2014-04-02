@@ -57,7 +57,7 @@ pinfo("Experiment configuration loaded.")
 # Exp. design
 groups.m <- groups2matrix(exp.conf)
 contrasts.m <- contrasts2matrix(exp.conf)
-
+#pinfo("Groups and contrasts loaded.")
 library(xtable)
 
 pdebug.save.state("irap_report_expinfo","p1")
@@ -92,34 +92,44 @@ exp.info.vars[["GSE"]] <- c("gse_tool","gse_method","gse_pvalue","gse_minsize")
 # libraries excluded + info labels
 library(brew)
 ####################################
- 
-lib.colours <- all.lib.colours[colnames(groups.m)[-1]]
-group.colours <- append(NA,gsub("..$","",irap.get.palette(ncol(contrasts.m[,-1]))))
-names(group.colours) <- colnames(contrasts.m)
 
-groups.m.html <- ifelse(is.na(groups.m),NA,"&nbsp;&nbsp;&nbsp;&nbsp;")
-groups.m.colours <- apply(groups.m,c(1,2),table.get.colour,lib.colours.mapping)
-groups.m.colours <- rbind(lib.colours.mapping[apply(groups.m,2,max,na.rm=T)],groups.m.colours)
-rownames(groups.m.colours)[1] <- "Group name"
-# add first row
-groups.m.html <- rbind(colnames(groups.m.html),groups.m.html)
-rownames(groups.m.html)[1] <- "Group name"
-groups.m.html <- table.set.bgcolor(groups.m.html,groups.m.colours)
+if ( is.null(groups.m) ) {
+  pinfo("No groups defined")
+  groups.m.html <- NULL
+} else {
+  lib.colours <- all.lib.colours[colnames(groups.m)[-1]]
+  group.colours <- append(NA,gsub("..$","",irap.get.palette(ncol(contrasts.m[,-1]))))
+  names(group.colours) <- colnames(contrasts.m)
+  
+  groups.m.html <- ifelse(is.na(groups.m),NA,"&nbsp;&nbsp;&nbsp;&nbsp;")
+  groups.m.colours <- apply(groups.m,c(1,2),table.get.colour,lib.colours.mapping)
+  groups.m.colours <- rbind(lib.colours.mapping[apply(groups.m,2,max,na.rm=T)],groups.m.colours)
+  rownames(groups.m.colours)[1] <- "Group name"
+                                        # add first row
+  groups.m.html <- rbind(colnames(groups.m.html),groups.m.html)
+  rownames(groups.m.html)[1] <- "Group name"
+  groups.m.html <- table.set.bgcolor(groups.m.html,groups.m.colours)
+}
 
+if ( is.null(contrasts.m) ) {
+  pinfo("No contrasts found")
+  contrasts.m.html <- NULL
+} else {
 # contrasts
-contrasts.m.html <- contrasts.m
-contrasts.m.html[apply(contrasts.m,2,grepl,pattern="^[0-9]*$",perl=T)] <- "&nbsp;&nbsp;&nbsp;&nbsp;"
-
-contrasts.m.colours <- ifelse(is.na(contrasts.m),NA,"black")
-contrasts.m.colours[,1] <- NA
+  contrasts.m.html <- contrasts.m
+  contrasts.m.html[apply(contrasts.m,2,grepl,pattern="^[0-9]*$",perl=T)] <- "&nbsp;&nbsp;&nbsp;&nbsp;"
+  
+  contrasts.m.colours <- ifelse(is.na(contrasts.m),NA,"black")
+  contrasts.m.colours[,1] <- NA
 # add the colors for the first row
-contrasts.m.colours <- rbind(rep(NA,length(group.colours)),contrasts.m.colours)
-rownames(contrasts.m.colours)[1] <- "Contrast name"
-# add first row
-contrasts.m.html <- rbind(colnames(contrasts.m.html),contrasts.m.html)
-rownames(contrasts.m.html)[1] <- "Contrast name"
-contrasts.m.html <- table.set.bgcolor(contrasts.m.html,contrasts.m.colours)
+  contrasts.m.colours <- rbind(rep(NA,length(group.colours)),contrasts.m.colours)
+  rownames(contrasts.m.colours)[1] <- "Contrast name"
+                                        # add first row
+  contrasts.m.html <- rbind(colnames(contrasts.m.html),contrasts.m.html)
+  rownames(contrasts.m.html)[1] <- "Contrast name"
+  contrasts.m.html <- table.set.bgcolor(contrasts.m.html,contrasts.m.colours)
 
+}
 ####################################
 pdebug.save.state("irap_report_expinfo","p2")
 irap.css <- opt$css
