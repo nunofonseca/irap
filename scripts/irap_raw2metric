@@ -44,6 +44,7 @@ option_list <- list(
   make_option(c("-m", "--metric"), type="character", dest="metric", default="rpkm", help="Metric (rpkm) [default %default]"),
   make_option(c("-i", "--tsv"), type="character", dest="tsv_file", help="TSV file name with the matrix with the counts per gene/transcript."),
   make_option(c("-l", "--lengths"), type="character",dest="lengths_file", help="Name of the rdata file with the length of the features."),
+  make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
   make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name prefix. An HTML and TSV.gz file will be created.")
 )
 
@@ -59,15 +60,23 @@ opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filena
 
 # ensure that the path include / in the end
 opt$browser <- paste(gsub("/$","",opt$browser),"/",sep="")
-#pdebug(opt)
-save.image("debug.Rdata")
+pdebug.enabled <- opt$debug
+
 #
+pdebug.save.state("irap_raw2metric","p0")
 
 # load TSV
 # TODO: trap and report errors
 table <- read.tsv(opt$tsv_file)
 rownames(table) <- table[,1]
+libnames <- colnames(table)[-1]
+ids <- table[,1]
 table <- table[,-1]
+# matrix may contain a single column with values
+if ( is.vector(table) ) {
+  names(table) <- ids
+}
+
 # Gene lib1 ....
 
 # load lengths
@@ -90,13 +99,20 @@ if (opt$feature=="exon" ) {
 }
 
 lengths <- list(gene=gene.length,transcript=trans.length,exon=exon.length)
+pdebug.save.state("irap_raw2metric","p1")
 if ( opt$metric == "rpkm" ) {
   #(read count  * 1,000,000) / (total number of reads * kilobase of gene/transcript/exon)
-  rpkms <- countstable2rpkms(table,lengths[[opt$feature]])
-  rpkms <- data.frame(cbind(rownames(rpkms),rpkms))
-  colnames(rpkms) <- append(capitalize(opt$feature),colnames(rpkms)[-1])
+  rpkm <- countstable2rpkms(table,lengths[[opt$feature]])
+  if ( is.vector(rpkm) ) {
+    rpkm <- data.frame(cbind(names(rpkm),rpkm))
+    colnames(rpkm) <- append(capitalize(opt$feature),libnames)
+  } else {
+    rpkm <- data.frame(cbind(rownames(rpkm),rpkm))
+    colnames(rpkm) <- append(capitalize(opt$feature),colnames(rpkm)[-1])
+  }
+
   # save
-  write.tsv(rpkms,file=opt$out)
+  write.tsv(rpkm,file=opt$out)
   pinfo("Saved ",opt$out)
   q(status=0)
 }

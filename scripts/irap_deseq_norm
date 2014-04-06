@@ -71,5 +71,6 @@ Gene<-data[,1]
 t<-counts(cds,normalized=normalize)
 df<-data.frame(t)
 df<-cbind(Gene,df)
+colnames(df) <- colnames(data)
 write.table(df,"",sep="\t",col.names=TRUE,row.names=F,quote=FALSE)
 quit("yes",status=0)
