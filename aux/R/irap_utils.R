@@ -342,7 +342,11 @@ countstable2rpkms <- function(table,lens,exitonerror=TRUE) {
     #(l*1e6)/(sum(l)*lens[names(l)]/1000)
     10^9*l/(sum(l)*lens[names(l)])
   }
-  round(apply(table,2,v.compute.rpkm,lens),2)
+  if ( is.vector(table) ) {
+    return(round(v.compute.rpkm(table,lens),2))
+  } else {
+    return(round(apply(table,2,v.compute.rpkm,lens),2))
+  }
 }
 
 
