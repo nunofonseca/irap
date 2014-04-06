@@ -30,7 +30,7 @@
 #include <string.h>
 #include <assert.h>
 
-#define VERSION "0.4.0d3"
+#define VERSION "0.4.0d4"
 
 
 #define BACKLINE "\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b"
