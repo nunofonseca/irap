@@ -166,22 +166,25 @@ pinfo("p-value mean ",round(mean(abs(pval),na.rm=T),2),"+-",round(sd(pval,na.rm=
 # set of genes
 set1 <- names(pval[pval<=pval.lim])
 set1.annot <- gene2go[gene2go[,1] %in% set1,]
-if(nrow(set1.annot)==0) {
+print.empty <- FALSE
+
+minSizeLim <- opt$min.size
+pinfo("#Genes=",length(pval)," #genes (pvalue<=",pval.lim,")=",length(set1))
+
+if(nrow(set1.annot)==0 ) {
   err.file <- opt
   ifile <- opt$annotation
   if ( !is.null(opt$go) ) {
     ifile <- opt$go
   }
-  perror("No gene annotation found...giving up. Please check if you have GO/Pathway information for each gene in ",ifile,".")
-  q(status=2)
+  pwarning("No gene annotation found...giving up. Please check if you have GO/Pathway information in ",ifile,".")
+  print.empty <- TRUE
+  #q(status=2)
 }
 #save.image("debug.Rdata")
-print.empty <- TRUE
-minSizeLim <- opt$min.size
-pinfo("#Genes=",length(pval)," #genes (pvalue<=",pval.lim,")=",length(set1))
 #pinfo(minSizeLim)
 pdebug.save.state("irap_GSE_piano","p1")
-if ( length(set1)>=minSizeLim )  {
+if ( length(set1)>=minSizeLim && print.empty==FALSE )  {
   print.empty <- FALSE
   myGSC <- loadGSC(set1.annot)
   # stats - vector fold change with names()=gene name
