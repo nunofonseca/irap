@@ -17,10 +17,14 @@ if [ $? != 0 ] || [ "$LINE-" = "-" ]; then
     exit 1
 fi
 HLINE=`expr $LINE + 1`
-FLINE=`grep -n -i -F "</body" $1 | cut -f 1 -d:`
+#<div id="footer">
+FLINE=`grep -n -i -F "<div id=\"footer" $1 | cut -f 1 -d:`
 if [ $? != 0 ]|| [ "$FLINE-" = "-" ]; then
-    echo "ERROR: Unable to find </body> in $1"
-    exit 1
+    FLINE=`grep -n -i -F "</body>" $1 | cut -f 1 -d:`
+    if [ $? != 0 ]|| [ "$FLINE-" = "-" ]; then
+	echo "ERROR: Unable to find footer div or /body in $1"
+	exit 1
+    fi
 fi
 # footer
 FLINE=`expr $FLINE - 1`
