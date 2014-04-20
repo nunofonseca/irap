@@ -49,7 +49,7 @@ irap.output.html(html, "The following table shows information, per
 <%
 file <- "read_filtering_plot.png"
 filepath <- paste(out.dir,sep="")
-n <- length(colnames(df))
+n <- length(rownames(df))
 if (conf.is.qc.enabled(conf)) {
   html <- gen.plot2report(filename=file,
                           dir=filepath,
@@ -58,12 +58,12 @@ if (conf.is.qc.enabled(conf)) {
                           height=480,
                           html=TRUE,
                           ps=TRUE,
-                          data.table=df,
                           caption="",
                           to.plot= function() {
                             gen.qc.plot(df)
                           }
                           )
+
   irap.output.html(html$html,"Number of reads per library that passed the filtering process and that were filtered out because of quality, contamination, having uncalled bases (Ns), unpaired reads (only applicable to paired-end libraries).")
 } else {
   irap.output.html("<p>Filtering disabled.</p>")
