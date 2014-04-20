@@ -164,7 +164,7 @@ $(name)/report/qc.html: $(conf) $(name)/data/
 phony_targets+=info_report
 info_targets=$(name)/report/info.html $(name)/report/versions.html
 
-info_report: $(info_targets)
+info_report: report_setup $(info_targets)
 
 $(name)/report/info.html: $(name)/report/$(call notdir,$(conf))
 	irap_report_expinfo --conf $<  --css $(CSS_FILE) --out $@.tmp && mv $@.tmp $@
@@ -188,7 +188,7 @@ mapping_report_files:
 
 mapping_report: report_setup $(mapping_report_targets)
 
-$(name)/report/mapping/%.html: $(name)/%/  $(foreach p,$(pe),$(name)/%/$(p).pe.hits.bam) $(foreach s,$(se),$(name)/%/$(s).se.hits.bam) $(foreach p,$(pe),$(name)/%/$(p).pe.hits.bam.stats) $(foreach s,$(se),$(name)/%/$(s).se.hits.bam.stats) $(foreach p,$(pe),$(name)/%/$(p).pe.hits.bam.gene.stats) $(foreach s,$(se),$(name)/%/$(s).se.hits.bam.gene.stats) $(conf)
+$(name)/report/mapping/%.html: $(name)/%/  $(name)/report/mapping/ $(foreach p,$(pe),$(name)/%/$(p).pe.hits.bam) $(foreach s,$(se),$(name)/%/$(s).se.hits.bam) $(foreach p,$(pe),$(name)/%/$(p).pe.hits.bam.stats) $(foreach s,$(se),$(name)/%/$(s).se.hits.bam.stats) $(foreach p,$(pe),$(name)/%/$(p).pe.hits.bam.gene.stats) $(foreach s,$(se),$(name)/%/$(s).se.hits.bam.gene.stats) $(conf)
 	irap_report_mapping --out $(subst .html,,$@).1.html --mapper $* --pe "$(foreach p,$(pe),;$(name)/$*/$(p).pe.hits.bam)" --se "$(foreach s,$(se),;$(name)/$*/$(s).se.hits.bam)"  --pe_labels "$(foreach p,$(pe),;$(p))" --se_labels "$(foreach s,$(se),;$(s))" --css ../$(CSS_FILE) && mv $(subst .html,,$@).1.html  $@
 
 
@@ -408,7 +408,7 @@ gse_report_files:
 ############################
 # all targets
 phony_targets+= report_all_targets
-report_all_targets:  $(info_targets) qc_report mapping_report quant_report de_report gse_report  end_report $(name)/report/about.html
+report_all_targets:  report_setup $(info_targets) qc_report mapping_report quant_report de_report gse_report  end_report $(name)/report/about.html
 
 
 
