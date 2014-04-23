@@ -43,3 +43,12 @@ $(name)/atlas_html.tar.gz: $(name)/report $(name)/report/software.tsv $(name)/re
 
 $(name)/report/irap.conf: $(conf)
 	cp $< $@.tmp && mv $@.tmp $@
+
+
+##########################
+# Useful temporary targets
+atlas_clean_report:
+	$(call p_info, Cleaning some HTML files)
+	@rm -f $(name)/report/qc.html $(name)/report/mapping/$(mapper).html
+	$(call p_info, Files deleted)
+	$(call p_info, Please rerun 'irap conf=... report' to update the files)
