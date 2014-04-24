@@ -102,8 +102,12 @@ gse_go_annot_col=GOterm
 gse_go_map_file_option=--annotation
 endif
 
+# findstring - empty if not found
+foldchange_col=$(if $(findstring cuffdiff,$(de_method)),10,6)
+
+
 define run_piano_goterm=
-irap_GSE_piano --tsv $1 --out $(subst .tsv,,$2) --foldchange-col 6 --annotation_col $(gse_go_annot_col) $(gse_go_map_file_option) $(gse_go_mapping) --pvalue $(gse_pvalue) --minsize $(gse_minsize) --method $(gse_method) --minedge $(gse_minedge) --top $(gse_top)
+irap_GSE_piano --tsv $1 --out $(subst .tsv,,$2) --foldchange-col $(foldchange_col) --annotation_col $(gse_go_annot_col) $(gse_go_map_file_option) $(gse_go_mapping) --pvalue $(gse_pvalue) --minsize $(gse_minsize) --method $(gse_method) --minedge $(gse_minedge) --top $(gse_top)
 endef
 
 #########
@@ -121,7 +125,7 @@ gse_pathway_map_file_option=--annotation
 endif
 
 define run_piano_kegg=
-irap_GSE_piano --tsv $1 --out $(subst .tsv,,$2) --foldchange-col 6 --annotation_col $(gse_pathway_annot_col) $(gse_pathway_map_file_option) $(gse_pathway_mapping) --pvalue $(gse_pvalue) --minsize $(gse_minsize) --method $(gse_method) --minedge $(gse_minedge) --top $(gse_top)
+irap_GSE_piano --tsv $1 --out $(subst .tsv,,$2) --foldchange-col $(foldchange_col) --annotation_col $(gse_pathway_annot_col) $(gse_pathway_map_file_option) $(gse_pathway_mapping) --pvalue $(gse_pvalue) --minsize $(gse_minsize) --method $(gse_method) --minedge $(gse_minedge) --top $(gse_top)
 endef
 ################################
 # validate the options
