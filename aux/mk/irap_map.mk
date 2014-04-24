@@ -759,7 +759,7 @@ define run_osa_map=
 	$(call osa_conf_file,$(1),$(2),`dirname $(3)`/$(1)_tmp) > $(3).conf && \
 	 irap_map.sh osa osa.exe -alignrna `dirname $(file_indexed)` $(call osa_ref_lib_name,$(file_indexed)) \
 	 $(call osa_index_dirname,$(file_indexed))/ReferenceLibrary/$(call osa_ref_lib_name,$(file_indexed))_GeneModels/$(call osa_gene_model_name) $(3).conf && \
-	samtools sort -m $(SAMTOOLS_SORT_MEM) `dirname $(3)`/$(if $(findstring $(1),$(pe)), $(1)_f.bam,$(1)_f.bam) $(3).tmp &&\
+	samtools sort -m $(SAMTOOLS_SORT_MEM) `dirname $(3)`/$(if $(findstring $(1),$(pe)),$(1)_f.bam,$(1)_f.bam) $(3).tmp &&\
 	mv $(3).tmp.bam $(3) && rm -f `dirname $(3)`/$(1)_f.bam  && rm -f $(3).conf
 endef
 
