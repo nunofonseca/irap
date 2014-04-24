@@ -753,12 +753,12 @@ endef
 
 # osa requires the options to be passed in a conf. file...not user friendly :(
 # gene model must be absolute path?! (01/2012)
-# osa ignore the outputname for the bam file :(
+# osa ignores the outputname for the bam file :(
 define run_osa_map=
 	$(call osa_conf_file,$(1),$(2),`dirname $(3)`/$(1)_tmp) > $(3).conf && \
 	 irap_map.sh osa osa.exe -alignrna `dirname $(file_indexed)` $(call osa_ref_lib_name,$(file_indexed)) \
 	 $(call osa_index_dirname,$(file_indexed))/ReferenceLibrary/$(call osa_ref_lib_name,$(file_indexed))_GeneModels/$(call osa_gene_model_name) $(3).conf && \
-	samtools sort -m $(SAMTOOLS_SORT_MEM) `dirname $(3)`/$(subst .fastq,.bam,$(shell basename $(word 1,$(2)))) $(3).tmp &&\
+	samtools sort -m $(SAMTOOLS_SORT_MEM) `dirname $(3)`/$(2).bam,$(shell basename $(word 1,$(2)))) $(3).tmp &&\
 	mv $(3).tmp.bam $(3) && rm -f `dirname $(3)`/$(subst .fastq,.bam,$(shell basename $(word 1,$(2)))) && rm -f $(3).conf
 endef
 #	 irap_map.sh osa osa.exe -alignrna `dirname $(file_indexed)` $(call osa_ref_lib_name,$(file_indexed))  `dirname $(file_indexed)`/$(call osa_ref_lib_name,$(file_indexed))_GeneModels/$(call osa_gene_model_name) $(3).conf && \ $(call osa_index_dirname,$(1)) $(gtf_file_abspath) $(call osa_ref_lib_name,$(1)) $(call osa_gene_model_name) &&\
