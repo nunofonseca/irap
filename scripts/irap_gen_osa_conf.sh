@@ -36,13 +36,13 @@ Gzip=False
 AutoPenalty=True 
 ExpressionMeasurement=$expression
 SearchNovelExonJunction=True
+InsertSizeStandardDeviation=$sd //Default value=40
+ExpectedInsertSize=$ins //Default value=300
+InsertOnSameStrand=False // Possible values: True, False. Default value=False
 
 <Output>
 OutputName=$outfile
 OutputPath=$outdir 
 
-InsertSizeStandardDeviation=$sd //Default value=40
-ExpectedInsertSize=$ins //Default value=300
-InsertOnSameStrand=False // Possible values: True, False. Default value=False
 EOF
 exit 0
