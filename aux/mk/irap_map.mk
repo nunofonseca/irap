@@ -461,7 +461,7 @@ endef
 # ADD
 # --max-decoded-matches
 gem_map_params= --threads $(max_threads) $(gem_map_options)
-gem_index_params= -t $(max_threads) --max-memory unlimited $(gem_index_options)
+gem_index_params= --threads $(max_threads) --max-memory unlimited $(gem_index_options)
 #gem_index_params= -t $(max_threads)--max-memory unlimited $(gem_index_options) --for-rna-mapper
 
 define gem_qual_option=
