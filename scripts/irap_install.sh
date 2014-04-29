@@ -892,7 +892,8 @@ EOF
     make -C samtools-${SAMTOOLS_VERSION} -j3 lib;
     export SAMTOOLS="$PWD/samtools-${SAMTOOLS_VERSION}";    
     #export SAMTOOLS=$IRAP_DIR/lib/ 
-    cpan -fi CJFIELDS/BioPerl-1.6.1.tar.gz   <<EOF
+#    cpan -fi CJFIELDS/BioPerl-1.6.1.tar.gz   <<EOF
+    cpan -fi CJFIELDS/BioPerl-1.6.923.tar.gz   <<EOF
 n
 n
 n
