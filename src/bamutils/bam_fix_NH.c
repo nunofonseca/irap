@@ -1,6 +1,6 @@
 /*
  * =========================================================
- * Copyright 2012-2013,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+ * Copyright 2012-2014,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
  *
  * This file is part of iRAP.
  *
@@ -33,7 +33,7 @@
 
 #define HASHSIZE 7000001
 // Same version as IRAP
-#define VERSION "0.4.0d7"
+#define VERSION "0.4.0d8"
 struct read {
   uint8_t ctr; // how many times a read appears in one alignment
   char *name;// read name
