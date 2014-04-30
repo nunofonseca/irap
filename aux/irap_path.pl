@@ -1,5 +1,5 @@
 % =========================================================
-% Copyright 2012-2013,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+% Copyright 2012-2014,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
 %
 % This file is part of iRAP.
 %
@@ -74,6 +74,8 @@ start_graph(File):-
 %        graph_format('splines=ortho;~n~n',[]),
         graph_format('splines=polyline;~n~n',[]),
         graph_format('model=circuit;~n',[]),
+        graph_format('rankdir=TB;~n',[]),
+        graph_format('center=true;~n',[]),
 %        graph_format('model=subset;~n',[]),
 	save_nodes,
 %	graph_format('cluster_m -> cluster_qr [style="invis"]~n',[]),
@@ -111,18 +113,24 @@ type2label(gse, 'GSE','style=filled; color=lightgrey;').
 
 %node(+nodeType,NodeName,-Label,-Style)
 node(m,N,N,'[color=salmon2,style=filled]'):-
-    m(N,_,_).
+    m(N,_,_),
+    not N==none.
 node(qr,N,N,'[color=coral3,style=filled]'):-
-    qr(N,_,_).
-node(qn,NDE,N,Style):-
-    qn(NDE,_,_),
-    atom_concat(['[color=cyan,style=filled,label=',NDE,']'],Style),
-    atom_concat([NDE,'_qn'],N).
+    qr(N,_,_),
+    not N==scripture,
+    not N==basic,
+    not N==none.
+%node(qn,NDE,N,Style):-
+%    qn(NDE,_,_),
+%    atom_concat(['[color=cyan,style=filled,label=',NDE,']'],Style),
+%    atom_concat([NDE,'_qn'],N).
 node(de,DE,DE,Style):-
     de(DE,_,_),
+    not DE==none,
     atom_concat(['[color=lightsteelblue1,style=filled,label=',DE,']'],Style).
 node(gse,GSE,GSE,Style):-
     gse(GSE,_,_),
+    not GSE==none,
     atom_concat(['[color=lightsteelblue1,style=filled,label=',GSE,']'],Style).
 
 
@@ -140,27 +148,33 @@ save_edges:-
     all((QR1,Map1),(m(Map1,_,_),qr(QR1,m(Map1),_)),L),
     member((QR,Map),L),
     qr(QR,m(Map),_),
+    not QR='none',
+    not QR==scripture,
+    not QR==basic,
     graph_format('~w -> ~w;~n',[Map,QR]),
     fail.
-save_edges:-
+
+save_edges:-fail,
     all((QN1,QR1),(qr(QR1,_,_),qn(QN1,qr(QR1),_)),L),
     format('~w~n',L),
     member((QN,QR),L),
     qn(QN,qr(QR),_),
     once(node(qn,QN,QNL,_)),
     once(node(qr,QR,QRL,_)),
+    not QNL='none',
+    not QRL='none',
     graph_format('~w -> ~w;~n',[QRL,QNL]),
     fail.
 
-save_edges:-
+save_edges:-fail,
     all((DE1,QR1,QN1),(qr(QR1,_,_),qn(QN1,qr(QR1),_),de(DE1,(_,(qr(QR1),qn(QN1))),_)),L),
     member((DE,QR,QN),L),
     de(DE,(qr(QR),qn(QN)),_),
-    graph_format('~w -> ~w;~n',[QN,DE]),
+    graph_format('~w -> ~w;~n',[QR,DE]),
     fail.
 
+
 save_edges:-
-    fail,!,
     all((DE1,QR1),(qr(QR1,_,_),de(DE1,(qr(QR1),_),_)),L),
     member((DE,QR),L),
     once(node(qr,QRE,QR,_)),
@@ -171,8 +185,9 @@ save_edges:-
 save_edges:-
     all((DE1,GSE1),(de(DE1,_,_),gse(GSE1,de(DE1),_)),L),
     member((DE,GSE),L),
-    once(node(de,DE,_,_)),
-    once(node(gse,GSE,de(DE),_)),
+    %once(node(de,DE,_,_)),
+    %once(node(gse,GSE,de(DE),_)),
+    not GSE==none,
     graph_format('~w -> ~w;~n',[DE,GSE]),
     fail.
 
@@ -193,9 +208,12 @@ m('bwa2',_,'').
 m('bowtie1',_,'').
 m('bowtie2',_,'').
 m('gem',_,'').
-m('gems',_,'').%RNA-version
+%m('gems',_,'').%RNA-version
 m('star',_,'').
 m('osa',_,'').
+
+all_quant([htseq1,htseq2,basic,flux_cap,cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,nurd]).
+all_de([deseq,edger,voom,cuffdiff1,cuffdiff2,cuffdiff1_nd,cuffdiff2_nd]).
 
 qr('htseq1',m(M),'Only requires the NH flag defined'):-m(M,_,_).
 qr('htseq2',m(M),'Only requires the NH flag defined'):-m(M,_,_).
@@ -206,12 +224,12 @@ qr('cufflinks2',m(M),'BAM flags...'):-m(M,_,_),not member(M,[soapsplice]).
 qr('cufflinks2_nd',m(M),'BAM flags...'):-m(M,_,_),not member(M,[soapsplice]).
 qr('flux_cap',m(M),''):-m(M,_,_).
 qr('scripture',m(M),''):-m(M,_,_).
-qr('ireckon',m(M),''):-m(M,_,_).
-qr('bitseq',m(M),''):-m(M,_,_).
-qr('rsem',m(M),''):-m(M,_,_).
 qr('nurd',m(M),''):-m(M,_,_).
-qr('isoem',m(M),''):-m(M,_,_).
-qr('sailfish',m(M),''):-m(M,_,_).
+%qr('ireckon',m(M),''):-m(M,_,_).
+%qr('bitseq',m(M),''):-m(M,_,_).
+%qr('rsem',m(M),''):-m(M,_,_).
+%qr('isoem',m(M),''):-m(M,_,_).
+%qr('sailfish',m(M),''):-m(M,_,_).
 
 qr(none,m(M),''):-m(M,_,_).
 
@@ -225,11 +243,11 @@ qn(deseq,qr(QR),_):-member(QR,[flux_cap,basic,htseq1,htseq2]).
 qn(none,qr(_),_).
 
 
-de(deseq,(qr(QR),qn(QN)),_):-member(QR,[htseq1,htseq2,basic,flux_cap]),member(QN,[deseq,flux_cap,none]).
-de(dexseq,(qr(QR),qn(QN)),_):-member(QR,[htseq1,htseq2,basic,flux_cap]),member(QN,[deseq,flux_cap,none]).
-de(bayseq,(qr(QR),qn(QN)),_):-member(QR,[htseq1,htseq2,basic,flux_cap]),member(QN,[deseq,flux_cap,none]).
-de(edger,(qr(QR),qn(QN)),_):-member(QR,[htseq1,htseq2,basic,flux_cap]),member(QN,[deseq,flux_cap,none]).
-de(voom,(qr(QR),qn(QN)),_):-member(QR,[htseq1,htseq2,basic,flux_cap]),member(QN,[deseq,flux_cap,none]).
+de(deseq,(qr(QR),qn(QN)),_):-all_quant(ALL_QN),member(QR,ALL_QN),member(QN,ALL_QN).
+de(edger,(qr(QR),qn(QN)),_):-all_quant(ALL_QN),member(QR,ALL_QN),member(QN,ALL_QN).
+de(voom,(qr(QR),qn(QN)),_):-all_quant(ALL_QN),member(QR,ALL_QN),member(QN,ALL_QN).
+%de(dexseq,(qr(QR),qn(QN)),_):-member(QR,[htseq1,htseq2,basic,flux_cap]),member(QN,[deseq,flux_cap,none]).
+%de(bayseq,(qr(QR),qn(QN)),_):-member(QR,[htseq1,htseq2,basic,flux_cap]),member(QN,[deseq,flux_cap,none]).
 de(cuffdiff1,(qr(QR),qn(QR)),_):-member(QR,[cufflinks1,cufflinks2]).
 de(cuffdiff2,(qr(QR),qn(QR)),_):-member(QR,[cufflinks1,cufflinks2]).
 de(cuffdiff1_nd,(qr(QR),qn(QR)),_):-member(QR,[cufflinks1_nd,cufflinks2_nd]).
@@ -238,5 +256,7 @@ de(none,(qr(_),qn(_)),_).
 %de(edger,(qr(QR),_),_):-member(QR,[htseq1,htseq2,basic,flux_cap]).
 
 
+
 gse(none,_,_).
-gse(piano,de(DE),_):- (ground(DE)->not member(DE,[none]);true).
+gse(piano,de(DE),_):- all_de(ALL_DE),member(DE,ALL_DE).
+% (ground(DE)->not member(DE,[none]);true).

@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 # =========================================================
-# Copyright 2012-2013,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+# Copyright 2012-2014,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
 #
 # This file is part of iRAP.
 #
