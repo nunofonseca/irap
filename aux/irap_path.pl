@@ -105,11 +105,11 @@ start_cluster(Type):-
 end_cluster:-
 	graph_format('} ~n',[]).
 
-type2label(m,'Mappers','style=filled; color=lightgrey;').
-type2label(qr, 'Quantification','style=filled; color=lightgrey;').
-type2label(qn,'Normalization','style=filled; color=lightgrey;').
-type2label(de, 'DE','style=filled; color=lightgrey;').
-type2label(gse, 'GSE','style=filled; color=lightgrey;').
+type2label(m,'Mappers','style=filled; color=lightgrey;labeljust=r;').
+type2label(qr, 'Quantification','style=filled; color=lightgrey;labeljust=r;').
+type2label(qn,'Normalization','style=filled; color=lightgrey;labeljust=r;').
+type2label(de, 'DE','style=filled; color=lightgrey;labeljust=r;').
+type2label(gse, 'GSE','style=filled; color=lightgrey;labeljust=r;').
 
 %node(+nodeType,NodeName,-Label,-Style)
 node(m,N,N,'[color=salmon2,style=filled]'):-
@@ -135,8 +135,9 @@ node(gse,GSE,GSE,Style):-
 
 
 save_nodes:-
-    member(T,[m,qr,qn,de,gse]),
+    member(T,[m,qr,de,gse]),
     (start_cluster(T);end_cluster,fail),
+    graph_format('~w [style=invis]~n',[T]),
     all(Label,node(T,_NodeName,Label,_),Ls),
     member(L,Ls),
     once(node(T,N,L,Attrs)),
@@ -191,7 +192,11 @@ save_edges:-
     graph_format('~w -> ~w;~n',[DE,GSE]),
     fail.
 
-save_edges.
+save_edges:-
+%    member(T,[m,qr,de,gse]),
+    graph_format('m -> qr -> de -> gse [style=invis,weight=100];~n',[]),
+    !.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %reference(genome).
