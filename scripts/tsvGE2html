@@ -268,6 +268,7 @@ gen.page <- function (o.html.file) {
   quant.data<-table.html[,html.cols2sel]
   rownames(quant.data)<-quant.data[,1]
   quant.data<-quant.data[,-1]
+  quant.data <- round(quant.data,0)
   # colours for each group
   coloursbygroup <- rainbow(length(names(groups.l)))
   names(coloursbygroup) <- names(groups.l)
