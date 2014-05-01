@@ -111,9 +111,15 @@ for f in $gse_ofiles; do
 done
 
 # update the menu 
-submit_job "${jobname_prefix}u" -w "ended(\"${jobname_prefix}f*\")"  "$cmd conf=$conf end_report  $IRAP_PARAMS"
+submit_job "${jobname_prefix}u" -w "ended(\"${jobname_prefix}f*\")"  "$cmd conf=$conf report  $IRAP_PARAMS"
 
-submit_job_status "${jobname_prefix}u"
+#########################################
+# To finalize, run the whole pipeline
+# If everything went ok then nothing should be done
+# otherwise it should fail and an email will be sent
+submit_job "${jobname_prefix}l" -w "${jobname_prefix}u"  "irap conf=$conf  $IRAP_PARAMS -n -q report"
+
+submit_job_status "${jobname_prefix}l"
 echo "JOBS=$name/${jobname_prefix}*.out"
 echo "JOBNAME=${jobname_prefix}u"
 exit
