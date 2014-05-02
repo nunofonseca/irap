@@ -27,6 +27,7 @@ BROWSER_DIR=jbrowse
 ifndef CSS_FILE
 CSS_FILE=irap.css
 endif
+PATH2CSS_FILE=$(IRAP_DIR)/aux/css/irap.css
 
 # useful functions
 define mapping_dirs=
@@ -147,7 +148,7 @@ $(name)/report/de/:
 $(name)/report/quant/:
 	mkdir -p $@
 
-$(name)/report/irap.css: $(CSS_FILE)
+$(name)/report/irap.css: $(PATH2CSS_FILE)
 	cp -f $< $@
 
 #############################
