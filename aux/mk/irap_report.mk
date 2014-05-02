@@ -423,11 +423,11 @@ $(name)/report/about.html: $(IRAP_DIR)/aux/html/page.header.html $(IRAP_DIR)/aux
 # TODO: remove/fix this in the future (currently necessary to update the menu)
 phony_targets+=end_report
 
-end_report: $(name)/report/index.html
+end_report: $(name)/report/index.html $(name)/report/irap.css
 
 
 # TODO: replace versions.html by info_report
-$(name)/report/index.html: $(conf) $(info_targets)  $(quant_html_files) $(qc_html_files) $(mapping_report_targets) $(call de_html_files,$(name)) $(call gse_html_files,$(name))  $(call must_exist,$(name)/report/status.html) $(name)/report/about.html
+$(name)/report/index.html: $(conf) $(info_targets)  $(quant_html_files) $(qc_html_files) $(mapping_report_targets) $(call de_html_files,$(name)) $(call gse_html_files,$(name))  $(call must_exist,$(name)/report/status.html) $(name)/report/about.html $(name)/report/irap.css
 	cp  $(name)/report/info.html $@ &&
 	irap_report_main $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(name)/report -m "$(call mapping_dirs,$(name))" -q "$(call quant_dirs,$(name))" -d "$(call de_dirs,$(name))" &&
 	touch $@
