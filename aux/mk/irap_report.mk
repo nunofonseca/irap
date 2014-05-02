@@ -203,7 +203,7 @@ $(name)/report/mapping/%.html: $(name)/%/  $(foreach p,$(pe),$(name)/%/$(p).pe.h
 	bedtools coverage -abam $< -counts -b $(gff3_file_abspath) > $@.tmp && \
 	mv $@.tmp $@
 
-$(name)/report/mapping/%.stats: $(call must_exist,$(name)/%/)  $(foreach p,$(pe),$(name)/%/$(p).pe.hits.bam.stats) $(foreach s,$(se),$(name)/%/$(s).se.hits.bam.stats) $(foreach p,$(pe),$(name)/%/$(p).pe.hits.bam.gene.stats) $(foreach s,$(se),$(name)/%/$(s).se.hits.bam.gene.stats)
+$(name)/report/mapping/%.stats: $(call must_exist,$(name)/report/mapping/) $(call must_exist,$(name)/%/)  $(foreach p,$(pe),$(name)/%/$(p).pe.hits.bam.stats) $(foreach s,$(se),$(name)/%/$(s).se.hits.bam.stats) $(foreach p,$(pe),$(name)/%/$(p).pe.hits.bam.gene.stats) $(foreach s,$(se),$(name)/%/$(s).se.hits.bam.gene.stats) 
 
 %.bam.gene.stats: %.bam $(name)/data/exons.bed $(name)/data/introns.bed
 	echo -n "Exons	" > $@.tmp &&\
