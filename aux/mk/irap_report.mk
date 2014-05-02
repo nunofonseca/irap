@@ -121,7 +121,7 @@ ifdef reuse_menu
 IRAP_REPORT_MAIN_OPTIONS += --reuse-menu
 endif
 
-must_exist=$(if  $(realpath $(1)),$(1),)
+must_exist=$(if  $(realpath $(1)),,$(1))
 
 
 clean_report: 
