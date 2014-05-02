@@ -113,8 +113,12 @@ gen.toplevel.menu <- function(menufile) {
   cat("
 	 <li><a href='TTOPLEVELversions.html'>Software</a></li>
      </ul>
-  </li>
-  <li><a href='TTOPLEVELjbrowse/index.html'>Genome Browser</a>
+  </li>")
+  if (file.exists(path2report("jbrowse/index.html"))) {
+    cat(" <li><a href='TTOPLEVELjbrowse/index.html'>Genome Browser</a>
+")
+  }
+  cat("
   <li><a href='TTOPLEVELqc.html'>QC</a>
     <ul>
       <li><a href='TTOPLEVELqc.html'>Summary</a></li>
