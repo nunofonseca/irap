@@ -59,6 +59,7 @@ irap.output.html(html$html,"Number of alignments per library where a read aligns
 
 
 <H3 class="section"><%=irap.ctr("Table")%></H3>
+<DIV class="table_wrapper">
 <%
 
 xt <- xtable(mapping.dfs$raw,
@@ -80,6 +81,7 @@ names(tsv.download.files) <- "TSV"
 abs.tsv.download.html <- html.download.bar(tsv.download.files)
 
 %>
+</DIV>
 <DIV> <%=abs.tsv.download.html%></DIV>
 
   
@@ -122,6 +124,7 @@ irap.output.html(html$html,"Number of alignments overlapping annotated features.
 
 
 <H3 class="section"><%=irap.ctr("Table")%></H3>
+<DIV class="table_wrapper">
 <%
 xt <- xtable(round(mapping.feat2plot,0),
              caption="",
@@ -143,10 +146,12 @@ names(feat.download.files) <- "TSV"
 feat.tsv.download.html <- html.download.bar(feat.download.files)
 
 %>
+</DIV>
 <DIV> <%=feat.tsv.download.html%></DIV>
 
 
 <H3 class="section"><%=irap.ctr("Table")%></H3>
+<DIV class="table_wrapper">
 <%
 mapping.feat.sum <- colSums(mapping.feat)
 mapping.feat.per <- round(sweep(mapping.feat,MARGIN=2,100*1/mapping.feat.sum,`*`),2)
@@ -170,6 +175,7 @@ html <- print.xtable(file="/dev/null",
 irap.output.html(html, "Percentage of alignments overlapping annotated features. Values obtained with bedtools (coverage).")
 
 %>
+</DIV>
 
 <H3 class="section"><%=irap.ctr("Figure")%></H3>
 <%
@@ -236,8 +242,9 @@ irap.output.html(html$html,"Number of alignments overlapping introns and exons. 
 %>
 
 <H3 class="section"><%=irap.ctr("Table")%></H3>
+<DIV class="table_wrapper">
 <%
-save.image("debug.Rdata")
+#save.image("debug.Rdata")
 head(mapping.genes)
 xt <- xtable(round(mapping.genes[,!colnames(mapping.genes) %in% c("Median","Mean","SD")],0),
              caption="",
@@ -259,9 +266,11 @@ names(gene.download.files) <- "TSV"
 gene.tsv.download.html <- html.download.bar(gene.download.files)
 
 %>
+</DIV>
 <DIV> <%=gene.tsv.download.html%></DIV>
 
 <H3 class="section"><%=irap.ctr("Table")%></H3>  
+<DIV class="table_wrapper">
 <%
 # percentages
 tot <- colSums(mapping.genes)
@@ -285,7 +294,7 @@ html <- print.xtable(file="/dev/null",
 irap.output.html(html, "Percentage of alignments overlapping exons and introns. Values obtained with bedtools.")
 
 %>
-
+</DIV>
 
 
 
