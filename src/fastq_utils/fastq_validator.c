@@ -49,6 +49,11 @@
 #define READ_LINE_SEQ(fd) fgets(&read_buffer_seq[0],MAX_READ_LENGTH,fd)
 #define READ_LINE_QUAL(fd) fgets(&read_buffer_qual[0],MAX_READ_LENGTH,fd)
 
+#define READ_LINE_HDR2_1(fd) fgets(&read_buffer2_hdr1[0],MAX_READ_LENGTH,fd)
+#define READ_LINE_HDR2_2(fd) fgets(&read_buffer2_hdr2[0],MAX_READ_LENGTH,fd)
+#define READ_LINE_SEQ2(fd) fgets(&read_buffer2_seq[0],MAX_READ_LENGTH,fd)
+#define READ_LINE_QUAL2(fd) fgets(&read_buffer2_qual[0],MAX_READ_LENGTH,fd)
+
 #define PRINT_READS_PROCESSED(c) { if (c%500000==0) { fprintf(stderr,"\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b%ld",c);fflush(stderr); }}
 
 struct index_entry {
@@ -67,10 +72,17 @@ char read_buffer_hdr1[MAX_READ_LENGTH];
 char read_buffer_hdr2[MAX_READ_LENGTH];
 char read_buffer_seq[MAX_READ_LENGTH];
 char read_buffer_qual[MAX_READ_LENGTH];
+
+char read_buffer2_hdr1[MAX_READ_LENGTH];
+char read_buffer2_hdr2[MAX_READ_LENGTH];
+char read_buffer2_seq[MAX_READ_LENGTH];
+char read_buffer2_qual[MAX_READ_LENGTH];
+
 char read_buffer[MAX_READ_LENGTH];
 long index_mem=0;
 int is_casava_18;
 int is_paired_data;
+int is_interleaved;
 
 /*
 sdbm
@@ -338,11 +350,59 @@ int is_casava_1_8(char *f) {
   return is_casava_1_8;
 }
 
+int validate_interleaved(char *f) {
+  unsigned long cline=1;
+  FILE *fd1=NULL;
+  
+  fprintf(stderr,"Paired-end interleaved\n");
+  fd1=open_fastq(f);
+  while(!feof(fd1)) {
+    long start_pos=ftell(fd1);
+    // Read 1
+    char *hdr1=READ_LINE_HDR(fd1);
+    if ( hdr1==NULL) break;
+    int len;
+    char *seq1=READ_LINE_SEQ(fd1);
+    char *hdr1_2=READ_LINE_HDR2(fd1);
+    char *qual1=READ_LINE_QUAL(fd1);
+    // Read 2
+    char *hdr2=READ_LINE_HDR2_1(fd1);
+    char *seq2=READ_LINE_SEQ2(fd1);
+    char *hdr2_2=READ_LINE_HDR2_2(fd1);
+    char *qual2=READ_LINE_QUAL2(fd1);
+    
+    if ( seq1==NULL || hdr1_2==NULL || qual1==NULL ||
+	 hdr2==NULL || seq2==NULL || hdr2_2==NULL || qual2==NULL ) {
+      fprintf(stderr,"Error in file %s, line %lu: file truncated?\n",f,cline);
+      return(1);
+    }
+    if (validate_entry(hdr1,hdr1_2,seq1,qual1,cline,f)!=0) {
+      return(1);
+    }
+    if (validate_entry(hdr2,hdr2_2,seq2,qual2,cline+4,f)!=0) {
+      return(1);
+    }
+    char* readname1=get_readname(hdr1,&len,cline,f);
+    char* readname2=get_readname(hdr2,&len,cline+4,f);
+    if ( strcmp(readname1,readname2) ) {
+      fprintf(stderr,"Error in file %s, line %lu: unpaired read - %s\n",f,cline,readname1);
+      return(1);
+    } 
+    PRINT_READS_PROCESSED(cline+4/4);
+    //
+    cline+=8;
+    }
+  printf("\n");
+  fclose(fd1);
+  return 0;
+}
+
 int main(int argc, char **argv ) {
   long paired=0;
   is_paired_data=0;
+  is_interleaved=0;
   if (argc<2 || argc>3) {
-    fprintf(stderr,"Usage: fastq_validator fastq1 [fastq2]\n");
+    fprintf(stderr,"Usage: fastq_validator fastq1 [fastq2 file|pe]\n");
     //fprintf(stderr,"%d",argc);
     exit(1);
   }
@@ -356,17 +416,25 @@ int main(int argc, char **argv ) {
   //bin/fprintf(stderr,"%s\n",argv[0]);
   if (argc ==3) {
     is_paired_data=1;
-    fd2=open_fastq(argv[2]);
-    fclose(fd2);
+    if ( !strncmp(argv[2],"pe",2) ) {
+      is_interleaved=1;
+    } else  {
+      fd2=open_fastq(argv[2]);
+      fclose(fd2);
+    }
   }
   // ************************************************************
   // casava 1.8?
   is_casava_18=is_casava_1_8(argv[1]);
   if (is_casava_18) fprintf(stderr,"CASAVA=1.8\n");
-  fprintf(stderr,"HASHSIZE=%lu\n",HASHSIZE);
   // ************************************************************
   off_t cur_offset=1;
+  // interleaved
+  if ( is_interleaved ) {
+    exit(validate_interleaved(argv[1]));
+  }
   unsigned long cline=1;
+  fprintf(stderr,"HASHSIZE=%lu\n",HASHSIZE);
   //memset(&collisions[0],0,HASHSIZE+1);
   hashtable sn_index=new_hashtable(HASHSIZE);
   index_mem+=sizeof(hashtable);
