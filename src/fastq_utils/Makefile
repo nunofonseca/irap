@@ -85,14 +85,17 @@ test6:
 	./fastq_validator tests/test_e14.fastq || \
 	./fastq_validator tests/test_e15.fastq || \
 	./fastq_validator tests/test_e16.fastq || \
+	./fastq_validator tests/casava.1.8i_err.Fastq || \
 	echo "OK! all errors detected"
 	./fastq_validator tests/test_1.fastq && \
 	./fastq_validator tests/test_2.fastq && \
 	./fastq_validator tests/test_13.fastq && \
+	time -p ./fastq_validator tests/casava.1.8i_err.fastq pe && \
 	time -p ./fastq_validator tests/pe_bug14.fastq tests/pe_bug14.fastq && \
 	time -p ./fastq_validator tests/c18_1M_1.fastq && \
-	time -p ./fastq_validator tests/c18_1M_2.fastq
-	time -p ./fastq_validator tests/c18_1M_1.fastq tests/c18_1M_2.fastq || echo "OK! Error detected"
+	time -p ./fastq_validator tests/c18_1M_2.fastq && \
+	time -p ./fastq_validator tests/casava.1.8i.fastq pe && \
+	time -p ./fastq_validator tests/c18_1M_1.fastq tests/c18_1M_2.fastq || echo "OK! No error detected"
 
 
 tests: test1 test2 test3 test4 test5 test6

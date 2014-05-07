@@ -388,7 +388,7 @@ int validate_interleaved(char *f) {
       fprintf(stderr,"Error in file %s, line %lu: unpaired read - %s\n",f,cline,readname1);
       return(1);
     } 
-    PRINT_READS_PROCESSED(cline+4/4);
+    PRINT_READS_PROCESSED(cline/4);
     //
     cline+=8;
     }
