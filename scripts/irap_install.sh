@@ -97,12 +97,12 @@ function download2cache {
 }
 
 function check_dependencies {
-    DEVEL_LIBRARIES_REQUIRED="zlib-devel python-devel bzip2-devel python readline-devel libgfortran gcc-gfortran libX11-devel libXt-devel numpy gd-devel libxml2-devel libxml2 libpng libcurl-devel expat-devel [db-devel|db4-devel|libdb-devel]"
+    DEVEL_LIBRARIES_REQUIRED="zlib-devel python-devel bzip2-devel python readline-devel libgfortran gcc-gfortran libX11-devel libXt-devel numpy gd-devel libxml2-devel libxml2 libpng libcurl-devel expat-devel [db-devel|db4-devel|libdb-devel] libpangocairo"
     MISSING=0
     pinfo "If installation fails then please check if the following libraries are installed:"
     pinfo "$DEVEL_LIBRARIES_REQUIRED"
     # Binaries that should be available
-    BINARIES="java python gcc g++ gfortran curl-config"
+    BINARIES="java python gcc g++ gfortran curl-config git"
     pinfo "Checking dependencies..."
     for bin in $BINARIES; do
 	PATH2BIN=`which $bin 2> /dev/null`
@@ -750,8 +750,14 @@ EOF
 # Yap 
 function YAP_install {
     pinfo "Installing YAP..."
-    rm -rf mainline
-    git clone http://gitorious.org/yap-git/mainline.git
+    if [ $USE_CACHE == "y" ]; then
+	tar xzvf $SRC_DIR/download/yap.tgz
+    else
+	rm -rf mainline
+	git clone http://gitorious.org/yap-git/mainline.git
+	tar czvf yap.tgz mainline
+	cp yap.tgz $SRC_DIR/download/
+    fi
     pushd mainline
     ./configure --prefix=$IRAP_DIR --disable-myddas
     make
