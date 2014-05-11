@@ -550,7 +550,7 @@ endif
 SUPPORTED_QUANT_METHODS=basic htseq1 htseq2 cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd scripture flux_cap nurd 
 
 # methods that produce transcript level quantification by default
-TRANS_QUANT_METHODS=flux_cap cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd
+TRANS_QUANT_METHODS=flux_cap cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd nurd
 
 #rsem isoem sailfish bitseq
 ifeq (,$(filter $(quant_method),$(SUPPORTED_QUANT_METHODS) none))
