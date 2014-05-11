@@ -33,7 +33,7 @@ if ( IRAP.DIR == "" ) {
 # specify our desired options in a list
 #
 source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
-pdebug.enabled <- TRUE
+pdebug.enabled <- FALSE
 
 library(multicore)
 
