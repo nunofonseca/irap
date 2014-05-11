@@ -117,7 +117,7 @@ submit_job "${jobname_prefix}u" -w "ended(\"${jobname_prefix}f*\")"  "$cmd conf=
 # To finalize, run the whole pipeline
 # If everything went ok then nothing should be done
 # otherwise it should fail and an email will be sent
-submit_job "${jobname_prefix}l" -w "${jobname_prefix}u"  "irap conf=$conf  $IRAP_PARAMS -n -q report"
+submit_job "${jobname_prefix}l" -w "ended(\"${jobname_prefix}u\")"  "irap conf=$conf  $IRAP_PARAMS -n -q report"
 
 submit_job_status "${jobname_prefix}l"
 echo "JOBS=$name/${jobname_prefix}*.out"
