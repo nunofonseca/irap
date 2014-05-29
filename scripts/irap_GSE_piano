@@ -158,7 +158,7 @@ pinfo("Starting to play piano...")
 # exclude NAs
 pval <- pval[!is.na(pval)]
 fc <- fc[!is.na(fc)]
-pinfo("FC mean",round(mean(abs(fc),na.rm=T),2),"+-",round(sd(fc,na.rm=T),2))
+pinfo("FC mean ",round(mean(abs(fc),na.rm=T),2),"+-",round(sd(fc,na.rm=T),2))
 # fc.dir <- fc
 # fc.dir[fc.dir<0] <- "down"
 # fc.dir[fc.dir>0] <- "up"
@@ -171,8 +171,11 @@ set1 <- names(pval[pval<=pval.lim])
 if ( opt$annot.only ) {
   # expand set 1
   # genes without annotation
-  no.value <- is.na(gene2go[,2])
-  to.exclude <- gene2go[no.value,1]
+  #print(head(gene2go))
+  no.value <- is.na(gene2go[,2])  
+  to.exclude <- as.character(gene2go[no.value,1])
+  print(length(to.exclude))
+  #print(head(set1))
   n1 <- length(set1)
   set1 <- set1[!set1 %in% to.exclude]
   n2 <- length(set1)
@@ -237,7 +240,7 @@ if ( length(set1)>=minSizeLim && print.empty==FALSE )  {
                        html=FALSE,
                        ps=TRUE,
                        to.plot = function () {
-                         nw1 <- networkPlot(gsaRes,class="distinct",direction="both",edgeWidth=c(2,20),adjusted=T,significance=opt$pvalue,geneSets=sel,overlap=opt$minedge)
+                         nw1 <- networkPlot(gsaRes,class="distinct",direction="both",edgeWidth=c(2,20),adjusted=T,significance=opt$pvalue,geneSets=sel,overlap=opt$minedge,cexLegend=0.9)
                        }                     
                        )
      }
@@ -255,7 +258,7 @@ if ( length(set1)>=minSizeLim && print.empty==FALSE )  {
                      html=FALSE,
                      ps=TRUE,
                      to.plot = function () {
-                       nw1 <- networkPlot(gsaRes,class="non",edgeWidth=c(2,20),adjusted=T,significance=opt$pvalue,geneSets=sel,overlap=opt$minedge)
+                       nw1 <- networkPlot(gsaRes,class="non",edgeWidth=c(2,20),adjusted=T,significance=opt$pvalue,geneSets=sel,overlap=opt$minedge,cexLegend=0.9)
                      }                     
                      )
 
