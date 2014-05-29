@@ -250,14 +250,15 @@ if ( length(set1)>=minSizeLim && print.empty==FALSE )  {
   pwarning("No significant entries found for p-value of ",opt$pvalue)
   print.empty <- TRUE
 }
-
+pdebug.save.state("irap_GSE_piano","p3")
 if(print.empty) {
   gsaRes=NA
-  save(gsaRes,file=paste(opt$out,".Rdata",sep=""))
-  write.tsv(matrix(),file=out.tsv.file)
   pinfo("Created empty ",out.tsv.file)
 }
-pdebug.save.state("irap_GSE_piano","p3")
+save(gsaRes,file=paste(opt$out,".Rdata",sep=""))
+write.tsv(matrix(),file=out.tsv.file)
+
+
 
 quit(save="no",status=0)
 
