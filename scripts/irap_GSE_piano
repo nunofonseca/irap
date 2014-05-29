@@ -49,6 +49,7 @@ option_list <- list(
   make_option(c("-f", "--foldchange-col"), type="numeric", dest="fold.col", default=5,help="Column with the foldchange values [default %default]"),
   make_option(c("-l", "--pvalue"), type="numeric", dest="pvalue", default=0.05,help="p-value [default %default]"),
   make_option(c("-s", "--minsize"), type="numeric", dest="min.size", default=5,help="Minimum size of  a cluster [default %default]"),
+  make_option(c("-x", "--maxsize"), type="numeric", dest="max.size", default=+Inf,help="Maximum size of  a cluster [default %default]"),
   make_option(c("-m", "--method"), type="character", dest="method", default="median",help="Method [default: %default]"),
   make_option(c("-e", "--minedge"), type="numeric", dest="minedge", default=3,help="Minimum number of genes shared between two gene sets (used only in the plots) [default: %default]"),
   make_option(c("-t", "--top"), type="numeric", dest="top", default=Inf,help="Top gene sets used in the plot [default: %default]"),
@@ -143,6 +144,7 @@ pinfo("p-value=",opt$pvalue)
 pinfo("top=",opt$top)
 pinfo("minedge=",opt$minedge)
 pinfo("minimum size=",opt$min.size)
+pinfo("miximum size=",opt$max.size)
 pinfo("annotation col=",opt$annotation_col)
 pinfo("...............................")
 ##############################################
@@ -169,6 +171,7 @@ set1.annot <- gene2go[gene2go[,1] %in% set1,]
 print.empty <- FALSE
 
 minSizeLim <- opt$min.size
+maxSizeLim <- opt$max.size
 pinfo("#Genes=",length(pval)," #genes (pvalue<=",pval.lim,")=",length(set1))
 
 if(nrow(set1.annot)==0 ) {
@@ -195,7 +198,7 @@ if ( length(set1)>=minSizeLim && print.empty==FALSE )  {
    #}adjMethod="none
    #save.image("debug.Rdata")
   gsaRes <- try(runGSA(geneLevelStats=pval,directions=fc,geneSetStat=opt$method,
-                       gsc=myGSC,gsSizeLim=c(minSizeLim,Inf)))
+                       gsc=myGSC,gsSizeLim=c(minSizeLim,maxSizeLim)))
   pdebug.save.state("irap_GSE_piano","p2")
   if ( class(gsaRes)=="try-error") {
     perror("Failed runGSA(",opt$method,")")
@@ -245,9 +248,10 @@ if ( length(set1)>=minSizeLim && print.empty==FALSE )  {
                      )
 
      # save the tsv file and the rdata file
-     save(gsaRes,file=paste(opt$out,".Rdata",sep=""),envir=sys.frame())
+     #save(gsaRes,file=paste(opt$out,".Rdata",sep=""),envir=sys.frame())
      write.tsv(GSAsummaryTable(gsaRes),file=out.tsv.file,header=T)
      pinfo("Created ",out.tsv.file)
+     print.empty <- FALSE
    }
 } else {
   pwarning("No significant entries found for p-value of ",opt$pvalue)
@@ -256,13 +260,13 @@ if ( length(set1)>=minSizeLim && print.empty==FALSE )  {
 pdebug.save.state("irap_GSE_piano","p3")
 if(print.empty) {
   gsaRes=NA
+  write.tsv(matrix(),file=out.tsv.file)
   pinfo("Created empty ",out.tsv.file)
 }
 save(gsaRes,file=paste(opt$out,".Rdata",sep=""))
-write.tsv(matrix(),file=out.tsv.file)
 
 quit(save="no",status=0)
-
+###############################################################
 IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
 if ( IRAP.DIR == "" ) {
   IRAP.DIR="/home/nf/Research/Projects/WIP/EREAP/ereap_install"
