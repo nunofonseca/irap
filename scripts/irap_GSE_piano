@@ -214,15 +214,18 @@ if ( length(set1)>=minSizeLim && print.empty==FALSE )  {
        v <- apply(cbind(v1,v2),1,min,na.rm=TRUE)       
        sel <- names(head(sort(v),opt$top))
      }
-     gen.plot2report(filename=paste(opt$out,"_class_distinct_dir_both.png",sep=""),
-                     width=450,
-                     height=450,
-                     html=FALSE,
-                     ps=TRUE,
-                     to.plot = function () {
-                       nw1 <- networkPlot(gsaRes,class="distinct",direction="both",edgeWidth=c(2,20),adjusted=T,significance=opt$pvalue,geneSets=sel,overlap=opt$minedge)
-                     }                     
-                     )
+     #If geneSetStat is set to"fisher","stouffer","reporter" or"tailStrength" only p-values are allowed as geneLevelStats.
+     if ( ! opt$method %in% c("fisher","stouffer","reporter","tailStrength")) {
+       gen.plot2report(filename=paste(opt$out,"_class_distinct_dir_both.png",sep=""),
+                       width=450,
+                       height=450,
+                       html=FALSE,
+                       ps=TRUE,
+                       to.plot = function () {
+                         nw1 <- networkPlot(gsaRes,class="distinct",direction="both",edgeWidth=c(2,20),adjusted=T,significance=opt$pvalue,geneSets=sel,overlap=opt$minedge)
+                       }                     
+                       )
+     }
 
      # which sets to include
      sel <- NULL
@@ -257,8 +260,6 @@ if(print.empty) {
 }
 save(gsaRes,file=paste(opt$out,".Rdata",sep=""))
 write.tsv(matrix(),file=out.tsv.file)
-
-
 
 quit(save="no",status=0)
 
