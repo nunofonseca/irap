@@ -50,6 +50,20 @@ function usage {
     echo " -x software: install/update software.";
 }
 
+function check_for_irap_env {
+
+    if [ "$IRAP_DIR-" == "-" ]; then
+	echo "ERROR: IRAP_DIR environment variable not defined"
+	exit 1
+    fi
+    # check if IRAP_DIR is in the path
+    IP="$IRAP_DIR/scripts" 
+    if [[ ":$PATH:" != *":$IP:"* ]]; then
+	echo "ERROR: IRAP_DIR ($IP) not in PATH."
+	exit 1
+    fi
+}
+
 function download {
     FILE2DOWNLOAD=$1
     FILE2=$2
@@ -1608,6 +1622,7 @@ if [ "$IRAP_DIR1-" != "-" ]; then
     export IRAP_DIR=$IRAP_DIR1
 fi
 
+
 if [ "$IRAP_DIR-" = "-" ]; then
     echo ERROR: IRAP directory not defined. > /dev/stderr
     usage
@@ -1649,10 +1664,11 @@ uname -a
 check_dependencies
 # Full path
 pinfo "Checking paths..."
-IRAP_DIR=$(readlink -f "$IRAP_DIR")
+IRAP_DIR=$(realpath -s "$IRAP_DIR")
 SRC_DIR=$(readlink -f "$SRC_DIR")
 pinfo "IRAP_DIR=$IRAP_DIR"
 pinfo "SRC_DIR=$SRC_DIR"
+pinfo "PATH=$PATH"
 pinfo "Checking paths...done."
 #
 BIN_DIR=$IRAP_DIR/bin
@@ -1714,6 +1730,7 @@ if [ "$install" == "download" ]; then
 fi
 
 if [ "$install" == "collect_software_versions" ]; then
+    check_for_irap_env
     collect_software_versions
     pinfo "Log saved to $logfile"
     exit 0
@@ -1734,12 +1751,14 @@ if [ "$install" == "core" ]; then
 fi
 
 if [ "$install" == "mappers" ]; then
+    check_for_irap_env
     mappers_install
     pinfo "Log saved to $logfile"
     exit 0
 fi
 
 if [ "$install" == "r_pack" ]; then
+    check_for_irap_env
     R_packages_install
     R3_packages_install
     pinfo "Log saved to $logfile"
@@ -1747,24 +1766,28 @@ if [ "$install" == "r_pack" ]; then
 fi
 
 if [ "$install" == "p_pack" ]; then
+    check_for_irap_env
     perl_packages_install
     pinfo "Log saved to $logfile"
     exit 0
 fi
 
 if [ "$install" == "quant" ]; then
+    check_for_irap_env
     quant_install
     pinfo "Log saved to $logfile"
     exit 0
 fi
 
 if [ "$install" == "browser" ]; then
+    check_for_irap_env
     jbrowse_install
     pinfo "Log saved to $logfile"
     exit 0
 fi
 
 if [ "$install" == "data" ]; then
+    check_for_irap_env
     data_install
     pinfo "Log saved to $logfile"
     exit 0
@@ -1772,6 +1795,7 @@ fi
 
 if [ "$install" == "testing" ]; then
     set -e
+    check_for_irap_env
     IsoEM_install
     Sailfish_install
     #NURD_install
@@ -1792,6 +1816,7 @@ pinfo "PATH=$PATH"
 pinfo "IRAP_DIR=$IRAP_DIR"
 env |  grep IRAP_DIR
 pinfo "Loading environment $SETUP_FILE...done."
+#check_for_irap_env
 R_packages_install
 R3_packages_install
 mappers_install
