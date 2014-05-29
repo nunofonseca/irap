@@ -382,13 +382,14 @@ export PERL5LIB=\$IRAP_DIR/perl/lib/perl5:\$IRAP_DIR/lib/perl5:\$IRAP_DIR/lib/pe
 export PYTHONUSERBASE=\$IRAP_DIR/python
 # Adjust to your needs and uncomment the following lines
 # in order to use iRAP with the LSF job scheduler
-# note: memory values are in MB
+# note: memory values are in MB 
 #export IRAP_LSF_GROUP=/irap
 #export QUEUE=research-rh6
 export MEM=10000
 export THREADS=8
 #export JOB_MEM_INCR 8000
 #export JOB_MAX_MEM 32000
+#export IRAP_LSF_PARAMS=
 EOF
 }
 
