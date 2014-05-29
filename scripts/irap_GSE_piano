@@ -53,6 +53,7 @@ option_list <- list(
   make_option(c("-m", "--method"), type="character", dest="method", default="median",help="Method [default: %default]"),
   make_option(c("-e", "--minedge"), type="numeric", dest="minedge", default=3,help="Minimum number of genes shared between two gene sets (used only in the plots) [default: %default]"),
   make_option(c("-t", "--top"), type="numeric", dest="top", default=Inf,help="Top gene sets used in the plot [default: %default]"),
+  make_option(c("--annot-only"),action="store_true",dest="annot.only",default=FALSE,help="Consider only genes with annotation [default %default]"),
   make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode (save a Rdata file for debugging purposes)"),
   make_option(c("--go"), type="character", dest="go.file", default=NULL,help="TSV file with the mapping of the genes to GO terms (two columns file: geneid goterm)"),
   make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name prefix.")
@@ -158,15 +159,26 @@ pinfo("Starting to play piano...")
 pval <- pval[!is.na(pval)]
 fc <- fc[!is.na(fc)]
 pinfo("FC mean",round(mean(abs(fc),na.rm=T),2),"+-",round(sd(fc,na.rm=T),2))
-#fc.dir <- fc
-#fc.dir[fc.dir<0] <- "down"
-#fc.dir[fc.dir>0] <- "up"
+# fc.dir <- fc
+# fc.dir[fc.dir<0] <- "down"
+# fc.dir[fc.dir>0] <- "up"
 # TODO: replace inf by a big value?
 pval[is.infinite(pval)] <- 1
 pval.lim <- opt$pvalue
 pinfo("p-value mean ",round(mean(abs(pval),na.rm=T),2),"+-",round(sd(pval,na.rm=T),2))
 # set of genes
 set1 <- names(pval[pval<=pval.lim])
+if ( opt$annot.only ) {
+  # expand set 1
+  # genes without annotation
+  no.value <- is.na(gene2go[,2])
+  to.exclude <- gene2go[no.value,1]
+  n1 <- length(set1)
+  set1 <- set1[!set1 %in% to.exclude]
+  n2 <- length(set1)
+  pinfo("Excluded ",n1-n2," genes with no annotation")
+}
+
 set1.annot <- gene2go[gene2go[,1] %in% set1,]
 print.empty <- FALSE
 
