@@ -172,7 +172,7 @@ if ( opt$annot.only ) {
   # expand set 1
   # genes without annotation
   #print(head(gene2go))
-  no.value <- is.na(gene2go[,2])  
+  no.value <- is.na(gene2go[,2]) | gene2go[,2]==""
   to.exclude <- as.character(gene2go[no.value,1])
   print(length(to.exclude))
   #print(head(set1))
@@ -240,7 +240,7 @@ if ( length(set1)>=minSizeLim && print.empty==FALSE )  {
                        html=FALSE,
                        ps=TRUE,
                        to.plot = function () {
-                         nw1 <- networkPlot(gsaRes,class="distinct",direction="both",edgeWidth=c(2,20),adjusted=T,significance=opt$pvalue,geneSets=sel,overlap=opt$minedge,cexLegend=0.9)
+                         nw1 <- networkPlot(gsaRes,class="distinct",direction="both",edgeWidth=c(2,20),adjusted=T,significance=opt$pvalue,geneSets=sel,overlap=opt$minedge,cexLegend=0.8)
                        }                     
                        )
      }
