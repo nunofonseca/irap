@@ -1801,8 +1801,6 @@ if [ "$install" == "testing" ]; then
     Sailfish_install
     #NURD_install
     rsem_install
-    #R3_install
-    #R3_packages_install
     pinfo "Log saved to $logfile"
     exit 0
 fi
