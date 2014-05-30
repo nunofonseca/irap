@@ -719,7 +719,7 @@ gen.plot2report <- function(filename=NULL,
   if (ps==TRUE) {
     ps.file <- paste(png.file,".eps",sep="")
     #ps(file=ps.file)
-    postscript(file=ps.file)
+    postscript(file=ps.file,fonts=c("serif", "sans"))
     err <- try(to.plot())
     dev.off()
     if ( class(err)=="try-error") {
