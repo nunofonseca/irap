@@ -1666,7 +1666,7 @@ check_dependencies
 # Full path
 pinfo "Checking paths..."
 #IRAP_DIR=$(realpath -f "$IRAP_DIR")
-IRAP_DIR=$(reallink -f "$IRAP_DIR")
+IRAP_DIR=$(readlink -f "$IRAP_DIR")
 SRC_DIR=$(readlink -f "$SRC_DIR")
 pinfo "IRAP_DIR=$IRAP_DIR"
 pinfo "SRC_DIR=$SRC_DIR"
