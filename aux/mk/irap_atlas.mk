@@ -29,21 +29,37 @@ atlas_wrap_up: $(name)/atlas_html.tar.gz
 #######################
 # Get a tarball with the plots and HTML files without irap's menu, HTML head and CSS.
 
-# TODO: add the plots for mapping...check if all files are there!
-ATLAS_REPORT_FILES=$(name)/report/qc.html $(name)/report/read_filtering_plot.png $(name)/report/qc.tsv $(name)/report/read_filtering_plot.png.eps $(name)/report/mapping/$(mapper).html $(name)/report/mapping/$(mapper)*.png $(name)/report/mapping/$(mapper)*.png.eps $(name)/report/mapping/$(mapper)*.tsv $(name)/report/qc.html $(name)/report/riq/raw_data/*/fastqc_report.html $(name)/report/riq/raw_data/*/Images $(name)/report/riq/raw_data/*/Icons/ $(name)/report/software.tsv $(name)/report/info.html $(name)/report/irap.conf 
+# Lower the resolution of some images
+ATLAS_IMAGES2CONVERT=$(shell ls -1 $(name)/report/read_filtering_plot.png $(name)/report/mapping/$(mapper)*.png | grep -v orig.png | grep -v scaled.png)
+ATLAS_SCALED_IMAGES=$(subst .png,.scaled.png,$(ATLAS_IMAGES2CONVERT))
 
-$(name)/atlas_html.tar.gz: $(name)/report $(name)/report/software.tsv $(name)/report/irap.conf
+# TODO: add the plots for mapping...check if all files are there!
+
+ATLAS_REPORT_FILES=$(name)/report/qc.html  $(name)/report/qc.tsv $(name)/report/read_filtering_plot.png.eps $(name)/report/mapping/$(mapper).html  $(name)/report/mapping/$(mapper)*.png.eps $(name)/report/mapping/$(mapper)*.tsv $(name)/report/qc.html $(name)/report/riq/raw_data/*/fastqc_report.html $(name)/report/riq/raw_data/*/Images $(name)/report/riq/raw_data/*/Icons/ $(name)/report/software.tsv $(name)/report/info.html $(name)/report/irap.conf $(ATLAS_IMAGES2CONVERT) $(ATLAS_SCALED_IMAGES)
+
+$(name)/atlas_html.tar.gz: $(name)/report $(name)/report/software.tsv $(name)/report/irap.conf $(ATLAS_SCALED_IMAGES)
 	mkdir -p $(name)/atlas && rm -rf $(name)/atlas/* && \
 	tar czvf $(name)/tmp.atlas.tgz  $(ATLAS_REPORT_FILES) &&\
 	cd $(name)/atlas && tar xzvf ../tmp.atlas.tgz && rm ../tmp.atlas.tgz && mv $(name)/report/* . && rm -rf $(name) && \
+	find . -name "*.scaled.png"  -exec rename .scaled.png .png {} \;  && \
 	for html_file in `find . -name "*.htm*"`; do atlas_clean_html.sh $$html_file; done && \
 	cd .. && tar czvf $(@F).tmp  atlas/ && mv $(@F).tmp $(@F) &&\
 	echo Created $@
 # remove header, footer and menu
+# rename the scaled images
 
 $(name)/report/irap.conf: $(conf)
 	cp $< $@.tmp && mv $@.tmp $@
 
+atlas_test: $(ATLAS_IMAGES2CONVERT)
+	echo $^
+
+# reduce the size of the images
+%.orig.png: %.png
+	cp $< $@
+
+%.scaled.png: %.orig.png
+	convert -scale 50% $< $*.scaled.png
 
 ##########################
 # Useful temporary targets
@@ -52,3 +68,5 @@ atlas_clean_report:
 	@rm -f $(name)/report/qc.html $(name)/report/mapping/$(mapper).html
 	$(call p_info, Files deleted)
 	$(call p_info, Please rerun 'irap conf=... report' to update the files)
+
+
