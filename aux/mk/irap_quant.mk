@@ -117,7 +117,7 @@ define run_flux_cap=
 	echo COVERAGE_STATS true > $(1).par &&\
 	echo COVERAGE_FILE `basename $(1).cov` >> $(1).par &&\
 	echo "transcript	locus	gene	reads	length	RPKM"> $(4).tmp2 &&\
-	FLUX_MEM=$(fluxcap_mem) flux-capacitor --force --annotation $(2)  -i $(1) --threads $(max_threads) -p $(1).par -o $(4).gtf && \
+	TMP_DIR=$(tmp_dir) FLUX_MEM=$(fluxcap_mem) flux-capacitor --force --annotation $(2)  -i $(1) --threads $(max_threads) -p $(1).par -o $(4).gtf && \
 	sed  "s/.*transcript_id/transcript_id/" $(4).gtf | sed "s/\"//g" | sed "s/;/\t/g" | sed -E "s/([a-zA-Z]*_id|reads|length|RPKM| )//g" >> $(4).tmp2 && \
 	mv $(4).tmp2 $(4) 
 endef
