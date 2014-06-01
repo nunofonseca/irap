@@ -145,7 +145,7 @@ pinfo("p-value=",opt$pvalue)
 pinfo("top=",opt$top)
 pinfo("minedge=",opt$minedge)
 pinfo("minimum size=",opt$min.size)
-pinfo("miximum size=",opt$max.size)
+pinfo("maximum size=",opt$max.size)
 pinfo("annotation col=",opt$annotation_col)
 pinfo("...............................")
 ##############################################
