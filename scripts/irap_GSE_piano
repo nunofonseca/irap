@@ -266,7 +266,6 @@ if ( length(set1)>=minSizeLim && print.empty==FALSE )  {
        #gsaRes2plot$gsc <- gsaRes2plot$gsc[!is.null(gsaRes2plot$gsc)]
        for (v in append(grep("^p" ,names(gsaRes2plot),value=T),"nGenesTot") ) {
          gsaRes2plot[[v]] <- matrix(gsaRes2plot[[v]][!gsaRes2Plot.sel,],ncol=1)
-         head(gsaRes$pAdjNonDirectional)
        }
      }
      sel <- NULL
