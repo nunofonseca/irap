@@ -54,8 +54,11 @@ option_list <- list(
   make_option(c("-e", "--minedge"), type="numeric", dest="minedge", default=3,help="Minimum number of genes shared between two gene sets (used only in the plots) [default: %default]"),
   make_option(c("-t", "--top"), type="numeric", dest="top", default=Inf,help="Top gene sets used in the plot [default: %default]"),
   make_option(c("--annot-only"),action="store_true",dest="annot.only",default=FALSE,help="Consider only genes with annotation [default %default]"),
+  make_option(c("--plot-annot-only"),action="store_true",dest="plot.annot.only",default=FALSE,help="Plot  only genes with annotation [default %default]"),
+  make_option(c("--dup-use-best"),action="store_true",dest="dup.use.best",default=TRUE,help="Pick the best statistic (lowest p-value) for duplicated genes [default %default]"),
   make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode (save a Rdata file for debugging purposes)"),
   make_option(c("--go"), type="character", dest="go.file", default=NULL,help="TSV file with the mapping of the genes to GO terms (two columns file: geneid goterm)"),
+  make_option(c("--title"), type="character", dest="title", default="",help="Main title to include in the plot"),
   make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name prefix.")
 )
 multiple.options = list(method=c("mean","median","sum","fisher","stouffer","tailStrength","wilcoxon","reporter","page"))
@@ -91,7 +94,33 @@ if ( opt$fold.col>ncol(df) || opt$fold.col<1 ) {
   perror("Invalid foldchange-col: ",opt$fold.col)
   quit(status=1)
 }
-
+#save.image("debug.Rdata")
+#load("debug.Rdata")
+#####################$
+# check for duplicates
+if ( length(unique(df[,1]))!=nrow(df) ) {
+  pinfo("Found duplicated gene entries in ",opt$tsv.file,".")
+  if (!opt$dup.use.best) {
+    perror("Please enable --dup-use-best to proceed")
+    q(status=1)
+  }
+  # filter the duplicated genes
+  dup.genes <- unique(as.character(df[duplicated(df[,1]),1]))
+  pinfo("Picking the best statistic for each set of entries related to a gene")
+  pinfo("Starting with ",nrow(df)," entries")
+  for ( g in dup.genes ) {
+    pdebug("Processing duplicated gene ",g)
+    to.exclude <- which(df[,1]==g)
+    pdebug("gene has ",length(to.exclude)," entries")
+    pick <- which(df[to.exclude,opt$pval.col]==min(df[to.exclude,opt$pval.col]))[1]
+    pdebug("Picked ",df[to.exclude[pick],])
+    to.exclude <- to.exclude[-pick]
+    df <- df[-to.exclude,] 
+  }
+  pinfo("No more duplicates")
+  pinfo("",nrow(df)," unique entries")
+}
+# 
 fc <- df[,opt$fold.col]
 names(fc) <- df[,1]
 pval <- as.numeric(df[,opt$pval.col])
@@ -135,9 +164,10 @@ if (!is.null(opt$go.file)) {
   gene2go <- data.frame(list(gene=unlist(lapply(as.character(s.tmp.m$ID),myrep,lx)),
                              go.id=unlist(x)),stringsAsFactors = F)
 }
-# Save a tsv file with the data 
+# output filename
 out.tsv.file <- paste(opt$out,".tsv",sep="")
 
+##############################################
 # print options
 pinfo("Options")
 pinfo("method=",opt$method)
@@ -168,6 +198,9 @@ pval.lim <- opt$pvalue
 pinfo("p-value mean ",round(mean(abs(pval),na.rm=T),2),"+-",round(sd(pval,na.rm=T),2))
 # set of genes
 set1 <- names(pval[pval<=pval.lim])
+
+# opt$plot.annot.only
+
 if ( opt$annot.only ) {
   # expand set 1
   # genes without annotation
@@ -223,14 +256,34 @@ if ( length(set1)>=minSizeLim && print.empty==FALSE )  {
      # Create the plots
      # 
      # which sets to include
+     gsaRes2plot <- gsaRes
+     #opt$plot.annot.only <- T
+     if (opt$plot.annot.only) {
+       #Do not plot gene sets with a name
+       gsaRes2Plot.sel <- (names(gsaRes$gsc)=="" )
+       gsaRes2plot$gsc <- gsaRes2plot$gsc[!gsaRes2Plot.sel]
+       #gsaRes2plot$gsc[[gsaRes2Plot.sel]] <- NULL
+       #gsaRes2plot$gsc <- gsaRes2plot$gsc[!is.null(gsaRes2plot$gsc)]
+       for (v in append(grep("^p" ,names(gsaRes2plot),value=T),"nGenesTot") ) {
+         gsaRes2plot[[v]] <- matrix(gsaRes2plot[[v]][!gsaRes2Plot.sel,],ncol=1)
+         head(gsaRes$pAdjNonDirectional)
+       }
+     }
      sel <- NULL
      if ( !is.infinite(opt$top) ) {
-       v1 <- as.numeric(gsaRes$pAdjDistinctDirDn)
-       v2 <- as.numeric(gsaRes$pAdjDistinctDirUp)
-       names(v1) <- names(gsaRes$gsc)
-       names(v2) <- names(gsaRes$gsc)
-       v <- apply(cbind(v1,v2),1,min,na.rm=TRUE)       
-       sel <- names(head(sort(v),opt$top))
+       v1 <- as.numeric(gsaRes2plot$pAdjDistinctDirDn)
+       v2 <- as.numeric(gsaRes2plot$pAdjDistinctDirUp)
+       names(v1) <- names(gsaRes2plot$gsc)
+       names(v2) <- names(gsaRes2plot$gsc)
+       v <- apply(cbind(v1,v2),1,min,na.rm=TRUE)
+       # select the top gene sets (lowest p-values, larger number of genes)
+       v2 <- as.numeric(gsaRes2plot$nGenesTot)
+       #length(v2)
+       #length(names(gsaRes2plot$gsc))
+       m <- cbind(v,v2)       
+       rownames(m) <- names(gsaRes2plot$gsc)
+       sorted <- m[order(v,-v2),]
+       sel <- head(rownames(sorted),opt$top)
      }
      #If geneSetStat is set to"fisher","stouffer","reporter" or"tailStrength" only p-values are allowed as geneLevelStats.
      if ( ! opt$method %in% c("fisher","stouffer","reporter","tailStrength")) {
@@ -240,17 +293,22 @@ if ( length(set1)>=minSizeLim && print.empty==FALSE )  {
                        html=FALSE,
                        ps=TRUE,
                        to.plot = function () {
-                         nw1 <- networkPlot(gsaRes,class="distinct",direction="both",edgeWidth=c(2,20),adjusted=T,significance=opt$pvalue,geneSets=sel,overlap=opt$minedge,cexLegend=0.8)
+                         nw1 <- networkPlot(gsaRes2plot,class="distinct",direction="both",edgeWidth=c(2,20),adjusted=T,significance=opt$pvalue,geneSets=sel,overlap=opt$minedge,cexLegend=0.8,main=opt$title)
                        }                     
                        )
      }
-
      # which sets to include
      sel <- NULL
      if ( !is.infinite(opt$top) ) {
-       v <- as.numeric(gsaRes$pAdjNonDirectional)
-       names(v) <- names(gsaRes$gsc)
-       sel <- names(head(sort(v),opt$top))
+       # select the top gene sets (lowest p-values, larger number of genes)
+       v <- as.numeric(gsaRes2plot$pAdjNonDirectional)
+       v2 <- as.numeric(gsaRes2plot$nGenesTot)
+       #length(v2)
+       #length(names(gsaRes2plot$gsc))
+       m <- cbind(v,v2)       
+       rownames(m) <- names(gsaRes2plot$gsc)
+       sorted <- m[order(v,-v2),]
+       sel <- head(rownames(sorted),opt$top)
      }
      gen.plot2report(filename=paste(opt$out,"_class_non_dir_both.png",sep=""),
                      width=550,
@@ -258,7 +316,7 @@ if ( length(set1)>=minSizeLim && print.empty==FALSE )  {
                      html=FALSE,
                      ps=TRUE,
                      to.plot = function () {
-                       nw1 <- networkPlot(gsaRes,class="non",edgeWidth=c(2,20),adjusted=T,significance=opt$pvalue,geneSets=sel,overlap=opt$minedge,cexLegend=0.8)
+                       nw1 <- networkPlot(gsaRes2plot,class="non",edgeWidth=c(2,20),adjusted=T,significance=opt$pvalue,geneSets=sel,overlap=opt$minedge,cexLegend=0.8,main=opt$title)
                      }                     
                      )
 
