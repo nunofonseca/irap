@@ -30,7 +30,7 @@ atlas_wrap_up: $(name)/atlas_html.tar.gz
 # Get a tarball with the plots and HTML files without irap's menu, HTML head and CSS.
 
 # Lower the resolution of some images
-ATLAS_IMAGES2CONVERT=$(shell ls -1 $(name)/report/read_filtering_plot.png $(name)/report/mapping/$(mapper)*.png | grep -v orig.png | grep -v scaled.png)
+ATLAS_IMAGES2CONVERT=$(shell ls -1 $(name)/report/read_filtering_plot.png $(name)/report/mapping/$(mapper)*.png 2>/dev/null | grep -v orig.png | grep -v scaled.png )
 ATLAS_SCALED_IMAGES=$(subst .png,.scaled.png,$(ATLAS_IMAGES2CONVERT))
 
 # TODO: add the plots for mapping...check if all files are there!
