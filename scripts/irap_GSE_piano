@@ -261,11 +261,10 @@ if ( length(set1)>=minSizeLim && print.empty==FALSE )  {
      if (opt$plot.annot.only ) {
        #Do not plot gene sets without annotation
        gsaRes2Plot.sel <- (names(gsaRes$gsc)=="" )
-       gsaRes2plot$gsc <- gsaRes2plot$gsc[!gsaRes2Plot.sel]
-       length(names(gsaRes2plot$gsc))
        #gsaRes2plot$gsc[[gsaRes2Plot.sel]] <- NULL
        #gsaRes2plot$gsc <- gsaRes2plot$gsc[!is.null(gsaRes2plot$gsc)]
        if (sum(gsaRes2Plot.sel)>0 ) {
+         gsaRes2plot$gsc <- gsaRes2plot$gsc[!gsaRes2Plot.sel]                
          for (v in append(grep("^p" ,names(gsaRes2plot),value=T),"nGenesTot") ) {
            gsaRes2plot[[v]] <- matrix(gsaRes2plot[[v]][!gsaRes2Plot.sel,],ncol=1)
          }
