@@ -90,6 +90,7 @@ test6:
 	./fastq_validator tests/test_1.fastq && \
 	./fastq_validator tests/test_2.fastq && \
 	./fastq_validator tests/test_13.fastq && \
+	./fastq_validator tests/test_17.fastq && \
 	time -p ./fastq_validator tests/casava.1.8i_err.fastq pe && \
 	time -p ./fastq_validator tests/pe_bug14.fastq tests/pe_bug14.fastq && \
 	time -p ./fastq_validator tests/c18_1M_1.fastq && \
