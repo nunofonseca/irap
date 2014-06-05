@@ -203,7 +203,7 @@ html <- gen.plot2report(filename=file,
                                         beside=F,col=cols,
                                         ylab="Percentage of alignments (%)",
                                         horiz=F,cex.axis=0.8,
-				        xaxs="i",xlim=c(-0.2,ncol(v)))
+				        xaxs="i",xlim=c(-0.2,0.2+ncol(v)))
 
                           par( xpd=NA )
                           legend(ceiling(max(bp)),max(colSums(v)),legend=pprint.fieldname(rownames(v)),fill=cols,horiz=FALSE, cex=0.70,bty='n')                          
@@ -233,7 +233,8 @@ html <- gen.plot2report(filename=file,
                         to.plot= function() {
                           cols <- rainbow(nrow(mapping.genes2plot))
                           par(mar=c(10,5,5,4))                          
-                          bp <- barplot(mapping.genes2plot,las=2,col=cols)
+                          bp <- barplot(mapping.genes2plot,las=2,col=cols,
+				xaxs="i",xlim=c(-0.2,0.2+ncol(mapping.genes2plot)))
                           par( xpd=NA )                          
                           legend("top",inset=c(0,-0.08),legend=rownames(mapping.genes2plot),fill=cols,horiz=TRUE, cex=0.80,bty='n')                            
                         }
