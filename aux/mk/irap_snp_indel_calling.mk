@@ -43,6 +43,11 @@ endif
 indel_snp_calling_method_valid_tools=samtools none
 def_indel_snp_calling_method=none
 
+# initialize
+mpileup_params?=
+bcf_params?=
+vcf_params?=
+
 mpileup_params+= $(mpileup_params) -gu
 bcf_params+= $(bcf_params) -cgvb
 vcf_params+= $(vcf_params)
