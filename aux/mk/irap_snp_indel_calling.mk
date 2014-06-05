@@ -34,8 +34,8 @@
 #[9:49:13 AM] Nuno Fonseca:  samtools mpileup -r 1:10000-100000 -g -u -f ~nf/storage3/ref.fa ../../georgepanos/tophat2/SM.X1549.120928.8.se.hits.bam | bcftools view -cgbv - > test.bcf
 
 
-ifdef test_snp
-indel_snp_calling_method_valid_tools=samtools
+ifdef test_snp 
+indel_snp_calling_method=samtools
 
 endif
 

@@ -871,6 +871,7 @@ $(if  $(realpath $(1)),$(if $(shell head -n 1 $(1) | grep   Empty),y))
 endef
 
 ################################################################################
+# TODO: STAGE0
 STAGE1_OUT_FILES=$(foreach p,$(se),$(name)/data/$(p).f.fastq) $(foreach p,$(pe),$(name)/data/$(p)_1.f.fastq)
 
 STAGE2_OUT_FILES=$(foreach p,$(pe), $(name)/$(mapper)/$(p).pe.hits.bam) $(foreach s,$(se), $(name)/$(mapper)/$(s).se.hits.bam)
