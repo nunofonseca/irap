@@ -871,6 +871,13 @@ $(if  $(realpath $(1)),$(if $(shell head -n 1 $(1) | grep   Empty),y))
 endef
 
 ################################################################################
+STAGE1_OUT_FILES=$(foreach p,$(se),$(name)/data/$(p).f.fastq) $(foreach p,$(pe),$(name)/data/$(p)_1.f.fastq)
+
+STAGE2_OUT_FILES=$(foreach p,$(pe), $(name)/$(mapper)/$(p).pe.hits.bam) $(foreach s,$(se), $(name)/$(mapper)/$(s).se.hits.bam)
+
+STAGE2BYNAME_OUT_FILES=$(foreach p,$(pe), $(name)/$(mapper)/$(p).pe.hits.byname.bam) $(foreach s,$(se), $(name)/$(mapper)/$(s).se.hits.byname.bam)
+
+################################################################################
 # Default target
 all: setup quality_filtering_and_report mapping quantification DE GSE
 
@@ -895,7 +902,11 @@ include $(irap_path)/../aux/mk/irap_gse.mk
 # Atlas (atlas specific stuff)
 include $(irap_path)/../aux/mk/irap_atlas.mk
 
-
+ifdef irap_devel
+$(call p_info,Loading code under development)
+# include under development features
+include $(irap_path)/../aux/mk/irap_snp_indel_calling.mk
+endif
 
 # Check if the options provided are valid
 ifeq (invalid,$(shell irap_paths $(mapper) $(quant_method) $(quant_norm_method) $(de_method)))
@@ -1160,7 +1171,6 @@ endif
 # alias: stage1=qc=quality_filtering_and_report
 qc: quality_filtering_and_report 
 
-STAGE1_OUT_FILES=$(foreach p,$(se),$(name)/data/$(p).f.fastq) $(foreach p,$(pe),$(name)/data/$(p)_1.f.fastq)
 # TODO: improve robustness (no filtered reads)
 # TODO:	signature=filtering parameters (if they are the same then avoid recomputation between experiments)  minlen=$(min_read_len) min_qual=$(min_qual) qual_perc=$(min_qu
 quality_filtering_and_report: setup	$(STAGE1_OUT_FILES)
@@ -1192,9 +1202,6 @@ mapping: stage1 $(name)/$(mapper)/ $(mapper)_mapping
 #*************
 # Generic rule
 #*************
-STAGE2_OUT_FILES=$(foreach p,$(pe), $(name)/$(mapper)/$(p).pe.hits.bam) $(foreach s,$(se), $(name)/$(mapper)/$(s).se.hits.bam)
-
-STAGE2BYNAME_OUT_FILES=$(foreach p,$(pe), $(name)/$(mapper)/$(p).pe.hits.byname.bam) $(foreach s,$(se), $(name)/$(mapper)/$(s).se.hits.byname.bam)
 #####################
 phony_targets+= $(mapper)_mapping mapping stage2_tracks
 
