@@ -195,7 +195,7 @@ gen.qc.plot <- function(df) {
   if ( n>10 ) { cex <- 0.6 } else { cex=0.7}
   par( xpd=NA , mar=c(9,6,4,4))
   #bp <- barplot( bp.data, beside = FALSE, col=cols, las=2 , cex.axis=cex, cex.names=0.8)
-  bp <- barplot( bp.data, beside = FALSE, col=cols,  las=2 , cex.axis=cex, cex.names=0.8, xaxs="i",xlim=c(-0.2,n))
+  bp <- barplot( bp.data, beside = FALSE, col=cols,  las=2 , cex.axis=cex, cex.names=0.8, xaxs="i",xlim=c(-0.2,0.2+n))
   par( xpd=NA , mar=c(8,6,4,4))
   title(ylab="Number of reads",mgp=c(5,1,0))
   legend("top",inset=c(0,-0.08),legend=legend,fill=cols,horiz=TRUE, cex=0.70,bty='n')                          
