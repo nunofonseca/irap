@@ -48,9 +48,9 @@ mpileup_params?=
 bcf_params?=
 vcf_params?=
 
-mpileup_params+= $(mpileup_params) -gu
-bcf_params+= $(bcf_params) -cgvb
-vcf_params+= $(vcf_params)
+mpileup_params+= -gu
+bcf_params+=  -cgvb
+vcf_params+= 
 
 # default values
 ifndef indel_snp_calling_method
