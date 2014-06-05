@@ -93,10 +93,9 @@ mapping.plot <- function(df) {
   cex <- 0.95
 
   n <- length(colnames(df))
-  bp <- barplot(as.matrix(df[df.rows,]),ylab="Number of alignments/reads",las=2 , cex.axis=cex, cex.names=cex*0.90,col=cols,beside=T, xaxs="i",xlim=c(-0.2,n))
+  bp <- barplot(as.matrix(df[df.rows,]),ylab="Number of alignments/reads",las=2 , cex.axis=cex, cex.names=cex*0.90,col=cols,beside=T, xaxs="i",xlim=c(-0.1,0.1+length(df.rows)+n*length(df.rows)))
 
-  par( xpd=NA )
-  
+  par( xpd=NA )  
   legend("top",inset=c(0,-0.05),legend=rownames(df[df.rows,]),fill=cols,horiz=TRUE, cex=0.70,bty='n')  
 }
 
@@ -113,7 +112,7 @@ mapping.qual <- function(df) {
   n <- length(colnames(sliced.df))
   cols <- topo.colors(length(df.rows))
   cex <- 0.95
-  bp <- barplot(as.matrix(sliced.df),ylab="Number of alignments",las=2,cex.axis=cex, cex.names=cex*0.90,col=cols,beside=T,xaxs="i",xlim=c(-0.2,n))
+  bp <- barplot(as.matrix(sliced.df),ylab="Number of alignments",las=2,cex.axis=cex, cex.names=cex*0.90,col=cols,beside=T, xaxs="i",xlim=c(-0.1,0.1+length(df.rows)+n*length(df.rows)))
 
   par( xpd=NA )
   
