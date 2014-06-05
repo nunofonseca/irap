@@ -43,9 +43,9 @@ endif
 indel_snp_calling_method_valid_tools=samtools none
 def_indel_snp_calling_method=none
 
-mpileup_params+= -gu
-bcf_params+= -cgvb
-vcf_params+=
+mpileup_params+= $(mpileup_params) -gu
+bcf_params+= $(bcf_params) -cgvb
+vcf_params+= $(vcf_params)
 
 # default values
 ifndef indel_snp_calling_method
@@ -80,7 +80,7 @@ $(snp_dir):
 $(snp_dir)/%.$(indel_snp_calling_method).bcf: $(name)/$(mapper)/%.bam 
 	samtools mpileup $(mpileup_params) -f $(reference_abspath) $< | bcftools view $(bcf_params) - > $@.bcf.tmp && mv $@.bcf.tmp $@
 
-%.vcf:%.bcf
+%.vcf: %.bcf
 	bcftools view $< > $@.tmp && mv $@.tmp $@
 endif
 
