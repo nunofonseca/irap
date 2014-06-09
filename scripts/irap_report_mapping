@@ -57,6 +57,7 @@ opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filena
 
 irap.css <- opt$css
 pdebug.enabled <- opt$debug
+pdebug.save.state("irap_report_mapping","p0")
 
 pe.bam.v <- strsplit(gsub(" *; *",";",gsub("^;","",opt$pe_bams)),split="[; ]")[[1]]
 se.bam.v <- strsplit(gsub(" *; *",";",gsub("^;","",opt$se_bams)),split="[; ]")[[1]]
@@ -79,7 +80,7 @@ if (length(se.bam.v)!=length(se.labels.v)) {
 }
 
 pinfo("Parameters parsed.")
-
+pdebug.save.state("irap_report_mapping","p1")
 library("emBAM")
 
 ###########################################
@@ -92,8 +93,19 @@ mapping.plot <- function(df) {
   cols <- rainbow(length(df.rows))
   cex <- 0.95
 
+  par(mar=c(9,5,4,4))
   n <- length(colnames(df))
-  bp <- barplot(as.matrix(df[df.rows,]),ylab="Number of alignments/reads",las=2 , cex.axis=cex, cex.names=cex*0.90,col=cols,beside=T, xaxs="i",xlim=c(-0.1,0.1+length(df.rows)+n*length(df.rows)))
+  bp <- barplot(as.matrix(df[df.rows,]),
+                ylab="Number of alignments/reads",
+                las=2,
+                cex.axis=cex,
+                cex.names=cex*0.90,
+                col=cols,
+                beside=T,
+                xaxs="i",
+                width=0.8,
+                xlim=c(-0.1,0.1+length(df.rows)*n)
+                )
 
   par( xpd=NA )  
   legend("top",inset=c(0,-0.05),legend=rownames(df[df.rows,]),fill=cols,horiz=TRUE, cex=0.70,bty='n')  
@@ -112,7 +124,17 @@ mapping.qual <- function(df) {
   n <- length(colnames(sliced.df))
   cols <- topo.colors(length(df.rows))
   cex <- 0.95
-  bp <- barplot(as.matrix(sliced.df),ylab="Number of alignments",las=2,cex.axis=cex, cex.names=cex*0.90,col=cols,beside=T, xaxs="i",xlim=c(-0.1,0.1+length(df.rows)+n*length(df.rows)))
+  par(mar=c(9,5,4,4))
+  bp <- barplot(as.matrix(sliced.df),
+                ylab="Number of alignments",
+                las=2,
+                cex.axis=cex,
+                cex.names=cex*0.90,
+                col=cols,
+                beside=T,
+                xaxs="i",
+                width=0.8,
+                xlim=c(-0.1,0.1+length(df.rows)*n))
 
   par( xpd=NA )
   
@@ -286,11 +308,12 @@ mapper <- opt$mapper
 mapping.dfs <- get.mapping.stats(mapper,pe.bam.v,se.bam.v,pe.labels.v,se.labels.v)
 mapping.feat <- get.mapping.feature.stats(mapper,pe.bam.v,se.bam.v,pe.labels.v,se.labels.v)
 mapping.genes <- get.mapping.gene.stats(mapper,pe.bam.v,se.bam.v,pe.labels.v,se.labels.v)
-
+pdebug.save.state("irap_report_mapping","p3")
 library(brew)
 ####################################
 out.dir <- dirname(opt$out)
 out.prefix <- sub(".htm.*","",basename(opt$out))
+
 # save files
 raw.stats.file <- paste(out.prefix,"_mapping_stats_raw.tsv",sep="")
 r <- write.tsv(mapping.dfs$raw,file=paste(out.dir,"/",raw.stats.file,sep=""),rownames.label="")
@@ -308,6 +331,7 @@ gene.stats.file <- paste(out.prefix,"_mapping_stats_gene.tsv",sep="")
 r <- write.tsv(mapping.genes,file=paste(out.dir,"/",gene.stats.file,sep=""),rownames.label="")
 pinfo("Saved ",gene.stats.file)
 
+pdebug.save.state("irap_report_mapping","p4")
 
 out.html.file <- paste(opt$out,sep="")
 brew.wrapper(opt$html_template,opt$out)
