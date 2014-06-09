@@ -2,6 +2,17 @@
 
 <%
 library(xtable)
+dummy.data <- function(n=200) {
+  NSAMPLES <- n
+  a <- rep(c(100,10000,100000,100000,1000000),NSAMPLES)
+  l <- paste("lib",seq(1,NSAMPLES))
+  m <- matrix(a,nrow=5)
+  colnames(m) <- l
+  rownames(m) <- c("Reads4","Reads3","Reads2","Reads1","Reads0")
+  #rownames(m) <- c("Lib","Passed", "Unpaired", "Ns", "Contamination","Quality")
+  return(m)
+}
+#bp.data<-dummy.data()
 %>
   
 <%# Comment -- wrap up everything in a div %>
@@ -52,12 +63,15 @@ irap.output.html(html, "The following table shows information, per
 file <- "read_filtering_plot.png"
 filepath <- paste(out.dir,sep="")
 n <- length(rownames(df))
+#df<-t(bp.data)
+nlibs<-nrow(df)
+width=max(400,15*nlibs)
 if (conf.is.qc.enabled(conf)) {
   html <- gen.plot2report(filename=file,
                           dir=filepath,
                           bg="white",
-                          width=(480*round(0.5+n/12,0)),
-                          height=480,
+                          width=width,
+                          height=400,
                           html=TRUE,
                           ps=TRUE,
                           caption="",
