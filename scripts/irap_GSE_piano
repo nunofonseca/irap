@@ -263,15 +263,19 @@ if ( length(set1)>=minSizeLim && print.empty==FALSE )  {
        gsaRes2Plot.sel <- (names(gsaRes$gsc)=="" )
        #gsaRes2plot$gsc[[gsaRes2Plot.sel]] <- NULL
        #gsaRes2plot$gsc <- gsaRes2plot$gsc[!is.null(gsaRes2plot$gsc)]
-       if (sum(gsaRes2Plot.sel)>0 ) {
-         gsaRes2plot$gsc <- gsaRes2plot$gsc[!gsaRes2Plot.sel]                
-         for (v in append(grep("^p" ,names(gsaRes2plot),value=T),"nGenesTot") ) {
-           gsaRes2plot[[v]] <- matrix(gsaRes2plot[[v]][!gsaRes2Plot.sel,],ncol=1)
+       if ( sum(gsaRes2Plot.sel)==length(names(gsaRes2plot$gsc))) {
+         gsaRes2plot <- NULL
+       } else {
+         if (sum(gsaRes2Plot.sel)>0 ) {
+           gsaRes2plot$gsc <- gsaRes2plot$gsc[!gsaRes2Plot.sel]                
+           for (v in append(grep("^p" ,names(gsaRes2plot),value=T),"nGenesTot") ) {
+             gsaRes2plot[[v]] <- matrix(gsaRes2plot[[v]][!gsaRes2Plot.sel,],ncol=1)
+           }
          }
        }
      }
      sel <- NULL
-     if (length(names(gsaRes2plot$gsc))<3) {
+     if (is.null(gsaRes2plot) || length(names(gsaRes2plot$gsc))<3) {
        pwarning("Unable to generate plots, not enough gene sets")
      } else {
        if ( !is.infinite(opt$top) ) {
