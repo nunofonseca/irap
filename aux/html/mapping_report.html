@@ -2,6 +2,10 @@
 
 <%
 library(xtable)
+bar.width<-15
+get.image.width <- function(nbars,min.width=400) {
+  return(max(min.width,bar.width*nbars))
+}
 %>
  
 <%# Comment -- wrap up everything in a div %>
@@ -23,8 +27,8 @@ n <- length(colnames(mapping.dfs$raw))
 html <- gen.plot2report(filename=file,
                         dir=out.dir,
                         bg="white",
-                        width=(480*round(0.5+n/12,0)),
-                        height=480,
+                        width=get.image.width(n,400),
+                        height=400,
                         html=TRUE,
                         ps=TRUE,
                         caption="",
@@ -44,8 +48,8 @@ n <- length(colnames(mapping.dfs$raw))
 html <- gen.plot2report(filename=file,
                         dir=out.dir,
                         bg="white",
-                        width=(480*round(0.5+n/12,0)),
-                        height=480,
+                        width=get.image.width(n,400),
+                        height=400,
                         html=TRUE,
                         ps=TRUE,
                         caption="",
@@ -97,8 +101,8 @@ mapping.feat2plot <- mapping.feat[,!colnames(mapping.feat) %in% c("Median","Mean
 html <- gen.plot2report(filename=file,
                         dir=out.dir,
                         bg="white",
-                        width=(480*round(0.5+n/12,0)),
-                        height=900,
+                        width=get.image.width(n,500),
+                        height=500,
                         html=TRUE,
                         ps=TRUE,
                         caption="",
@@ -112,7 +116,7 @@ html <- gen.plot2report(filename=file,
                                         beside=F,col=cols,
                                         ylab="Number of alignments",
                                         horiz=F,cex.axis=0.8,
-				        xaxs="i",xlim=c(-0.1,ncol(v)))
+				        xaxs="i",xlim=c(-0.1,0.1+ncol(v)),width=0.8)
 				
                           par( xpd=NA )
                           legend(ceiling(max(bp)),max(colSums(v)),legend=pprint.fieldname(rownames(v)),fill=cols,horiz=FALSE, cex=0.70,bty='n')                          
@@ -188,8 +192,8 @@ mapping.feat2plot <- mapping.feat.per[,!colnames(mapping.feat.per) %in% c("Media
 html <- gen.plot2report(filename=file,
                         dir=out.dir,
                         bg="white",
-                        width=(480*round(0.5+n/12,0)),
-                        height=900,
+                        width=get.image.width(n,500),
+                        height=500,
                         html=TRUE,
                         ps=TRUE,
                         caption="",
@@ -199,11 +203,16 @@ html <- gen.plot2report(filename=file,
                           v <- mapping.feat2plot[feat.order,]
                           par(mar=c(9,5,4,10))
                           cols <- rainbow(nrow(mapping.feat2plot))
-                          bp <- barplot(v,las=2,
-                                        beside=F,col=cols,
+                          bp <- barplot(v,
+                                        las=2,
+                                        beside=F,
+                                        col=cols,
                                         ylab="Percentage of alignments (%)",
-                                        horiz=F,cex.axis=0.8,
-				        xaxs="i",xlim=c(-0.2,0.2+ncol(v)))
+                                        horiz=F,
+                                        cex.axis=0.8,
+				        xaxs="i",
+                                        width=0.8,
+                                        xlim=c(-0.2,0.2+ncol(v)))
 
                           par( xpd=NA )
                           legend(ceiling(max(bp)),max(colSums(v)),legend=pprint.fieldname(rownames(v)),fill=cols,horiz=FALSE, cex=0.70,bty='n')                          
@@ -225,16 +234,20 @@ n <- length(colnames(mapping.genes2plot))
 html <- gen.plot2report(filename=file,
                         dir=out.dir,
                         bg="white",
-                        width=(480*round(0.5+n/12,0)),
-                        height=480,
+                        width=get.image.width(n,400),
+                        height=400,
                         html=TRUE,
                         ps=TRUE,
                         caption="",
                         to.plot= function() {
                           cols <- rainbow(nrow(mapping.genes2plot))
-                          par(mar=c(10,5,5,4))                          
+                          par(mar=c(10,5,3,2))                          
                           bp <- barplot(mapping.genes2plot,las=2,col=cols,
-				xaxs="i",xlim=c(-0.2,0.2+ncol(mapping.genes2plot)))
+                                        xaxs="i",
+                                        width=0.8,
+                                        cex.axis=0.8,                                        
+                                        ylab="Number of alignments",
+                                        xlim=c(-0.2,0.2+ncol(mapping.genes2plot)))
                           par( xpd=NA )                          
                           legend("top",inset=c(0,-0.08),legend=rownames(mapping.genes2plot),fill=cols,horiz=TRUE, cex=0.80,bty='n')                            
                         }
