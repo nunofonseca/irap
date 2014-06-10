@@ -96,7 +96,6 @@ mapping.plot <- function(df) {
   par(mar=c(9,5,4,4))
   n <- length(colnames(df))
   bp <- barplot(as.matrix(df[df.rows,]),
-                ylab="Number of alignments/reads",
                 las=2,
                 cex.axis=cex,
                 cex.names=cex*0.90,
@@ -106,7 +105,7 @@ mapping.plot <- function(df) {
                 width=0.8,
                 xlim=c(-0.1,0.1+length(df.rows)*n)
                 )
-
+  title(ylab="Number of Alignments/Reads",mgp=c(4,1,0))
   par( xpd=NA )  
   legend("top",inset=c(0,-0.05),legend=rownames(df[df.rows,]),fill=cols,horiz=TRUE, cex=0.70,bty='n')  
 }
@@ -126,7 +125,6 @@ mapping.qual <- function(df) {
   cex <- 0.95
   par(mar=c(9,5,4,4))
   bp <- barplot(as.matrix(sliced.df),
-                ylab="Number of alignments",
                 las=2,
                 cex.axis=cex,
                 cex.names=cex*0.90,
@@ -136,8 +134,8 @@ mapping.qual <- function(df) {
                 width=0.8,
                 xlim=c(-0.1,0.1+length(df.rows)*n))
 
+  title(ylab="Number of Alignments",mgp=c(4,1,0))
   par( xpd=NA )
-  
   legend("top",inset=c(0,-0.05),legend=gsub("\\)","",gsub("Alignments \\(","",rownames(sliced.df))),fill=cols,horiz=TRUE, cex=0.70,bty='n')  
 }
 
