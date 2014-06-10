@@ -25,6 +25,8 @@
 
 atlas_wrap_up: $(name)/atlas_html.tar.gz
 
+atlas_wrap_up_clean:
+	rm -f $(name)/atlas_html.tar.gz
 
 #######################
 # Get a tarball with the plots and HTML files without irap's menu, HTML head and CSS.
@@ -59,7 +61,7 @@ atlas_test: $(ATLAS_IMAGES2CONVERT)
 	cp $< $@
 
 %.scaled.png: %.orig.png
-	convert -scale 25% $< $*.scaled.png
+	convert -scale 50% $< $*.scaled.png
 
 ##########################
 # Useful temporary targets
