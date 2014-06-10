@@ -22,21 +22,20 @@
 # =========================================================
 # Atlas specific 
 # all variable, functions, and rules should contain a atlas suffix or prefix
-
-atlas_wrap_up: $(name)/atlas_html.tar.gz
-
-atlas_wrap_up_clean:
-	rm -f $(name)/atlas_html.tar.gz
-
-#######################
-# Get a tarball with the plots and HTML files without irap's menu, HTML head and CSS.
-
 # Lower the resolution of some images
 ATLAS_IMAGES2CONVERT=$(shell ls -1 $(name)/report/read_filtering_plot.png $(name)/report/mapping/$(mapper)*.png 2>/dev/null | grep -v orig.png | grep -v scaled.png )
 ATLAS_SCALED_IMAGES=$(subst .png,.scaled.png,$(ATLAS_IMAGES2CONVERT))
 
-# TODO: add the plots for mapping...check if all files are there!
+atlas_wrap_up: $(name)/atlas_html.tar.gz
 
+atlas_wrap_up_clean:
+	rm -f $(name)/atlas_html.tar.gz $(ATLAS_SCALED_IMAGES)
+
+#######################
+# Get a tarball with the plots and HTML files without irap's menu, HTML head and CSS.
+
+
+# TODO: add the plots for mapping...check if all files are there!
 ATLAS_REPORT_FILES=$(name)/report/qc.html  $(name)/report/qc.tsv $(name)/report/read_filtering_plot.png.eps $(name)/report/mapping/$(mapper).html  $(name)/report/mapping/$(mapper)*.png.eps $(name)/report/mapping/$(mapper)*.tsv $(name)/report/qc.html $(name)/report/riq/raw_data/*/fastqc_report.html $(name)/report/riq/raw_data/*/Images $(name)/report/riq/raw_data/*/Icons/ $(name)/report/software.tsv $(name)/report/info.html $(name)/report/irap.conf $(ATLAS_IMAGES2CONVERT) $(ATLAS_SCALED_IMAGES)
 
 $(name)/atlas_html.tar.gz: $(name)/report $(name)/report/software.tsv $(name)/report/irap.conf $(ATLAS_SCALED_IMAGES)
