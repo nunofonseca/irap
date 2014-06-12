@@ -3,7 +3,7 @@
 <%
 library(xtable)
 bar.width<-15
-get.image.width <- function(nbars,min.width=400) {
+get.image.width <- function(nbars,min.width=500) {
   return(max(min.width,bar.width*nbars))
 }
 %>
@@ -27,13 +27,13 @@ n <- length(colnames(mapping.dfs$raw))
 html <- gen.plot2report(filename=file,
                         dir=out.dir,
                         bg="white",
-                        width=get.image.width(n,400),
-                        height=400,
+                        width=get.image.width(n,500),
+                        height=500,
                         html=TRUE,
                         ps=TRUE,
                         caption="",
                         to.plot= function() {
-                          mapping.plot(mapping.dfs$raw)
+                          mapping.plot(mapping.dfs$raw[,seq(1,40)])
                         }
                         )
 
@@ -48,8 +48,8 @@ n <- length(colnames(mapping.dfs$raw))
 html <- gen.plot2report(filename=file,
                         dir=out.dir,
                         bg="white",
-                        width=get.image.width(n,400),
-                        height=400,
+                        width=get.image.width(n,500),
+                        height=500,
                         html=TRUE,
                         ps=TRUE,
                         caption="",
@@ -208,7 +208,7 @@ html <- gen.plot2report(filename=file,
                                         beside=F,
                                         col=cols,                                        
                                         horiz=F,
-                                        cex.axis=0.8,
+                                        cex.axis=0.75,
 				        xaxs="i",
                                         width=0.8,
                                         xlim=c(-0.2,0.2+ncol(v)))
@@ -233,8 +233,8 @@ n <- length(colnames(mapping.genes2plot))
 html <- gen.plot2report(filename=file,
                         dir=out.dir,
                         bg="white",
-                        width=get.image.width(n,400),
-                        height=400,
+                        width=get.image.width(n,500),
+                        height=500,
                         html=TRUE,
                         ps=TRUE,
                         caption="",
@@ -244,7 +244,7 @@ html <- gen.plot2report(filename=file,
                           bp <- barplot(mapping.genes2plot,las=2,col=cols,
                                         xaxs="i",
                                         width=0.8,
-                                        cex.axis=0.8,                                        
+                                        cex.axis=0.75,                                        
                                         xlim=c(-0.2,0.2+ncol(mapping.genes2plot)))
                           title(ylab="Number of alignments",mgp=c(4,1,0))
                           par( xpd=NA )                          

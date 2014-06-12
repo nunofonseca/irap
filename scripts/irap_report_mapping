@@ -91,9 +91,9 @@ mapping.plot <- function(df) {
 
   df.rows <- c("Alignments","Reads mapped","Unmapped","Uniquely mapped","Spliced reads")
   cols <- rainbow(length(df.rows))
-  cex <- 0.95
+  cex <- 0.85
 
-  par(mar=c(9,5,4,4))
+  par(mar=c(9,5,4,2))
   n <- length(colnames(df))
   bp <- barplot(as.matrix(df[df.rows,]),
                 las=2,
@@ -122,8 +122,8 @@ mapping.qual <- function(df) {
 
   n <- length(colnames(sliced.df))
   cols <- topo.colors(length(df.rows))
-  cex <- 0.95
-  par(mar=c(9,5,4,4))
+  cex <- 0.85
+  par(mar=c(9,5,4,2))
   bp <- barplot(as.matrix(sliced.df),
                 las=2,
                 cex.axis=cex,
