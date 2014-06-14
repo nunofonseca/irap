@@ -1277,13 +1277,13 @@ gen.heatmap <- function(data,colors=NULL,ncolors=NULL,do.cor=FALSE,trace="none",
   heatmap.2(data,col = colors, scale = "none",cexCol=cexCol,cexRow=cexRow,keysize=keysize,density.info=density.info,trace=trace,...)
 }
 
-plot.panel.label <- function(label,add=")",cex=1.5,col="black") {
+plot.panel.label <- function(label,add=")",cex=1.5,col="black",adj=2) {
   if ( par("ylog") ) {
     at=10^par("usr")[4]
   } else {
     at=par("usr")[4]
   }
-  mtext(paste(label,add,sep=""), side=2, at=at,line=2.5,cex=cex,las=2,col=col)
+  mtext(paste(label,add,sep=""), side=2, at=at,line=2.5,cex=cex,las=2,col=col,adj=adj,padj=0)
 }
 
 is.wholenumber <- function(x, tol = .Machine$double.eps^0.5)  abs(x - round(x)) < tol 
