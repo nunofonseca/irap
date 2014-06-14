@@ -432,7 +432,7 @@ end_report: $(name)/report/index.html $(call must_exist,$(name)/report/irap.css)
 
 # TODO: replace versions.html by info_report
 # TODO $(call must_exist,$(name)/report/status.html)a
-$(name)/report/index.html: $(conf) $(info_targets)  $(quant_html_files) $(qc_html_files) $(mapping_report_targets) $(call de_html_files,$(name)) $(call gse_html_files,$(name))  $(call must_exist,$(name)/report/jbrowse/index.html)  $(name)/report/about.html $(call must_exist,$(name)/report/irap.css) $(call must_exist,$(name)/report/menu.css)
+$(name)/report/index.html: $(conf) $(info_targets)  $(quant_html_files) $(qc_html_files) $(mapping_report_targets) $(call de_html_files,$(name)) $(call gse_html_files,$(name))  $(call rep_browse,$(name)/report/jbrowse/index.html)  $(name)/report/about.html $(call must_exist,$(name)/report/irap.css) $(call must_exist,$(name)/report/menu.css)
 	cp  $(name)/report/info.html $@ &&
 	irap_report_main $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(name)/report -m "$(call mapping_dirs,$(name))" -q "$(call quant_dirs,$(name))" -d "$(call de_dirs,$(name))" &&
 	touch $@
