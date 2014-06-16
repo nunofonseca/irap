@@ -265,12 +265,12 @@ inline int validate_entry(char *hdr,char *hdr2,char *seq,char *qual,unsigned lon
   unsigned int slen=0;
   char c;
   while ( seq[slen]!='\0' && seq[slen]!='\n' && seq[slen]!='\r' ) {
-    // check content: ACGT acgt nN 0123.
+    // check content: ACGT acgt nN 0123....include the .?
     if ( seq[slen]!='A' && seq[slen]!='C' && seq[slen]!='G' && seq[slen]!='T' &&
 	 seq[slen]!='a' && seq[slen]!='c' && seq[slen]!='g' && seq[slen]!='t' &&
 	 seq[slen]!='0' && seq[slen]!='1' && seq[slen]!='2' && seq[slen]!='3' &&
 	 seq[slen]!='n' && seq[slen]!='N' ) {
-      fprintf(stderr,"Error in file %s, line %lu: invalid character '%x', expected ACGTacgt0123nN\n",filename,linenum+1,seq[slen]);
+      fprintf(stderr,"Error in file %s, line %lu: invalid character '%c' (hex. code:'%x'), expected ACGTacgt0123nN\n",filename,linenum+1,seq[slen],seq[slen]);
       return 1;
     }
     slen++;
