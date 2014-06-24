@@ -33,7 +33,7 @@ html <- gen.plot2report(filename=file,
                         ps=TRUE,
                         caption="",
                         to.plot= function() {
-                          mapping.plot(mapping.dfs$raw[,seq(1,40)])
+                          mapping.plot(mapping.dfs$raw)
                         }
                         )
 
@@ -96,7 +96,8 @@ rownames(mapping.feat)<-gsub("_"," ",rownames(mapping.feat))
 
 file <- paste(out.prefix,"_aln_bio",sep="")
 n <- length(colnames(mapping.feat))
-mapping.feat2plot <- mapping.feat[,!colnames(mapping.feat) %in% c("Median","Mean","SD")]
+mapping.feat2plot <- data.frame(mapping.feat[,!colnames(mapping.feat) %in% c("Median","Mean","SD")])
+colnames(mapping.feat2plot) <- colnames(mapping.feat)[!colnames(mapping.feat) %in% c("Median","Mean","SD")]
 html <- gen.plot2report(filename=file,
                         dir=out.dir,
                         bg="white",
@@ -108,15 +109,19 @@ html <- gen.plot2report(filename=file,
                         to.plot= function() {
                           # sort rows based on mean values
                           feat.order <- names(sort(mapping.feat[,"Mean"],decreasing=T))
-                          v <- mapping.feat2plot[feat.order,]
+                          v <- data.frame(mapping.feat2plot[feat.order,])
+                          rownames(v) <- feat.order
+                          colnames(v) <- colnames(mapping.feat2plot)
                           par(mar=c(9,5,4,10))
                           cols <- rainbow(nrow(mapping.feat2plot))
-                          bp <- barplot(v,las=2,
+                          bp <- barplot(as.matrix(v),las=2,
                                         beside=F,col=cols,
 
                                         horiz=F,cex.axis=0.8,
-				        xaxs="i",xlim=c(-0.1,0.1+ncol(v)),width=0.8)
-
+				        xaxs="i",xlim=c(-0.1,0.1+ncol(v)),
+                                        width=0.8)
+                          #is.matrix(v)
+                          #is.data.frame(v)
                           title(ylab="Number of Alignments",mgp=c(4,1,0))
                           par( xpd=NA )
                           legend(ceiling(max(bp)),max(colSums(v)),legend=pprint.fieldname(rownames(v)),fill=cols,horiz=FALSE, cex=0.70,bty='n')                          
@@ -160,7 +165,11 @@ feat.tsv.download.html <- html.download.bar(feat.download.files)
 <%
 mapping.feat.sum <- colSums(mapping.feat)
 mapping.feat.per <- round(sweep(mapping.feat,MARGIN=2,100*1/mapping.feat.sum,`*`),2)
-SD<-apply(mapping.feat.per[,-c(1,2,3)],1,FUN=sd)
+if (ncol(mapping.feat.per)>4) {
+  SD <- apply(mapping.feat.per[,-c(1,2,3)],1,FUN=sd)
+} else {
+  SD <- rep(0,nrow(mapping.feat.per))
+}
 mapping.feat.per[,"SD"]<-SD
 #cbind(mapping.feat.per,SD)
 
@@ -188,7 +197,8 @@ rownames(mapping.feat.per)<-gsub("_"," ",rownames(mapping.feat.per))
 
 file <- paste(out.prefix,"_paln_bio",sep="")
 n <- length(colnames(mapping.feat.per))
-mapping.feat2plot <- mapping.feat.per[,!colnames(mapping.feat.per) %in% c("Median","Mean","SD")]
+mapping.feat2plot <- data.frame(mapping.feat.per[,!colnames(mapping.feat.per) %in% c("Median","Mean","SD")])
+colnames(mapping.feat2plot) <- colnames(mapping.feat.per)[!colnames(mapping.feat.per) %in% c("Median","Mean","SD")]
 html <- gen.plot2report(filename=file,
                         dir=out.dir,
                         bg="white",
@@ -200,10 +210,12 @@ html <- gen.plot2report(filename=file,
                         to.plot= function() {
                           # sort rows based on mean values
                           feat.order <- names(sort(mapping.feat.per[,"Mean"],decreasing=T))
-                          v <- mapping.feat2plot[feat.order,]
+                          v <- data.frame(mapping.feat2plot[feat.order,])
+                          rownames(v) <- feat.order
+                          colnames(v) <- colnames(mapping.feat2plot)
                           par(mar=c(9,5,4,10))
                           cols <- rainbow(nrow(mapping.feat2plot))
-                          bp <- barplot(v,
+                          bp <- barplot(as.matrix(v),
                                         las=2,
                                         beside=F,
                                         col=cols,                                        
@@ -228,7 +240,8 @@ irap.output.html(html$html,"Percentage of alignments per library overlapping ann
 <%
 
 file <- paste(out.prefix,"_aln_genes",sep="")
-mapping.genes2plot <- mapping.genes[,!colnames(mapping.genes) %in% c("Median","Mean","SD")]
+mapping.genes2plot <- data.frame(mapping.genes[,!colnames(mapping.genes) %in% c("Median","Mean","SD")])
+colnames(mapping.genes2plot) <- colnames(mapping.genes)[!colnames(mapping.genes) %in% c("Median","Mean","SD")]
 n <- length(colnames(mapping.genes2plot))
 html <- gen.plot2report(filename=file,
                         dir=out.dir,
@@ -241,7 +254,8 @@ html <- gen.plot2report(filename=file,
                         to.plot= function() {
                           cols <- rainbow(nrow(mapping.genes2plot))
                           par(mar=c(10,5,3,2))                          
-                          bp <- barplot(mapping.genes2plot,las=2,col=cols,
+                          bp <- barplot(as.matrix(mapping.genes2plot),
+                                        las=2,col=cols,
                                         xaxs="i",
                                         width=0.8,
                                         cex.axis=0.75,                                        
@@ -261,7 +275,10 @@ irap.output.html(html$html,"Number of alignments overlapping introns and exons. 
 <%
 #save.image("debug.Rdata")
 head(mapping.genes)
-xt <- xtable(round(mapping.genes[,!colnames(mapping.genes) %in% c("Median","Mean","SD")],0),
+v <- data.frame(round(mapping.genes[,!colnames(mapping.genes) %in% c("Median","Mean","SD")],0))
+colnames(v) <- colnames(mapping.genes)[!colnames(mapping.genes) %in% c("Median","Mean","SD")]
+v
+xt <- xtable(v,
              caption="",
              digits=0,
              label="map_genes_table")
@@ -291,7 +308,11 @@ gene.tsv.download.html <- html.download.bar(gene.download.files)
 tot <- colSums(mapping.genes)
 p.mapping.genes <- round(sweep(mapping.genes,MARGIN=2,100*1/tot,`*`),2)
 # recompute sd
-SD<-apply(p.mapping.genes[,-c(1,2,3)],1,FUN=sd)
+if (ncol(p.mapping.genes)>4) {
+  SD<-apply(p.mapping.genes[,-c(1,2,3)],1,FUN=sd)
+} else {
+  SD <- rep(0,nrow(p.mapping.genes))
+}
 p.mapping.genes[,"SD"] <- SD
 #p.mapping.genes<-cbind(p.mapping.genes,SD)
 xt <- xtable(p.mapping.genes,
@@ -310,8 +331,6 @@ irap.output.html(html, "Percentage of alignments overlapping exons and introns. 
 
 %>
 </DIV>
-
-
 
 
 </DIV>

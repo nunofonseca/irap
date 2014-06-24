@@ -92,7 +92,7 @@ mapping.plot <- function(df) {
   df.rows <- c("Alignments","Reads mapped","Unmapped","Uniquely mapped","Spliced reads")
   cols <- rainbow(length(df.rows))
   cex <- 0.85
-
+  
   par(mar=c(9,5,4,2))
   n <- length(colnames(df))
   bp <- barplot(as.matrix(df[df.rows,]),
@@ -107,7 +107,7 @@ mapping.plot <- function(df) {
                 )
   title(ylab="Number of Alignments/Reads",mgp=c(4,1,0))
   par( xpd=NA )  
-  legend("top",inset=c(0,-0.05),legend=rownames(df[df.rows,]),fill=cols,horiz=TRUE, cex=0.70,bty='n')  
+  legend("top",inset=c(0,-0.05),legend=df.rows,fill=cols,horiz=TRUE, cex=0.70,bty='n')  
 }
 
 
@@ -116,8 +116,15 @@ mapping.qual <- function(df) {
   df.rows <- c("Alignments (perfect)","Alignments (1-difference)","Alignments (2-difference)","Alignments")
   
   cex <- 0.95
-  sliced.df <- df[df.rows,]
-  sliced.df["Alignments",] <- sliced.df["Alignments",]-apply(sliced.df[c("Alignments (perfect)","Alignments (1-difference)","Alignments (2-difference)"),],2,sum)
+  sliced.df <- data.frame(df[df.rows,])
+  rownames(sliced.df) <- df.rows
+  colnames(sliced.df) <- colnames(df)
+  #sliced.df
+  if ( ncol(sliced.df) > 1 ) {
+    sliced.df["Alignments",] <- sliced.df["Alignments",]-apply(sliced.df[c("Alignments (perfect)","Alignments (1-difference)","Alignments (2-difference)"),],2,sum)
+  } else {
+    sliced.df["Alignments",1] <- sliced.df["Alignments",1]-sum(sliced.df[c("Alignments (perfect)","Alignments (1-difference)","Alignments (2-difference)"),1])
+  }
   rownames(sliced.df)[4] <- "Alignments (>2-differences)"
 
   n <- length(colnames(sliced.df))
@@ -156,7 +163,6 @@ get.mapping.stats <- function(mapper,pe.bam.v,se.bam.v,pe.labels.v,se.labels.v) 
   if (length(se.labels.v)>0) { se.bam.urls <- paste("<a href='",dir.prefix,"/",se.labels.v,"/index.html'>Align. Details</a>",sep="") }
 
   urls <- append(pe.bam.urls,se.bam.urls)
-  urls
 
   m <- matrix(c(urls),nrow=1,byrow=T)
   colnames(m) <- libs
@@ -165,31 +171,45 @@ get.mapping.stats <- function(mapper,pe.bam.v,se.bam.v,pe.labels.v,se.labels.v) 
   #print(bam.files)
   #cat("--------------------------------------------")
   data <- lapply(bam.files,em.bam.counts.df,use.cache=TRUE)
-  data[[2]]
+  
   # listOflists2matrix only takes the first column
   #df <- as.data.frame(listOflists2matrix(data))
   #df <- df[c(1:length(data[[1]]$Count)),]
-  df <- as.data.frame(data[[1]][,1])
+  df <- data.frame(data[[1]][,1])
   rownames(df)<-rownames(data[[1]])
+  colnames(df) <- libs[1]
+  pinfo("length:",length(data))
+  df
   if(length(data)>1) {
     for (i in c(2:length(data))) {
       df <- cbind(df,data[[i]]$Count)
     }
   }
-
-  rownames(df) <- rownames(data[[1]])
   colnames(df) <- append(pe.labels.v,se.labels.v)
   
   irap.assert(sum(df[,1]!=data[[1]]$Count,na.rm=T)==0)
-  
-  # slice some rows
-  sliced.data <- df[c("Alignments","Primary","Unmapped","Uniquely mapped reads","Multimap reads","Spliced reads","Not primary","Alignments (perfect)","Alignments (1-difference)","Alignments (2-difference)"),]
-  rownames(sliced.data) <- c("Alignments","Reads mapped","Unmapped","Uniquely mapped","Multimap reads","Spliced reads","Multimaps","Alignments (perfect)","Alignments (1-difference)","Alignments (2-difference)")
-  sliced.data <- sliced.data[c("Alignments","Reads mapped","Unmapped","Uniquely mapped","Multimap reads","Spliced reads","Alignments (perfect)","Alignments (1-difference)","Alignments (2-difference)"),]
 
+  #print(df)
+  # slice some rows
+  sliced.data <- as.data.frame(df[c("Alignments","Primary","Unmapped","Uniquely mapped reads","Multimap reads","Spliced reads","Not primary","Alignments (perfect)","Alignments (1-difference)","Alignments (2-difference)"),])
+  rownames(sliced.data) <- c("Alignments","Reads mapped","Unmapped","Uniquely mapped","Multimap reads","Spliced reads","Multimaps","Alignments (perfect)","Alignments (1-difference)","Alignments (2-difference)")
+  sel.rows <- c("Alignments","Reads mapped","Unmapped","Uniquely mapped","Multimap reads","Spliced reads","Alignments (perfect)","Alignments (1-difference)","Alignments (2-difference)")
+  sliced.data <- data.frame(sliced.data[sel.rows,])
+  rownames(sliced.data) <- sel.rows
+  colnames(sliced.data) <- colnames(df)
+  #df
+  sliced.data
   # compute the percentages
-  tot.reads <- apply(sliced.data[c("Reads mapped","Unmapped"),],MARGIN=2,FUN=sum)
-  p.sliced.data <- sliced.data[c("Reads mapped","Unmapped","Uniquely mapped","Multimap reads","Spliced reads","Alignments (perfect)","Alignments (1-difference)","Alignments (2-difference)"),]
+  if ( ncol(sliced.data) == 1 ) {
+    tot.reads <- sum(sliced.data[c("Reads mapped","Unmapped"),])
+    p.sliced.data <- data.frame(sliced.data[c("Reads mapped","Unmapped","Uniquely mapped","Multimap reads","Spliced reads","Alignments (perfect)","Alignments (1-difference)","Alignments (2-difference)"),])
+    rownames(p.sliced.data) <- c("Reads mapped","Unmapped","Uniquely mapped","Multimap reads","Spliced reads","Alignments (perfect)","Alignments (1-difference)","Alignments (2-difference)")
+    p.sliced.data
+  } else {
+    tot.reads <- apply(sliced.data[c("Reads mapped","Unmapped"),],MARGIN=2,FUN=sum)
+    p.sliced.data <- sliced.data[c("Reads mapped","Unmapped","Uniquely mapped","Multimap reads","Spliced reads","Alignments (perfect)","Alignments (1-difference)","Alignments (2-difference)"),]
+  }
+
 
   reads.mapped <- as.numeric(sliced.data["Reads mapped",])
   reads.unmapped <- as.numeric(sliced.data["Unmapped",])
