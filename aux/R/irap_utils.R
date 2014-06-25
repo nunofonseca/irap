@@ -1131,8 +1131,9 @@ map.conds2cols <- function(label2group,cols) {
 # compute the average values and sd
 data2groups <- function(data.matrix,conds) {
   groups <- unique(conds)
-  avg.matrix <- data.matrix[,c(1:length(groups))]
+  avg.matrix <- data.frame(data.matrix[,c(1:length(groups))])
   colnames(avg.matrix) <- groups
+  rownames(avg.matrix) <- rownames(data.matrix)
   sd.matrix <- avg.matrix
   for ( g in groups ) {
     sel.cols <- conds==g
@@ -1277,13 +1278,13 @@ gen.heatmap <- function(data,colors=NULL,ncolors=NULL,do.cor=FALSE,trace="none",
   heatmap.2(data,col = colors, scale = "none",cexCol=cexCol,cexRow=cexRow,keysize=keysize,density.info=density.info,trace=trace,...)
 }
 
-plot.panel.label <- function(label,add=")",cex=1.5,col="black",adj=2) {
+plot.panel.label <- function(label,add=")",x=2.5,cex=1.5,col="black",adj=2) {
   if ( par("ylog") ) {
     at=10^par("usr")[4]
   } else {
     at=par("usr")[4]
   }
-  mtext(paste(label,add,sep=""), side=2, at=at,line=2.5,cex=cex,las=2,col=col,adj=adj,padj=0)
+  mtext(paste(label,add,sep=""), side=2, at=at,line=x,cex=cex,las=2,col=col,adj=adj,padj=0)
 }
 
 is.wholenumber <- function(x, tol = .Machine$double.eps^0.5)  abs(x - round(x)) < tol 
@@ -1844,4 +1845,40 @@ get.source.filter.names <- function() {
 
 get.source.filter.size <- function(filter.name) {
   length(source.filt.groups[[filter.name]])
+}
+
+
+boxplot.n <- function(significance=NULL,comparisons=NULL,show.n=TRUE,adj.n=0,...) {
+
+  if (!is.null(significance) ) {
+    significance[is.na(significance)] <- ""
+    significance[significance!=""] <- paste("p=",significance[significance!=""],sep="")
+  }
+  bp <- boxplot(...)
+  if (show.n) {
+    text(seq(1,ncol(bp$stats)),bp$stats[5,]+strheight("T")*2+adj.n,
+         paste("n=",bp$n,""),
+         col="darkgrey")
+  }
+  if (!is.null(comparisons)) {
+    bars <- unique(unlist(comparisons))
+    min.height <- bp$stats[5,bars]+strheight("T")*2+adj.n
+  # adjust height to avoid overlaps
+    heights.l <- rep(NA,length(bars))
+    min.h <- max(min.height)
+    for (c in seq(1,length(comparisons)) ) {
+      heights.l[c] <- min.h+c*strheight("T")*2+adj.n
+    }
+    for (c in seq(1,length(comparisons)) ) {
+      x1 <- comparisons[[c]]
+      x2 <- c(heights.l[c],heights.l[c])
+      txt <- significance[c]
+      segments(x1[1],x2[1],x1[2],x2[2],col="gray")
+      segments(x1[1],x2[1],x1[1],x2[1]-strheight("T")/2,col="gray")
+      segments(x1[2],x2[2],x1[2],x2[2]-strheight("T")/2,col="gray")
+      text((x1[1]+x1[2])/2,x2[2]+strheight("T")/2,txt,col="gray")
+    }
+  }
+
+  bp
 }

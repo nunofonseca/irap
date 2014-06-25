@@ -267,7 +267,9 @@ gen.page <- function (o.html.file) {
   # setup variables
   quant.data<-table.html[,html.cols2sel]
   rownames(quant.data)<-quant.data[,1]
-  quant.data<-quant.data[,-1]
+  quant.data <- data.frame(quant.data[,-1])
+  colnames(quant.data) <- html.cols2sel[-1]
+  rownames(quant.data) <- rownames(table.html)
   quant.data <- round(quant.data,0)
   # colours for each group
   coloursbygroup <- rainbow(length(names(groups.l)))
@@ -279,7 +281,7 @@ gen.page <- function (o.html.file) {
   
   # if raw counts use deseq
   # TODO: handle normalized values
-  if ( opt$metric=="raw" ) {
+  if ( opt$metric=="raw" && ncol(quant.data)>1 ) {
      # aggregate (using DE seq)
      conds <- lib2group(groups.l,names(quant.data))
 
