@@ -60,7 +60,7 @@ atlas_test: $(ATLAS_IMAGES2CONVERT)
 	cp $< $@
 
 %.scaled.png: %.orig.png
-	convert -scale 50% $< $*.scaled.png
+	convert -scale 75% $< $*.scaled.png
 
 ##########################
 # Useful temporary targets
