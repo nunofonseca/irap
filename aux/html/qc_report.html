@@ -6,13 +6,22 @@ dummy.data <- function(n=200) {
   NSAMPLES <- n
   a <- rep(c(100,10000,100000,100000,1000000),NSAMPLES)
   l <- paste("lib",seq(1,NSAMPLES))
-  m <- matrix(a,nrow=5)
-  colnames(m) <- l
-  rownames(m) <- c("Reads4","Reads3","Reads2","Reads1","Reads0")
-  #rownames(m) <- c("Lib","Passed", "Unpaired", "Ns", "Contamination","Quality")
+  m <- t(matrix(a,nrow=5))
+  rownames(m) <- l
+  #rownames(m) <- c("Reads4","Reads3","Reads2","Reads1","Reads0")
+  m <- as.data.frame(m)
+  m$Lib <- as.factor(l)
+  colnames(m) <- c("Passed", "Unpaired", "Ns", "Contamination","Quality","Lib")
   return(m)
 }
 #bp.data<-dummy.data()
+#bp.data.orig<-bp.data
+#df<-bp.data.orig[seq(1,2),]
+#df<-bp.data.orig[seq(1,5),]
+#df<-bp.data.orig[seq(1,10),]
+#df<-bp.data.orig[seq(1,15),]
+#df<-bp.data.orig[seq(1,25),]
+#df<-bp.data.orig
 %>
   
 <%# Comment -- wrap up everything in a div %>
@@ -61,11 +70,12 @@ irap.output.html(html, "The following table shows information, per
 <H3 class="section"><%=irap.ctr("Figure")%></H3>
 <%
 file <- "read_filtering_plot.png"
+#filepath <- "/tmp"
 filepath <- paste(out.dir,sep="")
 n <- length(rownames(df))
 #df<-t(bp.data)
 nlibs<-nrow(df)
-width=max(400,15*nlibs)
+width=max(400,10*nlibs)
 if (conf.is.qc.enabled(conf)) {
   html <- gen.plot2report(filename=file,
                           dir=filepath,
