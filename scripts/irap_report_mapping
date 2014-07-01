@@ -358,7 +358,7 @@ q()
 
 IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
 if ( IRAP.DIR == "" ) {
-  IRAP.DIR="/home/nf/Research/Projects/WIP/EREAP/ereap_install"
+  IRAP.DIR="/home/nf/Research/Projects/WIP/EREAP/irap9"
   Sys.setenv(IRAP_DIR=IRAP.DIR)
 }
 
