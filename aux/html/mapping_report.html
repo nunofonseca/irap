@@ -3,8 +3,8 @@
 <%
 library(xtable)
 bar.width<-15
-get.image.width <- function(nbars,min.width=500) {
-  return(max(min.width,bar.width*nbars))
+get.image.width <- function(nbars,min.width=500,bar_width=bar.width) {
+  return(max(min.width,bar_width*nbars))
 }
 %>
  
@@ -27,7 +27,7 @@ n <- length(colnames(mapping.dfs$raw))
 html <- gen.plot2report(filename=file,
                         dir=out.dir,
                         bg="white",
-                        width=get.image.width(n,500),
+                        width=get.image.width(n,500,bar_width=bar.width*2),
                         height=500,
                         html=TRUE,
                         ps=TRUE,
@@ -48,7 +48,7 @@ n <- length(colnames(mapping.dfs$raw))
 html <- gen.plot2report(filename=file,
                         dir=out.dir,
                         bg="white",
-                        width=get.image.width(n,500),
+                        width=get.image.width(n,500,bar_width=bar.width*2),
                         height=500,
                         html=TRUE,
                         ps=TRUE,
