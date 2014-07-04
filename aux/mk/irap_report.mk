@@ -418,8 +418,8 @@ report_all_targets:  report_setup $(info_targets) qc_report mapping_report quant
 
 
 
-$(name)/report/about.html: $(IRAP_DIR)/aux/html/page.header.html $(IRAP_DIR)/aux/html/about.html  $(IRAP_DIR)/aux/html/page.footer.html
-	cat $^ >  $@
+$(name)/report/about.html: 
+	cat $(IRAP_DIR)/aux/html/page.header.html $(IRAP_DIR)/aux/html/about.html  $(IRAP_DIR)/aux/html/page.footer.html >  $@
 
 
 #########################
