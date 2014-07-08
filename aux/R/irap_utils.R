@@ -1637,6 +1637,12 @@ vars2table.html <- function(conf,vars,table.label="",colnames2add=NULL) {
 }
 
 lib.info <- function(exp.conf,lib) {
+  # check if we have any data for the library
+  if ( is.null(conf.get.value(exp.conf,lib)) ) {
+    perror("Unable to find library ",lib," in configuration file.")
+    q(status=1)
+  }
+
   info <- conf.get.value(exp.conf,paste(lib,"_info",sep=""))
   if ( is.null(info) || is.na(info)) {
     info <- ""
