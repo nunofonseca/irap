@@ -34,6 +34,7 @@ html.temp <- get.path2template("info")
 usage <- "irap_report_expinfo --conf file  [options]"
 option_list <- list(
   make_option(c("-v", "--verbose"), action="store_true", default=TRUE, help="Print extra output [default]"),
+  make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
   make_option(c("-c", "--conf"), type="character", dest="conf_file", default="",help="configuration filename"),
   make_option(c("-o", "--out"), type="character", dest="out_file", default="info.html",help="Output file name."),
   make_option(c("--css"), type="character",default="",help="Path to the irap.css file"),
@@ -44,6 +45,8 @@ filenames <- c("conf_file") ;#filenames that must exist (if defined)
 mandatory <- c("conf_file")
 opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
 
+pdebug.enabled <- opt$debug
+
 #####################################################################
 pinfo("conf_file=",opt$conf_file)
 #opt$conf_file <- "test3_qc.conf"
@@ -53,7 +56,7 @@ pinfo("Experiment configuration loaded.")
 # set the variables
 #import.conf.variables(conf)
 
-
+pdebug.save.state("irap_report_expinfo","p1")
 # Exp. design
 groups.m <- groups2matrix(exp.conf)
 contrasts.m <- contrasts2matrix(exp.conf)
