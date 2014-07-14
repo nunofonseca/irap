@@ -50,6 +50,11 @@ define qual_soap=
 $(shell if [ "$(1)" == "33" ]; then echo "-q 1"; else echo "-q 0"; fi)
 endef
 
+# mapsplice
+define qual_mapsplice=
+$(shell if [ "$(1)" == "33" ]; then echo "--qual-scale phred33"; else echo "--qual-scale solexa64"; fi)
+endef
+
 # passion
 define qual_passion=
 $(shell if [ "$(1)" == "33" ]; then echo "--phred33"; else echo "--phred64"; fi)
@@ -70,6 +75,7 @@ gem_index_options?=
 gems_map_options?=
 gems_index_options?=
 soapsplice_map_options?=
+mapsplice_map_options?=
 star_map_options?=
 star_index_options?=
 osa_index_options?=
@@ -83,6 +89,7 @@ bwa2_aln_options?=
 gsnap_aln_options?=
 smalt_index_options?=
 soapsplice_aln_options?=
+mapsplice_aln_options?=
 star_aln_options?=
 osa_aln_options?=
 
@@ -96,9 +103,10 @@ define run_bowtie1_index=
 	irap_map.sh bowtie1  bowtie-build --offrate 3 $(1) $(1)
 endef
 
+#
 # same arguments used for *_index
 define bowtie1_index_filename=
-$(2).1.ebwt
+$(2).mapsplice.1.ebwt
 endef
 
 # -v <int>           report end-to-end hits w/ <=v mismatches; ignore qualities
@@ -170,7 +178,7 @@ define tophat_qual_option=
 endef
 
 define tophat_seglength_option=
-	$(shell if [ $(1) \< 40 ]; then echo "--segment-length 20"; else echo ""; fi)
+	$(shell if [ $(1) \< 44 ]; then echo "--segment-length 20"; else echo ""; fi)
 endef
 
 
@@ -214,14 +222,11 @@ endef
 
 
 # Warning: tophat does not like reads to have different sizes
-# Warning: you have only one segment per read.
-#	If the read length is greater than or equal to 45bp,
-#	"we strongly recommend that you decrease --segment-length to about half t
 # splice mismatches -m0 (0-2)"
 # --transcriptome-index
 define tophat_setup_dirs=
 	$(shell if [ ! -h $(reference_prefix).fa ] ; then  ln -s $(reference_prefix) $(reference_prefix).fa; fi)
-	$(shell if [ ! -e $(name)/$(mapper)/$(1)/tmp ] ; then mkdir -p $(name)/$(mapper)/$(1)/tmp; fi)
+	$(shell if [ ! -e $(call lib2bam_folder,$(1))$(1)/tmp ] ; then mkdir -p $(call lib2bam_folder,$(1))$(1)/tmp; fi)
 endef
 
 tophat_reference_prefix=$(reference_prefix)
@@ -230,16 +235,16 @@ tophat_reference_prefix=$(reference_prefix)
 # Error: sort order of reads in BAMs must be the same
 # TODO: test and do the same to tophat2
 define run_tophat1_map=
-        $(call tophat_setup_dirs)
-	irap_map.sh tophat1 tophat  -p $(max_threads) $(call tophat_seglength_option,$($(1)_rs),$(1)) $(call tophat_qual_option,$($(1)_qual)) $(tophat1_map_params) $(call tophat_ins_sd_params,$(1)) -G $(gtf_file_abspath) --tmp-dir $(name)/$(mapper)/$(1)/tmp -o $(name)/$(mapper)/$(1)	 $(tophat_reference_prefix) $(2) &&\
-	samtools sort -m $(SAMTOOLS_SORT_MEM) $(name)/$(mapper)/$(1)/accepted_hits.bam  $(3).tmp && \
+        $(call tophat_setup_dirs,$(1))
+	irap_map.sh tophat1 tophat  -p $(max_threads) $(call tophat_seglength_option,$($(1)_rs),$(1)) $(call tophat_qual_option,$($(1)_qual)) $(tophat1_map_params) $(call tophat_ins_sd_params,$(1)) -G $(gtf_file_abspath) --tmp-dir $(call lib2bam_folder,$(1))/$(1)/tmp -o $(call lib2bam_folder,$(1))/$(1)	 $(tophat_reference_prefix) $(2) &&\
+	samtools sort -m $(SAMTOOLS_SORT_MEM) $(call lib2bam_folder,$(1))$(1)/accepted_hits.bam  $(3).tmp && \
 	mv $(3).tmp.bam $(3)
 endef
 
 define run_tophat2_map=
-        $(call tophat_setup_dirs)
-	irap_map.sh tophat2 tophat2  -p $(max_threads) $(call tophat_seglength_option,$($(1)_rs),$(1)) $(call tophat_qual_option,$($(1)_qual)) $(tophat2_map_params) $(call tophat_ins_sd_params,$(1)) -G $(gtf_file_abspath) --tmp-dir $(name)/$(mapper)/$(1)/tmp -o $(name)/$(mapper)/$(1)	 $(tophat_reference_prefix) $(2) &&\
-	mv $(name)/$(mapper)/$(1)/accepted_hits.bam $(3)
+        $(call tophat_setup_dirs,$(1))
+	irap_map.sh tophat2 tophat2  -p $(max_threads) $(call tophat_seglength_option,$($(1)_rs),$(1)) $(call tophat_qual_option,$($(1)_qual)) $(tophat2_map_params) $(call tophat_ins_sd_params,$(1)) -G $(gtf_file_abspath) --tmp-dir $(call lib2bam_folder,$(1))/$(1)/tmp -o $(call lib2bam_folder,$(1))$(1)	 $(tophat_reference_prefix) $(2) &&\
+	mv $(call lib2bam_folder,$(1))/$(1)/accepted_hits.bam $(3)
 endef
 
 
@@ -249,8 +254,6 @@ smalt_map_params= -n $(max_threads)  -f samsoft  $(smalt_map_options)
 smalt_index_params= -s 3 $(smalt_index_options)
 # Note: -p option broken in 0.6.4 when used in conjunction with PE data
 # only use -p with SE
-# Ex.@ tests irap_map.sh smalt smalt_x86_64 map  -n 1 -p  -f samsoft    -j 0 -i `expr 350 + 349` -o test4/smalt/PE2.pe.hits.bam.unsrt.sam /home/nf/Research/Projects/WIP/IRAP/irap/tests/data/reference/homo_sapiens/chr19.fa.smalt.index test4/data/PE2_1.f.fastq test4/data/PE2_2.f.fastq 
-
 
 # reference, index.prefix
 define run_smalt_index=
@@ -764,6 +767,63 @@ define run_osa_map=
 endef
 
 #	 irap_map.sh osa osa.exe -alignrna `dirname $(file_indexed)` $(call osa_ref_lib_name,$(file_indexed))  `dirname $(file_indexed)`/$(call osa_ref_lib_name,$(file_indexed))_GeneModels/$(call osa_gene_model_name) $(3).conf && \ $(call osa_index_dirname,$(1)) $(gtf_file_abspath) $(call osa_ref_lib_name,$(1)) $(call osa_gene_model_name) &&\
+
+######################################################
+# Mapsplice
+
+# global alignement
+# --min-map-len 0
+# max number of alignments
+# -k 
+# -m / --splice-mis <int> 	Maximum number of mismatches that are allowed in the first/last segment crossing a splice junction in the range of [0, 2]. Default is 1.
+#(Maximum number of mismatches that are allowed in the middle segment crossing a splice junction is always fixed at 2.)
+# --bam
+# -o outputdir
+# --threads thread
+# -qual-scale phred33,phred64,solexa64
+#-I / --max-intron <int>
+#-i / --min-intron <int>
+# Fusion
+#--gene-gtf <string> 
+#--fusion | --fusion-non-canonical  	--fusion: Search for canonical and semi-canonical fusion junctions.
+#--fusion-non-canonical: Search for canonical, semi-canonical, and non-canonical fusion junctions. 
+# mapsplice fails with smaller values
+mapsplice_min_intron=11
+mapsplice_map_params=   --min-intron $(mapsplice_min_intron)  $(mapsplice_map_options) --max-intron 10000 --max-hits $(max_hits) --del $(min_intron_len) --ins $(min_intron_len)
+mapsplice_index_params= --offrate 3 
+
+define mapsplice_index_filename=
+$(1).mapsplice.index
+endef
+
+define mapsplice_index_prefix=
+$(1).mapsplice
+endef
+
+define mapsplice_file_params=
+	$(if $(findstring $(1),$(pe)), -1 $(word 1,$(2)) -2 $(word 2,$(2)) $(call qual_mapsplice,$($(1)_qual)), -1 $(2) $(call qual_mapsplice,$($(1)_qual)))
+endef
+
+#
+define run_mapsplice_index=
+	sed 's/ .*//g' $(1) > $(call mapsplice_index_prefix,$(1)).fa && \
+	irap_fasta_split.pl $(call mapsplice_index_prefix,$(1)).fa $(call mapsplice_index_prefix,$(1)) && \
+	irap_map.sh mapsplice  bowtie-build $(mapsplice_index_params) $(call mapsplice_index_prefix,$(1)).fa $(call mapsplice_index_prefix,$(1)) && \
+	touch $(call mapsplice_index_filename,$(1))
+endef
+
+
+#-c The directory containing the sequence files of reference genome. All sequence files are required to:
+# BAM file does not contain the NH flag and the mate information is not ok (htseq fails)
+define run_mapsplice_map=
+	 irap_map.sh mapsplice python $(IRAP_DIR)/bin/mapsplice/mapsplice.py  $(mapsplice_map_params) --threads	 $(max_threads) --bam -o  $(call lib2bam_folder,$(1))/$(1) -c $(call mapsplice_index_prefix,$(file_indexed)) -x $(call mapsplice_index_prefix,$(file_indexed)) $(call mapsplice_file_params,$(1),$(2)) &&\
+	samtools fixmate  $(call lib2bam_folder,$(1))/$(1)/alignments.bam $(3).fix && \
+	$(call bam_fix_nh,$(3).fix,-) | \
+	samtools sort -m $(SAMTOOLS_SORT_MEM) - $(3).tmp && \
+	mv $(3).tmp.bam $(3) && rm -f $(3).fix
+endef
+
+
 
 
 

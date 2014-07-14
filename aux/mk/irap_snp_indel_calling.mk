@@ -74,6 +74,8 @@ endif
 # samtools
 snp_dir=$(name)/$(mapper)/snp
 
+lib2snp_folder=$(snp_dir)/$($(1)_dir)
+
 ifeq ($(indel_snp_calling_method),samtools)
 
 
@@ -81,9 +83,6 @@ indel_snp_calling_setup: $(snp_dir) $(reference_abspath).fai
 
 $(snp_dir):
 	mkdir -p $@
-
-$(snp_dir)/%.$(indel_snp_calling_method).bcf: $(name)/$(mapper)/%.bam 
-	samtools mpileup $(mpileup_params) -f $(reference_abspath) $< | bcftools view $(bcf_params) - > $@.bcf.tmp && mv $@.bcf.tmp $@
 
 %.vcf: %.bcf
 	bcftools view $< > $@.tmp && mv $@.tmp $@
@@ -96,18 +95,26 @@ indel_snp_calling_setup:
 snp_indel_calling_stage: 
 
 else
-BCF_FILES=$(subst /$(mapper)/,/$(mapper)/snp/,$(subst .bam,.$(indel_snp_calling_method).bcf,$(STAGE2_OUT_FILES)))
+BCF_FILES=$(subst .hits,,$(subst /$(mapper)/,/$(mapper)/snp/,$(subst .bam,.$(indel_snp_calling_method).bcf,$(STAGE2_OUT_FILES))))
 VCF_FILES=$(subst .bcf,.vcf,$(BCF_FILES))
 
 snp_indel_calling_stage: indel_snp_calling_setup $(VCF_FILES)
+
+
+define make-snp-rule=
+$(call lib2snp_folder,$(1))$(2).$(indel_snp_calling_method).bcf: $(call lib2bam_folder,$(1))$(2).hits.bam 
+	mkdir -p $$(@D) && samtools mpileup $$(mpileup_params) -f $$(reference_abspath) $$< | bcftools view $$(bcf_params) - > $$@.bcf.tmp && mv $$@.bcf.tmp $$@
+endef
+
+$(foreach l,$(se),$(eval $(call make-snp-rule,$(l),$(l).se)))
+$(foreach l,$(pe),$(eval $(call make-snp-rule,$(l),$(l).pe)))
+$(foreach l,$(pe),$(info $(call make-snp-rule,$(l),$(l).pe)))
 
 endif
 
 SNP_INDEL_CALLING_FILES:
 	echo $(BCF_FILES)
+
 #########
 # reports
-$(name)/report/$(mapper)/$(quant_method)/$(de_method)/%.gse.$(gse_tool).$(gse_method).go.html: $(name)/$(mapper)/$(quant_method)/$(de_method)/%.gse.$(gse_tool).$(gse_method).go.tsv
-	$(call run_gse_report,$<,$@,,"$(mapper)x$(quant_method)x$(de_method)",$*)
-
 

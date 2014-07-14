@@ -105,7 +105,23 @@ endef
 # complain if a file does not exist and exit
 file_exists=$(if  $(realpath $(1)),,$(call p_error,$(1) not found))
 
-check_param_ok=$(if $($(1)),$(info *	$(1)=$($(1))),$(error * Missing $(1)))
+#  check if a variable  $(1) is defined - return the variable name if it is defined or empty otherwise
+is_defined=$(if $(subst undefined,,$(origin $(1))),$(1),)
+
+# ensure that the dir name starts and ends with a /
+check_libdir_ok=$(if $(call is_defined,$(1)_dir),$(patsubst %/,%,$($(1)_dir))/,)
+
+# get the path for a filtered fastq file
+lib2filt_folder=$(name)/data/$($(1)_dir)
+# get the path for a bam file
+lib2bam_folder=$(name)/$(mapper)/$($(1)_dir)
+#
+lib2snp_folder=$(name)/$(mapper)/$($(1)_dir)
+#
+lib2quant_folder=$(name)/$(mapper)/$(quant_method)/$($(1)_dir)
+
+# check if a parameter is defined
+check_param_ok=$(if $(call is_defined,$(1)),$(info *	$(1)=$($(1))),$(error * Missing $(1)))
 
 # check  contrast name
 # 1 - param 2-param_name
@@ -346,6 +362,11 @@ ifdef se
  $(info *	se=$(se))
  $(foreach l,$(se),$(info $(l)=$($(l))))
 
+ 
+ # check if fastq file is in a different directory
+ $(foreach l,$(se),$(eval $(l)_dir=$(call check_libdir_ok,$(l))))
+ $(foreach l,$(se),$(info $(l)_dir=$($(l)_dir)))
+ #$(foreach l,$(se),$(info $(l)_dir=$(call check_libdir_ok,$(l))))
  $(foreach l,$(se),$(call check_se_libname_ok,$(l)))
  $(foreach l,$(se),$(call check_param_ok,$(l)_rs))
  $(foreach l,$(se),$(call check_param_ok,$(l)_qual))
@@ -370,6 +391,8 @@ ifdef pe
  rs_list=
  set_rs_list=$(eval rs_list+= $($(1)))
  $(foreach l,$(pe),$(call check_pe_libname_ok,$(l)))
+ $(foreach l,$(pe),$(eval $(l)_dir=$(call check_libdir_ok,$(l))))
+ $(foreach l,$(pe),$(info $(l)_dir=$($(l)_dir)))
  $(foreach l,$(pe),$(call check_param_ok,$(l)_sd))
  $(foreach l,$(pe),$(call check_param_ok,$(l)_ins))
  $(foreach l,$(pe),$(call check_param_ok,$(l)_rs))
@@ -432,8 +455,11 @@ technical.replicates=
  $(info *	technical.replicates=NONE)
 else
  $(info *	technical.replicates=$(technical.replicates))
-# $(info *       Currently this information is not used)
+ # validate the libraries names
+ comma=,
+ $(foreach  l,$(subst $(comma), ,$(subst ;, ,$(technical.replicates))),$(call check_param_ok, $(l)))
 endif
+
 
 
 #####################
@@ -506,7 +532,7 @@ endif
 $(info *	mapper=$(mapper))
 
 # gems
-SUPPORTED_MAPPERS=tophat1 tophat2 smalt gsnap soapsplice bwa1 bwa2 bowtie1 bowtie2 gem star osa
+SUPPORTED_MAPPERS=tophat1 tophat2 smalt gsnap soapsplice bwa1 bwa2 bowtie1 bowtie2 gem star osa mapsplice
 ifeq (,$(filter $(mapper),$(SUPPORTED_MAPPERS)))
 $(call p_info,[ERROR] Mapping)
 $(error $(mapper) not implemented)
@@ -803,7 +829,7 @@ endef
 # 1-libname
 # path to the filtered fastq files 
 define libname2fastq=
-$(if $(call is_pe_lib,$(1)),$(name)/data/$(1)_1.f.fastq $(name)/data/$(1)_2.f.fastq,$(name)/data/$(1).f.fastq)
+$(if $(call is_pe_lib,$(1)),$(call lib2filt_folder,$(1))$(1)_1.f.fastq $(call lib2filt_folder,$(1))$(1)_2.f.fastq,$(call lib2filt_folder,$(1))$(1).f.fastq)
 endef
 
 # 1-libname
@@ -817,7 +843,7 @@ endef
 
 # 1-group
 define  get_group_bam_files=
-$(foreach l,$($(1)), $(name)/$(mapper)/$(call bam_file_for_lib,$(l)))
+$(foreach l,$($(1)), $(call lib2bam_folder,$(l))/$(call bam_file_for_lib,$(l)))
 endef
 
 # the bam file names of each group are concatened using ,
@@ -872,11 +898,11 @@ endef
 
 ################################################################################
 # TODO: STAGE0
-STAGE1_OUT_FILES=$(foreach p,$(se),$(name)/data/$(p).f.fastq) $(foreach p,$(pe),$(name)/data/$(p)_1.f.fastq)
+STAGE1_OUT_FILES=$(foreach p,$(se),$(call lib2filt_folder,$(p))$(p).f.fastq) $(foreach p,$(pe),$(call lib2filt_folder,$(p))$(p)_1.f.fastq)
 
-STAGE2_OUT_FILES=$(foreach p,$(pe), $(name)/$(mapper)/$(p).pe.hits.bam) $(foreach s,$(se), $(name)/$(mapper)/$(s).se.hits.bam)
+STAGE2_OUT_FILES=$(foreach p,$(pe), $(call lib2bam_folder,$(p))$(p).pe.hits.bam) $(foreach s,$(se), $(call lib2bam_folder,$(s))$(s).se.hits.bam)
 
-STAGE2BYNAME_OUT_FILES=$(foreach p,$(pe), $(name)/$(mapper)/$(p).pe.hits.byname.bam) $(foreach s,$(se), $(name)/$(mapper)/$(s).se.hits.byname.bam)
+STAGE2BYNAME_OUT_FILES=$(foreach p,$(pe), $(call lib2bam_folder,$(p))$(p).pe.hits.byname.bam) $(foreach s,$(se), $(call lib2bam_folder,$(s))$(s).se.hits.byname.bam)
 
 ################################################################################
 # Default target
@@ -933,11 +959,11 @@ $(call p_info,[DONE] Initialization)
 # Quality Filtering
 ###################
 define do_quality_filtering_and_report=
-	irap_fastq_qc $(read_qual_filter_common_params) read_size=$($(1)_rs) qual=$($(1)_qual) f="$($(1))" out_prefix=$(1) is_pe=$(call is_pe_lib,$(1))
+	irap_fastq_qc $(read_qual_filter_common_params) data_dir=$(data_dir)/raw_data/$(species)/$($(1)_dir) read_size=$($(1)_rs) qual=$($(1)_qual) f="$($(1))" out_prefix=$(1) is_pe=$(call is_pe_lib,$(1)) out_dir=$(name)/data/$($(1)_dir) report_dir=$(name)/report/riq/$($(1)_dir)
 endef
 
 define do_quality_filtering_and_report_cleanup=
-	irap_fastq_qc $(read_qual_filter_common_params) read_size=$($(1)_rs) qual=$($(1)_qual) f="$($(1))" out_prefix=$(1) is_pe=$(call is_pe_lib,$(1)) clean
+	irap_fastq_qc $(read_qual_filter_common_params) data_dir=$(data_dir)/raw_data/$(species)/$($(1)_dir) read_size=$($(1)_rs) qual=$($(1)_qual) f="$($(1))" out_prefix=$(1) is_pe=$(call is_pe_lib,$(1)) out_dir=$(name)/data/$($(1)_dir) report_dir=$(name)/report/riq/$($(1)_dir) clean
 endef
 
 define not_empty=
@@ -1161,7 +1187,8 @@ $(name)/$(mapper)/$(quant_method)/$(de_method)/:
 # Read Filtering
 ################################################################################
 # reuse the data filtered between experiments?
-read_qual_filter_common_params=tmp_dir=$(tmp_dir) out_dir=$(name)/data report_dir=$(name)/report/riq threads=$(max_threads) data_dir=$(data_dir)/raw_data/$(species) qual_filtering=$(qual_filtering)  min_qual=$(min_read_quality) trim=$(trim_reads) cont_index=$(cont_index) 
+read_qual_filter_common_params=tmp_dir=$(tmp_dir)  threads=$(max_threads)  qual_filtering=$(qual_filtering)  min_qual=$(min_read_quality) trim=$(trim_reads) cont_index=$(cont_index) 
+
 
 phony_targets+= qc quality_filtering_and_report clean_quality_filtering_and_report_cleanup
 
@@ -1177,9 +1204,10 @@ qc: quality_filtering_and_report
 quality_filtering_and_report: setup	$(STAGE1_OUT_FILES)
 	$(call p_info,[DONE] Quality filtering)
 # SE 
-$(name)/data/%.f.fastq: 
-	$(call p_info,Filtering $(call fix_libname,$*))
-	$(call do_quality_filtering_and_report,$(call get_lib_name,$(call fix_libname,$*)))
+#$(name)/data/%.f.fastq: 
+%.f.fastq: 
+	$(call p_info,Filtering $(call fix_libname,$(notdir $*)))
+	$(call do_quality_filtering_and_report,$(call get_lib_name,$(call fix_libname,$(notdir $*))))
 #	$(call not_empty,$@)
 
 
@@ -1221,9 +1249,6 @@ mappingbyname: $(mapper)_mappingbyname
 
 $(mapper)_mappingbyname: $(index_files) $(STAGE2BYNAME_OUT_FILES)
 
-$(name)/$(mapper)/%.se.hits.bam: $(name)/data/%.f.fastq $(index_files) $(gtf_file_abspath) $(reference_prefix) $(index_files)
-	$(call run_$(mapper)_map,$*,$<,$@)
-
 # interleaved fastq file
 # special rule for GEM with PE
 # 1-mapper
@@ -1231,14 +1256,30 @@ define mapper_ifiles=
 $(if $(subst gem,,$(1)),$(3),$(name)/data/$(2)_int.f.fastq)
 endef
 
-$(name)/$(mapper)/%.pe.hits.bam: $(call mapper_ifiles,$(mapper),%,$(name)/data/%_1.f.fastq $(name)/data/%_2.f.fastq)   $(index_files)
-	$(call run_$(mapper)_map,$*,$(call mapper_ifiles,$(mapper),$*,$(name)/data/$*_1.f.fastq $(name)/data/$*_2.f.fastq),$@)
+##############################################
+# Create the rules on the fly for each library
+# $1 = libname
+define make-se-bam-rule=
+$(call lib2bam_folder,$(1))$(1).se.hits.bam: $(call lib2filt_folder,$(1))$(1).f.fastq $(index_files) $(gtf_file_abspath) $(reference_prefix) $(index_files)
+	$(call run_$(mapper)_map,$(1),$$<,$$@)
+endef
 
+define make-pe-bam-rule=
+$(call lib2bam_folder,$(1))$(1).pe.hits.bam: $(call mapper_ifiles,$(mapper),$(1),$(call lib2filt_folder,$(1))$(1)_1.f.fastq $(call lib2filt_folder,$(1))$(1)_2.f.fastq)   $(index_files)
+	$(call run_$(mapper)_map,$(1),$(call mapper_ifiles,$(mapper),$(1),$(call lib2filt_folder,$(1))$(1)_1.f.fastq $(call lib2filt_folder,$(1))$(1)_2.f.fastq),$$@)
+endef
+
+# create the output directories
+$(foreach l,$(se) $(pe),$(eval $(shell mkdir -p $(call lib2bam_folder,$(l)))))
+
+# rules for SE libraries
+$(foreach l,$(se),$(eval $(call make-se-bam-rule,$(l))))
+# rules for PE libraries
+$(foreach l,$(pe),$(eval $(call make-pe-bam-rule,$(l))))
 
 # interleaved fastq file
 $(name)/data/%_int.f.fastq: $(name)/data/%_1.f.fastq $(name)/data/%_2.f.fastq
 	fastq2interleaved.pl $^ $@.tmp && mv $@.tmp $@
-
 
 %.$(mapper).index: %.fa
 
@@ -1425,10 +1466,10 @@ $(name)/$(mapper)/$(quant_method)/transcripts.rpkm.none.tsv: $(name)/$(mapper)/$
 
 # special rules
 # cufflinks*
-$(name)/$(mapper)/$(quant_method)/genes.rpkm.cufflinks%.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.genes.rpkm.$(quant_method).tsv) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.genes.rpkm.$(quant_method).tsv) 
+$(name)/$(mapper)/$(quant_method)/genes.rpkm.cufflinks%.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.genes.rpkm.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.genes.rpkm.$(quant_method).tsv) 
 	$(call merge_tsv,$(quant_method)) $^  > $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/$(quant_method)/transcripts.rpkm.cufflinks%.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.transcripts.rpkm.$(quant_method).tsv) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.transcripts.rpkm.$(quant_method).tsv) 
+$(name)/$(mapper)/$(quant_method)/transcripts.rpkm.cufflinks%.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.rpkm.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.transcripts.rpkm.$(quant_method).tsv) 
 	$(call merge_tsv,$(quant_method)) $^  > $@.tmp && mv $@.tmp $@
 
 $(name)/$(mapper)/$(quant_method)/exons.rpkm.cufflinks%.tsv:
@@ -1436,10 +1477,10 @@ $(name)/$(mapper)/$(quant_method)/exons.rpkm.cufflinks%.tsv:
 	@$(call empty_file,$@)
 
 # flux-capacitor
-$(name)/$(mapper)/$(quant_method)/genes.rpkm.flux%.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.genes.rpkm.$(quant_method).tsv) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.genes.rpkm.$(quant_method).tsv) 
+$(name)/$(mapper)/$(quant_method)/genes.rpkm.flux%.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.genes.rpkm.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.genes.rpkm.$(quant_method).tsv) 
 	$(call merge_tsv,$(quant_method)) $^  > $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/$(quant_method)/transcripts.rpkm.flux%.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.transcripts.rpkm.$(quant_method).tsv) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.transcripts.rpkm.$(quant_method).tsv) 
+$(name)/$(mapper)/$(quant_method)/transcripts.rpkm.flux%.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.rpkm.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.transcripts.rpkm.$(quant_method).tsv) 
 	$(call merge_tsv,$(quant_method)) $^  > $@.tmp && mv $@.tmp $@
 
 $(name)/$(mapper)/$(quant_method)/exons.rpkm.flux%.tsv: 
@@ -1447,10 +1488,10 @@ $(name)/$(mapper)/$(quant_method)/exons.rpkm.flux%.tsv:
 	@$(call empty_file,$@)
 
 # nurd
-$(name)/$(mapper)/$(quant_method)/genes.rpkm.nurd.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.genes.rpkm.$(quant_method).tsv) $(foreach s,$(se), $(name)/$(mapper)/$(quant_method)/$(s).se.genes.rpkm.$(quant_method).tsv)
+$(name)/$(mapper)/nurd/genes.rpkm.nurd.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.genes.rpkm.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.rpkm.$(quant_method).tsv)
 	$(call merge_tsv,$(quant_method)) $^  > $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/$(quant_method)/transcripts.rpkm.nurd.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.transcripts.rpkm.$(quant_method).tsv) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.transcripts.rpkm.$(quant_method).tsv) 
+$(name)/$(mapper)/nurd/transcripts.rpkm.nurd.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.rpkm.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.transcripts.rpkm.$(quant_method).tsv) 
 	$(call merge_tsv,$(quant_method)) $^  > $@.tmp && mv $@.tmp $@
 
 $(name)/$(mapper)/$(quant_method)/exons.rpkm.nurd.tsv: 

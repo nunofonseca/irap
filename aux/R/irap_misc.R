@@ -65,7 +65,8 @@ fold.change.plot <- function(res,y.lab="log2(Fold change)",x.lab="log(Mean)",fdr
 #       log=log, pch=ifelse(py<ylim[1], 6, ifelse(py>ylim[2], 2, 16)),
 #       cex=cex, col=col, xlab=xlab, ylab=ylab, ylim=ylim, ...)
 cor.scatterplot <- function(df=NULL,colA=NULL,colB=NULL,x=NULL,y=NULL,
-                            value.name="",smooth="",log="xy",panel=NULL) {
+                            value.name="",smooth="",log="xy",panel=NULL,
+                            print.cor=TRUE) {
   library(sfsmisc)
   del <- 0.5
   if (!is.null(df)) {
@@ -115,7 +116,7 @@ cor.scatterplot <- function(df=NULL,colA=NULL,colB=NULL,x=NULL,y=NULL,
   if ( !is.null(panel) ) {
     plot.panel.label(panel)
   }
-  if ( value.name =="" ) {
+  if ( value.name =="" && print.cor ) {
     if ( par("ylog") ) {
       Sx <- 10^(par("usr")[1]+(par("usr")[2]-10^par("usr")[1])*0.2)
         #min(x)+ceiling(del)

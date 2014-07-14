@@ -140,7 +140,16 @@ raw.summary.dataframe <- function(conf) {
       } else {
         files.f <- c(paste(lib,"_1.f.fastq",sep=""),paste(lib,"_2.f.fastq",sep=""))
       }
+      l.dir <- conf.get.value(conf,paste(lib,"_dir",sep=""))
 
+      if ( !is.null(l.dir) ) {
+        #
+        l.dir <- sub("/$","",l.dir)
+        files.f <- paste(l.dir,files.f,sep="/")
+        files <- paste(l.dir,files,sep="/")
+        #pinfo ("!!!!! different dir ",l.dir," ....", files.f)
+      }
+      
       if ( conf.is.qc.enabled(conf) ) { 
         d <- totnumreads2filtered(read.csv(file.required(paste(toplevel.dir,"/report/riq/",files[1],".csv",sep="")),header=FALSE))
         d2 <- stats.file2df(file.required(paste(toplevel.dir,"/data/",files.f[1],".stats",sep="")))

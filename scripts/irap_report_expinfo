@@ -50,13 +50,13 @@ pdebug.enabled <- opt$debug
 #####################################################################
 pinfo("conf_file=",opt$conf_file)
 #opt$conf_file <- "test3_qc.conf"
-# 
+#
+pdebug.save.state("irap_report_expinfo","p0")
 exp.conf <- load.configuration.file(opt$conf_file)
 pinfo("Experiment configuration loaded.")
 # set the variables
 #import.conf.variables(conf)
 
-pdebug.save.state("irap_report_expinfo","p1")
 # Exp. design
 groups.m <- groups2matrix(exp.conf)
 contrasts.m <- contrasts2matrix(exp.conf)

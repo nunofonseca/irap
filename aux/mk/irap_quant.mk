@@ -54,12 +54,13 @@ endif
 define cufflinks_g_option=
 $(if $(findstring _nd,$(quant_method)),-G,-g)
 endef
+
 define run_cufflinks1=
-	irap_wrapper.sh cufflinks1 cufflinks -p $(max_threads) -o $(name)/$(mapper)/$(quant_method)/$(2) $(call cufflinks_g_option) $(gtf_file_abspath) $(cufflinks1_params) $(1) && mv $(name)/$(mapper)/$(quant_method)/$(2)/transcripts.gtf $(3) && mv $(name)/$(mapper)/$(quant_method)/$(2)/isoforms.fpkm_tracking $(4) && mv $(name)/$(mapper)/$(quant_method)/$(2)/genes.fpkm_tracking $(5)
+	irap_wrapper.sh cufflinks1 cufflinks -p $(max_threads) -o $(call lib2quant_folder,$(2))$(2) $(call cufflinks_g_option) $(gtf_file_abspath) $(cufflinks1_params) $(1) && mv $(call lib2quant_folder,$(2))$(2)/transcripts.gtf $(3) && mv $(call lib2quant_folder,$(2))$(2)/isoforms.fpkm_tracking $(4) && mv $(call lib2quant_folder,$(2))$(2)/genes.fpkm_tracking $(5)
 endef
 
 define run_cufflinks2=
-	irap_wrapper.sh cufflinks2 cufflinks -p $(max_threads) -o $(name)/$(mapper)/$(quant_method)/$(2)  $(call cufflinks_g_option) $(gtf_file_abspath) $(cufflinks2_params) $(1) && mv $(name)/$(mapper)/$(quant_method)/$(2)/transcripts.gtf $(3) && mv $(name)/$(mapper)/$(quant_method)/$(2)/isoforms.fpkm_tracking $(4) && mv $(name)/$(mapper)/$(quant_method)/$(2)/genes.fpkm_tracking $(5)
+	irap_wrapper.sh cufflinks2 cufflinks -p $(max_threads) -o $(call lib2quant_folder,$(2))$(2)  $(call cufflinks_g_option) $(gtf_file_abspath) $(cufflinks2_params) $(1) && mv $(call lib2quant_folder,$(2))$(2)/transcripts.gtf $(3) && mv $(call lib2quant_folder,$(2))$(2)/isoforms.fpkm_tracking $(4) && mv $(call lib2quant_folder,$(2))$(2)/genes.fpkm_tracking $(5)
 endef
 
 # run_cuffmerge cufflinks1|cufflinks2 
@@ -196,8 +197,6 @@ define run_nurd=
 endef
 # ideally nurd should support BAM
 # or accept SAM from stdin...
-# but the following does not work
-# samtools view test1/tophat1/SE1.se.hits.bam | NURD  -O test1/tophat1/nurd/SE1.se.nurd.tsv.dir -G test_files/Homo_sapiens.GRCh37.66.gtf -S /dev/fd/1
 
 #******************
 # IsoEM
@@ -239,101 +238,66 @@ define cufflinks2counts=
 	irap_cufflinksFPKMs2counts -c $(3) --label "$(1)" -r $($(subst .pe,,$(subst .se,,$(1)))_rs) -o $(2)/$(1).genes.raw.$(4).tsv -i $(2)/$(1).transcripts.raw.$(4).tsv
 endef
 
-# cufflinks1
-$(name)/$(mapper)/$(quant_method)/%.transcripts.raw.cufflinks1.tsv $(name)/$(mapper)/$(quant_method)/%.genes.raw.cufflinks1.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.isoforms.fpkm_tracking
-	$(call p_info,Warning! Cufflinks produces FPKMS and does not provide counts. Generating pseudo counts $@.)
-	$(call cufflinks2counts,$*,$(@D),$^,cufflinks1)
+# call we avoid two functions?
+define cufflinks2counts_g=
+	irap_cufflinksFPKMs2counts -c $(3) --label "$(1)" -r $($(subst .pe,,$(subst .se,,$(1)))_rs) -o $(2)/$(1).genes.raw.$(4).tsv -i /dev/null
+endef
 
-$(name)/$(mapper)/$(quant_method)/genes.raw.cufflinks1.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.genes.raw.cufflinks1.tsv) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.genes.raw.cufflinks1.tsv) 
-	$(call merge_tsv,$(quant_method)) $^  > $@.tmp && mv $@.tmp $@
+define cufflinks2counts_t=
+	irap_cufflinksFPKMs2counts -c $(3) --label "$(1)" -r $($(subst .pe,,$(subst .se,,$(1)))_rs) -o /dev/null -i $(2)/$(1).transcripts.raw.$(4).tsv
+endef
 
-$(name)/$(mapper)/$(quant_method)/transcripts.raw.cufflinks1.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.transcripts.raw.cufflinks1.tsv) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.transcripts.raw.cufflinks1.tsv) 
-	$(call merge_tsv,$(quant_method)) $^  > $@.tmp && mv $@.tmp $@
-
-#exons
-$(name)/$(mapper)/$(quant_method)/%xons.raw.cufflinks1.tsv: 
-	$(call p_info,Warning! Cufflinks does not provide quantification at exon level. Generating empty file $@.)
-	@$(call empty_file,$@)
-
-#
-# cufflinks1_nd
-$(name)/$(mapper)/$(quant_method)/%.transcripts.raw.cufflinks1_nd.tsv $(name)/$(mapper)/$(quant_method)/%.genes.raw.cufflinks1_nd.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.isoforms.fpkm_tracking
-	$(call p_info,Warning! Cufflinks produces FPKMS and does not provide counts. Generating pseudo counts $@.)
-	$(call cufflinks2counts,$*,$(@D),$^,cufflinks1_nd)
-
-$(name)/$(mapper)/$(quant_method)/genes.raw.cufflinks1_nd.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.genes.raw.cufflinks1_nd.tsv) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.genes.raw.cufflinks1_nd.tsv) 
-	$(call merge_tsv,$(quant_method)) $^  > $@.tmp && mv $@.tmp $@
-
-$(name)/$(mapper)/$(quant_method)/transcripts.raw.cufflinks1_nd.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.transcripts.raw.cufflinks1_nd.tsv) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.transcripts.raw.cufflinks1_nd.tsv) 
-	$(call merge_tsv,$(quant_method)) $^  > $@.tmp && mv $@.tmp $@
-
-$(name)/$(mapper)/$(quant_method)/%xons.raw.cufflinks1_nd.tsv: 
-	$(call p_info,Warning! Cufflinks produces FPKMS and does not provide counts. Generating empty file $@.)
-	@$(call empty_file,$@)
-
-# cufflinks2
-$(name)/$(mapper)/$(quant_method)/%.transcripts.raw.cufflinks2.tsv $(name)/$(mapper)/$(quant_method)/%.genes.raw.cufflinks2.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.isoforms.fpkm_tracking
-	$(call p_info,Warning! Cufflinks produces FPKMS and does not provide counts. Generating pseudo counts $@.)
-	$(call cufflinks2counts,$*,$(@D),$^,cufflinks2)
-
-$(name)/$(mapper)/$(quant_method)/genes.raw.cufflinks2.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.genes.raw.cufflinks2.tsv) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.genes.raw.cufflinks2.tsv) 
-	$(call merge_tsv,$(quant_method)) $^  > $@.tmp && mv $@.tmp $@
-
-$(name)/$(mapper)/$(quant_method)/transcripts.raw.cufflinks2.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.transcripts.raw.cufflinks2.tsv) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.transcripts.raw.cufflinks2.tsv) 
-	$(call merge_tsv,$(quant_method)) $^  > $@.tmp && mv $@.tmp $@
-
-$(name)/$(mapper)/$(quant_method)/%xons.raw.cufflinks2.tsv: 
-	$(call p_info,Warning! Cufflinks does not provide quantification at exon level. Generating empty file $@.)
-	@$(call empty_file,$@)
-
-
-# cufflinks2_nd
-$(name)/$(mapper)/$(quant_method)/%.transcripts.raw.cufflinks2_nd.tsv $(name)/$(mapper)/$(quant_method)/%.genes.raw.cufflinks2_nd.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.isoforms.fpkm_tracking
-	$(call p_info,Warning! Cufflinks produces FPKMS and does not provide counts. Generating pseudo counts $@.)
-	$(call cufflinks2counts,$*,$(@D),$^,cufflinks2_nd)
-
-$(name)/$(mapper)/$(quant_method)/genes.raw.cufflinks2_nd.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.genes.raw.cufflinks2_nd.tsv) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.genes.raw.cufflinks2_nd.tsv) 
-	$(call merge_tsv,$(quant_method)) $^  > $@.tmp && mv $@.tmp $@
-
-$(name)/$(mapper)/$(quant_method)/transcripts.raw.cufflinks2_nd.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.transcripts.raw.cufflinks2_nd.tsv) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.transcripts.raw.cufflinks2_nd.tsv) 
-	$(call merge_tsv,$(quant_method)) $^  > $@.tmp && mv $@.tmp $@
-
-$(name)/$(mapper)/$(quant_method)/%xons.raw.cufflinks2_nd.tsv: 
-	$(call p_info,Warning! Cufflinks produces FPKMS and does not provide counts. Generating empty file $@.)
-	@$(call empty_file,$@)
 
 #######
 # The SAM file supplied to Cufflinks must be sorted by reference position. 
 # -M/--mask-file <mask.(gtf/gff)> 
 # novel genes=-g gtf
 # only known=-G gtf
-
-# cufflinks
-$(name)/$(mapper)/cufflinks1/%.cuff.gtf $(name)/$(mapper)/cufflinks1/%.cuff.genes.fpkm_tracking $(name)/$(mapper)/cufflinks1/%.cuff.isoforms.fpkm_tracking: $(name)/$(mapper)/%.hits.bam
-	$(call run_cufflinks1,$<,$*,$@,$(name)/$(mapper)/cufflinks1/$*.cuff.isoforms.fpkm_tracking,$(name)/$(mapper)/cufflinks1/$*.cuff.genes.fpkm_tracking)
-
-# cufflinks1_nd
-$(name)/$(mapper)/cufflinks1_nd/%.cuff.gtf $(name)/$(mapper)/cufflinks1_nd/%.cuff.genes.fpkm_tracking $(name)/$(mapper)/cufflinks1_nd/%.cuff.isoforms.fpkm_tracking: $(name)/$(mapper)/%.hits.bam
-	$(call run_cufflinks1,$<,$*,$@,$(name)/$(mapper)/cufflinks1_nd/$*.cuff.isoforms.fpkm_tracking,$(name)/$(mapper)/cufflinks1_nd/$*.cuff.genes.fpkm_tracking)
+# $1 - lib
+# $2 - cufflinks1|cufflinks1_nd|cuffflinks2|...
+# $3 - bam file prefix (includes .se|.pe)
+define make-cufflinks-quant-rule=
+$(call lib2quant_folder,$(1))$(3).cuff.gtf $(call lib2quant_folder,$(1))$(3).cuff.genes.fpkm_tracking $(call lib2quant_folder,$(1))$(3).cuff.isoforms.fpkm_tracking: $(call lib2bam_folder,$(1))$(3).hits.bam
+	$(call run_$(subst _nd,,$(2)),$$<,$(1),$$@,$(call lib2quant_folder,$(1))$(3).cuff.isoforms.fpkm_tracking,$(call lib2quant_folder,$(1))$(3).cuff.genes.fpkm_tracking)
 
 
-# cufflinks2
-$(name)/$(mapper)/cufflinks2/%.cuff.gtf $(name)/$(mapper)/cufflinks2/%.cuff.genes.fpkm_tracking $(name)/$(mapper)/cufflinks2/%.cuff.isoforms.fpkm_tracking: $(name)/$(mapper)/%.hits.bam
-	$(call run_cufflinks2,$<,$*,$@,$(name)/$(mapper)/cufflinks2/$*.cuff.isoforms.fpkm_tracking,$(name)/$(mapper)/cufflinks2/$*.cuff.genes.fpkm_tracking)
+$(call lib2quant_folder,$(1))$(3).transcripts.raw.$(quant_method).tsv: $(call lib2quant_folder,$(1))$(3).cuff.isoforms.fpkm_tracking
+	$$(call p_info,Warning! Cufflinks produces FPKMS and does not provide counts. Generating pseudo counts $$@.)
+	$$(call cufflinks2counts_t,$(3),$$(@D),$$^,$(quant_method))
 
-# cufflinks2_nd
-$(name)/$(mapper)/cufflinks2_nd/%.cuff.gtf $(name)/$(mapper)/cufflinks2_nd/%.cuff.genes.fpkm_tracking $(name)/$(mapper)/cufflinks2_nd/%.cuff.isoforms.fpkm_tracking: $(name)/$(mapper)/%.hits.bam
-	$(call run_cufflinks2,$<,$*,$@,$(name)/$(mapper)/cufflinks2_nd/$*.cuff.isoforms.fpkm_tracking,$(name)/$(mapper)/cufflinks2_nd/$*.cuff.genes.fpkm_tracking)
+$(call lib2quant_folder,$(1))$(3).genes.raw.$(quant_method).tsv: $(call lib2quant_folder,$(1))$(3).cuff.isoforms.fpkm_tracking
+	$$(call p_info,Warning! Cufflinks produces FPKMS and does not provide counts. Generating pseudo counts $$@.)
+	$$(call cufflinks2counts_g,$(3),$$(@D),$$^,$(quant_method))
 
+endef
+
+# generate the rules for htseq
+ifeq ($(patsubst cufflinks%,,$(quant_method)),)
+$(foreach l,$(se),$(eval $(call make-cufflinks-quant-rule,$(l),$(quant_method),$(l).se,gene)))	
+$(foreach l,$(pe),$(eval $(call make-cufflinks-quant-rule,$(l),$(quant_method),$(l).pe,gene)))
+
+# cufflinks* specific rules
+
+$(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).tsv)
+	$(call merge_tsv,$(quant_method)) $^  > $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/$(quant_method)/%xons.raw.$(quant_method).tsv: 
+	$(call p_info,Warning! Cufflinks produces FPKMS and does not provide counts. Generating empty file $@.)
+	@$(call empty_file,$@)
+
+$(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).tsv) 
+	$(call merge_tsv,$(quant_method)) $^  > $@.tmp && mv $@.tmp $@
 
 # Run Cuffmerge on all your assemblies to create a single merged transcriptome annotation
-$(name)/$(mapper)/$(quant_method)/$(name).merged.gtf:  $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.cuff.gtf) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.cuff.gtf) $(name)/$(mapper)/$(quant_method)/$(name).assemblies.txt
+$(name)/$(mapper)/$(quant_method)/$(name).merged.gtf:  $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.cuff.gtf) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.cuff.gtf) $(name)/$(mapper)/$(quant_method)/$(name).assemblies.txt
 	$(call run_cuffmerge,$(quant_method),$@)
 
 # cuffmerge' assemblies.txt - lists the assembly file for each sample. 
-$(name)/$(mapper)/$(quant_method)/$(name).assemblies.txt: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.cuff.gtf) $(foreach s,$(se),$(name)/$(mapper)/$(quant_method)/$(s).se.cuff.gtf)
+$(name)/$(mapper)/$(quant_method)/$(name).assemblies.txt: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.cuff.gtf) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.cuff.gtf)
 	rm -f $@
 	touch $@.tmp && for f in $^; do echo $$f >> $@.tmp ; done && mv $@.tmp $@
+
+endif
 
 #*****************
 # HTSeq
@@ -341,53 +305,56 @@ $(name)/$(mapper)/$(quant_method)/$(name).assemblies.txt: $(foreach p,$(pe),$(na
 
 # * HTSeq1
 # counts per gene
-$(name)/$(mapper)/htseq1/genes.raw.htseq1.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.genes.raw.$(quant_method).tsv) $(foreach s,$(se), $(name)/$(mapper)/$(quant_method)/$(s).se.genes.raw.$(quant_method).tsv)
+$(name)/$(mapper)/htseq1/genes.raw.htseq1.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).tsv)
 	irap_merge_tsv.sh $^  > $@.tmp && mv $@.tmp $@
 
 # counts per transcript
-$(name)/$(mapper)/htseq1/transcripts.raw.htseq1.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se), $(name)/$(mapper)/$(quant_method)/$(s).se.transcripts.raw.$(quant_method).tsv)
+$(name)/$(mapper)/htseq1/transcripts.raw.htseq1.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).tsv)
 	irap_merge_tsv.sh $^  > $@.tmp && mv $@.tmp $@
 
 # counts per exon
-$(name)/$(mapper)/htseq1/exons.raw.htseq1.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.exons.raw.$(quant_method).tsv) $(foreach s,$(se), $(name)/$(mapper)/$(quant_method)/$(s).se.exons.raw.$(quant_method).tsv)
+$(name)/$(mapper)/htseq1/exons.raw.htseq1.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.exons.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.exons.raw.$(quant_method).tsv)
 	irap_merge_tsv.sh $^  > $@.tmp && mv $@.tmp $@
 
-
 ## htseq bam file needs to be sorted by name
-$(name)/$(mapper)/htseq1/%.genes.raw.htseq1.tsv: $(name)/$(mapper)/%.hits.byname.bam $(gtf_file_abspath)
-	$(call run_htseq1,$<,$(gtf_file_abspath),$@,gene)
+# $1 - lib
+# $2 - htseq1|htseq2
+# $3 - bam file prefix (includes .se|.pe)
+# $4 - quantification of exon|gene|trans
+define make-htseq-quant-rule=
+$(call lib2quant_folder,$(1))$(3).$(4)s.raw.$(2).tsv: $(call lib2bam_folder,$(1))$(3).hits.byname.bam $(gtf_file_abspath)
+	mkdir -p $$(@D) && $$(call run_$(2),$$<,$$(gtf_file_abspath),$$@,$(4))
+endef
 
-## htseq bam file needs to be sorted by name
-$(name)/$(mapper)/htseq1/%.exons.raw.htseq1.tsv: $(name)/$(mapper)/%.hits.byname.bam $(gtf_file_abspath).exon_id.gtf
-	$(call run_htseq1,$<,$(gtf_file_abspath).exon_id.gtf,$@,exon)
-
-## htseq bam file needs to be sorted by name
-$(name)/$(mapper)/htseq1/%.transcripts.raw.htseq1.tsv: $(name)/$(mapper)/%.hits.byname.bam $(gtf_file_abspath)
-	$(call run_htseq1,$<,$(gtf_file_abspath),$@,transcript)
+# generate the rules for htseq
+ifeq ($(patsubst htseq%,,$(quant_method)),)
+$(foreach l,$(se),$(eval $(call make-htseq-quant-rule,$(l),$(quant_method),$(l).se,gene)))	
+$(foreach l,$(pe),$(eval $(call make-htseq-quant-rule,$(l),$(quant_method),$(l).pe,gene)))
+ifeq ($(exon_quant),y)
+$(foreach l,$(se),$(eval $(call make-htseq-quant-rule,$(l),$(quant_method),$(l).se,exon)))	
+$(foreach l,$(pe),$(eval $(call make-htseq-quant-rule,$(l),$(quant_method),$(l).pe,exon)))
+endif
+ifeq ($(transcript_quant),y)
+$(foreach l,$(se),$(eval $(call make-htseq-quant-rule,$(l),$(quant_method),$(l).se,transcript)))	
+$(foreach l,$(pe),$(eval $(call make-htseq-quant-rule,$(l),$(quant_method),$(l).pe,transcript)))
+endif
+#$(foreach l,$(se) $(pe),$(info $(call make-htseq-quant-rule,$(l),htseq1,$(l).pe,gene)))
+endif
 
 # * HTSeq2
 
 # counts per gene
-$(name)/$(mapper)/htseq2/genes.raw.htseq2.tsv: $(foreach p,$(pe), $(name)/$(mapper)/$(quant_method)/$(p).pe.genes.raw.htseq2.tsv) $(foreach s,$(se), $(name)/$(mapper)/$(quant_method)/$(s).se.genes.raw.$(quant_method).tsv)
+$(name)/$(mapper)/htseq2/genes.raw.htseq2.tsv: $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.genes.raw.htseq2.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).tsv)
 	irap_merge_tsv.sh $^  > $@.tmp && mv $@.tmp $@
 
 # counts per transcript
-$(name)/$(mapper)/htseq2/transcripts.raw.htseq2.tsv: $(foreach p,$(pe), $(name)/$(mapper)/$(quant_method)/$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se), $(name)/$(mapper)/$(quant_method)/$(s).se.transcripts.raw.$(quant_method).tsv)
+$(name)/$(mapper)/htseq2/transcripts.raw.htseq2.tsv: $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).tsv)
 	irap_merge_tsv.sh $^  > $@.tmp && mv $@.tmp $@
 
 # counts per exon
-$(name)/$(mapper)/htseq2/exons.raw.htseq2.tsv: $(foreach p, $(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.exons.raw.$(quant_method).tsv) $(foreach s,$(se), $(name)/$(mapper)/$(quant_method)/$(s).se.exons.raw.$(quant_method).tsv)
+$(name)/$(mapper)/htseq2/exons.raw.htseq2.tsv: $(foreach p, $(pe),$(call lib2quant_folder,$(p))$(p).pe.exons.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.exons.raw.$(quant_method).tsv)
 	irap_merge_tsv.sh $^  > $@.tmp && mv $@.tmp $@
 
-##
-$(name)/$(mapper)/htseq2/%.genes.raw.htseq2.tsv: $(name)/$(mapper)/%.hits.byname.bam $(gtf_file_abspath)
-	$(call run_htseq2,$<,$(gtf_file_abspath),$@,gene)
-##
-$(name)/$(mapper)/htseq2/%.exons.raw.htseq2.tsv: $(name)/$(mapper)/%.hits.byname.bam $(gtf_file_abspath).exon_id.gtf
-	$(call run_htseq2,$<,$(gtf_file_abspath).exon_id.gtf,$@,exon)
-##
-$(name)/$(mapper)/htseq2/%.transcripts.raw.htseq2.tsv: $(name)/$(mapper)/%.hits.byname.bam $(gtf_file_abspath)
-	$(call run_htseq2,$<,$(gtf_file_abspath),$@,transcript)
 
 #*****************
 # Simple count
@@ -426,43 +393,50 @@ $(name)/$(mapper)/basic/%.transcripts.raw.basic.tsv: $(name)/$(mapper)/%.se.hits
 # Flux-capacitor
 #*****************
 
-$(name)/$(mapper)/flux_cap/genes.raw.flux_cap.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.genes.raw.$(quant_method).tsv) $(foreach s,$(se), $(name)/$(mapper)/$(quant_method)/$(s).se.genes.raw.$(quant_method).tsv)
+$(name)/$(mapper)/flux_cap/genes.raw.flux_cap.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).tsv)
 	irap_merge_tsv.sh $^  > $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/flux_cap/exons.raw.flux_cap.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.exons.raw.$(quant_method).tsv) $(foreach s,$(se), $(name)/$(mapper)/$(quant_method)/$(s).se.exons.raw.$(quant_method).tsv)
+$(name)/$(mapper)/flux_cap/exons.raw.flux_cap.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.exons.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.exons.raw.$(quant_method).tsv)
 #	irap_merge_tsv.sh $^  > $@.tmp && mv $@.tmp $@
 	@$(call empty_file,$@)
 
-$(name)/$(mapper)/flux_cap/transcripts.raw.flux_cap.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se), $(name)/$(mapper)/$(quant_method)/$(s).se.transcripts.raw.$(quant_method).tsv)
+$(name)/$(mapper)/flux_cap/transcripts.raw.flux_cap.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).tsv)
 	irap_merge_tsv.sh $^  > $@.tmp && mv $@.tmp $@
 
 #
 # Run flux
 #
-$(name)/$(mapper)/flux_cap/%.se.flux_cap.tsv: $(name)/$(mapper)/%.se.hits.bam $(gtf_file_abspath) $(name)/$(mapper)/%.se.hits.bam.bai 
-	$(call run_flux_cap,$<,$(gtf_file_abspath),SINGLE,$@)
+# $1 - lib
+# $2 - SINGLE|PE
+# $3 - bam file prefix (includes .se|.pe)
+define make-fluxcap-quant-rule=
+$(call lib2quant_folder,$(1))$(3).flux_cap.tsv: $(call lib2bam_folder,$(1))$(3).hits.byname.bam $(gtf_file_abspath) $(call lib2bam_folder,$(1))$(3).hits.byname.bam $(call lib2bam_folder,$(1))$(3).hits.bam.bai 
+	mkdir -p $$(@D) && $$(call run_flux_cap,$$<,$$(gtf_file_abspath),$(2),$$@)
+endef
 
-$(name)/$(mapper)/flux_cap/%.pe.flux_cap.tsv: $(name)/$(mapper)/%.pe.hits.bam $(gtf_file_abspath) $(name)/$(mapper)/%.pe.hits.bam.bai 
-	$(call run_flux_cap,$<,$(gtf_file_abspath),PAIRED,$@)
+ifeq (flux_cap,$(quant_method))
+$(foreach l,$(se),$(eval $(call make-fluxcap-quant-rule,$(l),SINGLE,$(l).se)))	
+$(foreach l,$(pe),$(eval $(call make-fluxcap-quant-rule,$(l),PAIRED,$(l).pe)))
+endif
 
 # Process flux output
-$(name)/$(mapper)/flux_cap/%.genes.raw.flux_cap.tsv: $(name)/$(mapper)/flux_cap/%.flux_cap.tsv 
+%.genes.raw.flux_cap.tsv: %.flux_cap.tsv 
 	tsv.aggrbygene $< counts $@.tmp && mv $@.tmp $@ 
 
-$(name)/$(mapper)/flux_cap/%.genes.rpkm.flux_cap.tsv: $(name)/$(mapper)/flux_cap/%.flux_cap.tsv
+%.genes.rpkm.flux_cap.tsv: %.flux_cap.tsv
 	tsv.aggrbygene $< RPKM $@.tmp && mv  $@.tmp $@
 
-$(name)/$(mapper)/flux_cap/%.transcripts.raw.flux_cap.tsv: $(name)/$(mapper)/flux_cap/%.flux_cap.tsv
+%.transcripts.raw.flux_cap.tsv: %.flux_cap.tsv
 	cut -f 1,4 $< |tail -n +2 > $@.tmp && mv  $@.tmp $@
 
-$(name)/$(mapper)/flux_cap/%.transcripts.rpkm.flux_cap.tsv: $(name)/$(mapper)/flux_cap/%.flux_cap.tsv
+%.transcripts.rpkm.flux_cap.tsv: %.flux_cap.tsv
 	cut -f 1,6 $< | tail -n +2  > $@.tmp && mv  $@.tmp $@
 
-$(name)/$(mapper)/flux_cap/%.exons.raw.flux_cap.tsv: 
+%.exons.raw.flux_cap.tsv: 
 	$(call p_info, Warning! Flux_capacitor does not produce quantification at exon level. Generating empty file $@.)
 	@$(call empty_file,$@)
 
-$(name)/$(mapper)/flux_cap/%.exons.rpkm.flux_cap.tsv: 
+%.exons.rpkm.flux_cap.tsv: 
 	$(call p_info, Warning! Flux_capacitor does not produce quantification at exon level. Generating empty file $@.)
 	@$(call empty_file,$@)
 
@@ -471,7 +445,7 @@ $(name)/$(mapper)/flux_cap/%.exons.rpkm.flux_cap.tsv:
 # NURD
 #*****************
 
-$(name)/$(mapper)/nurd/genes.raw.nurd.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.genes.raw.$(quant_method).tsv) $(foreach s,$(se), $(name)/$(mapper)/$(quant_method)/$(s).se.genes.raw.$(quant_method).tsv)
+$(name)/$(mapper)/nurd/genes.raw.nurd.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).tsv)
 	irap_merge_tsv.sh $^  > $@.tmp && mv $@.tmp $@
 
 $(name)/$(mapper)/nurd/exons.raw.nurd.tsv: 
@@ -479,38 +453,46 @@ $(name)/$(mapper)/nurd/exons.raw.nurd.tsv:
 	@$(call empty_file,$@)
 
 $(name)/$(mapper)/nurd/transcripts.raw.nurd.tsv: 
-	$(call p_info, Warning! NURD does not produce raw quantification at transcript level. Generating empty file $@.)
+#	$(call p_info, Warning! NURD does not produce raw quantification at transcript level. Generating empty file $@.)
 	@$(call empty_file,$@)
 
 #
-# Run NURD
+# Run flux
 #
-$(name)/$(mapper)/nurd/%.se.nurd.tsv: $(name)/$(mapper)/%.se.hits.bam $(gtf_file_abspath)
-	$(call run_nurd,$<,$(gtf_file_abspath),$@)
+# $1 - lib
+# $2 - bam file prefix (includes .se|.pe)
+define make-nurd-quant-rule=
+$(call lib2quant_folder,$(1))$(2).nurd.tsv: $(call lib2bam_folder,$(1))$(2).hits.bam $(gtf_file_abspath) 
+	$$(call run_nurd,$$<,$$(gtf_file_abspath),$$@)
+# Process nurd output
+$(call lib2quant_folder,$(1))$(2).genes.raw.nurd.tsv: $(call lib2quant_folder,$(1))$(2).nurd.tsv 
+	cut -f 1,3 $$< > $$@.tmp && mv $$@.tmp $$@
 
-$(name)/$(mapper)/nurd/%.pe.nurd.tsv: $(name)/$(mapper)/%.pe.hits.bam $(gtf_file_abspath)
-	$(call run_nurd,$<,$(gtf_file_abspath),$@)
+$(call lib2quant_folder,$(1))$(2).genes.rpkm.nurd.tsv: $(call lib2quant_folder,$(1))$(2).nurd.tsv
+	cut -f 1,6 $$< > $$@.tmp && mv $$@.tmp $$@
 
-# Process flux output
-$(name)/$(mapper)/nurd/%.genes.raw.nurd.tsv: $(name)/$(mapper)/nurd/%.nurd.tsv 
-	cut -f 1,3 $< > $@.tmp && mv $@.tmp $@
-
-$(name)/$(mapper)/nurd/%.genes.rpkm.nurd.tsv: $(name)/$(mapper)/nurd/%.nurd.tsv
-	cut -f 1,6 $< > $@.tmp && mv $@.tmp $@
 
 # transcripts/isoforms
-$(name)/$(mapper)/nurd/%.transcripts.raw.nurd.tsv: $(name)/$(mapper)/nurd/%.nurd.tsv
-	irap_nurd2tsv --tsv $< --out $@.tmp && mv $@.tmp $@
+$(call lib2quant_folder,$(1))$(2).transcripts.raw.nurd.tsv: $(call lib2quant_folder,$(1))$(2).nurd.tsv
+	irap_nurd2tsv --tsv $$< --out $$@.tmp && mv $$@.tmp $$@
 
-$(name)/$(mapper)/nurd/%.transcripts.rpkm.nurd.tsv: $(name)/$(mapper)/nurd/%.nurd.tsv
-	irap_nurd2tsv --tsv $< --out $@.tmp && mv $@.tmp $@
+$(call lib2quant_folder,$(1))$(2).transcripts.rpkm.nurd.tsv: $(call lib2quant_folder,$(1))$(2).nurd.tsv
+	irap_nurd2tsv --tsv $$< --out $$@.tmp && mv $$@.tmp $$@
+
+endef
+
+ifeq (nurd,$(quant_method))
+$(foreach l,$(se),$(eval $(call make-nurd-quant-rule,$(l),$(l).se)))	
+$(foreach l,$(pe),$(eval $(call make-nurd-quant-rule,$(l),$(l).pe)))
+endif
+
 
 # exons
-$(name)/$(mapper)/nurd/%.exons.raw.nurd.tsv: 
+%.exons.raw.nurd.tsv: 
 	$(call p_info, Warning! NURD does not produce quantification at exon level. Generating empty file $@.)
 	@$(call empty_file,$@)
 
-$(name)/$(mapper)/nurd/%.exons.rpkm.nurd.tsv: 
+%.exons.rpkm.nurd.tsv: 
 	$(call p_info, Warning! NURD does not produce quantification at exon level. Generating empty file $@.)
 	@$(call empty_file,$@)
 

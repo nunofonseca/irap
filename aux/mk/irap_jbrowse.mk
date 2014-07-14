@@ -102,50 +102,50 @@ jbrowser_bam_targets=
 jbrowser_stage2_targets: 
 	echo $(subst .bam,.bam.tracks,$(call bam_files,$(name)))
 
-$(name)/$(mapper)/%.bam.tracks: $(name)/$(mapper)/%.bam.bw
-	$(call p_info,"BAM tracks for $*.bam generated.")
+%.bam.tracks: %.bam.bw
+	$(call p_info,"BAM tracks for $(notdir $*).bam generated.")
 
-$(name)/$(mapper)/%.bam.tracks.uploaded: $(name)/$(mapper)/%.bam.track $(name)/$(mapper)/%.bam.cov.track $(name)/$(mapper)/%.bam.covd.track
+%.bam.tracks.uploaded: %.bam.track %.bam.cov.track %.bam.covd.track
 	touch $@
-#	$(call p_info,"BAM tracks for $*.bam in browser ")
+#	$(call p_info,"BAM tracks for $(notdir $*).bam in browser ")
 
 # note: the bam files + index need to be copied/moved to the raw/bam/ directory under the jbrowser tree
 #       a symbolic link will be created in the original location
-$(name)/$(mapper)/%.se.hits.bam.track: $(name)/$(mapper)/%.se.hits.bam $(name)/$(mapper)/%.se.hits.bam.bai
-	track_add.sh -d bam  -l "$*-$(mapper)-BAM" -o $(JBROWSE_DATA) -i $< \
-	-m $(call get_metadata,Mapping,$(mapper),,,,Alignment (Reads) Track,"Lib" : "$*";) &&\
+%.se.hits.bam.track: %.se.hits.bam %.se.hits.bam.bai
+	track_add.sh -d bam  -l "$(notdir $*)-$(mapper)-BAM" -o $(JBROWSE_DATA) -i $< \
+	-m $(call get_metadata,Mapping,$(mapper),,,,Alignment (Reads) Track,"Lib" : "$(notdir $*)";) &&\
 	touch $@
 
-$(name)/$(mapper)/%.pe.hits.bam.track: $(name)/$(mapper)/%.pe.hits.bam  $(name)/$(mapper)/%.pe.hits.bam.bai
-	track_add.sh -d bam -l "$*-$(mapper)-BAM" -o $(JBROWSE_DATA) -i $< \
-	-m $(call get_metadata,Mapping,$(mapper),,,,Alignment (Reads) Track,"Lib" : "$*";) &&\
+%.pe.hits.bam.track: %.pe.hits.bam  %.pe.hits.bam.bai
+	track_add.sh -d bam -l "$(notdir $*)-$(mapper)-BAM" -o $(JBROWSE_DATA) -i $< \
+	-m $(call get_metadata,Mapping,$(mapper),,,,Alignment (Reads) Track,"Lib" : "$(notdir $*)";) &&\
 	touch $@
 
 
 # old 
 #$(name)/$(mapper)/%.se.hits.bam.track: $(name)/$(mapper)/%.se.hits.bam $(name)/$(mapper)/%.se.hits.bam.bed $(name)/$(mapper)/%.se.hits.bam.bai
-#	track_add.sh -d bam2  -l "$*-$(mapper)-BAM" -o $(JBROWSE_DATA) -i $< && 	touch $(name)/$(mapper)/%.se.hits.bam.track $(name)/$(mapper)/%.se.hits.bam.track
+#	track_add.sh -d bam2  -l "$(notdir $*)-$(mapper)-BAM" -o $(JBROWSE_DATA) -i $< && 	touch $(name)/$(mapper)/%.se.hits.bam.track $(name)/$(mapper)/%.se.hits.bam.track
 
 # Coverage Wig from BAM
-$(name)/$(mapper)/%.se.hits.bam.cov.track: $(name)/$(mapper)/%.se.hits.bam.bw $(name)/$(mapper)/%.se.hits.bam  $(name)/$(mapper)/%.se.hits.bam.bai
-	track_add.sh -d cov -l "$*-$(mapper)-Cov" -o $(JBROWSE_DATA) -i $< \
-	-m $(call get_metadata,Mapping,$(mapper),,,,Alignment Coverage Track,"Lib" : "$*";) &&\
+%.se.hits.bam.cov.track: %.se.hits.bam.bw %.se.hits.bam  %.se.hits.bam.bai
+	track_add.sh -d cov -l "$(notdir $*)-$(mapper)-Cov" -o $(JBROWSE_DATA) -i $< \
+	-m $(call get_metadata,Mapping,$(mapper),,,,Alignment Coverage Track,"Lib" : "$(notdir $*)";) &&\
 	touch $@
 
-$(name)/$(mapper)/%.pe.hits.bam.cov.track: $(name)/$(mapper)/%.pe.hits.bam.bw $(name)/$(mapper)/%.pe.hits.bam  $(name)/$(mapper)/%.pe.hits.bam.bai
-	track_add.sh -d cov -l "$*-$(mapper)-Cov" -o $(JBROWSE_DATA) -i $< \
-	-m $(call get_metadata,Mapping,$(mapper),,,,Alignment Coverage Track,"Lib" : "$*";) &&
+%.pe.hits.bam.cov.track: %.pe.hits.bam.bw %.pe.hits.bam  %.pe.hits.bam.bai
+	track_add.sh -d cov -l "$(notdir $*)-$(mapper)-Cov" -o $(JBROWSE_DATA) -i $< \
+	-m $(call get_metadata,Mapping,$(mapper),,,,Alignment Coverage Track,"Lib" : "$(notdir $*)";) &&
 	touch $@
 
 # Density Coverage Wig from BAM
-$(name)/$(mapper)/%.se.hits.bam.covd.track: $(name)/$(mapper)/%.se.hits.bam.bw $(name)/$(mapper)/%.se.hits.bam  $(name)/$(mapper)/%.se.hits.bam.bai
-	track_add.sh -d covd -l "$*-$(mapper)-D" -o $(JBROWSE_DATA) -i $< \
-	-m $(call get_metadata,Mapping,$(mapper),,,,Alignment Density Coverage Track,"Lib" : "$*";) &&\
+%.se.hits.bam.covd.track: %.se.hits.bam.bw %.se.hits.bam  %.se.hits.bam.bai
+	track_add.sh -d covd -l "$(notdir $*)-$(mapper)-D" -o $(JBROWSE_DATA) -i $< \
+	-m $(call get_metadata,Mapping,$(mapper),,,,Alignment Density Coverage Track,"Lib" : "$(notdir $*)";) &&\
 	touch $@
 
-$(name)/$(mapper)/%.pe.hits.bam.covd.track: $(name)/$(mapper)/%.pe.hits.bam.bw $(name)/$(mapper)/%.pe.hits.bam  $(name)/$(mapper)/%.pe.hits.bam.bai
-	track_add.sh -d covd -l "$*-$(mapper)-D" -o $(JBROWSE_DATA) -i $< \
-	-m $(call get_metadata,Mapping,$(mapper),,,,Alignment Density Coverage Track,"Lib" : "$*";) &&
+%.pe.hits.bam.covd.track: %.pe.hits.bam.bw %.pe.hits.bam %.pe.hits.bam.bai
+	track_add.sh -d covd -l "$(notdir $*)-$(mapper)-D" -o $(JBROWSE_DATA) -i $< \
+	-m $(call get_metadata,Mapping,$(mapper),,,,Alignment Density Coverage Track,"Lib" : "$(notdir $*)";) &&
 	touch $@
 
 #1-Stage
@@ -341,7 +341,7 @@ define cuffdiff_bed=
 	rm -f $(1).tmp* &&\
 	mv $(2).tmp $(2) 
 endef
-# R code fixes the number in scientific notation and change +-inf to 0
+# R code fixes the number in scientific notation and change +-inf to 0...
 $(name)/$(mapper)/$(quant_method)/cuffdiff2/%.genes_de.fold.bedGraph: $(name)/$(mapper)/$(quant_method)/cuffdiff2/%.genes_de.tsv $(gff3_file_abspath).csv
 	$(call cuffdiff_bed,$<,$@,fold,gene)
 $(name)/$(mapper)/$(quant_method)/cuffdiff1/%.genes_de.fold.bedGraph: $(name)/$(mapper)/$(quant_method)/cuffdiff1/%.genes_de.tsv $(gff3_file_abspath).csv
