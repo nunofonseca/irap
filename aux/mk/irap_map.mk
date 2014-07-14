@@ -106,7 +106,7 @@ endef
 #
 # same arguments used for *_index
 define bowtie1_index_filename=
-$(2).mapsplice.1.ebwt
+$(2).bowtie1.1.ebwt
 endef
 
 # -v <int>           report end-to-end hits w/ <=v mismatches; ignore qualities
