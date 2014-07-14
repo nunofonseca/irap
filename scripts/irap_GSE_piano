@@ -138,7 +138,13 @@ if ( length(unique(df[,1]))!=nrow(df) ) {
   pinfo("No more duplicates")
   pinfo("",nrow(df)," unique entries")
 }
-# 
+# checking for NAs
+NAs.1 <- nrow(df) 
+df <- df[!is.na(df[,opt$pval.col]),]
+df <- df[!is.na(df[,opt$fold.col]),]
+NAs.2 <- nrow(df)
+pinfo("NAs removed: ",NAs.1-NAs.2)
+
 fc <- df[,opt$fold.col]
 names(fc) <- df[,1]
 pval <- as.numeric(df[,opt$pval.col])
