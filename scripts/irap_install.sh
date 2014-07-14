@@ -189,6 +189,10 @@ GSNAP_VERSION=2013-11-27
 GSNAP_FILE=gmap-gsnap-${GSNAP_VERSION}.tar.gz
 GSNAP_URL=http://research-pub.gene.com/gmap/src/$GSNAP_FILE
 #
+mapsplice_VERSION=v2.1.8
+mapsplice_FILE=MapSplice-v$mapsplice_VERSION.zip
+mapsplice_URL=http://protocols.netlab.uky.edu/~zeng/$mapsplice_FILE
+#
 bwa_VERSION=0.7.4
 bwa_FILE=bwa-${bwa_VERSION}.tar.bz2
 bwa_URL=http://sourceforge.net/projects/bio-bwa/files/$bwa_FILE
@@ -576,9 +580,10 @@ function bwa_install {
     popd
 }
 
+
 function osa_install {
     MAPPER=osa
-    pinfo "Starting $MAPPER source installation..."
+    pinfo "Starting $MAPPER binary installation..."
     # download_software MONO
     # tar xjvf $MONO_FILE
     # pushd mono-$MONO_VERSION
@@ -590,6 +595,20 @@ function osa_install {
     unzip $osa_FILE
     pushd OSAv$osa_VERSION
     install_binary $MAPPER . \*
+    popd
+    pinfo "$MAPPER installation complete."    
+}
+
+function mapsplice_install {
+    MAPPER=mapsplice
+    pinfo "Starting $MAPPER source installation..."
+    download_software $MAPPER
+    unzip $mapsplice_FILE
+    pushd MapSplice-v$mapsplice_VERSION
+    make clean
+    make
+    install_binary $MAPPER bin \*
+    cp mapsplice.py $BIN_DIR/$MAPPER/
     popd
     pinfo "$MAPPER installation complete."    
 }
@@ -609,6 +628,7 @@ function mappers_install {
    gsnap_install 
    osa_install
    star_install
+# mapsplice_install
 }
 
 ########################
