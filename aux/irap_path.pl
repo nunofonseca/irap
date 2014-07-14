@@ -216,6 +216,7 @@ m('gem',_,'').
 %m('gems',_,'').%RNA-version
 m('star',_,'').
 m('osa',_,'').
+m('mapsplice',_,'').
 
 all_quant([htseq1,htseq2,basic,flux_cap,cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,nurd]).
 all_quant_norm([flux_cap,cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,none,deseq]).
