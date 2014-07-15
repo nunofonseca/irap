@@ -124,7 +124,7 @@ if ( length(unique(df[,1]))!=nrow(df) ) {
       pick <- which(df[to.exclude,opt$pval.col]==min(df[to.exclude,opt$pval.col],na.rm=T))[1]
     } else {
       # option 2 - greatest fold-change
-      pick <- which(df[to.exclude,opt$fold.col]==max(df[to.exclude,opt$fold.col],na.rm=T))[1]
+      pick <- which(abs(df[to.exclude,opt$fold.col])==max(abs(df[to.exclude,opt$fold.col]),na.rm=T))[1]
     }
     pdebug("Picked(",g,")=",df[to.exclude[pick],])
     if (!is.na(pick)) {
