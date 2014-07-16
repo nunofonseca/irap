@@ -45,6 +45,7 @@ option_list <- list(
   make_option(c("--bw"), action="store_true", default=FALSE, dest="bw", help="Also generate a bigWigFile (.bw extension)"),
   make_option(c("-f", "--feature"), type="character", dest="feature", default="gene",help="Feature (gene) [default %default]"),
   make_option(c("-i", "--tsv"), type="character", dest="tsv_file", default=NULL,help="TSV file name"),
+  make_option(c("--dup-pick-highest"),action="store_true",dest="dup.pick.highest",default=FALSE,help="Remove duplicates by picking the feature with highest (absolute) value [default %default]"),
   make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode")
 )
 filenames <- c("tsv_file","gtf_file","chr_file") ;#filenames that must exist (if defined)
@@ -162,7 +163,28 @@ tsv.sel.val <- tsv.sel.val[tsv.sel.id %in% sel[,1]]
 dups <- duplicated(as.character(tsv.sel.id))
 if (sum(dups) > 0) {
   pwarning("Found ",sum(dups)," duplicates. E.g., ",as.character(tsv.sel.id[dups][1]))
-  pinfo("Keeping duplicates")
+  if ( opt$dup.pick.highest ) {
+    pinfo("Excluding duplicates")
+    dup.feats <- unique(as.character(tsv.sel.id)[dups])
+    for ( g in dup.feats ) {
+      pdebug("Processing duplicated feature ",g)
+      to.exclude <- which(tsv.sel.id==g)
+      pdebug("feature has ",length(to.exclude)," entries")
+      pick <- which(abs(tsv.sel.val[to.exclude])==max(abs(tsv.sel.val[to.exclude]),na.rm=T))[1]
+      pdebug("Picked(",g,")=",tsv.sel.val[to.exclude[pick]])
+      if (!is.na(pick)) {
+        to.exclude <- to.exclude[-pick]
+      } else {
+        pinfo("Excluding all entries for feature ",g," no value (NA)")
+      }
+      tsv.sel.id <- tsv.sel.id[-to.exclude]
+      tsv.sel.val <- tsv.sel.val[-to.exclude]
+    }
+    
+  } else {
+    pinfo("Keeping duplicates")
+
+  }
 }
 pdebug.save.state("tsv2bedGraph","p3")
 
