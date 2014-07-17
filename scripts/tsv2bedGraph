@@ -46,6 +46,7 @@ option_list <- list(
   make_option(c("-f", "--feature"), type="character", dest="feature", default="gene",help="Feature (gene) [default %default]"),
   make_option(c("-i", "--tsv"), type="character", dest="tsv_file", default=NULL,help="TSV file name"),
   make_option(c("--dup-pick-highest"),action="store_true",dest="dup.pick.highest",default=FALSE,help="Remove duplicates by picking the feature with highest (absolute) value [default %default]"),
+    make_option(c("--dup_value_col"), type="character", default=NULL,help="Column in the TSV file with the values used to remove duplicates."),
   make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode")
 )
 filenames <- c("tsv_file","gtf_file","chr_file") ;#filenames that must exist (if defined)
@@ -153,10 +154,25 @@ if (is.factor(tsv[,get.col(tsv,opt$value_col)])) {
   tsv.sel.val <- as.numeric(tsv[,get.col(tsv,opt$value_col)])
   pinfo("numeric")
 }
-irap.assert(length(tsv.sel.val)==length(tsv.sel.id),"Internal error processing tsv file")
 names(tsv.sel.val) <- as.character(tsv.sel.id)
+
+if ( !is.null(opt$dup_value_col) ) {
+  if (is.factor(tsv[,get.col(tsv,opt$dup_value_col)])) {
+    tsv.dup.sel.val <- my.factor2numeric(tsv[,get.col(tsv,opt$dup_value_col)])
+    pinfo("factor")
+  } else {
+    tsv.dup.sel.val <- as.numeric(tsv[,get.col(tsv,opt$dup_value_col)])
+    pinfo("numeric")
+  }
+} else {
+  tsv.dup.sel.val <- tsv.sel.val
+}
+names(tsv.dup.sel.val) <- as.character(tsv.sel.id)
+
+irap.assert(length(tsv.sel.val)==length(tsv.sel.id),"Internal error processing tsv file")
 # values need to have the correspondent information in the gtf file
 tsv.sel.val <- tsv.sel.val[tsv.sel.id %in% sel[,1]]
+tsv.dup.sel.val <- tsv.dup.sel.val[tsv.sel.id %in% sel[,1]]
 
 # load(".RData")
 # Duplicated entries?
@@ -170,8 +186,8 @@ if (sum(dups) > 0) {
       pdebug("Processing duplicated feature ",g)
       to.exclude <- which(tsv.sel.id==g)
       pdebug("feature has ",length(to.exclude)," entries")
-      pick <- which(abs(tsv.sel.val[to.exclude])==max(abs(tsv.sel.val[to.exclude]),na.rm=T))[1]
-      pdebug("Picked(",g,")=",tsv.sel.val[to.exclude[pick]])
+      pick <- which(abs(tsv.dup.sel.val[to.exclude])==max(abs(tsv.dup.sel.val[to.exclude]),na.rm=T))[1]
+      pdebug("Picked(",g,")=",tsv.dup.sel.val[to.exclude[pick]])
       if (!is.na(pick)) {
         to.exclude <- to.exclude[-pick]
       } else {
@@ -179,6 +195,7 @@ if (sum(dups) > 0) {
       }
       tsv.sel.id <- tsv.sel.id[-to.exclude]
       tsv.sel.val <- tsv.sel.val[-to.exclude]
+      tsv.dup.sel.val <- tsv.dup.sel.val[-to.exclude]
     }
     
   } else {
@@ -189,8 +206,7 @@ if (sum(dups) > 0) {
 pdebug.save.state("tsv2bedGraph","p3")
 
 # entries that are in the GTF file
-sel.entries <- as.character(tsv.sel.id[as.character(tsv.sel.id) %in%
-                                     as.character(sel[,1])])
+sel.entries <- as.character(tsv.sel.id[as.character(tsv.sel.id) %in%  as.character(sel[,1])])
 sel <- sel[as.character(sel[,1]) %in% sel.entries,]
 
 pinfo("#Features with data:",nrow(sel))
