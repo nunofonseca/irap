@@ -216,7 +216,7 @@ if ( nrow(sel) == 0 ) {
 }
 # Merge in such a way that duplicated entries are kept
 rownames(sel) <- as.character(sel[,1])
-values <- tsv.sel.val
+values <- tsv.sel.val[as.character(sel[,1])]
 #pinfo(sel.entries)
 pinfo("# values:",length(values))
 #head(values)
