@@ -217,7 +217,7 @@ if ( nrow(sel) == 0 ) {
 # Merge in such a way that duplicated entries are kept
 rownames(sel) <- as.character(sel[,1])
 #EXCLUDE THE FOLLOWING LINE
-print(head(tsv.sel.val))
+#print(head(tsv.sel.val))
 values <- tsv.sel.val[names(tsv.sel.val) %in% as.character(sel[,1])]
 
 #pinfo(sel.entries)
