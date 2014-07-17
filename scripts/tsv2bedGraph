@@ -112,7 +112,7 @@ if ( opt$feature == "gene" ) {
   }
 }
 #gtf <- NULL
-#head(sel)
+# loc
 sel<-sel[,c(gtf.id.cols[opt$feature],'seqid','start','end')]
 
 if ( nrow(sel)==0 ) {
@@ -216,7 +216,10 @@ if ( nrow(sel) == 0 ) {
 }
 # Merge in such a way that duplicated entries are kept
 rownames(sel) <- as.character(sel[,1])
-values <- tsv.sel.val[as.character(sel[,1])]
+#EXCLUDE THE FOLLOWING LINE
+print(head(tsv.sel.val))
+values <- tsv.sel.val[names(tsv.sel.val) %in% as.character(sel[,1])]
+
 #pinfo(sel.entries)
 pinfo("# values:",length(values))
 #head(values)
