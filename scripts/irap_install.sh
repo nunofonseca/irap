@@ -633,10 +633,14 @@ function mappers_install {
 
 ########################
 function embam_install {
-
+        
+    R=$1
+    if [ "$R-" == "-" ];  then
+	R=$IRAP_DIR/bin/R
+    fi
     pinfo "Starting emBAM source installation..."
     download_software EMBAM
-    $IRAP_DIR/bin/R  CMD INSTALL $EMBAM_FILE
+    $R  CMD INSTALL $EMBAM_FILE
     pinfo "Starting emBAM source installation...done."
 }
 function  collect_software_versions {
@@ -1023,7 +1027,7 @@ biocLite(p,ask=FALSE)
 q()
 EOF
     pinfo "Installing EMBAM..."
-    embam_install    
+    embam_install $IRAP_DIR/bin/R
     pinfo "installing EMBAM...done."
     pinfo "Installing R packages...done."
 }
@@ -1087,7 +1091,7 @@ colnames(species2db)<-c("db","species")
 q()
 EOF
     pinfo "Installing EMBAM..."
-    embam_install    
+    embam_install $IRAP_DIR/R3/bin/R
     pinfo "installing EMBAM...done."
     pinfo "Installing R-3.x packages...done."
 }
