@@ -21,7 +21,7 @@ if ( IRAP.DIR == "" ) {
 # specify our desired options in a list
 #
 source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
-source(paste(IRAP.DIR,"","emBAM.R",sep="/"))
+#source(paste(IRAP.DIR,"","emBAM.R",sep="/"))
 
 pdebug.enabled <- FALSE
 
@@ -44,7 +44,7 @@ opt$htmldir <- paste(gsub("/$","",opt$htmldir),"/",sep="")
 pdebug.enabled <- opt$debug
 
 suppressPackageStartupMessages(library(R2HTML))
-#suppressPackageStartupMessages(library(emBAM))
+suppressPackageStartupMessages(library(emBAM))
 
 bam.file <- opt$bam_file
 # optional
