@@ -1,4 +1,4 @@
-#!/usr/bin/env Rscript
+#!/usr/bin/env Rscript3
 ## /*******************************************************************************************
 ##  *
 ##  * Copyright (c) 2012 Nuno Fonseca. All rights reserved.
@@ -21,6 +21,8 @@ if ( IRAP.DIR == "" ) {
 # specify our desired options in a list
 #
 source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+source(paste(IRAP.DIR,"","emBAM.R",sep="/"))
+
 pdebug.enabled <- FALSE
 
 
@@ -42,7 +44,7 @@ opt$htmldir <- paste(gsub("/$","",opt$htmldir),"/",sep="")
 pdebug.enabled <- opt$debug
 
 suppressPackageStartupMessages(library(R2HTML))
-suppressPackageStartupMessages(library(emBAM))
+#suppressPackageStartupMessages(library(emBAM))
 
 bam.file <- opt$bam_file
 # optional
@@ -63,9 +65,9 @@ if (num.cores<1) {
 
 irap.assert(num.cores>0)
 
-if ( num.cores>multicore:::detectCores()) {
-  num.cores <- multicore:::detectCores()
-  pwarning("The number of cores to use exceeds the cores available. Reducing the limit to ",multicore:::detectCores())
+if ( num.cores>parallel:::detectCores()) {
+  num.cores <- parallel:::detectCores()
+  pwarning("The number of cores to use exceeds the cores available. Reducing the limit to ",parallel:::detectCores())
 }
 
 options("cores"=num.cores)
@@ -267,7 +269,7 @@ bam.report <- function(bam.file,html.dir,total.num.reads=NA) {
   ################
   # TODO: reenable cache
   df <- em.bam.counts.df(bam.file,use.cache=TRUE,num.reads=total.num.reads)
-  save.image("debug.Rdata")
+  #save.image("debug.Rdata")
   count.label <- "Count"
   count.label.p <- "Count plus"
   count.label.m <- "Count minus"
@@ -304,13 +306,13 @@ bam.report <- function(bam.file,html.dir,total.num.reads=NA) {
       #
       my.html.plot(filename="pe_alignments.png",html.dir=html.dir, caption="Pair-end Alignments", to.plot=function() { plot.pe.alignments(df) })
       # insert distribution
-      l<-em.bam.pe.isize(bam.file,query=em.query("Paired"))
-      if (!is.null(l)) {
-        ins <- abs(l)
-        my.html.plot(filename="pe_ins_size.png",html.dir=html.dir, caption="Insert size", to.plot=function() { boxplot(ins,horizontal=FALSE,cex.axis=0.9,ylab="bp",xlab="Estimated Insert Size") } )
-      } else {
-        pdebug("No isize")
-      }
+      #l<-em.bam.pe.isize(bam.file,query=em.query("Paired"))
+      #if (!is.null(l)) {
+      #  ins <- abs(l)
+      #  my.html.plot(filename="pe_ins_size.png",html.dir=html.dir, caption="Insert size", to.plot=function() { boxplot(ins,horizontal=FALSE,cex.axis=0.9,ylab="bp",xlab="Estimated Insert Size") } )
+      #} else {
+      #  pdebug("No isize")
+      #}
       # insert length per reference
       #
   }
