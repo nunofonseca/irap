@@ -38,12 +38,21 @@ define bam_files=
 $(shell find  $(1) -name "*.hits.bam"  2>/dev/null | sort -u)
 endef
 
+#define de_dirs_orig=
+#$(shell ls -d -1 $(1)/*/*/* 2>/dev/null| grep -E "($(shell echo $(SUPPORTED_DE_MET#HODS)| sed 's/ /|/g'))$$")
+#endef
+
 define de_dirs=
-$(shell ls -d -1 $(1)/*/*/* 2>/dev/null| grep -E "($(shell echo $(SUPPORTED_DE_METHODS)| sed 's/ /|/g'))$$")
+$(shell ls -d -1 $(1)/{$(shell echo $(SUPPORTED_MAPPERS)| sed 's/ /,/g')}/{$(shell echo $(SUPPORTED_QUANT_METHODS)| sed 's/ /,/g')}/{$(shell echo $(SUPPORTED_DE_METHODS)| sed 's/ /,/g')}/ 2>/dev/null)
 endef
 
+
+#define quant_dirs_orig=
+#$(shell ls -d -1 $(1)/*/* 2>/dev/null| grep -E "($(shell echo $(SUPPORTED_QUANT_ME#THODS)| sed 's/ /|/g'))$$")
+#endef
+
 define quant_dirs=
-$(shell ls -d -1 $(1)/*/* 2>/dev/null| grep -E "($(shell echo $(SUPPORTED_QUANT_METHODS)| sed 's/ /|/g'))$$")
+$(shell ls -d -1 $(1)/{$(shell echo $(SUPPORTED_MAPPERS)| sed 's/ /,/g')}/{$(shell echo $(SUPPORTED_QUANT_METHODS)| sed 's/ /,/g')}/ 2>/dev/null)
 endef
 
 # 1 - exp name
