@@ -100,101 +100,101 @@ define GE_tsv2html=
 	tsvGE2html -m $(1) --tsv $(2) --out $(3)/$(4) --species $(species)  --browser ../../../../$(BROWSER_DIR)/ --css ../../../../$(CSS_FILE) --title "$(5)" -a $(annot_tsv)  --gdef "$(call groupsdef2str)" --gnames "$(call groups2str)" -f $(6) --feat_mapping $(feat_mapping_file)
 endef
 
-# #-x min value
-# #-r replicates
-# #-f feature (gene,exon,CDS)
+#-x min value
+#-r replicates
+#-f feature (gene,exon,CDS)
 
-# #1 DEST FILE
-# #2 OUTDIR
-# #3 TSV FILE
-# define  gen_htseq_report=
-# 	$(if $(3),irap_htseq_report.R $(2) $(3) $(de_min_count) && touch $(1),)
-# endef
+#1 DEST FILE
+#2 OUTDIR
+#3 TSV FILE
+define  gen_htseq_report=
+	$(if $(3),irap_htseq_report.R $(2) $(3) $(de_min_count) && touch $(1),)
+endef
 
-# # 1- pat
-# define quiet_ls=
-# $(shell ls -1 $(1) 2>/dev/null)
-# endef
+# 1- pat
+define quiet_ls=
+$(shell ls -1 $(1) 2>/dev/null)
+endef
 
-# # 1 - pat
-# # return only the the first file (most recent file)
-# define quiet_ls1=
-# $(shell ls -1 -t $(1) 2>/dev/null| head -n 1)
-# endef
+# 1 - pat
+# return only the the first file (most recent file)
+define quiet_ls1=
+$(shell ls -1 -t $(1) 2>/dev/null| head -n 1)
+endef
 
-# ifndef IRAP_REPORT_MAIN_OPTIONS
-# IRAP_REPORT_MAIN_OPTIONS=
-# endif
-# # 
-# ifdef reuse_menu
-# IRAP_REPORT_MAIN_OPTIONS += --reuse-menu
-# endif
+ifndef IRAP_REPORT_MAIN_OPTIONS
+IRAP_REPORT_MAIN_OPTIONS=
+endif
+# 
+ifdef reuse_menu
+IRAP_REPORT_MAIN_OPTIONS += --reuse-menu
+endif
 
-# must_exist=$(if  $(realpath $(1)),,$(1))
-
-
-# clean_report: 
-# 	@find $(name)/report/mapping/ $(name)/report/quant/ $(name)/report/de/  -maxdepth 1 -type f -exec rm -f {} \; 
-# 	$(call p_info,Report folder partially cleaned up)
-
-# ##############################################################################
-# # Produce a HTML report
-# #report: $(name)/report/index.html mapping_report quant_report de_report
-# phony_targets+=report_setup clean_report
+must_exist=$(if  $(realpath $(1)),,$(1))
 
 
-# report_setup: $(call must_exist,$(name)/report) $(call must_exist,$(name)/report/mapping/) $(call must_exist,$(name)/report/de/) $(call must_exist,$(name)/report/quant/) $(call rep_browse,report_browser_setup) $(call must_exist,$(name)/report/irap.css) $(call must_exist,$(name)/report/menu.css)
+clean_report: 
+	@find $(name)/report/mapping/ $(name)/report/quant/ $(name)/report/de/  -maxdepth 1 -type f -exec rm -f {} \; 
+	$(call p_info,Report folder partially cleaned up)
 
-# $(name)/report/:
-# 	mkdir -p $@
+##############################################################################
+# Produce a HTML report
+#report: $(name)/report/index.html mapping_report quant_report de_report
+phony_targets+=report_setup clean_report
 
-# $(name)/report/mapping/:
-# 	mkdir -p $@
 
-# $(name)/report/de/:
-# 	mkdir -p $@
+report_setup: $(call must_exist,$(name)/report) $(call must_exist,$(name)/report/mapping/) $(call must_exist,$(name)/report/de/) $(call must_exist,$(name)/report/quant/) $(call rep_browse,report_browser_setup) $(call must_exist,$(name)/report/irap.css) $(call must_exist,$(name)/report/menu.css)
 
-# $(name)/report/quant/:
-# 	mkdir -p $@
+$(name)/report/:
+	mkdir -p $@
 
-# $(name)/report/irap.css: $(PATH2CSS_FILE)
-# 	cp -f $< $@
+$(name)/report/mapping/:
+	mkdir -p $@
 
-# $(name)/report/menu.css: $(IRAP_DIR)/aux/css/menu.css
-# 	cp -f $< $@
+$(name)/report/de/:
+	mkdir -p $@
 
-# #############################
-# # QC
-# phony_targets+=qc_report
+$(name)/report/quant/:
+	mkdir -p $@
 
-# qc_html_files=$(name)/report/qc.html
+$(name)/report/irap.css: $(PATH2CSS_FILE)
+	cp -f $< $@
 
-# qc_report: $(qc_html_files)
+$(name)/report/menu.css: $(IRAP_DIR)/aux/css/menu.css
+	cp -f $< $@
 
-# $(name)/report/qc.html: $(conf) $(call must_exist,$(name)/data/)
-# 	irap_report_qc $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(name)/report 
+#############################
+# QC
+phony_targets+=qc_report
 
-# #############################
-# # TODO: info.html
-# phony_targets+=info_report
-# info_targets=$(name)/report/info.html $(name)/report/versions.html
+qc_html_files=$(name)/report/qc.html
 
-# info_report: report_setup $(info_targets)
+qc_report: $(qc_html_files)
 
-# $(name)/report/info.html: $(name)/report/$(call notdir,$(conf))
-# 	irap_report_expinfo --conf $<  --css $(CSS_FILE) --out $@.tmp && mv $@.tmp $@
+$(name)/report/qc.html: $(conf) $(call must_exist,$(name)/data/)
+	irap_report_qc $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(name)/report 
 
-# #
-# $(name)/report/versions.html: $(name)/report/software.tsv $(conf) 
-# 	tsvSoftware2html -i $< -o $@.tmp && mv $@.tmp.html $@
+#############################
+# TODO: info.html
+phony_targets+=info_report
+info_targets=$(name)/report/info.html $(name)/report/versions.html
 
-# $(name)/report/status.html:
+info_report: report_setup $(info_targets)
 
-# $(name)/report/$(call notdir,$(conf)): $(conf)
-# 	cp $< $@.tmp && mv $@.tmp $@
+$(name)/report/info.html: $(name)/report/$(call notdir,$(conf))
+	irap_report_expinfo --conf $<  --css $(CSS_FILE) --out $@.tmp && mv $@.tmp $@
 
-# #############################
-# phony_targets+=mapping_report quant_report
+#
+$(name)/report/versions.html: $(name)/report/software.tsv $(conf) 
+	tsvSoftware2html -i $< -o $@.tmp && mv $@.tmp.html $@
+
+$(name)/report/status.html:
+
+$(name)/report/$(call notdir,$(conf)): $(conf)
+	cp $< $@.tmp && mv $@.tmp $@
+
+#############################
+phony_targets+=mapping_report quant_report
 
 define mapping_report_targets=
 $(foreach m,$(call mapping_dirs,$(name)), $(name)/report/mapping/$(shell basename $(m)).html) $(name)/report/mapping/comparison.html 
