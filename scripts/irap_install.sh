@@ -201,7 +201,7 @@ osa_VERSION=2.1.14
 osa_FILE=OSAv$osa_VERSION.zip
 osa_URL=http://www.omicsoft.com/osa/software/$osa_FILE
 #
-EMBAM_VERSION=0.1.10
+EMBAM_VERSION=0.1.12
 EMBAM_FILE=emBAM_${EMBAM_VERSION}.tar.gz
 EMBAM_URL=http://embam.googlecode.com/files/$EMBAM_FILE
 
@@ -231,7 +231,7 @@ R_URL=http://cran.r-project.org/src/base/R-2/$R_FILE
 # 
 R3_VERSION=3.0.2
 R3_FILE=R-${R3_VERSION}.tar.gz 
-R3_URL=http://cran.r-project.org/src/base/R-3/$R_FILE
+R3_URL=http://cran.r-project.org/src/base/R-3/$R3_FILE
 
 # new: 0.1.19
 SAMTOOLS_VERSION=0.1.18
@@ -961,6 +961,7 @@ function R_packages_install {
     R --no-save <<EOF
 repo<-"$CRAN_REPO"
 install.packages("multicore",repos=repo)
+install.packages("parallel",repos=repo)
 install.packages("intervals",repos=repo)
 install.packages("gclus",repo=repo)
 install.packages('R2HTML',repo=repo)
@@ -1034,7 +1035,7 @@ function R3_packages_install {
     pinfo "Installing R-3.x packages..."
     R3 --no-save <<EOF
 repo<-"$CRAN_REPO"
-packages2install<-c("multicore","intervals","gclus",'R2HTML',"agricolae",
+packages2install<-c("multicore","parallel","intervals","gclus",'R2HTML',"agricolae",
              "optparse","brew","reshape","gtools","gdata","caTools",
              "sfsmisc","gplots")
 
