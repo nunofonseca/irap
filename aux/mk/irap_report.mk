@@ -196,13 +196,17 @@ $(name)/report/$(call notdir,$(conf)): $(conf)
 #############################
 phony_targets+=mapping_report quant_report
 
-mapping_report_targets=$(foreach m,$(call mapping_dirs,$(name)), $(name)/report/mapping/$(shell basename $(m)).html) $(name)/report/mapping/comparison.html 
+define mapping_report_targets=
+$(foreach m,$(call mapping_dirs,$(name)), $(name)/report/mapping/$(shell basename $(m)).html) $(name)/report/mapping/comparison.html 
+endef
+
+#mapping_report_targets=$(foreach m,$(call mapping_dirs,$(name)), $(name)/report/mapping/$(shell basename $(m)).html) $(name)/report/mapping/comparison.html 
 
 mapping_report_files:
-	echo $(mapping_report_targets)
+	echo $(call mapping_report_targets)
 	echo $(call mapping_dirs,$(name))
 
-mapping_report: report_setup $(mapping_report_targets)
+mapping_report: report_setup $(call mapping_report_targets)
 
 
 $(name)/report/mapping/%.html: $(name)/%/   $(foreach p,$(pe),$(name)/%/$($(p)_dir)$(p).pe.hits.bam) $(foreach s,$(se),$(name)/%/$($(s)_dir)$(s).se.hits.bam) $(foreach p,$(pe),$(name)/%/$($(p)_dir)$(p).pe.hits.bam.stats) $(foreach s,$(se),$(name)/%/$($(s)_dir)$(s).se.hits.bam.stats) $(foreach p,$(pe),$(name)/%/$($(p)_dir)$(p).pe.hits.bam.gene.stats) $(foreach s,$(se),$(name)/%/$($(s)_dir)$(s).se.hits.bam.gene.stats) $(conf) $(call must_exist,$(name)/report/mapping/)
@@ -443,7 +447,7 @@ end_report: $(name)/report/index.html $(call must_exist,$(name)/report/irap.css)
 
 # TODO: replace versions.html by info_report
 # TODO $(call must_exist,$(name)/report/status.html)a
-$(name)/report/index.html: $(conf) $(info_targets)  $(quant_html_files) $(qc_html_files) $(mapping_report_targets) $(call de_html_files,$(name)) $(call gse_html_files,$(name))  $(call rep_browse,$(name)/report/jbrowse/index.html)  $(name)/report/about.html $(call must_exist,$(name)/report/irap.css) $(call must_exist,$(name)/report/menu.css)
+$(name)/report/index.html: $(conf) $(info_targets)  $(quant_html_files) $(qc_html_files) $(call mapping_report_targets) $(call de_html_files,$(name)) $(call gse_html_files,$(name))  $(call rep_browse,$(name)/report/jbrowse/index.html)  $(name)/report/about.html $(call must_exist,$(name)/report/irap.css) $(call must_exist,$(name)/report/menu.css)
 	cp  $(name)/report/info.html $@ &&
 	irap_report_main $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(name)/report -m "$(call mapping_dirs,$(name))" -q "$(call quant_dirs,$(name))" -d "$(call de_dirs,$(name))" &&
 	sleep 2 &&
