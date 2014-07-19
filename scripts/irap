@@ -1294,8 +1294,7 @@ endef
 define exons_quant_file=
 $(if $(filter y,$(exon_quant)),$(name)/$(mapper)/$(quant_method)/exons.raw.$(quant_method).tsv,)
 endef
-d
-efine exons_quant_files=
+define exons_quant_files=
 $(if $(filter y,$(exon_quant)),$(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(call lib2quant_folder,$(p))$(p).pe.exons.raw.$(quant_method).tsv) $(foreach s,$(se), $(name)/$(mapper)/$(quant_method)/$(call lib2quant_folder,$(s))$(s).se.exons.raw.$(quant_method).tsv),)
 endef
 
