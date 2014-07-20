@@ -144,7 +144,7 @@ bowtie1_VERSION=1.0.1
 bowtie1_FILE=bowtie-${bowtie1_VERSION}-linux-x86_64.zip
 bowtie1_URL=http://sourceforge.net/projects/bowtie-bio/files/bowtie/$bowtie1_VERSION/$bowtie1_FILE
 #
-bowtie2_VERSION=2.2.3
+bowtie2_VERSION=2.2.2
 bowtie2_FILE=bowtie2-${bowtie2_VERSION}-linux-x86_64.zip
 bowtie2_URL=http://sourceforge.net/projects/bowtie-bio/files/bowtie2/$bowtie2_VERSION/$bowtie2_FILE
 
@@ -439,7 +439,7 @@ function bowtie2_install {
     #export BITS=64
     #make clean
     #make -j $J all
-    FILES="bowtie2 bowtie2-build bowtie2-inspect bowtie2-align"
+    FILES="bowtie2 bowtie2-build bowtie2-inspect bowtie2-align*"
     install_binary $MAPPER . $FILES 
     install_binary $MAPPER scripts \*
     pinfo "$MAPPER installation complete."
