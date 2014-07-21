@@ -72,6 +72,8 @@ if ( num.cores>parallel:::detectCores()) {
 
 options("cores"=num.cores)
 
+pdebug.save.state("bam_report","p0")
+
 # TODO: check arguments
 is.wholenumber <- function(x, tol = .Machine$double.eps^0.5)  abs(x - round(x)) < tol 
 
@@ -392,7 +394,7 @@ bam_report.init <- function(bam.file,html.dir=NULL) {
 
 ##################################################
 html.dir <- bam_report.init(bam.file,html.dir=html.dir)
-
+pdebug.save.state("bam_report","p1")
 if(!is.na(fastq.files) && !is.null(fastq.files) ) {
   files <- strsplit(fastq.files," +")[[1]];
   num.reads <- 0
@@ -404,8 +406,10 @@ if(!is.na(fastq.files) && !is.null(fastq.files) ) {
     num.reads <- num.reads + as.integer(r)/4
   }
   pinfo("Num reads=",num.reads)
+  pdebug.save.state("bam_report","p2")
   bam.report(bam.file,html.dir,num.reads)
 } else {
+  pdebug.save.state("bam_report","p2")
   bam.report(bam.file,html.dir)
 }
 q(status=0)
