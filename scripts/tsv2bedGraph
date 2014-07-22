@@ -171,8 +171,9 @@ names(tsv.dup.sel.val) <- as.character(tsv.sel.id)
 
 irap.assert(length(tsv.sel.val)==length(tsv.sel.id),"Internal error processing tsv file")
 # values need to have the correspondent information in the gtf file
-tsv.sel.val <- tsv.sel.val[tsv.sel.id %in% sel[,1]]
-tsv.dup.sel.val <- tsv.dup.sel.val[tsv.sel.id %in% sel[,1]]
+tsv.sel.id <- tsv.sel.id[tsv.sel.id %in% sel[,1]]
+tsv.sel.val <- tsv.sel.val[names(tsv.sel.val) %in% tsv.sel.id]
+tsv.dup.sel.val <- tsv.dup.sel.val[names(tsv.dup.sel.val) %in% tsv.sel.id]
 
 # load(".RData")
 # Duplicated entries?
@@ -186,7 +187,12 @@ if (sum(dups) > 0) {
       pdebug("Processing duplicated feature ",g)
       to.exclude <- which(tsv.sel.id==g)
       pdebug("feature has ",length(to.exclude)," entries")
-      pick <- which(abs(tsv.dup.sel.val[to.exclude])==max(abs(tsv.dup.sel.val[to.exclude]),na.rm=T))[1]
+      # all NAs
+      if ( sum(is.na(tsv.dup.sel.val[to.exclude]))==length(to.exclude)) {
+        pick <- NA
+      } else {
+        pick <- which(abs(tsv.dup.sel.val[to.exclude])==max(abs(tsv.dup.sel.val[to.exclude]),na.rm=T))[1]
+      }
       pdebug("Picked(",g,")=",tsv.dup.sel.val[to.exclude[pick]])
       if (!is.na(pick)) {
         to.exclude <- to.exclude[-pick]
@@ -208,6 +214,7 @@ pdebug.save.state("tsv2bedGraph","p3")
 # entries that are in the GTF file
 sel.entries <- as.character(tsv.sel.id[as.character(tsv.sel.id) %in%  as.character(sel[,1])])
 sel <- sel[as.character(sel[,1]) %in% sel.entries,]
+sel.entries <- as.character(sel[,1])
 
 pinfo("#Features with data:",nrow(sel))
 if ( nrow(sel) == 0 ) {
@@ -216,15 +223,19 @@ if ( nrow(sel) == 0 ) {
 }
 # Merge in such a way that duplicated entries are kept
 rownames(sel) <- as.character(sel[,1])
-#EXCLUDE THE FOLLOWING LINE
-#print(head(tsv.sel.val))
 values <- tsv.sel.val[names(tsv.sel.val) %in% as.character(sel[,1])]
 
 #pinfo(sel.entries)
 pinfo("# values:",length(values))
 #head(values)
 irap.assert(length(sel.entries)==length(values),"Internal error")
-t1 <- cbind(sel[sel.entries,-1],values)
+#t1 <- cbind(sel[sel.entries,-1],values)
+# sort coords and values before merging
+values <- values[names(values) %in% sel.entries]
+values <- values[sort(names(values))]
+sel <- sel[as.character(sel[,1]) %in% sel.entries,]
+sel <- sel[names(values),]
+t1 <- cbind(sel[,-1],values)
 rownames(t1) <- NULL
 #head(sel)
 # sort
