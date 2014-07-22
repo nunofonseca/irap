@@ -393,6 +393,11 @@ bam_report.init <- function(bam.file,html.dir=NULL) {
 }
 
 ##################################################
+# COMMENT THE following code
+#if (pdebug.enabled) {
+#  source(paste(IRAP.DIR,"emBAM.R",sep="/"))
+#}
+
 html.dir <- bam_report.init(bam.file,html.dir=html.dir)
 pdebug.save.state("bam_report","p1")
 if(!is.na(fastq.files) && !is.null(fastq.files) ) {
