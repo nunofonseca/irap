@@ -201,7 +201,7 @@ osa_VERSION=2.1.14
 osa_FILE=OSAv$osa_VERSION.zip
 osa_URL=http://www.omicsoft.com/osa/software/$osa_FILE
 #
-EMBAM_VERSION=0.1.12
+EMBAM_VERSION=0.1.14
 EMBAM_FILE=emBAM_${EMBAM_VERSION}.tar.gz
 EMBAM_URL=http://embam.googlecode.com/files/$EMBAM_FILE
 
