@@ -3,8 +3,24 @@
 FILES=$*
 
 NAMES=$FILES
+if [ "$*-" == "-stdin-" ]; then
+    set -e
+    read -t 60 NAMES
+    set -- $NAMES
+    set +e
+else
+    if [ "$1-" == "-" ]; then
+	echo "ERROR: no file names provided"
+	exit 1
+    fi
+fi
+#echo $*
 f1=$1
 shift 1
+if [ ! -e $f1 ]; then
+    echo "ERROR: file $f1 not found"
+    exit 1
+fi
 
 # check if order is ok
 # exclude entries added by CUFFlinks 
