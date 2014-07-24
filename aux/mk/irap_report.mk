@@ -210,8 +210,7 @@ mapping_report: report_setup $(call mapping_report_targets)
 
 
 $(name)/report/mapping/%.html: $(name)/%/   $(foreach p,$(pe),$(name)/%/$($(p)_dir)$(p).pe.hits.bam) $(foreach s,$(se),$(name)/%/$($(s)_dir)$(s).se.hits.bam) $(foreach p,$(pe),$(name)/%/$($(p)_dir)$(p).pe.hits.bam.stats) $(foreach s,$(se),$(name)/%/$($(s)_dir)$(s).se.hits.bam.stats) $(foreach p,$(pe),$(name)/%/$($(p)_dir)$(p).pe.hits.bam.gene.stats) $(foreach s,$(se),$(name)/%/$($(s)_dir)$(s).se.hits.bam.gene.stats) $(conf) $(call must_exist,$(name)/report/mapping/)
-	irap_report_mapping --out $(subst .html,,$@).1.html --mapper $* --pe "$(foreach p,$(pe),;$(name)/$*/$($(p)_dir)$(p).pe.hits.bam)" --se "$(foreach s,$(se),;$(name)/$*/$($(s)_dir)$(s).se.hits.bam)"  --pe_labels "$(foreach p,$(pe),;$(p))" --se_labels "$(foreach s,$(se),;$(s))" --css ../$(CSS_FILE) && mv $(subst .html,,$@).1.html  $@
-
+	( $(call pass_args_stdin,irap_report_mapping,$@, --out $(subst .html,,$@).1.html --mapper $* --pe "$(foreach p,$(pe),;$(name)/$*/$($(p)_dir)$(p).pe.hits.bam)" --se "$(foreach s,$(se),;$(name)/$*/$($(s)_dir)$(s).se.hits.bam)"  --pe_labels "$(foreach p,$(pe),;$(p))" --se_labels "$(foreach s,$(se),;$(s))" --css ../$(CSS_FILE) $@ ) && mv $(subst .html,,$@).1.html  $@
 
 # statistics per bam file
 %.bam.stats: %.bam $(gff3_file_abspath)

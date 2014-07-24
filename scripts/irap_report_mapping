@@ -52,7 +52,10 @@ filenames <- c("html_template") ;#filenames that must exist (if defined)
 
 # check multiple options values
 mandatory <- c("out","mapper","se_bams","pe_bams","se_labels","pe_labels","html_template")
-opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
+
+#
+args <- importArgsfromStdin()
+opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory,args=args)
 
 
 irap.css <- opt$css

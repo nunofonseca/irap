@@ -1396,12 +1396,12 @@ myderef <- function(s) {
 }
 #################################################################################################
 
-myParseArgs <- function(usage,option_list,filenames.exist=NULL,multiple.options=NULL,mandatory=NULL) {
+myParseArgs <- function(usage,option_list,filenames.exist=NULL,multiple.options=NULL,mandatory=NULL,...) {
 
   # get command line options, if help option encountered print help and exit,
   # otherwise if options not found on command line then set defaults,
   parser <- OptionParser(usage = usage, option_list=option_list)
-  opt <- parse_args(parser)
+  opt <- parse_args(parser,...)
   
   for ( m in mandatory ) {
     if ( is.null(opt[[m]]) ) {
@@ -1887,4 +1887,23 @@ boxplot.n <- function(significance=NULL,comparisons=NULL,show.n=TRUE,adj.n=0,...
   }
 
   bp
+}
+
+###################################################
+#
+
+importArgsfromStdin <- function() {
+  args <- commandArgs(trailingOnly = TRUE)
+
+  if ( args[1]=="-stdin" ) {
+    f <- file("stdin")
+    open(f)
+    line <- readLines(f,n=1)
+    write(line, stderr())
+    # process line
+    # for now just split into words
+    # TODO: take into account '' or ""
+    args <- strsplit(line,split=" ")[[1]]
+  }
+  return(args)
 }
