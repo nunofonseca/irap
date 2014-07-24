@@ -10,7 +10,7 @@ if [ "$*-" == "-stdin-" ]; then
     set +e
 else
     if [ "$1-" == "-" ]; then
-	echo "ERROR: no file names provided"
+	echo "ERROR: no file names provided" 
 	exit 1
     fi
 fi

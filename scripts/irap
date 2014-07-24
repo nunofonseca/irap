@@ -896,6 +896,39 @@ define is_empty_file=
 $(if  $(realpath $(1)),$(if $(shell head -n 1 $(1) | grep   Empty),y))
 endef
 
+#1-file
+#2-args
+define args2file=
+ $(shell rm -f $(1) && touch $(1))
+ $(foreach arg,$(2), $(shell echo -n "$(arg) " >> $(1);))
+ $(shell echo >> $(1))
+endef
+
+###############################################################################
+# When the number of libraries is greater than BIG_LIM then pass the arguments
+# to some scripts from stdin
+BIG_LIM=800
+ifeq ($(word 1,$(sort $(BIG_LIM) $(words $(se) $(pe))))),$(BIG_LIM))
+# too many libs to be able to pass them as an argument
+$(call p_info, Big number of libraries mode (>800))
+# cmd=$1
+# out_file=$2
+# args=$3
+define pass_args_stdin=
+$(call args2file,$(2).in,$(3)) cat $(2).in | $(1) -stdin && rm -f $(2).in
+endef
+
+else
+$(call p_info, Small number of libraries mode)
+# cmd=$1
+# out_file=$2
+# args=$3
+define pass_args_stdin=
+$(1) $(3) 
+endef
+
+endif
+
 ################################################################################
 # TODO: STAGE0
 STAGE1_OUT_FILES=$(foreach p,$(se),$(call lib2filt_folder,$(p))$(p).f.fastq) $(foreach p,$(pe),$(call lib2filt_folder,$(p))$(p)_1.f.fastq)
