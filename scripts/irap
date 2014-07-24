@@ -907,8 +907,12 @@ endef
 ###############################################################################
 # When the number of libraries is greater than BIG_LIM then pass the arguments
 # to some scripts from stdin
-BIG_LIM=800
-ifeq ($(word 1,$(sort $(BIG_LIM) $(words $(se) $(pe))))),$(BIG_LIM))
+BIG_LIM=600
+#$(info $(words $(se) $(pe)))
+#$(info $(sort $(BIG_LIM) $(words $(se) $(pe))))
+#$(info $(shell expr $(words $(se) $(pe)) \<  $(BIG_LIM)))
+ifeq ($(shell expr $(words $(se) $(pe)) \<  $(BIG_LIM)),0)
+#($(word 1,$(sort $(BIG_LIM) $(words $(se) $(pe))))),$(BIG_LIM))
 # too many libs to be able to pass them as an argument
 $(call p_info, Big number of libraries mode (>800))
 # cmd=$1
