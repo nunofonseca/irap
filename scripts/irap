@@ -269,7 +269,7 @@ endif
 # data_dir Data directory (directory where the data is expected to be)
 # Directory organization
 # data_dir/reference/species/(fasta+(cdna+gtf))
-# data_dir/raw_data/species/
+# data_dir/raw_data/$(raw_folder)/
 
 # check if data dir exists and structure is OK
 # TODO
@@ -287,6 +287,12 @@ ifndef species
  $(call p_error,missing argument species)
 else
  $(info *	species=$(species))
+endif
+
+#****************
+# raw data folder
+ifndef raw_folder
+ raw_folder=$(species)
 endif
 
 #**********************
@@ -996,11 +1002,11 @@ $(call p_info,[DONE] Initialization)
 # Quality Filtering
 ###################
 define do_quality_filtering_and_report=
-	irap_fastq_qc $(read_qual_filter_common_params) data_dir=$(data_dir)/raw_data/$(species)/$($(1)_dir) read_size=$($(1)_rs) qual=$($(1)_qual) f="$($(1))" out_prefix=$(1) is_pe=$(call is_pe_lib,$(1)) out_dir=$(name)/data/$($(1)_dir) report_dir=$(name)/report/riq/$($(1)_dir)
+	irap_fastq_qc $(read_qual_filter_common_params) data_dir=$(data_dir)/raw_data/$(raw_folder)/$($(1)_dir) read_size=$($(1)_rs) qual=$($(1)_qual) f="$($(1))" out_prefix=$(1) is_pe=$(call is_pe_lib,$(1)) out_dir=$(name)/data/$($(1)_dir) report_dir=$(name)/report/riq/$($(1)_dir)
 endef
 
 define do_quality_filtering_and_report_cleanup=
-	irap_fastq_qc $(read_qual_filter_common_params) data_dir=$(data_dir)/raw_data/$(species)/$($(1)_dir) read_size=$($(1)_rs) qual=$($(1)_qual) f="$($(1))" out_prefix=$(1) is_pe=$(call is_pe_lib,$(1)) out_dir=$(name)/data/$($(1)_dir) report_dir=$(name)/report/riq/$($(1)_dir) clean
+	irap_fastq_qc $(read_qual_filter_common_params) data_dir=$(data_dir)/raw_data/$(raw_folder)/$($(1)_dir) read_size=$($(1)_rs) qual=$($(1)_qual) f="$($(1))" out_prefix=$(1) is_pe=$(call is_pe_lib,$(1)) out_dir=$(name)/data/$($(1)_dir) report_dir=$(name)/report/riq/$($(1)_dir) clean
 endef
 
 define not_empty=
