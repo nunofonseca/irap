@@ -260,9 +260,9 @@ qc.expand.table <- function(dft,conf) {
   names(dft.sd) <- rownames(dft)
 
   for ( n in c("Passed","Unpaired","Ns","Contamination","Quality","reads","length","mean.base.qual","sd.base.qual","median.base.qual","GC") ) {
-    dft.median[n] <- round(median(as.numeric(dft[n,])),2)
-    dft.mean[n] <- round(mean(as.numeric(dft[n,])),2)
-    dft.sd[n] <- round(sd(as.numeric(dft[n,])),2)
+    dft.median[n] <- round(median(as.numeric(dft[n,]),na.rm=T),2)
+    dft.mean[n] <- round(mean(as.numeric(dft[n,]),na.rm=T),2)
+    dft.sd[n] <- round(sd(as.numeric(dft[n,]),na.rm=T),2)
   }
   dft.nlibs <- ncol(dft)
   dft <- cbind(dft,dft.median,dft.mean,dft.sd)
