@@ -321,22 +321,23 @@ $(name)/$(mapper)/htseq1/exons.raw.htseq1.tsv: $(foreach p,$(pe),$(call lib2quan
 # $2 - htseq1|htseq2
 # $3 - bam file prefix (includes .se|.pe)
 # $4 - quantification of exon|gene|trans
+# $5 - gtf file
 define make-htseq-quant-rule=
-$(call lib2quant_folder,$(1))$(3).$(4)s.raw.$(2).tsv: $(call lib2bam_folder,$(1))$(3).hits.byname.bam $(gtf_file_abspath)
-	mkdir -p $$(@D) && $$(call run_$(2),$$<,$$(gtf_file_abspath),$$@,$(4))
+$(call lib2quant_folder,$(1))$(3).$(4)s.raw.$(2).tsv: $(call lib2bam_folder,$(1))$(3).hits.byname.bam $(5)
+	mkdir -p $$(@D) && $$(call run_$(2),$$<,$$(5),$$@,$(4))
 endef
 
 # generate the rules for htseq
 ifeq ($(patsubst htseq%,,$(quant_method)),)
-$(foreach l,$(se),$(eval $(call make-htseq-quant-rule,$(l),$(quant_method),$(l).se,gene)))	
-$(foreach l,$(pe),$(eval $(call make-htseq-quant-rule,$(l),$(quant_method),$(l).pe,gene)))
+$(foreach l,$(se),$(eval $(call make-htseq-quant-rule,$(l),$(quant_method),$(l).se,gene,$(gtf_file_abspath))))	
+$(foreach l,$(pe),$(eval $(call make-htseq-quant-rule,$(l),$(quant_method),$(l).pe,gene,$(gtf_file_abspath))))
 ifeq ($(exon_quant),y)
-$(foreach l,$(se),$(eval $(call make-htseq-quant-rule,$(l),$(quant_method),$(l).se,exon)))	
-$(foreach l,$(pe),$(eval $(call make-htseq-quant-rule,$(l),$(quant_method),$(l).pe,exon)))
+$(foreach l,$(se),$(eval $(call make-htseq-quant-rule,$(l),$(quant_method),$(l).se,exon,$(gtf_file_abspath).exon_id.gtf)))	
+$(foreach l,$(pe),$(eval $(call make-htseq-quant-rule,$(l),$(quant_method),$(l).pe,exon,$(gtf_file_abspath).exon_id.gtf)))
 endif
 ifeq ($(transcript_quant),y)
-$(foreach l,$(se),$(eval $(call make-htseq-quant-rule,$(l),$(quant_method),$(l).se,transcript)))	
-$(foreach l,$(pe),$(eval $(call make-htseq-quant-rule,$(l),$(quant_method),$(l).pe,transcript)))
+$(foreach l,$(se),$(eval $(call make-htseq-quant-rule,$(l),$(quant_method),$(l).se,transcript,$(gtf_file_abspath))))	
+$(foreach l,$(pe),$(eval $(call make-htseq-quant-rule,$(l),$(quant_method),$(l).pe,transcript,$(gtf_file_abspath))))
 endif
 #$(foreach l,$(se) $(pe),$(info $(call make-htseq-quant-rule,$(l),htseq1,$(l).pe,gene)))
 endif
