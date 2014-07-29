@@ -439,7 +439,7 @@ function bowtie2_install {
     #export BITS=64
     #make clean
     #make -j $J all
-    FILES="bowtie2 bowtie2-build bowtie2-inspect bowtie2-align*"
+    FILES="bowtie2 bowtie2-build* bowtie2-inspect* bowtie2-align*"
     install_binary $MAPPER . $FILES 
     install_binary $MAPPER scripts \*
     pinfo "$MAPPER installation complete."
