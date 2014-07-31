@@ -79,6 +79,7 @@ if [ ! -e "$conf" ]; then
 fi
 #DATA_DIR=$2
 data_dir=`grep "^data_dir=" $conf|cut -f 2 -d=`
+
 shift 1
 IRAP_PARAMS=$*
 #Data directory
@@ -93,8 +94,17 @@ se="`grep "^se=" $conf|cut -f 2 -d=`"
 pe="`grep "^pe=" $conf|cut -f 2 -d=`"
 mapper="`grep "^pe=" $conf|cut -f 2 -d=`"
 contrasts="`grep "^contrasts=" $conf|cut -f 2 -d=`"
+# log_dir
+log_dir=`grep "^log_dir=" $conf|cut -f 2 -d=`
 report_dir=$name/report
 echo " * Configuration loaded."
+
+# directory to keep the logs
+if [ "$log_dir-" == "-" ]; then
+    log_dir=`pwd`/$name/lsf_logs
+fi
+LOG_DIR=$log_dir/$jobname_prefix
+mkdir -p $LOG_DIR
 
 # Check JOB_MAX_MEM
 if [ "$JOB_MAX_MEM-" != "-" ]; then 
@@ -138,6 +148,12 @@ fi
 echo PE=$pe
 echo SE=$se 
 
+# cur_stage
+CUR_STAGE=
+function get_path2logfile {
+    mkdir -p $LOG_DIR/$CUR_STAGE
+    echo $LOG_DIR/$CUR_STAGE
+}
 
 function p_info {
     echo "[INFO] $*" >&2
@@ -214,8 +230,8 @@ function submit_job {
     #-R  "span[ptile=$THREADS]"
     MAX_MEM=`get_maxmem $MEM`
     if [ "$WAIT_FOR_IDS-" != "-" ]; then
-	$ECHO bsub $IRAP_LSF_PARAMS -q $QUEUE -n $THREADS  -M $MAX_MEM -R "select[mem>=$MEM] rusage[mem=$MEM]"  -w "$WAIT_FOR_IDS"  -cwd `pwd` -o "`pwd`/$name/$jobname-%J.out" -e "`pwd`/$name/$jobname-%J.err" -J $jobname  $cmd2e max_threads=$THREADS  data_dir=$DATA_DIR max_mem=$MEM
+	$ECHO bsub $IRAP_LSF_PARAMS -q $QUEUE -n $THREADS  -M $MAX_MEM -R "select[mem>=$MEM] rusage[mem=$MEM]"  -w "$WAIT_FOR_IDS"  -cwd `pwd` -o "`get_path2logfile`/$jobname-%J.out" -e "`get_path2logfile`/$jobname-%J.err" -J $jobname  $cmd2e max_threads=$THREADS  data_dir=$DATA_DIR max_mem=$MEM
     else
-	$ECHO bsub $IRAP_LSF_PARAMS -q $QUEUE  $GROUP -n $THREADS  -M $MAX_MEM -R "select[mem>=$MEM]  rusage[mem=$MEM]"   -cwd `pwd` -o "`pwd`/$name/$jobname-%J.out" -e "`pwd`/$name/$jobname-%J.err" -J $jobname  $cmd2e max_threads=$THREADS  data_dir=$DATA_DIR max_mem=$MEM	
+	$ECHO bsub $IRAP_LSF_PARAMS -q $QUEUE  $GROUP -n $THREADS  -M $MAX_MEM -R "select[mem>=$MEM]  rusage[mem=$MEM]"   -cwd `pwd` -o "`get_path2logfile`/$jobname-%J.out" -e "`get_path2logfile`/$jobname-%J.err" -J $jobname  $cmd2e max_threads=$THREADS  data_dir=$DATA_DIR max_mem=$MEM	
     fi
 }
