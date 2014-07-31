@@ -787,6 +787,8 @@ feat_length=$(name)/data/lengths.Rdata
 phony_targets=
 silent_targets= 
 
+empty=
+space=$(empty) $(empty) 
 
 ################################################################################
 # AUXILIARY FUNCTIONS
