@@ -34,7 +34,6 @@ if ( IRAP.DIR == "" ) {
 #
 source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
 pdebug.enabled <- TRUE
-
 #######################
 usage <- "irap_raw2metric --tsv file --lengths lengths.Rdata [options]"
 filenames <- c("tsv_file","lengths")
