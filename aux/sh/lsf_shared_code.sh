@@ -145,8 +145,8 @@ if [ "$name-" = "-" ]; then
  echo "!missing argument name!"
 	exit 1
 fi
-echo PE=$pe
-echo SE=$se 
+#echo PE=$pe
+#echo SE=$se 
 
 # cur_stage
 CUR_STAGE=
