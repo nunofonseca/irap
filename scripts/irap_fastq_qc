@@ -412,7 +412,8 @@ define n_reads_noqc =
 $(shell A=`if [ -e $(1) ]; then grep -c "^+" $(1); else zgrep -c "^+" $(1).gz; fi`; echo $$A,$$A,$$A,$$A)
 endef
 
-$(report_dir)/%.f.csv:  $(out_dir)/%.f.fastq $(out_dir)/%.filter1.fastq $(out_dir)/%.filter2.fastq $(out_dir)/%.filter3.fastq $(data_dir)/%.fastq
+$(report_dir)/%.f.csv:  
+#$(out_dir)/%.f.fastq $(out_dir)/%.filter1.fastq $(out_dir)/%.filter2.fastq $(out_dir)/%.filter3.fastq $(data_dir)/%.fastq
 	echo $*,`num_reads.sh $(data_dir)/$*.fastq`,\
 	`num_reads.sh $(out_dir)/$*.filter1.fastq`,\
 	`num_reads.sh $(out_dir)/$*.filter2.fastq`,\
