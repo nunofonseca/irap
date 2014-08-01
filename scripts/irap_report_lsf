@@ -54,6 +54,7 @@ de_ofiles=`irap conf=$conf $IRAP_PARAMS de_report_files|tail -n 1`
 gse_ofiles=`irap conf=$conf $IRAP_PARAMS gse_report_files|tail -n 1`
 WAIT_FOR_IDS_=$WAIT_FOR_IDS
 
+# one report for each mapper
 for d in $mappers_dirs; do
     mapper=`basename $d`
     p_info "Bam files generated using $mapper..."
