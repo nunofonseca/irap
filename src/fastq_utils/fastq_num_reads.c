@@ -72,7 +72,7 @@ int main(int argc, char **argv ) {
     READ_LINE(fd1);
     cline+=4;
     ++num_reads;
-    PRINT_READS_PROCESSED(cline/4);
+    //PRINT_READS_PROCESSED(cline/4);
   }
   fclose(fd1);
   printf("%lu\n",num_reads);
