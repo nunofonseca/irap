@@ -5,7 +5,7 @@ ifdef DEBUG
 CFLAGS+= -g -DDEBUG=1
 endif
 
-TARGETS=fastq_truncate fastq_filterpair fastq_randsample fastq_trim fastq_filter_n fastq_validator
+TARGETS=fastq_truncate fastq_filterpair fastq_randsample fastq_trim fastq_filter_n fastq_validator fastq_num_reads
 
 ############################################################################
 all: $(TARGETS)
@@ -17,6 +17,9 @@ fastq_validator:  hash.o fastq_validator.o
 fastq_filterpair: hash.o fastq_filterpair.o
 	gcc  $^ -o $@
 
+
+fastq_num_reads: fastq_num_reads.c
+	gcc  $(CFLAGS)  -o $@  $<
 
 hash.o: hash.c hash.h
 	gcc $(CFLAGS) -c $<
