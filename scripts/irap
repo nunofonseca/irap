@@ -849,10 +849,16 @@ define get_lib_name=
 $(if $(filter $(1),$(se)),$(1),$(if $(findstring $(1),$(pe)),$(subst _1,,$(1)),$(if $(findstring $(subst _1,,$(1)),$(pe)),$(subst _1,,$(1)),$(1))))
 endef
 
+# 1 -lib
+define path2lib_bam=
+$(call lib2bam_folder,$(1))/$(call bam_file_for_lib,$(1))
+endef
+
 # 1-group
 define  get_group_bam_files=
-$(foreach l,$($(1)), $(call lib2bam_folder,$(l))/$(call bam_file_for_lib,$(l)))
+$(foreach l,$($(1)), $(call path2lib_bam,$(l)))
 endef
+
 
 # the bam file names of each group are concatened using ,
 define  get_contrast_bam_files=
@@ -916,9 +922,7 @@ endef
 # When the number of libraries is greater than BIG_LIM then pass the arguments
 # to some scripts from stdin
 BIG_LIM=600
-#$(info $(words $(se) $(pe)))
-#$(info $(sort $(BIG_LIM) $(words $(se) $(pe))))
-#$(info $(shell expr $(words $(se) $(pe)) \<  $(BIG_LIM)))
+
 ifeq ($(shell expr $(words $(se) $(pe)) \<  $(BIG_LIM)),0)
 #($(word 1,$(sort $(BIG_LIM) $(words $(se) $(pe))))),$(BIG_LIM))
 # too many libs to be able to pass them as an argument
@@ -931,7 +935,7 @@ $(call args2file,$(2).in,$(3)) cat $(2).in | $(1) -stdin && rm -f $(2).in
 endef
 
 else
-$(call p_info, Small number of libraries mode)
+#$(call p_info, Small number of libraries mode)
 # cmd=$1
 # out_file=$2
 # args=$3
