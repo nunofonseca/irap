@@ -324,7 +324,7 @@ $(name)/$(mapper)/htseq1/exons.raw.htseq1.tsv: $(foreach p,$(pe),$(call lib2quan
 # $5 - gtf file
 define make-htseq-quant-rule=
 $(call lib2quant_folder,$(1))$(3).$(4)s.raw.$(2).tsv: $(call lib2bam_folder,$(1))$(3).hits.byname.bam $(5)
-	mkdir -p $$(@D) && $$(call run_$(2),$$<,$$(5),$$@,$(4))
+	mkdir -p $$(@D) && $$(call run_$(2),$$<,$(5),$$@,$(4))
 endef
 
 # generate the rules for htseq
