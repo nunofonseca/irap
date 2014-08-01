@@ -98,9 +98,15 @@ $(info $(shell date "+%H:%M:%S %d/%m/%Y") * ERROR: $(1)) && $(error Fatal error)
 endef
 
 # check if the parameter has a value - prints an error if not
+ifdef verbose
 define check_ok=
 $(if $($(1)),$(call p_info, *	$(1)=$($(1))),$(p_error Missing $(1)))
 endef
+else
+define check_ok=
+$(if $($(1)),,$(p_error Missing $(1)))
+endef
+endif
 
 # complain if a file does not exist and exit
 file_exists=$(if  $(realpath $(1)),,$(call p_error,$(1) not found))
@@ -364,14 +370,11 @@ refgeneannot_file=$(subst .gtf,,$(subst .gz,,$(gtf_file))).gene_annot.tsv
 # FASTQ files
 # SE reads
 ifdef se
- # check if file exists
  $(info *	se=$(se))
- $(foreach l,$(se),$(info $(l)=$($(l))))
-
- 
+ #$(foreach l,$(se),$(info $(l)=$($(l)))) 
  # check if fastq file is in a different directory
  $(foreach l,$(se),$(eval $(l)_dir=$(call check_libdir_ok,$(l))))
- $(foreach l,$(se),$(info $(l)_dir=$($(l)_dir)))
+ #$(foreach l,$(se),$(info $(l)_dir=$($(l)_dir)))
  #$(foreach l,$(se),$(info $(l)_dir=$(call check_libdir_ok,$(l))))
  $(foreach l,$(se),$(call check_se_libname_ok,$(l)))
  $(foreach l,$(se),$(call check_param_ok,$(l)_rs))
