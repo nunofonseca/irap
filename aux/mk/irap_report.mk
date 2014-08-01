@@ -208,16 +208,20 @@ mapping_report_files:
 
 mapping_report: report_setup $(call mapping_report_targets)
 
+# files required
+MAPPING_REPORT_PRE_STATS=$(foreach p,$(pe),$(name)/$(mapper)/$($(p)_dir)$(p).pe.hits.bam.stats) $(foreach s,$(se),$(name)/$(mapper)/$($(s)_dir)$(s).se.hits.bam.stats) $(foreach p,$(pe),$(name)/$(mapper)/$($(p)_dir)$(p).pe.hits.bam.gene.stats) $(foreach s,$(se),$(name)/$(mapper)/$($(s)_dir)$(s).se.hits.bam.gene.stats)
 
-$(name)/report/mapping/%.html: $(name)/%/   $(foreach p,$(pe),$(name)/%/$($(p)_dir)$(p).pe.hits.bam) $(foreach s,$(se),$(name)/%/$($(s)_dir)$(s).se.hits.bam) $(foreach p,$(pe),$(name)/%/$($(p)_dir)$(p).pe.hits.bam.stats) $(foreach s,$(se),$(name)/%/$($(s)_dir)$(s).se.hits.bam.stats) $(foreach p,$(pe),$(name)/%/$($(p)_dir)$(p).pe.hits.bam.gene.stats) $(foreach s,$(se),$(name)/%/$($(s)_dir)$(s).se.hits.bam.gene.stats) $(conf) $(call must_exist,$(name)/report/mapping/)
-	$(call pass_args_stdin,irap_report_mapping,$@, --out $(subst .html,,$@).1.html --mapper $* --pe $(subst $(space),,$(foreach p,$(pe),;$(name)/$*/$($(p)_dir)$(p).pe.hits.bam)) --se $(subst $(space),,$(foreach s,$(se),;$(name)/$*/$($(s)_dir)$(s).se.hits.bam))  --pe_labels $(subst  $(space),,$(foreach p,$(pe),;$(p))) --se_labels $(subst $(space),,$(foreach s,$(se),;$(s)))" --css ../$(CSS_FILE) $@ ) && mv $(subst .html,,$@).1.html  $@
+# 
+$(name)/report/mapping/%.html_req:
+	echo $(MAPPING_REPORT_PRE_STATS)
+
+$(name)/report/mapping/%.html: $(name)/%/   $(foreach p,$(pe),$(name)/%/$($(p)_dir)$(p).pe.hits.bam) $(foreach s,$(se),$(name)/%/$($(s)_dir)$(s).se.hits.bam) $(MAPPING_REPORT_PRE_STATS) $(conf) $(call must_exist,$(name)/report/mapping/)
+	$(call pass_args_stdin,irap_report_mapping,$@, --out $(subst .html,,$@).1.html --mapper $* --pe "$(subst $(space),,$(foreach p,$(pe),;$(name)/$*/$($(p)_dir)$(p).pe.hits.bam))" --se "$(subst $(space),,$(foreach s,$(se),;$(name)/$*/$($(s)_dir)$(s).se.hits.bam))"  --pe_labels "$(subst  $(space),,$(foreach p,$(pe),;$(p)))" --se_labels "$(subst $(space),,$(foreach s,$(se),;$(s)))" --css ../$(CSS_FILE) $@ ) && mv $(subst .html,,$@).1.html  $@
 
 # statistics per bam file
 %.bam.stats: %.bam $(gff3_file_abspath)
 	bedtools coverage -abam $< -counts -b $(gff3_file_abspath) > $@.tmp && \
 	mv $@.tmp $@
-
-#$(name)/report/mapping/%.stats: $(call must_exist,$(name)/report/mapping/) $(call must_exist,$(name)/%/)  $(foreach p,$(pe),$(name)/%/$($(p)_dir)$(p).pe.hits.bam.stats) $(foreach s,$(se),$(name)/%/$($(s)_dir)$(s).se.hits.bam.stats) $(foreach p,$(pe),$(name)/%/$($(p)_dir)$(p).pe.hits.bam.gene.stats) $(foreach s,$(se),$(name)/%/$($(s)_dir)$(s).se.hits.bam.gene.stats) 
 
 %.bam.gene.stats: %.bam $(name)/data/exons.bed $(name)/data/introns.bed
 	echo -n "Exons	" > $@.tmp &&\
@@ -260,7 +264,13 @@ $(name)/report/mapping/comparison.html: $(call only_existing_files,$(foreach m,$
 
 # detailed info per bam
 $(name)/report/mapping/$(mapper)/%/index.html: FORCE
-	bam_report.R --bam $(name)/$(mapper)/$(call bam_file_for_lib,$*) -d $(@D) --fastq "$(call libname2fastq,$*)" --cores $(max_threads)
+	bam_report.R --bam $(call path2lib_bam,$*) -d $(@D) --fastq "$(call libname2fastq,$*)" --cores $(max_threads)
+
+
+
+$(name)/report/mapping/$(mapper)/lib_map_report:  $(foreach p,$(pe),$(name)/report/mapping/$(mapper)/$(p)/index.html $(name)/$(mapper)/$($(p)_dir)$(p).pe.hits.bam.gene.stats $(name)/$(mapper)/$($(p)_dir)$(p).pe.hits.bam.stats) $(foreach s,$(se),$(name)/report/mapping/$(mapper)/$(s)/index.html $(name)/$(mapper)/$($(s)_dir)$(s).se.hits.bam.gene.stats $(name)/$(mapper)/$($(s)_dir)$(s).se.hits.bam.stats)
+
+phony_targets+= $(name)/report/mapping/$(mapper)/lib_map_report
 
 ########################
 phony_targets+=quant_report quant_report_files
