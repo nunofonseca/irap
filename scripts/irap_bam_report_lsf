@@ -42,17 +42,6 @@ fi
 declare -i s1=0
 declare -i s2=0
 
-# function submit_job {
-#     jobname=$1
-#     shift
-#     cmd2e=$*
-
-#     if [ "$DEBUG-" = "1-" ]; then
-#         echo $cmd2e
-#     else
-# 	bsub -q $QUEUE -N -n $THREADS  -M $MEM -R "rusage[mem=$MEM]" -R  "span[ptile=$THREADS]"  -cwd `pwd` -o `pwd`/$name/$jobname.out  -J $jobname  $cmd2e
-#     fi
-# }
 
 ##########
 # pe files
@@ -60,10 +49,9 @@ declare -i s2=0
 # step2 align & counting
 echo "***********************************************"
 echo "* Step&21 (PE)"
-for p in $pe ; do 
+for p in $pe; do 
     let s1=s1+1
-    BAMFILE=$name/$mapper/$p.pe.hits.bam
-    submit_job "${jobname_prefix}[$s1]"  $cmd $report_dir/mapping/$mapper/$p/index.html $BAMFILE.stats  $BAMFILE.gene.stats
+    submit_job "${jobname_prefix}[$s1]"  $cmd se= pe=$p $report_dir/mapping/$mapper/lib_map_report
 done
 
 
@@ -73,16 +61,11 @@ echo "***********************************************"
 echo "*Step1&2 (SE)"
 for f in $se ; do
     let s1=s1+1
-    BAMFILE="$name/$mapper/$f.se.hits.bam"
-    if [ -e $BAMFILE ]; then
-	submit_job "${jobname_prefix}[$s1]"   $cmd $report_dir/mapping/$mapper/$f/index.html $BAMFILE.stats $BAMFILE.gene.stats
-    fi
+    submit_job "${jobname_prefix}[$s1]"   $cmd se=$f pe= $report_dir/mapping/$mapper/lib_map_report
 done
 
 WAIT_FOR_IDS=
 submit_job "${jobname_prefix}M"  `check_dependency ${jobname_prefix}`  $cmd $report_dir/mapping/$mapper.html 
-#bam_report_multi.R $report_dir/bam/$mapper $name/$mapper/*.hits.bam
-#$name/report/mapping/comparison.html
 echo JOB=${jobname_prefix}M
 
 echo JOBS=${jobname_prefix}*.out
