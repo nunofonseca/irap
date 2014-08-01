@@ -267,7 +267,6 @@ $(name)/report/mapping/$(mapper)/%/index.html: FORCE
 	bam_report.R --bam $(call path2lib_bam,$*) -d $(@D) --fastq "$(call libname2fastq,$*)" --cores $(max_threads)
 
 
-
 $(name)/report/mapping/$(mapper)/lib_map_report:  $(foreach p,$(pe),$(name)/report/mapping/$(mapper)/$(p)/index.html $(name)/$(mapper)/$($(p)_dir)$(p).pe.hits.bam.gene.stats $(name)/$(mapper)/$($(p)_dir)$(p).pe.hits.bam.stats) $(foreach s,$(se),$(name)/report/mapping/$(mapper)/$(s)/index.html $(name)/$(mapper)/$($(s)_dir)$(s).se.hits.bam.gene.stats $(name)/$(mapper)/$($(s)_dir)$(s).se.hits.bam.stats)
 
 phony_targets+= $(name)/report/mapping/$(mapper)/lib_map_report
