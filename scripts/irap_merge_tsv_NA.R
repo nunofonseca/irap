@@ -1,4 +1,4 @@
-#!/usr/bin/env Rscript
+#!/usr/bin/env Rscript3
 
 IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
 if ( IRAP.DIR == "" ) {
@@ -7,16 +7,13 @@ if ( IRAP.DIR == "" ) {
 }
 source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
 
-
 #args <- commandArgs(trailingOnly=TRUE)
 args <- importArgsfromStdin()
-
+#pwarning(args)
 if (length(args)<1) {
   cat("ERROR! usage: irap_merge_tsv_NA.R  file1.tsv [file2.tsv file3.tsv ...]\n")
   q(status=1);
 }
-
-
 
 files <- args
 f1<-files[1]
