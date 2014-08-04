@@ -1452,7 +1452,7 @@ $(name)/$(mapper)/scripture/rawcounts.all.scripture.tsv:  $(gtf_file_abspath) $(
 #
 # for DE and normalization it may be better to have the counts file by file
 $(name)/$(mapper)/scripture/rawcounts.scripture.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.$(quant_method).tsv) $(foreach s,$(se), $(name)/$(mapper)/$(quant_method)/$(s).se.$(quant_method).tsv)
-	irap_merge_tsv.sh $^  > $@
+	( $(call pass_args_stdin,irap_merge_tsv.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
 
 # SE & PE
 $(name)/$(mapper)/scripture/%.se.scripture.tsv: $(name)/$(mapper)/%.se.hits.bam $(gtf_file_abspath) $(name)/$(mapper)/$(quant_method)/chr_size.tsv $(reference_abspath)_files   $(name)/$(mapper)/%.se.hits.bam.bai
@@ -1518,10 +1518,10 @@ $(name)/$(mapper)/$(quant_method)/transcripts.rpkm.none.tsv: $(name)/$(mapper)/$
 # special rules
 # cufflinks*
 $(name)/$(mapper)/$(quant_method)/genes.rpkm.cufflinks%.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.genes.rpkm.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.genes.rpkm.$(quant_method).tsv) 
-	$(call merge_tsv,$(quant_method)) $^  > $@.tmp && mv $@.tmp $@
+	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) ) > $@.tmp && mv $@.tmp $@
 
 $(name)/$(mapper)/$(quant_method)/transcripts.rpkm.cufflinks%.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.rpkm.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.transcripts.rpkm.$(quant_method).tsv) 
-	$(call merge_tsv,$(quant_method)) $^  > $@.tmp && mv $@.tmp $@
+	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) ) > $@.tmp && mv $@.tmp $@
 
 $(name)/$(mapper)/$(quant_method)/exons.rpkm.cufflinks%.tsv:
 	$(call p_info, Warning! Cufflinks does not produce quantification at exon level. Generating empty file $@.)
@@ -1529,10 +1529,10 @@ $(name)/$(mapper)/$(quant_method)/exons.rpkm.cufflinks%.tsv:
 
 # flux-capacitor
 $(name)/$(mapper)/$(quant_method)/genes.rpkm.flux%.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.genes.rpkm.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.genes.rpkm.$(quant_method).tsv) 
-	$(call merge_tsv,$(quant_method)) $^  > $@.tmp && mv $@.tmp $@
+	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) )  > $@.tmp && mv $@.tmp $@
 
 $(name)/$(mapper)/$(quant_method)/transcripts.rpkm.flux%.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.rpkm.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.transcripts.rpkm.$(quant_method).tsv) 
-	$(call merge_tsv,$(quant_method)) $^  > $@.tmp && mv $@.tmp $@
+	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) )  > $@.tmp && mv $@.tmp $@
 
 $(name)/$(mapper)/$(quant_method)/exons.rpkm.flux%.tsv: 
 	$(call p_info, Warning! Flux-capacitor does not produce quantification at exon level. Generating empty file $@.)
@@ -1540,10 +1540,10 @@ $(name)/$(mapper)/$(quant_method)/exons.rpkm.flux%.tsv:
 
 # nurd
 $(name)/$(mapper)/nurd/genes.rpkm.nurd.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.genes.rpkm.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.rpkm.$(quant_method).tsv)
-	$(call merge_tsv,$(quant_method)) $^  > $@.tmp && mv $@.tmp $@
+	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) ) > $@.tmp && mv $@.tmp $@
 
 $(name)/$(mapper)/nurd/transcripts.rpkm.nurd.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.rpkm.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.transcripts.rpkm.$(quant_method).tsv) 
-	$(call merge_tsv,$(quant_method)) $^  > $@.tmp && mv $@.tmp $@
+	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) ) > $@.tmp && mv $@.tmp $@
 
 $(name)/$(mapper)/$(quant_method)/exons.rpkm.nurd.tsv: 
 	$(call p_info, Warning! NURD does not produce quantification at exon level. Generating empty file $@.)
