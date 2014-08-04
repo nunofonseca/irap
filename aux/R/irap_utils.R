@@ -1904,6 +1904,7 @@ importArgsfromStdin <- function() {
     # for now just split into words
     # TODO: take into account '' or ""
     args <- strsplit(line,split=" ")[[1]]
+    close(f)
   }
   return(args)
 }
