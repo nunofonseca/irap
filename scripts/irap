@@ -117,6 +117,20 @@ is_defined=$(if $(subst undefined,,$(origin $(1))),$(1),)
 # ensure that the dir name starts and ends with a /
 check_libdir_ok=$(if $(call is_defined,$(1)_dir),$(patsubst %/,%,$($(1)_dir))/,)
 
+# 
+lib_strand_info=$(if $(call is_defined,$(1)_strand),,undef)
+
+# strand value
+VALID_STRAND_OPTIONS=first second both
+# return non empty if option is invalid
+strand_value_ok=$(if $(filter $($(1)),$(VALID_STRAND_OPTIONS)),"invalid option $($(1)) for $(1)",)
+
+# check if stranded information is ok
+check_libstrand_ok=$(if $(call is_defined,$(1)_strand),$(if $(call strand_value_ok,$(1)_strand),$(call set_has_stranded_data,$(1)),$(call p_error,"Invalid strand option for lib $(1) - $($(1)_strand)")))
+
+has_stranded_data=no
+set_has_stranded_data=$(if $(filter both,$($(1))),,$(eval has_stranded_data=yes))
+
 # get the path for a filtered fastq file
 lib2filt_folder=$(name)/data/$($(1)_dir)
 # get the path for a bam file
@@ -150,6 +164,7 @@ define convert_bam2pefastq=
 $(call file_exists,$(2))
 $(eval override $(1):=$(notdir $(basename $(2)))_1.fastq $(notdir $(basename $(2)))_2.fastq)
 endef
+
 
 ################################################################################
 # Variables
@@ -374,6 +389,7 @@ ifdef se
  #$(foreach l,$(se),$(info $(l)=$($(l)))) 
  # check if fastq file is in a different directory
  $(foreach l,$(se),$(eval $(l)_dir=$(call check_libdir_ok,$(l))))
+ $(foreach l,$(se),$(eval $(l)_dir=$(call check_libstrand_ok,$(l))))
  #$(foreach l,$(se),$(info $(l)_dir=$($(l)_dir)))
  #$(foreach l,$(se),$(info $(l)_dir=$(call check_libdir_ok,$(l))))
  $(foreach l,$(se),$(call check_se_libname_ok,$(l)))
@@ -401,6 +417,7 @@ ifdef pe
  set_rs_list=$(eval rs_list+= $($(1)))
  $(foreach l,$(pe),$(call check_pe_libname_ok,$(l)))
  $(foreach l,$(pe),$(eval $(l)_dir=$(call check_libdir_ok,$(l))))
+ $(foreach l,$(pe),$(eval $(l)_dir=$(call check_libstrand_ok,$(l))))
  $(foreach l,$(pe),$(info $(l)_dir=$($(l)_dir)))
  $(foreach l,$(pe),$(call check_param_ok,$(l)_sd))
  $(foreach l,$(pe),$(call check_param_ok,$(l)_ins))
@@ -410,6 +427,8 @@ ifdef pe
  #$(foreach l,$(pe),$(call check_param_ok,$(l)_mp))
  ifile_given=1
 endif
+
+#$(call p_info,has_stranded_data=$(has_stranded_data))
 
 ifndef ifile_given
 $(warning pe parameter or se parameter should be defined and non-empty)
@@ -921,6 +940,25 @@ define args2file=
  $(shell echo >> $(1))
 endef
 
+####################
+###################
+# 
+# $(1) var name
+cached_vars=
+define cached_var=
+$(if $(call is_defined,$(1)), $(info cache hit $(1)) $($(1)), $(call set_$(1)) $(info cache miss $(1)) $(eval cached_vars+= $(1)))
+endef
+
+
+ifdef use_cached_vars
+include $(name)/cached_vars.mk
+endif
+
+#
+define list_cached_vars=
+	$(foreach var,$(cached_vars) cached_vars, echo $(var)=$(strip $(call cached_var,$(var)));)
+endef
+
 ###############################################################################
 # When the number of libraries is greater than BIG_LIM then pass the arguments
 # to some scripts from stdin
@@ -988,8 +1026,8 @@ include $(irap_path)/../aux/mk/irap_snp_indel_calling.mk
 endif
 
 # Check if the options provided are valid
-ifeq (invalid,$(shell irap_paths $(mapper) $(quant_method) $(quant_norm_method) $(de_method)))
-  $(error invalid combination mapper:$(mapper) -> quant_method:$(quant_method) -> quant_norm_method:$(quant_norm_method) -> de_method:$(de_method))
+ifeq (invalid,$(shell irap_paths $(mapper) $(quant_method) $(quant_norm_method) $(de_method) $(gse_tool) $(has_stranded_data)))
+  $(error invalid combination mapper:$(mapper) -> quant_method:$(quant_method) -> quant_norm_method:$(quant_norm_method) -> de_method:$(de_method) for the given data)
 endif
 
 $(info *========================================================)
@@ -1006,6 +1044,7 @@ VARS2PRINT=reference_prefix gtf_file_abspath index_files file_indexed
 $(foreach v,$(VARS2PRINT),$(info $v=$($v)))
 endif
 $(call p_info,[DONE] Initialization)
+
 
 ###################
 # Quality Filtering
@@ -1880,6 +1919,13 @@ cleanup_4_0_reference:
 #define interesting_vars=
 #$(filter-out %_sd %_rs $(se) $(pe),$(foreach v,$(.VARIABLES),$(if $(subst file,,$(#origin $(v))),,$(v) )))
 #endef
+
+###################################################
+phony_targets+= $(name)/cached_vars.mk
+save_cache: $(name)/cached_vars.mk
+$(name)/cached_vars.mk: 
+	rm -f $@
+	($(call list_cached_vars)) > $@.tmp && mv $@.tmp $@
 
 ###################################################
 # FORCE the program to run even if files haven't changed
