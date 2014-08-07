@@ -83,7 +83,7 @@ submit_job "${jobname_prefix}q"  -w "ended(${jobname_prefix}2*)"  "$cmd conf=$co
 #####
 # DE
 CUR_STAGE=DE
-de_ofiles=`irap conf=$conf de_files|tail -n 1`
+de_ofiles=`irap conf=$conf de_files $IRAP_PARAMS|tail -n 1`
 let s2=1
 for f in $de_ofiles; do
     let s2=s2+1
@@ -102,7 +102,7 @@ CUR_STAGE=GSE
 if [ "$de_ofiles-" != "-" ]; then
     #####
     # GSE
-    gse_ofiles=`irap conf=$conf GSE_files|tail -n 1`
+    gse_ofiles=`irap conf=$conf $IRAP_PARAMS GSE_files|tail -n 1`
     let s2=1
     for f in $gse_ofiles; do
 	let s2=s2+1
