@@ -39,10 +39,16 @@ declare -i s2=0
 #############
 # Submit jobs
 p_info " * Initialization "
+# save variables
+$cmd conf=$conf $IRAP_PARAMS save_cache
+
+#load the file with the variables already computed
+IRAP_PARAMS=$IRAP_PARAMS used_cached_vars=y
+p_info " * Starting initial job"
 CUR_STAGE=stage0
 submit_job "${jobname_prefix}0[1]" $cmd conf=$conf stage0 $IRAP_PARAMS
 bstop -J "${jobname_prefix}0[1]"
-
+p_info " * First job suspended until all jobs are submitted."
 WAIT_FOR_IDS=
 # step1 parallel quality filtering
 # step2 align

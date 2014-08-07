@@ -27,38 +27,49 @@ BROWSER_DIR=jbrowse
 ifndef CSS_FILE
 CSS_FILE=irap.css
 endif
-PATH2CSS_FILE=$(IRAP_DIR)/aux/css/irap.css
+PATH2CSS_FILE=$(IRAP_DIR)/aux/css/$(CSS_FILE)
 
 # useful functions
-define mapping_dirs=
-$(shell find  $(1) -name "*.hits.bam" 2>/dev/null  | sed "s|/[^/]*.bam||" | sed -E "s|($(1)/[^/]+)(/.*)|\1|" | sort -u | grep -E "$(shell echo $(SUPPORTED_MAPPERS)| sed 's/ /|/g')"   2>/dev/null )
+define set_MAPPING_DIRS=
+$(eval override MAPPING_DIRS:=$(shell ls -d -1 $(name)/{$(shell echo $(SUPPORTED_MAPPERS)| sed 's/ /,/g')} 2>/dev/null)) $(MAPPING_DIRS)
 endef
 
-define bam_files=
-$(shell find  $(1) -name "*.hits.bam"  2>/dev/null | sort -u)
+define set_QUANT_DIRS=
+$(eval override QUANT_DIRS:=$(shell ls -d -1 $(shell echo $(foreach d,$(call mapping_dirs),$d/{$(shell echo $(SUPPORTED_QUANT_METHODS)| sed 's/ /,/g')}/)) 2>/dev/null)) $(QUANT_DIRS)
 endef
 
-#define de_dirs_orig=
-#$(shell ls -d -1 $(1)/*/*/* 2>/dev/null| grep -E "($(shell echo $(SUPPORTED_DE_MET#HODS)| sed 's/ /|/g'))$$")
-#endef
-
-define de_dirs=
-$(shell ls -d -1 $(1)/{$(shell echo $(SUPPORTED_MAPPERS)| sed 's/ /,/g')}/{$(shell echo $(SUPPORTED_QUANT_METHODS)| sed 's/ /,/g')}/{$(shell echo $(SUPPORTED_DE_METHODS)| sed 's/ /,/g')}/ 2>/dev/null)
-endef
-
-
-#define quant_dirs_orig=
-#$(shell ls -d -1 $(1)/*/* 2>/dev/null| grep -E "($(shell echo $(SUPPORTED_QUANT_ME#THODS)| sed 's/ /|/g'))$$")
-#endef
-
-define quant_dirs=
-$(shell ls -d -1 $(1)/{$(shell echo $(SUPPORTED_MAPPERS)| sed 's/ /,/g')}/{$(shell echo $(SUPPORTED_QUANT_METHODS)| sed 's/ /,/g')}/ 2>/dev/null)
+define set_DE_DIRS=
+$(eval override DE_DIRS:=$(shell ls -d -1 $(shell echo $(foreach d,$(call quant_dirs),$(d){$(shell echo $(SUPPORTED_DE_METHODS)| sed 's/ /,/g')}/)) 2>/dev/null)) $(DE_DIRS)
 endef
 
 # 1 - exp name
-define de_html_files=
-$(subst $(name)/,$(name)/report/,$(foreach d,$(call de_dirs,$(1)),$(subst .tsv,.html,$(call quiet_ls,$(d)/*_de.tsv))))
+define set_DE_HTML_FILES=
+$(eval override  DE_HTML_FILES=$(subst $(name)/,$(name)/report/,$(foreach d,$(call de_dirs,$(1)),$(subst .tsv,.html,$(call quiet_ls,$(d)*_de.tsv)))))
 endef
+
+define mapping_dirs=
+$(strip $(call cached_var,MAPPING_DIRS))
+endef
+
+define quant_dirs=
+$(strip $(call cached_var,QUANT_DIRS))
+endef
+
+define de_dirs=
+$(strip $(call cached_var,DE_DIRS))
+endef
+
+define de_html_files=
+$(strip $(call cached_var,DE_HTML_FILES))
+endef
+
+$(info dir=$(call mapping_dirs))
+$(info dir=$(call mapping_dirs))
+$(info dir=$(call quant_dirs))
+$(info dir=$(call quant_dirs))
+$(info dir=$(call de_dirs))
+$(info dir=$(call de_dirs))
+$(info cached_vars=$(cached_vars))
 
 # 1 - exp name
 define gse_html_files=
@@ -216,7 +227,7 @@ $(name)/report/mapping/%.html_req:
 	echo $(MAPPING_REPORT_PRE_STATS)
 
 $(name)/report/mapping/%.html: $(name)/%/   $(foreach p,$(pe),$(name)/%/$($(p)_dir)$(p).pe.hits.bam) $(foreach s,$(se),$(name)/%/$($(s)_dir)$(s).se.hits.bam) $(MAPPING_REPORT_PRE_STATS) $(conf) $(call must_exist,$(name)/report/mapping/)
-	$(call pass_args_stdin,irap_report_mapping,$@, --out $(subst .html,,$@).1.html --mapper $* --pe "$(subst $(space),,$(foreach p,$(pe),;$(name)/$*/$($(p)_dir)$(p).pe.hits.bam))" --se "$(subst $(space),,$(foreach s,$(se),;$(name)/$*/$($(s)_dir)$(s).se.hits.bam))"  --pe_labels "$(subst  $(space),,$(foreach p,$(pe),;$(p)))" --se_labels "$(subst $(space),,$(foreach s,$(se),;$(s)))" --css ../$(CSS_FILE) $@ ) && mv $(subst .html,,$@).1.html  $@
+	$(call pass_args_stdin,irap_report_mapping,$@, --out $(subst .html,,$@).1.html --mapper $* --pe "$(subst $(space),,$(foreach p,$(pe),;$(name)/$*/$($(p)_dir)$(p).pe.hits.bam))" --se "$(subst $(space),,$(foreach s,$(se),;$(name)/$*/$($(s)_dir)$(s).se.hits.bam))"  --pe_labels "$(subst  $(space),,$(foreach p,$(pe),;$(p)))" --se_labels "$(subst $(space),,$(foreach s,$(se),;$(s)))" --css ../$(CSS_FILE) ) && mv $(subst .html,,$@).1.html  $@
 
 # statistics per bam file
 %.bam.stats: %.bam $(gff3_file_abspath)
@@ -275,13 +286,18 @@ phony_targets+= $(name)/report/mapping/$(mapper)/lib_map_report
 phony_targets+=quant_report quant_report_files
 silent_targets+=quant_report quant_report_files
 
-quant_html_files=$(foreach q,$(SUPPORTED_QUANT_METHODS),$(foreach m,$(SUPPORTED_MAPPERS),$(foreach f,gene exon transcript,$(foreach metric,raw nlib rpkm,$(call quant_target,$(m),$(q),$(metric),$(f)) ))))
+define set_QUANT_HTML_FILES=
+$(eval override QUANT_HTML_FILES=$(foreach q,$(SUPPORTED_QUANT_METHODS),$(foreach m,$(SUPPORTED_MAPPERS),$(foreach f,gene exon transcript,$(foreach metric,raw nlib rpkm,$(call quant_target,$(m),$(q),$(metric),$(f)) ))))) $(QUANT_HTML_FILES)
+endef
 
+define quant_html_files=
+$(strip $(call cached_var,QUANT_HTML_FILES))
+endef
 
-quant_report: report_setup $(quant_html_files)
+quant_report: report_setup $(call quant_html_files)
 
 quant_report_files: 
-	echo $(quant_html_files)
+	echo $(call quant_html_files)
 
 #######################################
 # Quant. at gene level
@@ -455,7 +471,7 @@ end_report: $(name)/report/index.html $(call must_exist,$(name)/report/irap.css)
 
 # TODO: replace versions.html by info_report
 # TODO $(call must_exist,$(name)/report/status.html)a
-$(name)/report/index.html: $(conf) $(info_targets)  $(quant_html_files) $(qc_html_files) $(call mapping_report_targets) $(call de_html_files,$(name)) $(call gse_html_files,$(name))  $(call rep_browse,$(name)/report/jbrowse/index.html)  $(name)/report/about.html $(call must_exist,$(name)/report/irap.css) $(call must_exist,$(name)/report/menu.css)
+$(name)/report/index.html: $(conf) $(info_targets)  $(call quant_html_files) $(qc_html_files) $(call mapping_report_targets) $(call de_html_files,$(name)) $(call gse_html_files,$(name))  $(call rep_browse,$(name)/report/jbrowse/index.html)  $(name)/report/about.html $(call must_exist,$(name)/report/irap.css) $(call must_exist,$(name)/report/menu.css)
 	cp  $(name)/report/info.html $@ &&
 	irap_report_main $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(name)/report -m "$(call mapping_dirs,$(name))" -q "$(call quant_dirs,$(name))" -d "$(call de_dirs,$(name))" &&
 	sleep 2 &&

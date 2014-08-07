@@ -32,14 +32,20 @@ source $IRAP_DIR/aux/sh/lsf_shared_code.sh
 declare -i mapper_counter=0
 declare -i counter=0
 
+p_info " * Initialization "
+# save the variables
+submit_job "${jobname_prefix}i" $cmd conf=$conf $IRAP_PARAMS save_cache
+bstop -J "${jobname_prefix}i"
 
+#load the file with the variables already computed
+IRAP_PARAMS=$IRAP_PARAMS used_cached_vars=y
 #############
 # Submit jobs
 
 echo " * Report setup "
-submit_job "${jobname_prefix}0[1]" ""  "$cmd conf=$conf report_setup $IRAP_PARAMS"
-submit_job "${jobname_prefix}0[2]" ""  "$cmd conf=$conf qc_report $IRAP_PARAMS"
-submit_job "${jobname_prefix}0[3]" ""  "$cmd conf=$conf info_report $IRAP_PARAMS"
+submit_job "${jobname_prefix}0[1]" "-w ended(\"${jobname_prefix}i\")"  "$cmd conf=$conf report_setup $IRAP_PARAMS"
+submit_job "${jobname_prefix}0[2]" "-w ended(\"${jobname_prefix}i\")"  "$cmd conf=$conf qc_report $IRAP_PARAMS"
+submit_job "${jobname_prefix}0[3]" "-w ended(\"${jobname_prefix}i\")"  "$cmd conf=$conf info_report $IRAP_PARAMS"
 
 
 #############
@@ -121,6 +127,7 @@ submit_job "${jobname_prefix}u" -w "ended(\"${jobname_prefix}f*\")"  "$cmd conf=
 submit_job "${jobname_prefix}l" -w "ended(\"${jobname_prefix}u\")"  "irap conf=$conf  $IRAP_PARAMS -n -q report"
 
 submit_job_status "${jobname_prefix}l"
+bresume -J "${jobname_prefix}i"
 echo "JOBS=$name/${jobname_prefix}*.out"
 echo "JOBNAME=${jobname_prefix}u"
 exit
