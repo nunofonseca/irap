@@ -56,11 +56,11 @@ $(if $(findstring _nd,$(quant_method)),-G,-g)
 endef
 
 define run_cufflinks1=
-	irap_wrapper.sh cufflinks1 cufflinks -p $(max_threads) -o $(call lib2quant_folder,$(2))$(2) $(call cufflinks_g_option) $(gtf_file_abspath) $(cufflinks1_params) $(1) && mv $(call lib2quant_folder,$(2))$(2)/transcripts.gtf $(3) && mv $(call lib2quant_folder,$(2))$(2)/isoforms.fpkm_tracking $(4) && mv $(call lib2quant_folder,$(2))$(2)/genes.fpkm_tracking $(5)
+	irap_wrapper.sh cufflinks1 cufflinks -p $(max_threads) -o $(call lib2quant_folder,$(2))$(2) $(call cufflinks_g_option) $(gtf_file_abspath) $(call tophat_strand_params,$(2)) $(cufflinks1_params) $(1) && mv $(call lib2quant_folder,$(2))$(2)/transcripts.gtf $(3) && mv $(call lib2quant_folder,$(2))$(2)/isoforms.fpkm_tracking $(4) && mv $(call lib2quant_folder,$(2))$(2)/genes.fpkm_tracking $(5)
 endef
 
 define run_cufflinks2=
-	irap_wrapper.sh cufflinks2 cufflinks -p $(max_threads) -o $(call lib2quant_folder,$(2))$(2)  $(call cufflinks_g_option) $(gtf_file_abspath) $(cufflinks2_params) $(1) && mv $(call lib2quant_folder,$(2))$(2)/transcripts.gtf $(3) && mv $(call lib2quant_folder,$(2))$(2)/isoforms.fpkm_tracking $(4) && mv $(call lib2quant_folder,$(2))$(2)/genes.fpkm_tracking $(5)
+	irap_wrapper.sh cufflinks2 cufflinks -p $(max_threads) -o $(call lib2quant_folder,$(2))$(2)  $(call cufflinks_g_option) $(gtf_file_abspath) $(call tophat_strand_params,$(2)) $(cufflinks2_params) $(1) && mv $(call lib2quant_folder,$(2))$(2)/transcripts.gtf $(3) && mv $(call lib2quant_folder,$(2))$(2)/isoforms.fpkm_tracking $(4) && mv $(call lib2quant_folder,$(2))$(2)/genes.fpkm_tracking $(5)
 endef
 
 # run_cuffmerge cufflinks1|cufflinks2 
@@ -130,7 +130,7 @@ endef
 
 # 
 ifndef htseq_params
-htseq_params= -q  --stranded=no
+htseq_params= -q  
 endif
 
 
@@ -143,7 +143,7 @@ $(if $(filter $(1),gene),--idattr gene_id,$(if $(findstring $(1),exon),--idattr 
 endef 
 
 define htseq_mode_param=
-$(if $(filter $(1),htseq1),-m union,-m intersection-nonempty)
+$(if $(filter $(1),htseq1),-m union,-m intersection-nonempty) 
 endef
 # BAM file needs to be sorted by read name
 # run_htseq, bam file, gtf, output file
@@ -154,9 +154,10 @@ endef
 #3- output file 
 #4- mode
 #5- exon|gene|transctript 
+#6- lib
 define run_htseq=
 	samtools view $(1) | \
-	htseq-count $(call htseq_sam_output_param,$(3))  $(call htseq_mode_param,$(4))  $(call htseq_id_param,$(5))  $(htseq_params) - $(2)  > $(3).tmp && \
+	htseq-count $(call htseq_sam_output_param,$(3))  $(call htseq_mode_param,$(4)) $(call htseq_strand_params,$(6)) $(call htseq_id_param,$(5))  $(htseq_params) - $(2)  > $(3).tmp && \
 	tail -n -5 $(3).tmp > $(3).$(4).stats &&\
 	head -n -5 $(3).tmp > $(3).tmp2 &&\
 	mv $(3).tmp2 $(3) && rm -f $(3).tmp
@@ -166,16 +167,29 @@ endef
 #1- BAM file
 #2- GTF/GFF file
 #3- output file 
-#4- mode
-#5- exon|gene|transtript 
+#4- exon|gene|transtript 
+#5- libname
 define run_htseq1=
-	$(call run_htseq,$(1),$(2),$(3),htseq1,$(4))
+	$(call run_htseq,$(1),$(2),$(3),htseq1,$(4),$(5))
 endef
 
 #mode: intersection-nonempty
 define run_htseq2=
-	$(call run_htseq,$(1),$(2),$(3),htseq2,$(4))
+	$(call run_htseq,$(1),$(2),$(3),htseq2,$(4),$(5))
 endef
+
+# strand option
+# irap
+# first  -> --library-type=fr-firststrand
+# second -> --library-type=fr-secondstrand 
+irap_strand2htseqoption=$(if $(findstring $(1),"first"),reverse,$(if $(findstring $(1),"second"),yes,no))
+
+
+# 1 - libname
+define htseq_strand_params=
+	$(if $(call lib_strand_info,$(1)), , --stranded=$(call irap_strand2htseqoption,$($(1)_strand)))
+endef
+
 
 #******************
 # NURD
@@ -271,7 +285,7 @@ $(call lib2quant_folder,$(1))$(3).genes.raw.$(quant_method).tsv: $(call lib2quan
 
 endef
 
-# generate the rules for htseq
+# generate the rules for cufflinks
 ifeq ($(patsubst cufflinks%,,$(quant_method)),)
 $(foreach l,$(se),$(eval $(call make-cufflinks-quant-rule,$(l),$(quant_method),$(l).se,gene)))	
 $(foreach l,$(pe),$(eval $(call make-cufflinks-quant-rule,$(l),$(quant_method),$(l).pe,gene)))
@@ -325,7 +339,7 @@ $(name)/$(mapper)/htseq1/exons.raw.htseq1.tsv: $(foreach p,$(pe),$(call lib2quan
 # $5 - gtf file
 define make-htseq-quant-rule=
 $(call lib2quant_folder,$(1))$(3).$(4)s.raw.$(2).tsv: $(call lib2bam_folder,$(1))$(3).hits.byname.bam $(5)
-	mkdir -p $$(@D) && $$(call run_$(2),$$<,$(5),$$@,$(4))
+	mkdir -p $$(@D) && $$(call run_$(2),$$<,$(5),$$@,$(4),$(1))
 endef
 
 # generate the rules for htseq

@@ -200,6 +200,19 @@ ifeq ($(mapper_splicing),no)
 	tophat2_map_params+= $(tophat_no_splicing)
 endif
 
+
+# strand option
+# irap
+# first  -> --library-type=fr-firststrand
+# second -> --library-type=fr-secondstrand 
+irap_strand2tophatoption=$(if $(findstring $(1),"first"),fr-firststrand,$(if $(findstring $(1),"second"),fr-secondstrand,fr-unstranded))
+
+# 1 - libname
+define tophat_strand_params=
+	$(if $(call lib_strand_info,$(1)), , --library-type=$(call irap_strand2tophatoption,$($(1)_strand)))
+endef
+
+
 define tophat_ins_sd_params=
 	$(if $(findstring $(1),$(pe)), --mate-inner-dist $($(1)_ins) --mate-std-dev $($(1)_sd))
 endef
@@ -236,14 +249,14 @@ tophat_reference_prefix=$(reference_prefix)
 # TODO: test and do the same to tophat2
 define run_tophat1_map=
         $(call tophat_setup_dirs,$(1))
-	irap_map.sh tophat1 tophat  -p $(max_threads) $(call tophat_seglength_option,$($(1)_rs),$(1)) $(call tophat_qual_option,$($(1)_qual)) $(tophat1_map_params) $(call tophat_ins_sd_params,$(1)) -G $(gtf_file_abspath) --tmp-dir $(call lib2bam_folder,$(1))/$(1)/tmp -o $(call lib2bam_folder,$(1))/$(1)	 $(tophat_reference_prefix) $(2) &&\
+	irap_map.sh tophat1 tophat  -p $(max_threads) $(call tophat_seglength_option,$($(1)_rs),$(1)) $(call tophat_qual_option,$($(1)_qual)) $(call tophat_strand_params,$(1)) $(tophat1_map_params) $(call tophat_ins_sd_params,$(1)) -G $(gtf_file_abspath) --tmp-dir $(call lib2bam_folder,$(1))/$(1)/tmp -o $(call lib2bam_folder,$(1))/$(1)	 $(tophat_reference_prefix) $(2) &&\
 	samtools sort -m $(SAMTOOLS_SORT_MEM) $(call lib2bam_folder,$(1))$(1)/accepted_hits.bam  $(3).tmp && \
 	mv $(3).tmp.bam $(3)
 endef
 
 define run_tophat2_map=
         $(call tophat_setup_dirs,$(1))
-	irap_map.sh tophat2 tophat2  -p $(max_threads) $(call tophat_seglength_option,$($(1)_rs),$(1)) $(call tophat_qual_option,$($(1)_qual)) $(tophat2_map_params) $(call tophat_ins_sd_params,$(1)) -G $(gtf_file_abspath) --tmp-dir $(call lib2bam_folder,$(1))/$(1)/tmp -o $(call lib2bam_folder,$(1))$(1)	 $(tophat_reference_prefix) $(2) &&\
+	irap_map.sh tophat2 tophat2  -p $(max_threads) $(call tophat_seglength_option,$($(1)_rs),$(1)) $(call tophat_qual_option,$($(1)_qual)) $(call tophat_strand_params,$(1)) $(tophat2_map_params) $(call tophat_ins_sd_params,$(1)) -G $(gtf_file_abspath) --tmp-dir $(call lib2bam_folder,$(1))/$(1)/tmp -o $(call lib2bam_folder,$(1))$(1)	 $(tophat_reference_prefix) $(2) &&\
 	mv $(call lib2bam_folder,$(1))/$(1)/accepted_hits.bam $(3)
 endef
 
