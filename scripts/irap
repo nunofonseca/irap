@@ -1921,9 +1921,9 @@ cleanup_4_0_reference:
 #endef
 
 ###################################################
-phony_targets+= $(name)/cached_vars.mk
+phony_targets+= $(name)/cached_vars.mk save_cache
 save_cache: $(name)/cached_vars.mk
-$(name)/cached_vars.mk: 
+$(name)/cached_vars.mk: FORCE
 	rm -f $@
 	($(call list_cached_vars)) > $@.tmp && mv $@.tmp $@
 
