@@ -43,8 +43,19 @@ $(eval override DE_DIRS:=$(shell ls -d -1 $(shell echo $(foreach d,$(call quant_
 endef
 
 # 1 - exp name
+define set_GSE_HTML_FILES=
+$(eval override GSE_HTML_FILES:=$(subst $(name)/,$(name)/report/,$(foreach d,$(call de_dirs,$(1)),$(subst .tsv,.html,$(call quiet_ls,$(d)/*.gse.*.tsv))))) $(GSE_HTML_FILES)
+endef
+
+
+# 1 - exp name
 define set_DE_HTML_FILES=
 $(eval override  DE_HTML_FILES=$(subst $(name)/,$(name)/report/,$(foreach d,$(call de_dirs,$(1)),$(subst .tsv,.html,$(call quiet_ls,$(d)*_de.tsv)))))
+endef
+
+# mapper quant raw|nlib|rpkm gene|exon|trans
+define quant_target=
+$(if $(call quiet_ls1,$(name)/$(1)/$(2)/$(4)s.$(3).*.tsv), $(name)/report/quant/$(1)_x_$(2)/$(4).$(3).html, )
 endef
 
 define mapping_dirs=
@@ -63,6 +74,10 @@ define de_html_files=
 $(strip $(call cached_var,DE_HTML_FILES))
 endef
 
+define gse_html_files=
+$(strip $(call cached_var,GSE_HTML_FILES))
+endef
+
 $(info dir=$(call mapping_dirs))
 $(info dir=$(call mapping_dirs))
 $(info dir=$(call quant_dirs))
@@ -72,14 +87,10 @@ $(info dir=$(call de_dirs))
 $(info cached_vars=$(cached_vars))
 
 # 1 - exp name
-define gse_html_files=
-$(subst $(name)/,$(name)/report/,$(foreach d,$(call de_dirs,$(1)),$(subst .tsv,.html,$(call quiet_ls,$(d)/*.gse.*.tsv))))
-endef
+#define gse_html_files=
+#$(subst $(name)/,$(name)/report/,$(foreach d,$(call de_dirs,$(1)),$(subst .tsv,.html,$(call quiet_ls,$(d)/*.gse.*.tsv))))
+#endef
 
-# mapper quant raw|nlib|rpkm gene|exon|trans
-define quant_target=
-$(if $(call quiet_ls1,$(name)/$(1)/$(2)/$(4)s.$(3).*.tsv), $(name)/report/quant/$(1)_x_$(2)/$(4).$(3).html, )
-endef
 
 
 # 1 metric
