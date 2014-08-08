@@ -806,6 +806,7 @@ function YAP_install {
 }
 
 function deps_install {
+    pinfo "Installing dependencies (make, perk, ruby, boost, gnuplot, R, samtools, ...)"
     make_install
     perl_install
     ruby_install
@@ -817,6 +818,7 @@ function deps_install {
     # 
     samtools_install
     bedtools_install
+    pinfo "Installing dependencies...done."
 }
 
 ######################################################
