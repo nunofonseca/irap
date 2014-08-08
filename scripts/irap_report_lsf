@@ -38,7 +38,7 @@ submit_job "${jobname_prefix}i" $cmd conf=$conf $IRAP_PARAMS save_cache
 bstop -J "${jobname_prefix}i"
 
 #load the file with the variables already computed
-IRAP_PARAMS=$IRAP_PARAMS used_cached_vars=y
+IRAP_PARAMS=$IRAP_PARAMS use_cached_vars=y
 #############
 # Submit jobs
 
