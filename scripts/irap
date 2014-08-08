@@ -953,6 +953,7 @@ endef
 
 ifdef use_cached_vars
 include $(name)/cached_vars.mk
+$(call p_info,[INFO] Loaded cached variables.)
 endif
 
 #
@@ -1922,8 +1923,9 @@ cleanup_4_0_reference:
 #endef
 
 ###################################################
-phony_targets+= $(name)/cached_vars.mk save_cache
+phony_targets+= save_cache
 save_cache: $(name)/cached_vars.mk
+
 $(name)/cached_vars.mk: FORCE
 	($(call list_cached_vars)) > $@.tmp && mv $@.tmp $@
 
