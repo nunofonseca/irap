@@ -237,8 +237,8 @@ MAPPING_REPORT_PRE_STATS=$(foreach p,$(pe),$(name)/$(mapper)/$($(p)_dir)$(p).pe.
 $(name)/report/mapping/%.html_req:
 	echo $(MAPPING_REPORT_PRE_STATS)
 
-$(name)/report/mapping/%.html: $(name)/%/   $(foreach p,$(pe),$(name)/%/$($(p)_dir)$(p).pe.hits.bam) $(foreach s,$(se),$(name)/%/$($(s)_dir)$(s).se.hits.bam) $(MAPPING_REPORT_PRE_STATS) $(conf) $(call must_exist,$(name)/report/mapping/)
-	$(call pass_args_stdin,irap_report_mapping,$@, --out $(subst .html,,$@).1.html --mapper $* --pe "$(subst $(space),,$(foreach p,$(pe),;$(name)/$*/$($(p)_dir)$(p).pe.hits.bam))" --se "$(subst $(space),,$(foreach s,$(se),;$(name)/$*/$($(s)_dir)$(s).se.hits.bam))"  --pe_labels "$(subst  $(space),,$(foreach p,$(pe),;$(p)))" --se_labels "$(subst $(space),,$(foreach s,$(se),;$(s)))" --css ../$(CSS_FILE) ) && mv $(subst .html,,$@).1.html  $@
+$(name)/report/mapping/%.html: $(name)/%/   $(foreach p,$(pe),$(call must_exist,$(name)/%/$($(p)_dir)$(p).pe.hits.bam)) $(foreach s,$(se),$(call must_exist,$(name)/%/$($(s)_dir)$(s).se.hits.bam)) $(MAPPING_REPORT_PRE_STATS) $(conf) $(call must_exist,$(name)/report/mapping/)
+	$(call pass_args_stdin,irap_report_mapping,$@, --out $(subst .html,,$@).1.html --mapper $* --pe "$(subst $(space),,$(foreach p,$(pe),;$(name)/$*/$($(p)_dir)$(p).pe.hits.bam))" --se "$(subst $(space),,$(foreach s,$(se),;$(name)/$*/$($(s)_dir)$(s).se.hits.bam))"  --pe_labels "$(subst  $(space),,$(foreach p,$(pe),;$(p)))" --se_labels "$(subst $(space),,$(foreach s,$(se),;$(s)))" --css ../$(CSS_FILE) --cores $(max_threads) ) && mv $(subst .html,,$@).1.html  $@
 
 # statistics per bam file
 %.bam.stats: %.bam $(gff3_file_abspath)

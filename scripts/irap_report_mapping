@@ -44,7 +44,8 @@ option_list <- list(
   make_option(c("--se"),type="character",dest="se_bams",default=NULL,help="BAM files generated from single-end libraries"),
   make_option(c("-p","--pe_labels"),type="character",dest="pe_labels",default=NULL,help="Labels for the BAM files generated from paired-end libraries"),
   make_option(c("-s","--se_labels"),type="character",dest="se_labels",default=NULL,help="Labels for the BAM files generated from single-end libraries"),
-  make_option(c("-t","--html"),type="character",dest="html_template",default=html.temp,help="HTML template file [default: %default]")
+  make_option(c("-t","--html"),type="character",dest="html_template",default=html.temp,help="HTML template file [default: %default]"),
+  make_option(c("-c", "--cores"), type="character",default="3",dest="num_cores",help="Number of cores to use ([default %default])")
 )
 
 multiple.options = list()
@@ -57,10 +58,32 @@ mandatory <- c("out","mapper","se_bams","pe_bams","se_labels","pe_labels","html_
 args <- importArgsfromStdin()
 opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory,args=args)
 
-
 irap.css <- opt$css
 pdebug.enabled <- opt$debug
 pdebug.save.state("irap_report_mapping","p0")
+
+suppressPackageStartupMessages(library(parallel))
+
+tryCatch(num.cores <- as.integer(as.numeric(opt$num_cores)),warning=
+         function(w) {
+           perror("Invalid number of cores ",opt$num_cores)
+           q(status=3)    
+       }
+)
+if (num.cores<1) {
+  perror("Invalid number of cores ",opt$num_cores)
+  q(status=3)    
+}
+
+irap.assert(num.cores>0)
+
+if ( num.cores>multicore:::detectCores()) {
+  num.cores <- multicore:::detectCores()
+  pwarning("The number of cores to use exceeds the cores available. Reducing the limit to ",multicore:::detectCores())
+}
+
+options("cores"=num.cores)
+
 
 pe.bam.v <- strsplit(gsub(" *; *",";",gsub("^;","",opt$pe_bams)),split="[; ]")[[1]]
 se.bam.v <- strsplit(gsub(" *; *",";",gsub("^;","",opt$se_bams)),split="[; ]")[[1]]
@@ -84,7 +107,7 @@ if (length(se.bam.v)!=length(se.labels.v)) {
 
 pinfo("Parameters parsed.")
 pdebug.save.state("irap_report_mapping","p1")
-library("emBAM")
+suppressPackageStartupMessages(library("emBAM"))
 
 ###########################################
 # Functions
@@ -173,7 +196,7 @@ get.mapping.stats <- function(mapper,pe.bam.v,se.bam.v,pe.labels.v,se.labels.v) 
   bam.files <- append(pe.bam.v,se.bam.v)
   #print(bam.files)
   #cat("--------------------------------------------")
-  data <- lapply(bam.files,em.bam.counts.df,use.cache=TRUE)
+  data <- mclapply(bam.files,em.bam.counts.df,use.cache=TRUE)
   
   # listOflists2matrix only takes the first column
   #df <- as.data.frame(listOflists2matrix(data))
@@ -276,9 +299,10 @@ get.mapping.feature.stats <- function(mapper,pe.bam.v,se.bam.v,pe.labels.v,se.la
   colnames(aln.stats) <- append(cols.names,c("Median","Mean","SD"))
   aln.stats <- aln.stats[,append(c("Median","Mean","SD"),cols.names)]
   # sort
-  t.order <- names(sort(aln.stats[,"Mean"],decreasing=T))
-  aln.stats <- aln.stats[t.order,]  
-
+  if (nrow(aln.stats) >= 2){
+    t.order <- names(sort(aln.stats[,"Mean"],decreasing=T))
+    aln.stats <- aln.stats[t.order,]  
+  }
   return(aln.stats)
 }
 
