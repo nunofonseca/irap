@@ -1899,7 +1899,7 @@ importArgsfromStdin <- function() {
     f <- file("stdin")
     open(f)
     line <- readLines(f,n=1)
-    write(line, stderr())
+    ##write(line, stderr())
     # process line
     # for now just split into words
     # TODO: take into account '' or ""
