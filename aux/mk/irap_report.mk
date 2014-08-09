@@ -265,7 +265,7 @@ $(name)/data/genes.bed: $(gff3_file_abspath)
 
 # introns
 $(name)/data/introns.bed: $(name)/data/genes.bed $(name)/data/exons.bed
-	bedtools subtract -a $< -b $(name)/data/exons.bed > $@.tmp && mv $@.tmp $@
+	bedtools subtract -a $< -b $(name)/data/exons.bed > $@.tmp && if [ `wc -l $@.tmp |cut -f 1 -d\ ` == 0 ]; then echo -e 'dummy_entry\t1\t1' > $@.tmp; fi && mv $@.tmp $@
 
 
 # M
