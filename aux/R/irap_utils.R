@@ -280,7 +280,10 @@ get.exon.length.from.gtf <- function(gtf,filter.biotype=NULL) {
 
 load.gff3 <- function(file,type="gene") {
   # load the gff3 file
-  gff3<-read.table(file,sep="\t",header=F,quote="\"",comment.char ="")
+  gff3<-try(read.table(file,sep="\t",header=F,quote="\"",comment.char =""))
+  if(class(gff3)=='try-error') {
+    gff3=as.data.frame(matrix(nrow=0,ncol=length(formats.cols$gff3)))
+  }
   cnames <- formats.cols$gff3
   colnames(gff3)<-cnames[0:ncol(gff3)]
   gff3$attributes <- as.character(gff3$attributes)
@@ -291,22 +294,28 @@ load.gff3 <- function(file,type="gene") {
   # convert the start/end to numbers
   gff3$start <- as.integer(gff3$start)
   gff3$end <- as.integer(gff3$end)
-
+  
   # add the attributes
   tags<-c("ID","Name","Alias","Parent","Target","Gap","Derives","Note","DBxref","Ontology_term","Is_circular")
   pdebug("tags")
-  for (tag in tags ) {
-    pattern <- paste("",tag,"=([^;]+)",sep="")
-    m<-regexec(pattern,as.vector(gff3$attributes))
+  if (nrow(gff3)>0 ) {
+    for (tag in tags ) {
+      pattern <- paste("",tag,"=([^;]+)",sep="")
+      m<-regexec(pattern,as.vector(gff3$attributes))
                                         #m<-regexec("^ID=([^;]+);",as.vector(gff3$attributes))
-    for ( i in c(1:length(m)) ) { if ( m[[i]][1]==-1 ) { m[[i]]=NA; } }
-    x<-regmatches(as.vector(gff3$attributes),m)
-    for ( i in c(1:length(x)) ) { if ( length(x[[i]])==0 ) { x[[i]]=c(NA,NA); } }
-    vals<-matrix(unlist(x),ncol=2,byrow=T,)[,2]
-    gff3[,tag]<-vals
+      for ( i in c(1:length(m)) ) { if ( m[[i]][1]==-1 ) { m[[i]]=NA; } }
+      x<-regmatches(as.vector(gff3$attributes),m)
+      for ( i in c(1:length(x)) ) { if ( length(x[[i]])==0 ) { x[[i]]=c(NA,NA); } }
+      vals<-matrix(unlist(x),ncol=2,byrow=T,)[,2]
+      gff3[,tag]<-vals
+    }
+  } else {
+    m2 <- as.data.frame(matrix(nrow=0,ncol=length(tags)))
+    colnames(m2) <- tags
+    gff3 <- cbind(gff3,m2)
   }
 
-  gff3
+  return(gff3)
 }
 
 ######################################################
