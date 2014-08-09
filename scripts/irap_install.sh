@@ -189,7 +189,7 @@ GSNAP_VERSION=2013-11-27
 GSNAP_FILE=gmap-gsnap-${GSNAP_VERSION}.tar.gz
 GSNAP_URL=http://research-pub.gene.com/gmap/src/$GSNAP_FILE
 #
-mapsplice_VERSION=v2.1.8
+mapsplice_VERSION=2.1.8
 mapsplice_FILE=MapSplice-v$mapsplice_VERSION.zip
 mapsplice_URL=http://protocols.netlab.uky.edu/~zeng/$mapsplice_FILE
 #
