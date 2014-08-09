@@ -280,6 +280,10 @@ get.mapping.feature.stats <- function(mapper,pe.bam.v,se.bam.v,pe.labels.v,se.la
     if ( !is.null(file.required(f,fatal=F)) ) {
       # load file
       x <- load.gff3(f,"gene")
+      if ( nrow(x)==0 ) {
+        perror("No gene entries found in file",f)
+        q(status=1)
+      }
       # slice some columns
       type.genes <- x[x$type=="gene",c("source","comments")]
       x <- aggregate(type.genes$comments,list(source=type.genes$source),sum)
