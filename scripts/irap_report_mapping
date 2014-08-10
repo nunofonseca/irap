@@ -302,6 +302,12 @@ get.mapping.feature.stats <- function(mapper,pe.bam.v,se.bam.v,pe.labels.v,se.la
   aln.stats <- cbind(aln.stats,aln.stats.median,aln.stats.mean,aln.stats.sd)
   colnames(aln.stats) <- append(cols.names,c("Median","Mean","SD"))
   aln.stats <- aln.stats[,append(c("Median","Mean","SD"),cols.names)]
+  if ( is.null(dim(aln.stats))) {
+    m <- as.data.frame(matrix(aln.stats,nrow=1,ncol=length(aln.stats)))
+    colnames(m) <- names(aln.stats)
+    rownames(m) <- names(stats[[1]])
+    aln.stats <- m                
+  }
   # sort
   if (nrow(aln.stats) >= 2){
     t.order <- names(sort(aln.stats[,"Mean"],decreasing=T))
@@ -346,6 +352,11 @@ get.mapping.gene.stats <- function(mapper,pe.bam.v,se.bam.v,pe.labels.v,se.label
   gene.stats <- cbind(gene.stats,gene.stats.median,gene.stats.mean,gene.stats.sd)
   colnames(gene.stats) <- append(cols.names,c("Median","Mean","SD"))
   gene.stats <- gene.stats[,append(c("Median","Mean","SD"),cols.names)]
+  if ( is.null(dim(gene.stats))) {
+    m <- as.data.frame(matrix(gene.stats,nrow=1,ncol=length(gene.stats)))
+    colnames(m) <- names(gene.stats)
+    gene.stats <- m                
+  }
   return(gene.stats)
 }
 
@@ -371,6 +382,7 @@ pinfo("Saved ",raw.stats.file)
 perc.stats.file <- paste(out.prefix,"_mapping_stats_perc.tsv",sep="")
 r <- write.tsv(mapping.dfs$perc,file=paste(out.dir,"/",perc.stats.file,sep=""),rownames.label="")
 pinfo("Saved ",perc.stats.file)
+
 
 feat.stats.file <- paste(out.prefix,"_mapping_stats_feat.tsv",sep="")
 r <- write.tsv(mapping.feat,file=paste(out.dir,"/",feat.stats.file,sep=""),rownames.label="Features")
