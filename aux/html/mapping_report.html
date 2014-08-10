@@ -129,7 +129,7 @@ html <- gen.plot2report(filename=file,
                           #is.data.frame(v)
                           title(ylab="Number of Alignments",mgp=c(4,1,0))
                           par( xpd=NA )
-                          legend(ceiling(max(bp)),max(colSums(v)),legend=pprint.fieldname(rownames(v)),fill=cols,horiz=FALSE, cex=0.70,bty='n')                          
+                          legend(ceiling(max(bp)),max(colSums(v,na.rm=T)),legend=pprint.fieldname(rownames(v)),fill=cols,horiz=FALSE, cex=0.70,bty='n')                          
                         }
                         )
 
@@ -168,7 +168,7 @@ feat.tsv.download.html <- html.download.bar(feat.download.files)
 <H3 class="section"><%=irap.ctr("Table")%></H3>
 <DIV class="table_wrapper">
 <%
-mapping.feat.sum <- colSums(mapping.feat)
+mapping.feat.sum <- colSums(mapping.feat,na.rm=T)
 mapping.feat.per <- round(sweep(mapping.feat,MARGIN=2,100*1/mapping.feat.sum,`*`),2)
 if (ncol(mapping.feat.per)>4) {
   SD <- apply(mapping.feat.per[,-c(1,2,3)],1,FUN=sd)
@@ -236,7 +236,7 @@ html <- gen.plot2report(filename=file,
                                         xlim=c(-0.2,0.2+ncol(v)))
                           title(ylab="Percentage of alignments (%)",mgp=c(4,1,0))
                           par( xpd=NA )
-                          legend(ceiling(max(bp)),max(colSums(v)),legend=pprint.fieldname(rownames(v)),fill=cols,horiz=FALSE, cex=0.70,bty='n')                          
+                          legend(ceiling(max(bp)),max(colSums(v,na.rm=T)),legend=pprint.fieldname(rownames(v)),fill=cols,horiz=FALSE, cex=0.70,bty='n')                          
                         }
                         )
 
@@ -315,7 +315,7 @@ gene.tsv.download.html <- html.download.bar(gene.download.files)
 <DIV class="table_wrapper">
 <%
 # percentages
-tot <- colSums(mapping.genes)
+tot <- colSums(mapping.genes,na.rm=T)
 p.mapping.genes <- round(sweep(mapping.genes,MARGIN=2,100*1/tot,`*`),2)
 # recompute sd
 if (ncol(p.mapping.genes)>4) {
