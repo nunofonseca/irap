@@ -108,10 +108,15 @@ html <- gen.plot2report(filename=file,
                         caption="",
                         to.plot= function() {
                           # sort rows based on mean values
-                          feat.order <- names(sort(mapping.feat[,"Mean"],decreasing=T))
-                          v <- data.frame(mapping.feat2plot[feat.order,])
-                          rownames(v) <- feat.order
+                          if (nrow(mapping.feat) > 1) {
+                            feat.order <- names(sort(mapping.feat[,"Mean"],decreasing=T))
+                            v <- data.frame(mapping.feat2plot[feat.order,])
+                            rownames(v) <- feat.order
+                          } else {
+                            v <- mapping.feat
+                          }
                           colnames(v) <- colnames(mapping.feat2plot)
+
                           par(mar=c(9,5,4,10))
                           cols <- rainbow(nrow(mapping.feat2plot))
                           bp <- barplot(as.matrix(v),las=2,
@@ -209,9 +214,14 @@ html <- gen.plot2report(filename=file,
                         caption="",
                         to.plot= function() {
                           # sort rows based on mean values
-                          feat.order <- names(sort(mapping.feat.per[,"Mean"],decreasing=T))
-                          v <- data.frame(mapping.feat2plot[feat.order,])
-                          rownames(v) <- feat.order
+                          if (nrow(mapping.feat) > 1) {   
+                            feat.order <- names(sort(mapping.feat.per[,"Mean"],decreasing=T))
+                            v <- data.frame(mapping.feat2plot[feat.order,])
+                            rownames(v) <- feat.order
+
+                          } else {
+                            v <- mapping.feat
+                          }
                           colnames(v) <- colnames(mapping.feat2plot)
                           par(mar=c(9,5,4,10))
                           cols <- rainbow(nrow(mapping.feat2plot))
