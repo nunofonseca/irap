@@ -29,7 +29,7 @@ source $IRAP_DIR/aux/sh/lsf_shared_code.sh
 
 # invoke irap instead of bam_report.R
 # it is up to irap to know the dependencies
-cmd="irap conf=$conf $IRAP_PARAMS quant_method=none quant_norm_method=none de_method=none"
+cmd="irap conf=$conf $IRAP_PARAMS quant_method=none quant_norm_method=none de_method=none use_cached_vars=y"
 
 if [ "$DEBUG-" = "1-" ]; then
     echo mkdir -p $report_dir
