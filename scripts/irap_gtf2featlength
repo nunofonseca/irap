@@ -36,7 +36,7 @@ source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
 pdebug.enabled <- TRUE
 
 #######################
-usage <- "irap_gtf2genelength --gtf file --out outprefix"
+usage <- "irap_gtf2featlength --gtf file --out outprefix [--cores number_cores]"
 filenames <- c("gtf_file") ;#filenames that must exist (if defined)
 option_list <- list(
 #  make_option(c("-v", "--verbose"), action="store_true", default=TRUE, help="Print extra output [default]"),
