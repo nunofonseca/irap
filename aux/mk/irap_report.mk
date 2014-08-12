@@ -78,13 +78,13 @@ define gse_html_files=
 $(strip $(call cached_var,GSE_HTML_FILES))
 endef
 
-$(info dir=$(call mapping_dirs))
-$(info dir=$(call mapping_dirs))
-$(info dir=$(call quant_dirs))
-$(info dir=$(call quant_dirs))
-$(info dir=$(call de_dirs))
-$(info dir=$(call de_dirs))
-$(info cached_vars=$(cached_vars))
+$(call p_debug, dir=$(call mapping_dirs))
+$(call p_debug, dir=$(call mapping_dirs))
+$(call p_debug, dir=$(call quant_dirs))
+$(call p_debug, dir=$(call quant_dirs))
+$(call p_debug, dir=$(call de_dirs))
+$(call p_debug, dir=$(call de_dirs))
+$(call p_debug, cached_vars=$(cached_vars))
 
 # 1 - exp name
 #define gse_html_files=

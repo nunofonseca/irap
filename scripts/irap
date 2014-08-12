@@ -171,6 +171,9 @@ endef
 ################################################################################
 ifndef debug	
  debug=1
+p_debug=
+else
+p_debug=$(info DEBUG:$(1))
 endif
 
 ifndef pe
@@ -933,6 +936,9 @@ define is_empty_file=
 $(if  $(realpath $(1)),$(if $(shell head -n 1 $(1) | grep   Empty),y))
 endef
 
+define zero_lines_file=
+$(if $(realpath $(1)),$(if  $(shell wc -l $(1)|cut -f 1 -d\ |sed "s/^0$//",,no)),)
+endef
 #1-file
 #2-args
 define args2file=
@@ -947,7 +953,7 @@ endef
 # $(1) var name
 cached_vars=
 define cached_var=
-$(if $(call is_defined,$(1)), $(info cache hit $(1)) $($(1)), $(call set_$(1)) $(info cache miss $(1)) $(eval cached_vars+= $(1)))
+$(if $(call is_defined,$(1)), $(call p_debug,cache hit $(1)) $($(1)), $(call set_$(1)) $(call p_debug,cache miss $(1)) $(eval cached_vars+= $(1)))
 endef
 
 
