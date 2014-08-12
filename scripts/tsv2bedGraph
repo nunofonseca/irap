@@ -205,8 +205,8 @@ if (sum(dups) > 0) {
     }
     
   } else {
-    pinfo("Keeping duplicates")
-
+    perror("Unable to proceed. Please enable an option to handle duplicated entries.")
+    q(status=1)
   }
 }
 pdebug.save.state("tsv2bedGraph","p3")
@@ -221,14 +221,15 @@ if ( nrow(sel) == 0 ) {
   perror("No overlap between the feature ids and the ids in the gtf file.")
   q(status=1)
 }
-# Merge in such a way that duplicated entries are kept
+# 
 rownames(sel) <- as.character(sel[,1])
 values <- tsv.sel.val[names(tsv.sel.val) %in% as.character(sel[,1])]
 
 #pinfo(sel.entries)
 pinfo("# values:",length(values))
 #head(values)
-irap.assert(length(sel.entries)==length(values),"Internal error")
+irap.assert(length(sel.entries)==length(values),"Internal error line 231")
+
 #t1 <- cbind(sel[sel.entries,-1],values)
 # sort coords and values before merging
 values <- values[names(values) %in% sel.entries]
