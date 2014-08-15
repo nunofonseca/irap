@@ -257,7 +257,8 @@ endef
 define run_tophat2_map=
         $(call tophat_setup_dirs,$(1))
 	irap_map.sh tophat2 tophat2  -p $(max_threads) $(call tophat_seglength_option,$($(1)_rs),$(1)) $(call tophat_qual_option,$($(1)_qual)) $(call tophat_strand_params,$(1)) $(tophat2_map_params) $(call tophat_ins_sd_params,$(1)) -G $(gtf_file_abspath) --tmp-dir $(call lib2bam_folder,$(1))/$(1)/tmp -o $(call lib2bam_folder,$(1))$(1)	 $(tophat_reference_prefix) $(2) &&\
-	mv $(call lib2bam_folder,$(1))/$(1)/accepted_hits.bam $(3)
+	samtools merge - $(call lib2bam_folder,$(1))/$(1)/accepted_hits.bam $(call lib2bam_folder,$(1))/$(1)/unmapped.bam | samtools sort -m $(SAMTOOLS_SORT_MEM) - $(call lib2bam_folder,$(1))/$(1)/$(1) &&\
+	mv $(call lib2bam_folder,$(1))/$(1)/$(1).bam $(3)
 endef
 
 
