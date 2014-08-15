@@ -205,7 +205,7 @@ get.mapping.stats <- function(mapper,pe.bam.v,se.bam.v,pe.labels.v,se.labels.v) 
   rownames(df)<-rownames(data[[1]])
   colnames(df) <- libs[1]
   pinfo("length:",length(data))
-  df
+  #print(df)
   if(length(data)>1) {
     for (i in c(2:length(data))) {
       df <- cbind(df,data[[i]]$Count)
@@ -224,7 +224,7 @@ get.mapping.stats <- function(mapper,pe.bam.v,se.bam.v,pe.labels.v,se.labels.v) 
   rownames(sliced.data) <- sel.rows
   colnames(sliced.data) <- colnames(df)
   #df
-  sliced.data
+  #sliced.data
   # compute the percentages
   if ( ncol(sliced.data) == 1 ) {
     tot.reads <- sum(sliced.data[c("Reads mapped","Unmapped"),])
@@ -276,7 +276,7 @@ get.mapping.feature.stats <- function(mapper,pe.bam.v,se.bam.v,pe.labels.v,se.la
   # Check if file exists
   for ( n in names(bams.stats.files) ) {
     f <- bams.stats.files[n]
-    pinfo(f)
+    pinfo("Loading ",f)
     if ( !is.null(file.required(f,fatal=F)) ) {
       # load file
       x <- load.gff3(f,"gene")
@@ -292,6 +292,10 @@ get.mapping.feature.stats <- function(mapper,pe.bam.v,se.bam.v,pe.labels.v,se.la
     }
   }
   aln.stats <- do.call("cbind",stats)
+  if ( is.null(aln.stats) ) {
+    perror("unable to find any .bam.stats file")
+    q(status=1)
+  }
   if ( ncol(aln.stats)!=nlibs) {
     pwarning("unable to find all .bam.stats file")
   }
@@ -304,6 +308,8 @@ get.mapping.feature.stats <- function(mapper,pe.bam.v,se.bam.v,pe.labels.v,se.la
   aln.stats <- aln.stats[,append(c("Median","Mean","SD"),cols.names)]
   if ( is.null(dim(aln.stats))) {
     m <- as.data.frame(matrix(aln.stats,nrow=1,ncol=length(aln.stats)))
+    #print(aln.stats)
+    #print(stats)
     colnames(m) <- names(aln.stats)
     rownames(m) <- names(stats[[1]])
     aln.stats <- m                
