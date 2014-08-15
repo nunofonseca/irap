@@ -21,7 +21,7 @@ if ( IRAP.DIR == "" ) {
 # specify our desired options in a list
 #
 source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
-#source(paste(IRAP.DIR,"","emBAM.R",sep="/"))
+
 
 pdebug.enabled <- FALSE
 
@@ -45,6 +45,7 @@ pdebug.enabled <- opt$debug
 
 suppressPackageStartupMessages(library(R2HTML))
 suppressPackageStartupMessages(library(emBAM))
+#source("/home/nf/Research/myR/src/emBAM/R/emBAM.R")
 
 bam.file <- opt$bam_file
 # optional
@@ -71,7 +72,6 @@ if ( num.cores>parallel:::detectCores()) {
 }
 
 options("cores"=num.cores)
-
 pdebug.save.state("bam_report","p0")
 
 # TODO: check arguments
@@ -377,7 +377,7 @@ bam_report.init <- function(bam.file,html.dir=NULL) {
   
   if (!file.exists(bam.file)) {
     pwarning("Bam file ",bam.file," not found.")
-    exit(1)
+    q(status=1)
   }
   
   if (is.null(html.dir) || is.na(html.dir)) {
