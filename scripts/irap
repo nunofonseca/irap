@@ -82,7 +82,7 @@ ifeq ($(VERSION_OK),0)
  $(error make version needs to be 3.82 or above)
 endif
 
-
+irap_path=$(shell dirname `which irap`)
 ################################################################################
 # Auxiliary functions
 ################################################################################
@@ -115,7 +115,7 @@ file_exists=$(if  $(realpath $(1)),,$(call p_error,$(1) not found))
 is_defined=$(if $(subst undefined,,$(origin $(1))),$(1),)
 
 # ensure that the dir name starts and ends with a /
-check_libdir_ok=$(if $(call is_defined,$(1)_dir),$(patsubst %/,%,$($(1)_dir))/,)
+check_libdir_ok=$(if $(call is_defined,$(1)_dir),$(patsubst %/,%,$($(1)_dir))/,$(patsubst %/,%,$(def_lib_dir))/)
 
 # 
 lib_strand_info=$(if $(call is_defined,$(1)_strand),,undef)
@@ -253,6 +253,8 @@ def_de_num_genes_per_table=300
 
 def_annot_tsv=auto
 
+def_lib_dir=
+
 CSS_FILE=irap.css
 ################################################################################
 # START!
@@ -274,6 +276,11 @@ else
  $(call p_error,Configuration file missing)
 endif
 
+###############################################################
+# load the default values from some modules
+ifdef atlas_run
+include $(irap_path)/../aux/mk/irap_atlas_init.mk
+endif
 ###############################################################
 # Check and validate the parameters values
 # fastq files -> pair-end, single-end or both
@@ -806,7 +813,10 @@ ifndef SAMTOOLS_SORT_MEM
  SAMTOOLS_SORT_MEM:=`expr $(max_mem) \* 1000000 \* 50 \/ 100`
 endif
 
+ifndef feat_length
 feat_length=$(name)/data/lengths.Rdata
+endif
+
 
 ################################################################################
 # Make stuff
@@ -1008,7 +1018,6 @@ all: setup quality_filtering_and_report mapping quantification DE GSE
 
 ################################################################################
 # Load extra code
-irap_path=$(shell dirname `which irap`)
 # Mapping
 include $(irap_path)/../aux/mk/irap_map.mk
 # JBrowse
