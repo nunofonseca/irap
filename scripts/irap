@@ -1939,10 +1939,10 @@ cleanup_4_0_reference:
 #endef
 
 ###################################################
-phony_targets+= save_cache
+phony_targets+= save_cache $(name)/cached_vars.mk
 save_cache: $(name)/cached_vars.mk
 
-$(name)/cached_vars.mk: FORCE
+$(name)/cached_vars.mk: 
 	($(call list_cached_vars)) > $@.tmp && mv $@.tmp $@
 
 ###################################################
