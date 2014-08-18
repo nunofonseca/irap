@@ -24,6 +24,6 @@
 # It should be used to override default options
 
 # $(lib)_dir default dir should be $(exp_name)_$(species)
-def_lib_dir=$(name)_$(species)
-
+#def_lib_dir=$(name)_$(species)
+raw_folder=$(name)_$(species)
 # Options
