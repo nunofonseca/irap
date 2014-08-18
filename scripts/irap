@@ -968,6 +968,7 @@ endef
 
 
 ifdef use_cached_vars
+$(call file_exists,$(name)/cached_vars.mk)	
 include $(name)/cached_vars.mk
 $(call p_info,[INFO] Loaded cached variables.)
 endif
