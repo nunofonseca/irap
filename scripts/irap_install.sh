@@ -268,8 +268,8 @@ BitSeq_URL=http://bitseq.googlecode.com/files/$BitSeq_FILE
 #MMSEQ_FILE=mmseq_${MMSEQ_VERSION}.zip
 #MMSEQ_URL=http://www.bgx.org.uk/software/$MMSEQ_FILE
 
-#
-htseq_VERSION=0.5.4p5
+#htseq_VERSION=0.5.4p5
+htseq_VERSION=0.6.1p1
 htseq_FILE=HTSeq-${htseq_VERSION}.tar.gz
 htseq_URL=http://pypi.python.org/packages/source/H/HTSeq/$htseq_FILE
 
