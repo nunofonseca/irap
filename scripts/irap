@@ -496,7 +496,8 @@ else
  $(info *	technical.replicates=$(technical.replicates))
  # validate the libraries names
  comma=,
- $(foreach  l,$(subst $(comma), ,$(subst ;, ,$(technical.replicates))),$(call check_param_ok,$(strip $(l))))
+ quote="
+ $(foreach  l,$(subst $(quote), ,$(subst $(comma), ,$(subst ;, ,$(technical.replicates)))),$(call check_param_ok,$(strip $(l))))
 endif
 
 
