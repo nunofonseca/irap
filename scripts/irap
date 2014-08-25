@@ -141,7 +141,7 @@ lib2snp_folder=$(name)/$(mapper)/$($(1)_dir)
 lib2quant_folder=$(name)/$(mapper)/$(quant_method)/$($(1)_dir)
 
 # check if a parameter is defined
-check_param_ok=$(if $(call is_defined,$(1)),$(info *	$(1)=$($(1))),$(error * Missing $(1)))
+check_param_ok=$(if $(call is_defined,$(strip $(1))),$(info *	$(1)=$($(1))),$(error * Missing -$(1)-))
 
 # check  contrast name
 # 1 - param 2-param_name
