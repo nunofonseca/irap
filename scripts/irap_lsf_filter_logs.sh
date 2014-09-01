@@ -13,7 +13,7 @@ function check_jobs_status {
   let failed_jobs=0
 
   function check_jobs_in_dir {
-    out_files=`ls -1 $dir/*.out`
+    out_files=`ls -1 $dir/*.out 2>/dev/null`
     for f in $out_files; do
        OK=`grep -c -E  "^Successfully completed." $f`
        #echo "OK=$OK" > /dev/stderr
