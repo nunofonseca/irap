@@ -122,6 +122,9 @@ done
 
 # update the menu 
 submit_job "${jobname_prefix}u" -w "ended(\"${jobname_prefix}f*\")"  "$cmd conf=$conf report  $IRAP_PARAMS"
+else
+# update the menu 
+submit_job "${jobname_prefix}u" -w "ended(\"${jobname_prefix}0*\")"  "$cmd conf=$conf report  $IRAP_PARAMS"
 fi
 
 #########################################
