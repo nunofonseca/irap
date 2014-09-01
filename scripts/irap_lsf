@@ -126,7 +126,7 @@ submit_job_status "${jobname_prefix}f"
 
 bresume -J "${jobname_prefix}0[1]"
 # TODO: report
-echo JOBS=$name/${jobname_prefix}*.out
+echo JOBS=$LOG_DIR/${jobname_prefix}*.out
 echo JOBNAME=${jobname_prefix}f
 exit
 
