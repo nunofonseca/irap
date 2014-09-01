@@ -23,7 +23,6 @@
 # Shared code by all *_lsf scripts
 #cmd="bsub_wrapper.sh "
 cmd="irap "
-#DEBUG=1
 RAND=`perl -e "print int(rand()*10);"`
 #DATE=`date "+%w%H%M"`
 DATE=`date "+%w%H%M%S"`
@@ -176,6 +175,22 @@ function check_dependency {
 	echo "-w ended(\"$jobname\")"
     fi
     
+}
+
+function stop_job {
+    if [ "$DEBUG-" == "1-" ]; then
+	echo "stop/suspend job $1"
+    else
+	bstop -J $1
+    fi
+}
+
+function resume_job {
+    if [ "$DEBUG-" == "1-" ]; then
+	echo "resume job $1"
+    else
+	bresume -J $1
+    fi
 }
 
 function submit_job_status {

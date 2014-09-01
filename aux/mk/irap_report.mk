@@ -29,6 +29,10 @@ CSS_FILE=irap.css
 endif
 PATH2CSS_FILE=$(IRAP_DIR)/aux/css/$(CSS_FILE)
 
+ifndef report_qc_only
+report_qc_only=n
+endif
+
 # useful functions
 define set_MAPPING_DIRS=
 $(eval override MAPPING_DIRS:=$(shell ls -d -1 $(name)/{$(shell echo $(SUPPORTED_MAPPERS)| sed 's/ /,/g')} 2>/dev/null)) $(MAPPING_DIRS)
@@ -227,6 +231,9 @@ endef
 mapping_report_files:
 	echo $(call mapping_report_targets)
 	echo $(call mapping_dirs,$(name))
+
+print_mapping_dirs:
+	echo $(MAPPING_DIRS)
 
 mapping_report: report_setup $(call mapping_report_targets)
 
@@ -464,8 +471,13 @@ gse_report_files:
 ############################
 # all targets
 phony_targets+= report_all_targets
-report_all_targets:  report_setup $(info_targets) qc_report mapping_report quant_report de_report gse_report  end_report $(name)/report/about.html
 
+GEN_REPORT_QC_ONLY=$(if $(filter $(strip $(report_qc_only)),y),y,)
+
+REPORT_TARGETS=report_setup $(info_targets)  $(if $(call GEN_REPORT_QC_ONLY), qc_report, qc_report mapping_report quant_report de_report gse_report )   end_report $(name)/report/about.html
+
+$(info $(REPORT_TARGETS))
+report_all_targets:  $(REPORT_TARGETS)
 
 
 $(name)/report/about.html: 
@@ -482,8 +494,16 @@ end_report: $(name)/report/index.html $(call must_exist,$(name)/report/irap.css)
 
 # TODO: replace versions.html by info_report
 # TODO $(call must_exist,$(name)/report/status.html)a
+ifeq ($(report_qc_only),y)
+$(name)/report/index.html: $(conf) $(info_targets) $(qc_html_files) $(call rep_browse,$(name)/report/jbrowse/index.html)  $(name)/report/about.html $(call must_exist,$(name)/report/irap.css) $(call must_exist,$(name)/report/menu.css)
+	cp  $(name)/report/info.html $@ &&
+	irap_report_main $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(name)/report -m "" -q "" -d "" &&
+	sleep 2 &&
+	touch $@
+else
 $(name)/report/index.html: $(conf) $(info_targets)  $(call quant_html_files) $(qc_html_files) $(call mapping_report_targets) $(call de_html_files,$(name)) $(call gse_html_files,$(name))  $(call rep_browse,$(name)/report/jbrowse/index.html)  $(name)/report/about.html $(call must_exist,$(name)/report/irap.css) $(call must_exist,$(name)/report/menu.css)
 	cp  $(name)/report/info.html $@ &&
 	irap_report_main $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(name)/report -m "$(call mapping_dirs,$(name))" -q "$(call quant_dirs,$(name))" -d "$(call de_dirs,$(name))" &&
 	sleep 2 &&
 	touch $@
+endif

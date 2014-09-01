@@ -35,7 +35,7 @@ declare -i counter=0
 p_info " * Initialization "
 # save the variables
 submit_job "${jobname_prefix}i" $cmd conf=$conf $IRAP_PARAMS save_cache
-bstop -J "${jobname_prefix}i"
+stop_job "${jobname_prefix}i"
 
 #load the file with the variables already computed
 IRAP_PARAMS=$IRAP_PARAMS use_cached_vars=y
@@ -53,19 +53,22 @@ submit_job "${jobname_prefix}0[3]" "-w ended(\"${jobname_prefix}i\")"  "$cmd con
 irap_path=`which irap`
 # TODO replace the following two lines with a call to irap to get the files to be generated
 supported_mappers=`grep "^SUPPORTED_MAPPERS=" $irap_path|cut -f 2 -d= |sed "s/ /|/g"`
-mappers_dirs=`ls -d -1 $name/* | grep -E "$supported_mappers"`
+mappers_dirs=`irap conf=$conf $IRAP_PARAMS print_mapping_dirs|tail -n 1`
 #mapping_ofiles=`irap conf=$conf maping_report_files|tail -n 1`
 quant_ofiles=`irap conf=$conf $IRAP_PARAMS quant_report_files|tail -n 1`
 de_ofiles=`irap conf=$conf $IRAP_PARAMS de_report_files|tail -n 1`
 gse_ofiles=`irap conf=$conf $IRAP_PARAMS gse_report_files|tail -n 1`
+report_qc_only=`get_param_value report_qc_only $conf`
 WAIT_FOR_IDS_=$WAIT_FOR_IDS
 
+if [ "$report_qc_only-" != "y-" ]; then
 # one report for each mapper
 for d in $mappers_dirs; do
     mapper=`basename $d`
     p_info "Bam files generated using $mapper..."
     let c=1
     FILES=$d/*.hits.bam
+    #echo $FILES
     if [ "$FILES" != '$d/*.hits.bam' ]; then
 	mapper_counter=`expr $mapper_counter + 1`
 	if [ "$DEBUG-" = "1-" ]; then	    
@@ -119,6 +122,7 @@ done
 
 # update the menu 
 submit_job "${jobname_prefix}u" -w "ended(\"${jobname_prefix}f*\")"  "$cmd conf=$conf report  $IRAP_PARAMS"
+fi
 
 #########################################
 # To finalize, run the whole pipeline
@@ -127,7 +131,7 @@ submit_job "${jobname_prefix}u" -w "ended(\"${jobname_prefix}f*\")"  "$cmd conf=
 submit_job "${jobname_prefix}l" -w "ended(\"${jobname_prefix}u\")"  "irap conf=$conf  $IRAP_PARAMS -n -q report"
 
 submit_job_status "${jobname_prefix}l"
-bresume -J "${jobname_prefix}i"
+resume_job "${jobname_prefix}i"
 echo "JOBS=$name/${jobname_prefix}*.out"
 echo "JOBNAME=${jobname_prefix}u"
 exit

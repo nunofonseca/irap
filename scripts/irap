@@ -45,7 +45,7 @@ exec make --warn-undefined-variables -Rf "$0"  ${1+"$@"}
 # Tools to map, calculate gene expression or differential expression will vary so are not documented.
 #
 #
-# The file requires a config file OR to enter the compulsory parameters in command line (name= data_dir= species= reference=)
+# The file requires a config file
 # Typical command:
 #     - irap conf=my_conf_file.conf
 #     - irap name=study_name species=my_species reference=DNA_species_file 
