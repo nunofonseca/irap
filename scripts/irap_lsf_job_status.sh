@@ -4,7 +4,8 @@
 jobname=$1
 JOB_ID=$2
 MEM=$3
-shift 3
+LOG_DIR=$4
+shift 4
 JOB_CMD=$*
 if [ "$JOB_CMD-" = "-" ]; then
     echo "ERROR! Usage: irap_lsf_job_status.sh jobname jobid MEM job_cmd" >&2
@@ -21,14 +22,14 @@ if [ "$STATUS-" == "-" ]; then
 fi
 
 if [ "$STATUS-" == "DONE-" ]; then
-EXIT_CODE=0
-echo "Job finished successfully ($STATUS)"
+ EXIT_CODE=0
+ echo "Job finished successfully ($STATUS)"
 else
-EXIT_CODE=1
-echo "Job failed ($STATUS)"
+ EXIT_CODE=1
+ echo "Job failed ($STATUS)"
+ irap_lsf_filter_logs.sh $LOG_DIR
+ EXIT_CODE=$?
 fi
-
-
 # print some info about the job
 bjobs  -a -l -J $jobname
 cat<<EOF
