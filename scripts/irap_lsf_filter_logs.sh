@@ -12,8 +12,8 @@ function check_jobs_status {
   let success_jobs=0
   let failed_jobs=0
 
-  function check_jobs_in_dir {
-    out_files=`ls -1 $dir/*.out 2>/dev/null`
+  function check_jobs_in_dir {    
+    out_files=`ls -1 $1/*.out 2>/dev/null`
     for f in $out_files; do
        OK=`grep -c -E  "^Successfully completed." $f`
        #echo "OK=$OK" > /dev/stderr
@@ -36,7 +36,7 @@ function check_jobs_status {
     fi
     done
     # checking subfolders
-    local DIRS=`ls -d $dir/*/ 2> /dev/null`
+    local DIRS=`ls -d $1/*/ 2> /dev/null`
     local d
     for d in $DIRS; do
       check_jobs_in_dir $d
