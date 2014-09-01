@@ -27,7 +27,7 @@ if [ "$STATUS-" == "DONE-" ]; then
 else
  EXIT_CODE=1
  echo "Job failed ($STATUS)"
- irap_lsf_filter_logs.sh $LOG_DIR > /dev/stderr
+ irap_lsf_filter_logs.sh $LOG_DIR
  EXIT_CODE=$?
 fi
 # print some info about the job
