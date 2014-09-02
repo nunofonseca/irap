@@ -476,7 +476,7 @@ GEN_REPORT_QC_ONLY=$(if $(filter $(strip $(report_qc_only)),y),y,)
 
 REPORT_TARGETS=report_setup $(info_targets)  $(if $(call GEN_REPORT_QC_ONLY), qc_report, qc_report mapping_report quant_report de_report gse_report )   end_report $(name)/report/about.html
 
-$(info $(REPORT_TARGETS))
+#$(info $(REPORT_TARGETS))
 report_all_targets:  $(REPORT_TARGETS)
 
 
