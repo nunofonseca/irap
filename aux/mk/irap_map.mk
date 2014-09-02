@@ -178,7 +178,7 @@ define tophat_qual_option=
 endef
 
 define tophat_seglength_option=
-	$(shell if [ $(1) \< 44 ]; then echo "--segment-length 20"; else echo ""; fi)
+	$(shell if [ $(1) \< 60 ]; then echo "--segment-length 20"; else echo ""; fi)
 endef
 
 
@@ -221,8 +221,12 @@ define run_tophat1_index=
         $(call run_bowtie1_index,$(1),$(1))
 endef
 
+# generate the trancriptome once (v.2.0.10 or above)\
+
 define run_tophat2_index=
-        $(call run_bowtie2_index,$(1),$(1))
+        $(call run_bowtie2_index,$(1),$(1)) && \
+	mkdir -p $(call tophat2_trans_index_filename,$(1),$(1)) && \
+	irap_map.sh tophat2 tophat -G $(gtf_file_abspath) --transcriptome-index $(call tophat2_trans_index_filename,$(1),$(1)) $(tophat_reference_prefix)
 endef
 
 # same arguments used for *_index
@@ -232,9 +236,12 @@ endef
 define tophat2_index_filename=
 	$(call bowtie2_index_filename,$(1),$(1))
 endef
+define tophat2_trans_index_filename=
+	$(1)_th2_trans
+endef
 
 
-# Warning: tophat does not like reads to have different sizes
+# Warning: tophat does not like reads with different sizes in the same file
 # splice mismatches -m0 (0-2)"
 # --transcriptome-index
 define tophat_setup_dirs=
@@ -249,16 +256,16 @@ tophat_reference_prefix=$(reference_prefix)
 # TODO: test and do the same to tophat2
 define run_tophat1_map=
         $(call tophat_setup_dirs,$(1))
-	irap_map.sh tophat1 tophat  -p $(max_threads) $(call tophat_seglength_option,$($(1)_rs),$(1)) $(call tophat_qual_option,$($(1)_qual)) $(call tophat_strand_params,$(1)) $(tophat1_map_params) $(call tophat_ins_sd_params,$(1)) -G $(gtf_file_abspath) --tmp-dir $(call lib2bam_folder,$(1))/$(1)/tmp -o $(call lib2bam_folder,$(1))/$(1)	 $(tophat_reference_prefix) $(2) &&\
+	irap_map.sh tophat1 tophat  -p $(max_threads) $(call tophat_seglength_option,$($(1)_rs),$(1)) $(call tophat_qual_option,$($(1)_qual)) $(call tophat_strand_params,$(1)) $(tophat1_map_params) $(call tophat_ins_sd_params,$(1)) -G $(gtf_file_abspath) --tmp-dir $(call lib2bam_folder,$(1))$(1)/tmp -o $(call lib2bam_folder,$(1))$(1)	 $(tophat_reference_prefix) $(2) &&\
 	samtools sort -m $(SAMTOOLS_SORT_MEM) $(call lib2bam_folder,$(1))$(1)/accepted_hits.bam  $(3).tmp && \
 	mv $(3).tmp.bam $(3)
 endef
 
 define run_tophat2_map=
         $(call tophat_setup_dirs,$(1))
-	irap_map.sh tophat2 tophat2  -p $(max_threads) $(call tophat_seglength_option,$($(1)_rs),$(1)) $(call tophat_qual_option,$($(1)_qual)) $(call tophat_strand_params,$(1)) $(tophat2_map_params) $(call tophat_ins_sd_params,$(1)) -G $(gtf_file_abspath) --tmp-dir $(call lib2bam_folder,$(1))/$(1)/tmp -o $(call lib2bam_folder,$(1))$(1)	 $(tophat_reference_prefix) $(2) &&\
-	samtools merge - $(call lib2bam_folder,$(1))/$(1)/accepted_hits.bam $(call lib2bam_folder,$(1))/$(1)/unmapped.bam | samtools sort -m $(SAMTOOLS_SORT_MEM) - $(call lib2bam_folder,$(1))/$(1)/$(1) &&\
-	mv $(call lib2bam_folder,$(1))/$(1)/$(1).bam $(3)
+	irap_map.sh tophat2 tophat2  -p $(max_threads) $(call tophat_seglength_option,$($(1)_rs),$(1)) $(call tophat_qual_option,$($(1)_qual)) $(call tophat_strand_params,$(1)) $(tophat2_map_params) $(call tophat_ins_sd_params,$(1)) -G $(gtf_file_abspath) --tmp-dir $(call lib2bam_folder,$(1))$(1)/tmp -o $(call lib2bam_folder,$(1))$(1) --transcriptome-index $(call tophat2_trans_index_filename,$(file_indexed),$(file_indexed))  --rg-id $(1) --rg-sample $(1)  $(tophat_reference_prefix) $(2) &&\
+	samtools merge - $(call lib2bam_folder,$(1))$(1)/accepted_hits.bam $(call lib2bam_folder,$(1))$(1)/unmapped.bam | samtools sort -m $(SAMTOOLS_SORT_MEM) - $(call lib2bam_folder,$(1))$(1)/$(1) &&\
+	mv $(call lib2bam_folder,$(1))$(1)/$(1).bam $(3)
 endef
 
 
@@ -830,8 +837,8 @@ endef
 #-c The directory containing the sequence files of reference genome. All sequence files are required to:
 # BAM file does not contain the NH flag and the mate information is not ok (htseq fails)
 define run_mapsplice_map=
-	 irap_map.sh mapsplice python $(IRAP_DIR)/bin/mapsplice/mapsplice.py  $(mapsplice_map_params) --threads	 $(max_threads) --bam -o  $(call lib2bam_folder,$(1))/$(1) -c $(call mapsplice_index_prefix,$(file_indexed)) -x $(call mapsplice_index_prefix,$(file_indexed)) $(call mapsplice_file_params,$(1),$(2)) &&\
-	samtools fixmate  $(call lib2bam_folder,$(1))/$(1)/alignments.bam $(3).fix && \
+	 irap_map.sh mapsplice python $(IRAP_DIR)/bin/mapsplice/mapsplice.py  $(mapsplice_map_params) --threads	 $(max_threads) --bam -o  $(call lib2bam_folder,$(1))$(1) -c $(call mapsplice_index_prefix,$(file_indexed)) -x $(call mapsplice_index_prefix,$(file_indexed)) $(call mapsplice_file_params,$(1),$(2)) &&\
+	samtools fixmate  $(call lib2bam_folder,$(1))$(1)/alignments.bam $(3).fix && \
 	$(call bam_fix_nh,$(3).fix,-) | \
 	samtools sort -m $(SAMTOOLS_SORT_MEM) - $(3).tmp && \
 	mv $(3).tmp.bam $(3) && rm -f $(3).fix
