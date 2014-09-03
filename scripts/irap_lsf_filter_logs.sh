@@ -13,6 +13,8 @@ function check_jobs_status {
   let failed_jobs=0
 
   function check_jobs_in_dir {    
+    local f
+    local out_files
     out_files=`ls -1 $1/*.out 2>/dev/null`
     for f in $out_files; do
        OK=`grep -c -E  "^Successfully completed." $f`
@@ -28,11 +30,11 @@ function check_jobs_status {
 	 if [ "$EXIT_STATUS" == "1" ]; then 
 	     INSUF_MEM=1
 	 fi
-	 echo "------------------------------------------" > /dev/stderr
-	 echo "Out file: $f" > /dev/stderr
-         echo "Exit status: $EXIT_STATUS" > /dev/stderr
-	 echo "$CMD" > /dev/stderr
-	 echo "$LAST_LINES" > /dev/stderr
+	 echo "------------------------------------------" 
+	 echo "Out file: $f" 
+         echo "Exit status: $EXIT_STATUS" 
+	 echo "$CMD" 
+	 echo "$LAST_LINES" 
     fi
     done
     # checking subfolders
