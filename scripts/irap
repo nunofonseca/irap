@@ -971,9 +971,9 @@ endef
 ifdef use_cached_vars
 $(call file_exists,$(name)/cached_vars.mk)	
 include $(name)/cached_vars.mk
-$(call p_info,[INFO] Loaded cached variables.)
+$(info [INFO] Loaded cached variables.)
 endif
-
+$(shell exit)
 #
 define list_cached_vars=
 	$(foreach var,$(cached_vars) cached_vars, echo $(var)=$(strip $(call cached_var,$(var)));)
@@ -1944,15 +1944,14 @@ tophat2_update_index:
 #endef
 
 ###################################################
-phony_targets+= save_cache $(name)/cached_vars.mk
-save_cache: $(name)/cached_vars.mk
-
-$(name)/cached_vars.mk: 
+phony_targets+= save_cache 
+save_cache: 
 	($(call list_cached_vars)) > $@.tmp && mv $@.tmp $@
 
 ###################################################
 # FORCE the program to run even if files haven't changed
-FORCE: 
+FORCE:
+
 
 #PHONY: performance improvement. Tell MAKE that those targets don't generate any files. 
 .PHONY:  $(phony_targets)
