@@ -1925,6 +1925,10 @@ cleanup_4_0_data:
 cleanup_4_0_reference:
 	rm -f $(gtf_file_abspath).exon_id.gtf
 
+# 0.4.2d and above
+tophat2_update_index: 
+	$(call run_tophat2_index,$(file_indexed))
+
 ###################################################
 # 
 #$(name)/report/all_options.txt:
