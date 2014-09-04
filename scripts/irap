@@ -967,10 +967,10 @@ define cached_var=
 $(if $(call is_defined,$(1)), $(call p_debug,cache hit $(1)) $($(1)), $(call set_$(1)) $(call p_debug,cache miss $(1)) $(eval cached_vars+= $(1)))
 endef
 
-
+cached_vars_file=$(name)/cached_vars.mk
 ifdef use_cached_vars
-$(call file_exists,$(name)/cached_vars.mk)	
-include $(name)/cached_vars.mk
+$(call file_exists,$(cached_vars_file))	
+include $(cached_vars_file)
 $(info [INFO] Loaded cached variables.)
 endif
 $(shell exit)
@@ -1946,7 +1946,7 @@ tophat2_update_index:
 ###################################################
 phony_targets+= save_cache 
 save_cache: 
-	($(call list_cached_vars)) > $@.tmp && mv $@.tmp $@
+	($(call list_cached_vars)) > $(cached_vars_file).tmp && mv $(cached_vars_file).tmp $(cached_vars_file)
 
 ###################################################
 # FORCE the program to run even if files haven't changed
