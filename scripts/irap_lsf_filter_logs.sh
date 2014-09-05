@@ -23,7 +23,13 @@ function check_jobs_status {
          let success_jobs=$success_jobs+1
        else 
          # error
-         LAST_LINES=`tail -n 50 $f|head -n 10`
+	 err_f=`echo $f|sed "s/.out$/.err/"`
+	 if [ -e $err_f ]; then
+	     ERR_LAST_LINES=`tail -n 10 $err_f`
+	 else
+	     ERR_LAST_LINES="$err_f not found"
+	 fi
+         LAST_LINES=`tail -n 50 $f|head -n 9`
          let failed_jobs=$failed_jobs+1
          EXIT_STATUS=`grep "Exited with exit code" $f|tail -n 1 |cut -f 5 -d\ |sed "s/\.$//"`
          CMD=`grep "LSBATCH: User input" -A 1 $f|tail -n 1`
@@ -31,10 +37,15 @@ function check_jobs_status {
 	     INSUF_MEM=1
 	 fi
 	 echo "------------------------------------------" 
-	 echo "Out file: $f" 
+	 echo "------------------------------------------" 
+	 echo "Output file: $f" 
+	 echo "Error file: $err_f" 
          echo "Exit status: $EXIT_STATUS" 
 	 echo "$CMD" 
+	 echo "*********** $f"
 	 echo "$LAST_LINES" 
+	 echo "*********** $err_f"
+	 echo "$ERR_LAST_LINES"
     fi
     done
     # checking subfolders
