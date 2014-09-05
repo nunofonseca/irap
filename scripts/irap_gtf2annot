@@ -35,7 +35,7 @@ if ( IRAP.DIR == "" ) {
 source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
 pdebug.enabled <- TRUE
 
-library(multicore)
+library(parallel)
 
 #######################
 usage <- "irap_gtf2annot --species species --gtf file [-o outfile] [--rdata -r]"
@@ -75,8 +75,8 @@ if ( num.cores>multicore:::detectCores()) {
 
 pdebug.enabled <- opt$debug
 # Disabling multicores due to an error with  RSQLite driver (mm)
-num.cores <- 1
-pwarning("Multi-threading is temporarily disabled due to an error with RSQLite driver that occurs when processing some GTF files.")
+#num.cores <- 1
+#pwarning("Multi-threading is temporarily disabled due to an error with RSQLite driver that occurs when processing some GTF files.")
 options("cores"=num.cores)
 
 gtf.table <- NULL
