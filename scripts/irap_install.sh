@@ -247,8 +247,8 @@ cuffdiff1_VERSION=1.3.0
 cufflinks1_FILE=cufflinks-${cufflinks1_VERSION}.Linux_x86_64.tar.gz
 cufflinks1_URL=http://cufflinks.cbcb.umd.edu/downloads/$cufflinks1_FILE
 
-cufflinks2_VERSION=2.1.1
-cuffdiff2_VERSION=2.1.1
+cufflinks2_VERSION=2.2.1
+cuffdiff2_VERSION=2.2.1
 cufflinks2_FILE=cufflinks-${cufflinks2_VERSION}.Linux_x86_64.tar.gz
 cufflinks2_URL=http://cufflinks.cbcb.umd.edu/downloads/$cufflinks2_FILE
 
@@ -1572,6 +1572,7 @@ EOF
 #     unzip SOAPfusion_all_in_one_package.zip
 #     pinfo "$MAPPER installation complete."    
 #}
+
 function NURD_install {
     pinfo "Installing NURD..."
     download_software NURD
@@ -1620,6 +1621,18 @@ function miso_install {
     pinfo "RSEM installation complete."    
 }
 
+PICARD_VERSION=1.119
+PICARD_FILE=picard-tools-$PICARD_VERSION.zip
+PICARD_URL=http://sourceforge.net/projects/picard/files/picard-tools/$PICARD_VERSION/$PICARD_FILE/download
+
+function picard_install {
+    pinfo "Installing Picard..."
+    download_software PICARD
+    unzip $PICARD_FILE
+    mkdir -p $BIN_DIR/picard-tools
+    mv picard-tools-$PICARD_VERSION/* $BIN_DIR/picard-tools
+    pinfo "Picard installed"    
+}
 ###############################
 UPDATE_FILE_PERMS=n
 OPTERR=0
