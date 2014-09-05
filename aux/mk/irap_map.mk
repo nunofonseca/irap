@@ -224,7 +224,7 @@ define run_tophat1_index=
         $(call run_bowtie1_index,$(1),$(1))
 endef
 
-# generate the trancriptome once (v.2.0.10 or above)\
+# generate the transcriptome once (v.2.0.10 or above)\
 
 define run_tophat2_index=
         $(call run_bowtie2_index,$(1),$(1)) && \
