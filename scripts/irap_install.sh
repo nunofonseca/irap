@@ -818,6 +818,7 @@ function deps_install {
     # 
     samtools_install
     bedtools_install
+    picard_install
     pinfo "Installing dependencies...done."
 }
 
