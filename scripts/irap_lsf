@@ -131,7 +131,7 @@ submit_job "${jobname_prefix}f" $DEP   "irap conf=$conf  $IRAP_PARAMS -n -q"
 # send an email to the user
 submit_job_status "${jobname_prefix}f"
 
-resume_job  "${jobname_prefix}0[1]"
+resume_job  "${jobname_prefix}i"
 # TODO: report
 echo JOBS=$LOG_DIR/${jobname_prefix}*.out
 echo JOBNAME=${jobname_prefix}f
