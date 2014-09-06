@@ -4,7 +4,7 @@ if [ "$1-" == "-" ]; then
     echo "Usage: irap_lsf_filter_logs log_dir" > /dev/stderr
     exit 1
 fi
-set -e
+
 INSUF_MEM=0
 # Provide a bit more information
 function check_jobs_status {
