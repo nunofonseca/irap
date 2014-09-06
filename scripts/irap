@@ -1201,6 +1201,9 @@ SETUP_DATA_FILES=$(name)/data/gene_class.txt $(index_files) $(gtf_file_abspath).
 
 setup_files: $(SETUP_DATA_FILES)
 
+print_stage0_files: setup_dirs
+	echo $(SETUP_DATA_FILES)
+
 $(index_files): $(file_indexed)
 	$(call p_info,INDEXING)
 	$(call run_$(mapper)_index,$(file_indexed))
