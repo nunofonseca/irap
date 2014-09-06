@@ -1197,7 +1197,7 @@ phony_targets+= setup setup_files
 ################################################################################
 # Setup initial files
 # file with the length of the features (gene, isoform, exon)
-SETUP_DATA_FILES=$(name)/data/gene_class.txt $(index_files) $(gtf_file_abspath).checked  $(gtf_file_abspath).exon_id.gtf $(juncs_file_abspath) $(feat_mapping_file) $(name)/data/chr_sizes.txt  $(gff3_file_abspath) $(gff3_file_abspath).csv $(annot_tsv) $(feat_length) $(annot_tsv) $(name)/data/exons.bed $(name)/data/introns.bed $(name)/data/genes.bed
+SETUP_DATA_FILES=$(name)/data/gene_class.txt $(index_files) $(gtf_file_abspath).checked  $(gtf_file_abspath).exon_id.gtf $(juncs_file_abspath) $(feat_mapping_file) $(name)/data/chr_sizes.txt  $(gff3_file_abspath) $(gff3_file_abspath).csv  $(feat_length) $(annot_tsv) $(name)/data/exons.bed $(name)/data/introns.bed $(name)/data/genes.bed
 
 setup_files: $(SETUP_DATA_FILES)
 
