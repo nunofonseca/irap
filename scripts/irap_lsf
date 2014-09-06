@@ -46,9 +46,16 @@ $cmd conf=$conf $IRAP_PARAMS save_cache
 IRAP_PARAMS="$IRAP_PARAMS use_cached_vars=y"
 p_info " * Starting initial job"
 CUR_STAGE=stage0
-submit_job "${jobname_prefix}0[1]" $cmd conf=$conf stage0 $IRAP_PARAMS
-bstop -J "${jobname_prefix}0[1]"
+submit_job "${jobname_prefix}i" $cmd conf=$conf setup_dirs $IRAP_PARAMS
+stop_job  "${jobname_prefix}i"
 p_info " * First job suspended until all jobs are submitted."
+stage0_targets=`irap conf=$conf $IRAP_PARAMS print_stage0_files|tail -n 1`
+let i=2
+for f in $stage0_targets; do    
+    submit_job "${jobname_prefix}0[$i]"  -w "ended(${jobname_prefix}i)" $cmd conf=$conf setup_dirs $IRAP_PARAMS $f
+    let i=$i+1
+done
+
 WAIT_FOR_IDS=
 # step1 parallel quality filtering
 # step2 align
@@ -124,7 +131,7 @@ submit_job "${jobname_prefix}f" $DEP   "irap conf=$conf  $IRAP_PARAMS -n -q"
 # send an email to the user
 submit_job_status "${jobname_prefix}f"
 
-bresume -J "${jobname_prefix}0[1]"
+resume_job  "${jobname_prefix}0[1]"
 # TODO: report
 echo JOBS=$LOG_DIR/${jobname_prefix}*.out
 echo JOBNAME=${jobname_prefix}f
