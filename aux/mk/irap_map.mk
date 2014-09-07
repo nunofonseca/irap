@@ -271,7 +271,7 @@ endef
 define run_tophat2_map=
         $(call tophat_setup_dirs,$(1))
 	irap_map.sh tophat2 tophat2  -p $(max_threads) $(call tophat_seglength_option,$($(1)_rs),$(1)) $(call tophat_qual_option,$($(1)_qual)) $(call tophat_strand_params,$(1)) $(tophat2_map_params) $(call tophat_ins_sd_params,$(1)) -G $(gtf_file_abspath) --tmp-dir $(call lib2bam_folder,$(1))$(1)/tmp -o $(call lib2bam_folder,$(1))$(1) --transcriptome-index $(call tophat2_trans_index_filename,$(file_indexed),$(file_indexed))  --rg-id $(1) --rg-sample $(1)  $(tophat_reference_prefix) $(2) &&\
-	$(if $(findstring $(1),$(pe)), $(call run_picard,FixMateInformation) INPUT=$(call lib2bam_folder,$(1))$(1)/accepted_hits.bam ASSUME_SORTED=true VALIDATION_STRINGENCY=LENIENT TMP_DIR=$(call lib2bam_folder,$(1))$(1) && ) \
+	$(if $(findstring $(1),$(pe)), $(call run_picard,FixMateInformation) INPUT=$(call lib2bam_folder,$(1))$(1)/accepted_hits.bam ASSUME_SORTED=false VALIDATION_STRINGENCY=LENIENT TMP_DIR=$(call lib2bam_folder,$(1))$(1) && ) \
 	samtools merge - $(call lib2bam_folder,$(1))$(1)/accepted_hits.bam $(call lib2bam_folder,$(1))$(1)/unmapped.bam | \
 	samtools sort -m $(SAMTOOLS_SORT_MEM) - $(call lib2bam_folder,$(1))$(1)/$(1) &&\
 	mv $(call lib2bam_folder,$(1))$(1)/$(1).bam $(3)
