@@ -1053,7 +1053,7 @@ $(info *========================================================)
 
 #################################################################################
 
-index_files=$(call $(mapper)_index_filename,$(file_indexed),$(file_indexed))
+index_files=$(call $(mapper)_index_filenames,$(file_indexed),$(file_indexed))
 
 #*********************
 # print all variables
