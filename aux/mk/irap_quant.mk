@@ -156,7 +156,7 @@ endef
 #5- exon|gene|transctript 
 #6- lib
 define run_htseq=
-	samtools view $(1) | \
+	samtools view -F 4 $(1) | \
 	htseq-count $(call htseq_sam_output_param,$(3))  $(call htseq_mode_param,$(4)) $(call htseq_strand_params,$(6)) $(call htseq_id_param,$(5))  $(htseq_params) - $(2)  > $(3).tmp && \
 	tail -n -5 $(3).tmp > $(3).$(4).stats &&\
 	head -n -5 $(3).tmp > $(3).tmp2 &&\
