@@ -78,7 +78,7 @@ for d in $mappers_dirs; do
 	    p_info "running irap_bam_report: $NEW_JOB"
 	    if [ "$NEW_JOB-"  != "-" ] ; then		
 		WAIT_FOR_IDS=
-		submit_job "${jobname_prefix}m[$mapper_counter]"  "-w  ended($NEW_JOB)"  "irap conf=$conf $IRAP_PARAMS mapper=$mapper quant_method=none quant_norm_method=none de_method=none $name/report/mapping/$mapper.html"
+		submit_job "${jobname_prefix}m[$mapper_counter]"  "-w  ended($NEW_JOB)"  "irap conf=$conf $IRAP_PARAMS mapper=$mapper quant_method=none quant_norm_method=none de_method=none gse_tool=none $name/report/mapping/$mapper.html"
 		WAIT_FOR_IDS=$WAIT_FOR_IDS_
 	    else 
 		p_info "Failed to start irap_bam_report_lsf"
