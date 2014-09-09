@@ -1,7 +1,7 @@
 CFLAGS=-O1
 #CFLAGS=-g -DDEBUG
 
-OFILES=bam_fix_NH  bam_pe_insert bam_rm_NH bam_fix_se_flag
+OFILES=bam_fix_NH  bam_pe_insert bam_rm_NH bam_fix_se_flag bam_tophat2_fix
 
 all: $(OFILES)
 
@@ -9,6 +9,9 @@ clean:
 	rm -f *.o $(OFILES) bam_fix_se_flag
 
 bam_pe_insert: bam_pe_insert.c
+	gcc  $<   -L $(IRAP_DIR)/lib -lbam -lm -lz -o $@  -I $(IRAP_DIR)/include/bam/ 
+
+bam_tophat2_fix: bam_tophat2_fix.c
 	gcc  $<   -L $(IRAP_DIR)/lib -lbam -lm -lz -o $@  -I $(IRAP_DIR)/include/bam/ 
 
 

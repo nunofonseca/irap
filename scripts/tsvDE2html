@@ -434,12 +434,12 @@ gen.page <- function (o.html.file) {
   pdebug("Starting to generate html ",o.html.file)
   #
   write.tsv(table.tsv,file=tsv.file)
-  system(paste("rm -f ",tsv.file,".gz ;gzip ",tsv.file,sep=""))
+  system(paste("rm -f ",tsv.file,".gz ;gzip -c ",tsv.file," > ",tsv.file,".gz",sep=""))
 
   if ( nrow(uncut.table)<20 ) {
     pdebug("Not enough data")
     write.tsv(uncut.table,file=tsv.file)
-    system(paste("rm -f ",tsv.file,".gz ;gzip ",tsv.file,sep=""))
+    system(paste("rm -f ",tsv.file,".gz ;gzip -c ",tsv.file," > ",tsv.file,".gz",sep=""))
     brew.wrapper(get.path2template("not_enough_data"),o.html.file)
     return
   }
