@@ -969,18 +969,14 @@ ifndef use_cached_vars
 use_cached_vars=n
 endif
 
-ifeq (use_cached_vars,y)
 define cached_var=
 $(if $(call is_defined,$(1)), $(call p_debug,cache hit $(1)), $(call set_$(1)) $(call p_debug,cache miss $(1)) $(eval cached_vars+= $(1))) $($(1))
 endef
+
+ifeq (use_cached_vars,y)
 $(call file_exists,$(cached_vars_file))	
 include $(cached_vars_file)
 $(info [INFO] Loaded cached variables.)
-else
-$(info caching disabled)
-define cached_var=
-$(info $(1)=$(call set_$(1)))$(call set_$(1))
-endef
 endif
 
 #
