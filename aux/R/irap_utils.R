@@ -1697,10 +1697,16 @@ load.configuration.file <- function(conf_file) {
   conf.table <- read.delim(conf_file,sep="=",comment.char="#",header=FALSE,stringsAsFactors=FALSE)
   pinfo("Loading conf_file...done")
   pinfo("Configuration:")
+  line2include <- c()
   for ( i in 1:nrow(conf.table) ) {
-    assign(as.character(conf.table[i,1]),mytrim(conf.table[i,2]))
-    pinfo("",conf.table[i,1],"=",conf.table[i,2])
+    if ( mytrim(as.character(conf.table[i,1])) != "" ) {
+      assign(as.character(conf.table[i,1]),mytrim(conf.table[i,2]))
+      pinfo("",conf.table[i,1],"=",conf.table[i,2])
+      line2include <- append(line2include,i)
+    } 
   }
+  # exclude empty lines
+  conf.table <- conf.table[line2include,]
   pinfo("Loading default parameters...")
   #################
   # Default values
