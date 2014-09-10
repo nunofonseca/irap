@@ -182,12 +182,12 @@ endef
 # irap
 # first  -> --library-type=fr-firststrand
 # second -> --library-type=fr-secondstrand 
-irap_strand2htseqoption=$(if $(findstring $(1),"first"),reverse,$(if $(findstring $(1),"second"),yes,no))
+irap_strand2htseqoption=$(if $(findstring $(1),first),reverse,$(if $(findstring $(1),second),yes,no))
 
 
 # 1 - libname
 define htseq_strand_params=
-	$(if $(call lib_strand_info,$(1)), , --stranded=$(call irap_strand2htseqoption,$($(1)_strand)))
+	$(if $(call lib_strand_info,$(1)),--stranded=$(call irap_strand2htseqoption,$($(1)_strand)),)
 endef
 
 

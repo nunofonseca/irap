@@ -117,16 +117,16 @@ is_defined=$(if $(subst undefined,,$(origin $(1))),$(1),)
 # ensure that the dir name starts and ends with a /
 check_libdir_ok=$(if $(call is_defined,$(1)_dir),$(patsubst %/,%,$($(1)_dir))/,$(patsubst %/,%,$(def_lib_dir))/)
 
-# 
-lib_strand_info=$(if $(call is_defined,$(1)_strand),,undef)
+# return y if the strand info was provided
+lib_strand_info=$(if $(call is_defined,$(1)_strand),y,)
 
 # strand value
 VALID_STRAND_OPTIONS=first second both
 # return non empty if option is invalid
-strand_value_ok=$(if $(filter $($(1)),$(VALID_STRAND_OPTIONS)),"invalid option $($(1)) for $(1)",)
+strand_value_ok=$(if $(filter $($(1)),$(VALID_STRAND_OPTIONS)),invalid option $($(1)) for $(1),)
 
 # check if stranded information is ok
-check_libstrand_ok=$(if $(call is_defined,$(1)_strand),$(if $(call strand_value_ok,$(1)_strand),$(call set_has_stranded_data,$(1)),$(call p_error,"Invalid strand option for lib $(1) - $($(1)_strand)")))
+check_libstrand_ok=$(if $(call is_defined,$(1)_strand),$(if $(call strand_value_ok,$(1)_strand),$(call set_has_stranded_data,$(1)) $($(1)_strand),$(call p_error,Invalid strand option for lib $(1) - $($(1)_strand))))
 
 has_stranded_data=no
 set_has_stranded_data=$(if $(filter both,$($(1))),,$(eval has_stranded_data=yes))

@@ -208,11 +208,11 @@ endif
 # irap
 # first  -> --library-type=fr-firststrand
 # second -> --library-type=fr-secondstrand 
-irap_strand2tophatoption=$(if $(findstring $(1),"first"),fr-firststrand,$(if $(findstring $(1),"second"),fr-secondstrand,fr-unstranded))
+irap_strand2tophatoption=$(if $(findstring $(1),first),fr-firststrand,$(if $(findstring $(1),second),fr-secondstrand,fr-unstranded))
 
 # 1 - libname
 define tophat_strand_params=
-	$(if $(call lib_strand_info,$(1)), , --library-type=$(call irap_strand2tophatoption,$($(1)_strand)))
+	$(if $(call lib_strand_info,$(1)),--library-type=$(call irap_strand2tophatoption,$($(1)_strand)),)
 endef
 
 
