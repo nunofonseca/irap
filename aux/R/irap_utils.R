@@ -152,7 +152,7 @@ get.gene.length.from.gtf.file <- function(gtf.file,filter.biotype=NULL,length.mo
 get.gene.length.from.gtf <- function(gtf,filter.biotype=NULL,length.mode="union.exons") {
   # TODO: validate gtf
   # protein coding
-  suppressPackageStartupMessages(library(multicore))
+  suppressPackageStartupMessages(library(parallel))
   if ( !is.null(filter.biotype) ) {
     gtf <- gtf[gtf$gene_biotype==filter.biotype,]
   }
@@ -244,7 +244,7 @@ addGeneFeature2gtf <- function(gtf) {
 get.transcript.length.from.gtf <- function(gtf,filter.biotype=NULL) {
   # TODO: validate gtf
   # protein coding
-  suppressPackageStartupMessages(library(multicore))
+  suppressPackageStartupMessages(library(parallel))
   if ( !is.null(filter.biotype) ) {
     gtf <- gtf[gtf$gene_biotype==filter.biotype,]
   }
