@@ -39,11 +39,11 @@ $(eval override MAPPING_DIRS:=$(shell ls -d -1 $(name)/{$(shell echo $(SUPPORTED
 endef
 
 define set_QUANT_DIRS=
-$(eval override QUANT_DIRS:=$(shell ls -d -1 $(shell echo $(foreach d,$(call mapping_dirs),$d/{$(shell echo $(SUPPORTED_QUANT_METHODS)| sed 's/ /,/g')}/)) 2>/dev/null)) $(QUANT_DIRS)
+$(eval override QUANT_DIRS:=$(shell ls -d -1 $(shell echo $(foreach d,$(call mapping_dirs),$d/{$(shell echo $(SUPPORTED_QUANT_METHODS)| sed 's/ /,/g')})) 2>/dev/null)) $(QUANT_DIRS)
 endef
 
 define set_DE_DIRS=
-$(eval override DE_DIRS:=$(shell ls -d -1 $(shell echo $(foreach d,$(call quant_dirs),$(d){$(shell echo $(SUPPORTED_DE_METHODS)| sed 's/ /,/g')}/)) 2>/dev/null)) $(DE_DIRS)
+$(eval override DE_DIRS:=$(shell ls -d -1 $(shell echo $(foreach d,$(call quant_dirs),$(d)/{$(shell echo $(SUPPORTED_DE_METHODS)| sed 's/ /,/g')})) 2>/dev/null)) $(DE_DIRS)
 endef
 
 # 1 - exp name
@@ -54,7 +54,7 @@ endef
 
 # 1 - exp name
 define set_DE_HTML_FILES=
-$(eval override  DE_HTML_FILES=$(subst $(name)/,$(name)/report/,$(foreach d,$(call de_dirs,$(1)),$(subst .tsv,.html,$(call quiet_ls,$(d)*_de.tsv)))))
+$(eval override  DE_HTML_FILES=$(subst $(name)/,$(name)/report/,$(foreach d,$(call de_dirs,$(1)),$(subst .tsv,.html,$(call quiet_ls,$(d)/*_de.tsv)))))
 endef
 
 # mapper quant raw|nlib|rpkm gene|exon|trans
@@ -464,6 +464,7 @@ silent_targets+=gse_report_files
 
 # only generates the html iff the respective GSE tsv file exist
 gse_report: report_setup $(call gse_html_files,$(name))
+
 # just print the name of the files that will be produced
 gse_report_files:
 	echo $(call gse_html_files,$(name))
