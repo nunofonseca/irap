@@ -278,14 +278,11 @@ trim=n
 endif
 $(info * trim=$(trim))
 # basename of the reads files (extract gz extension if necessary)
-# and replace .fq by fastq to create symlinks
-f1_n=$(shell echo $(basename $(f1))|sed s/.fq//|sed s/.fastq//|sed s/.gz//)
-f2_n=$(shell echo $(basename $(f2))|sed s/.fq//|sed s/.fastq//|sed s/.gz//)
+f1_n:=$(subst .fq,,$(subst .fastq,,$(subst .gz,,$(basename $(f1)))))
+f2_n:=$(subst .fq,,$(subst .fastq,,$(subst .gz,,$(basename $(f2)))))
 
-#[TODO] Make it smarter using a list of variable to go through 
-#       and get value entered in param. or default (foreach loop) 
+
 # check if bowtie is available
-
 ifneq ($(cont_index),no)
 bowtie_path?=$(shell which bowtie 2>/dev/null)
 ifeq ($(bowtie_path),)
