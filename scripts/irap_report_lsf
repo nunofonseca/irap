@@ -49,16 +49,21 @@ submit_job "${jobname_prefix}0[2]" "-w ended(\"${jobname_prefix}i\")"  "$cmd con
 submit_job "${jobname_prefix}0[3]" "-w ended(\"${jobname_prefix}i\")"  "$cmd conf=$conf info_report $IRAP_PARAMS"
 
 
+
 #############
 # Alignments
 irap_path=`which irap`
 # TODO replace the following two lines with a call to irap to get the files to be generated
 supported_mappers=`grep "^SUPPORTED_MAPPERS=" $irap_path|cut -f 2 -d= |sed "s/ /|/g"`
-mappers_dirs=`irap conf=$conf $IRAP_PARAMS print_mapping_dirs|tail -n 1`
+#mappers_dirs=`irap conf=$conf $IRAP_PARAMS print_mapping_dirs|tail -n 1`
 #mapping_ofiles=`irap conf=$conf maping_report_files|tail -n 1`
-quant_ofiles=`irap conf=$conf $IRAP_PARAMS quant_report_files|tail -n 1`
-de_ofiles=`irap conf=$conf $IRAP_PARAMS de_report_files|tail -n 1`
-gse_ofiles=`irap conf=$conf $IRAP_PARAMS gse_report_files|tail -n 1`
+#quant_ofiles=`irap conf=$conf $IRAP_PARAMS quant_report_files|tail -n 1`
+#de_ofiles=`irap conf=$conf $IRAP_PARAMS de_report_files|tail -n 1`
+#gse_ofiles=`irap conf=$conf $IRAP_PARAMS gse_report_files|tail -n 1`
+mappers_dirs=`get_cached_value MAPPING_DIRS`
+quant_ofiles=`get_cached_value QUANT_HTML_FILES`
+de_ofiles=`get_cached_value DE_HTML_FILES`
+gse_ofiles=`get_cached_value GSE_HTML_FILES`
 report_qc_only=`get_param_value report_qc_only $conf`
 WAIT_FOR_IDS_=$WAIT_FOR_IDS
 

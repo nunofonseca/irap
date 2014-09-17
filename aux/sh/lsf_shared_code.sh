@@ -218,6 +218,16 @@ function get_maxmem {
     let MAX_MEM=($1/4000+1)*4000
     echo $1
 }
+
+function get_cached_value {
+
+    if [ ! -e $name/cached_vars.mk ]; then
+	echo ERROR: File $name/cached_vars.mk not found > /dev/stderr
+	exit 1
+    fi
+    val=`grep "^$1=" $name/cached_vars.mk|cut -f 2 -d=`
+    echo $val
+}
 ################
 ## Job functions (computer farm)
 # length of jobname needs to be small otherwise lsf dependencies will not work
