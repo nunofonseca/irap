@@ -380,7 +380,7 @@ gtf_file_dir:=$(name)/data
 user_gtf_abspath:=$(gtf_file_abspath)
 gtf_file_abspath:=$(name)/data/$(patsubst %.gtf,%.spike.gtf,$(subst .gz,,$(gtf_file)))
 spikein_gtf_file:=$(gtf_file_dir)/spike.gtf
-override gtf_file:=$(basename $(gtf_file_abspath))
+override gtf_file:=$(notdir $(gtf_file_abspath))
 
 #
 $(warning Currently spikein data is not explored when performing differential expression analysis)
@@ -405,12 +405,12 @@ endif
 # offset=0
 # includes 1 base of the exons
 juncs_file_abspath:=$(subst .gz,,$(gtf_file_abspath)).juncs
-juncs_file:=$(basename $(juncs_file_abspath))
+juncs_file:=$(notdir $(juncs_file_abspath))
 
 
 # GFF3 file obtained from the gtf file
 gff3_file_abspath:=$(subst .gz,,$(subst .gtf,.gff3,$(gtf_file_abspath)))
-gff3_file:=$(subst .gz,,$(subst .gtf,.gff3,$(gtf_file)))
+gff3_file:=$(subst .gz,,$(subst .gtf,.gff3,$(gtf_file_abspath)))
 $(info *       gff3_file  = $(gff3_file_abspath))
 
 
@@ -2002,8 +2002,11 @@ tophat2_update_index:
 	$(call run_tophat2_index,$(file_indexed))
 
 # cp the gff3 file to the new location
-gff3_update: $(name)/$(data_dir)/$(gff3_file)
-	cp -a $(name)/$(data_dir)/$(gff3_file) $(gff3_file_abspath)
+# 0.4.3d and above
+gff3_update: $(data_dir)/reference/$(species)/$(notdir $(gff3_file_abspath))
+	cp -a $(data_dir)/reference/$(species)/$(notdir $(gff3_file)) $(gff3_file_abspath)
+	cp -a $(data_dir)/reference/$(species)/$(notdir $(gtf_file_abspath)).juncs $(gtf_file_abspath).juncs
+
 
 ###################################################
 # 
