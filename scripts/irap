@@ -1004,7 +1004,7 @@ endef
 #2-args
 define args2file=
  $(shell rm -f $(1) && touch $(1))
- $(foreach arg,$(2), $(shell echo -n "$(arg) " >> $(1);))
+ $(foreach arg,$(2), $(shell echo -n '$(arg) ' >> $(1);))
  $(shell echo >> $(1))
 endef
 
@@ -1037,12 +1037,14 @@ endef
 ###############################################################################
 # When the number of libraries is greater than BIG_LIM then pass the arguments
 # to some scripts from stdin
+ifndef BIG_LIM
 BIG_LIM:=600
+endif
 
 ifeq ($(shell expr $(words $(se) $(pe)) \<  $(BIG_LIM)),0)
 #($(word 1,$(sort $(BIG_LIM) $(words $(se) $(pe))))),$(BIG_LIM))
 # too many libs to be able to pass them as an argument
-$(call p_info, Big number of libraries mode (>800))
+$(call p_info, Big number of libraries mode (>$(BIG_LIM)))
 # cmd=$1
 # out_file=$2
 # args=$3
