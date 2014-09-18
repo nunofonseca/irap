@@ -56,6 +56,12 @@ if [ "$IRAP_LSF_PARAMS-" = "-" ]; then
     IRAP_LSF_PARAMS=
 fi
 
+export QUEUE
+export IRAP_LSF_GROUP
+export IRAP_LSF_PARAMS
+export MEM
+export THREADS
+
 #########################
 ## Check input parameters 
 #Configuration file
