@@ -6,5 +6,5 @@ if [ "$GTF_FILE-" = "-" ]; then
     exit 1
 fi
 echo class gene_id 	
-cut -f 2,9  $GTF_FILE | cut -f 1,3 -d\ | tr -d "\";\t"  | sort   -u 
+cut -f 2,9  $GTF_FILE | cut -f 1,3 -d\ | tr -d "\";\t"  | sort   -u | uniq
 exit 0
