@@ -117,6 +117,8 @@ is_defined=$(if $(subst undefined,,$(origin $(1))),$(1),)
 # ensure that the dir name starts and ends with a /
 check_libdir_ok=$(if $(call is_defined,$(1)_dir),$(patsubst %/,%,$($(1)_dir))/,$(patsubst %/,%,$(def_lib_dir))/)
 
+# *****************
+# Stranded data
 # return y if the strand info was provided
 lib_strand_info=$(if $(call is_defined,$(1)_strand),y,)
 
@@ -131,6 +133,9 @@ check_libstrand_ok=$(if $(call is_defined,$(1)_strand),$(if $(call strand_value_
 has_stranded_data=no
 set_has_stranded_data=$(if $(filter both,$($(1))),,$(eval has_stranded_data=yes))
 
+
+# ****************
+# Paths
 # get the path for a filtered fastq file
 lib2filt_folder=$(name)/data/$($(1)_dir)
 # get the path for a bam file
@@ -255,7 +260,7 @@ def_annot_tsv=auto
 
 def_lib_dir=
 
-CSS_FILE=irap.css
+CSS_FILE?=irap.css
 ################################################################################
 # START!
 $(info *****************************************************)
@@ -355,6 +360,7 @@ $(call file_exists,$(gtf_file_dir)/$(gtf_file))
 
 # ************
 # spikein data
+
 ifdef spikein_fasta
 spikein_data=y
 $(info *	spikein_data=y)
@@ -375,8 +381,26 @@ user_gtf_abspath:=$(gtf_file_abspath)
 gtf_file_abspath:=$(name)/data/$(patsubst %.gtf,%.spike.gtf,$(subst .gz,,$(gtf_file)))
 spikein_gtf_file:=$(gtf_file_dir)/spike.gtf
 override gtf_file:=$(basename $(gtf_file_abspath))
+
+#
+$(warning Currently spikein data is not explored when performing differential expression analysis)
 endif
 
+
+# ****************
+# single cell
+ifndef single_cell
+single_cell=n
+endif
+
+ifeq ($(single_cell),y)
+$(info *	single_cell=y)
+ifndef spikein_data
+$(call p_error,spikein_fasta parameter needs to be provided when analysing single cell data)
+endif
+endif
+
+# ****************
 # file with the junctions (as used by tophat)
 # offset=0
 # includes 1 base of the exons
@@ -417,6 +441,7 @@ $(info *       Transcripts = $(trans_file))
 
 refgeneclass_file=$(subst .gz,,$(gtf_file_abspath)).gene_class.txt
 refgeneannot_file=$(subst .gtf,,$(subst .gz,,$(gtf_file_abspath))).gene_annot.tsv
+
 #************
 # FASTQ files
 # SE reads
@@ -506,8 +531,9 @@ endif
 # groups=group1 group2 group3 
 ifndef groups
 $(info *	 groups=  parameter not defined, using the groups in the contrasts (if defined).)
+groups=$(contrasts)
 else
- $(foreach g,$(groups),$(call check_param_ok,$(g)))
+$(foreach g,$(groups),$(call check_param_ok,$(g)))
 $(info *	groups=$(groups))
 endif
 
@@ -652,14 +678,6 @@ $(call p_info,[ERROR] quant_method)
 $(error $(quant_method) not supported)
 endif
 
-# temporary (backward compatibility)
-# ifeq ($(quant_method),htseq_1)
-# override quant_method:=htseq1
-# endif
-
-# ifeq ($(quant_method),htseq_2)
-# override quant_method=htseq2
-# endif
 
 $(info *	quant_method=$(quant_method))
 
@@ -852,9 +870,8 @@ endif
 phony_targets=
 silent_targets= 
 
-empty=
-space=$(empty) $(empty) 
-
+empty:=
+space:=$(empty) $(empty)#
 ################################################################################
 # AUXILIARY FUNCTIONS
 ################################################################################
@@ -866,12 +883,17 @@ define groups2str=
 $(call spaces2commas,$(call groupsnames))
 endef
 
+define remove_spaces=
+$(subst $(space),,$(1))
+endef
+
 define spaces2commas=
 $(shell echo $(1)|tr " " ",")
 endef
 
+#$(sort $(strip $(foreach l,$(groups),$(foreach g,$($(l)),$(g)))))
 define groupsnames=
-$(sort $(strip $(foreach l,$(contrasts),$(foreach g,$($(l)),$(g)))))
+$(sort $(strip $(foreach l,$(groups),$(l) )))
 endef
 
 
