@@ -80,7 +80,7 @@ for d in $mappers_dirs; do
 	if [ "$DEBUG-" = "1-" ]; then	    
 	    p_info "running irap_bam_report_lsf $mapper"
 	else
-	    NEW_JOB=`irap_bam_report_lsf conf=$conf $IRAP_PARAMS mapper=$mapper | grep "JOB=" | cut -f 2 -d\=`	
+	    NEW_JOB=`WAIT_FOR_IDS=${jobname_prefix}i irap_bam_report_lsf conf=$conf $IRAP_PARAMS mapper=$mapper | grep "JOB=" | cut -f 2 -d\=`	
 	    p_info "running irap_bam_report: $NEW_JOB"
 	    if [ "$NEW_JOB-"  != "-" ] ; then		
 		WAIT_FOR_IDS=
