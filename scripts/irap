@@ -2007,8 +2007,8 @@ tophat2_update_index:
 # cp the gff3 file to the new location
 # 0.4.3d and above
 gff3_update: $(data_dir)/reference/$(species)/$(notdir $(gff3_file_abspath))
-	cp -a $(data_dir)/reference/$(species)/$(notdir $(gff3_file)) $(gff3_file_abspath)
-	cp -a $(data_dir)/reference/$(species)/$(notdir $(gtf_file_abspath)).juncs $(gtf_file_abspath).juncs
+	cp -a $(data_dir)/reference/$(species)/$(notdir $(gff3_file)) $(name)/data/$(notdir $(gff3_file))
+	cp -a $(data_dir)/reference/$(species)/$(notdir $(gtf_file_abspath)).juncs $(name)/data/$(notdir $(gtf_file)).juncs
 
 
 ###################################################
