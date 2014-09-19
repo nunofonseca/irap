@@ -20,10 +20,29 @@
 #
 #    $Id$
 # =========================================================
+# Macros 
 # Code executed after reading the configuration file and before validating the options
 # It should be used to override default options
 
+
+#################
+# SOP 
+ifdef sop
+ifeq ($(sop),pawg_mapping)
+qc=off
+mapper=tophat2
+species=homo_sapiens
+quant_method=
+de_method=
+reference=GRCh37.p13.genome.chr_only.fa
+gtf_file=gencode.v19.annotation.gtf
+endif
+endif
+
+##################
+# Expression Atlas
+ifdef atlas_run
 # $(lib)_dir default dir should be $(exp_name)_$(species)
 #def_lib_dir=$(name)_$(species)
 raw_folder=$(name)_$(species)
-# Options
+endif

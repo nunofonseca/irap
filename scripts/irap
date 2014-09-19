@@ -270,6 +270,8 @@ $(info * $(license))
 $(info *)
 
 $(info * Initializing...)
+
+
 ###############################################
 # Load configuration (mandatory)
 ifdef conf
@@ -281,11 +283,15 @@ else
  $(call p_error,Configuration file missing)
 endif
 
+###############################################
+# Load some definitions
+include $(irap_path)/../aux/mk/irap_defs.mk
+
 ###############################################################
 # load the default values from some modules
-ifdef atlas_run
-include $(irap_path)/../aux/mk/irap_atlas_init.mk
-endif
+#ifdef atlas_run
+#include $(irap_path)/../aux/mk/irap_atlas_init.mk
+#endif
 ###############################################################
 # Check and validate the parameters values
 # fastq files -> pair-end, single-end or both
