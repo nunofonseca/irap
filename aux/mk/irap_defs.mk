@@ -28,14 +28,15 @@
 #################
 # SOP 
 ifdef sop
-ifeq ($(sop),pawg_mapping)
-qc=off
-mapper=tophat2
-species=homo_sapiens
-quant_method=
-de_method=
-reference=GRCh37.p13.genome.chr_only.fa
-gtf_file=gencode.v19.annotation.gtf
+$(info * sop=$(sop) (overriding some options))
+ifeq ($(sop),pawg3_mapping)
+override qc=off
+override mapper=tophat2
+override species=homo_sapiens
+override quant_method=
+override de_method=
+override reference=GRCh37.p13.genome.chr_only.fa
+override gtf_file=gencode.v19.annotation.gtf
 endif
 endif
 
@@ -44,5 +45,6 @@ endif
 ifdef atlas_run
 # $(lib)_dir default dir should be $(exp_name)_$(species)
 #def_lib_dir=$(name)_$(species)
+$(info * atlas_run mode (overriding some options))
 raw_folder=$(name)_$(species)
 endif
