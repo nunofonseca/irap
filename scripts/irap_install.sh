@@ -164,10 +164,10 @@ tophat1_FILE=tophat-${tophat1_VERSION}.Linux_x86_64.tar.gz
 tophat1_URL=http://tophat.cbcb.umd.edu/downloads/$tophat1_FILE
 
 #
-tophat2_VERSION=2.0.10
+tophat2_VERSION=2.0.12
 tophat2_FILE=tophat-${tophat2_VERSION}.Linux_x86_64.tar.gz
-tophat2_URL=http://tophat.cbcb.umd.edu/downloads/$tophat2_FILE
-
+#tophat2_URL=http://tophat.cbcb.umd.edu/downloads/$tophat2_FILE
+tophat2_URL=http://ccb.jhu.edu/software/tophat/downloads/$tophat2_FILE
 #
 SMALT_VERSION=0.7.4
 SMALT_FILE=smalt-$SMALT_VERSION.tgz
