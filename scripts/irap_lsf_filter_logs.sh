@@ -32,15 +32,17 @@ function check_jobs_status {
          LAST_LINES=`tail -n 50 $f|head -n 9`
          let failed_jobs=$failed_jobs+1
          EXIT_STATUS=`grep "Exited with exit code" $f|tail -n 1 |cut -f 5 -d\ |sed "s/\.$//"`
+	 MEM_INSUF=`grep -c "^TERM_MEMLIMIT: job killed after reaching LSF memory usage limit." $f`
          CMD=`grep "LSBATCH: User input" -A 1 $f|tail -n 1`
-	 if [ "$EXIT_STATUS" == "1" ]; then 
-	     INSUF_MEM=1
-	 fi
 	 echo "------------------------------------------" 
 	 echo "------------------------------------------" 
 	 echo "Output file: $f" 
 	 echo "Error file: $err_f" 
          echo "Exit status: $EXIT_STATUS" 
+	 if [ "$MEM_INSUF" == "1" ]; then 
+	     INSUF_MEM=1
+	     echo "Insufficient memory"
+	 fi
 	 echo "$CMD" 
 	 echo "*********** $f"
 	 echo "$LAST_LINES" 
