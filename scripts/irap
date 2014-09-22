@@ -900,7 +900,7 @@ endef
 
 # return groups definition
 define groupsdef2str=
-$(foreach g,$(call groupsnames),$(call spaces2commas,$(strip $($(g))));)
+$(call remove_spaces,$(foreach g,$(call groupsnames),$(call spaces2commas,$(strip $($(g))));))
 endef
 
 define libname2ofastq=
