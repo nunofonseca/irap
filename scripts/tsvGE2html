@@ -188,6 +188,11 @@ if (ndups > 0 ) {
 }
 rownames(table) <- as.character(table[,"ID"])
 
+# fix colnames (.rpkm)
+if ( opt$metric == "rpkm" ) {
+  colnames(table) <- gsub(".rpkm$","",colnames(table))
+}
+
 html.cols2sel <- colnames(table)
 pdebug.save.state("tsvGE2html0","p0")
 
@@ -324,6 +329,7 @@ gen.page <- function (o.html.file) {
   caption <- ""
   brew.wrapper(html.template,o.html.file)
 }
+
 
 filt.name <- "All"
 tsv.file <- gsub(".html$",".tsv",o.html.file)
