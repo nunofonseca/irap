@@ -71,7 +71,8 @@ gse_ofiles=`get_cached_value GSE_HTML_FILES`
 report_qc_only=`get_param_value report_qc_only $conf`
 WAIT_FOR_IDS_=$WAIT_FOR_IDS
 
-if [ "$report_qc_only-" != "y-" ]; then
+if [ "$report_qc_only-" != "y-" ] && [ "$mappers_dirs-" != "-" ] ; then
+
 # one report for each mapper
 for d in $mappers_dirs; do
     mapper=`basename $d`
