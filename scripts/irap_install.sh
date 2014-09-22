@@ -981,6 +981,7 @@ install.packages("gtools",repo=repo)
 install.packages("gdata",repo=repo)
 install.packages("caTools",repo=repo)
 install.packages("sfsmisc",repo=repo)
+install.packages("lattice",repo=repo)
 download.file("http://cran.r-project.org/src/contrib/Archive/gplots/gplots_2.11.0.tar.gz","gplots_2.11.0.tar.gz")
 install.packages("gplots_2.11.0.tar.gz",type="source",repos=NULL)
 #install.packages("gplots",repo=repo)
@@ -1044,7 +1045,7 @@ function R3_packages_install {
 repo<-"$CRAN_REPO"
 packages2install<-c("multicore","parallel","intervals","gclus",'R2HTML',"agricolae",
              "optparse","brew","reshape","gtools","gdata","caTools",
-             "sfsmisc","gplots")
+             "sfsmisc","gplots","lattice")
 
 for (p in packages2install ) {
    install.packages(p,repo=repo)
