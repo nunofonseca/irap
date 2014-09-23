@@ -671,9 +671,17 @@ bfast_map_options= -A $(bfast_A)
 # note: --outSAMattributes Standard  --outSAMstrandField intronMotif (order is important?)
 #   --outSAMstrandField intronMotif - unstranded data only
 # stranded RNA-seq data: do not need to use any specific STAR options
-star_map_params=  --genomeLoad NoSharedMemory --runThreadN $(max_threads) --outSAMunmapped Within --outFilterMultimapNmax $(max_hits) --outSAMattributes Standard  --outSAMstrandField intronMotif   $(star_map_options) 
+# TODO: if splicing use 
+
+star_map_params=  --genomeLoad NoSharedMemory --runThreadN $(max_threads) --outSAMunmapped Within --outFilterMultimapNmax $(max_hits) --outSAMattributes NH HI NM MD AS XS  --outSAMstrandField intronMotif   $(star_map_options) 
 star_index_params= --runThreadN $(max_threads) 
 
+ifeq ($(mapper_splicing),no)
+ star_map_params+= --sjdbOverhang  0
+else
+# TODO: replace 20 by readlength-1 
+ star_map_params+= $(if $(filter --sjdbOverhang,$(star_map_options)),, --sjdbOverhang 20)
+endif
 
 define star_qual_option=
 	$(shell if [ "$(1)" != "33" ]; then echo "-q 'offset-64'"; else echo "-q offset-33"; fi)
@@ -693,29 +701,20 @@ endef
 define run_star_index=
 	irap_fasta_split.pl $(1) $(call star_index_dirname,$(1)) && \
 	sed -i 's/ .*//' $(call star_index_dirname,$(1))/*.fa && \
-	irap_map.sh star star --runMode genomeGenerate $(star_index_params) --genomeDir $(call star_index_dirname,$(1)) --genomeFastaFiles $(call star_index_dirname,$(1))/*.fa && \
+	irap_map.sh star star --runMode genomeGenerate $(star_index_params) --genomeDir $(call star_index_dirname,$(1)) --genomeFastaFiles $(call star_index_dirname,$(1))/*.fa  --sjdbGTFfile $(gtf_file_abspath) && \
 	touch $(call star_index_filename,$(1))
 endef
 
-# TODO: if splicing use 
-ifeq ($(mapper_splicing),no)
- star_map_params+= --sjdbOverhang  0
-else
-# TODO: replace 20 by readlength-1 
- star_map_params+= --sjdbOverhang  20
-endif
 
-# TODO: fix
-# Seg. fault 
+
+#  --sjdbFileChrStartEnd  $(juncs_file_abspath)
 # irap conf=test3.conf mapper=star quant_method=basic   exon_quant=y  transcript_quant=y de_method=none  stage2
 define run_star_map=
 	 irap_map.sh star star $(star_map_params) --genomeDir $(call star_index_dirname,$(file_indexed)) \
-	--readFilesIn $(2) --outFileNamePrefix $(3) --sjdbFileChrStartEnd  $(juncs_file_abspath) &&\
-	samtools view -bS $(3)Aligned.out.sam  > $(3).tmp.bam && \
-	$(call bam_fix_nh,$(3).tmp.bam,$(3).tmp21.bam) &&  \
-	bam_fix_se_flag $(3).tmp21.bam - | \
+	--readFilesIn $(2) --outFileNamePrefix $(3) --outSAMtype BAM Unsorted &&\
+	bam_fix_se_flag $(3)Aligned.out.bam - | \
 	samtools sort -m $(SAMTOOLS_SORT_MEM) - $(3).tmp  && \
-	mv $(3).tmp.bam $(3) && rm -f $(3)Aligned.out.sam $(3).tmp21.bam
+	mv $(3).tmp.bam $(3) && rm -f $(3)Aligned.out.bam 
 endef
 
 
