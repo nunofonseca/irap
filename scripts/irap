@@ -1513,23 +1513,30 @@ endef
 #     exons.raw.htseq1.tsv
 #     genes.nlib.htseq1.tsv
 
+ifeq ($(quant_method),none) 
+quantification:
+	$(call p_info,[DISABLED] Assembly and quantification)
+$(quant_method)_quant_files=
+$(quant_method)_quant:
+quantification_s:
+else
 $(quant_method)_quant_files=$(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv $(call transcripts_quant_file)  $(call exons_quant_file) 
-
-phony_targets+= quantification $(quant_method)_quant quantification_s
 
 # Raw  + Normalized 
 quantification: $(quant_norm_method)_nquant $(quant_method)_quant 
 	$(call p_info,[DONE] Assembly and quantification)
 
 $(quant_method)_quant: mapping $($(quant_method)_quant_files)
-
-
 # do not create the final matrix file (used by lsf wrapper)
 #ifeq ($(shell echo -n $(quant_method)|sed -E "s/[12].*//"),cufflinks)
 #quantification_s: setup mapping $(call nquant_files)
 #else
 quantification_s: setup mapping $(call genes_quant_files) $(call transcripts_quant_files)  $(call exons_quant_files) 
 #endif
+
+endif
+phony_targets+= quantification $(quant_method)_quant quantification_s
+
 
 
 #*****************
@@ -2009,7 +2016,6 @@ tophat2_update_index:
 gff3_update: $(data_dir)/reference/$(species)/$(notdir $(gff3_file_abspath))
 	cp -a $(data_dir)/reference/$(species)/$(notdir $(gff3_file)) $(name)/data/$(notdir $(gff3_file))
 	cp -a $(data_dir)/reference/$(species)/$(notdir $(juncs_file_abspath)) $(name)/data/$(notdir $(juncs_file_abspath))
-
 
 ###################################################
 # 
