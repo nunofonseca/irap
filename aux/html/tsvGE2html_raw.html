@@ -84,7 +84,7 @@ do_cor_heatmap<-function(m) {
 <H3><%=irap.ctr("Figure")%>: Correlation scatterplot</H3>
 
 <%
-if (ncol(quant.data)>=2 && nrow(quant.data)>20 ) {
+if (ncol(quant.data)>=2 && ncol(quant.data)<12 && nrow(quant.data)>20 ) {
   pdebug("Correlation scatterplots\n")    
   p <- gen.plot2report(filename=paste(file.prefix,"_group_pairs.png",sep=""),
                        width=600,
@@ -109,7 +109,7 @@ if (ncol(quant.data)>=2 && nrow(quant.data)>20 ) {
   irap.output.html(html,paste("Pairwise comparison across all groups. Panels above the diagonal show the Pearson correlation between two groups. Panels below the diagonal show the log2 expression of each ",pprint.feat(opt$feature,cap=F)," for each pair of groups. A regression  (computed using the R lowess function) line is plotted in red.",sep=""))
 
 } else {
-  cat("Insufficient data")
+  cat("Insufficient data or plot not suitable for the available data")
 }
 %>
 
