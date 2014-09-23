@@ -181,9 +181,12 @@ SOAP2_VERSION=2.21
 SOAP2_FILE=soap${SOAP2_VERSION}release.tar.gz
 SOAP2_URL=http://soap.genomics.org.cn/down/$SOAP2_FILE
 # 
-STAR_VERSION=2.3.0
-STAR_FILE=STAR_${STAR_VERSION}e.Linux_x86_64.tgz
-STAR_URL=ftp://ftp2.cshl.edu/gingeraslab/tracks/STARrelease/$STAR_VERSION/$STAR_FILE
+STAR_VERSION=2.4.0b
+STAR_FILE=STAR_${STAR_VERSION}.tar.gz
+STAR_URL=https://github.com/alexdobin/STAR/archive/$STAR_FILE
+#STAR_FILE=STAR_${STAR_VERSION}e.Linux_x86_64.tgz
+#STAR_URL=ftp://ftp2.cshl.edu/gingeraslab/tracks/STARrelease/$STAR_VERSION/$STAR_FILE
+
 #
 GSNAP_VERSION=2013-11-27
 GSNAP_FILE=gmap-gsnap-${GSNAP_VERSION}.tar.gz
@@ -537,17 +540,13 @@ function gem2_install {
 function star_install {
     MAPPER=star
     pinfo  "Starting $MAPPER binary installation..."
-    download_software $MAPPER
-    EXECF=`echo $STAR_FILE|sed "s/.tgz//"`
+    download_software $MAPPER    
     #gunzip -c $STAR_FILE > $EXECF
     tar xzvf $STAR_FILE
+    pushd STAR-STAR_$STAR_VERSION
     mkdir -p $BIN_DIR/star/bin
-    #chmod +x $EXECF
-    #rm -f star
-    #ln -s $EXECF star
-    chmod +x $EXECF/STAR
-    #cp $EXECF star $BIN_DIR/star/bin
-    cp $EXECF/STAR $BIN_DIR/star/bin/star
+    cp STARstatic $BIN_DIR/star/bin/star
+    cp STARstatic $BIN_DIR/star/bin/
     pinfo "$MAPPER installation complete."    
 }
 
