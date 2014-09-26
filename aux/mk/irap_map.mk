@@ -195,7 +195,7 @@ endif
 
 min_intron_len=6
 tophat1_map_params= --min-intron-length $(min_intron_len) $(tophat1_map_options)
-tophat2_map_params= --no-coverage-search --min-intron-length $(min_intron_len) $(tophat2_map_options)
+tophat2_map_params= --max-multihits $(max_hits) --no-coverage-search --min-intron-length $(min_intron_len) $(tophat2_map_options)
 tophat_no_splicing= --no-gtf-juncs --no-novel-juncs --transcriptome-only --no-novel-indels
 
 ifeq ($(mapper_splicing),no)
