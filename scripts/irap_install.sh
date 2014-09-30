@@ -895,7 +895,7 @@ q
 EOF
 # 
     # 
-    cpan App::cpanminus
+    cpan -f App::cpanminus
     # set permissions 
     chmod +w $IRAP_DIR/bin/*
     pinfo "Configuring CPAN...done."
@@ -947,9 +947,9 @@ n
 EOF
     # be sure to have make in path
     export PATH=$IRAP_DIR/bin:$PATH
-    cpan -i YAML  < /dev/null
-    cpan -i JSON  < /dev/null
-    cpan -i ExtUtils::MakeMaker
+    cpan -i -f YAML  < /dev/null
+    cpan -i -f JSON  < /dev/null
+    cpan -i -f ExtUtils::MakeMaker
     cpan -f -i Hash::Merge 
     cpan -f -i Devel::Size
     #pan -i  Bio::DB::Sam < /dev/null
