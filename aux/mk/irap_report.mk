@@ -258,6 +258,7 @@ $(name)/report/mapping/%.html: $(name)/%/   $(foreach p,$(pe),$(call must_exist,
 	bedtools intersect -abam $<  -b $(name)/data/exons.bed |samtools view -c - >> $@.tmp && echo >> $@ &&\
 	echo -n "Introns	" >> $@.tmp &&\
 	bedtools intersect -abam $<  -b $(name)/data/introns.bed |samtools view -c - >> $@.tmp && echo >> $@ && \
+	expr `wc -l $@.tmp | cut -f 1 -d\ ` == 2 && \
 	mv $@.tmp $@
 
 # bed files required to get some extra stats
