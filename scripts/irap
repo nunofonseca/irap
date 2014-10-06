@@ -374,7 +374,7 @@ override spikein_fasta_abspath:=$(data_dir)/raw_data/$(raw_folder)/$(subst .gz,,
 reference_dir:=$(name)/data
 user_reference_abspath:=$(reference_abspath)
 # ref: ref_prefix.spike.fa
-override reference_abspath:=$(name)/data/$(patsubst %.fa,%.spike.fa,$(patsubst %.fasta,%.spike.fasta,$(reference)))
+override reference_abspath:=$(name)/data/$(patsubst %.fa,%.spike.fa,$(patsubst %.fasta,%.spike.fasta,$(subst .gz,,$(reference))))
 reference_prefix=$(reference_abspath)
 #
 gtf_file_dir:=$(name)/data
