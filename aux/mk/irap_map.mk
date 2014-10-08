@@ -227,7 +227,7 @@ endef
 # generate the transcriptome once (v.2.0.10 or above)\
 #	
 define run_tophat2_index=
-	if [ ! -h $(reference_prefix).fa ] ; then  ln -s $(reference_prefix) $(reference_prefix).fa; fi && \
+	if [ ! -h $(reference_prefix).fa ] ; then  ln -s `basename $(reference_prefix)` $(reference_prefix).fa; fi && \
         $(call run_bowtie2_index,$(1),$(1)) && \
 	mkdir -p $(call tophat2_trans_index_filename,$(1),$(1)) &&  \
 	irap_map.sh tophat2 tophat -G $(gtf_file_abspath) --transcriptome-index $(call tophat2_trans_index_filename,$(1),$(1))/ $(tophat_reference_prefix)
