@@ -249,7 +249,7 @@ endef
 # splice mismatches -m0 (0-2)"
 # --transcriptome-index
 define tophat_setup_dirs=
-	if [ ! -h $(reference_prefix).fa ] ; then  ln -s $(reference_prefix) $(reference_prefix).fa; fi
+	if [ ! -h $(reference_prefix).fa ] ; then  ln -s `basename $(reference_prefix)`  $(reference_prefix).fa; fi
 	if [ ! -e $(call lib2bam_folder,$(1))$(1)/tmp ] ; then mkdir -p $(call lib2bam_folder,$(1))$(1)/tmp; fi
 endef
 
