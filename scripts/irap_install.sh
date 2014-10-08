@@ -284,7 +284,7 @@ FLUX_CAPACITOR_FILE=flux-capacitor-$FLUX_CAPACITOR_VERSION.tgz
 FLUX_CAPACITOR_URL=http://sammeth.net/artifactory/barna/barna/barna.capacitor/$FLUX_CAPACITOR_VERSION/$FLUX_CAPACITOR_FILE
 
 #
-NURD_VERSION=1.0.8
+NURD_VERSION=1.1.1
 NURD_FILE=NURD_v${NURD_VERSION}.tar.gz
 NURD_URL=http://bioinfo.au.tsinghua.edu.cn/software/NURD/share/$NURD_FILE
 
@@ -1578,7 +1578,8 @@ function NURD_install {
     pinfo "Installing NURD..."
     download_software NURD
     tar xzvf $NURD_FILE
-    pushd release_v$NURD_VERSION
+#    pushd release_v$NURD_VERSION
+    pushd NURD
     make
     cp NURD $IRAP_DIR/bin
     popd
