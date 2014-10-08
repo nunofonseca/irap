@@ -203,12 +203,21 @@ endif
 # 2 gtf
 # 3 nurd outgenes.reads.out
 # bam file needs to be sorted by name
+# 1.0.9 or earlier
+# define run_nurd=
+#         samtools view $(1) > $(1).sam && \
+# 	NURD $(nurd_params) -O $(3).dir -G $(2) -S $(1).sam && \
+# 	rm -f $(1).sam && \
+# 	mv $(3).dir/`basename $(1).sam`.nurd.all_expr $(3) 
+# endef
 define run_nurd=
         samtools view $(1) > $(1).sam && \
 	NURD $(nurd_params) -O $(3).dir -G $(2) -S $(1).sam && \
 	rm -f $(1).sam && \
-	mv $(3).dir/`basename $(1).sam`.nurd.all_expr $(3) 
+	mv $(3).dir/`basename $(1).sam`.nurd.rpkm $(3).nurd.tsv  && \
+	mv $(3).dir/`basename $(1).sam`.nurd.rdcnt $(3).raw.nurd.tsv 
 endef
+
 # ideally nurd should support BAM
 # or accept SAM from stdin...
 
@@ -466,9 +475,12 @@ $(name)/$(mapper)/nurd/exons.raw.nurd.tsv:
 	$(call p_info, Warning! NURD does not produce quantification at exon level. Generating empty file $@.)
 	@$(call empty_file,$@)
 
-$(name)/$(mapper)/nurd/transcripts.raw.nurd.tsv: 
+$(name)/$(mapper)/nurd/transcripts.raw.nurd.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).tsv)
+	( $(call pass_args_stdin,irap_merge_tsv.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
+
+#$(name)/$(mapper)/nurd/transcripts.raw.nurd.tsv: 
 #	$(call p_info, Warning! NURD does not produce raw quantification at transcript level. Generating empty file $@.)
-	@$(call empty_file,$@)
+#	@$(call empty_file,$@)
 
 #
 # Run flux
@@ -476,8 +488,8 @@ $(name)/$(mapper)/nurd/transcripts.raw.nurd.tsv:
 # $1 - lib
 # $2 - bam file prefix (includes .se|.pe)
 define make-nurd-quant-rule=
-$(call lib2quant_folder,$(1))$(2).nurd.tsv: $(call lib2bam_folder,$(1))$(2).hits.bam $(gtf_file_abspath) 
-	$$(call run_nurd,$$<,$$(gtf_file_abspath),$$@)
+$(call lib2quant_folder,$(1))$(2).nurd.tsv $(call lib2quant_folder,$(1))$(2).raw.nurd.tsv : $(call lib2bam_folder,$(1))$(2).hits.bam $(gtf_file_abspath) 
+	$$(call run_nurd,$$<,$$(gtf_file_abspath),$(call lib2quant_folder,$(1))$(2))
 # Process nurd output
 $(call lib2quant_folder,$(1))$(2).genes.raw.nurd.tsv: $(call lib2quant_folder,$(1))$(2).nurd.tsv 
 	cut -f 1,3 $$< > $$@.tmp && mv $$@.tmp $$@
@@ -487,7 +499,7 @@ $(call lib2quant_folder,$(1))$(2).genes.rpkm.nurd.tsv: $(call lib2quant_folder,$
 
 
 # transcripts/isoforms
-$(call lib2quant_folder,$(1))$(2).transcripts.raw.nurd.tsv: $(call lib2quant_folder,$(1))$(2).nurd.tsv
+$(call lib2quant_folder,$(1))$(2).transcripts.raw.nurd.tsv: $(call lib2quant_folder,$(1))$(2).raw.nurd.tsv
 	irap_nurd2tsv --tsv $$< --out $$@.tmp && mv $$@.tmp $$@
 
 $(call lib2quant_folder,$(1))$(2).transcripts.rpkm.nurd.tsv: $(call lib2quant_folder,$(1))$(2).nurd.tsv
