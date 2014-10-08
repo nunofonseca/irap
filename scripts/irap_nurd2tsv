@@ -54,21 +54,22 @@ pdebug.enabled <- opt$debug
 pdebug("TSVFILE=",opt$tsv_file)
 
 x <- read.tsv(opt$tsv_file,header=F)
-colnames(x)<-c("gene","n.isoforms","gene.reads","isoforms","isoforms.rpkms","genes.rpkms")
+colnames(x)<-c("gene","n.isoforms","gene.reads","isoforms","isoforms.expr","genes.expr")
 pdebug("data loaded")
 
 #
 isoforms<-unlist(strsplit(as.vector(x[,"isoforms"]),split=",",fixed=T))
-rpkms<-unlist(strsplit(as.vector(x[,"isoforms.rpkms"]),split=",",fixed=T))
+expr<-unlist(strsplit(as.vector(x[,"isoforms.expr"]),split=",",fixed=T))
 
 # control
-if (length(isoforms)!=length(rpkms)) {
+if (length(isoforms)!=length(expr)) {
   # print message
-  perror("Error in ",opt$tsv_file,", number of isoform names (",length(isoforms),") is different from the number of values (",length(rpkms),")")
+  perror("Error in ",opt$tsv_file,", number of isoform names (",length(isoforms),") is different from the number of values (",length(expr),")")
   quit(status=1)
 }
 
 #
-df <- data.frame(isoforms,as.numeric(rpkms))
+df <- data.frame(isoforms,as.numeric(expr))
+df[,2] <- format(df[,2], scientific = FALSE)
 write.tsv(df,file=opt$out,header=F)
 q(status=0)
