@@ -25,10 +25,10 @@
 # Cufflinks 1 & 2
 #*****************
 ifndef cufflinks1_params
-	cufflinks1_params=--max-bundle-frags 90000000
+	cufflinks1_params=--max-bundle-frags 190000000
 endif
 ifndef cufflinks2_params
-	cufflinks2_params=--max-bundle-frags 90000000
+	cufflinks2_params=--max-bundle-frags 190000000
 endif
 
 #--FDR $(de_pvalue_cuffoff)
