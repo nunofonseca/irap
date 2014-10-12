@@ -28,7 +28,7 @@ cat <<EOF
 # Mapping SOP
 sop=pawg3_th2_mapping
 # uncomment the following line to use Star for mapping
-#sop=pawg3_th2_mapping
+#sop=pawg3_star_mapping
 
 
 # Folder where all results will be placed
