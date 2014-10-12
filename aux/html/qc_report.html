@@ -77,18 +77,40 @@ n <- length(rownames(df))
 nlibs<-nrow(df)
 width=max(400,10*nlibs)
 if (conf.is.qc.enabled(conf)) {
-  html <- gen.plot2report(filename=file,
-                          dir=filepath,
-                          bg="white",
-                          width=width,
-                          height=400,
-                          html=TRUE,
-                          ps=TRUE,
-                          caption="",
-                          to.plot= function() {
-                            gen.qc.plot(df)
-                          }
-                          )
+  # handle experiments with a huge number of libs
+  if ( nlibs > 100 ) {
+    o <- boxplot(t(apply(df[c("Passed","Unpaired","Contamination","Quality"),],c(1,2),as.numeric)),outline=T,las=2)
+    d <- t(df[c("Passed","Unpaired","Contamination","Quality"),])
+    d <- apply(d,c(1,2),as.numeric)
+    o <- boxplot(d,outline=T,las=2,ylim=max(d,na.rm=T))
+    head(df)
+    print(o$out)
+    html <- gen.plot2report(filename=file,
+                            dir=filepath,
+                            bg="white",
+                            width=width,
+                            height=400,
+                            html=TRUE,
+                            ps=TRUE,
+                            caption="",
+                            to.plot= function() {
+                              gen.qc.plot(df)
+                            }
+                            )
+  } else {
+    html <- gen.plot2report(filename=file,
+                            dir=filepath,
+                            bg="white",
+                            width=width,
+                            height=400,
+                            html=TRUE,
+                            ps=TRUE,
+                            caption="",
+                            to.plot= function() {
+                              gen.qc.plot(df)
+                            }
+                            )
+  }
 
   irap.output.html(html$html,"Number of reads per library that passed the filtering process and that were filtered out because of quality, contamination, having uncalled bases (Ns), unpaired reads (only applicable to paired-end libraries).")
 } else {
