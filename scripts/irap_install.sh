@@ -117,7 +117,7 @@ function check_dependencies {
     pinfo "$DEVEL_LIBRARIES_REQUIRED"
     # Binaries that should be available
     # make is required to...compile make
-    BINARIES="java python gcc g++ gfortran curl-config git which make"
+    BINARIES="java python gcc g++ gfortran curl-config git which make bzip2"
     pinfo "Checking dependencies..."
     for bin in $BINARIES; do
 	PATH2BIN=`which $bin 2> /dev/null`
