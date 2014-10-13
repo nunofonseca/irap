@@ -85,6 +85,11 @@ if ( !is.null(opt$annotation) ) {
 # TODO: trap and report errors
 table <- read.tsv(opt$tsv_file)
 pdebug("data loaded")
+# Check if there is duplicated rows
+if ( sum(duplicated(table[,1]))>0 ) {
+  perror("Duplicated entries in column 1: e.g., ",table[duplicated(table[,1]),1][1])
+  q(status=1)
+}
 rownames(table) <- as.character(table[,1])
 
 pdebug.save.state("tsvDE2html0","p0")
