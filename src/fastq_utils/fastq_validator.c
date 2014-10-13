@@ -35,6 +35,8 @@
 // 1MB
 // disable this option if disk access is fast (local disk)
 // enable it for network disks
+#define VERSION "0.4.3d3"
+
 #define SEQDISKACCESS 1
 
 #define MAX_READ_LENGTH 1024000
@@ -177,6 +179,11 @@ char* get_readname(char *s,int *len_p,unsigned long cline,const char *filename) 
     len=0;
     while (s[len]!=' ' && s[len]!='\0') ++len;
     s[len]='\0';
+    if  ( s[len-2] == '/' ) {
+      // discard /[12]
+      s[len-2]='\0';
+      len=len-2;
+    }
   } else {
     // discard last character if PE && not casava 1.8
     len=strlen(s);
@@ -401,6 +408,7 @@ int main(int argc, char **argv ) {
   long paired=0;
   is_paired_data=0;
   is_interleaved=0;
+  printf("Version %s\n",VERSION);
   if (argc<2 || argc>3) {
     fprintf(stderr,"Usage: fastq_validator fastq1 [fastq2 file|pe]\n");
     //fprintf(stderr,"%d",argc);

@@ -99,6 +99,7 @@ test6:
 	time -p ./fastq_validator tests/c18_1M_1.fastq && \
 	time -p ./fastq_validator tests/c18_1M_2.fastq && \
 	time -p ./fastq_validator tests/casava.1.8i.fastq pe && \
+	time -p ./fastq_validator tests/solexa_1.fastq tests/solexa_2.fastq && \
 	time -p ./fastq_validator tests/c18_1M_1.fastq tests/c18_1M_2.fastq || echo "OK! No error detected"
 
 
