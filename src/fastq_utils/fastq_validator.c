@@ -408,7 +408,7 @@ int main(int argc, char **argv ) {
   long paired=0;
   is_paired_data=0;
   is_interleaved=0;
-  printf("Version %s\n",VERSION);
+  printf("Version iRAP %s\n",VERSION);
   if (argc<2 || argc>3) {
     fprintf(stderr,"Usage: fastq_validator fastq1 [fastq2 file|pe]\n");
     //fprintf(stderr,"%d",argc);
