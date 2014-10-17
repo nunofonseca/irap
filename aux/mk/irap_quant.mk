@@ -300,9 +300,8 @@ $(foreach l,$(se),$(eval $(call make-cufflinks-quant-rule,$(l),$(quant_method),$
 $(foreach l,$(pe),$(eval $(call make-cufflinks-quant-rule,$(l),$(quant_method),$(l).pe,gene)))
 
 # cufflinks* specific rules
-
 $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).tsv)
-	( $(call pass_args_stdin,irap_merge_tsv.sh,$@,$^) )  > $@.tmp && mv $@.tmp $@
+	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) )  > $@.tmp && mv $@.tmp $@
 
 $(name)/$(mapper)/$(quant_method)/%xons.raw.$(quant_method).tsv: 
 	$(call p_info,Warning! Cufflinks produces FPKMS and does not provide counts. Generating empty file $@.)
