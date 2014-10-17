@@ -111,7 +111,7 @@ function download2cache {
 }
 
 function check_dependencies {
-    DEVEL_LIBRARIES_REQUIRED="zlib-devel python-devel bzip2-devel python readline-devel libgfortran gcc-gfortran gcc-c++ libX11-devel libXt-devel numpy gd-devel libxml2-devel libxml2 libpng libcurl-devel expat-devel  libpangocairo [db-devel|db4-devel|libdb-devel]"
+    DEVEL_LIBRARIES_REQUIRED="zlib-devel python-devel bzip2-devel python readline-devel libgfortran gcc-gfortran gcc-c++ libX11-devel libXt-devel numpy gd-devel libxml2-devel libxml2 libpng libcurl-devel expat-devel  libpangocairo bison [db-devel|db4-devel|libdb-devel]"
     MISSING=0
     pinfo "If installation fails then please check if the following libraries are installed:"
     pinfo "$DEVEL_LIBRARIES_REQUIRED"
@@ -581,16 +581,11 @@ function bwa_install {
 }
 
 
+
 function osa_install {
     MAPPER=osa
     pinfo "Starting $MAPPER binary installation..."
-    # download_software MONO
-    # tar xjvf $MONO_FILE
-    # pushd mono-$MONO_VERSION
-    # ./configure --with-large-heap=yes --prefix=$IRAP_DIR
-    # make
-    # make install
-    # popd    
+    mono_install
     download_software $MAPPER
     unzip $osa_FILE
     pushd OSAv$osa_VERSION
@@ -666,6 +661,20 @@ function make_install {
     cp make $IRAP_DIR/bin
     popd
     pinfo "Installing make...done."
+}
+
+######################################################
+# 
+function mono_install {
+    pinfo "Installing mono..."
+    download_software MONO
+    tar xjvf $MONO_FILE
+    pushd mono-$MONO_VERSION
+    ./configure --with-large-heap=yes --prefix=$IRAP_DIR
+    make
+    make install
+    popd    
+    pinfo "Installing mono...done."
 }
     
 ######################################################
