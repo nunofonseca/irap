@@ -496,12 +496,12 @@ annot.expand.fields <- function(annot.table) {
   chr <- unlist(strsplit(x=as.character(annot.table$locus),split=":.*"))
   get.gene.start <- function(s) {
     l <- unlist(strsplit(x=s,split=":",fixed=T))
-    loc <- unlist(strsplit(x=l[2],split="..",fixed=T))
+    loc <- unlist(strsplit(x=l[2],split="(\\.\\.|\\-)"))
     as.numeric(loc[1])
   }
   get.gene.len <- function(s) {
     l <- unlist(strsplit(x=s,split=":",fixed=T))
-    loc <- unlist(strsplit(x=l[2],split="..",fixed=T))
+    loc <- unlist(strsplit(x=l[2],split="(\\.\\.|\\-)"))
     abs(as.numeric(loc[1])-as.numeric(loc[2]))
   }
   # expand annot info
@@ -1014,6 +1014,9 @@ my.factor2numeric <- function(v) {
 mergeAnnot <- function(table,annot,table.field,annot.field="ID") {
   # Annotation file (generated from the GTF file)
   # gene_id locus@(chr:start...end) Description GO
+  #pinfo("merge ",table.field," ",annot.field)
+  #pinfo(colnames(table))
+  #pinfo(colnames(annot))
   m<-merge(table,annot,by.x=table.field,by.y=annot.field,all.x=TRUE,sort=F)
   # handle col name clashes
   # rename the initial columns
