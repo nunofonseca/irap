@@ -407,6 +407,8 @@ if (nrow(table)) {
                "Internal error: missing fields ",fields$cols2sel[!fields$cols2sel %in% colnames(table)])
 }  
 
+pdebug.save.state("tsvDE2html","p2")
+pdebug("Preparing to generate HTML page...")
 table.html <- table[,fields$cols2sel]
 # link to the source file
 #cat(paste("<a href='",opt$out,".tsv.gz'>TSV</a>",sep=""))
@@ -415,7 +417,8 @@ colnames(table.html)
 #save.image()
 title <- opt$title
 sources.menu <- ""
-init.source.filter(uncut.table)
+#head(uncut.table)
+init.source.filter(uncut.table,id.col=fields$URL.FIELD.ID)
 sources.menu <- get.source.filter.menu(opt$out)
 
 # uncut - no pvalue threshold was applied
@@ -457,7 +460,7 @@ gen.page <- function (o.html.file) {
 }
 
 
-pdebug.save.state("tsvDE2html2","p2")
+pdebug.save.state("tsvDE2html2","p3")
 
 
 filt.name <- "All"
