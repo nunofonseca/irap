@@ -520,7 +520,7 @@ function gem_install {
     tar xjvf $GEM_FILE
     # deps: requires ruby
     pushd `echo $GEM_FILE|sed "s/.tbz2//"`
-    install_binary $MAPPER . \*
+    install_binary $MAPPER bin \*
 #    sed -i "s/^#!/.*ruby/#!$ENV_FP ruby/" $BIN_DIR/$MAPPER/bin/gem*
     pinfo "$MAPPER  installation complete."    
     popd
