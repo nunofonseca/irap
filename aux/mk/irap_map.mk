@@ -381,7 +381,7 @@ else
 endif
 
 define run_soapsplice_index=
-	sed 's/ .*//g' $(1) > $(1).soapsplice.fa  && irap_map.sh soap_splice  2bwt-builder $(1).soapsplice.fa $(call soapsplice_index_filename,$(1)) && touch $(call soapsplice_index_filename,$(1)) 
+	sed 's/ .*//g' $(1) > $(1).soapsplice.fa  && irap_map.sh soap_splice  2bwt-builder $(1).soapsplice.fa $(subst .index,,$(call soapsplice_index_filename,$(1))) && touch $(call soapsplice_index_filename,$(1)) 
 endef
 
 define soapsplice_index_filename=
@@ -400,7 +400,7 @@ endef
 
 # WARNING: cufflinks requires the spliced alignments with the XS record defined (soapsplice does not include the XS field in the SAM file
 define run_soapsplice_map=
-	irap_map.sh soap_splice soapsplice $(soapsplice_map_params)  -d $(index_files).index -o $(3).unsrt $(call soapsplice_file_param,$(1),$(2)) $(call soapsplice_ins_param,$(1))  -q $($(1)_qual) &&\
+	irap_map.sh soap_splice soapsplice $(soapsplice_map_params)  -d $(index_files) -o $(3).unsrt $(call soapsplice_file_param,$(1),$(2)) $(call soapsplice_ins_param,$(1))  -q $($(1)_qual) &&\
 	samtools view -T $(reference_abspath) -bS $(3).unsrt.sam > $(3).unsrt.bam  && \
 	$(call bam_fix_nh,$(3).unsrt.bam,$(3).unsrt2.bam) && rm -f $(3).unsrt.* && \
 	echo "@HD	VN:1.0	SO:coordinate" > $(3).tmp.H && \
