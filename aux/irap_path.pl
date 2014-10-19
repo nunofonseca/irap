@@ -239,7 +239,7 @@ all_de([deseq,edger,voom,cuffdiff1,cuffdiff2,cuffdiff1_nd,cuffdiff2_nd]).
 
 qr('htseq1',m(M),'Only requires the NH flag defined',stranded):-m(M,_,_,_S).
 qr('htseq2',m(M),'Only requires the NH flag defined',stranded):-m(M,_,_,_S).
-qr('basic',m(M),'',S,no):-m(M,_,_,S).
+qr('basic',m(M),'',S):-m(M,_,_,S).
 qr('cufflinks1',m(M),'BAM flags...',stranded):-m(M,_,_,_S),not member(M,[soapsplice]).
 qr('cufflinks1_nd',m(M),'BAM flags...',stranded):-m(M,_,_,_S),not member(M,[soapsplice]).
 qr('cufflinks2',m(M),'BAM flags...',stranded):-m(M,_,_,_S),not member(M,[soapsplice]).
