@@ -111,7 +111,7 @@ function download2cache {
 }
 
 function check_dependencies {
-    DEVEL_LIBRARIES_REQUIRED="zlib-devel python-devel bzip2-devel python readline-devel libgfortran gcc-gfortran gcc-c++ libX11-devel libXt-devel numpy gd-devel libxml2-devel libxml2 libpng libcurl-devel expat-devel  libpangocairo bison [db-devel|db4-devel|libdb-devel]"
+    DEVEL_LIBRARIES_REQUIRED="zlib-devel python-devel bzip2-devel python readline-devel libgfortran gcc-gfortran gcc-c++ libX11-devel libXt-devel numpy gd-devel libxml2-devel libxml2 libpng libcurl-devel expat-devel  libpangocairo bison gettext-devel [db-devel|db4-devel|libdb-devel]"
     MISSING=0
     pinfo "If installation fails then please check if the following libraries are installed:"
     pinfo "$DEVEL_LIBRARIES_REQUIRED"
@@ -802,7 +802,10 @@ function YAP_install {
 	tar xzvf $SRC_DIR/download/yap.tgz
     else
 	rm -rf mainline
-	git clone http://gitorious.org/yap-git/mainline.git
+	git clone https://github.com/vscosta/yap-6.3
+	#http://gitorious.org/yap-git/mainline.git
+	mv yap-6.3 mainline
+	rm -rf mainline/.git
 	tar czvf yap.tgz mainline
 	cp yap.tgz $SRC_DIR/download/
     fi
