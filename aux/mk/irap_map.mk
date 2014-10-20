@@ -527,12 +527,12 @@ endef
 
 # TODO: SAM/BAM file reference is wrong
 # SE reads have paired flags enabled
-# sed code is to replaces the names of the sequences from 1 dna, 2 dna, ... to 1,2,...
+# sed code is to replace the names of the sequences from 1 dna, 2 dna, ... to 1,2,...
 # lib,fastq,out
 # PE mode requires interlaced fastq file
 #	 sed -i  -e 's/\([a-zA-Z0-9]\+\) dna:/\1:/g' $(3).gem.map &&
 define run_gem_map=
-	 irap_map.sh GEM gem-mapper $(gem_map_params) $(call gem_pairing_param,$(1)) $(call gem_qual_option,$($(1)_qual)) -I $(index_files).gem -i $(2) -o $(3).gem && \
+	 irap_map.sh GEM gem-mapper $(gem_map_params) $(call gem_pairing_param,$(1)) $(call gem_qual_option,$($(1)_qual)) -I $(subst .index,.index.gem,$(index_files)) -i $(2) -o $(3).gem && \
 	 irap_map.sh GEM  gem-2-sam -i $(3).gem.map -I $(index_files) --emit-correct-flags -T $(max_threads) $(call gem2sam_pairing_param,$(1)) $(call gem_qual_option,$($(1)_qual)) -o /dev/fd/1 | sed  -e 's/\([a-zA-Z0-9]\+\) dna/\1/g'   | \
 	 samtools  view -T $(reference_abspath) -bS - > $(3).tmp2.bam &&\
 	 bam_fix_se_flag $(3).tmp2.bam - | \
