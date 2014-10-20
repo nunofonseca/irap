@@ -1,0 +1,21 @@
+FROM fedora
+MAINTAINER Nuno Fonseca email: nuno.fonseca at gmail.com
+
+# Update the image with the latest packages (recommended)
+RUN yum update -y; yum clean all
+
+
+# Install missing packages
+RUN yum install -y zlib-devel python-devel bzip2-devel python readline-devel libgfortran gcc-gfortran gcc-c++ libX11-devel libXt-devel numpy gd-devel libxml2-devel libxml2 libpng libcurl-devel expat-devel  libpangocairo db-devel java python gcc g++ gfortran curl-config git which make bzip2 bison gettext-devel  unzip make wget && yum clean all
+
+# 
+WORKDIR /opt
+
+RUN git clone http://code.google.com/p/irap/ irap_clone;
+RUN cd irap_clone && git checkout devel 
+RUN cd /opt/irap_clone/; git pull && ./scripts/irap_install_pcawg.sh /irap_install
+RUN rm -rf /irap_install/tmp
+RUN echo source /irap_install/irap_setup.sh >> ~/.bash_profile && echo source /irap_install/irap_setup.sh >> ~/.bashrc
+
+
+
