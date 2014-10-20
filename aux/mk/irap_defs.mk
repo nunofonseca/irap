@@ -39,6 +39,7 @@ override de_method=none
 override reference=GRCh37.p13.genome.chr_only.fa
 override gtf_file=gencode.v19.annotation.gtf
 override max_hits=20
+
 endif
 
 ifeq ($(sop),pawg3_star_mapping)
