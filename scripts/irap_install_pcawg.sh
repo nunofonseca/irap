@@ -28,7 +28,7 @@ if [ "$DIR-" = "-" ]; then
     exit 1
 fi
 
-if [ ! -e  scritps/irap_install.sh ]; then
+if [ ! -e  scripts/irap_install.sh ]; then
     echo "This script should be executed from iRAP's installation directory"
     exit 1
 fi
