@@ -34,18 +34,18 @@ if [ ! -e  scripts/irap_install.sh ]; then
 fi
 
 export IRAP_DIR=$DIR
-./scripts/irap_install -s . -x make
-./scripts/irap_install -s . -x gnuplot
-./scripts/irap_install -s . -x YAP
-./scripts/irap_install -s . -x samtools
-./scripts/irap_install -s . -x bedtools
-./scripts/irap_install -s . -x picard
-./scripts/irap_install -s . -x core
+./scripts/irap_install.sh -s . -x make
+./scripts/irap_install.sh -s . -x gnuplot
+./scripts/irap_install.sh -s . -x YAP
+./scripts/irap_install.sh -s . -x samtools
+./scripts/irap_install.sh -s . -x bedtools
+./scripts/irap_install.sh -s . -x picard
+./scripts/irap_install.sh -s . -x core
 source $DIR/irap_setup.sh
-./scripts/irap_install -s . -x tophat2
-./scripts/irap_install -s . -x bowtie2
-./scripts/irap_install -s . -x star
-./scripts/irap_install -s . -x fastq_qc
-./scripts/irap_install -s . -v
+./scripts/irap_install.sh -s . -x tophat2
+./scripts/irap_install.sh -s . -x bowtie2
+./scripts/irap_install.sh -s . -x star
+./scripts/irap_install.sh -s . -x fastq_qc
+./scripts/irap_install.sh -s . -v
 exit 0
 
