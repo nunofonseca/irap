@@ -2032,6 +2032,13 @@ gff3_update: $(data_dir)/reference/$(species)/$(notdir $(gff3_file_abspath))
 #endef
 
 ###################################################
+# Alternative targets (lightweight)
+do_index: setup_dirs $(word 1,$(index_files))
+
+# TODO: rename the BAM file and add the headers if necessary
+do_mapping: $(mapper)_mapping
+
+###################################################
 phony_targets+= save_cache 
 save_cache: 
 	($(call list_cached_vars)) > $(cached_vars_file).tmp && mv $(cached_vars_file).tmp $(cached_vars_file)
