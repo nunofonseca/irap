@@ -235,7 +235,7 @@ gen.qc.plot <- function(df) {
     y[5] <- sum(bp.data[c(1:5),i])
     for( r in c(1:5) ){
       #pinfo(f[r])
-      if (f[r]>2) {
+      if ( sum(is.na(f))==0 && f[r]>2) {
         #
         #legend( bp[i], y[r]-bp.data[r,i]/2, paste("~",f[r], "%", sep=""), bty="n", xjust=0.5, yjust=0.5)
         #pinfo(bp[i]," ",y[r]--bp.data[r,i]/2)
@@ -439,6 +439,7 @@ pdebug.save.state("irap_report_qc","p3")
 ###########################
 # fails here check image
 table1.rows <- c("Passed","Unpaired","Ns","Contamination","Quality","Initial data (quality report)","Quality plots")
+# FIX!!!
 table1 <- quality.details.matrix(etdf,conf)
 out.table1 <- table1[table1.rows,]
 out.table1 <- gsub(conf.get.value(conf,"report.dir"),"",out.table1)
