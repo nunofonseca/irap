@@ -810,7 +810,7 @@ function YAP_install {
 	cp yap.tgz $SRC_DIR/download/
     fi
     pushd mainline
-    ./configure --prefix=$IRAP_DIR --disable-myddas
+    ./configure --prefix=$IRAP_DIR --disable-myddas --disable-horus
     make
     make install
     popd
