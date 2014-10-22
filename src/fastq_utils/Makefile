@@ -18,7 +18,7 @@ fastq_info:  hash.o fastq_info.o
 	gcc  $(CFLAGS) $^ -o $@ -lz
 
 fastq_filterpair: hash.o fastq_filterpair.o
-	gcc  $^ -o $@
+	gcc  $(CFLAGS) $^ -o $@
 
 fastq_num_reads: fastq_num_reads.c
 	gcc  $(CFLAGS)  -o $@  $<
