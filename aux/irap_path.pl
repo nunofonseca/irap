@@ -235,7 +235,7 @@ m('mapsplice',_,'',no).
 
 all_quant([htseq1,htseq2,basic,flux_cap,cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,nurd]).
 all_quant_norm([flux_cap,cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,none,deseq]).
-all_de([deseq,edger,voom,cuffdiff1,cuffdiff2,cuffdiff1_nd,cuffdiff2_nd]).
+all_de([deseq,edger,voom,cuffdiff1,cuffdiff2,cuffdiff1_nd,cuffdiff2_nd,none]).
 
 qr('htseq1',m(M),'Only requires the NH flag defined',stranded):-m(M,_,_,_S).
 qr('htseq2',m(M),'Only requires the NH flag defined',stranded):-m(M,_,_,_S).
