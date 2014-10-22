@@ -5,13 +5,16 @@ ifdef DEBUG
 CFLAGS+= -g -DDEBUG=1
 endif
 
-TARGETS=fastq_truncate fastq_filterpair fastq_randsample fastq_trim fastq_filter_n fastq_validator fastq_num_reads
+TARGETS=fastq_truncate fastq_filterpair fastq_randsample fastq_trim fastq_filter_n fastq_validator fastq_num_reads fastq_info
 
 ############################################################################
 all: $(TARGETS)
 
 
 fastq_validator:  hash.o fastq_validator.o
+	gcc  $(CFLAGS) $^ -o $@
+
+fastq_info:  hash.o fastq_info.o
 	gcc  $(CFLAGS) $^ -o $@
 
 fastq_filterpair: hash.o fastq_filterpair.o
@@ -89,18 +92,46 @@ test6:
 	./fastq_validator tests/test_e15.fastq || \
 	./fastq_validator tests/test_e16.fastq || \
 	./fastq_validator tests/casava.1.8i_err.Fastq || \
+	time -p ./fastq_validator tests/c18_1M_1.fastq tests/c18_1M_2.fastq || \
 	echo "OK! all errors detected"
 	./fastq_validator tests/test_1.fastq && \
 	./fastq_validator tests/test_2.fastq && \
 	./fastq_validator tests/test_13.fastq && \
 	./fastq_validator tests/test_17.fastq && \
-	time -p ./fastq_validator tests/casava.1.8i_err.fastq pe && \
 	time -p ./fastq_validator tests/pe_bug14.fastq tests/pe_bug14.fastq && \
 	time -p ./fastq_validator tests/c18_1M_1.fastq && \
 	time -p ./fastq_validator tests/c18_1M_2.fastq && \
 	time -p ./fastq_validator tests/casava.1.8i.fastq pe && \
 	time -p ./fastq_validator tests/solexa_1.fastq tests/solexa_2.fastq && \
-	time -p ./fastq_validator tests/c18_1M_1.fastq tests/c18_1M_2.fastq || echo "OK! No error detected"
+	echo "OK! No error detected"
+
+test7:
+	@./fastq_info tests/test_e1.fastq || \
+	./fastq_info tests/test_e2.fastq || \
+	./fastq_info tests/test_e3.fastq || \
+	./fastq_info tests/test_e4.fastq || \
+	./fastq_info tests/test_e5.fastq || \
+	./fastq_info tests/test_e6.fastq || \
+	./fastq_info tests/test_e7.fastq || \
+	./fastq_info tests/test_e8.fastq || \
+	./fastq_info tests/test_e9.fastq || \
+	./fastq_info tests/test_e10.fastq || \
+	./fastq_info tests/test_e14.fastq || \
+	./fastq_info tests/test_e15.fastq || \
+	./fastq_info tests/test_e16.fastq || \
+	time -p ./fastq_info tests/c18_1M_1.fastq tests/c18_1M_2.fastq || \
+	./fastq_info tests/casava.1.8i_err.Fastq || \
+	echo "OK! all errors detected"
+	./fastq_info tests/test_1.fastq && \
+	./fastq_info tests/test_2.fastq && \
+	./fastq_info tests/test_13.fastq && \
+	./fastq_info tests/test_17.fastq && \
+	time -p ./fastq_info tests/pe_bug14.fastq tests/pe_bug14.fastq && \
+	time -p ./fastq_info tests/c18_1M_1.fastq && \
+	time -p ./fastq_info tests/c18_1M_2.fastq && \
+	time -p ./fastq_info tests/casava.1.8i.fastq pe && \
+	time -p ./fastq_info tests/solexa_1.fastq tests/solexa_2.fastq && \
+	 echo "OK! No error detected"
 
 
-tests: test1 test2 test3 test4 test5 test6
+tests: test1 test2 test3 test4 test5 test6 test7
