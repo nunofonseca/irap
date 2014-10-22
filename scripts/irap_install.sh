@@ -242,6 +242,11 @@ SAMTOOLS_VERSION=0.1.18
 SAMTOOLS_FILE=samtools-$SAMTOOLS_VERSION.tar.bz2
 SAMTOOLS_URL=http://sourceforge.net/projects/samtools/files/samtools/$SAMTOOLS_VERSION/$SAMTOOLS_FILE
 
+
+ZLIB_VERSION=1.2.8
+ZLIB_FILE=zlib-$ZLIB_VERSION.tar.gz
+ZLIB_URL=http://zlib.net/$ZLIB_FILE
+
 BEDTOOLS_VERSION=2.17.0
 BEDTOOLS_FILE=BEDTools.v$BEDTOOLS_VERSION.tar.gz
 BEDTOOLS_URL=http://bedtools.googlecode.com/files/$BEDTOOLS_FILE
@@ -384,7 +389,7 @@ function gen_setup_irap {
 export IRAP_DIR=$IRAP_DIR
 export PATH=\$IRAP_DIR/bin/bowtie1/bin:\$IRAP_DIR/bin:\$IRAP_DIR/scripts:\$PATH
 export LD_LIBRARY_PATH=\$IRAP_DIR/lib:\$LD_LIBRARY_PATH:/usr/local/lib
-export CFLAGS="-I\$IRAP_DIR/include -I\$IRAP_DIR/include/bam -I\$IRAP_DIR/include/boost \$CFLAGS"
+export CFLAGS="-I\$IRAP_DIR/include -I\$IRAP_DIR/include/bam -I\$IRAP_DIR/include/boost -L\$IRAP_DIR/lib \$CFLAGS"
 export CXXFLAGS="-I\$IRAP_DIR/include -I\$IRAP_DIR/include/bam -I\$IRAP_DIR/include/boost -L\$IRAP_DIR/lib \$CXXFLAGS"
 export PERL5LIB=\$IRAP_DIR/perl/lib/perl5:\$IRAP_DIR/lib/perl5:\$IRAP_DIR/lib/perl5/x86_64-linux:\$IRAP_DIR/lib/perl5/$PERL_VERSION
 export PYTHONUSERBASE=\$IRAP_DIR/python
@@ -820,6 +825,7 @@ function YAP_install {
 function deps_install {
     pinfo "Installing dependencies (make, perk, ruby, boost, gnuplot, R, samtools, ...)"
     make_install
+    zlib_install
     perl_install
     ruby_install
     boost_install
@@ -851,6 +857,20 @@ function samtools_install {
     cp libbam.a $INC_DIR/bam
     popd
     pinfo "Downloading, compiling, and installing SAMTools...done."
+}
+
+######################################################
+# zlib
+function zlib_install {
+    pinfo "Downloading, compiling, and installing zlib..."
+    download_software ZLIB
+    tar xvjf $ZLIB_FILE
+    pushd zlib-${ZIB_VERSION}
+    ./configure --prefix $IRAP_DIR
+    make 
+    make install
+    popd
+    pinfo "Downloading, compiling, and installing zlib...done."
 }
 
 ######################################################

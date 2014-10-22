@@ -1,4 +1,4 @@
-CFLAGS=-O3
+CFLAGS+=-O3
 #-g
 
 ifdef DEBUG
