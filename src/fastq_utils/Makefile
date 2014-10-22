@@ -15,11 +15,10 @@ fastq_validator:  hash.o fastq_validator.o
 	gcc  $(CFLAGS) $^ -o $@
 
 fastq_info:  hash.o fastq_info.o
-	gcc  $(CFLAGS) $^ -o $@
+	gcc  $(CFLAGS) $^ -o $@ -lz
 
 fastq_filterpair: hash.o fastq_filterpair.o
 	gcc  $^ -o $@
-
 
 fastq_num_reads: fastq_num_reads.c
 	gcc  $(CFLAGS)  -o $@  $<
@@ -29,9 +28,6 @@ hash.o: hash.c hash.h
 
 %.o: %.c
 	gcc $(CFLAGS) -c $<
-
-fastq_qual_enc:  fastq_qual_enc.c
-	gcc  $(CFLAGS) -o $@ $<
 
 fastq_truncate:  fastq_truncate.c
 	gcc  $(CFLAGS) -o $@ $<
@@ -129,6 +125,9 @@ test7:
 	time -p ./fastq_info tests/pe_bug14.fastq tests/pe_bug14.fastq && \
 	time -p ./fastq_info tests/c18_1M_1.fastq && \
 	time -p ./fastq_info tests/c18_1M_2.fastq && \
+	time -p ./fastq_info tests/c18_1M_1.fastq.gz && \
+	time -p ./fastq_info tests/c18_1M_2.fastq.gz && \
+	time -p ./fastq_info tests/c18_1M_1.fastq.gz tests/c18_1M_1.fastq.gz && \
 	time -p ./fastq_info tests/casava.1.8i.fastq pe && \
 	time -p ./fastq_info tests/solexa_1.fastq tests/solexa_2.fastq && \
 	 echo "OK! No error detected"
