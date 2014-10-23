@@ -11,16 +11,21 @@ mkdir -p $DATA_DIR/raw_data/homo_sapiens
 
 
 echo "Downloading GTF file..."
-wget ftp://ftp.sanger.ac.uk/pub/gencode/Gencode_human/release_19/gencode.v19.annotation.gtf.gz && echo "Downloading complete."
+wget -c ftp://ftp.sanger.ac.uk/pub/gencode/Gencode_human/release_19/gencode.v19.annotation.gtf.gz && echo "Downloading complete."
+# TODO: check md5
+# md5sum: fdc985b094ef823e5a51164cd109f4e8  gencode.v19.annotation.gtf.gz
 
 echo "Downloading genome fasta file (chromosomes only)"
-wget http://www.ebi.ac.uk/~nf/GRCh37.p13.genome.chr_only.fa.gz && echo "Download complete"
+wget -c http://www.ebi.ac.uk/~nf/hs37d5.genome.chr_only.fa.gz && echo "Download complete"
+#wget ftp://ftp.sanger.ac.uk/pub/project/PanCancer/genome.fa.gz && echo "Download complete"
 
+# 
 echo "Moving files to their location and uncompressing them"
-mv GRCh37.p13.genome.chr_only.fa.gz $DATA_DIR/reference/homo_sapiens
+mv hs37d5.genome.chr_only.fa.gz $DATA_DIR/reference/homo_sapiens
 mv gencode.v19.annotation.gtf.gz $DATA_DIR/reference/homo_sapiens
-gunzip $DATA_DIR/reference/homo_sapiens/GRCh37.p13.genome.chr_only.fa.gz
-gunzip $DATA_DIR/reference/homo_sapiens/gencode.v19.annotation.gtf.gz
+gunzip $DATA_DIR/reference/homo_sapiens/hs37d5.genome.chr_only.fa.gz
+# Fix the gtf
+zcat $DATA_DIR/reference/homo_sapiens/gencode.v19.annotation.gtf.gz | tail -n +6 | sed -e "s/^chrM/MT/g;s/^chr//g" > $DATA_DIR/reference/homo_sapiens/gencode.v19.annotation.hs37d5_chr.gtf
 
 # template irap configuration file
 cat <<EOF 
