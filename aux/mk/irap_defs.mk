@@ -36,7 +36,7 @@ override mapper=tophat2
 override species=homo_sapiens
 override quant_method=none
 override de_method=none
-override reference=genome.hs37d5.chr_only.fa
+override reference=hs37d5.genome.chr_only.fa
 override gtf_file=gencode.v19.annotation.hs37d5_chr.gtf
 override max_hits=20
 
@@ -49,7 +49,7 @@ override mapper:=star
 override species:=homo_sapiens
 override quant_method:=none
 override de_method:=none
-override reference:=genome.hs37d5.chr_only.fa
+override reference:=hs37d5.genome.chr_only.fa
 override gtf_file:=gencode.v19.annotation.hs37d5_chr.gtf
 override star_index_params:= --sjdbOverhang 100 
 override star_map_options:= --outFilterMultimapScoreRange 1  --outFilterMismatchNmax 10 --alignIntronMax 500000 --alignMatesGapMax 1000000 --sjdbScore 2 --alignSJDBoverhangMin 1 --outFilterMatchNminOverLread 0.33 --outFilterScoreMinOverLread 0.33
