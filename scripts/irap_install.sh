@@ -864,7 +864,7 @@ function samtools_install {
 function zlib_install {
     pinfo "Downloading, compiling, and installing zlib..."
     download_software ZLIB
-    tar xvjf $ZLIB_FILE
+    tar xvzf $ZLIB_FILE
     pushd zlib-${ZIB_VERSION}
     ./configure --prefix $IRAP_DIR
     make 
