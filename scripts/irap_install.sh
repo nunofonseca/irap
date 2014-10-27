@@ -865,7 +865,7 @@ function zlib_install {
     pinfo "Downloading, compiling, and installing zlib..."
     download_software ZLIB
     tar xvzf $ZLIB_FILE
-    pushd zlib-${ZIB_VERSION}
+    pushd zlib-${ZLIB_VERSION}
     ./configure --prefix $IRAP_DIR
     make 
     make install
