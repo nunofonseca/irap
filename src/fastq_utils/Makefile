@@ -119,6 +119,8 @@ test7:
 	time -p ./fastq_info tests/c18_1M_1.fastq tests/c18_1M_2.fastq || \
 	./fastq_info tests/casava.1.8i_err.Fastq || \
 	echo "OK! all errors detected"
+	./fastq_info -f tests/test_dot.fastq && \
+	./fastq_info tests/test_dot.fastq && \
 	./fastq_info tests/test_1.fastq && \
 	./fastq_info tests/test_2.fastq && \
 	./fastq_info tests/test_13.fastq && \
