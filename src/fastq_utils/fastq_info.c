@@ -44,6 +44,8 @@
 #define MIN_READ_LENGTH 1
 
 #define HASHSIZE 19000001
+#define TRUE 1
+#define FALSE 0
 #define UNDEF -1
 //#define HASHSIZE 5
 
@@ -58,18 +60,6 @@
 #define READ_LINE_SEQ2(fd) gzgets(fd,&read_buffer2_seq[0],MAX_READ_LENGTH)
 #define READ_LINE_QUAL2(fd) gzgets(fd,&read_buffer2_qual[0],MAX_READ_LENGTH)
 
-/* #define READ_LINE(fd) fgets(&read_buffer[0],MAX_READ_LENGTH,fd) */
-/* #define READ_LINE_HDR(fd) fgets(&read_buffer_hdr1[0],MAX_READ_LENGTH,fd) */
-/* #define READ_LINE_HDR2(fd) fgets(&read_buffer_hdr2[0],MAX_READ_LENGTH,fd) */
-/* #define READ_LINE_SEQ(fd) fgets(&read_buffer_seq[0],MAX_READ_LENGTH,fd) */
-/* #define READ_LINE_QUAL(fd) fgets(&read_buffer_qual[0],MAX_READ_LENGTH,fd) */
-
-/* #define READ_LINE_HDR2_1(fd) fgets(&read_buffer2_hdr1[0],MAX_READ_LENGTH,fd) */
-/* #define READ_LINE_HDR2_2(fd) fgets(&read_buffer2_hdr2[0],MAX_READ_LENGTH,fd) */
-/* #define READ_LINE_SEQ2(fd) fgets(&read_buffer2_seq[0],MAX_READ_LENGTH,fd) */
-/* #define READ_LINE_QUAL2(fd) fgets(&read_buffer2_qual[0],MAX_READ_LENGTH,fd) */
-
-
 #define PRINT_READS_PROCESSED(c) { if (c%500000==0) { fprintf(stderr,"\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b%ld",c);fflush(stderr); }}
 
 struct index_entry {
@@ -83,7 +73,7 @@ struct index_entry {
 };
 typedef struct index_entry INDEX_ENTRY;
 
-// four buffers
+// four buffers per file
 char read_buffer_hdr1[MAX_READ_LENGTH];
 char read_buffer_hdr2[MAX_READ_LENGTH];
 char read_buffer_seq[MAX_READ_LENGTH];
@@ -94,12 +84,14 @@ char read_buffer2_hdr2[MAX_READ_LENGTH];
 char read_buffer2_seq[MAX_READ_LENGTH];
 char read_buffer2_qual[MAX_READ_LENGTH];
 
+char hdr[MAX_READ_LENGTH];
+
 char read_buffer[MAX_READ_LENGTH];
 long index_mem=0;
 int is_casava_18=UNDEF;
-int is_paired_data;
-int is_interleaved;
-
+int is_paired_data=FALSE;
+int is_interleaved=FALSE;
+int fix_dot=FALSE;
 // collect data from the reads
 unsigned long min_rl=MAX_READ_LENGTH; // minimum read length
 unsigned long max_rl=0; // maximum read length
@@ -125,8 +117,34 @@ int has_gz_extension(const char *s) {
   return(!reti);
 }
 
+inline void close_fixed_fastq(gzFile fd) {
+  if (fd==NULL) { return; }
+  if (gzclose(fd)!=Z_OK) {
+    fprintf(stderr,"Error: unable to close file descriptor\n");
+    exit(1);
+  }
+}
+inline gzFile open_fixed_fastq(const char* filename) {
+  gzFile fd1=NULL;
+  
+  if (fix_dot) {
+    // new filename
+    char new_filename[1024];
+    strncpy(&new_filename[0],filename,1024);
+    strcat(&new_filename[0],"_fix.fastq.gz");
+    fd1=gzopen(new_filename,"w");
+    if (fd1==NULL) {
+      fprintf(stderr,"Error: Unable to open %s\n",filename);
+      exit(1);
+    }
+    gzbuffer(fd1,128000);
+  }
+  return(fd1);
+}
+
 inline gzFile open_fastq(const char* filename) {
   gzFile fd1;
+  
   fd1=gzopen(filename,"r");
   if (fd1==NULL) {
     fprintf(stderr,"Error: Unable to open %s\n",filename);
@@ -221,8 +239,41 @@ void free_indexentry(INDEX_ENTRY *e) {
   return;
 }
 
-char* get_readname(char *s,int *len_p,unsigned long cline,const char *filename) {
+inline long replace_dot_by_N(char* seq) {
+  long n=0;  
+  long replaced=0;
+  while (seq[n]!='\0') {
+    if (seq[n]=='.') {
+      ++replaced;
+      seq[n]='N';
+    }
+    ++n;
+  }
+  return replaced;
+}
+
+inline long replace_dots(long long start,char* seq, char *hdr1, char *hdr2, char *qual,gzFile fd) {
+  // FIX .
+  if ( fix_dot ) {
+    long replaced=replace_dot_by_N(seq);
+    gzprintf(fd,"%s%s%s%s",hdr1,seq,hdr2,qual);
+  }
+}
+
+char* get_readname(char *s_orig,int *len_p,unsigned long cline,const char *filename) {
   int len;
+  
+  // create a copy
+  char *s;
+  if ( fix_dot ) {
+    s=&hdr[0];
+    if ( strcpy(s,s_orig)==NULL ) {
+      fprintf(stderr, "Error in strcpy\n");
+      exit(1);
+    }
+  } else {
+    s=s_orig;
+  }
   if (s[0]!='@' ) {
     fprintf(stderr,"Error in file %s, line %lu: wrong header %s\n",filename,cline,s);
     exit(1);
@@ -256,6 +307,7 @@ char* get_readname(char *s,int *len_p,unsigned long cline,const char *filename) 
 
 void index_file(char *filename,hashtable sn_index,long start_offset,long length) {
   gzFile fd1=open_fastq(filename);  
+  gzFile fdf=open_fixed_fastq(filename);  
   if (fd1==NULL) {
     fprintf(stderr,"Error: Unable to open %s\n",filename);
     exit(1);
@@ -268,7 +320,7 @@ void index_file(char *filename,hashtable sn_index,long start_offset,long length)
   long cline=1;
   // sn_index creation could be done in parallel
   while(!gzeof(fd1)) {
-    long start_pos=gztell(fd1);
+    long long start_pos=gztell(fd1);
     char *hdr=READ_LINE_HDR(fd1);
 
     if ( hdr==NULL) break;
@@ -296,12 +348,12 @@ void index_file(char *filename,hashtable sn_index,long start_offset,long length)
       fprintf(stderr,"Error in file %s, line %lu: malloc failed?",filename,cline);
       exit(1);
     }
-    
+    replace_dots(start_pos,seq,hdr,hdr2,qual,fdf);    
     PRINT_READS_PROCESSED(cline/4);
     //
     cline+=4;
   }
-  
+  close_fixed_fastq(fdf);
   gzclose(fd1);
   return;
 }
@@ -447,6 +499,7 @@ int validate_interleaved(char *f) {
   gzFile fd1=NULL;  
   fprintf(stderr,"Paired-end interleaved\n");
   fd1=open_fastq(f);
+  gzFile fdf=open_fixed_fastq(f);  
   while(!gzeof(fd1)) {
     long start_pos=gztell(fd1);
     // Read 1
@@ -480,14 +533,18 @@ int validate_interleaved(char *f) {
       return(1);
     } 
     PRINT_READS_PROCESSED(cline/4);
+    replace_dots(start_pos,seq1,hdr1,hdr1_2,qual1,fdf);    
+    replace_dots(start_pos,seq2,hdr2,hdr2_2,qual2,fdf);    
     //
     cline+=8;
     nreads1+=2;
   }
   printf("\n");
+  close_fixed_fastq(fdf);
   gzclose(fd1);
   return(nreads1);
 }
+
 
 char* encodings[]={"33","64","solexa","33 *"};
 static char* qualRange2enc(int min_qual,int max_qual) {
@@ -510,84 +567,106 @@ int main(int argc, char **argv ) {
   long paired=0;
   unsigned long num_reads1=0,
     num_reads2=0;
-  is_paired_data=0;
-  is_interleaved=0;
-  printf("Version iRAP %s\n",VERSION);
-  if (argc<2 || argc>3) {
-    fprintf(stderr,"Usage: fastq_info fastq1 [fastq2 file|pe]\n");
+  
+  is_paired_data=FALSE;
+  is_interleaved=FALSE;
+  fix_dot=FALSE;
+  
+  int nopt=0;
+  int c;
+  opterr = 0;
+
+  fprintf(stderr,"Version iRAP %s\n",VERSION);
+  
+  while ((c = getopt (argc, argv, "f")) != -1)
+    switch (c)
+      {
+      case 'f':
+        fix_dot = TRUE;
+	fprintf(stderr,"Fixing (-f) enabled: Replacing . by N (creating .fix.gz files)\n",c);
+	++nopt;
+        break;
+      default:
+	++nopt;
+        fprintf(stderr,"ERROR: Option -%c invalid\n",optopt);
+	exit(1);
+      }
+  
+  if (argc-nopt<2 || argc-nopt>3) {
+    fprintf(stderr,"Usage: fastq_info [-f] fastq1 [fastq2 file|pe]\n");
     //fprintf(stderr,"%d",argc);
     exit(1);
   }
   gzFile fd1=NULL;
   gzFile fd2=NULL;
+  gzFile fd_fix=NULL;
 
-  if (argc ==3) {
+  if (argc+nopt ==3) {
     is_paired_data=1;
-    if ( !strncmp(argv[2],"pe",2) ) {
+    if ( !strncmp(argv[2+nopt],"pe",2) ) {
       is_interleaved=1;
     } else  {
-      fd2=open_fastq(argv[2]);
+      fd2=open_fastq(argv[2+nopt]);
       gzclose(fd2);
     }
   }
-  // ************************************************************
-  // casava 1.8?
-  //is_casava_18=is_casava_1_8(argv[1]);
 
   // ************************************************************
   off_t cur_offset=1;
-  // interleaved
   if ( is_interleaved ) {
-    num_reads1=validate_interleaved(argv[1]);
+    // interleaved    
+    num_reads1=validate_interleaved(argv[1+nopt]);
   } else {
+    // single or pair of fastq file(s)
     unsigned long cline=1;
     fprintf(stderr,"HASHSIZE=%lu\n",HASHSIZE);
     //memset(&collisions[0],0,HASHSIZE+1);
     hashtable sn_index=new_hashtable(HASHSIZE);
     index_mem+=sizeof(hashtable);
     
-    index_file(argv[1],sn_index,0,-1);
+    index_file(argv[1+nopt],sn_index,0,-1);
     num_reads1=sn_index->n_entries;
     fprintf(stderr,"\n");
     // print some info
     fprintf(stderr,"Reads processed: %ld\n",sn_index->n_entries);    
     fprintf(stderr,"Memory used in indexing: ~%ld MB\n",index_mem/1024/1024);  
     // pair-end
-    if (argc ==3 ) {
-      fprintf(stderr,"File %s processed\n",argv[1]);  
-      fprintf(stderr,"Next file %s\n",argv[2]);  
+    if (argc+nopt ==3 ) {
+      fprintf(stderr,"File %s processed\n",argv[1+nopt]);  
+      fprintf(stderr,"Next file %s\n",argv[2+nopt]);  
       // validate the second file and check if all reads are paired
-      fd2=open_fastq(argv[2]);
+      fd2=open_fastq(argv[2+nopt]);
+      gzFile fdf=open_fixed_fastq(argv[2+nopt]);  
       INDEX_ENTRY* e;
       // read the entry using another fd
       cline=1;
       // TODO: improve code - mostly duplicated:(
       while(!gzeof(fd2)) {
-	long start_pos=gztell(fd2);
+	long long start_pos=gztell(fd2);
 	char *hdr=READ_LINE_HDR(fd2);
 	if ( hdr==NULL) break;
 	int len;
 	char *seq=READ_LINE_SEQ(fd2);
 	char *hdr2=READ_LINE_HDR2(fd2);
 	char *qual=READ_LINE_QUAL(fd2);
-	char* readname=get_readname(hdr,&len,cline,argv[2]);
+	char* readname=get_readname(hdr,&len,cline,argv[2+nopt]);
 	if (seq==NULL || hdr2==NULL || qual==NULL ) {
-	  fprintf(stderr,"Error in file %s, line %lu: file truncated?\n",argv[2],cline);
+	  fprintf(stderr,"Error in file %s, line %lu: file truncated?\n",argv[2+nopt],cline);
 	  exit(1);
 	}
-	if (validate_entry(hdr,hdr2,seq,qual,cline,argv[2])!=0) {
+	if (validate_entry(hdr,hdr2,seq,qual,cline,argv[2+nopt])!=0) {
 	  exit(1);
 	}
 	//fprintf(stderr,"Reads processed: %ld\n",sn_index->n_entries);
 	// check for duplicates
 	if ( (e=lookup_header(sn_index,readname))==NULL ) {
-	  fprintf(stderr,"Error in file %s, line %lu: unpaired read - %s\n",argv[2],cline,readname);
+	  fprintf(stderr,"Error in file %s, line %lu: unpaired read - %s\n",argv[2+nopt],cline,readname);
 	  exit(1);
 	} else {
 	  ulong key=hashit(readname);
 	  // remove entry from sn_index
 	  if (delete(sn_index,key,e)!=e) {
-	    fprintf(stderr,"Error in file %s, line %lu: unable to delete entry from sn_index - %s\n",argv[2],cline,readname);
+	    fprintf(stderr,"Error in file %s, line %lu: unable to delete entry from sn_index - %s\n",argv[2+nopt],cline,readname);
 	    exit(1);
 	  }
 	  free_indexentry(e);
@@ -595,24 +674,33 @@ int main(int argc, char **argv ) {
 	PRINT_READS_PROCESSED(cline/4);
 	++num_reads2;
 	//
+	replace_dots(start_pos,seq,hdr,hdr2,qual,fdf);
 	cline+=4;
       }
       printf("\n");
+      close_fixed_fastq(fdf);
       if (sn_index->n_entries>0 ) {
-	fprintf(stderr,"Error in file %s: found %lu unpaired reads\n",argv[1],sn_index->n_entries);
+	fprintf(stderr,"Error in file %s: found %lu unpaired reads\n",argv[1+nopt],sn_index->n_entries);
 	exit(1);
       }
-    } 
+    }
   }
-  printf("------------------------------------\n");
-  if ( num_reads2>0 ) {
-    printf("Number of reads: %lu %lu\n",num_reads1,num_reads2);
+  FILE* out;  
+  if (fix_dot) {
+    out=stderr;
   } else {
-    printf("Number of reads: %lu\n",num_reads1);
+    out=stdout;
   }
-  printf("Quality encoding range: %lu %lu\n",min_qual,max_qual);
-  printf("Quality encoding: %s\n",qualRange2enc(min_qual,max_qual));
-  printf("Read length: %lu %lu\n",min_rl,max_rl);
-  printf("OK\n");  
+  fprintf(out,"------------------------------------\n");
+  if ( num_reads2>0 ) {
+    fprintf(out,"Number of reads: %lu %lu\n",num_reads1,num_reads2);
+  } else {
+    fprintf(out,"Number of reads: %lu\n",num_reads1);
+  }
+  fprintf(out,"Quality encoding range: %lu %lu\n",min_qual,max_qual);
+  fprintf(out,"Quality encoding: %s\n",qualRange2enc(min_qual,max_qual));
+  fprintf(out,"Read length: %lu %lu\n",min_rl,max_rl);
+  fprintf(out,"OK\n");  
   exit(0);
 }
+
