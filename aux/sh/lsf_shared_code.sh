@@ -71,6 +71,10 @@ if [ "$1-" = "-" ]; then
 	exit 1
 fi
 conf=`echo $1|cut -f 2 -d=`
+if [ ! -e $conf ]; then
+    echo "$conf file not found"
+    exit 1
+fi
 conf_var=`echo $1|cut -f 1 -d=`
 if [ "$conf_var-" != "conf-" ]; then
 	echo "Usage: $LSF_CMD conf=my_irap.conf [IRAP options]"
