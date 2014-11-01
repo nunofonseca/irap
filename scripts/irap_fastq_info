@@ -1,0 +1,143 @@
+#!/bin/sh
+#; -*- mode: Makefile;-*-
+#the next line restarts using\
+exec make --warn-undefined-variables -Rf "$0"  ${1+"$@"} 
+# =========================================================
+# Copyright 2014,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#    $Id: scripts/irap 0.1.1 Nuno Fonseca Fri Dec 21 01:07:37 2012$
+# =========================================================
+
+
+
+###############################################################
+# disable deletion of temporary files
+.SECONDARY: 
+.ONESHELL:
+
+##################
+# Setup some paths
+# path to script
+path=.
+path?=$(shell if which irap >/dev/null 2>/dev/null; then dirname $(MAKEFILE_LIST); else dirname `which irap`; fi)
+
+ifdef path
+ PATH:=$(path):$(PATH)
+endif
+
+# Requires make 3.82 or above
+VERSION_OK=$(shell if [ `make --version|head -n 1 | cut -f3 -d\ ` \< 3.82 ]; then echo 0; else echo 1; fi )
+ifeq ($(VERSION_OK),0)
+ $(error make version needs to be 3.82 or above)
+endif
+
+path2script=$(shell dirname `which irap_fastq_info`)
+path2irap=$(shell dirname `which irap`)
+################################################################################
+# Auxiliary functions
+################################################################################
+
+# Information messages
+define p_info=
+$(info $(shell date "+%H:%M:%S %d/%m/%Y * ") $(1))
+endef
+
+# Error messages
+define p_error=
+$(info $(shell date "+%H:%M:%S %d/%m/%Y") * ERROR: $(1)) && $(error Fatal error)
+endef
+
+
+# complain if a file does not exist and exit
+file_exists=$(if  $(realpath $(1)),,$(call p_error,$(1) not found))
+
+
+version=0
+pname=irap_fastq_info
+
+################################################################################
+# Default values
+################################################################################
+#def_
+
+################################################################################
+# START!
+$(info *****************************************************)
+$(info * $(pname) $(version))
+$(info *)
+
+#***********************
+# Name of the experiment
+ifndef file.list
+ $(call p_error, missing argument file.list!)
+endif
+
+# avoid passing the list of files as an argument (size limitations)
+files=$(shell cat $(file.list))
+
+# filter _2 files
+filter_2_files_with_pair=$(sort $(foreach f,$(1),$(call no_pair,$(f),$(1))))
+
+# $1 _2 file
+# files
+no_pair=$(filter $(subst _2.fastq,_1.fastq,$(1)),$(2))
+
+# check if the files exists
+$(foreach f,$(files),$(call file_exists,$f))
+
+files2=$(call filter_2_files_with_pair,$(files))
+files.info=$(foreach f,$(files2),$f.info)
+
+$(info $(files2))
+
+define pe.libs=
+	$(sort $(foreach f,$(1),$(shell grep "pe=" $f|cut -f 2 -d=)))
+endef
+
+define se.libs=
+	$(sort $(foreach f,$(1),$(shell grep "se=" $f|cut -f 2 -d=)))
+endef
+
+# TODO: add support to bam files
+
+all: $(files.info)
+	@for f in $(files.info); do cat $$f; done
+	@echo pe=$(strip $(call pe.libs,$(files.info)))
+	@echo se=$(strip $(call se.libs,$(files.info)))
+
+%_1.fastq.gz.info: %_1.fastq.gz %_2.fastq.gz
+	fastq_info.sh $^  > $@.tmp && mv $@.tmp $@
+
+%_1.fastq.info: %_1.fastq %_2.fastq
+	fastq_info.sh $^  > $@.tmp && mv $@.tmp $@
+
+
+%.fastq.gz.info: %.fastq.gz
+	fastq_info.sh $^  > $@.tmp && mv $@.tmp $@
+
+%.fastq.info: %.fastq
+	fastq_info.sh $^  > $@.tmp && mv $@.tmp $@
+
+
+###################################################
+# Force the program to run even if files haven't changed
+FORCE:
+
+
+
