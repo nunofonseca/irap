@@ -1398,6 +1398,8 @@ function core_install {
     popd
     pinfo "Compiling and installing fastq/bam processing programs...done."
 
+    # create the VERSION file
+    echo $IRAP_VERSION > $IRAP_DIR/version
     pinfo "Core installation complete."
 }
 ###############################################
