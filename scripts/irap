@@ -797,10 +797,9 @@ endif
 
 
 ifeq (off,$(annot_tsv)) 
-override annot_tsv:=$(name)/data/gene.annot.tsv
-# create a dummy file
-$(shell touch $(annot_tsv))
+override annot_tsv:=$(name)/data/empty.gene.annot.tsv
 endif
+
 
 ifndef de_annot_genes_only
 de_annot_genes_only=$(def_de_annot_genes_only)
@@ -1335,6 +1334,9 @@ $(name)/data/gene.annot.tsv: $(refgeneannot_file)
 $(name)/data/gene.annot.tsv.Rdata: $(refgeneannot_file).Rdata
 	cp $< $@.tmp && mv $@.tmp $@
 #endif
+
+$(name)/data/empty.gene.annot.tsv: 
+	echo '"ID","Name","locus","source","lname","GO","GOterm","KEGG"' > $@
 
 # collect genes, transcripts and exons lengths
 # generate only once
