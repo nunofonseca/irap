@@ -597,12 +597,14 @@ int main(int argc, char **argv ) {
     //fprintf(stderr,"%d",argc);
     exit(1);
   }
+
   gzFile fd1=NULL;
   gzFile fd2=NULL;
   gzFile fd_fix=NULL;
 
-  if (argc+nopt ==3) {
+  if (argc-nopt ==3) {
     is_paired_data=1;
+    //fprintf(stderr,"%d %d %d %s\n",argc,nopt,argc-nopt,argv[2+nopt]);
     if ( !strncmp(argv[2+nopt],"pe",2) ) {
       is_interleaved=1;
     } else  {
@@ -631,7 +633,7 @@ int main(int argc, char **argv ) {
     fprintf(stderr,"Reads processed: %ld\n",sn_index->n_entries);    
     fprintf(stderr,"Memory used in indexing: ~%ld MB\n",index_mem/1024/1024);  
     // pair-end
-    if (argc+nopt ==3 ) {
+    if (argc-nopt ==3 ) {
       fprintf(stderr,"File %s processed\n",argv[1+nopt]);  
       fprintf(stderr,"Next file %s\n",argv[2+nopt]);  
       // validate the second file and check if all reads are paired
