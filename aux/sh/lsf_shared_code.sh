@@ -20,35 +20,12 @@
 #    $Id: 0.1.3 Nuno Fonseca Wed Dec 26 16:20:16 2012$
 # =========================================================
 
-# Shared code by all *_lsf scripts
-#cmd="bsub_wrapper.sh "
-cmd="irap "
-RAND=`perl -e "print int(rand()*10);"`
-#DATE=`date "+%w%H%M"`
-DATE=`date "+%w%H%M%S"`
-###################################
-# length of jobname needs to be 
-# small otherwise lsf dependencies 
-# will not work
-jobname_prefix="$RAND${DATE}e"
-###################################
-## Check computer farm requirements
-#Number of threads
-if [ "$THREADS-" = "-" ]; then 
-    THREADS=8
-fi
-#Memory
-if [ "$MEM-" = "-" ]; then 
-    MEM=16000
-fi
-#Debug status
-if [ "$DEBUG-" = "1-" ]; then
-    cmd="irap"
-fi
-#Queue
+
+#source $IRAP_DIR/aux/sh/irap_fun.sh
+
 if [ "$QUEUE-" = "-" ]; then
     #QUEUE="research-rh6"
-    echo "ERROR in irap_lsf: LSF queue not defined. Please check the  $IRAP_DIR/irap_setup.sh file."
+    echo "ERROR in $LSF_CMD: LSF queue not defined. Please check the  $IRAP_DIR/irap_setup.sh file."
     exit 1
 fi
 
@@ -61,52 +38,6 @@ export IRAP_LSF_GROUP
 export IRAP_LSF_PARAMS
 export MEM
 export THREADS
-
-#########################
-## Check input parameters 
-#Configuration file
-if [ "$1-" = "-" ]; then
-	echo "Missing conf. file"
-	echo "Usage: $LSF_CMD conf=my_irap.conf [IRAP options]"
-	exit 1
-fi
-conf=`echo $1|cut -f 2 -d=`
-if [ ! -e $conf ]; then
-    echo "$conf file not found"
-    exit 1
-fi
-conf_var=`echo $1|cut -f 1 -d=`
-if [ "$conf_var-" != "conf-" ]; then
-	echo "Usage: $LSF_CMD conf=my_irap.conf [IRAP options]"
-	exit 1
-fi
-
-conf=`echo $1|cut -f 2 -d=`
-if [ ! -e "$conf" ]; then
-	echo "Conf. file $conf does not exist"
-	exit 1
-fi
-#DATA_DIR=$2
-data_dir=`grep "^data_dir=" $conf|cut -f 2 -d=`
-
-shift 1
-IRAP_PARAMS=$*
-#Data directory
-
-IRAP_PAR_CMD="$0 conf=$conf $IRAP_PARAMS"
-###################
-## Load config file
-echo " * Trying to load configuration file $conf..."
-#name
-name=`grep "^name=" $conf|cut -f 2 -d=`
-se="`grep "^se=" $conf|cut -f 2 -d=`"
-pe="`grep "^pe=" $conf|cut -f 2 -d=`"
-mapper="`grep "^pe=" $conf|cut -f 2 -d=`"
-contrasts="`grep "^contrasts=" $conf|cut -f 2 -d=`"
-# log_dir
-log_dir=`grep "^log_dir=" $conf|cut -f 2 -d=`
-report_dir=$name/report
-echo " * Configuration loaded."
 
 # directory to keep the logs
 if [ "$log_dir-" == "-" ]; then
@@ -122,58 +53,6 @@ if [ "$JOB_MAX_MEM-" != "-" ]; then
     exit 1
   fi
 fi
-
-# override irap_params
-for p in $IRAP_PARAMS; do
-    pv=`echo $p|sed "s/.*=.*/=/g"`
-    if [ "$pv-" = "=-" ]; then
-	var=`echo $p|cut -f 1 -d\=`
-	value=`echo $p|cut -f 2 -d\=`
-	export $var=$value
-	echo "$var=$value"
-    fi
-done
-
-DATA_DIR=$data_dir
-if [ "$DATA_DIR-" = "-" ]; then
-	echo "Missing DATA_DIR"
-	exit 1
-fi
-if [ ! -e $DATA_DIR ]; then
-	echo "DATA_DIR $DATA_DIR does not exist"
-	exit 1
-fi
-
-#####################
-## Set default values
-# TODO: get default values from IRAP
-if [ "$mapper-" = "-" ]; then
-    mapper=tophat1
-fi
-if [ "$name-" = "-" ]; then
- echo "!missing argument name!"
-	exit 1
-fi
-#echo PE=$pe
-#echo SE=$se 
-
-# cur_stage
-CUR_STAGE=
-function get_path2logfile {
-    mkdir -p $LOG_DIR/$CUR_STAGE
-    echo $LOG_DIR/$CUR_STAGE
-}
-
-function p_info {
-    echo "[INFO] $*" >&2
-}
-
-function get_param_value {
-    param_name=$1
-    conf_file=$2
-    val=`grep "^$param_name=" $conf_file|cut -f 2 -d=`
-    echo $val
-}
 
 function check_dependency {
     jobname=$1
@@ -224,20 +103,7 @@ function submit_job_status {
     fi
 }
 
-function get_maxmem {
-    let MAX_MEM=($1/4000+1)*4000
-    echo $1
-}
 
-function get_cached_value {
-
-    if [ ! -e $name/cached_vars.mk ]; then
-	echo ERROR: File $name/cached_vars.mk not found > /dev/stderr
-	exit 1
-    fi
-    val=`grep "^$1=" $name/cached_vars.mk|cut -f 2 -d=`
-    echo $val
-}
 ################
 ## Job functions (computer farm)
 # length of jobname needs to be small otherwise lsf dependencies will not work
