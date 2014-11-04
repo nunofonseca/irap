@@ -158,8 +158,10 @@ get.gene.length.from.gtf <- function(gtf,filter.biotype=NULL,length.mode="union.
   }
   # compute the length for each exon
   gtf <- gtf[gtf$feature=="exon",]
-  gene.ids <- unique(gtf$gene_id)
-  glen <- unlist(mclapply(gene.ids,get.gene.length,gtf,mode=length.mode))
+  gene.ids <- as.character(unique(gtf$gene_id))
+  #pinfo(gene.ids)
+  glen <- mclapply(gene.ids,FUN=get.gene.length,gtf.data=gtf,mode=length.mode)
+  glen <- unlist(glen)
   names(glen) <- gene.ids
   glen  
 }
@@ -167,6 +169,7 @@ get.gene.length.from.gtf <- function(gtf,filter.biotype=NULL,length.mode="union.
 
 get.gene.length <- function(gene.id,gtf.data,mode="sum.exons",lim=+Inf,do.plot=FALSE) {
   suppressPackageStartupMessages(library("intervals"))
+  library(methods)
   #gtf.data <- gtf2
   i <- Intervals(gtf.data[gtf.data$gene_id==gene.id  & gtf.data$feature=="exon",c("start","end")])
   ne <- length(size(i))
@@ -259,6 +262,7 @@ get.transcript.length.from.gtf <- function(gtf,filter.biotype=NULL) {
 #
 get.transcript.length <-  function(transcript.id,gtf.data) {
   suppressPackageStartupMessages(library("intervals"))
+  library(methods)
   i <- Intervals(gtf.data[gtf.data$transcript_id==transcript.id & gtf.data$feature=="exon",c("start","end")])
   sum(size(i))+length(i)/2
 }
