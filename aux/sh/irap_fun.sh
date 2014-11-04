@@ -205,6 +205,7 @@ function stage0_jobs {
 	submit_job "${jobname_prefix}0[$i]"  -w "ended($waitfor)" $cmd conf=$conf setup_dirs $IRAP_PARAMS $f
 	let i=$i+1
     done
+    echo "${jobname_prefix}0*"
 }
 
 function stage1_jobs {    
