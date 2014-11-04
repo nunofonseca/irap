@@ -30,64 +30,14 @@ set -e
 ###################################
 # load shared code
 LSF_CMD=irap_lsf
+source $IRAP_DIR/aux/sh/irap_fun.sh
 source $IRAP_DIR/aux/sh/lsf_shared_code.sh
 
+wf1=`irap_init_job`
+wf2=`stage0_jobs $wf1`
+wf3=`stage12_jobs $wf2`
+final_job $wf3
 
-declare -i s1=0
-declare -i s2=0
-
-#############
-# Submit jobs
-p_info " * Initialization "
-# save variables
-$cmd conf=$conf $IRAP_PARAMS save_cache
-
-#load the file with the variables already computed
-IRAP_PARAMS="$IRAP_PARAMS use_cached_vars=y"
-p_info " * Starting initial job"
-CUR_STAGE=stage0
-submit_job "${jobname_prefix}0[1]" $cmd conf=$conf stage0 $IRAP_PARAMS
-bstop -J "${jobname_prefix}0[1]"
-p_info " * First job suspended until all jobs are submitted."
-WAIT_FOR_IDS=
-# step1 parallel quality filtering
-# step2 align
-# step3 counting 
-
-# Paired end files
-p_info "* Step&21 (PE)"
-for p in $pe ; do 
-    let s1=s1+1
-    let s2=s2+1
-    p_info "Lib (PE): $p"
-    CUR_STAGE=stage1 submit_job "${jobname_prefix}${s1}1[1]" -w "ended(${jobname_prefix}0*)" "$cmd conf=$conf  pe=$p se=  $IRAP_PARAMS stage1"
-    CUR_STAGE=stage12 submit_job "${jobname_prefix}2[$s2]"  -w "ended(${jobname_prefix}${s1}1*)"  "$cmd conf=$conf stage1 stage2 mappingbyname  se=  pe=$p  $IRAP_PARAMS"
-done
-
-# Single end files
-echo "***********************************************"
-CUR_STAGE=stage12
-echo "*Step1&2 (SE)"
-for f in $se ; do
-    let s2=s2+1
-    p_info "Lib (SE): $f"
-    submit_job "${jobname_prefix}2[$s2]" -w  "ended(${jobname_prefix}0*)"  "$cmd conf=$conf stage1 stage2 mappingbyname pe=  se=$f  $IRAP_PARAMS"
-done
-
-CUR_STAGE=
-#########################################
-# To finalize, run the whole pipeline
-# If everything went ok then nothing should be done
-# otherwise it should fail and an email will be sent
-submit_job "${jobname_prefix}f" -w "ended(${jobname_prefix}2*)"   "irap conf=$conf  $IRAP_PARAMS stage2 mappingbyname -n -q"
-    
-# send an email to the user
-submit_job_status "${jobname_prefix}f"
-
-bresume -J "${jobname_prefix}0[1]"
-# TODO: report
-echo JOBS=$LOG_DIR/${jobname_prefix}*.out
-echo JOBNAME=${jobname_prefix}f
 exit
 
 

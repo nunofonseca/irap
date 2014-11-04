@@ -20,121 +20,25 @@
 #
 #    $Id: 0.1.1 Nuno Fonseca Thu Dec 20 21:19:56 2012$
 # =========================================================
-#Send irap jobs on the farm - if paired end files, parallelize
+#Send irap jobs to the farm - if paired end files, parallelize
 #Input: a config file and irap parameters
 #Output: send jobs on the farm
-#A README file (fastq_qc_README.txt) with more details about each step and 
-# the general process is available in the same directory.
 set -e 
 
 ###################################
 # load shared code
 LSF_CMD=irap_lsf
+source $IRAP_DIR/aux/sh/irap_fun.sh
 source $IRAP_DIR/aux/sh/lsf_shared_code.sh
 
+wf1=`irap_init_job`
+wf2=`stage0_jobs $wf1`
+wf3=`stage123_jobs $wf2`
+wf4=`stage3_jobs $wf3`
+wf5=`DE_jobs $wf4`
+wf5=`GSA_jobs $wf4`
+final_job $wf5
 
-declare -i s1=0
-declare -i s2=0
-
-#############
-# Submit jobs
-p_info " * Initialization "
-# save variables
-$cmd conf=$conf $IRAP_PARAMS save_cache
-
-#load the file with the variables already computed
-IRAP_PARAMS="$IRAP_PARAMS use_cached_vars=y"
-p_info " * Starting initial job"
-CUR_STAGE=stage0
-submit_job "${jobname_prefix}i" $cmd conf=$conf setup_dirs $IRAP_PARAMS
-stop_job  "${jobname_prefix}i"
-p_info " * First job suspended until all jobs are submitted."
-stage0_targets=`irap conf=$conf $IRAP_PARAMS print_stage0_files|tail -n 1`
-let i=2
-for f in $stage0_targets; do    
-    submit_job "${jobname_prefix}0[$i]"  -w "ended(${jobname_prefix}i)" $cmd conf=$conf setup_dirs $IRAP_PARAMS $f
-    let i=$i+1
-done
-
-WAIT_FOR_IDS=
-# step1 parallel quality filtering
-# step2 align
-# step3 counting 
-
-# Paired end files
-p_info "* Step&21 (PE)"
-for p in $pe ; do 
-    let s1=s1+1
-    let s2=s2+1
-    p_info "Lib (PE): $p"
-    CUR_STAGE=stage1 submit_job "${jobname_prefix}${s1}1[1]" -w "ended(${jobname_prefix}0*)" "$cmd conf=$conf  pe=$p se=  $IRAP_PARAMS stage1"
-    CUR_STAGE=stage123 submit_job "${jobname_prefix}2[$s2]"  -w "ended(${jobname_prefix}${s1}1*)"  "$cmd conf=$conf stage1 stage2 stage3as  se=  pe=$p  $IRAP_PARAMS"
-done
-
-# Single end files
-echo "***********************************************"
-CUR_STAGE=stage123
-echo "*Step1&2 (SE)"
-for f in $se ; do
-    let s2=s2+1
-    p_info "Lib (SE): $f"
-    submit_job "${jobname_prefix}2[$s2]" -w  "ended(${jobname_prefix}0*)"  "$cmd conf=$conf stage1 stage2 stage3as pe=  se=$f  $IRAP_PARAMS"
-done
-
-# Normalization
-CUR_STAGE=stage3 
-p_info "Stage3"
-submit_job "${jobname_prefix}q"  -w "ended(${jobname_prefix}2*)"  "$cmd conf=$conf  $IRAP_PARAMS stage3"
-
-
-#####
-# DE
-CUR_STAGE=DE
-de_ofiles=`irap conf=$conf de_files $IRAP_PARAMS|tail -n 1`
-let s2=1
-for f in $de_ofiles; do
-    let s2=s2+1
-    p_info "DE: $f"
-    submit_job "${jobname_prefix}de[$s2]"  `check_dependency ${jobname_prefix}q`  "irap conf=$conf  $IRAP_PARAMS $f"
-done
-if [ "$de_ofiles-" = "-" ]; then
-    DEP=`check_dependency ${jobname_prefix}q`
-else
-    DEP=`check_dependency ${jobname_prefix}de`
-fi
-
-######
-# GSE
-CUR_STAGE=GSE
-if [ "$de_ofiles-" != "-" ]; then
-    #####
-    # GSE
-    gse_ofiles=`irap conf=$conf $IRAP_PARAMS GSE_files|tail -n 1`
-    let s2=1
-    for f in $gse_ofiles; do
-	let s2=s2+1
-	p_info "GSE: $f"
-	submit_job "${jobname_prefix}gse[$s2]" $DEP  "irap conf=$conf  $IRAP_PARAMS $f"
-    done
-    if [ "$gse_ofiles-" != "-" ]; then
-	DEP=`check_dependency ${jobname_prefix}gse`
-    fi    
-fi
-
-CUR_STAGE=
-#########################################
-# To finalize, run the whole pipeline
-# If everything went ok then nothing should be done
-# otherwise it should fail and an email will be sent
-submit_job "${jobname_prefix}f" $DEP   "irap conf=$conf  $IRAP_PARAMS -n -q"
-    
-# send an email to the user
-submit_job_status "${jobname_prefix}f"
-
-resume_job  "${jobname_prefix}i"
-# TODO: report
-echo JOBS=$LOG_DIR/${jobname_prefix}*.out
-echo JOBNAME=${jobname_prefix}f
 exit
 
 

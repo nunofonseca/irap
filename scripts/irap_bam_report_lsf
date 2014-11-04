@@ -25,6 +25,7 @@ set -e
 ###################################
 # load shared code
 LSF_CMD=irap_bam_report_lsf
+source $IRAP_DIR/aux/sh/irap_fun.sh
 source $IRAP_DIR/aux/sh/lsf_shared_code.sh
 
 # invoke irap instead of bam_report.R
