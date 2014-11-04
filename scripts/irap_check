@@ -2,7 +2,8 @@
 
 # script to check if the files produced by irap are ok
 LSF_CMD=irap_check
-source $IRAP_DIR/scripts/lsf_shared_code.sh
+QUEUE=undef
+source $IRAP_DIR/aux/sh/lsf_shared_code.sh
 
 if [ "$name-" = "-" ]; then
     echo "ERROR: name not defined." >&2
@@ -103,7 +104,7 @@ done
 
 ########################################
 # Quant
-QUANTS=`ls -1 $name/*/*/raw*.tsv | sed -E "s|$name\/[^\/]+\/([^\/]+)\/.*|\1|" | sort -u | tr "\n" " "`
+QUANTS=`ls -1 $name/*/*/raw*.tsv 2>/dev/null | sed -E "s|$name\/[^\/]+\/([^\/]+)\/.*|\1|" | sort -u | tr "\n" " " `
 p_info Quantification: $QUANTS
 
 for q in $QUANTS; do
