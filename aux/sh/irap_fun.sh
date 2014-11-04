@@ -197,7 +197,7 @@ function irap_init_job {
  echo "${jobname_prefix}i"
 }
 
-function irap_stage0_jobs {
+function stage0_jobs {
     waitfor=$1
     stage0_targets=`irap conf=$conf $IRAP_PARAMS print_stage0_files|tail -n 1`
     let i=2
