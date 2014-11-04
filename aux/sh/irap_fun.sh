@@ -200,11 +200,13 @@ function irap_init_job {
 function stage0_jobs {
     waitfor=$1
     stage0_targets=`irap conf=$conf $IRAP_PARAMS print_stage0_files|tail -n 1`
-    let i=2
+    let i=1
+    p_info "* Stage 0..."
     for f in $stage0_targets; do    
 	submit_job "${jobname_prefix}0[$i]"  -w "ended($waitfor)" $cmd conf=$conf setup_dirs $IRAP_PARAMS $f
 	let i=$i+1
     done
+    p_info "* Stage 0...$i jobs"
     echo "${jobname_prefix}0*"
 }
 
@@ -265,7 +267,7 @@ function stage123_jobs {
     declare -i s1=0
     declare -i s2=0
     # Paired end files
-    p_info "* Step&21 (PE)"
+    p_info "* Step 1,2, and 3 (PE)"
     for p in $pe ; do 
 	let s1=s1+1
 	let s2=s2+1
@@ -276,7 +278,7 @@ function stage123_jobs {
     # Single end files
     echo "***********************************************"
     CUR_STAGE=stage123
-    echo "*Step1&2 (SE)"
+    p_info "* Step 1,2, and 3 (SE)"
     for f in $se ; do
 	let s2=s2+1
 	let s1=s1+1
