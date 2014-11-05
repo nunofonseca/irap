@@ -313,6 +313,7 @@ if ( length(set1)>=minSizeLim && print.empty==FALSE )  {
          v <- apply(cbind(v1,v2),1,min,na.rm=TRUE)
          # select the top gene sets (lowest p-values, larger number of genes)
          v2 <- as.numeric(gsaRes2plot$nGenesTot)
+         names(v2) <- names(gsaRes2plot$gsc)
          m <- cbind(v,v2)       
          rownames(m) <- names(gsaRes2plot$gsc)
          sorted <- m[order(v,-v2),]
@@ -361,7 +362,12 @@ if ( length(set1)>=minSizeLim && print.empty==FALSE )  {
          gsaRes[[n]] <- matrix(gsaRes[[n]],ncol=1)
        }
      }
-     write.tsv(GSAsummaryTable(gsaRes),file=out.tsv.file,header=T)
+     #
+     tab <- GSAsummaryTable(gsaRes)
+     if ( nrow(tab)==1 && tab[1,1]=="" ) {
+       tab <- tab[-1,]
+     }
+     write.tsv(tab,file=out.tsv.file,header=T)
      pinfo("Created ",out.tsv.file)
      print.empty <- FALSE
    }
