@@ -1,4 +1,5 @@
 #!/usr/bin/env Rscript3
+#; -*- mode: R;-*-
 # =========================================================
 #
 # This file is part of iRAP.
@@ -271,6 +272,8 @@ if ( length(set1)>=minSizeLim && print.empty==FALSE )  {
    #save.image("debug.Rdata")
   gsaRes <- try(runGSA(geneLevelStats=pval,directions=fc,geneSetStat=opt$method,
                        gsc=myGSC,gsSizeLim=c(minSizeLim,maxSizeLim)))
+  print(gsaRes)
+  #gsaRes$geneSetStat
   pdebug.save.state("irap_GSE_piano","p2")
   if ( class(gsaRes)=="try-error") {
     perror("Failed runGSA(",opt$method,")")
@@ -352,6 +355,12 @@ if ( length(set1)>=minSizeLim && print.empty==FALSE )  {
      }
      # save the tsv file and the rdata file
      #save(gsaRes,file=paste(opt$out,".Rdata",sep=""),envir=sys.frame())
+     # fix values type (Piano issue)
+     for ( n in c("nGenesTot","pAdjDistinctDirUp","pAdjDistinctDirDn","pAdjNonDirectional","pAdjMixedDirUp","pAdjMixedDirDn") ) {
+       if ( ! is.matrix(gsaRes[[n]]) ) {        
+         gsaRes[[n]] <- matrix(gsaRes[[n]],ncol=1)
+       }
+     }
      write.tsv(GSAsummaryTable(gsaRes),file=out.tsv.file,header=T)
      pinfo("Created ",out.tsv.file)
      print.empty <- FALSE
