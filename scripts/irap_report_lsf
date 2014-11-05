@@ -31,11 +31,11 @@ source $IRAP_DIR/aux/sh/lsf_shared_code.sh
 ###################################
 
 
-wf1=`irap_init_job`
+wf1=`irap_init_job|tail -n 1`
 for f in qc_report init_page_report mapping_report quant_report DE_report gsa_report; do
     $f $wf1
 done
 
-wf2=`finish_report`
-final_job "ended(\"$wf2\")"
+wf2=`finish_report|tail -n 1`
+final_job $wf2 $wf1
 exit

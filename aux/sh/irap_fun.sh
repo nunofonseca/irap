@@ -201,13 +201,13 @@ function stage0_jobs {
     waitfor=$1
     stage0_targets=`irap conf=$conf $IRAP_PARAMS print_stage0_files|tail -n 1`
     let i=1
-    p_info "* Stage 0..."
+    p_info "* Stage 0..." 
     for f in $stage0_targets; do    
 	submit_job "${jobname_prefix}0[$i]"  -w "ended($waitfor)" $cmd conf=$conf setup_dirs $IRAP_PARAMS $f
 	let i=$i+1
     done
-    p_info "* Stage 0...$i jobs"
-    echo "${jobname_prefix}0*"
+    p_info "* Stage 0...$i jobs" 
+    echo "${jobname_prefix}0*" 
 }
 
 function stage1_jobs {    
@@ -311,18 +311,19 @@ function DE_jobs {
 	submit_job "${jobname_prefix}de[$s2]"  `check_dependency $waitfor`  "irap conf=$conf  $IRAP_PARAMS $f"
     done
     if [ "$de_ofiles-" = "-" ]; then
-	DEP=`check_dependency ${jobname_prefix}q`
+	DEP=$waitfor
     else
-	DEP=`check_dependency ${jobname_prefix}de`
+	DEP=${jobname_prefix}de
     fi
     echo $DEP
 }
 
 function GSA_jobs {
-    DEP=$1
+    waitfor=$1
     ######
     # GSA
     CUR_STAGE=GSA
+    DEP=$waitfor
     if [ "$de_ofiles-" != "-" ]; then
         #####
         # GSA
@@ -331,10 +332,12 @@ function GSA_jobs {
 	for f in $gse_ofiles; do
 	    let s2=s2+1
 	    p_info "GSE: $f"
-	    submit_job "${jobname_prefix}gse[$s2]" $DEP  "irap conf=$conf  $IRAP_PARAMS $f"
+	    submit_job "${jobname_prefix}gse[$s2]" `check_dependency $waitfor`  "irap conf=$conf  $IRAP_PARAMS $f"
 	done
 	if [ "$gse_ofiles-" != "-" ]; then
-	    DEP=`check_dependency ${jobname_prefix}gse`
+	    DEP=${jobname_prefix}gse
+	else
+	    DEP=$waitfor
 	fi    
     fi
     echo $DEP
@@ -342,17 +345,18 @@ function GSA_jobs {
 
 function final_job {
     CUR_STAGE=
-    DEP=$1
+    waitfor=$1
+    susp_job=$2
     #########################################
     # To finalize, run the whole pipeline
     # If everything went ok then nothing should be done
     # otherwise it should fail and an email will be sent
-    CUR_STAGE= submit_job "${jobname_prefix}f" $DEP   "irap conf=$conf  $IRAP_PARAMS -n -q"
+    CUR_STAGE=  submit_job "${jobname_prefix}f" `check_dependency $waitfor`   "irap conf=$conf  $IRAP_PARAMS -n -q"
     
     # send an email to the user
-    CUR_STAGE= submit_job_status "${jobname_prefix}f"
-    
-    resume_job $_INIT_SUSP_JOB
+    CUR_STAGE=  submit_job_status "${jobname_prefix}f"
+
+    resume_job $susp_job
     # TODO: report
     echo JOBS=$LOG_DIR/${jobname_prefix}*.out
     echo JOBNAME=${jobname_prefix}f
@@ -430,12 +434,12 @@ function quant_report {
     quant_ofiles=`get_cached_value QUANT_HTML_FILES`
     for f in $quant_ofiles; do
 	let counter=counter+1
-	submit_job "${jobname_prefix}f[$counter]"  "-w ended(\"$waitfor*\")"  "irap conf=$conf $IRAP_PARAMS $f"
+	submit_job "${jobname_prefix}f[$counter]"  "-w ended(\"$waitfor\")"  "irap conf=$conf $IRAP_PARAMS $f"
     done
 }
 
 function DE_report {
-    waitfor=
+    waitfor=$1
 ####
 # DE
     de_ofiles=`get_cached_value DE_HTML_FILES`

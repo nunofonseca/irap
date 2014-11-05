@@ -29,8 +29,8 @@ LSF_CMD=irap_stage1_lsf
 source $IRAP_DIR/aux/sh/irap_fun.sh
 source $IRAP_DIR/aux/sh/lsf_shared_code.sh
 
-wf1=`irap_init_job`
-wf2=`stage0_jobs $wf1`
-wf3=`stage1_jobs $wf2`
-final_job $wf3
+wf1=`irap_init_job|tail -n 1`
+wf2=`stage0_jobs $wf1|tail -n 1`
+wf3=`stage1_jobs $wf2|tail -n 1`
+final_job $wf3 $wf1
 exit
