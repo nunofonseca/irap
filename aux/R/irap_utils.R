@@ -1911,6 +1911,220 @@ boxplot.n <- function(significance=NULL,comparisons=NULL,show.n=TRUE,adj.n=0,...
   bp
 }
 
+###############################################
+# 
+fisherNetworkPlot <- function (gsaRes,
+                               adjusted = FALSE, significance = 0.001,
+                               overlap = 1,
+                               long.names=NULL,
+                               label = "names", cexLabel = 0.9, 
+                               ncharLabel = 15, cexLegend = 1,
+                               nodeSize = c(10, 40), edgeWidth = c(1,15),
+                               edgeColor = NULL, scoreColors = NULL, main) 
+{
+  library(igraph)
+  library(marray)
+  
+  if (overlap <= 0) 
+    stop("argument overlap has to be at least 1")
+  if (length(nodeSize) != 2) 
+    stop("argument nodeSize has to have length 2")
+  if (length(edgeWidth) != 2) 
+    stop("argument edgeWidth has to have length 2")
+  if (class(adjusted) != "logical") 
+    stop("argument adjusted has to be TRUE or FALSE")
+  if (missing(main))  {
+    main <- paste("Exact Fisher-test (significance <=",significance,")",sep="")
+  } else {    
+    if (class(main) != "character") 
+      stop("argument main has to be a character string")
+  }                              #
+  if (!all(c("pvalues", "p.adj", "gsc","effect.size","sSizes") %in% names(gsaRes)))
+    stop("gsaRes needs to contain pvalues, p.adj, gsc, effect.size and sSizes")
+  
+  gsc <- gsaRes$gsc
+                                        # number of genes selected (DE) in each gene set
+  sSizes <- gsaRes$sSizes
+    effect.size <- gsaRes$effect.size
+                                        # use p-values or adjusted p-values
+  if (adjusted) {
+    pValues <- gsaRes$p.adj
+  } else {
+    pValues <- gsaRes$pvalues
+  }
+                                        #significance=1
+  geneSetNames <- names(gsc)
+                                        # which genes (index) have a significant p-value
+  indSignificant <- which(abs(pValues) <= significance)
+  
+  if (length(indSignificant) < 3) {
+    warning("less than three gene sets were selected, can not plot (tip: adjust the significance cutoff)")
+    return(NULL)
+  }
+  pSignificant <- pValues[indSignificant]
+                                        # overlap  genes between gene sets
+  overlapMat <- matrix(nrow = length(indSignificant), ncol = length(indSignificant))
+  for (i in 1:nrow(overlapMat)) {
+    for (j in i:ncol(overlapMat)) {
+      tmp <- sum(gsc[[indSignificant[i]]] %in% gsc[[indSignificant[j]]])
+      overlapMat[i, j] <- tmp
+            overlapMat[j, i] <- tmp
+    }
+  }
+                                        # size = number of genes in a gene set
+  gsSize <- diag(overlapMat)
+  overlapMat[overlapMat < overlap] <- 0    
+  adjMat <- overlapMat > 0
+  tmp <- adjMat
+  diag(tmp) <- 0
+  tmp[tmp<10000000000000] <- 0
+    if (all(!tmp)) 
+      warning("no overlap between gene sets found, try to decrease argument overlap or increase argument significance")
+  g <- graph.adjacency(tmp, mode = "undirected", diag = FALSE)
+  
+  edgeOverlap <- rep(NA, ecount(g))
+  if (ecount(g)>0) {
+    for (iEdge in 1:ecount(g)) {
+      tmp <- get.edge(g, iEdge)
+      edgeOverlap[iEdge] <- overlapMat[tmp[1], tmp[2]]
+    }
+      # edge width
+    eWidth <- (edgeOverlap - min(edgeOverlap))/(max(edgeOverlap) - 
+                                                min(edgeOverlap)) * (edgeWidth[2] - edgeWidth[1]) + edgeWidth[1]
+    
+    if (is.null(edgeColor)) 
+      edgeColor = c("gray80", "gray70", "gray60")
+    
+    tmp <- seq(min(edgeOverlap), max(edgeOverlap), length.out = length(edgeColor) +  1)
+    eColor <- rep(edgeColor[1], ecount(g))
+    for (i in 2:length(edgeColor)) {
+      eColor[edgeOverlap > tmp[i]] <- edgeColor[i]
+    }
+  } else {
+    eColor=NULL
+    eWidth=NULL
+    tmp <- NULL
+  }
+                                        # Node size - proportional to the size of the subsets of gene sets
+                                        #nodeSize <- c(3,20)
+  vSize <- (gsSize - min(gsSize))/(max(gsSize) - min(gsSize)) * 
+    (nodeSize[2] - nodeSize[1]) + nodeSize[1]
+                                        # size of the set of DE gene sets
+    #vSize2 <- (gsSize2 - min(gsSize2))/(max(gsSize2) - min(gsSize2)) * 
+                                        #    (nodeSize[2] - nodeSize[1]) + nodeSize[1]
+  
+  effect.size2 <- effect.size[names(gsc)[indSignificant]]
+  eSize <- ( - min(effect.size2))/(max(effect.size2) - min(effect.size2)) * 
+    (nodeSize[2] - nodeSize[1]) + nodeSize[1]
+  
+  if (is.null(scoreColors)) {
+    tmp <- c("red", "orange", "yellow")
+  } else {
+      if (length(scoreColors) < 2) 
+        stop("argument scoreColors should contain at least two colors")
+      tmp <- scoreColors
+    }
+  gradColors <- colorRampPalette(tmp, interpolate = "linear")(100)
+  
+  vColor <- gradColors[floor(effect.size * 99/max(effect.size, 
+                                                  na.rm = TRUE)) + 1]
+  vColor[is.na(vColor)] <- "#CCCCCC"
+                                        #label <- "numbers"
+  tmp <- try(label <- match.arg(label, c("names", "numbers", 
+                                         "namesAndLong"), several.ok = FALSE), 
+             silent = TRUE)
+  if (class(tmp) == "try-error") {
+    stop("argument label has to be set to either 'names' or 'numbers'")
+  }
+  tmp <- names(gsc)[indSignificant]
+                                        #ncharLabel <- 10
+  for (i in 1:length(tmp)) {
+    if (nchar(tmp[i]) > ncharLabel) 
+        tmp[i] <- paste(substr(tmp[i], 1, ncharLabel), "...", 
+                        sep = "")
+  }
+                                        # Labels
+  if (label == "names")  {
+    vLabels <- tmp
+  } else {
+    if (label == "numbers") 
+        vLabels <- 1:length(indSignificant)
+    else {
+      if (label == "namesAndLongNames") 
+        vLabels <- tmp
+      else {
+        if (label == "namesAndSizes") 
+          vLabels <- paste(tmp, " (", gsSize, ")", sep = "")
+        }
+    }
+  }
+  
+                                        # keep code from piano
+  if ( ecount(g)>0 ) {
+    eWeight <- rep(NA, ecount(g))
+      for (iEdge in 1:ecount(g)) {
+        tmp <- get.edge(g, iEdge)
+        tmp1 <- gsSize[tmp[1]]
+        tmp2 <- gsSize[tmp[2]]
+        if (tmp1 > tmp2) {
+          eWeight[iEdge] <- 1/(tmp1 * sum(adjMat[, tmp[1]]))
+        }
+        else {
+          eWeight[iEdge] <- 1/(tmp2 * sum(adjMat[, tmp[2]]))
+        }
+      }
+    if (min(eWeight) != max(eWeight)) {
+      eWeight <- (eWeight - min(eWeight))/(max(eWeight) - 
+                                           min(eWeight)) * (100 - 0) + 0
+    } else {
+      eWeight <- rep(50, length(eWeight))
+    }
+  } else {
+    eWeight <- NULL
+  }
+  lay <- layout.fruchterman.reingold(g, area = vcount(g)^4, 
+                                     repulserad = vcount(g)^5,
+                                     weights = eWeight)
+    
+  if (!is.null(long.names)) {
+    layout(matrix(c(1, 0, 3, 2, 2, 3), ncol = 2),
+           widths = c(1,7),
+           heights = c(2, 3, 2) )
+  } else {
+    layout(matrix(c(1, 3, 2, 2 ), ncol = 2), widths = c(1,5),
+           heights = c(1, 1 ))
+  }
+  #
+  #
+  #layout.show(3)
+  #dev.off()
+  maColorBar(seq(0, max(effect.size, na.rm = TRUE),
+                 by = max(effect.size, na.rm = TRUE)/100),
+             FALSE, gradColors,
+             k = 7, main = "Observed/Expected",
+             cex.main = cexLegend)
+                                        #cexLabel=1
+  plot(g, vertex.size = vSize, vertex.color = vColor,
+       vertex.label = as.character(vLabels), 
+       vertex.label.family = "sans", vertex.label.color = "black", 
+       vertex.label.cex = 1, edge.width = eWidth, edge.color = eColor,
+       frame.color=eColor,
+       layout = lay, main = main)
+  #long.names <- vLabels
+  long.names[1] <- "asdadajhljhasd fusdhflasdjfh sdfjsdh flasjkfh asdjlkf has"
+  if (label=="numeric" && !is.null(long.names) ) {
+    m <- min(11,length(vLabels))
+    labels <- paste(vLabels[seq(1,m)],long.names[seq(1,m)],sep=" - ",collapse = "\n")
+    plot.new()
+    text(0, 0, cex = cexLegend, col="black",
+         labels=labels, font = 2, adj = 0, offset=-0.5)      
+  }
+  # interactive
+  #tkplot
+  return(g)
+  }
+
+
 ###################################################
 #
 
