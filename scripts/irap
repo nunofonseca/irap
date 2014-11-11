@@ -284,6 +284,14 @@ else
  $(call p_error,Configuration file missing)
 endif
 
+# load library specific information
+ifdef lib.info
+ $(call file_exists,$(lib.info))
+ $(info * Trying to load information about the libraries - file $(lib.info)...)
+ include $(lib.info)
+ $(info * Information about the libraries loaded.)
+endif
+
 ###############################################
 # Load some definitions
 include $(irap_path)/../aux/mk/irap_defs.mk
