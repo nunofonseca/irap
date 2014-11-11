@@ -77,9 +77,9 @@ if (num.cores<1) {
 
 irap.assert(num.cores>0)
 
-if ( num.cores>multicore:::detectCores()) {
-  num.cores <- multicore:::detectCores()
-  pwarning("The number of cores to use exceeds the cores available. Reducing the limit to ",multicore:::detectCores())
+if ( num.cores>parallel:::detectCores()) {
+  num.cores <- parallel:::detectCores()
+  pwarning("The number of cores to use exceeds the cores available. Reducing the limit to ",parallel:::detectCores())
 }
 
 options("cores"=num.cores)

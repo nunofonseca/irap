@@ -29,7 +29,7 @@ library(R2HTML)
 
 #library(myUtils)
 library(emBAM)
-options("cores"=multicore:::detectCores())
+options("cores"=parallel:::detectCores())
 
 # Parallelize
 #
