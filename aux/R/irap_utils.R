@@ -1941,19 +1941,22 @@ fisherNetworkPlot <- function (gsaRes,
   }                              #
   if (!all(c("pvalues", "p.adj", "gsc","effect.size","sSizes") %in% names(gsaRes)))
     stop("gsaRes needs to contain pvalues, p.adj, gsc, effect.size and sSizes")
-  
-  gsc <- gsaRes$gsc
-                                        # number of genes selected (DE) in each gene set
-  sSizes <- gsaRes$sSizes
-    effect.size <- gsaRes$effect.size
-                                        # use p-values or adjusted p-values
+
+  #
+  geneSetNames <- rownames(gsaRes$resTab)
+  gsc <- gsaRes$gsc[geneSetNames]
+
+  # number of genes selected (DE) in each gene set
+  sSizes <- gsaRes$sSizes[geneSetNames]
+  effect.size <- gsaRes$effect.size[geneSetNames]
+  # use p-values or adjusted p-values
   if (adjusted) {
-    pValues <- gsaRes$p.adj
+    pValues <- gsaRes$p.adj[geneSetNames]
   } else {
-    pValues <- gsaRes$pvalues
+    pValues <- gsaRes$pvalues[geneSetNames]
   }
                                         #significance=1
-  geneSetNames <- names(gsc)
+
                                         # which genes (index) have a significant p-value
   indSignificant <- which(abs(pValues) <= significance)
   
@@ -1977,8 +1980,7 @@ fisherNetworkPlot <- function (gsaRes,
   adjMat <- overlapMat > 0
   tmp <- adjMat
   diag(tmp) <- 0
-  tmp[tmp<10000000000000] <- 0
-    if (all(!tmp)) 
+  if (all(!tmp)) 
       warning("no overlap between gene sets found, try to decrease argument overlap or increase argument significance")
   g <- graph.adjacency(tmp, mode = "undirected", diag = FALSE)
   
@@ -2018,17 +2020,24 @@ fisherNetworkPlot <- function (gsaRes,
     (nodeSize[2] - nodeSize[1]) + nodeSize[1]
   
   if (is.null(scoreColors)) {
-    tmp <- c("red", "orange", "yellow")
+    gradColors <- maPalette(low="white",mid="yellow",high="red",k=100)
+    vColor <- rep(NA,length(effect.size2))
+    tmp <- effect.size2>1
+    if ( sum(tmp) > 0 )
+      vColor[tmp] <- gradColors[floor(effect.size2[tmp] * 99/max(effect.size2[tmp],na.rm=T)) + 1]
+    tmp <- effect.size2<1
+    if (sum(tmp) > 0 ) 
+      vColor[tmp] <- gradColors[1]
   } else {
       if (length(scoreColors) < 2) 
         stop("argument scoreColors should contain at least two colors")
       tmp <- scoreColors
+      gradColors <- colorRampPalette(tmp, interpolate = "linear")(100)
+      vColor <- gradColors[floor(effect.size2 * 99/max(effect.size2, 
+                                                      na.rm = TRUE)) + 1]
     }
-  gradColors <- colorRampPalette(tmp, interpolate = "linear")(100)
+  vColor[is.na(vColor)] <- "#CCCCCC" 
   
-  vColor <- gradColors[floor(effect.size * 99/max(effect.size, 
-                                                  na.rm = TRUE)) + 1]
-  vColor[is.na(vColor)] <- "#CCCCCC"
                                         #label <- "numbers"
   tmp <- try(label <- match.arg(label, c("names", "numbers", 
                                          "namesAndLong"), several.ok = FALSE), 
@@ -2085,7 +2094,8 @@ fisherNetworkPlot <- function (gsaRes,
   lay <- layout.fruchterman.reingold(g, area = vcount(g)^4, 
                                      repulserad = vcount(g)^5,
                                      weights = eWeight)
-    
+  opar <- par()
+  par("mar"=c(3,3,3,3))
   if (!is.null(long.names)) {
     layout(matrix(c(1, 0, 3, 2, 2, 3), ncol = 2),
            widths = c(1,7),
@@ -2098,29 +2108,34 @@ fisherNetworkPlot <- function (gsaRes,
   #
   #layout.show(3)
   #dev.off()
-  maColorBar(seq(0, max(effect.size, na.rm = TRUE),
-                 by = max(effect.size, na.rm = TRUE)/100),
-             FALSE, gradColors,
-             k = 7, main = "Observed/Expected",
+  
+  maColorBar(seq(1, max(effect.size2, na.rm = TRUE),
+                 by = max(effect.size2, na.rm = TRUE)/100),
+             horizontal=FALSE, gradColors,
+             k = 7, main = "Observed/\nExpected",
              cex.main = cexLegend)
-                                        #cexLabel=1
+               
   plot(g, vertex.size = vSize, vertex.color = vColor,
        vertex.label = as.character(vLabels), 
        vertex.label.family = "sans", vertex.label.color = "black", 
        vertex.label.cex = 1, edge.width = eWidth, edge.color = eColor,
-       frame.color=eColor,
        layout = lay, main = main)
   #long.names <- vLabels
-  long.names[1] <- "asdadajhljhasd fusdhflasdjfh sdfjsdh flasjkfh asdjlkf has"
-  if (label=="numeric" && !is.null(long.names) ) {
-    m <- min(11,length(vLabels))
-    labels <- paste(vLabels[seq(1,m)],long.names[seq(1,m)],sep=" - ",collapse = "\n")
-    plot.new()
-    text(0, 0, cex = cexLegend, col="black",
-         labels=labels, font = 2, adj = 0, offset=-0.5)      
+  #long.names[1] <- "asdadajhljhasd fusdhflasdjfh sdfjsdh flasjkfh asdjlkf has"
+  if (!is.null(long.names) ) {
+    m <- min(ncharLabel,length(vLabels))
+    labels <- paste(vLabels[seq(1,m)],long.names[seq(1,m)],sep=" - ")
+
+    par("mar"=c(2,2,0,2))
+    #par("mar"=c(2,2,2,2))
+    frame()
+    rect(par("usr")[1],par("usr")[3],par("usr")[2],par("usr")[4],col="grey90")
+    legend("topleft",labels,bty='n')
   }
   # interactive
   #tkplot
+  par(mar=opar$mar)
+  par(bg=opar$bg)
   return(g)
   }
 
