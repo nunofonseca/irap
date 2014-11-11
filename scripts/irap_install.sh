@@ -1027,6 +1027,8 @@ biocLite('DESeq',ask=FALSE, suppressUpdates=FALSE)
 biocLite('DEXSeq',ask=FALSE, suppressUpdates=FALSE)
 biocLite('baySeq',ask=FALSE, suppressUpdates=FALSE)
 biocLite('limma',ask=FALSE, suppressUpdates=FALSE)
+biocLite('marray',ask=FALSE, suppressUpdates=FALSE)
+biocLite('igraph',ask=FALSE, suppressUpdates=FALSE)
 
 biocLite("org.Hs.eg.db",ask=FALSE, suppressUpdates=FALSE)
 biocLite('GO.db',ask=FALSE, suppressUpdates=FALSE)
@@ -1088,7 +1090,7 @@ for (p in packages2install ) {
 source("http://bioconductor.org/biocLite.R")
 packages2install<-c("Rsamtools",'edgeR',
                     'DESeq','DESeq2','DEXSeq','baySeq',
-                    'limma')
+                    'limma','marray','igraph')
 
 biocLite(packages2install,ask=FALSE, suppressUpdates=FALSE)
 biocLite("piano",ask=FALSE, suppressUpdates=FALSE)
