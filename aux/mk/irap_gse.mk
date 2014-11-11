@@ -129,7 +129,7 @@ irap_GSE_piano --tsv $1 --out $(subst .tsv,,$2) --foldchange-col $(foldchange_co
 endef
 ################################
 # validate the options
-gse_piano_valid_methods=mean median sum fisher stouffer tailStrength wilcoxon reporter page
+gse_piano_valid_methods=mean median sum fisher fisher-exact stouffer tailStrength wilcoxon reporter page
 ifeq (,$(filter $(gse_method),$(gse_piano_valid_methods)))
 $(call p_info,[ERROR] gse_method)
 $(error $(gse_method) not supported)
