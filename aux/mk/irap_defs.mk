@@ -34,7 +34,7 @@ $(info * SOP=PAWG3 mapping with TopHat2)
 override qc=off
 override mapper=tophat2
 override species=homo_sapiens
-override quant_method=none
+quant_method=none
 override de_method=none
 override reference=hs37d5.genome.chr_only.fa
 override gtf_file=gencode.v19.annotation.hs37d5_chr.gtf
@@ -47,8 +47,9 @@ $(info * SOP=PAWG3 mapping with STAR)
 override qc:=off
 override mapper:=star
 override species:=homo_sapiens
-override quant_method:=none
+quant_method:=none
 override de_method:=none
+override gse_tool:=none
 override reference:=hs37d5.genome.chr_only.fa
 override gtf_file:=gencode.v19.annotation.hs37d5_chr.gtf
 override star_index_params:= --sjdbOverhang 100 
@@ -67,4 +68,7 @@ ifdef atlas_run
 #def_lib_dir=$(name)_$(species)
 $(info * atlas_run mode (overriding some options))
 raw_folder=$(name)_$(species)
+# no need for annotation 
+annot_tsv=off
 endif
+
