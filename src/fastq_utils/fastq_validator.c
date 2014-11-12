@@ -35,7 +35,7 @@
 // 1MB
 // disable this option if disk access is fast (local disk)
 // enable it for network disks
-#define VERSION "0.5.2.d2d"
+#define VERSION "0.5.1p1"
 
 #define SEQDISKACCESS 1
 
