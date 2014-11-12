@@ -74,13 +74,21 @@ define de_dirs=
 $(strip $(call cached_var,DE_DIRS))
 endef
 
+#disable for atlas
+ifdef atlas_run
+define de_html_files=
+endef
+define gse_html_files=
+endef
+else
 define de_html_files=
 $(strip $(call cached_var,DE_HTML_FILES))
 endef
-
 define gse_html_files=
 $(strip $(call cached_var,GSE_HTML_FILES))
 endef
+
+endif
 
 # 
 $(call p_debug, dir=$(call mapping_dirs))
@@ -310,9 +318,16 @@ define set_QUANT_HTML_FILES=
 $(eval override QUANT_HTML_FILES=$(foreach q,$(SUPPORTED_QUANT_METHODS),$(foreach m,$(SUPPORTED_MAPPERS),$(foreach f,gene exon transcript,$(foreach metric,raw nlib rpkm,$(call quant_target,$(m),$(q),$(metric),$(f)) ))))) $(QUANT_HTML_FILES)
 endef
 
+# disable for Atlas
+ifdef atlas_run
+define quant_html_files=
+endef
+
+else
 define quant_html_files=
 $(strip $(call cached_var,QUANT_HTML_FILES))
 endef
+endif
 
 quant_report: report_setup $(call quant_html_files)
 
