@@ -23,11 +23,6 @@
 # Rules for upgrading irap (software and files)
 
 
-ifndef clone_dir
- $(call error, missing argument clone_dir!)
-else
- $(info clone_dir=$(clone_dir))
-endif
 
 #
 define main_version=
