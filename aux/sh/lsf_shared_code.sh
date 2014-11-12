@@ -131,8 +131,8 @@ function submit_job {
     #-R  "span[ptile=$THREADS]"
     MAX_MEM=`get_maxmem $MEM`
     if [ "$WAIT_FOR_IDS-" != "-" ]; then
-	$ECHO bsub $IRAP_LSF_PARAMS -q $QUEUE -n $THREADS  -M $MAX_MEM -R "select[mem>=$MEM] rusage[mem=$MEM]"  -w "$WAIT_FOR_IDS"  -cwd `pwd` -o "`get_path2logfile`/$jobname-%J.out" -e "`get_path2logfile`/$jobname-%J.err" -J $jobname  $cmd2e max_threads=$THREADS  data_dir=$DATA_DIR max_mem=$MEM
+	$ECHO bsub $IRAP_LSF_PARAMS -q $QUEUE -n $THREADS -R "span[hosts=1]"  -M $MAX_MEM -R "select[mem>=$MEM] rusage[mem=$MEM]"  -w "$WAIT_FOR_IDS"  -cwd `pwd` -o "`get_path2logfile`/$jobname-%J.out" -e "`get_path2logfile`/$jobname-%J.err" -J $jobname  $cmd2e max_threads=$THREADS  data_dir=$DATA_DIR max_mem=$MEM
     else
-	$ECHO bsub $IRAP_LSF_PARAMS -q $QUEUE  $GROUP -n $THREADS  -M $MAX_MEM -R "select[mem>=$MEM]  rusage[mem=$MEM]"   -cwd `pwd` -o "`get_path2logfile`/$jobname-%J.out" -e "`get_path2logfile`/$jobname-%J.err" -J $jobname  $cmd2e max_threads=$THREADS  data_dir=$DATA_DIR max_mem=$MEM	
+	$ECHO bsub $IRAP_LSF_PARAMS -q $QUEUE  $GROUP -n $THREADS -R "span[hosts=1]"  -M $MAX_MEM -R "select[mem>=$MEM]  rusage[mem=$MEM]"   -cwd `pwd` -o "`get_path2logfile`/$jobname-%J.out" -e "`get_path2logfile`/$jobname-%J.err" -J $jobname  $cmd2e max_threads=$THREADS  data_dir=$DATA_DIR max_mem=$MEM	
     fi
 }
