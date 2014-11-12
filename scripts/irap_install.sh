@@ -23,7 +23,7 @@
 install=all
 IRAP_DIR1=
 SRC_DIR=
-IRAP_VERSION=0.5.1p1
+IRAP_VERSION=0.5.2.d2d
 
 #
 USE_CACHE=y
