@@ -28,8 +28,13 @@ exec make --warn-undefined-variables -Rf "$0"  ${1+"$@"}
 
 irap_path=$(shell dirname `which irap`)
 
+ifndef clone_dir
+ $(call error, missing argument clone_dir!)
+else
+ $(info clone_dir=$(clone_dir))
+endif
 
 
-include $(irap_path)/../aux/mk/upgrade.mk
+include $(clone_dir)/aux/mk/upgrade.mk
 
 
