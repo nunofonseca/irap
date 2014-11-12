@@ -41,8 +41,10 @@ $(info $(irap_clone_version))
 irap_clone_version=0.5.1
 #
 ifeq ($(irap_cur_version),$(irap_clone_version))
+# just apply any iRAP patches
 upgrade_irap: 
-	@echo "Nothing to do"
+	$(irap_clone_dir)/scripts/irap_install.sh -s $(irap_clone_dir) -u
+	$(irap_clone_dir)/scripts/irap_install.sh -s $(irap_clone_dir) -v
 else
 upgrade_irap: upgrade_irap_$(irap_cur_version)_to_$(irap_clone_version)
 endif
