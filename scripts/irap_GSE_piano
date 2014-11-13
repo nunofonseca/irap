@@ -291,6 +291,10 @@ pdebug.save.state("irap_GSE_piano","p1")
 if ( length(set2)>=minSizeLim && print.empty==FALSE )  {
   print.empty <- FALSE  
   myGSC <- loadGSC(set2.annot)
+  if ( length(names(myGSC)) <=1 ) {
+    perror("No gene sets for the set of genes with data.")
+    q(status=1)
+  }
   if ( opt$method=="fisher-exact" ) {
     # runGSAhyper only uses the group membership of
     # each gene (in/not in gene set, significant/non-significant).
