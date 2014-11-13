@@ -296,8 +296,8 @@ if ( length(set2)>=minSizeLim && print.empty==FALSE )  {
     # each gene (in/not in gene set, significant/non-significant).
     genesinMyGSC <- unique(unlist(myGSC$gsc))      
     if ( sum(set2 %in% genesinMyGSC) <=1 ) {
-      perror("No gene sets for the set of genes with data.")
-      q(status=1)    
+      pwarning("No gene sets for the set of genes with data.")
+      q(status=0)    
     }
     pinfo("Gene sets:",length(myGSC$gsc)," genes:",length(genesinMyGSC))
     pval.sel <- pval[set2]
