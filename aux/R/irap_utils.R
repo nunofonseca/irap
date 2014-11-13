@@ -1962,10 +1962,11 @@ fisherNetworkPlot <- function (gsaRes,
   
   if (length(indSignificant) < 3) {
     warning("less than three gene sets were selected, can not plot (tip: adjust the significance cutoff)")
+    throw("fisherNetworkPlot: unable to generate plot - not enough significant genes")
     return(NULL)
   }
   pSignificant <- pValues[indSignificant]
-                                        # overlap  genes between gene sets
+  # overlap  genes between gene sets
   overlapMat <- matrix(nrow = length(indSignificant), ncol = length(indSignificant))
   for (i in 1:nrow(overlapMat)) {
     for (j in i:ncol(overlapMat)) {
@@ -1974,7 +1975,7 @@ fisherNetworkPlot <- function (gsaRes,
             overlapMat[j, i] <- tmp
     }
   }
-                                        # size = number of genes in a gene set
+  # size = number of genes in a gene set
   gsSize <- diag(overlapMat)
   overlapMat[overlapMat < overlap] <- 0    
   adjMat <- overlapMat > 0
@@ -2043,7 +2044,7 @@ fisherNetworkPlot <- function (gsaRes,
                                          "namesAndLong"), several.ok = FALSE), 
              silent = TRUE)
   if (class(tmp) == "try-error") {
-    stop("argument label has to be set to either 'names' or 'numbers'")
+    stop("argument label has to be set to either 'names' or 'numbers'")    
   }
   tmp <- names(gsc)[indSignificant]
                                         #ncharLabel <- 10
