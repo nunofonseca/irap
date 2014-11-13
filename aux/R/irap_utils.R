@@ -1961,8 +1961,7 @@ fisherNetworkPlot <- function (gsaRes,
   indSignificant <- which(abs(pValues) <= significance)
   
   if (length(indSignificant) < 3) {
-    warning("less than three gene sets were selected, can not plot (tip: adjust the significance cutoff)")
-    throw("fisherNetworkPlot: unable to generate plot - not enough significant genes")
+    stop("less than three gene sets were selected, can not plot (tip: adjust the significance cutoff)")
     return(NULL)
   }
   pSignificant <- pValues[indSignificant]
@@ -1981,8 +1980,10 @@ fisherNetworkPlot <- function (gsaRes,
   adjMat <- overlapMat > 0
   tmp <- adjMat
   diag(tmp) <- 0
-  if (all(!tmp)) 
-      warning("no overlap between gene sets found, try to decrease argument overlap or increase argument significance")
+  if (all(!tmp))  {
+    stop("no overlap between gene sets found, try to decrease argument overlap or increase argument significance")
+    return(NULL)
+  }
   g <- graph.adjacency(tmp, mode = "undirected", diag = FALSE)
   
   edgeOverlap <- rep(NA, ecount(g))
