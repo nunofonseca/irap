@@ -14,10 +14,8 @@ RUN yum install -y zlib-devel python-devel bzip2-devel python readline-devel lib
 # 
 WORKDIR /opt
 
-RUN git clone http://code.google.com/p/irap/ irap_clone;
-RUN  cd irap_clone
-RUN ./scripts/irap_install.sh -a /irap_install -s .
-RUN rm -rf /irap_install/tmp
+RUN git clone http://code.google.com/p/irap/ irap_clone
+RUN cd /opt/irap_clone && ./scripts/irap_install.sh -a /irap_install -s . && rm -rf /irap_install/tmp
 RUN echo source /irap_install/irap_setup.sh >> ~/.bash_profile && echo source /irap_install/irap_setup.sh >> ~/.bashrc
 
 
