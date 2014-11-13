@@ -281,6 +281,10 @@ if(nrow(set2.annot)==0 ) {
   print.empty <- TRUE
   #q(status=2)
 }
+if ( length(set1)<=2 ) {
+  pwarning("Insufficient number of genes with a p-value <= ",pval.lim)
+  q(status=0)
+}
 #save.image("debug.Rdata")
 #pinfo(minSizeLim)
 pdebug.save.state("irap_GSE_piano","p1")
