@@ -168,7 +168,7 @@ if (!is.null(opt$go.file)) {
   if (!is.null(opt$descr.file)) {
     pinfo("Reading ",opt$descr.file)
     go2descr <- read.table(opt$descr.file,sep="\t",header=F,comment.char="!",quote="\"")
-    pinfo("Data in ",opt$descr.file," loaded: ",nrow(gene2go)," entries")
+    pinfo("Data in ",opt$descr.file," loaded: ",nrow(go2descr)," entries")
     if (ncol(go2descr)!=2) {
       perror("Error in ",opt$go.file,": expected 2 columns (id descr)")
       q(status=2)
@@ -269,7 +269,7 @@ print.empty <- FALSE
 
 minSizeLim <- opt$min.size
 maxSizeLim <- opt$max.size
-pinfo("#Genes=",length(pval)," #genes (pvalue<=",pval.lim,")=",length(set1))
+pinfo("#Genes=",length(set2)," #genes (pvalue<=",pval.lim,")=",length(set1))
 
 if(nrow(set2.annot)==0 ) {
   err.file <- opt
