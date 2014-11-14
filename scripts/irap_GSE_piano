@@ -299,6 +299,10 @@ if ( length(set2)>=minSizeLim && print.empty==FALSE )  {
       pwarning("No gene sets for the set of genes with data.")
       q(status=0)    
     }
+    if ( sum(set1 %in% genesinMyGSC) <=1 ) {
+      pwarning("No gene sets for the genes with p-value below the threshold.")
+      q(status=0)    
+    }
     pinfo("Gene sets:",length(myGSC$gsc)," genes:",length(genesinMyGSC))
     pval.sel <- pval[set2]
     pinfo("Running Fisher-exact test...")
