@@ -307,7 +307,7 @@ if ( length(set2)>=minSizeLim && print.empty==FALSE )  {
     sizes<-lapply(myGSC$gsc,length)	
     if (sum(sizes >=minSizeLim &&     sizes <=maxSizeLim ) <=2) {
        pwarning("No gene sets found with size in the range of [",minSizeLim,",",maxSizeLim,"]")
-       q(status(0)
+       q(status=0)
     }
 
     pinfo("Gene sets:",length(myGSC$gsc)," genes:",length(genesinMyGSC))
