@@ -303,14 +303,26 @@ if ( length(set2)>=minSizeLim && print.empty==FALSE )  {
       pwarning("No gene sets for the genes with p-value below the threshold.")
       q(status=0)    
     }
+    # enough gene sets?
+    sizes<-lapply(myGSC$gsc,length)	
+    if (sum(sizes >=minSizeLim &&     sizes <=maxSizeLim ) <=2) {
+       pwarning("No gene sets found with size in the range of [",minSizeLim,",",maxSizeLim,"]")
+       q(status(0)
+    }
+
     pinfo("Gene sets:",length(myGSC$gsc)," genes:",length(genesinMyGSC))
     pval.sel <- pval[set2]
     pinfo("Running Fisher-exact test...")
-    fisherRes <- runGSAhyper(genes=set2,
+    fisherRes <- try(runGSAhyper(genes=set2,
                              pvalues=pval.sel,
                              pcutoff=pval.lim,
                              gsc=myGSC,gsSizeLim=c(minSizeLim,maxSizeLim),
-                             adjMethod="fdr")
+                             adjMethod="fdr"))
+    if ( class(gsaRes)=="try-error") {
+      perror("Failed runGSA(",opt$method,")")
+      pdebug.save.state("irap_GSE_piano","p2")
+      q(status=0)
+    }
     # expected<- #sign. de genes * (num. genes in set/total number of genes)
     de.genes <- sum(fisherRes$resTab[1,c("Significant (in gene set)","Significant (not in gene set)")])
     expected <- de.genes*rowSums(fisherRes$resTab[,c("Significant (in gene set)","Non-significant (in gene set)")])/rowSums(fisherRes$resTab[,c("Significant (in gene set)","Non-significant (in gene set)","Significant (not in gene set)","Non-significant (not in gene set)")])
