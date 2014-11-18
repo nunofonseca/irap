@@ -339,7 +339,7 @@ if ( length(set2)>=minSizeLim && print.empty==FALSE )  {
                              pcutoff=pval.lim,
                              gsc=myGSC,gsSizeLim=c(minSizeLim,maxSizeLim),
                              adjMethod="fdr"))
-    if ( class(gsaRes)=="try-error") {
+    if ( class(fisherRes)=="try-error") {
       perror("Failed runGSA(",opt$method,")")
       pdebug.save.state("irap_GSE_piano","p2")
       q(status=0)
