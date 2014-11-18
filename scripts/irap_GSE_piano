@@ -134,22 +134,22 @@ if ( length(unique(df[,1]))!=nrow(df) ) {
       # option 2 - greatest fold-change
       pick <- which(abs(df[to.exclude,opt$fold.col])==max(abs(df[to.exclude,opt$fold.col]),na.rm=T))[1]
     }
-    pdebug("Picked(",g,")=",df[to.exclude[pick],])
+    pdebug("Picked(",g,")=",df[to.exclude[pick],,drop=FALSE])
     if (!is.na(pick)) {
       to.exclude <- to.exclude[-pick]
     } else {
       pinfo("Excluding all entries for gene ",g," no value (NA)")
       #print(df[to.exclude,])
     }
-    df <- df[-to.exclude,]
+    df <- df[-to.exclude,,drop=FALSE]
   }
   pinfo("No more duplicates")
   pinfo("",nrow(df)," unique entries")
 }
 # checking for NAs
 NAs.1 <- nrow(df) 
-df <- df[!is.na(df[,opt$pval.col]),]
-df <- df[!is.na(df[,opt$fold.col]),]
+df <- df[!is.na(df[,opt$pval.col]),,drop=FALSE]
+df <- df[!is.na(df[,opt$fold.col]),,drop=FALSE]
 NAs.2 <- nrow(df)
 pinfo("NAs removed: ",NAs.1-NAs.2)
 
@@ -284,8 +284,8 @@ if ( opt$annot.only ) {
   pinfo("Excluded ",n1-n2," genes with no annotation")
 }
 
-set1.annot <- gene2go[gene2go[,1] %in% set1,]
-set2.annot <- gene2go[gene2go[,1] %in% set2,]
+set1.annot <- gene2go[gene2go[,1] %in% set1,,drop=FALSE]
+set2.annot <- gene2go[gene2go[,1] %in% set2,,drop=FALSE]
 print.empty <- FALSE
 
 minSizeLim <- opt$min.size
@@ -377,18 +377,19 @@ if ( length(set2)>=minSizeLim && print.empty==FALSE )  {
     sel <- Sets
     if ( !is.infinite(opt$top) ) {
       #sort by observed/expected
-      tmp <- tab[tab[,"Adjusted p-value"]<=opt$gs_fdr,]
+      tab2 <- cbind(rownames(tab),tab)
+      tmp <- tab2[as.numeric(tab2[,"Adjusted p-value"])<=opt$gs_fdr,,drop=FALSE]
       #fisherRes.bak <- fisherRes
       #fisherRes <- fisherRes.bak
       # select with a 
-      sorted <- tmp[order(tmp[,"effect.size"]),]
+      sorted <- tmp[order(as.numeric(tmp[,"effect.size"])),,drop=FALSE]
       sel <- head(rownames(sorted),opt$top)
     }
     
-    if ( !is.null(sel) && length(sel) >= 2 ) {
+    if ( !is.null(sel) && length(sel) >= 1 ) {
       fisherRes$effect.size <- effect.size
       fisherRes$sSizes <- sSizes
-      fisherRes$resTab <- fisherRes$resTab[sel,]
+      fisherRes$resTab <- fisherRes$resTab[sel,,drop=FALSE]
       #fisherRes <- fisherRes.bak
       #
       plot.file <- paste(opt$out,"_class_non_dir_both.png",sep="")
@@ -440,7 +441,7 @@ if ( length(set2)>=minSizeLim && print.empty==FALSE )  {
          if (sum(gsaRes2Plot.sel)>0 ) {
            gsaRes2plot$gsc <- gsaRes2plot$gsc[!gsaRes2Plot.sel]                
            for (v in append(grep("^p" ,names(gsaRes2plot),value=T),"nGenesTot") ) {
-             gsaRes2plot[[v]] <- matrix(gsaRes2plot[[v]][!gsaRes2Plot.sel,],ncol=1)
+             gsaRes2plot[[v]] <- matrix(gsaRes2plot[[v]][!gsaRes2Plot.sel,,drop=FALSE],ncol=1)
            }
          }
        }
@@ -460,7 +461,7 @@ if ( length(set2)>=minSizeLim && print.empty==FALSE )  {
          names(v2) <- names(gsaRes2plot$gsc)
          m <- cbind(v,v2)       
          rownames(m) <- names(gsaRes2plot$gsc)
-         sorted <- m[order(v,-v2),]
+         sorted <- m[order(v,-v2),,drop=FALSE]
          sel <- head(rownames(sorted),opt$top)
        }
        #If geneSetStat is set to"fisher","stouffer","reporter" or"tailStrength" only p-values are allowed as geneLevelStats.
@@ -485,7 +486,7 @@ if ( length(set2)>=minSizeLim && print.empty==FALSE )  {
                                         #length(names(gsaRes2plot$gsc))
          m <- cbind(v,v2)       
          rownames(m) <- names(gsaRes2plot$gsc)
-         sorted <- m[order(v,-v2),]
+         sorted <- m[order(v,-v2),,drop=FALSE]
          sel <- head(rownames(sorted),opt$top)
        }
        gen.plot2report(filename=paste(opt$out,"_class_non_dir_both.png",sep=""),
@@ -509,7 +510,7 @@ if ( length(set2)>=minSizeLim && print.empty==FALSE )  {
      #
      tab <- GSAsummaryTable(gsaRes)
      if ( nrow(tab)==1 && tab[1,1]=="" ) {
-       tab <- tab[-1,]
+       tab <- tab[-1,,drop=FALSE]
      }
      write.tsv(tab,file=out.tsv.file,header=T)
      pinfo("Created ",out.tsv.file)

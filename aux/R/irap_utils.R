@@ -123,7 +123,7 @@ load.gtf <- function(gtf.file,feature=NULL,selected.attr=NULL) {
   #feature <- "CDS"
   #selected.attr <- c("gene_id","transcript_id")
   if (!is.null(feature)) {
-    gtf<- gtf[gtf$feature==feature,]
+    gtf<- gtf[gtf$feature==feature,,drop=FALSE]
   }
   gtf$attributes <- as.character(gtf$attributes)
   gtf.attributes.names<-c("gene_id","transcript_id","exon_number","gene_name","gene_biotype","transcript_name","protein_id")
@@ -154,10 +154,10 @@ get.gene.length.from.gtf <- function(gtf,filter.biotype=NULL,length.mode="union.
   # protein coding
   suppressPackageStartupMessages(library(parallel))
   if ( !is.null(filter.biotype) ) {
-    gtf <- gtf[gtf$gene_biotype==filter.biotype,]
+    gtf <- gtf[gtf$gene_biotype==filter.biotype,,drop=FALSE]
   }
   # compute the length for each exon
-  gtf <- gtf[gtf$feature=="exon",]
+  gtf <- gtf[gtf$feature=="exon",,drop=FALSE]
   gene.ids <- as.character(unique(gtf$gene_id))
   #pinfo(gene.ids)
   glen <- mclapply(gene.ids,FUN=get.gene.length,gtf.data=gtf,mode=length.mode)
@@ -249,10 +249,10 @@ get.transcript.length.from.gtf <- function(gtf,filter.biotype=NULL) {
   # protein coding
   suppressPackageStartupMessages(library(parallel))
   if ( !is.null(filter.biotype) ) {
-    gtf <- gtf[gtf$gene_biotype==filter.biotype,]
+    gtf <- gtf[gtf$gene_biotype==filter.biotype,,drop=FALSE]
   }
   # compute the length for each transcript
-  gtf <- gtf[gtf$feature=="exon",]
+  gtf <- gtf[gtf$feature=="exon",,drop=FALSE]
   transcript.ids <- unique(gtf$transcript_id)
   tlen <- unlist(mclapply(transcript.ids,get.transcript.length,gtf))
   names(tlen) <- transcript.ids
@@ -272,10 +272,10 @@ get.exon.length.from.gtf <- function(gtf,filter.biotype=NULL) {
   # TODO: validate gtf
   # protein coding
   if ( !is.null(filter.biotype) ) {
-    gtf <- gtf[gtf$gene_biotype==filter.biotype,]
+    gtf <- gtf[gtf$gene_biotype==filter.biotype,,drop=FALSE]
   }
   # compute the length for each exon
-  gtf <- gtf[gtf$feature=="exon",]  
+  gtf <- gtf[gtf$feature=="exon",,drop=FALSE]  
   elen <- abs(gtf$start-gtf$end)+1
   gtf$elength <- elen
   gtf[,c("gene_id","transcript_id","exon_number","elength")]
@@ -293,7 +293,7 @@ load.gff3 <- function(file,type="gene") {
   gff3$attributes <- as.character(gff3$attributes)
 
   if ( !is.na(type) ) {
-    gff3 <- gff3[gff3$type==type,]
+    gff3 <- gff3[gff3$type==type,,drop=FALSE]
   }
   # convert the start/end to numbers
   gff3$start <- as.integer(gff3$start)
@@ -1221,7 +1221,7 @@ quant.load <- function(f,clean.cuff=FALSE) {
     tsv.data <- tsv.data[,-1]
     if (clean.cuff) {
       sel<-grep("^CUFF.*",rownames(tsv.data),perl=T,invert=TRUE)
-      tsv.data <- tsv.data[sel,]
+      tsv.data <- tsv.data[sel,,drop=FALSE]
     }
     return(tsv.data)
   }
@@ -1270,7 +1270,7 @@ quant.heatmap <- function(data,nlim=50,key.xlabel="Expression",do.cor=FALSE,dens
   # select a subset of rows
   if (!is.na(nlim)) {
     select <- order(var,decreasing=TRUE)[c(1:nlim)]
-    data <- data[select,]
+    data <- data[select,,drop=FALSE]
   }
   colors <- topo.colors(ncol)
   if ( do.cor ) {
@@ -1716,7 +1716,7 @@ load.configuration.file <- function(conf_file) {
     } 
   }
   # exclude empty lines
-  conf.table <- conf.table[line2include,]
+  conf.table <- conf.table[line2include,,drop=FALSE]
   pinfo("Loading default parameters...")
   #################
   # Default values
@@ -1963,7 +1963,7 @@ fisherNetworkPlot <- function (gsaRes,
                                         # which genes (index) have a significant p-value
   indSignificant <- which(abs(pValues) <= significance)
   
-  if (length(indSignificant) < 3) {
+  if (length(indSignificant) < 1) {
     stop("less than three gene sets were selected, can not plot (tip: adjust the significance cutoff)")
     return(NULL)
   }
@@ -1984,8 +1984,9 @@ fisherNetworkPlot <- function (gsaRes,
   tmp <- adjMat
   diag(tmp) <- 0
   if (all(!tmp))  {
-    stop("no overlap between gene sets found, try to decrease argument overlap or increase argument significance")
-    return(NULL)
+    warning("no overlap between gene sets found, try to decrease argument overlap or increase argument significance...fixing it for now")
+    diag(tmp) <- 1
+#    return(NULL)
   }
   g <- graph.adjacency(tmp, mode = "undirected", diag = FALSE)
   
@@ -2009,13 +2010,17 @@ fisherNetworkPlot <- function (gsaRes,
     }
   } else {
     eColor=NULL
-    eWidth=NULL
+    eWidth=10
     tmp <- NULL
   }
                                         # Node size - proportional to the size of the subsets of gene sets
                                         #nodeSize <- c(3,20)
   vSize <- (gsSize - min(gsSize))/(max(gsSize) - min(gsSize)) * 
     (nodeSize[2] - nodeSize[1]) + nodeSize[1]
+  if (is.na(vSize) ) {
+    # max(gsSize=min)
+    vSize=50
+  }
                                         # size of the set of DE gene sets
     #vSize2 <- (gsSize2 - min(gsSize2))/(max(gsSize2) - min(gsSize2)) * 
                                         #    (nodeSize[2] - nodeSize[1]) + nodeSize[1]
