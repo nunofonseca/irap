@@ -11,6 +11,25 @@ function fix_html_files {
     path=$1
 
     CSS_FILE='<link rel="stylesheet" href="TTOPLEVELmenu.css">'
+    
+    # 
+    #echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>$$ $path<<<<<<<<<<<<<<<<<<<<<<<<<"
+    #bash does not have a stack when invoking a function recursively
+    if [ "$path-" != "../../../../../-" ]; then
+	echo $path > .path
+	for d in `find -L .  -maxdepth 1  -type d -name  "*"`; do	
+	    if [ "$d" != "." ] ; then
+		pushd $d > /dev/null
+		if [ "$d" != "./data" ]; then
+		    echo "Going to dir $d"
+		    fix_html_files $path../
+		fi
+		popd > /dev/null
+		path=`cat .path`
+		#echo ">>>>>>>>>>>>>>>>>>>>>>>>>>$path $PWD"
+	    fi
+	done
+    fi
 
     for f in `find . -maxdepth 1 -name  "*.html"`; do
 	if [ `basename $f` != $menu ]; then
@@ -31,23 +50,6 @@ function fix_html_files {
 	    echo "'Fixing' $f...done."
 	fi    
     done
-    #echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>$$ $path<<<<<<<<<<<<<<<<<<<<<<<<<"
-    #bash does not have a stack when invoking a function recursively
-    if [ "$path-" != "../../../../../-" ]; then
-	echo $path > .path
-	for d in `find -L .  -maxdepth 1  -type d -name  "*"`; do	
-	    if [ "$d" != "." ] ; then
-		pushd $d > /dev/null
-		if [ "$d" != "./data" ]; then
-		    echo "Going to dir $d"
-		    fix_html_files $path../
-		fi
-		popd > /dev/null
-		path=`cat .path`
-		#echo ">>>>>>>>>>>>>>>>>>>>>>>>>>$path $PWD"
-	    fi
-	done
-    fi
 }
 
 #
