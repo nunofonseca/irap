@@ -326,7 +326,7 @@ if ( length(set2)>=minSizeLim && print.empty==FALSE )  {
     }
     # enough gene sets?
     sizes<-lapply(myGSC$gsc,length)	
-    if (sum(sizes >=minSizeLim &&     sizes <=maxSizeLim ) <=2) {
+    if (sum(sizes >=minSizeLim &  sizes <=maxSizeLim ) <=2) {
        pwarning("No gene sets found with a size in the range of [",minSizeLim,",",maxSizeLim,"]")
        q(status=0)
     }
@@ -377,8 +377,7 @@ if ( length(set2)>=minSizeLim && print.empty==FALSE )  {
     sel <- Sets
     if ( !is.infinite(opt$top) ) {
       #sort by observed/expected
-      #pval.lim <- 0.9
-      #tmp <- tab[tab[,"Adjusted p-value"]<=pval.lim,]
+      tmp <- tab[tab[,"Adjusted p-value"]<=opt$gs_fdr,]
       #fisherRes.bak <- fisherRes
       #fisherRes <- fisherRes.bak
       # select with a 
