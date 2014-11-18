@@ -41,7 +41,7 @@ library(parallel)
 usage <- "irap_gtf2mapping --gtf file [-o outfile] [--rdata -r]"
 option_list <- list(
   make_option(c("-o", "--out"),type="character",dest="out_file",default="",help="Output file [default %default]"),
-  make_option(c("-c", "--cores"), type="character",default="2",dest="num_cores",help="Number of cores to use ([default %default])"),
+  make_option(c("-c", "--cores"), type="character",default="1",dest="num_cores",help="Number of cores to use ([default %default])"),
   make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
   make_option(c("-r","--rdata"),action="store_true",dest="gen_rdata",default=FALSE,help="Generate an rdata file"),
   make_option(c("-i", "--gtf"), type="character", dest="gtf_file", default=NULL,help="GTF file")
