@@ -1201,7 +1201,10 @@ load.annot <- function(file) {
       annot.table <- gene.annot
     }
   } else {
-    annot.table <- read.tsv(file)
+    annot.table <- tryCatch(read.tsv(file),error=function(x) NULL)
+    if ( is.null(annot.table) ) {
+       return(NULL);
+    }       
     save(list=c("annot.table"),file=cached.annot)
   }
   annot.table <- annot.expand.fields(annot.table)

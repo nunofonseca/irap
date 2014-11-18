@@ -92,7 +92,12 @@ if ( is.null(opt$annotation) && is.null(opt$go.file) ) {
 }
 ##############################
 pinfo("Reading ",opt$tsv.file)
-df <- read.tsv(opt$tsv.file,header=T)
+df <- tryCatch(read.tsv(opt$tsv.file,header=T),error=function(x) NULL)
+
+if (is.null(df) ) {
+   perror("Empty file ",opt$tsv.file,"?")
+   q(status=1)
+}  
 pdebug.save.state("irap_GSE_piano","p0")
 
 if ( opt$pval.col>ncol(df) || opt$pval.col<1 ) {
@@ -157,7 +162,12 @@ pinfo("Data in ",opt$tsv.file," loaded: ",nrow(df)," entries")
 
 if (!is.null(opt$go.file)) {
   pinfo("Reading ",opt$go.file)
-  gene2go <- read.table(opt$go.file,sep="\t",header=F,comment.char="!",quote="\"")
+  gene2go<-NULL
+  tryCatch(gene2go <- read.table(opt$go.file,sep="\t",header=F,comment.char="!",quote="\""),error=function(x) NULL)
+  if ( is.null(gene2go) ) {
+    perror("Empty file ",opt$go.file,"?")
+    q(status=2)
+  }   
   pinfo("Data in ",opt$go.file," loaded: ",nrow(gene2go)," entries")
   if (ncol(gene2go)!=2) {
     perror("Error in ",opt$go.file,": expected 2 columns (id goterm)")
@@ -166,28 +176,38 @@ if (!is.null(opt$go.file)) {
   colnames(gene2go) <- c("gene","go.id")
   # descr. file
   if (!is.null(opt$descr.file)) {
-    pinfo("Reading ",opt$descr.file)
-    go2descr <- read.table(opt$descr.file,sep="\t",header=F,comment.char="!",quote="\"")
-    pinfo("Data in ",opt$descr.file," loaded: ",nrow(go2descr)," entries")
-    if (ncol(go2descr)!=2) {
-      perror("Error in ",opt$go.file,": expected 2 columns (id descr)")
-      q(status=2)
+     pinfo("Reading ",opt$descr.file)
+     go2descr <- NULL
+     tryCatch(go2descr <- read.table(opt$descr.file,sep="\t",header=F,comment.char="!",quote="\""),error=function(x) NULL)
+    if ( is.null(go2descr) ) {
+      perror("Empty file ",opt$descr.file,"?")
+      q(status=1)
+    } else {
+      pinfo("Data in ",opt$descr.file," loaded: ",nrow(go2descr)," entries")
+      if (ncol(go2descr)!=2) {
+        perror("Error in ",opt$go.file,": expected 2 columns (id descr)")
+        q(status=2)
+      } 
+      long.names <- go2descr[,2]
+      # Check if the names are unique
+      if ( length(unique(go2descr))!=length(go2descr) ) {
+       perror("Duplicated entries in column 1 of ",opt$go.file)
+       q(status=2)
+      }
+      names(long.names) <- go2descr[,1]
+      colnames(gene2go) <- c("gene","go.id")
     }
-    long.names <- go2descr[,2]
-    # Check if the names are unique
-    if ( length(unique(go2descr))!=length(go2descr) ) {
-      perror("Duplicated entries in column 1 of ",opt$go.file)
-      q(status=2)
-    }
-    names(long.names) <- go2descr[,1]
-    colnames(gene2go) <- c("gene","go.id")
   }
-
 } else {
   # load annot file
   pinfo("Loading annotation file ",opt$annotation,"...")
   annot.table <- load.annot(opt$annotation)
   pinfo("Loading annotation file ",opt$annotation,"...done.")
+  # empty?
+  if ( is.null(annot.table) ) {
+      perror("Empty annotation file ",opt$annotation)
+      q(status=1)
+  }
   # check if columns exist
   if ( ! opt$annotation_col %in% colnames(annot.table) ) {
     perror("Selected column ",opt$annotation_col," not found in ",opt$annotation)
