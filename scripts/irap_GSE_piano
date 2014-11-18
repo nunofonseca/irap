@@ -49,6 +49,7 @@ option_list <- list(
   make_option(c("-p", "--pvalue-col"), type="numeric", dest="pval.col", default=8,help="Column with the p-values [default %default]"),
   make_option(c("-f", "--foldchange-col"), type="numeric", dest="fold.col", default=5,help="Column with the foldchange values [default %default]"),
   make_option(c("-l", "--pvalue"), type="numeric", dest="pvalue", default=0.05,help="p-value [default %default]"),
+  make_option(c("--gs_fdr"), type="numeric", dest="gs_fdr", default=0.05,help="gene set fdr [default %default]"),
   make_option(c("-s", "--minsize"), type="numeric", dest="min.size", default=5,help="Minimum size of  a cluster [default %default]"),
   make_option(c("-x", "--maxsize"), type="numeric", dest="max.size", default=+Inf,help="Maximum size of  a cluster [default %default]"),
   make_option(c("-m", "--method"), type="character", dest="method", default="fisher",help="Method [default: %default]"),
@@ -401,7 +402,7 @@ if ( length(set2)>=minSizeLim && print.empty==FALSE )  {
                          ps=TRUE,
                          to.plot = function () {
                            fisherNetworkPlot(fisherRes,edgeWidth=c(2,20),
-                                             adjusted=T,significance=pval.lim,
+                                             adjusted=T,significance=opt$gs_fdr,
                                              label="names",
                                              cexLegend=1.1,main=opt$title,
                                              long.names=long.names[sel])
@@ -471,7 +472,7 @@ if ( length(set2)>=minSizeLim && print.empty==FALSE )  {
                          html=FALSE,
                          ps=TRUE,
                          to.plot = function () {
-                           nw1 <- networkPlot(gsaRes2plot,class="distinct",direction="both",edgeWidth=c(2,20),adjusted=T,significance=opt$pvalue,geneSets=sel,overlap=opt$minedge,cexLegend=0.8,main=opt$title)
+                           nw1 <- networkPlot(gsaRes2plot,class="distinct",direction="both",edgeWidth=c(2,20),adjusted=T,significance=opt$gs_fdr,geneSets=sel,overlap=opt$minedge,cexLegend=0.8,main=opt$title)
                          }                     
                          )
        }
