@@ -28,6 +28,7 @@ suppressPackageStartupMessages(library("piano"))
 
 ###########################################################
 suppressPackageStartupMessages(library("optparse"))
+suppressPackageStartupMessages(library("parallel"))
 
 #
 IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
@@ -53,6 +54,7 @@ option_list <- list(
   make_option(c("-s", "--minsize"), type="numeric", dest="min.size", default=5,help="Minimum size of  a cluster [default %default]"),
   make_option(c("-x", "--maxsize"), type="numeric", dest="max.size", default=+Inf,help="Maximum size of  a cluster [default %default]"),
   make_option(c("-m", "--method"), type="character", dest="method", default="fisher",help="Method [default: %default]"),
+  make_option(c("-c", "--cores"), type="character",default="2",dest="num_cores",help="Number of cores to use ([default %default])"),
   make_option(c("-e", "--minedge"), type="numeric", dest="minedge", default=3,help="Minimum number of genes shared between two gene sets (used only in the plots) [default: %default]"),
   make_option(c("-t", "--top"), type="numeric", dest="top", default=Inf,help="Top gene sets used in the plot [default: %default]"),
   make_option(c("--annot-only"),action="store_true",dest="annot.only",default=FALSE,help="Consider only genes with annotation [default %default]"),
@@ -109,6 +111,25 @@ if ( opt$fold.col>ncol(df) || opt$fold.col<1 ) {
   perror("Invalid foldchange-col: ",opt$fold.col)
   quit(status=1)
 }
+
+tryCatch(num.cores <- as.integer(as.numeric(opt$num_cores)),warning=
+         function(w) {
+           perror("Invalid number of cores ",opt$num_cores)
+           q(status=3)    
+       }
+)
+if (num.cores<1) {
+  perror("Invalid number of cores ",opt$num_cores)
+  q(status=3)    
+}
+
+irap.assert(num.cores>0)
+
+if ( num.cores>detectCores()) {
+  num.cores <- detectCores()
+  pwarning("The number of cores to use exceeds the cores available. Reducing the limit to ",detectCores())
+}
+
 #save.image("debug.Rdata")
 #load("debug.Rdata")
 #####################$
@@ -222,13 +243,13 @@ if (!is.null(opt$go.file)) {
   #s.tmp.m <- head(tmp.m)
   s.tmp.m <- tmp.m
   x <- strsplit(as.character(s.tmp.m$term),split=";")
-  lx <- lapply(x,length)
+  lx <- mclapply(x,length)
   names(lx) <- s.tmp.m$ID
   myrep <- function(x,n) {
     rep(x,n[x])
   }
   
-  gene2go <- data.frame(list(gene=unlist(lapply(as.character(s.tmp.m$ID),myrep,lx)),
+  gene2go <- data.frame(list(gene=unlist(mclapply(as.character(s.tmp.m$ID),myrep,lx)),
                              go.id=unlist(x)),stringsAsFactors = F)
 }
 # output filename
@@ -325,7 +346,7 @@ if ( length(set2)>=minSizeLim && print.empty==FALSE )  {
       q(status=0)    
     }
     # enough gene sets?
-    sizes<-lapply(myGSC$gsc,length)	
+    sizes<-mclapply(myGSC$gsc,length)	
     if (sum(sizes >=minSizeLim &  sizes <=maxSizeLim ) <=2) {
        pwarning("No gene sets found with a size in the range of [",minSizeLim,",",maxSizeLim,"]")
        q(status=0)
@@ -334,7 +355,7 @@ if ( length(set2)>=minSizeLim && print.empty==FALSE )  {
     pinfo("Gene sets:",length(myGSC$gsc)," genes:",length(genesinMyGSC))
     pval.sel <- pval[set2]
     pinfo("Running Fisher-exact test...")
-    fisherRes <- try(runGSAhyper(genes=set2,
+    fisherRes <- try(runGSAhyper2(genes=set2,
                              pvalues=pval.sel,
                              pcutoff=pval.lim,
                              gsc=myGSC,gsSizeLim=c(minSizeLim,maxSizeLim),

@@ -2017,13 +2017,11 @@ fisherNetworkPlot <- function (gsaRes,
                                         #nodeSize <- c(3,20)
   vSize <- (gsSize - min(gsSize))/(max(gsSize) - min(gsSize)) * 
     (nodeSize[2] - nodeSize[1]) + nodeSize[1]
-  if (is.na(vSize) ) {
+
+  if ( length(vSize)==1 && is.na(vSize) ) {
     # max(gsSize=min)
     vSize=50
   }
-                                        # size of the set of DE gene sets
-    #vSize2 <- (gsSize2 - min(gsSize2))/(max(gsSize2) - min(gsSize2)) * 
-                                        #    (nodeSize[2] - nodeSize[1]) + nodeSize[1]
   
   effect.size2 <- effect.size[names(gsc)[indSignificant]]
   eSize <- ( - min(effect.size2))/(max(effect.size2) - min(effect.size2)) * 
@@ -2149,6 +2147,133 @@ fisherNetworkPlot <- function (gsaRes,
   return(g)
   }
 
+
+# reimplement Piano's code
+runGSAhyper2 <- function (genes, pvalues, pcutoff, universe,
+                         gsc, gsSizeLim = c(1, Inf),
+                         adjMethod = "fdr") 
+{
+    
+  if (length(gsSizeLim) != 2) 
+    stop("argument gsSizeLim should be a vector of length 2")
+  if (missing(genes)) {
+    stop("argument genes is required")
+  }
+  else {
+    genes <- as.vector(as.matrix(genes))
+    if (class(genes) != "character") 
+      stop("argument genes should be a character vector")
+    if (length(unique(genes)) != length(genes)) 
+      stop("argument genes should contain no duplicated entries")
+  }
+  if (missing(pvalues)) {
+    pvalues <- rep(0, length(genes))
+  }
+  else {
+    pvalues <- as.vector(as.matrix(pvalues))
+    if (class(pvalues) != "numeric") 
+      stop("argument pvalues should be a numeric vector")
+    if (length(pvalues) != length(genes)) 
+      stop("argument pvalues should be the same length as argument genes")
+    if (max(pvalues) > 1 | min(pvalues) < 0) 
+            stop("pvalues need to lie between 0 and 1")
+  }
+  if (missing(pcutoff)) {
+    if (all(pvalues %in% c(0, 1))) {
+      pcutoff <- 0
+    }
+    else {
+      pcutoff <- 0.05
+    }
+  }
+  else {
+    if (length(pcutoff) != 1 & class(pcutoff) != "numeric") 
+      stop("argument pcutoff should be a numeric of length 1")
+    if (max(pcutoff) > 1 | min(pcutoff) < 0) 
+      stop("argument pcutoff needs to lie between 0 and 1")
+  }
+  if (missing(gsc)) {
+    stop("argument gsc needs to be given")
+  }
+  else {
+    if (class(gsc) != "GSC") 
+      stop("argument gsc should be of class GSC, as returned by the loadGSC function")
+  }
+  if (missing(universe)) {
+    if (!all(pvalues == 0)) {
+      universe <- genes
+      message("Using all genes in argument genes as universe.")
+    }
+    else {
+            universe <- unique(unlist(gsc$gsc))
+            message("Using all genes present in argument gsc as universe.")
+          }
+  }
+  else {
+    if (class(universe) != "character") 
+      stop("argument universe should be a character vector")
+    if (!all(pvalues == 0)) 
+      stop("if universe is given, genes should be only the genes of interest, i.e. pvalues should all be set to 0.")
+  }
+  if (!all(unique(unlist(gsc$gsc)) %in% universe)) 
+    warning("there are genes in gsc that are not in the universe, these will be removed before analysis")
+  if (!all(genes %in% universe)) {
+    warning("not all genes given by argument genes are present in universe, these will be added to universe")
+    universe <- c(universe, genes[!genes %in% universe])
+  }
+  if (length(unique(universe)) != length(universe)) 
+    stop("argument universe should contain no duplicated entries")
+  tmp <- try(adjMethod <- match.arg(adjMethod, c("holm", "hochberg", 
+                                                 "hommel", "bonferroni", "BH", "BY", "fdr", "none"), several.ok = FALSE), 
+             silent = TRUE)
+  if (class(tmp) == "try-error") {
+    stop("argument adjMethod set to unknown method")
+  }
+  pvalues[pvalues == 0] <- -1e-10
+  goi <- genes[pvalues < pcutoff]
+  if (length(goi) < 1) 
+    stop("no genes selected due to too strict pcutoff")
+  bg <- universe[!universe %in% goi]
+  gsc <- gsc$gsc
+  #
+  library(parallel)
+  gs_sizes <- mclapply(gsc,length)  
+  gsc <- gsc[gs_sizes >=gsSizeLim[1] &  gs_sizes <=gsSizeLim[2]]
+  message(paste("Analyzing the overrepresentation of ", length(goi), 
+                " genes of interest in ", length(gsc), " gene sets, using a background of ", 
+                length(bg), " non-interesting genes.", sep = ""))
+
+  do.test <- function(index,gsc,universe,goi,bg) {
+    gs <- gsc[[index]]
+    nogs <- universe[!universe %in% gs]
+    ctab <- rbind(c(sum(goi %in% gs), sum(goi %in% nogs)), 
+                  c(sum(bg %in% gs), sum(bg %in% nogs)))
+    p <- fisher.test(ctab, alternative = "greater")$p.value
+    rownames(ctab) <- c("Significant", "Non-significant")
+    colnames(ctab) <- c("Genes in gene set", "Genes not in gene set")
+    return(c(p, NA, sum(goi %in% gs), sum(bg %in% 
+                                             gs),
+             sum(goi %in% nogs), sum(bg %in% nogs)))           
+  }
+  a<-  mclapply(names(gsc),do.test,gsc,universe,goi,bg)
+  names(a) <- names(gsc)
+  resTab <- matrix(unlist(a),byrow=T,ncol=6)
+  rownames(resTab) <- names(gsc)
+  colnames(resTab) <- c("p-value", "Adjusted p-value", "Significant (in gene set)", 
+                        "Non-significant (in gene set)", "Significant (not in gene set)", 
+                        "Non-significant (not in gene set)")
+  
+  hist(resTab[,"p-value"])
+
+  res <- list()
+  res$pvalues <- resTab[,"p-value"]
+  res$p.adj <- p.adjust(res$pvalues, method = adjMethod)
+  resTab[, 2] <- res$p.adj
+  res$resTab <- resTab
+  #res$contingencyTable <- contTabList
+  res$gsc <- gsc
+  return(res)
+}
 
 ###################################################
 #
