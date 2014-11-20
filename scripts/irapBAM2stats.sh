@@ -26,7 +26,7 @@ select count(*) as Paired from bam_index where isDuplicate=0 and isNotPassingQua
 select count(*) as Paired_mapped from bam_index where isDuplicate=0 and isNotPassingQualityControls=0  and isMapped=1 and isPaired=1 and isProperPair=1  ;
 select count(*) as Paired_mapped_mate1 from bam_index where isDuplicate=0 and isNotPassingQualityControls=0  and isMapped=1 and isPaired=1 and isSecondMateRead=0 ;
 select count(*) as Paired_mapped_mate2 from bam_index where isDuplicate=0 and isNotPassingQualityControls=0  and isMapped=1 and isPaired=1 and isSecondMateRead=1 ;
-select count(*) as ReadsMapped from bam_index where  isPrimary=1 and isMapped=1 and  isDuplicate=0 and isNotPassingQualityControls=0;
+select count(*) as ReadsUnapped from bam_index where isMapped=0 and  isDuplicate=0 and isNotPassingQualityControls=0;
 select count(*) as Reads from bam_index where  isPrimary=1;
 select count(*) as NM0 from bam_index where isDuplicate=0 and isNotPassingQualityControls=0  and isMapped=1 and nm=0 ;
 select count(*) as NM1 from bam_index where isDuplicate=0 and isNotPassingQualityControls=0  and isMapped=1 and nm=1 ;
