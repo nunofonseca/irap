@@ -1,0 +1,24 @@
+#!/bin/sh
+#; -*- mode: Makefile;-*-
+#the next line restarts using\
+exec make --warn-undefined-variables -Rf "$0"  ${1+"$@"} 
+
+###############################################
+file_exists=$(if  $(realpath $(1)),,$(call error,$(1) not found))
+
+ifdef bam
+ $(call file_exists,$(bam))
+else
+ $(call error,Missing bam parameter)
+endif
+
+
+all: $(bam).stats
+
+
+%.bam.ridx: %.bam
+	bamRindex $<
+
+%.bam.stats.csv: %.bam.ridx
+	@irap_BAM_stats.sh $*.bam | sed "s/ = /,/" > $@.tmp && mv $@.tmp $@
+	@echo "File $@ created successfully."
