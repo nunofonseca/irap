@@ -27,13 +27,14 @@ select count(*) as Paired_mapped from bam_index where isDuplicate=0 and isNotPas
 select count(*) as Paired_mapped_mate1 from bam_index where isDuplicate=0 and isNotPassingQualityControls=0  and isMapped=1 and isPaired=1 and isSecondMateRead=0 ;
 select count(*) as Paired_mapped_mate2 from bam_index where isDuplicate=0 and isNotPassingQualityControls=0  and isMapped=1 and isPaired=1 and isSecondMateRead=1 ;
 select count(*) as ReadsUmapped from bam_index where isMapped=0 and  isDuplicate=0 and isNotPassingQualityControls=0;
-select count(*) as Reads from bam_index where  isPrimary=1;
 select count(*) as NM0 from bam_index where isDuplicate=0 and isNotPassingQualityControls=0  and isMapped=1 and nm=0 ;
 select count(*) as NM1 from bam_index where isDuplicate=0 and isNotPassingQualityControls=0  and isMapped=1 and nm=1 ;
 select count(*) as NM2 from bam_index where isDuplicate=0 and isNotPassingQualityControls=0  and isMapped=1 and nm=2 ;
 select count(*) as NMGE3 from bam_index where isDuplicate=0 and isNotPassingQualityControls=0  and isMapped=1 and nm>=3 ;
 select count(*) as plus_strand from bam_index where isDuplicate=0 and isNotPassingQualityControls=0  and isMapped=1 and xs='+' ;
 select count(*) as minus_strand from bam_index where isDuplicate=0 and isNotPassingQualityControls=0  and isMapped=1 and xs='-' ;
+select count(*) as UniquelyMappedReads from bam_index where isDuplicate=0 and isNotPassingQualityControls=0  and isMapped=1 and nh=1 and primary=1;
+select count(*) as MultimapReads from bam_index where isDuplicate=0 and isNotPassingQualityControls=0  and isMapped=1 and nh>1 and primary=1;
 select count(*) as NH1 from bam_index where isDuplicate=0 and isNotPassingQualityControls=0  and isMapped=1 and nh=1 ;
 select count(*) as NHGE2 from bam_index where isDuplicate=0 and isNotPassingQualityControls=0  and isMapped=1 and nh>=2 ;
 select count(*) as NHGE10 from bam_index where isDuplicate=0 and isNotPassingQualityControls=0  and isMapped=1 and nh>=10 ;
