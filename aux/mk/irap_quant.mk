@@ -25,16 +25,16 @@
 # Cufflinks 1 & 2
 #*****************
 ifndef cufflinks1_params
-	cufflinks1_params=--max-bundle-frags 190000000
+	cufflinks1_params=--max-bundle-frags 190000000 --min-isoform-fraction 0.05 --multi-read-correct
 endif
 ifndef cufflinks2_params
-	cufflinks2_params=--max-bundle-frags 190000000
+	cufflinks2_params=--max-bundle-frags 190000000 --min-isoform-fraction 0.05 --multi-read-correct
 endif
 
 #--FDR $(de_pvalue_cuffoff)
 #--multi-read-correct more accurate
-cufflinks1_params+= --no-update-check --min-isoform-fraction 0.05 --multi-read-correct
-cufflinks2_params+= $(cufflinks1_params)
+cufflinks1_params+= --no-update-check 
+cufflinks2_params+= --no-update-check 
 
 # cuffdiff params
 ifndef cuffdiff1_params=
@@ -281,7 +281,7 @@ endef
 # $3 - bam file prefix (includes .se|.pe)
 define make-cufflinks-quant-rule=
 $(call lib2quant_folder,$(1))$(3).cuff.gtf $(call lib2quant_folder,$(1))$(3).cuff.genes.fpkm_tracking $(call lib2quant_folder,$(1))$(3).cuff.isoforms.fpkm_tracking: $(call lib2bam_folder,$(1))$(3).hits.bam
-	$(call run_$(subst _nd,,$(2)),$$<,$(1),$$@,$(call lib2quant_folder,$(1))$(3).cuff.isoforms.fpkm_tracking,$(call lib2quant_folder,$(1))$(3).cuff.genes.fpkm_tracking)
+	$(call run_$(subst _nd,,$(2)),$$<,$(1),$(call lib2quant_folder,$(1))$(3).cuff.gtf,$(call lib2quant_folder,$(1))$(3).cuff.isoforms.fpkm_tracking,$(call lib2quant_folder,$(1))$(3).cuff.genes.fpkm_tracking)
 
 
 $(call lib2quant_folder,$(1))$(3).transcripts.raw.$(quant_method).tsv: $(call lib2quant_folder,$(1))$(3).cuff.isoforms.fpkm_tracking
