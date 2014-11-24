@@ -2,7 +2,6 @@
 #; -*- mode: Makefile;-*-
 #the next line restarts using\
 exec make --warn-undefined-variables -Rf "$0"  ${1+"$@"} 
-
 ###############################################
 file_exists=$(if  $(realpath $(1)),,$(call error,$(1) not found))
 
@@ -13,12 +12,13 @@ else
 endif
 
 
-all: $(bam).stats
+all: $(bam).stats.csv
 
-
+# index the bam
 %.bam.ridx: %.bam
 	bamRindex $<
 
+# Perform the queries
 %.bam.stats.csv: %.bam.ridx
-	@irap_BAM_stats.sh $*.bam | sed "s/ = /,/" > $@.tmp && mv $@.tmp $@
-	@echo "File $@ created successfully."
+	@irapBAM2stats.sh $*.bam | sed "s/ = /,/" > $@.tmp && mv $@.tmp $@ && \
+	echo "File $@ created successfully."

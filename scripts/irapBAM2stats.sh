@@ -33,8 +33,8 @@ select count(*) as NM2 from bam_index where isDuplicate=0 and isNotPassingQualit
 select count(*) as NMGE3 from bam_index where isDuplicate=0 and isNotPassingQualityControls=0  and isMapped=1 and nm>=3 ;
 select count(*) as plus_strand from bam_index where isDuplicate=0 and isNotPassingQualityControls=0  and isMapped=1 and xs='+' ;
 select count(*) as minus_strand from bam_index where isDuplicate=0 and isNotPassingQualityControls=0  and isMapped=1 and xs='-' ;
-select count(*) as UniquelyMappedReads from bam_index where isDuplicate=0 and isNotPassingQualityControls=0  and isMapped=1 and nh=1 and primary=1;
-select count(*) as MultimapReads from bam_index where isDuplicate=0 and isNotPassingQualityControls=0  and isMapped=1 and nh>1 and primary=1;
+select count(*) as UniquelyMappedReads from bam_index where isDuplicate=0 and isNotPassingQualityControls=0  and isMapped=1 and nh=1 and isPrimary=1;
+select count(*) as MultimapReads from bam_index where isDuplicate=0 and isNotPassingQualityControls=0  and isMapped=1 and nh>1 and isPrimary=1;
 select count(*) as NH1 from bam_index where isDuplicate=0 and isNotPassingQualityControls=0  and isMapped=1 and nh=1 ;
 select count(*) as NHGE2 from bam_index where isDuplicate=0 and isNotPassingQualityControls=0  and isMapped=1 and nh>=2 ;
 select count(*) as NHGE10 from bam_index where isDuplicate=0 and isNotPassingQualityControls=0  and isMapped=1 and nh>=10 ;
