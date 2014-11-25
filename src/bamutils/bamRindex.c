@@ -106,12 +106,15 @@ int main(int argc, char *argv[])
     
     BOOLEAN isPrimary;
     BOOLEAN isMapped;
+    BOOLEAN notMapped;
     BOOLEAN isDuplicate;
     BOOLEAN isNotPassingQualityControls;
     BOOLEAN isPaired;
     BOOLEAN isSecondMateRead,isProperPair;
     //secondary alignment
-    isMapped=((aln->core.flag & BAM_FMUNMAP) || aln->core.mtid >=0) ? TRUE: FALSE;
+    notMapped=(aln->core.flag & BAM_FUNMAP) ? TRUE: FALSE;
+    //notMapped=((aln->core.flag & BAM_FUNMAP) || (aln->core.mtid ==0)) ? TRUE: FALSE;
+    isMapped=!notMapped;
     isPrimary= (aln->core.flag & BAM_FSECONDARY) ? FALSE:TRUE;
     isProperPair=(aln->core.flag & BAM_FPROPER_PAIR) ? TRUE:FALSE;
     isPaired=(aln->core.flag & BAM_FPAIRED ) ? TRUE:FALSE;
