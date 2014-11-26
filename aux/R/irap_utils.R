@@ -684,6 +684,7 @@ gen.plot2report <- function(filename=NULL,
                      size.unit="px",
                      html=TRUE,
                      ps=TRUE,
+                     res=300,
                      data.table=NA,
                      caption="",
                      to.plot=NULL) {
@@ -719,7 +720,7 @@ gen.plot2report <- function(filename=NULL,
     height.in <- height
   }
   # PNG
-  png(filename=png.file,width=width.in, height=height.in,bg=bg,res=300,units="in")
+  png(filename=png.file,width=width.in, height=height.in,bg=bg,res=res,units="in")
   # Catch the errors
   err <- try(to.plot())
   #print(err)
@@ -2281,6 +2282,9 @@ runGSAhyper2 <- function (genes, pvalues, pcutoff, universe,
 importArgsfromStdin <- function() {
   args <- commandArgs(trailingOnly = TRUE)
 
+  if ( length(args)== 0 ) {
+    return(args)
+  }
   if ( args[1]=="-stdin" ) {
     f <- file("stdin")
     open(f)
