@@ -1,0 +1,228 @@
+#!/usr/bin/env Rscript3
+#; -*- mode: R;-*-
+# =========================================================
+# Copyright 2012-2014,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#    $Id: irap.txt Nuno Fonseca Wed Feb 6 00:51:29 2013$
+# =========================================================
+suppressPackageStartupMessages(library("optparse"))
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+# specify our desired options in a list
+#
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+pdebug.enabled <- FALSE
+
+#######################
+usage <- "irap_bam2tsv --out html_file [options]"
+option_list <- list(
+  make_option(c("-o","--out"),type="character",default=NULL,help="Output html file"),
+  make_option(c("--pe"),type="character",dest="pe_bams",default=NULL,help="BAM files generated from paired-end libraries"),
+  make_option(c("--se"),type="character",dest="se_bams",default=NULL,help="BAM files generated from single-end libraries"),
+  make_option(c("-p","--pe_labels"),type="character",dest="pe_labels",default=NULL,help="Labels for the BAM files generated from paired-end libraries"),
+  make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
+  make_option(c("-s","--se_labels"),type="character",dest="se_labels",default=NULL,help="Labels for the BAM files generated from single-end libraries")
+)
+
+# 
+mandatory <- c("out")
+
+#
+args <- importArgsfromStdin()
+opt <- myParseArgs(usage = usage,option_list=option_list,mandatory=mandatory,args=args)
+
+irap.css <- opt$css
+pdebug.enabled <- opt$debug
+pdebug.save.state("irap_bams2tsv","p0")
+
+pe.bam.v<-c()
+pe.labels.v<-c()
+se.bam.v<-c()
+se.labels.v<-c()
+
+if ( !is.null(opt$pe_bams) ) {
+  pe.bam.v <- strsplit(gsub(" *; *",";",gsub("^;","",opt$pe_bams)),split="[; ]")[[1]]
+   pe.labels.v <- strsplit(gsub(" *; *",";",gsub("^;","",opt$pe_labels)),split="[; ]")[[1]]	
+} 
+if ( !is.null(opt$se_bams) ) {
+   se.bam.v <- strsplit(gsub(" *; *",";",gsub("^;","",opt$se_bams)),split="[; ]")[[1]]
+
+   se.labels.v <- strsplit(gsub(" *; *",";",gsub("^;","",opt$se_labels)),split="[; ]")[[1]]
+}
+
+if (sum(length(pe.bam.v)+length(se.bam.v))==0) {
+  perror("At least one bam file needs to be provided.")
+  q(status=1)
+}
+
+if (length(pe.bam.v)!=length(pe.labels.v)) {
+  perror("Number of PE bams and labels differ.")
+  q(status=1)
+}
+if (length(se.bam.v)!=length(se.labels.v)) {
+  perror("Number of SE bams and labels differ.")
+  q(status=1)
+}
+
+pinfo("Parameters parsed.")
+pdebug.save.state("irap_bams2tsv","p1")
+
+##################################################
+get.mapping.stats <- function(pe.bam.v,se.bam.v,pe.labels.v,se.labels.v) {
+
+  libs <- unique(append(pe.labels.v,se.labels.v))
+  nlibs <- length(libs)
+  pinfo("Processing ",nlibs," BAM files")
+  
+  # an individual report for each bam file is available in bam  
+  pe.bam.urls <- c()
+  se.bam.urls <- c()
+  m <- matrix(libs,nrow=1,byrow=T)
+  colnames(m) <- libs
+
+  bam.files <- append(pe.bam.v,se.bam.v)
+  read.bam.stats.csv <- function(bam,gen=TRUE) {
+    stats.file <- paste(bam,".stats.csv",sep="")
+    if ( ! file.exists(stats.file ) ) {
+      if ( gen ) {
+        pinfo("File ",stats.file," not found, trying to generate it (but it may take a while)")      
+        system(paste("irapBAM2stats bam=",bam,sep=""))
+        return(read.bam.stats.csv(bam,gen=FALSE))
+      }
+      # gen==FALSE
+      perror("File ",stats.file," not found")
+      q(status=1)
+    }
+    x <- read.table(stats.file,sep=",",header=FALSE)
+    vals <- x$V2
+    names(vals) <- as.character(x$V1)
+    vals
+  }
+  #bam.files <- c("/home/nf/big1M.bam","/home/nf/big10M.bam")
+  #  libs<-c("l1","l2")
+  #cat("--------------------------------------------")
+  data <- lapply(bam.files,read.bam.stats.csv)
+  names(data) <- bam.files
+
+  df <- data.frame(matrix(unlist(data),byrow=T,ncol=length(data[[1]])))
+  colnames(df) <- names(data[[1]])
+  #  pinfo("length:",length(data))
+  df <- t(df)
+  colnames(df) <- append(pe.labels.v,se.labels.v)
+
+  #irap.assert(sum(df[,1]!=data[[1]]$Count,na.rm=T)==0)
+  df
+  # Improve the names
+  stats.file <- c("Entries (all)","Entries (valid)","Duplicate","Alignments",
+                  "Spliced","Reads spliced",
+                  "Paired","Paired mapped","Paired mapped (mate1)",
+                  "Paired mapped (mate 2)","Reads unmapped","Reads mapped",
+		  "Alignments (perfect)","Alignments (1-difference)",
+		  "Alignments (2-differences)",
+		  "Alignments (>=3-differences)",
+                  "Plus strand","Minus Strand",
+                  "Uniquely mapped","Multimap reads",
+                  "Multimap (=1)",
+                  "Multimap (>=2)",
+                  "Multimap (>=10)","Multimap (>=20)",
+                  "Spliced (2 exons)","Spliced (3 exons)",
+                  "Spliced (4 exons)","Spliced (>=5 exons)")
+  rownames(df)<-stats.file
+
+  # assert multimap_reads==multimap (=1)
+  irap.assert(sum(df["Uniquely mapped",]!=df["Multimap (=1)",])==0)
+  # slice
+  slice<-c("Alignments", "Reads mapped","Reads unmapped","Uniquely mapped","Multimap (>=2)","Reads spliced","Spliced","Alignments (perfect)","Alignments (1-difference)", "Alignments (2-differences)","Alignments (>=3-differences)","Spliced (2 exons)","Spliced (3 exons)","Spliced (4 exons)","Spliced (>=5 exons)")
+
+  
+  sliced.data <- data.frame(df[slice,,drop=FALSE])
+  # add reads unmapped
+  sliced.data["Reads",]<-  sliced.data["Reads mapped",]+sliced.data["Reads unmapped",]
+  p.sliced.data<-sliced.data
+  # % alignments	
+  alns<-as.vector(sliced.data["Alignments",,drop=FALSE])
+  # % reads
+  reads<-as.vector(sliced.data["Reads",,drop=FALSE])
+  # % spliced (reads)
+  spliced.alns<-as.vector(sliced.data["Spliced",,drop=FALSE])
+  spliced.reads<-as.vector(sliced.data["Reads spliced",,drop=FALSE])
+
+  # % mismatches  
+
+  # % reads
+  p.sliced.data["Reads mapped",] <- round(sliced.data["Reads mapped",,drop=FALSE]/reads*100,2)
+  p.sliced.data["Reads unmapped",] <- round(sliced.data["Reads unmapped",,drop=FALSE]/reads*100,2)
+  p.sliced.data["Uniquely mapped",] <- round(as.numeric(sliced.data["Uniquely mapped",,drop=FALSE])/reads*100,2)
+  p.sliced.data["Multimap reads",] <- round(as.numeric(sliced.data["Multimap (>=2)",,drop=FALSE])/reads*100,2)
+  p.sliced.data["Reads spliced",] <- round(as.numeric(sliced.data["Reads spliced",,drop=FALSE])/reads*100,2)
+  
+  # Alns
+  p.sliced.data["Multimap (>=2)",] <- round(as.numeric(sliced.data["Multimap (>=2)",,drop=FALSE])/alns*100,2)
+  p.sliced.data["Alignments spliced",] <- round(as.numeric(sliced.data["Spliced",,drop=FALSE])/alns*100,2)
+  p.sliced.data["Alignments (perfect)",] <- round(as.numeric(sliced.data["Alignments (perfect)",,drop=FALSE])/alns*100,2)
+  p.sliced.data["Alignments (1-difference)",] <- round(as.numeric(sliced.data["Alignments (1-difference)",,drop=FALSE])/alns*100,2)
+  p.sliced.data["Alignments (2-differences)",] <- round(as.numeric(sliced.data["Alignments (2-differences)",,drop=FALSE])/alns*100,2)
+  p.sliced.data["Alignments (>=3-differences)",] <- round(as.numeric(sliced.data["Alignments (>=3-differences)",,drop=FALSE])/alns*100,2)
+
+  p.sliced.data["Spliced (2 exons)",] <- round(as.numeric(sliced.data["Spliced (2 exons)",,drop=FALSE])/spliced.alns*100,2)
+  p.sliced.data["Spliced (3 exons)",] <- round(as.numeric(sliced.data["Spliced (3 exons)",,drop=FALSE])/spliced.alns*100,2)
+  p.sliced.data["Spliced (4 exons)",] <- round(as.numeric(sliced.data["Spliced (4 exons)",,drop=FALSE])/spliced.alns*100,2)
+  p.sliced.data["Spliced (>=5 exons)",] <- round(as.numeric(sliced.data["Spliced (>=5 exons)",,drop=FALSE])/spliced.alns*100,2)
+
+  nan2zero <- function(v) {
+    v[is.nan(v)] <- 0
+    return(v)
+  }
+  rn <- rownames(p.sliced.data)
+  p.sliced.data <- as.data.frame(lapply(p.sliced.data,nan2zero))
+  rownames(p.sliced.data) <- rn
+  # average
+  p.sliced.data.median <- apply(p.sliced.data,MARGIN=1,FUN=median)
+  p.sliced.data.mean <- apply(p.sliced.data,MARGIN=1,FUN=mean)
+  p.sliced.data.sd <- apply(p.sliced.data,MARGIN=1,FUN=sd)
+
+  #median(as.numeric(p.sliced.data[1,]))
+  p.sliced.data <- cbind(p.sliced.data,p.sliced.data.median,p.sliced.data.mean,p.sliced.data.sd)
+  colnames(p.sliced.data) <- append(colnames(sliced.data),c("Median","Mean","SD"))
+  p.sliced.data <- p.sliced.data[,append(c("Median","Mean","SD"),colnames(sliced.data))]
+  p.sliced.data$SD[is.na(p.sliced.data$SD)] <- 0
+  return(list(perc=p.sliced.data,raw=sliced.data,raw=df))
+}
+
+
+mapping.dfs <- get.mapping.stats(pe.bam.v,se.bam.v,pe.labels.v,se.labels.v)
+pdebug.save.state("irap_bam2tsv","p3")
+####################################
+out.prefix <- opt$out
+
+# save files
+raw.stats.file <- paste(out.prefix,"_mapping_stats_raw.tsv",sep="")
+r <- write.tsv(mapping.dfs$raw,file=paste(raw.stats.file,sep=""),rownames.label="")
+pinfo("Saved ",raw.stats.file)
+
+perc.stats.file <- paste(out.prefix,"_mapping_stats_perc.tsv",sep="")
+r <- write.tsv(mapping.dfs$perc,file=paste(perc.stats.file,sep=""),rownames.label="")
+pinfo("Saved ",perc.stats.file)
+
+warnings()
+q()
