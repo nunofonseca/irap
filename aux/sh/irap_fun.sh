@@ -396,6 +396,44 @@ function mapping_report {
 	    p_info "Bam files generated using $mapper..."
 	    let c=1
 	    FILES=$d/*.hits.bam
+            #echo $FILES
+	    if [ "$FILES" != '$d/*.hits.bam' ]; then
+		for p in $pe; do 
+		    let mapper_counter=mapper_counter+1
+		    submit_job "${jobname_prefix}m[$mapper_counter]" "-w  ended($waitfor)"  $cmd se= pe=$p $report_dir/mapping/$mapper.html_req
+		done
+		for f in $se ; do
+		    let mapper_counter=mapper_counter+1
+		    submit_job "${jobname_prefix}m[$mapper_counter]" "-w  ended($waitfor)"  $cmd se=$f pe= $report_dir/mapping/$mapper.html_req
+		done
+	    fi
+            # wait for the reports of all mappers
+	    let counter=counter+1
+	    submit_job "${jobname_prefix}f[$counter]"  "-w ended(\"${jobname_prefix}m*\")"  "irap conf=$conf $IRAP_PARAMS $report_dir/mapping/$mapper.html"
+	done
+        # wait for the reports of all mappers
+	let counter=counter+1
+	submit_job "${jobname_prefix}mf[$counter]"  "-w ended(\"${jobname_prefix}m*\")"  "irap conf=$conf $IRAP_PARAMS $report_dir/mapping/comparison.html"
+	echo ${jobname_prefix}mf
+    else
+	echo $waitfor
+
+    fi
+}
+
+function mapping_report_deprecated {
+    waitfor=$1
+    mappers_dirs=`get_cached_value MAPPING_DIRS`
+    report_qc_only=`get_param_value report_qc_only $conf`
+    if [ "$report_qc_only-" != "y-" ] && [ "$mappers_dirs-" != "-" ] ; then
+	declare -i mapper_counter=0
+# one report for each mapper
+	WAIT_FOR_IDS_=$WAIT_FOR_IDS
+	for d in $mappers_dirs; do
+	    mapper=`basename $d`
+	    p_info "Bam files generated using $mapper..."
+	    let c=1
+	    FILES=$d/*.hits.bam
     #echo $FILES
 	    if [ "$FILES" != '$d/*.hits.bam' ]; then
 		let mapper_counter=mapper_counter+1
