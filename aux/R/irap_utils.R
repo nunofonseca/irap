@@ -1218,7 +1218,7 @@ quant.load <- function(f,clean.cuff=FALSE) {
   tryCatch(tsv.data <- read.tsv(f),error=function(x) NULL)
   if ( !is.null(tsv.data) && ncol(tsv.data)>1 ) {
     rownames(tsv.data) <- as.character(tsv.data[,1])
-    tsv.data <- tsv.data[,-1]
+    tsv.data <- tsv.data[,-1,drop=FALSE]
     if (clean.cuff) {
       sel<-grep("^CUFF.*",rownames(tsv.data),perl=T,invert=TRUE)
       tsv.data <- tsv.data[sel,,drop=FALSE]
