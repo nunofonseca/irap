@@ -2,9 +2,21 @@
 
 <%
 library(xtable)
-bar.width<-15
+max.outliers <- 20
+bar.width<-25
 get.image.width <- function(nbars,min.width=500,bar_width=bar.width) {
   return(max(min.width,bar_width*nbars))
+}
+
+get.image.width2 <- function(nbars,min.width=500,bar_width=bar.width) {
+  # summary plot=5
+  nbars <- 5+min(max.outliers,nbars)
+  return(get.image.width(nbars=nbars,min.width = min.width,bar_width = bar.width))
+}
+get.image.width3 <- function(nbars,min.width=500,bar_width=bar.width) {
+  # summary plot=5
+  nbars <- 20+min(max.outliers,nbars)
+  return(get.image.width(nbars=nbars,min.width = min.width,bar_width = bar.width))
 }
 %>
  
@@ -20,26 +32,58 @@ get.image.width <- function(nbars,min.width=500,bar_width=bar.width) {
 
 <H2 class="section">Mapping statistics<A NAME='ms'/></H2>
 
-<H3 class="section"><%=irap.ctr("Figure")%></H3>
+  <H3 class="section"><%=irap.ctr("Figure")%></H3>
 <%
 file <- paste(out.prefix,"_aln",sep="")
 n <- length(colnames(mapping.dfs$raw))
 html <- gen.plot2report(filename=file,
                         dir=out.dir,
                         bg="white",
-                        width=get.image.width(n,500,bar_width=bar.width*2),
+                        width=get.image.width2(n,500,bar_width=bar.width*2),
                         height=500,
                         html=TRUE,
                         ps=TRUE,
                         caption="",
                         to.plot= function() {
-                          mapping.plot(mapping.dfs$raw)
+                          mapping.plot(mapping.dfs$raw,
+                                       outlier.vals=NULL,
+                                       big.dataset.max.out=max.outliers)
                         }
                         )
 
-irap.output.html(html$html,"Alignment statistics per library: number of alignments, number of reads mapped, number of reads not mapped (unmapped), number of reads that map to a single locus (uniquely mapped), and number of reads spliced.")
+irap.output.html(html$html,"Alignment statistics: number of alignments, number of reads mapped, number of reads not mapped (unmapped), number of reads that map to a single locus (uniquely mapped), and number of reads spliced.")
 
 %>
+
+<H3 class="section"><%=irap.ctr("Figure")%></H3>
+<%
+file <- paste(out.prefix,"_aln_perc",sep="")
+n <- length(colnames(mapping.dfs$perc))
+html <- gen.plot2report(filename=file,
+                        dir=out.dir,
+                        bg="white",
+                        width=get.image.width2(n,500,bar_width=bar.width*2),
+                        height=400,
+                        html=TRUE,
+                        ps=TRUE,
+                        caption="",
+                        to.plot= function() {
+                          mapping.plot(mapping.dfs$perc,
+                                       exclude.cols=c("Median","Mean","SD"),
+                                       vals=c("Reads mapped","Reads unmapped","Uniquely mapped","Reads spliced"),
+                                       outlier.vals=c("Reads mapped","Reads unmapped","Uniquely mapped","Reads spliced"),
+                                       ylab="%",
+                                       legend.horiz=T,
+                                       ylim=c(0,100),
+                                       big.dataset.max.out=max.outliers)
+
+                        }
+                        )
+
+irap.output.html(html$html,"Alignment statistics. Percentage of reads: mapped; not mapped (unmapped); that map to a single locus (uniquely mapped); and reads spliced.")
+
+%>
+
 
 <H3 class="section"><%=irap.ctr("Figure")%></H3>
 <%
@@ -54,7 +98,20 @@ html <- gen.plot2report(filename=file,
                         ps=TRUE,
                         caption="",
                         to.plot= function() {
-                          mapping.qual(mapping.dfs$raw)
+                          mapping.plot(mapping.dfs$perc,
+                                       legend.horiz=T,
+                                       exclude.cols=c("Median","Mean","SD"),
+                                       vals=c("Alignments (perfect)",
+                                         "Alignments (1-difference)","Alignments (2-differences)","Alignments (>=3-differences)"),
+                                       labels=c("Perfect","1-difference","2-differences",">=3-differences"),
+                                       outlier.vals=c("Alignments (perfect)",
+                                         "Alignments (1-difference)","Alignments (2-differences)","Alignments (>=3-differences)"),
+                                       ylab="% alignments",
+                                       col=topo.colors(4),
+                                       ylim=c(0,100),
+                                       out.beside=FALSE,
+                                       big.dataset.max.out=max.outliers)
+#                          mapping.qual(mapping.dfs$raw)                          
                         }
                         )
 irap.output.html(html$html,"Number of alignments per library where a read aligns perfectly (no mismatches), 1 mismatch, 2 mismatches and more than 2 mismatches. The values are obtained from the BAM file(s).")
@@ -95,41 +152,22 @@ abs.tsv.download.html <- html.download.bar(tsv.download.files)
 rownames(mapping.feat)<-gsub("_"," ",rownames(mapping.feat))
 
 file <- paste(out.prefix,"_aln_bio",sep="")
-n <- length(colnames(mapping.feat))
-mapping.feat2plot <- data.frame(mapping.feat[,!colnames(mapping.feat) %in% c("Median","Mean","SD")])
-colnames(mapping.feat2plot) <- colnames(mapping.feat)[!colnames(mapping.feat) %in% c("Median","Mean","SD")]
+
+cols2plot <- colnames(mapping.feat)[!colnames(mapping.feat) %in% c("Median","Mean","SD")]
+# sort
+feat.order <- names(sort(mapping.feat[,"Mean"],decreasing=T))
+n <- length(feat.order)
+#feat.order=NULL
 html <- gen.plot2report(filename=file,
                         dir=out.dir,
                         bg="white",
-                        width=get.image.width(n,500),
-                        height=500,
+                        width=get.image.width3(n,400),
+                        height=400,
                         html=TRUE,
                         ps=TRUE,
                         caption="",
                         to.plot= function() {
-                          # sort rows based on mean values
-                          if (nrow(mapping.feat) > 1) {
-                            feat.order <- names(sort(mapping.feat[,"Mean"],decreasing=T))
-                            v <- data.frame(mapping.feat2plot[feat.order,])
-                            rownames(v) <- feat.order
-                          } else {
-                            v <- mapping.feat
-                          }
-                          colnames(v) <- colnames(mapping.feat2plot)
-
-                          par(mar=c(9,5,4,10))
-                          cols <- rainbow(nrow(mapping.feat2plot))
-                          bp <- barplot(as.matrix(v),las=2,
-                                        beside=F,col=cols,
-
-                                        horiz=F,cex.axis=0.8,
-				        xaxs="i",xlim=c(-0.1,0.1+ncol(v)),
-                                        width=0.8)
-                          #is.matrix(v)
-                          #is.data.frame(v)
-                          title(ylab="Number of Alignments",mgp=c(4,1,0))
-                          par( xpd=NA )
-                          legend(ceiling(max(bp)),max(colSums(v,na.rm=T)),legend=pprint.fieldname(rownames(v)),fill=cols,horiz=FALSE, cex=0.70,bty='n')                          
+                          plot.mapping.feat(mapping.feat[feat.order,,drop=FALSE],sel.columns=cols2plot,col=rainbow(nrow(mapping.feat)),ylab="Alignments")
                         }
                         )
 
@@ -137,11 +175,49 @@ irap.output.html(html$html,"Number of alignments overlapping annotated features.
 
 %>
 
+<H3 class="section"><%=irap.ctr("Figure")%></H3>
+<%
+mapping.feat.sum <- colSums(mapping.feat,na.rm=T)
+mapping.feat.per <- round(sweep(mapping.feat,MARGIN=2,100*1/mapping.feat.sum,`*`),2)
+if (ncol(mapping.feat.per)>4) {
+  SD <- apply(mapping.feat.per[,-c(1,2,3)],1,FUN=sd)
+} else {
+  SD <- rep(0,nrow(mapping.feat.per))
+}
+mapping.feat.per[,"SD"]<-SD
+#cbind(mapping.feat.per,SD)
+
+
+rownames(mapping.feat.per)<-gsub("_"," ",rownames(mapping.feat.per))
+
+file <- paste(out.prefix,"_paln_bio",sep="")
+cols2plot <- colnames(mapping.feat.per)[!colnames(mapping.feat.per) %in% c("Median","Mean","SD")]
+# sort
+feat.order <- names(sort(mapping.feat.per[,"Mean"],decreasing=T))
+n <- length(feat.order)
+#feat.order=NULL
+html <- gen.plot2report(filename=file,
+                        dir=out.dir,
+                        bg="white",
+                        width=get.image.width3(n,400),
+                        height=400,
+                        html=TRUE,
+                        ps=TRUE,
+                        caption="",
+                        to.plot= function() {
+                          plot.mapping.feat(mapping.feat.per[feat.order,,drop=FALSE],sel.columns=cols2plot,col=rainbow(nrow(mapping.feat.per)),ylab="Alignments",ylim=c(0,100))
+                        }
+                        )
+
+irap.output.html(html$html,"Percentage of alignments per library overlapping annotated features. Values obtained with bedtools (coverage). ")
+
+%>
+
 
 <H3 class="section"><%=irap.ctr("Table")%></H3>
 <DIV class="table_wrapper">
 <%
-xt <- xtable(round(mapping.feat2plot,0),
+xt <- xtable(round(mapping.feat[feat.order,cols2plot],0),
              caption="",
              digits=0,
              label="map_feat_table")
@@ -168,16 +244,6 @@ feat.tsv.download.html <- html.download.bar(feat.download.files)
 <H3 class="section"><%=irap.ctr("Table")%></H3>
 <DIV class="table_wrapper">
 <%
-mapping.feat.sum <- colSums(mapping.feat,na.rm=T)
-mapping.feat.per <- round(sweep(mapping.feat,MARGIN=2,100*1/mapping.feat.sum,`*`),2)
-if (ncol(mapping.feat.per)>4) {
-  SD <- apply(mapping.feat.per[,-c(1,2,3)],1,FUN=sd)
-} else {
-  SD <- rep(0,nrow(mapping.feat.per))
-}
-mapping.feat.per[,"SD"]<-SD
-#cbind(mapping.feat.per,SD)
-
 
 xt <- xtable(mapping.feat.per,
              caption="",
@@ -196,87 +262,64 @@ irap.output.html(html, "Percentage of alignments overlapping annotated features.
 %>
 </DIV>
 
-<H3 class="section"><%=irap.ctr("Figure")%></H3>
-<%
-rownames(mapping.feat.per)<-gsub("_"," ",rownames(mapping.feat.per))
-
-file <- paste(out.prefix,"_paln_bio",sep="")
-n <- length(colnames(mapping.feat.per))
-mapping.feat2plot <- data.frame(mapping.feat.per[,!colnames(mapping.feat.per) %in% c("Median","Mean","SD")])
-colnames(mapping.feat2plot) <- colnames(mapping.feat.per)[!colnames(mapping.feat.per) %in% c("Median","Mean","SD")]
-html <- gen.plot2report(filename=file,
-                        dir=out.dir,
-                        bg="white",
-                        width=get.image.width(n,500),
-                        height=500,
-                        html=TRUE,
-                        ps=TRUE,
-                        caption="",
-                        to.plot= function() {
-                          # sort rows based on mean values
-                          if (nrow(mapping.feat) > 1) {   
-                            feat.order <- names(sort(mapping.feat.per[,"Mean"],decreasing=T))
-                            v <- data.frame(mapping.feat2plot[feat.order,])
-                            rownames(v) <- feat.order
-
-                          } else {
-                            v <- mapping.feat
-                          }
-                          colnames(v) <- colnames(mapping.feat2plot)
-                          par(mar=c(9,5,4,10))
-                          cols <- rainbow(nrow(mapping.feat2plot))
-                          bp <- barplot(as.matrix(v),
-                                        las=2,
-                                        beside=F,
-                                        col=cols,                                        
-                                        horiz=F,
-                                        cex.axis=0.75,
-				        xaxs="i",
-                                        width=0.8,
-                                        xlim=c(-0.2,0.2+ncol(v)))
-                          title(ylab="Percentage of alignments (%)",mgp=c(4,1,0))
-                          par( xpd=NA )
-                          legend(ceiling(max(bp)),max(colSums(v,na.rm=T)),legend=pprint.fieldname(rownames(v)),fill=cols,horiz=FALSE, cex=0.70,bty='n')                          
-                        }
-                        )
-
-irap.output.html(html$html,"Percentage of alignments per library overlapping annotated features. Values obtained with bedtools (coverage). ")
-
-%>
 
   
 <!-- number of reads mapping to exonic regions, intronic regions, other -->
 <H3 class="section"><%=irap.ctr("Figure")%></H3>
 <%
 
+mapping.genes.sum <- colSums(mapping.genes,na.rm=T)
+mapping.genes.per <- round(sweep(mapping.genes,MARGIN=2,100*1/mapping.genes.sum,`*`),2)
+if (ncol(mapping.genes.per)>4) {
+  SD <- apply(mapping.genes.per[,-c(1,2,3)],1,FUN=sd)
+} else {
+  SD <- rep(0,nrow(mapping.genes.per))
+}
+mapping.genes.per[,"SD"]<-SD
+
 file <- paste(out.prefix,"_aln_genes",sep="")
-mapping.genes2plot <- data.frame(mapping.genes[,!colnames(mapping.genes) %in% c("Median","Mean","SD")])
-colnames(mapping.genes2plot) <- colnames(mapping.genes)[!colnames(mapping.genes) %in% c("Median","Mean","SD")]
-n <- length(colnames(mapping.genes2plot))
+n <- length(cols2plot)
 html <- gen.plot2report(filename=file,
                         dir=out.dir,
                         bg="white",
-                        width=get.image.width(n,500),
+                        width=get.image.width2(n+5,500),
                         height=500,
                         html=TRUE,
                         ps=TRUE,
                         caption="",
                         to.plot= function() {
-                          cols <- rainbow(nrow(mapping.genes2plot))
-                          par(mar=c(10,5,3,2))                          
-                          bp <- barplot(as.matrix(mapping.genes2plot),
-                                        las=2,col=cols,
-                                        xaxs="i",
-                                        width=0.8,
-                                        cex.axis=0.75,                                        
-                                        xlim=c(-0.2,0.2+ncol(mapping.genes2plot)))
-                          title(ylab="Number of alignments",mgp=c(4,1,0))
-                          par( xpd=NA )                          
-                          legend("top",inset=c(0,-0.08),legend=rownames(mapping.genes2plot),fill=cols,horiz=TRUE, cex=0.80,bty='n')                            
+                          mapping.plot(mapping.genes.per,ylim=c(0,100),out.beside=F,
+                                       legend.horiz=T,
+                                       vals=rownames(mapping.genes.per),
+                                       exclude.cols=c("Median","Mean","SD"),
+                                       outlier.vals=rownames(mapping.genes.per),
+                                       ylab="% alignments")
                         }
                         )
 
-irap.output.html(html$html,"Number of alignments overlapping introns and exons. Values obtained with bedtools (intersect).")
+irap.output.html(html$html,"Percentage of alignments overlapping introns and exons. Values obtained with bedtools (intersect).")
+
+%>
+
+  <H3 class="section"><%=irap.ctr("Table")%></H3>  
+<DIV class="table_wrapper">
+<%
+# percentages
+p.mapping.genes <- mapping.genes.per
+#p.mapping.genes<-cbind(p.mapping.genes,SD)
+xt <- xtable(p.mapping.genes,
+             caption="",
+             label="map_genes_table.p")
+
+html <- print.xtable(file="/dev/null",
+                     xt,
+                     type="html",
+                     sanitize.text.function=function(x) {x},
+                     include.colnames=TRUE,
+                     include.rownames=TRUE,
+                     html.table.attributes = "")
+
+irap.output.html(html, "Percentage of alignments overlapping exons and introns. Values obtained with bedtools.")
 
 %>
 
@@ -284,7 +327,6 @@ irap.output.html(html$html,"Number of alignments overlapping introns and exons. 
 <DIV class="table_wrapper">
 <%
 #save.image("debug.Rdata")
-head(mapping.genes)
 v <- data.frame(round(mapping.genes[,!colnames(mapping.genes) %in% c("Median","Mean","SD")],0))
 colnames(v) <- colnames(mapping.genes)[!colnames(mapping.genes) %in% c("Median","Mean","SD")]
 v
@@ -311,35 +353,6 @@ gene.tsv.download.html <- html.download.bar(gene.download.files)
 </DIV>
 <DIV> <%=gene.tsv.download.html%></DIV>
 
-<H3 class="section"><%=irap.ctr("Table")%></H3>  
-<DIV class="table_wrapper">
-<%
-# percentages
-tot <- colSums(mapping.genes,na.rm=T)
-p.mapping.genes <- round(sweep(mapping.genes,MARGIN=2,100*1/tot,`*`),2)
-# recompute sd
-if (ncol(p.mapping.genes)>4) {
-  SD<-apply(p.mapping.genes[,-c(1,2,3)],1,FUN=sd)
-} else {
-  SD <- rep(0,nrow(p.mapping.genes))
-}
-p.mapping.genes[,"SD"] <- SD
-#p.mapping.genes<-cbind(p.mapping.genes,SD)
-xt <- xtable(p.mapping.genes,
-             caption="",
-             label="map_genes_table.p")
-
-html <- print.xtable(file="/dev/null",
-                     xt,
-                     type="html",
-                     sanitize.text.function=function(x) {x},
-                     include.colnames=TRUE,
-                     include.rownames=TRUE,
-                     html.table.attributes = "")
-
-irap.output.html(html, "Percentage of alignments overlapping exons and introns. Values obtained with bedtools.")
-
-%>
 </DIV>
 
 
