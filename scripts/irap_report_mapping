@@ -1,4 +1,5 @@
 #!/usr/bin/env Rscript3
+#; -*- mode: R;-*-
 # =========================================================
 # Copyright 2012-2014,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
 #
@@ -39,6 +40,8 @@ option_list <- list(
   make_option(c("--css"), type="character",default="irap.css",help="Path to the irap.css file relative to the location of the produced html file [default: %default"),
   make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
   make_option(c("-o","--out"),type="character",default=NULL,help="Output html file"),
+  make_option(c("--bam_stats"),type="character",default=NULL,dest="bam_stats",help="Statistics collected from all BAM files"),
+  make_option(c("--bam_statsp"),type="character",default=NULL,dest="bam_statsp",help="Statistics collected from all BAM files (%)"),
   make_option(c("-m","--mapper"),type="character",dest="mapper",default=NULL,help="Name of the mapper"),
   make_option(c("--pe"),type="character",dest="pe_bams",default=NULL,help="BAM files generated from paired-end libraries"),
   make_option(c("--se"),type="character",dest="se_bams",default=NULL,help="BAM files generated from single-end libraries"),
@@ -49,10 +52,10 @@ option_list <- list(
 )
 
 multiple.options = list()
-filenames <- c("html_template") ;#filenames that must exist (if defined)
+filenames <- c("html_template","bam_stats","bam_statsp") ;#filenames that must exist (if defined)
 
 # check multiple options values
-mandatory <- c("out","mapper","se_bams","pe_bams","se_labels","pe_labels","html_template")
+mandatory <- c("out","bam_stats","mapper","se_bams","pe_bams","se_labels","pe_labels","html_template","bam_statsp")
 
 #
 args <- importArgsfromStdin()
@@ -75,6 +78,9 @@ if (num.cores<1) {
   q(status=3)    
 }
 
+pinfo("stats=",opt$bam_stats)
+pinfo("statsp=",opt$bam_statsp)
+pinfo(names(opt))
 irap.assert(num.cores>0)
 
 if ( num.cores>parallel:::detectCores()) {
@@ -107,161 +113,244 @@ if (length(se.bam.v)!=length(se.labels.v)) {
 
 pinfo("Parameters parsed.")
 pdebug.save.state("irap_report_mapping","p1")
-suppressPackageStartupMessages(library("emBAM"))
 
 ###########################################
 # Functions
 ###########################################
+big.dataset <- 2
+## mapping.plot(mapping.dfs$raw)
+## mapping.plot(mapping.dfs$perc,
+##              exclude.cols=c("Median","Mean","SD"),
+##              vals=c("Reads mapped","Reads unmapped","Uniquely mapped","Reads spliced"),outlier.vals=c("Reads mapped","Reads unmapped","Uniquely mapped","Reads spliced"),
+##              ylab="%",
+##              ylim=c(0,100))
+## mapping.dfs$perc$SE4=mapping.dfs$perc$SE1
+## mapping.dfs$perc$SE5=mapping.dfs$perc$SE1
+## mapping.dfs$perc$SE6=mapping.dfs$perc$SE1
+## mapping.dfs$perc$SE7=mapping.dfs$perc$SE1
+## mapping.dfs$perc$SE8=mapping.dfs$perc$SE1
+## mapping.dfs$perc$SE9=mapping.dfs$perc$SE1
+## mapping.dfs$perc$SE91=mapping.dfs$perc$SE1
+## mapping.dfs$perc$SE92=mapping.dfs$perc$SE1
+##mapping.dfs$perc$SE912=mapping.dfs$perc$SE2
+##mapping.dfs$perc$SE913=mapping.dfs$perc$SE2
+#mapping.dfs$perc$SE914=mapping.dfs$perc$SE2
+#mapping.dfs$perc$SE914=mapping.dfs$perc$SE2*0.2
+#df <- mapping.dfs$perc
+mapping.plot <- function(df,is.small.dataset=FALSE,
+                         big.dataset.max.out=30,
+                         exclude.cols=NULL,
+                         ylab=NULL,
+                         ylim=NULL,
+                         labels=NULL,
+                         cols=NULL,
+                         out.beside=TRUE,
+                         legend.horiz=NULL,
+                         vals=c("Alignments","Reads mapped","Reads unmapped","Uniquely mapped","Reads spliced"),
+                         outlier.vals=c("Reads unmapped","Uniquely mapped","Reads spliced")) {
 
-mapping.plot <- function(df) {
-
-  df.rows <- c("Alignments","Reads mapped","Unmapped","Uniquely mapped","Spliced reads")
-  cols <- rainbow(length(df.rows))
   cex <- 0.85
-  
-  par(mar=c(9,5,4,2))
-  n <- length(colnames(df))
-  bp <- barplot(as.matrix(df[df.rows,]),
-                las=2,
-                cex.axis=cex,
-                cex.names=cex*0.90,
-                col=cols,
-                beside=T,
-                xaxs="i",
-                width=0.8,
-                xlim=c(-0.1,0.1+length(df.rows)*n)
-                )
-  title(ylab="Number of Alignments/Reads",mgp=c(4,1,0))
-  par( xpd=NA )  
-  legend("top",inset=c(0,-0.05),legend=df.rows,fill=cols,horiz=TRUE, cex=0.70,bty='n')  
-}
-
-
-mapping.qual <- function(df) {
-
-  df.rows <- c("Alignments (perfect)","Alignments (1-difference)","Alignments (2-difference)","Alignments")
-  
-  cex <- 0.95
-  sliced.df <- data.frame(df[df.rows,])
-  rownames(sliced.df) <- df.rows
-  colnames(sliced.df) <- colnames(df)
-  #sliced.df
-  if ( ncol(sliced.df) > 1 ) {
-    sliced.df["Alignments",] <- sliced.df["Alignments",]-apply(sliced.df[c("Alignments (perfect)","Alignments (1-difference)","Alignments (2-difference)"),],2,sum)
-  } else {
-    sliced.df["Alignments",1] <- sliced.df["Alignments",1]-sum(sliced.df[c("Alignments (perfect)","Alignments (1-difference)","Alignments (2-difference)"),1])
+  df.rows <- vals
+  # filter out some cols
+  if (!is.null(exclude.cols)) {
+    df <- df[,!colnames(df) %in% exclude.cols,drop=FALSE]
   }
-  rownames(sliced.df)[4] <- "Alignments (>2-differences)"
+  if (is.null(labels)) {
+    labels <- vals
+  }
+  if (is.null(ylab)) {
+    ylab <- "Number of Alignments/Reads"
+  }
+  if ( is.null(cols) ) {
+    cols <- rainbow(length(df.rows))
+  }
+  df <- df[df.rows,]
+  if (is.null(ylim) ) {
+    ylim <- c(0,max(df,na.rm=T))
+  }
+  if (!is.small.dataset && ncol(df)>big.dataset) {
+    pwarning("Big dataset mode")
+    out <- NULL
+    if (!is.null(outlier.vals) ) {
+      out.sel.df <- df[outlier.vals,,drop=FALSE]
+      bp<-boxplot(x=t(out.sel.df),add=F,out=T,names=rownames(out.sel.df),ylim=ylim)
+      # find the outliers
+      #print(bp)
+      min.vals <- bp$stats[5,]
+      max.vals <- bp$stats[1,]
+      names(min.vals) <- rownames(out.sel.df)
+      names(max.vals) <- rownames(out.sel.df)
+      out <- c()
+      for ( n in names(min.vals)[names(min.vals) %in% rownames(out.sel.df)] ) {
+        tmp.out <- colnames(df)[as.matrix(df[n,])<min.vals[n] | as.matrix(df[n,])>max.vals[n]]
+        if ( !is.null(tmp.out)) {
+          out <- append(out,tmp.out)
+        }
+      }      
+      out <- unique(out)
+      #pinfo("out=",out)
+      #out.sel.df[,out]
+    } 
+    # 
+    # plot the outliers if any
+    par(mar=c(9,6,4,2),bty='n',xpd=NA)
+    if ( !is.null(out) ) {
+      # no outliers
+      w <- max(nrow(df),4)+max(length(out),nrow(df)*2)
+      if ( out.beside ) {
+        widths <- round(c(max(nrow(df),4)/w*10,max(length(out),nrow(df))/w*10),0)
+      } else {
+        widths <- round(c(max(nrow(df),4)/w*10,max(length(out),nrow(df))/w*10),0)
+      }
+      widths <- widths/sum(widths)
+      layout(matrix(c(1,2),ncol=2),widths = widths)
+      pdebug(widths)
+    }
+    bp<-boxplot(x=t(df),col=cols,las=2,names=labels,ylim=ylim,add=F,out=T,
+                outpch=16)    
+    title(ylab=ylab,mgp=c(5,1,0))
+    # outliers (detailed)
+    if (!is.null(out) ) {
+      df <- df[,out[seq(1,min(length(out),big.dataset.max.out))]]
+      par(mar=c(3,3,4,2),bty='n',xpd=NA)
+      mapping.plot(df,is.small.dataset=T,ylab=ylab,vals=vals,exclude.cols=exclude.cols,labels=labels,cols=cols,out.beside=out.beside,ylim=ylim,legend.horiz)
+      do.horiz <- legend.horiz
+      if (!is.null(legend.horiz) ) {
+        do.horiz <- legend.horiz
+        if (nrow(df)<=3) {
+          inset <- c(0,-0.15)
+        } else {
+          inset <- c(-nrow(df)/sqrt(max(length(out),4)),-0.15)
+        }
+        pwarning("inset=",inset,"...",nrow(df),"...",length(out),"...",sqrt(length(out)))
+      } else {
+        if ( ncol(df) > 4 ) {
+          do.horiz <- T
+          inset <- c(-0.2,-0.15)
+        } else {        
+          do.horiz <- F
+          inset <- c(-0.7,-0.15)
+        }
+      }
+      legend("topleft",inset=inset,legend=labels,fill=cols,horiz=do.horiz, cex=cex,bty='n')
+    }
+  } else {
+    par(mar=c(9,5,4,2))
+    n <- length(colnames(df))
+    width=0.8
+    if ( out.beside ) {
+      xlim <- c(-0.1,(0.8*nrow(df))*n)
 
-  n <- length(colnames(sliced.df))
-  cols <- topo.colors(length(df.rows))
-  cex <- 0.85
-  par(mar=c(9,5,4,2))
-  bp <- barplot(as.matrix(sliced.df),
-                las=2,
-                cex.axis=cex,
-                cex.names=cex*0.90,
-                col=cols,
-                beside=T,
-                xaxs="i",
-                width=0.8,
-                xlim=c(-0.1,0.1+length(df.rows)*n))
+    } else {
+      xlim <- NULL
+    }
+    bp <- barplot(as.matrix(df),
+                  las=2,
+                  cex.axis=cex,
+                  cex.names=cex*0.90,
+                  col=cols,
+                  beside=out.beside,
+                  xaxs="i",
+                  width=width,
+                  ylim=ylim,
+                  xlim=xlim
+                  )
 
-  title(ylab="Number of Alignments",mgp=c(4,1,0))
-  par( xpd=NA )
-  legend("top",inset=c(0,-0.05),legend=gsub("\\)","",gsub("Alignments \\(","",rownames(sliced.df))),fill=cols,horiz=TRUE, cex=0.70,bty='n')  
+    par( xpd=NA )
+    if (!is.small.dataset) {
+      if (is.null(legend.horiz) ) {
+        legend.horiz=F
+      }
+      legend("top",inset=c(0,-0.05),legend=df.rows,fill=cols,horiz=legend.horiz, cex=0.70,bty='n')
+      title(ylab=ylab,mgp=c(4,1,0),main=paste("N=",ncol(df)))
+    } else {
+      title(ylab=ylab,mgp=c(4,1,0))
+    }
+  }
 }
+#big.dataset <- 2
+plot.mapping.feat <- function(df,is.small.dataset=FALSE,
+                              sel.columns=NULL,cols=NULL,
+                              ylab=NULL,
+                              big.dataset.max.out=40,ylim=NULL)
+{
 
+  cex <- 0.85
+                                        # filter out some cols
+  if (!is.null(sel.columns)) {
+    df <- df[,sel.columns,drop=FALSE]
+  }
+  if ( is.null(cols) ) {
+    cols <- rainbow(length(df.rows))
+  }
+  if (is.null(ylim) ) {
+    ylim <- c(0,max(colSums(df),na.rm=T))
+  }
+  if ( is.null(ylab) ) {
+    ylab=""
+  }
+  if (!is.small.dataset && ncol(df)>big.dataset) {
+    pwarning("Big dataset mode")
+    out <- NULL
+    out.sel.df <- df
+    bp<-boxplot(x=t(out.sel.df),add=F,out=T,names=rownames(out.sel.df),ylim=ylim)
+                                        # find the outliers
+    min.vals <- bp$stats[5,]
+    max.vals <- bp$stats[1,]
+    names(min.vals) <- rownames(out.sel.df)
+    names(max.vals) <- rownames(out.sel.df)
+    out <- c()
+    for ( n in names(min.vals)[names(min.vals) %in% rownames(out.sel.df)] ) {
+      tmp.out <- colnames(df)[as.matrix(df[n,])<min.vals[n] | as.matrix(df[n,])>max.vals[n]]
+      if ( !is.null(tmp.out)) {
+        out <- append(out,tmp.out)
+      }
+    }      
+    out <- unique(out)
+    #pinfo("out=",out)
+    # plot the outliers if any
+    par(mar=c(11,6,4,2),bty='n',xpd=NA)
+    if ( !is.null(out) ) {
+                                        # no outliers
+      w <- 5+max(length(out),10)
+      widths <- round(c(nrow(df)/w*10,max(length(out),nrow(df))/w*10),0)
+      widths <- widths/sum(widths)
+      layout(matrix(c(1,2),ncol=2),widths = widths)
+      #pinfo(widths)
+    }
+    bp<-boxplot(x=t(df),col=cols,las=2,names=rownames(df),ylim=ylim,add=F,out=T,
+                outpch=16)    
+    title(ylab=ylab,mgp=c(5,1,0),main=paste("N=",ncol(df)))
+                                        # outliers (detailed)
+    if (!is.null(out) ) {
+      df <- df[,out[seq(1,min(length(out),big.dataset.max.out))]]
+      par(mar=c(3,3,4,2),bty='n',xpd=NA)
+      plot.mapping.feat(df,is.small.dataset=T,cols=cols,ylim=ylim,ylab=ylab)
+      if ( ncol(df) > 4 ) {
+        do.horiz <- T
+        inset <- c(-0.2,-0.15)
+      } else {
+        do.horiz <- F
+        inset <- c(-0.7,-0.15)
+      }
+    }
+  } else {
+    par(mar=c(9,5,4,11))
+    bp <- barplot(as.matrix(df),las=2,
+                  beside=F,col=cols,                  
+                  horiz=F,cex.axis=0.8,
+                  xaxs="i",xlim=c(-0.1,0.1+ncol(df)),
+                  ylim=ylim,
+                  width=0.8)
+    title(ylab=ylab,mgp=c(4,1,0))
+    par( xpd=NA )
+    legend(ceiling(max(bp)),max(colSums(df,na.rm=T)),legend=pprint.fieldname(rownames(df)),fill=cols,horiz=FALSE, cex=0.70,bty='n')                          
+  }
+}
 
 
 ##################################################
-get.mapping.stats <- function(mapper,pe.bam.v,se.bam.v,pe.labels.v,se.labels.v) {
 
-  libs <- unique(append(pe.labels.v,se.labels.v))
-  nlibs <- length(libs)
-  pinfo("Processing ",nlibs," BAM files")
-  
-  # an individual report for each bam file is available in bam  
-  dir.prefix <- paste(mapper,sep="/")
-  pe.bam.urls <- c()
-  se.bam.urls <- c()
-  if (length(pe.labels.v)>0) { pe.bam.urls <- paste("<a href='",dir.prefix,"/",pe.labels.v,"/index.html'>Align. Details</a>",sep="") }
-  if (length(se.labels.v)>0) { se.bam.urls <- paste("<a href='",dir.prefix,"/",se.labels.v,"/index.html'>Align. Details</a>",sep="") }
-
-  urls <- append(pe.bam.urls,se.bam.urls)
-
-  m <- matrix(c(urls),nrow=1,byrow=T)
-  colnames(m) <- libs
-
-  bam.files <- append(pe.bam.v,se.bam.v)
-  #print(bam.files)
-  #cat("--------------------------------------------")
-  data <- mclapply(bam.files,em.bam.counts.df,use.cache=TRUE)
-  
-  # listOflists2matrix only takes the first column
-  #df <- as.data.frame(listOflists2matrix(data))
-  #df <- df[c(1:length(data[[1]]$Count)),]
-  df <- data.frame(data[[1]][,1])
-  rownames(df)<-rownames(data[[1]])
-  colnames(df) <- libs[1]
-  pinfo("length:",length(data))
-  #print(df)
-  if(length(data)>1) {
-    for (i in c(2:length(data))) {
-      df <- cbind(df,data[[i]]$Count)
-    }
-  }
-  colnames(df) <- append(pe.labels.v,se.labels.v)
-  
-  irap.assert(sum(df[,1]!=data[[1]]$Count,na.rm=T)==0)
-
-  #print(df)
-  # slice some rows
-  sliced.data <- as.data.frame(df[c("Alignments","Primary","Unmapped","Uniquely mapped reads","Multimap reads","Spliced reads","Not primary","Alignments (perfect)","Alignments (1-difference)","Alignments (2-difference)"),])
-  rownames(sliced.data) <- c("Alignments","Reads mapped","Unmapped","Uniquely mapped","Multimap reads","Spliced reads","Multimaps","Alignments (perfect)","Alignments (1-difference)","Alignments (2-difference)")
-  sel.rows <- c("Alignments","Reads mapped","Unmapped","Uniquely mapped","Multimap reads","Spliced reads","Alignments (perfect)","Alignments (1-difference)","Alignments (2-difference)")
-  sliced.data <- data.frame(sliced.data[sel.rows,])
-  rownames(sliced.data) <- sel.rows
-  colnames(sliced.data) <- colnames(df)
-  #df
-  #sliced.data
-  # compute the percentages
-  if ( ncol(sliced.data) == 1 ) {
-    tot.reads <- sum(sliced.data[c("Reads mapped","Unmapped"),])
-    p.sliced.data <- data.frame(sliced.data[c("Reads mapped","Unmapped","Uniquely mapped","Multimap reads","Spliced reads","Alignments (perfect)","Alignments (1-difference)","Alignments (2-difference)"),])
-    rownames(p.sliced.data) <- c("Reads mapped","Unmapped","Uniquely mapped","Multimap reads","Spliced reads","Alignments (perfect)","Alignments (1-difference)","Alignments (2-difference)")
-    p.sliced.data
-  } else {
-    tot.reads <- apply(sliced.data[c("Reads mapped","Unmapped"),],MARGIN=2,FUN=sum)
-    p.sliced.data <- sliced.data[c("Reads mapped","Unmapped","Uniquely mapped","Multimap reads","Spliced reads","Alignments (perfect)","Alignments (1-difference)","Alignments (2-difference)"),]
-  }
-
-
-  reads.mapped <- as.numeric(sliced.data["Reads mapped",])
-  reads.unmapped <- as.numeric(sliced.data["Unmapped",])
-  num.alignments <- as.numeric(sliced.data["Alignments",])
-  p.sliced.data["Reads mapped",] <- round(reads.mapped/tot.reads*100,2)
-  p.sliced.data["Unmapped",] <- round(reads.unmapped/tot.reads*100,2)
-  p.sliced.data["Uniquely mapped",] <- round(as.numeric(sliced.data["Uniquely mapped",])/reads.mapped*100,2)
-  p.sliced.data["Multimap reads",] <- round(as.numeric(sliced.data["Multimap reads",])/reads.mapped*100,2)
-  p.sliced.data["Spliced",] <- round(as.numeric(sliced.data["Spliced",])/reads.mapped*100,2)
-  p.sliced.data["Spliced reads",] <- round(as.numeric(sliced.data["Spliced reads",])/reads.mapped*100,2)
-  p.sliced.data["Alignments (perfect)",] <- round(as.numeric(sliced.data["Alignments (perfect)",])/num.alignments*100,2)
-  p.sliced.data["Alignments (1-difference)",] <- round(as.numeric(sliced.data["Alignments (1-difference)",])/num.alignments*100,2)
-  p.sliced.data["Alignments (2-difference)",] <- round(as.numeric(sliced.data["Alignments (2-difference)",])/num.alignments*100,2)
-  p.sliced.data["Multimaps",] <- round(as.numeric(sliced.data["Multimaps",])/num.alignments*100,2)
-  
-  # average
-  p.sliced.data.median <- apply(p.sliced.data,MARGIN=1,FUN=median)
-  p.sliced.data.mean <- apply(p.sliced.data,MARGIN=1,FUN=mean)
-  p.sliced.data.sd <- apply(p.sliced.data,MARGIN=1,FUN=sd)
-  #median(as.numeric(p.sliced.data[1,]))
-  p.sliced.data <- cbind(p.sliced.data,p.sliced.data.median,p.sliced.data.mean,p.sliced.data.sd)
-  colnames(p.sliced.data) <- append(colnames(sliced.data),c("Median","Mean","SD"))
-  p.sliced.data <- p.sliced.data[,append(c("Median","Mean","SD"),colnames(sliced.data))]
-
-  return(list(perc=p.sliced.data,raw=sliced.data))
-}
 
 get.mapping.feature.stats <- function(mapper,pe.bam.v,se.bam.v,pe.labels.v,se.labels) {
   # raw<-mapping.dfs$raw
@@ -371,8 +460,17 @@ get.mapping.gene.stats <- function(mapper,pe.bam.v,se.bam.v,pe.labels.v,se.label
 # export variables
 #opt$mapper_name="tophat1"
 mapper <- opt$mapper
-mapping.dfs <- get.mapping.stats(mapper,pe.bam.v,se.bam.v,pe.labels.v,se.labels.v)
+mapping.dfs <- list()
+mapping.dfs$raw <- quant.load(opt$bam_stats)
+mapping.dfs$perc <- quant.load(opt$bam_statsp)
+if ( is.null(mapping.dfs$raw) || is.null(mapping.dfs$perc) ) {
+  perror("Unable to read '",opt$bam_stats,"' or '",opt$bam_statsp,"'.")
+  q(status=1)
+}
+#rownames(mapping.dfs$perc) <- mapping.dfs$perc[,1]
+#mapping.dfs$perc <- mapping.dfs$perc[,-1,drop=FALSE]
 mapping.feat <- get.mapping.feature.stats(mapper,pe.bam.v,se.bam.v,pe.labels.v,se.labels.v)
+# exons/introns
 mapping.genes <- get.mapping.gene.stats(mapper,pe.bam.v,se.bam.v,pe.labels.v,se.labels.v)
 pdebug.save.state("irap_report_mapping","p3")
 library(brew)
