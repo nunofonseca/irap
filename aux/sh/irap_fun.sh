@@ -400,11 +400,11 @@ function mapping_report {
 	    if [ "$FILES" != '$d/*.hits.bam' ]; then
 		for p in $pe; do 
 		    let mapper_counter=mapper_counter+1
-		    submit_job "${jobname_prefix}m[$mapper_counter]" "-w  ended($waitfor)"  $cmd se= pe=$p $report_dir/mapping/$mapper.html_doreq
+		    submit_job "${jobname_prefix}m[$mapper_counter]" "-w  ended($waitfor)"  irap conf=$conf $IRAP_PARAMS se= pe=$p $report_dir/mapping/$mapper.html_doreq
 		done
 		for f in $se ; do
 		    let mapper_counter=mapper_counter+1
-		    submit_job "${jobname_prefix}m[$mapper_counter]" "-w  ended($waitfor)"  $cmd se=$f pe= $report_dir/mapping/$mapper.html_doreq
+		    submit_job "${jobname_prefix}m[$mapper_counter]" "-w  ended($waitfor)"  irap conf=$conf $IRAP_PARAMS se=$f pe= $report_dir/mapping/$mapper.html_doreq
 		done
 	    fi
             # wait for the reports of all mappers
