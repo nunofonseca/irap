@@ -257,6 +257,10 @@ $(name)/%/%_stats_raw.tsv $(name)/%/%_stats_perc.tsv:  $(foreach p,$(pe),$(name)
 $(name)/report/mapping/%.html_req:
 	echo $(MAPPING_REPORT_PRE_STATS)
 
+$(name)/report/mapping/%.html_doreq: $(MAPPING_REPORT_PRE_STATS)
+	echo "done"
+
+
 # Mapping report for a specific mapper
 $(name)/report/mapping/%.html: $(name)/%/   $(foreach p,$(pe),$(call must_exist,$(name)/%/$($(p)_dir)$(p).pe.hits.bam)) $(foreach s,$(se),$(call must_exist,$(name)/%/$($(s)_dir)$(s).se.hits.bam)) $(conf) $(call must_exist,$(name)/report/mapping/)  $(name)/%/%_stats_raw.tsv $(name)/%/%_stats_perc.tsv  $(foreach p,$(pe),$(name)/%/$($(p)_dir)$(p).pe.hits.bam.stats $(name)/$(mapper)/$($(p)_dir)$(p).pe.hits.bam.stats.csv $(name)/%/$($(p)_dir)$(p).pe.hits.bam.gene.stats) $(foreach s,$(se),$(name)/%/$($(s)_dir)$(s).se.hits.bam.stats.csv $(name)/%/$($(s)_dir)$(s).se.hits.bam.gene.stats $(name)/%/$($(s)_dir)$(s).se.hits.bam.stats) $(foreach p,$(pe),$(name)/%/$($(p)_dir)$(p).pe.hits.bam.gene.stats)
 	$(call pass_args_stdin,irap_report_mapping,$@, --out $(subst .html,,$@).1.html --mapper $* --pe "$(call remove_spaces,$(foreach p,$(pe),;$(name)/$*/$($(p)_dir)$(p).pe.hits.bam))" --se "$(call remove_spaces,$(foreach s,$(se),;$(name)/$*/$($(s)_dir)$(s).se.hits.bam))"  --pe_labels "$(call remove_spaces,$(foreach p,$(pe),;$(p)))" --se_labels "$(call remove_spaces,$(foreach s,$(se),;$(s)))" --bam_stats $(name)/$*/$*_stats_raw.tsv --bam_statsp $(name)/$*/$*_stats_perc.tsv  --css ../$(CSS_FILE) --cores $(max_threads) ) && mv $(subst .html,,$@).1.html  $@
