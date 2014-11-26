@@ -1396,7 +1396,7 @@ function core_install {
     popd
     pushd $SRC_DIR/src/bamutils
     make -B
-    cp bam_pe_insert bam_fix_NH bam_fix_se_flag bam_tophat2_fix  $BIN_DIR
+    cp bam_pe_insert bam_fix_NH bam_fix_se_flag bam_tophat2_fix bamRindex $BIN_DIR
     popd
     pinfo "Compiling and installing fastq/bam processing programs...done."
 
