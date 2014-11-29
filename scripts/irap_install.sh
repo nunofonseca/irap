@@ -111,7 +111,7 @@ function download2cache {
 }
 
 function check_dependencies {
-    DEVEL_LIBRARIES_REQUIRED="zlib-devel python-devel bzip2-devel python readline-devel libgfortran gcc-gfortran gcc-c++ libX11-devel libXt-devel numpy gd-devel libxml2-devel libxml2 libpng libcurl-devel expat-devel  libpangocairo bison gettext-devel [db-devel|db4-devel|libdb-devel] sqlite-devel sqlite"
+    DEVEL_LIBRARIES_REQUIRED="zlib-devel python-devel bzip2-devel python readline-devel libgfortran gcc-gfortran gcc-c++ libX11-devel libXt-devel numpy gd-devel libxml2-devel libxml2 libpng libcurl-devel expat-devel  libpangocairo bison gettext-devel  sqlite-devel sqlite [db-devel|db4-devel|libdb-devel]"
     MISSING=0
     pinfo "If installation fails then please check if the following libraries are installed:"
     pinfo "$DEVEL_LIBRARIES_REQUIRED"
