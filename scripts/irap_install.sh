@@ -111,7 +111,7 @@ function download2cache {
 }
 
 function check_dependencies {
-    DEVEL_LIBRARIES_REQUIRED="zlib-devel python-devel bzip2-devel python readline-devel libgfortran gcc-gfortran gcc-c++ libX11-devel libXt-devel numpy gd-devel libxml2-devel libxml2 libpng libcurl-devel expat-devel  libpangocairo bison gettext-devel [db-devel|db4-devel|libdb-devel]"
+    DEVEL_LIBRARIES_REQUIRED="zlib-devel python-devel bzip2-devel python readline-devel libgfortran gcc-gfortran gcc-c++ libX11-devel libXt-devel numpy gd-devel libxml2-devel libxml2 libpng libcurl-devel expat-devel  libpangocairo bison gettext-devel [db-devel|db4-devel|libdb-devel] sqlite-devel sqlite"
     MISSING=0
     pinfo "If installation fails then please check if the following libraries are installed:"
     pinfo "$DEVEL_LIBRARIES_REQUIRED"
@@ -213,8 +213,8 @@ RUBY_VERSION=1.9.3-p484
 RUBY_FILE=ruby-${RUBY_VERSION}.tar.gz
 RUBY_URL=http://ftp.ruby-lang.org/pub/ruby/1.9/$RUBY_FILE
 
-# new: 5.19.6
-PERL_VERSION=5.16.3
+# 
+PERL_VERSION=5.20.1
 PERL_FILE=perl-$PERL_VERSION.tar.gz
 PERL_URL=http://www.cpan.org/src/5.0/$PERL_FILE
 
@@ -927,7 +927,9 @@ o conf commit
 q
 EOF
 # 
-    # 
+    # upgrade cpan
+    cpan -f Bundle::CPAN   < /dev/null
+    cpan -f YAML   < /dev/null
     cpan -f App::cpanminus
     # set permissions 
     chmod +w $IRAP_DIR/bin/*
@@ -980,7 +982,7 @@ n
 EOF
     # be sure to have make in path
     export PATH=$IRAP_DIR/bin:$PATH
-    cpan -i -f YAML  < /dev/null
+    #cpan -i -f YAML  < /dev/null
     cpan -i -f JSON  < /dev/null
     cpan -i -f ExtUtils::MakeMaker
     cpan -f -i Hash::Merge 
@@ -1419,9 +1421,10 @@ function jbrowse_install {
 
     pinfo "Uncompressing and installing jbrowse...extra PERL packages"
     perl_packages_install
-    cpan -i ExtUtils::MakeMaker
-    cpan -i Module::CoreList
-    cpan -f -i GD
+    cpan -f -i ExtUtils::MakeMaker
+    cpan -f -i Module::CoreList
+    cpan -f -i Build < /dev/null
+    cpanm -v -f -i GD
     #
     download_software SAMTOOLS
     tar xvjf $SAMTOOLS_FILE
