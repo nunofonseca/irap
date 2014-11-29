@@ -594,6 +594,7 @@ $(info *	tmp_dir=$(tmp_dir) (temporary directory))
 #******************
 # Quality filtering
 #******************
+# on|off|report
 ifdef qc
  qual_filtering=$(qc)
 endif
@@ -865,7 +866,7 @@ ifeq ($(htseq_sam_output),y)
 htseq_sam_output=
 endif
 #
-# 
+# mem in MB
 ifndef max_mem
 max_mem=$(def_max_mem)
 endif
@@ -875,7 +876,8 @@ max_mem_gb:=$(shell expr $(max_mem) \/ 1000)
 
 # samtools max mem should be set ~ 1/2 of the max. memory available
 ifndef SAMTOOLS_SORT_MEM
- SAMTOOLS_SORT_MEM:=`expr $(max_mem) \* 1000000 \* 50 \/ 100`
+ SAMTOOLS_SORT_MEM:=$(max_mem_gb)G
+#`expr $(max_mem) \* 1000000 \* 50 \/ 100`
 endif
 
 ifndef feat_length
@@ -1143,12 +1145,14 @@ $(call p_info,[DONE] Initialization)
 ###################
 # Quality Filtering
 ###################
+read_qual_filter_common_params=tmp_dir=$(tmp_dir)  threads=$(max_threads)  qual_filtering=$(qual_filtering)  min_qual=$(min_read_quality) trim=$(trim_reads) cont_index=$(cont_index) 
+
 define do_quality_filtering_and_report=
-	irap_fastq_qc $(read_qual_filter_common_params) data_dir=$(data_dir)/raw_data/$(raw_folder)/$($(1)_dir) read_size=$($(1)_rs) qual=$($(1)_qual) f="$($(1))" out_prefix=$(1) is_pe=$(call is_pe_lib,$(1)) out_dir=$(name)/data/$($(1)_dir) report_dir=$(name)/report/riq/$($(1)_dir)
+	irap_fastq_qc $(read_qual_filter_common_params) data_dir=$(data_dir)/raw_data/$(raw_folder)/$($(1)_dir) read_size=$($(1)_rs)   qual=$($(1)_qual) f="$($(1))" out_prefix=$(1) is_pe=$(call is_pe_lib,$(1)) out_dir=$(name)/data/$($(1)_dir) report_dir=$(name)/report/riq/$($(1)_dir)
 endef
 
 define do_quality_filtering_and_report_cleanup=
-	irap_fastq_qc $(read_qual_filter_common_params) data_dir=$(data_dir)/raw_data/$(raw_folder)/$($(1)_dir) read_size=$($(1)_rs) qual=$($(1)_qual) f="$($(1))" out_prefix=$(1) is_pe=$(call is_pe_lib,$(1)) out_dir=$(name)/data/$($(1)_dir) report_dir=$(name)/report/riq/$($(1)_dir) clean
+	irap_fastq_qc $(read_qual_filter_common_params) data_dir=$(data_dir)/raw_data/$(raw_folder)/$($(1)_dir) read_size=$($(1)_rs)  qual=$($(1)_qual) f="$($(1))" out_prefix=$(1) is_pe=$(call is_pe_lib,$(1)) out_dir=$(name)/data/$($(1)_dir) report_dir=$(name)/report/riq/$($(1)_dir) clean
 endef
 
 define not_empty=
@@ -1395,7 +1399,7 @@ $(name)/$(mapper)/$(quant_method)/$(de_method)/:
 # Read Filtering
 ################################################################################
 # reuse the data filtered between experiments?
-read_qual_filter_common_params=tmp_dir=$(tmp_dir)  threads=$(max_threads)  qual_filtering=$(qual_filtering)  min_qual=$(min_read_quality) trim=$(trim_reads) cont_index=$(cont_index) 
+
 
 
 phony_targets+= qc quality_filtering_and_report clean_quality_filtering_and_report_cleanup
