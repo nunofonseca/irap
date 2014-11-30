@@ -928,9 +928,9 @@ q
 EOF
 # 
     # upgrade cpan
-    cpan -f Bundle::CPAN   < /dev/null
-    cpan -f YAML   < /dev/null
     cpan -f App::cpanminus
+    cpanm -f Bundle::CPAN
+    cpanm -f YAML   
     # set permissions 
     chmod +w $IRAP_DIR/bin/*
     pinfo "Configuring CPAN...done."
@@ -940,6 +940,7 @@ function perl_packages_install {
     #
     perl_cpan_install
     pinfo "Installing perl packages..."
+    cpanm -f CPAN::Meta::Converter
     cpanm -f  Algorithm::Munkres
     cpanm -f  Array::Compare
     cpanm -f Math::Random
