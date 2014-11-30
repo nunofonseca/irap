@@ -940,29 +940,28 @@ function perl_packages_install {
     #
     perl_cpan_install
     pinfo "Installing perl packages..."
-    echo /dev/null|perl -MCPAN -e shell<<EOF
-fforce install  Algorithm::Munkres
-fforce install  Array::Compare
-fforce install  Math::Random
-fforce install  Sort::Naturally
-fforce install Sub::Install
-fforce install Params::Util
-fforce install List::MoreUtils
-fforce install Math::Round
-fforce install DB_File
-fforce install Test 
-fforce install Test::Requisites
-fforce install Test::Fatal
-fforce install Test::Run
-fforce install Test::NoWarnings
-fforce install Error
-fforce install XML::Parser
-fforce install XML::Simple
-fforce install XML::SAX
-fforce install XML::SAX::Writer
-fforce install XML::Writer
-fforce install Array::Compare
-EOF
+    cpanm -f  Algorithm::Munkres
+    cpanm -f  Array::Compare
+    cpanm -f Math::Random
+    cpanm -f Sort::Naturally
+    cpanm -f Sub::Install
+    cpanm -f Params::Util
+    cpanm -f List::MoreUtils
+    cpanm -f Math::Round
+    cpanm -f DB_File
+    cpanm -f Test 
+    cpanm -f Test::Requisites
+    cpanm -f Test::Fatal
+    cpanm -f Test::Run
+    cpanm -f Test::NoWarnings
+    cpanm -f Error
+    cpanm -f XML::Parser
+    cpanm -f XML::Simple
+    cpanm -f XML::SAX
+    cpanm -f XML::SAX::Writer
+    cpanm -f XML::Writer
+    cpanm -f Array::Compare
+
 #fforce install Bio::SeqIO
     #    # SAMTOOLS needs to be recompiled :(
     mkdir -p $IRAP_DIR/tmp
@@ -983,10 +982,10 @@ EOF
     # be sure to have make in path
     export PATH=$IRAP_DIR/bin:$PATH
     #cpan -i -f YAML  < /dev/null
-    cpan -i -f JSON  < /dev/null
+    cpanm-f JSON  < /dev/null
     cpanm  -f ExtUtils::MakeMaker 
-    cpan --force -i Hash::Merge 
-    cpan -f -i Devel::Size
+    cpanm --force -i Hash::Merge 
+    cpanm --force  Devel::Size
     #pan -i  Bio::DB::Sam < /dev/null
     cpanm  --force -l $IRAP_DIR Heap::Simple::Perl
     popd
