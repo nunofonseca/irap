@@ -929,7 +929,7 @@ EOF
 # 
     # upgrade cpan
     cpan -f App::cpanminus
-    cpanm -f Bundle::CPAN
+    cpanm -f CPAN < /dev/null
     cpanm -f CPAN::Meta::Converter
     cpanm -f YAML   < /dev/null
     # set permissions 
@@ -941,12 +941,12 @@ function perl_packages_install {
     #
     perl_cpan_install
     pinfo "Installing perl packages..."
-    cpanm -f ExtUtils::MakeMaker 
+    cpanm -f ExtUtils::MakeMaker
     cpanm -f  Algorithm::Munkres
     cpanm -f  Array::Compare
     cpanm -f Math::Random
     cpanm -f Sort::Naturally
-    cpanm -f Sub::Install
+    cpanm -f Sub::Install Sub::Uplevel 
     cpanm -f Params::Util
     cpanm -f List::MoreUtils
     cpanm -f Math::Round
