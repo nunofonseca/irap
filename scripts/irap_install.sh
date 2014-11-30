@@ -213,8 +213,8 @@ RUBY_VERSION=1.9.3-p484
 RUBY_FILE=ruby-${RUBY_VERSION}.tar.gz
 RUBY_URL=http://ftp.ruby-lang.org/pub/ruby/1.9/$RUBY_FILE
 
-# 
-PERL_VERSION=5.20.1
+# 5.20.1
+PERL_VERSION=5.18.4
 PERL_FILE=perl-$PERL_VERSION.tar.gz
 PERL_URL=http://www.cpan.org/src/5.0/$PERL_FILE
 
@@ -929,6 +929,7 @@ EOF
 # 
     # upgrade cpan
     cpan -f App::cpanminus
+    cpan -u < /dev/null
     cpanm -f CPAN < /dev/null
     cpanm -f CPAN::Meta::Converter < /dev/null
     cpanm ExtUtils::MakeMaker  < /dev/null
@@ -948,7 +949,7 @@ function perl_packages_install {
     perl_cpan_install
     pinfo "Installing perl packages..."
     #    Test::Requisites
-    PACKAGES="Algorithm::Munkres     Array::Compare    Math::Random    Sort::Naturally    Sub::Install Sub::Uplevel     Params::Util    List::MoreUtils    Math::Round    DB_File    Test     Test::Fatal    Test::Run    Test::NoWarnings    Error    XML::Parser    XML::Simple    XML::SAX    XML::SAX::Writer    XML::Writer JSON Hash::Merge  Devel::Size Heap::Simple::Perl"    
+    PACKAGES="Algorithm::Munkres     Array::Compare    Math::Random    Sort::Naturally    Sub::Install Sub::Uplevel     Params::Util    List::MoreUtils    Math::Round    DB_File    Test     Test::Fatal    Test::Run    Test::NoWarnings    Error    XML::Parser    XML::Simple    XML::SAX    XML::SAX::Writer    XML::Writer JSON Hash::Merge  Devel::Size Heap::Simple::Perl PerlIO::locale Compress::Raw::Zlib Locale::Maketext::Lexicon Build"    
 
     set +e
     for p in $PACKAGES; do
@@ -1420,18 +1421,18 @@ function jbrowse_install {
     ln -s samtools-${SAMTOOLS_VERSION} samtools
     # It is necessary to clean .cpan 
     # yes, weird!
-    #rm -rf $IRAP_DIR/.cpan.bak2
-    #if [ -e ~/.cpan ]; then
-     #	mv ~/.cpan $IRAP_DIR/.cpan.bak2
-    #fi
+    rm -rf $IRAP_DIR/.cpan.bak2
+    if [ -e ~/.cpan ]; then
+     	mv ~/.cpan $IRAP_DIR/.cpan.bak2
+    fi
     #unset INSTALL_BASE
     cpanm -f local::lib < /dev/null    
     set +e
-    # cpanm -v --notest -l $IRAP_DIR --installdeps . < /dev/null;
+    cpanm -v --notest -l $IRAP_DIR --installdeps . < /dev/null;
     cpanm -f -v  --installdeps . < /dev/null;
     set -e
-    #rm -rf ~/.cpan
-    #mv $IRAP_DIR/.cpan.bak2 ~/.cpan 
+    rm -rf ~/.cpan
+    mv $IRAP_DIR/.cpan.bak2 ~/.cpan 
     # cpanm -v --notest -l $IRAP_DIR --installdeps . < /dev/null;
     pinfo "Uncompressing and installing jbrowse...extra PERL packages (done)"
     pinfo "Uncompressing and installing jbrowse...compiling wig2png"
