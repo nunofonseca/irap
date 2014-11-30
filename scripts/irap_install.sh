@@ -931,7 +931,9 @@ EOF
     cpan -f App::cpanminus
     cpanm -f CPAN < /dev/null
     cpanm -f CPAN::Meta::Converter < /dev/null
+    cpanm ExtUtils::MakeMaker  < /dev/null
     cpanm -f YAML   < /dev/null
+
     # set permissions 
     chmod +w $IRAP_DIR/bin/*
     pinfo "Configuring CPAN...done."
@@ -939,32 +941,20 @@ EOF
 function perl_packages_install {
     mkdir -p $IRAP_DIR/perl
     #
+    # ensure that make is in path
+    export PATH=$IRAP_DIR/bin:$PATH
+    
+    # TODO: do it only once
     perl_cpan_install
     pinfo "Installing perl packages..."
-    cpanm -f ExtUtils::MakeMaker
-    cpanm -f  Algorithm::Munkres
-    cpanm -f  Array::Compare
-    cpanm -f Math::Random
-    cpanm -f Sort::Naturally
-    cpanm -f Sub::Install Sub::Uplevel 
-    cpanm -f Params::Util
-    cpanm -f List::MoreUtils
-    cpanm -f Math::Round
-    cpanm -f DB_File
-    cpanm -f Test 
-    cpanm -f Test::Requisites
-    cpanm -f Test::Fatal
-    cpanm -f Test::Run
-    cpanm -f Test::NoWarnings
-    cpanm -f Error
-    cpanm -f XML::Parser
-    cpanm -f XML::Simple
-    cpanm -f XML::SAX
-    cpanm -f XML::SAX::Writer
-    cpanm -f XML::Writer
-    cpanm -f Array::Compare
+    #    Test::Requisites
+    PACKAGES="Algorithm::Munkres     Array::Compare    Math::Random    Sort::Naturally    Sub::Install Sub::Uplevel     Params::Util    List::MoreUtils    Math::Round    DB_File    Test     Test::Fatal    Test::Run    Test::NoWarnings    Error    XML::Parser    XML::Simple    XML::SAX    XML::SAX::Writer    XML::Writer JSON Hash::Merge  Devel::Size Heap::Simple::Perl"    
 
-#fforce install Bio::SeqIO
+    for p in $PACKAGES; do
+       pinfo "Package $p"
+       cpanm  $p < /dev/null
+    done
+
     #    # SAMTOOLS needs to be recompiled :(
     mkdir -p $IRAP_DIR/tmp
     pushd $IRAP_DIR/tmp
@@ -981,15 +971,6 @@ n
 n
 n
 EOF
-    # be sure to have make in path
-    export PATH=$IRAP_DIR/bin:$PATH
-    #cpan -i -f YAML  < /dev/null
-    cpanm-f JSON  < /dev/null
-
-    cpanm --force -i Hash::Merge 
-    cpanm --force  Devel::Size
-    #pan -i  Bio::DB::Sam < /dev/null
-    cpanm  --force -l $IRAP_DIR Heap::Simple::Perl
     popd
     pinfo "Installing perl packages...done."
 }
@@ -1421,11 +1402,13 @@ function jbrowse_install {
     sed -i "s|bin/cpanm|cpanm|" setup.sh
 
     pinfo "Uncompressing and installing jbrowse...extra PERL packages"
-    perl_packages_install
-    cpan -f -i ExtUtils::MakeMaker
-    cpan -f -i Module::CoreList
+    # TODO: do it only once
+    # perl_packages_install
+
+    cpan -f -i Module::CoreList  < /dev/null
+    cpan -f -i ExtUtils::MakeMaker < /dev/null
     cpan -f -i Build < /dev/null
-    cpanm -v -f  GD
+    cpanm -v   GD
     #
     download_software SAMTOOLS
     tar xvjf $SAMTOOLS_FILE
@@ -1436,18 +1419,18 @@ function jbrowse_install {
     ln -s samtools-${SAMTOOLS_VERSION} samtools
     # It is necessary to clean .cpan 
     # yes, weird!
-    rm -rf $IRAP_DIR/.cpan.bak2
-    if [ -e ~/.cpan ]; then
-	mv ~/.cpan $IRAP_DIR/.cpan.bak2
-    fi
+    #rm -rf $IRAP_DIR/.cpan.bak2
+    #if [ -e ~/.cpan ]; then
+     #	mv ~/.cpan $IRAP_DIR/.cpan.bak2
+    #fi
     #unset INSTALL_BASE
-    cpanm -f -l $IRAP_DIR local::lib < /dev/null    
+    cpanm -f local::lib < /dev/null    
     set +e
     # cpanm -v --notest -l $IRAP_DIR --installdeps . < /dev/null;
-    cpanm -f -v -l $IRAP_DIR --installdeps . < /dev/null;
+    cpanm -f -v  --installdeps . < /dev/null;
     set -e
-    rm -rf ~/.cpan
-    mv $IRAP_DIR/.cpan.bak2 ~/.cpan 
+    #rm -rf ~/.cpan
+    #mv $IRAP_DIR/.cpan.bak2 ~/.cpan 
     # cpanm -v --notest -l $IRAP_DIR --installdeps . < /dev/null;
     pinfo "Uncompressing and installing jbrowse...extra PERL packages (done)"
     pinfo "Uncompressing and installing jbrowse...compiling wig2png"
