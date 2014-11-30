@@ -930,7 +930,8 @@ EOF
     # upgrade cpan
     cpan -f App::cpanminus
     cpanm -f Bundle::CPAN
-    cpanm -f YAML   
+    cpanm -f CPAN::Meta::Converter
+    cpanm -f YAML   < /dev/null
     # set permissions 
     chmod +w $IRAP_DIR/bin/*
     pinfo "Configuring CPAN...done."
@@ -940,7 +941,7 @@ function perl_packages_install {
     #
     perl_cpan_install
     pinfo "Installing perl packages..."
-    cpanm -f CPAN::Meta::Converter
+    cpanm -f ExtUtils::MakeMaker 
     cpanm -f  Algorithm::Munkres
     cpanm -f  Array::Compare
     cpanm -f Math::Random
@@ -984,7 +985,7 @@ EOF
     export PATH=$IRAP_DIR/bin:$PATH
     #cpan -i -f YAML  < /dev/null
     cpanm-f JSON  < /dev/null
-    cpanm  -f ExtUtils::MakeMaker 
+
     cpanm --force -i Hash::Merge 
     cpanm --force  Devel::Size
     #pan -i  Bio::DB::Sam < /dev/null
