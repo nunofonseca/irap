@@ -930,7 +930,7 @@ EOF
     # upgrade cpan
     cpan -f App::cpanminus
     cpanm -f CPAN < /dev/null
-    cpanm -f CPAN::Meta::Converter
+    cpanm -f CPAN::Meta::Converter < /dev/null
     cpanm -f YAML   < /dev/null
     # set permissions 
     chmod +w $IRAP_DIR/bin/*
