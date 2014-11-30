@@ -950,12 +950,13 @@ function perl_packages_install {
     #    Test::Requisites
     PACKAGES="Algorithm::Munkres     Array::Compare    Math::Random    Sort::Naturally    Sub::Install Sub::Uplevel     Params::Util    List::MoreUtils    Math::Round    DB_File    Test     Test::Fatal    Test::Run    Test::NoWarnings    Error    XML::Parser    XML::Simple    XML::SAX    XML::SAX::Writer    XML::Writer JSON Hash::Merge  Devel::Size Heap::Simple::Perl"    
 
+    set +e
     for p in $PACKAGES; do
        pinfo "Package $p"
        cpanm  $p < /dev/null
     done
-
-    #    # SAMTOOLS needs to be recompiled :(
+    set -e
+    # SAMTOOLS needs to be recompiled :(
     mkdir -p $IRAP_DIR/tmp
     pushd $IRAP_DIR/tmp
     download_software SAMTOOLS
