@@ -940,7 +940,7 @@ function perl_packages_install {
     #
     perl_cpan_install
     pinfo "Installing perl packages..."
-    perl -MCPAN -e shell<<EOF
+    echo /dev/null|perl -MCPAN -e shell<<EOF
 fforce install  Algorithm::Munkres
 fforce install  Array::Compare
 fforce install  Math::Random
@@ -984,8 +984,8 @@ EOF
     export PATH=$IRAP_DIR/bin:$PATH
     #cpan -i -f YAML  < /dev/null
     cpan -i -f JSON  < /dev/null
-    cpan -i -f ExtUtils::MakeMaker
-    cpan -f -i Hash::Merge 
+    cpanm  -f ExtUtils::MakeMaker 
+    cpan --force -i Hash::Merge 
     cpan -f -i Devel::Size
     #pan -i  Bio::DB::Sam < /dev/null
     cpanm  --force -l $IRAP_DIR Heap::Simple::Perl
@@ -1424,7 +1424,7 @@ function jbrowse_install {
     cpan -f -i ExtUtils::MakeMaker
     cpan -f -i Module::CoreList
     cpan -f -i Build < /dev/null
-    cpanm -v -f -i GD
+    cpanm -v -f  GD
     #
     download_software SAMTOOLS
     tar xvjf $SAMTOOLS_FILE
