@@ -928,12 +928,13 @@ q
 EOF
 # 
     # upgrade cpan
-    cpan -f App::cpanminus
-    cpan -u < /dev/null
-    cpanm -f CPAN < /dev/null
-    cpanm -f CPAN::Meta::Converter < /dev/null
-    cpanm ExtUtils::MakeMaker  < /dev/null
-    cpanm -f YAML   < /dev/null
+    cpan -f  -i App::cpanminus
+    cpanm -f -i YAML   < /dev/null
+    cpan -i -f ExtUtils::MakeMaker  < /dev/null
+    cpan -f -i Parse::CPAN::Meta < /dev/null
+    cpan -f -i  CPAN < /dev/null
+    cpan -f CPAN::Meta::Converter < /dev/null
+    
 
     # set permissions 
     chmod +w $IRAP_DIR/bin/*
