@@ -1005,6 +1005,11 @@ download.file("http://cran.r-project.org/src/contrib/Archive/gplots/gplots_2.11.
 install.packages("gplots_2.11.0.tar.gz",type="source",repos=NULL)
 #install.packages("gplots",repo=repo)
 
+# RSQLite_1 does not compile
+download.file("http://cran.r-project.org/src/contrib/Archive/RSQLite/RSQLite_0.11.4.tar.gz","RSQLite_0.11.4.tar.gz")
+install.packages("RSQLite_0.11.4.tar.gz",type="source",repos=NULL)
+biocLite('GO.db',ask=FALSE, suppressUpdates=TRUE)
+
 source("http://bioconductor.org/biocLite.R")
 biocLite("Rsamtools",ask=FALSE, suppressUpdates=FALSE)
 #biocLite('cummeRbund',ask=FALSE, suppressUpdates=FALSE)
@@ -1018,7 +1023,7 @@ biocLite('marray',ask=FALSE, suppressUpdates=FALSE)
 biocLite('igraph',ask=FALSE, suppressUpdates=FALSE)
 
 biocLite("org.Hs.eg.db",ask=FALSE, suppressUpdates=FALSE)
-biocLite('GO.db',ask=FALSE, suppressUpdates=FALSE)
+
 #biocLite("topGO",ask=FALSE, suppressUpdates=FALSE)
 #biocLite("biomaRt",ask=FALSE, suppressUpdates=FALSE)
 
@@ -1082,7 +1087,8 @@ packages2install<-c("Rsamtools",'edgeR',
 biocLite(packages2install,ask=FALSE, suppressUpdates=FALSE)
 biocLite("piano",ask=FALSE, suppressUpdates=FALSE)
 #biocLite("org.Hs.eg.db",ask=FALSE, suppressUpdates=FALSE)
-#biocLite('GO.db',ask=FALSE, suppressUpdates=FALSE)
+biocLite('RCurl',ask=FALSE, suppressUpdates=FALSE)
+biocLite('GO.db',ask=FALSE, suppressUpdates=FALSE)
 #biocLite("topGO",ask=FALSE, suppressUpdates=FALSE)
 #biocLite("biomaRt",ask=FALSE, suppressUpdates=FALSE)
 
