@@ -129,12 +129,12 @@ int main(int argc, char *argv[])
     if (aln->core.n_cigar != 0) {
       for (i = 0; i < aln->core.n_cigar; ++i) {
 	char l="MIDNSHP=X"[bam1_cigar(aln)[i]&BAM_CIGAR_MASK];
-	fprintf(stderr,"%c",l);
+	//fprintf(stderr,"%c",l);
 	if ( l == 'N' ) { isSpliced=TRUE; hasSimpleCigar=FALSE;++nSpliced;}	  
 	if ( l != 'M' && l!='=' ) {  hasSimpleCigar=FALSE;}	  
       }
     }   
-    fprintf(stderr,"\n");
+    //printf(stderr,"\n");
     // isDuplicate,isNotPassingQualityControls,
     // isSpliced,isPAired,isPrimary,hasSimpleCigar,isSecondMateRead,isProperPair,nh,nm,xs
     sprintf(sSQL,"INSERT into bam_index values (%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,'%c')",
