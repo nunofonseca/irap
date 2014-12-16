@@ -38,7 +38,7 @@
 #define PRINT_ALNS_PROCESSED(c) { if (c%100000==0) { fprintf(stderr,"%s%ld",BACKLINE,c);fflush(stderr); }}
 
 
-#define TABLE "CREATE TABLE bam_index(isDuplicate Boolean, isNotPassingQualityControls Boolean,  nSpliced smallint,  isPaired Boolean,  isPrimary Boolean,  isMapped Boolean,  hasSimpleCigar Boolean,  isSecondMateRead Boolean,  isProperPair Boolean,  nh smallint,  nm smallint,  xs character(1));"
+#define TABLE "CREATE TABLE bam_index(isDuplicate Boolean, isNotPassingQualityControls Boolean,  nSpliced smallint,  isPaired Boolean,  isPrimary Boolean,  isMapped Boolean,  hasSimpleCigar Boolean,  isSecondMateRead Boolean,  isProperPair Boolean,  nh smallint,  nm smallint,  mapq smallint, xs character(1));"
 
 #define INDEXES "create index idx1 on bam_index (isMapped); CREATE INDEX idx2 on bam_index ( isPrimary); create index idx3 on bam_index (isProperPair ); create index idx4 on bam_index ( nSpliced ); create index idx5 on bam_index ( nh ); create index idx6 on bam_index ( nm ); create index idx7 on bam_index ( xs );"
 
@@ -122,6 +122,7 @@ int main(int argc, char *argv[])
     isNotPassingQualityControls=(aln->core.flag & BAM_FQCFAIL ) ? TRUE:FALSE;
     isDuplicate=(aln->core.flag & BAM_FDUP) ? TRUE: FALSE;
 
+
     BOOLEAN isSpliced=FALSE;
     BOOLEAN hasSimpleCigar=TRUE;
     int nSpliced=0;
@@ -136,11 +137,12 @@ int main(int argc, char *argv[])
     }   
     //printf(stderr,"\n");
     // isDuplicate,isNotPassingQualityControls,
-    // isSpliced,isPAired,isPrimary,hasSimpleCigar,isSecondMateRead,isProperPair,nh,nm,xs
-    sprintf(sSQL,"INSERT into bam_index values (%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,'%c')",
+    // isSpliced,isPAired,isPrimary,hasSimpleCigar,isSecondMateRead,isProperPair,nh,nm,qual/mapq,xs
+    sprintf(sSQL,"INSERT into bam_index values (%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,'%c')",
 	   isDuplicate,isNotPassingQualityControls,
 	   nSpliced,isPaired,isPrimary,isMapped,hasSimpleCigar,isSecondMateRead,isProperPair,
 	   (nh==0?0:bam_aux2i(nh)),(nm==0?0:bam_aux2i(nm)),
+	    aln->core.qual,
 	   (xs==0?' ':bam_aux2A(xs)));
     sqlite3_exec(db, sSQL, NULL, NULL, &sErrMsg);
     SQLITE_CHECK_ERROR();
