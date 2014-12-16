@@ -1011,10 +1011,10 @@ install.packages("RSQLite_0.11.4.tar.gz",type="source",repos=NULL)
 biocLite('GO.db',ask=FALSE, suppressUpdates=TRUE)
 
 source("http://bioconductor.org/biocLite.R")
-biocLite("Rsamtools",ask=FALSE, suppressUpdates=FALSE)
+biocLite("Rsamtools",ask=FALSE, suppressUpdates=TRUE)
 #biocLite('cummeRbund',ask=FALSE, suppressUpdates=FALSE)
 biocLite('edgeR',ask=FALSE, suppressUpdates=FALSE)
-biocLite('DESeq',ask=FALSE, suppressUpdates=FALSE)
+biocLite('DESeq',ask=FALSE, suppressUpdates=TRUE)
 #biocLite('DESeq2',ask=FALSE, suppressUpdates=FALSE)
 biocLite('DEXSeq',ask=FALSE, suppressUpdates=FALSE)
 biocLite('baySeq',ask=FALSE, suppressUpdates=FALSE)
@@ -1024,10 +1024,10 @@ biocLite('igraph',ask=FALSE, suppressUpdates=FALSE)
 
 biocLite("org.Hs.eg.db",ask=FALSE, suppressUpdates=FALSE)
 
-#biocLite("topGO",ask=FALSE, suppressUpdates=FALSE)
+#biocLite("topGO",ask=FALSE, suppressUpdates=TRUE)
 #biocLite("biomaRt",ask=FALSE, suppressUpdates=FALSE)
 
-biocLite('goseq',ask=FALSE, suppressUpdates=FALSE)
+biocLite('goseq',ask=FALSE, suppressUpdates=TRUE)
 
 species2db<-matrix(c('org.Ag.eg.db','Anopheles',
 'org.At.tair.db','Arabidopsis',
@@ -1056,9 +1056,10 @@ biocLite(p,ask=FALSE)
 
 q()
 EOF
-    pinfo "Installing EMBAM..."
-    embam_install $IRAP_DIR/bin/R
-    pinfo "installing EMBAM...done."
+    # deprecated
+    #pinfo "Installing EMBAM..."
+    #embam_install $IRAP_DIR/bin/R
+    #pinfo "installing EMBAM...done."
     pinfo "Installing R packages...done."
 }
 # 
@@ -1121,9 +1122,9 @@ colnames(species2db)<-c("db","species")
 
 q()
 EOF
-    pinfo "Installing EMBAM..."
-    embam_install $IRAP_DIR/R3/bin/R
-    pinfo "installing EMBAM...done."
+    #pinfo "Installing EMBAM..."
+    #embam_install $IRAP_DIR/R3/bin/R
+    #pinfo "installing EMBAM...done."
     pinfo "Installing R-3.x packages...done."
 }
 
