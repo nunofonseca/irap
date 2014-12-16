@@ -628,7 +628,7 @@ irap.ctr <- function(c.name,add.label=TRUE) {
 brew.wrapper <- function(...) {
   x <- try(brew(...,envir=parent.frame()))
   if ( inherits(x,"try-error") ) {
-    perror("Failed to generate HTML.",attr(x,"condtion"))
+    perror("Failed to generate HTML.",attr(x,"condition"))
     if (pdebug.enabled) {
       code <- brew(...,envir=parent.frame(),run=FALSE,parseCode=FALSE)
       cat(paste(unlist(code),collapse="\n",sep="\n"))
