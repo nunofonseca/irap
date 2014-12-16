@@ -2,22 +2,345 @@
 
 <%
 library(xtable)
-max.outliers <- 20
+
 bar.width<-25
+# how many libraries should we have to consider a dataset as 'big'?
+big.dataset <- 10
+# only used for 'big' dataset
+max.outliers <- 15
+mapping.vals <- c("Alignments","Reads mapped","Reads unmapped","Uniquely mapped","Reads spliced")
+outlier.vals <- c("Reads unmapped","Uniquely mapped","Reads spliced")
+
 get.image.width <- function(nbars,min.width=500,bar_width=bar.width) {
   return(max(min.width,bar_width*nbars))
 }
 
 get.image.width2 <- function(nbars,min.width=500,bar_width=bar.width) {
   # summary plot=5
-  nbars <- 5+min(max.outliers,nbars)
-  return(get.image.width(nbars=nbars,min.width = min.width,bar_width = bar.width))
+  nbars <- min(max.outliers,nbars)
+  return(min.width+get.image.width(nbars=nbars,min.width = min.width,bar_width = bar.width)/2)
 }
+
 get.image.width3 <- function(nbars,min.width=500,bar_width=bar.width) {
   # summary plot=5
   nbars <- 20+min(max.outliers,nbars)
   return(get.image.width(nbars=nbars,min.width = min.width,bar_width = bar.width))
 }
+
+
+
+mapping.plot.nbars <- function(df,vals=mapping.vals,
+                               exclude.cols = NULL,
+                               out.beside=TRUE, big.dataset.max.out=20,
+                               outlier.vals) {
+  out <- NULL
+  df <- df[vals,,drop=FALSE]
+  nbars1 <- 0
+  nbars2 <- 0
+  w <- 1
+  if (!is.null(exclude.cols)) {
+    df <- df[,!colnames(df) %in% exclude.cols,drop=FALSE]
+  }
+
+  if ( ncol(df)>big.dataset  ) {
+    pdebug("big dataset")
+    if ( !is.null(outlier.vals) ) {
+      out.sel.df <- df[outlier.vals,,drop=FALSE]
+      bp<-boxplot(x=t(out.sel.df),ylim=c(0,max(out.sel.df,na.rm=T)))
+      # find the outliers
+      min.vals <- bp$stats[5,]
+      max.vals <- bp$stats[1,]
+      names(min.vals) <- rownames(out.sel.df)
+      names(max.vals) <- rownames(out.sel.df)
+      out <- c()
+      for ( n in names(min.vals)[names(min.vals) %in% rownames(out.sel.df)] ) {
+        tmp.out <- colnames(df)[as.matrix(df[n,,drop=FALSE])<min.vals[n] | as.matrix(df[n,,drop=FALSE])>max.vals[n]]
+        if ( !is.null(tmp.out)) {
+          out <- append(out,tmp.out)
+        }
+      }      
+      out <- unique(out)
+      pdebug("# out=",length(out),"/",ncol(df))
+    }
+  } else {
+    nbars <- ncol(df)
+    w <- 1
+    return(list(nbars=nbars,w=w,nbars1=w,nbars2=0,out=NULL,widths=1))
+  }
+  if ( !is.null(out) ) {
+    out <- out[seq(1,min(big.dataset.max.out,length(out)))]
+    nbars1 <- max(nrow(df),5)
+    pdebug("w=",w," nrow(df)=",nrow(df))
+    if ( out.beside ) {
+      nbars2 <- max(length(out)*nrow(df),20)
+    } else {
+      nbars2 <- max(length(out),20)
+    }
+    # make the first bars a bit bigger
+    #nbars1 <- nbars1*2
+    w <- nbars1+nbars2   
+    widths <- c(nbars1/w*10,nbars2/w*10)
+    pdebug("nbars1=",nbars1," nbars2=",nbars2)
+    widths <- widths/sum(widths)
+    widths[1] <- max(widths[1],0.40)
+    widths[2] <- min(widths[2],0.60)
+    nbars <- w
+  } else  {
+    pdebug("out == NULL?")
+    widths <- 1
+    nbars  <- nrow(df)
+    nbars1 <- nbars
+  }
+  return(list(nbars=nbars,w=w,nbars1=nbars1,nbars2=nbars2,out=out,widths=widths))
+}
+
+mapping.plot <- function(df,
+                         
+                         is.small.dataset=FALSE,
+                         big.dataset.max.out=20,
+                         exclude.cols=NULL,
+                         ylab=NULL,
+                         ylim=NULL,
+                         labels=NULL,
+                         cols=NULL,
+                         out.beside=TRUE,
+                         legend.horiz=NULL,
+		         legend.beside=FALSE,
+                         vals=NULL,
+                         recursive=FALSE,
+                         outlier.vals=outlier.vals) {
+
+  cex <- 0.85
+  df.rows <- vals
+  # filter out some cols
+  if (!is.null(exclude.cols)) {
+    df <- df[,!colnames(df) %in% exclude.cols,drop=FALSE]
+  }
+  if (is.null(labels)) {
+    labels <- vals
+  }
+  if (is.null(ylab)) {
+    ylab <- "Number of Alignments/Reads"
+  }
+  if ( is.null(cols) ) {
+    cols <- rainbow(length(df.rows))
+  }
+  df <- df[df.rows,,drop=FALSE]
+  if (is.null(ylim) ) {
+    ylim <- c(0,max(df,na.rm=T))
+  }
+  if ( is.small.dataset==FALSE  && ! recursive && ncol(df)>big.dataset) {
+    pdebug("Big dataset mode")
+    # 
+    # plot the outliers if any
+    par(mar=c(9,6,4,2),bty='n',xpd=NA)
+    pdebug(">>",rownames(df))
+    d <- mapping.plot.nbars(df,outlier.vals=outlier.vals,vals=rownames(df),big.dataset.max.out=big.dataset.max.out,exclude.cols=NULL,out.beside=out.beside)
+    if ( !is.null(d$out)  ) {
+      widths <- d$widths*100
+      pdebug("nbars1=",d$nbars1," nbars2=",d$nbars2)
+      layout(matrix(c(1,2),ncol=2),widths = widths)
+      pdebug("widths=",widths)
+    }
+    bp<-boxplot(x=t(df),col=cols,las=2,names=labels,ylim=ylim,add=F,outline=FALSE)
+#                outpch=16)    
+    title(ylab=ylab,mgp=c(4,1,0),main=paste(ncol(df)," libraries",sep=""))
+    # outliers (detailed)
+    if (!is.null(d$out) ) {
+      df <- df[,d$out,drop=FALSE]
+      #par(mar=c(3,3,4,2),bty='n',xpd=NA)
+      bp<-mapping.plot(df,recursive=TRUE,ylab=ylab,vals=vals,exclude.cols=exclude.cols,labels=labels,cols=cols,out.beside=out.beside,ylim=ylim,legend.horiz,big.dataset.max.out=big.dataset.max.out,legend.beside=legend.beside)
+      do.horiz <- FALSE
+      inset <- c(0,0)
+      if ( ! legend.beside ) {
+        if (!is.null(legend.horiz) ) {
+          do.horiz <- legend.horiz
+          inset <- c(0,-0.18)
+        } else {
+          if ( ncol(df) > 4 ) {
+            do.horiz <- T
+            inset <- c(0,-0.18)
+          } else {        
+            do.horiz <- F
+            inset <- c(-0.7,-0.18)
+          }
+        }
+        legend("topright",inset=inset,legend=labels,fill=cols,horiz=do.horiz, cex=cex,bty='n')
+      }   
+      pdebug("Exiting 1")
+      return(bp)
+    }
+  } else {
+    # default values
+    top.margin <- 4
+    right.margin <- 2
+    left.margin <- 5
+    bot.margin <- 9
+    
+    if  ( legend.beside ) {      
+      right.margin <- 6
+      if ( recursive) {
+        right.margin <- 8                
+      }
+      if ( ncol(df)<=big.dataset ) {
+        right.margin <- right.margin * 1.2
+      }
+    }
+    if ( ! recursive ) {
+      top.margin <- 2
+    } else {
+      ylab <- ""
+      left.margin <- 1
+    }
+    if ( ncol(df)<=big.dataset)  {
+      if (max(df)>100) {
+        left.margin <- left.margin*1.20
+        right.margin <- right.margin*1.20
+      }
+    } else {
+      if (max(df)<=100) {
+        left.margin <- left.margin*0.90
+        right.margin <- right.margin*0.90
+      }
+    }
+    par(mar=c(bot.margin,left.margin,top.margin,right.margin))
+    n <- length(colnames(df))
+    width=0.7
+    xlim <- NULL
+    bp <- barplot(as.matrix(df),
+                  las=2,
+                  cex.axis=cex*.90,
+                  cex.names=cex*0.90,
+                  col=cols,
+                  beside=out.beside,
+                  xaxs="i",
+#                  width=width,
+                  ylim=ylim,
+                  xlim=xlim
+                  )
+    
+    title(ylab=ylab,mgp=c(left.margin-1.25,1,0))
+
+    par( xpd=NA )
+    # legend
+    if  ( legend.beside ) {
+          pdebug(df.rows,ceiling(max(bp,na.rm=T))," ",max(df,na.rm=T))
+          x <- ceiling(max(bp,na.rm=T))
+          y <- max(df,na.rm=T)
+          if (ncol(df) ==3 && ! recursive && out.beside==FALSE ) {
+            x <- x*0.9
+          }
+          if (ncol(df) <3 && ! recursive && out.beside==FALSE ) {
+            x <- x+ncol(df)*0.2
+          }
+          legend(x,y,horiz=FALSE, 
+               legend=labels,fill=cols, cex=0.70,bty='n')
+     } else {
+        pdebug("small.dataset 2")
+        if ( !recursive && ( is.small.dataset==FALSE || ncol(df)>big.dataset ) ) {
+          if (is.null(legend.horiz) ) {
+            legend.horiz=F
+          }
+          inset2 <- -0.10
+          if ( ncol(df)==1 ) {
+            inset2 <- -0.35
+          }
+          legend("top",inset=c(0,inset2),legend=df.rows,fill=cols,horiz=legend.horiz, cex=0.70,bty='n')
+        } else {
+          title(ylab=ylab,mgp=c(4,1,0))
+        }
+      }
+    pdebug("Exiting 2")
+    return(bp)
+  }
+}
+#big.dataset <- 2
+plot.mapping.feat <- function(df,is.small.dataset=FALSE,
+                              sel.columns=NULL,cols=NULL,
+                              ylab=NULL,
+                              big.dataset.max.out=40,ylim=NULL)
+{
+
+  cex <- 0.85
+                                        # filter out some cols
+  if (!is.null(sel.columns)) {
+    df <- df[,sel.columns,drop=FALSE]
+  }
+  if ( is.null(cols) ) {
+    cols <- rainbow(length(df.rows))
+  }
+  if (is.null(ylim) ) {
+    ylim <- c(0,max(colSums(df),na.rm=T))
+  }
+  if ( is.null(ylab) ) {
+    ylab=""
+  }
+  pdebug("small.dataset 3")
+  if ( ! is.small.dataset && ncol(df)>big.dataset) {
+    pdebug("Big dataset mode")
+    out <- NULL
+    out.sel.df <- df
+    pdebug(colnames(df))
+    pdebug(rownames(df))
+    bp<-boxplot(x=t(out.sel.df),add=F,out=T,names=rownames(out.sel.df),ylim=ylim)
+    # find the outliers
+    pdebug("bp computed")
+    min.vals <- bp$stats[5,]
+    max.vals <- bp$stats[1,]
+    names(min.vals) <- rownames(out.sel.df)
+    names(max.vals) <- rownames(out.sel.df)
+    out <- c()
+    for ( n in names(min.vals)[names(min.vals) %in% rownames(out.sel.df)] ) {
+      tmp.out <- colnames(df)[as.matrix(df[n,])<min.vals[n] | as.matrix(df[n,])>max.vals[n]]
+      if ( !is.null(tmp.out)) {
+        out <- append(out,tmp.out)
+      }
+    }      
+    out <- unique(out)
+    #pinfo("out=",out)
+    # plot the outliers if any
+    par(mar=c(11,6,4,2),bty='n',xpd=NA)
+    pdedug("out=",length(out))
+    if ( !is.null(out) ) {
+      # outliers
+      out <- out[seq(1,min(big.dataset.max.out,length(out)))]
+      w <- 5+max(length(out),10)
+      widths <- round(c(nrow(df)/w*10,max(length(out),nrow(df))/w*10),0)
+      widths <- widths/sum(widths)
+      layout(matrix(c(1,2),ncol=2),widths = widths)
+      pdebug("widths=",widths)
+    }
+    bp<-boxplot(x=t(df),col=cols,las=2,names=rownames(df),ylim=ylim,add=F,out=T,
+                outpch=16)    
+    title(ylab=ylab,mgp=c(5,1,0),main=paste(ncol(df)," libraries",sep=""))
+                                        # outliers (detailed)
+    if (!is.null(out) ) {
+      df <- df[,out[seq(1,min(length(out),big.dataset.max.out))],drop=FALSE]
+      par(mar=c(3,3,4,2),bty='n',xpd=NA)
+      pdebug("small.dataset 4")
+      plot.mapping.feat(df,is.small.dataset=TRUE,cols=cols,ylim=ylim,ylab=ylab)
+      if ( ncol(df) > 4 ) {
+        do.horiz <- T
+        inset <- c(-0.2,-0.18)
+      } else {
+        do.horiz <- F
+        inset <- c(-0.7,-0.18)
+      }
+    }
+  } else {
+    par(mar=c(9,5,4,11))
+    bp <- barplot(as.matrix(df),las=2,
+                  beside=F,col=cols,                  
+                  horiz=F,cex.axis=0.8,
+                  xaxs="i",xlim=c(-0.1,0.1+ncol(df)),
+                  ylim=ylim,
+                  width=0.8)
+    title(ylab=ylab,mgp=c(4,1,0))
+    par( xpd=NA )
+    legend(ceiling(max(bp)),max(colSums(df,na.rm=T)),legend=pprint.fieldname(rownames(df)),fill=cols,horiz=FALSE, cex=0.70,bty='n')                          
+  }
+}
+
 %>
  
 <%# Comment -- wrap up everything in a div %>
@@ -34,19 +357,29 @@ get.image.width3 <- function(nbars,min.width=500,bar_width=bar.width) {
 
   <H3 class="section"><%=irap.ctr("Figure")%></H3>
 <%
+colors <- rainbow(nrow(mapping.dfs$raw))
+names(colors) <- rownames(mapping.dfs$raw)
 file <- paste(out.prefix,"_aln",sep="")
 n <- length(colnames(mapping.dfs$raw))
+df <- mapping.dfs$raw
+ncol(df)
+d <- mapping.plot.nbars(mapping.dfs$raw,big.dataset.max.out=max.outliers,                                       vals=mapping.vals,
+                        outlier.vals=outlier.vals)
+#d
 html <- gen.plot2report(filename=file,
                         dir=out.dir,
                         bg="white",
-                        width=get.image.width2(n,500,bar_width=bar.width*2),
-                        height=500,
+                        width=get.image.width3(d$nbars,400,bar_width=bar.width*2),
+                        height=400,
                         html=TRUE,
                         ps=TRUE,
                         caption="",
                         to.plot= function() {
                           mapping.plot(mapping.dfs$raw,
-                                       outlier.vals=NULL,
+                                       legend.beside=T,
+                                       vals=mapping.vals,
+                                       outlier.vals=outlier.vals,
+                                       cols=colors[mapping.vals],
                                        big.dataset.max.out=max.outliers)
                         }
                         )
@@ -59,27 +392,37 @@ irap.output.html(html$html,"Alignment statistics: number of alignments, number o
 <%
 file <- paste(out.prefix,"_aln_perc",sep="")
 n <- length(colnames(mapping.dfs$perc))
+d <- mapping.plot.nbars(mapping.dfs$perc,outlier.vals=c("Reads mapped","Reads unmapped","Uniquely mapped","Reads spliced"),big.dataset.max.out=max.outliers,
+                        exclude.cols=c("Median","Mean","SD"),
+                        vals=mapping.vals)
+
+pdebug("PLOT2-START")
+#d
 html <- gen.plot2report(filename=file,
                         dir=out.dir,
                         bg="white",
-                        width=get.image.width2(n,500,bar_width=bar.width*2),
+                        width=get.image.width2(d$nbars,400,bar_width=bar.width),
                         height=400,
                         html=TRUE,
-                        ps=TRUE,
+                        ps=FALSE,
                         caption="",
                         to.plot= function() {
-                          mapping.plot(mapping.dfs$perc,
-                                       exclude.cols=c("Median","Mean","SD"),
-                                       vals=c("Reads mapped","Reads unmapped","Uniquely mapped","Reads spliced"),
-                                       outlier.vals=c("Reads mapped","Reads unmapped","Uniquely mapped","Reads spliced"),
-                                       ylab="%",
-                                       legend.horiz=T,
-                                       ylim=c(0,100),
-                                       big.dataset.max.out=max.outliers)
+
+                          fields2plot <- c("Reads mapped","Reads unmapped","Uniquely mapped","Reads spliced")
+                          b<-mapping.plot(mapping.dfs$perc,
+                                          exclude.cols=c("Median","Mean","SD"),
+                                          vals=fields2plot,
+                                          outlier.vals=fields2plot,
+                                          cols=colors[fields2plot],
+                                          ylab="%",
+                                          out.beside=TRUE,
+                                          ylim=c(0,100),
+                                          legend.beside=T,
+                                          big.dataset.max.out=max.outliers)
 
                         }
                         )
-
+pdebug("PLOT2-END")
 irap.output.html(html$html,"Alignment statistics. Percentage of reads: mapped; not mapped (unmapped); that map to a single locus (uniquely mapped); and reads spliced.")
 
 %>
@@ -88,32 +431,43 @@ irap.output.html(html$html,"Alignment statistics. Percentage of reads: mapped; n
 <H3 class="section"><%=irap.ctr("Figure")%></H3>
 <%
 file <- paste(out.prefix,"_diff",sep="")
-n <- length(colnames(mapping.dfs$raw))
+pdebug("Alignments plots dimension")
+d <- mapping.plot.nbars(mapping.dfs$perc,
+                        out.beside=FALSE,
+                        exclude.cols=c("Median","Mean","SD"),                        
+                        vals=c("Alignments (perfect)",
+                          "Alignments (1-difference)","Alignments (2-differences)","Alignments (>=3-differences)"),
+                        outlier.vals=c("Alignments (perfect)"))
+#
+pdebug("Alignments plots dimension:",d)
 html <- gen.plot2report(filename=file,
                         dir=out.dir,
                         bg="white",
-                        width=get.image.width(n,500,bar_width=bar.width*2),
-                        height=500,
+                        width=get.image.width2(d$nbars,400,bar_width=bar.width),
+                        height=400,
                         html=TRUE,
                         ps=TRUE,
                         caption="",
                         to.plot= function() {
+                          pdebug(colnames(mapping.dfs$perc))
+                          pdebug(rownames(mapping.dfs$perc))
                           mapping.plot(mapping.dfs$perc,
                                        legend.horiz=T,
                                        exclude.cols=c("Median","Mean","SD"),
                                        vals=c("Alignments (perfect)",
                                          "Alignments (1-difference)","Alignments (2-differences)","Alignments (>=3-differences)"),
                                        labels=c("Perfect","1-difference","2-differences",">=3-differences"),
-                                       outlier.vals=c("Alignments (perfect)",
-                                         "Alignments (1-difference)","Alignments (2-differences)","Alignments (>=3-differences)"),
+                                       outlier.vals=c("Alignments (perfect)"),
                                        ylab="% alignments",
+                                       legend.beside=T,
                                        col=topo.colors(4),
                                        ylim=c(0,100),
                                        out.beside=FALSE,
                                        big.dataset.max.out=max.outliers)
-#                          mapping.qual(mapping.dfs$raw)                          
                         }
                         )
+#                          mapping.qual(mapping.dfs$raw)                          
+pdebug("Another plot done...")
 irap.output.html(html$html,"Number of alignments per library where a read aligns perfectly (no mismatches), 1 mismatch, 2 mismatches and more than 2 mismatches. The values are obtained from the BAM file(s).")
 %>
 
@@ -149,6 +503,9 @@ abs.tsv.download.html <- html.download.bar(tsv.download.files)
   
 <H3 class="section"><%=irap.ctr("Figure")%></H3>
 <%
+pdebug("Mapping profile plot 1 - setup")
+if ( !is.null(mapping.feat) ) {
+pdebug("!",rownames(mapping.feat))
 rownames(mapping.feat)<-gsub("_"," ",rownames(mapping.feat))
 
 file <- paste(out.prefix,"_aln_bio",sep="")
@@ -158,6 +515,7 @@ cols2plot <- colnames(mapping.feat)[!colnames(mapping.feat) %in% c("Median","Mea
 feat.order <- names(sort(mapping.feat[,"Mean"],decreasing=T))
 n <- length(feat.order)
 #feat.order=NULL
+pdebug("Mapping profile plot 1 - start plot")
 html <- gen.plot2report(filename=file,
                         dir=out.dir,
                         bg="white",
@@ -170,13 +528,15 @@ html <- gen.plot2report(filename=file,
                           plot.mapping.feat(mapping.feat[feat.order,,drop=FALSE],sel.columns=cols2plot,col=rainbow(nrow(mapping.feat)),ylab="Alignments")
                         }
                         )
-
+pdebug("Mapping profile plot 1 - end plot")
 irap.output.html(html$html,"Number of alignments overlapping annotated features. Values obtained with bedtools (coverage). ")
-
+}
 %>
 
 <H3 class="section"><%=irap.ctr("Figure")%></H3>
 <%
+cols2plot <- NULL
+if ( !is.null(mapping.feat) ) {
 mapping.feat.sum <- colSums(mapping.feat,na.rm=T)
 mapping.feat.per <- round(sweep(mapping.feat,MARGIN=2,100*1/mapping.feat.sum,`*`),2)
 if (ncol(mapping.feat.per)>4) {
@@ -210,14 +570,15 @@ html <- gen.plot2report(filename=file,
                         )
 
 irap.output.html(html$html,"Percentage of alignments per library overlapping annotated features. Values obtained with bedtools (coverage). ")
-
+}
 %>
 
 
 <H3 class="section"><%=irap.ctr("Table")%></H3>
 <DIV class="table_wrapper">
 <%
-xt <- xtable(round(mapping.feat[feat.order,cols2plot],0),
+if ( ! is.null(mapping.feat) ) {
+xt <- xtable(round(mapping.feat[feat.order,cols2plot,drop=FALSE],0),
              caption="",
              digits=0,
              label="map_feat_table")
@@ -235,7 +596,9 @@ irap.output.html(html, "Number of alignments overlapping annotated features. Val
 feat.download.files <- c(feat.stats.file)
 names(feat.download.files) <- "TSV"
 feat.tsv.download.html <- html.download.bar(feat.download.files)
-
+} else {
+feat.tsv.download.html <-""
+}
 %>
 </DIV>
 <DIV> <%=feat.tsv.download.html%></DIV>
@@ -244,7 +607,7 @@ feat.tsv.download.html <- html.download.bar(feat.download.files)
 <H3 class="section"><%=irap.ctr("Table")%></H3>
 <DIV class="table_wrapper">
 <%
-
+if ( !is.null(mapping.feat.per) ) {
 xt <- xtable(mapping.feat.per,
              caption="",
              label="map_feat_table_per")
@@ -258,7 +621,7 @@ html <- print.xtable(file="/dev/null",
                      html.table.attributes = "")
 
 irap.output.html(html, "Percentage of alignments overlapping annotated features. Values obtained with bedtools (coverage).")
-
+}
 %>
 </DIV>
 
@@ -267,7 +630,7 @@ irap.output.html(html, "Percentage of alignments overlapping annotated features.
 <!-- number of reads mapping to exonic regions, intronic regions, other -->
 <H3 class="section"><%=irap.ctr("Figure")%></H3>
 <%
-
+if ( !is.null(mapping.genes) ) {
 mapping.genes.sum <- colSums(mapping.genes,na.rm=T)
 mapping.genes.per <- round(sweep(mapping.genes,MARGIN=2,100*1/mapping.genes.sum,`*`),2)
 if (ncol(mapping.genes.per)>4) {
@@ -279,11 +642,17 @@ mapping.genes.per[,"SD"]<-SD
 
 file <- paste(out.prefix,"_aln_genes",sep="")
 n <- length(cols2plot)
+d <- mapping.plot.nbars(mapping.genes.per,
+                        out.beside=FALSE,
+                        vals=rownames(mapping.genes.per),
+                        exclude.cols=c("Median","Mean","SD"),
+                        outlier.vals=rownames(mapping.genes.per))
+
 html <- gen.plot2report(filename=file,
                         dir=out.dir,
                         bg="white",
-                        width=get.image.width2(n+5,500),
-                        height=500,
+                        width=get.image.width2(d$nbars,400,bar_width=bar.width),
+                        height=400,
                         html=TRUE,
                         ps=TRUE,
                         caption="",
@@ -298,12 +667,13 @@ html <- gen.plot2report(filename=file,
                         )
 
 irap.output.html(html$html,"Percentage of alignments overlapping introns and exons. Values obtained with bedtools (intersect).")
-
+}
 %>
 
   <H3 class="section"><%=irap.ctr("Table")%></H3>  
 <DIV class="table_wrapper">
 <%
+if ( !is.null(mapping.genes.per) ) {
 # percentages
 p.mapping.genes <- mapping.genes.per
 #p.mapping.genes<-cbind(p.mapping.genes,SD)
@@ -320,13 +690,14 @@ html <- print.xtable(file="/dev/null",
                      html.table.attributes = "")
 
 irap.output.html(html, "Percentage of alignments overlapping exons and introns. Values obtained with bedtools.")
-
+}
 %>
 
 <H3 class="section"><%=irap.ctr("Table")%></H3>
 <DIV class="table_wrapper">
 <%
 #save.image("debug.Rdata")
+if ( ! is.null(mapping.genes) ) {
 v <- data.frame(round(mapping.genes[,!colnames(mapping.genes) %in% c("Median","Mean","SD")],0))
 colnames(v) <- colnames(mapping.genes)[!colnames(mapping.genes) %in% c("Median","Mean","SD")]
 v
@@ -348,7 +719,9 @@ irap.output.html(html, "Number of alignments overlapping  exons and introns. Val
 gene.download.files <- gene.stats.file
 names(gene.download.files) <- "TSV"
 gene.tsv.download.html <- html.download.bar(gene.download.files)
-
+} else {
+  gene.tsv.download.html <- ""
+}
 %>
 </DIV>
 <DIV> <%=gene.tsv.download.html%></DIV>
