@@ -300,7 +300,7 @@ plot.mapping.feat <- function(df,is.small.dataset=FALSE,
     #pinfo("out=",out)
     # plot the outliers if any
     par(mar=c(11,6,4,2),bty='n',xpd=NA)
-    pdedug("out=",length(out))
+    pdebug("out=",length(out))
     if ( !is.null(out) ) {
       # outliers
       out <- out[seq(1,min(big.dataset.max.out,length(out)))]
