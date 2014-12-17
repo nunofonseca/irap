@@ -146,13 +146,14 @@ get.mapping.stats <- function(pe.bam.v,se.bam.v,pe.labels.v,se.labels.v) {
                   "Multimap (>=2)",
                   "Multimap (>=10)","Multimap (>=20)",
                   "Spliced (2 exons)","Spliced (3 exons)",
-                  "Spliced (4 exons)","Spliced (>=5 exons)")
+                  "Spliced (4 exons)","Spliced (>=5 exons)",
+                  "MAPQ")
   rownames(df)<-stats.file
 
   # assert multimap_reads==multimap (=1)
   irap.assert(sum(df["Uniquely mapped",]!=df["Multimap (=1)",])==0)
   # slice
-  slice<-c("Alignments", "Reads mapped","Reads unmapped","Uniquely mapped","Multimap (>=2)","Reads spliced","Spliced","Alignments (perfect)","Alignments (1-difference)", "Alignments (2-differences)","Alignments (>=3-differences)","Spliced (2 exons)","Spliced (3 exons)","Spliced (4 exons)","Spliced (>=5 exons)")
+  slice<-c("Alignments", "Reads mapped","Reads unmapped","Uniquely mapped","Multimap (>=2)","Reads spliced","Spliced","Alignments (perfect)","Alignments (1-difference)", "Alignments (2-differences)","Alignments (>=3-differences)","Spliced (2 exons)","Spliced (3 exons)","Spliced (4 exons)","Spliced (>=5 exons)","MAPQ")
 
   
   sliced.data <- data.frame(df[slice,,drop=FALSE])
@@ -188,6 +189,7 @@ get.mapping.stats <- function(pe.bam.v,se.bam.v,pe.labels.v,se.labels.v) {
   p.sliced.data["Spliced (3 exons)",] <- round(as.numeric(sliced.data["Spliced (3 exons)",,drop=FALSE])/spliced.alns*100,2)
   p.sliced.data["Spliced (4 exons)",] <- round(as.numeric(sliced.data["Spliced (4 exons)",,drop=FALSE])/spliced.alns*100,2)
   p.sliced.data["Spliced (>=5 exons)",] <- round(as.numeric(sliced.data["Spliced (>=5 exons)",,drop=FALSE])/spliced.alns*100,2)
+  p.sliced.data <- p.sliced.data[!rownames(p.sliced.data) %in% "MAPQ",]
 
   nan2zero <- function(v) {
     v[is.nan(v)] <- 0
