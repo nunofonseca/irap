@@ -44,5 +44,6 @@ select count(*) as Spliced1 from bam_index where nSpliced=1 and isDuplicate=0 an
 select count(*) as Spliced2 from bam_index where nSpliced=2 and isDuplicate=0 and isNotPassingQualityControls=0  and isMapped=1;
 select count(*) as Spliced3 from bam_index where nSpliced=3 and isDuplicate=0 and isNotPassingQualityControls=0  and isMapped=1;
 select count(*) as SplicedGE4 from bam_index where nSpliced>3 and isDuplicate=0 and isNotPassingQualityControls=0  and isMapped=1;
+select avg(mapq) as MAPQ from bam_index where isMapped=1  and  isDuplicate=0 and isNotPassingQualityControls=0;
 EOF
 exit 0
