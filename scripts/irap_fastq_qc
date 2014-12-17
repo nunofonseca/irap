@@ -240,7 +240,7 @@ threads=$(def_threads)
 endif
 $(info * threads=$(threads) )
 
-#Quality filter ON/OFF
+#Quality filter ON/OFF/report(only)
 #If none, set to default one
 ifndef qual_filtering
 qual_filtering=$(def_qual_filtering)
@@ -434,7 +434,80 @@ $(info * Starting fastq filtering...)
 #Quality filtering OFF
 #Check the initial read quality
 ifneq ($(qual_filtering),on)
+
+#
+ifeq ($(qual_filtering),report)
 ###############################
+$(report_dir)/%.f.csv:  $(out_dir)/%.f.fastq 
+	A=`num_reads.sh $<` && echo $*,$$A,$$A,$$A,$$A,$$A > $@.tmp && mv $@.tmp $@
+
+#Produce the same files as if fastqc has been run
+#and create symbolic link
+stage2:
+stage3:
+stage4:
+stage5:
+
+
+#Paired end reads
+ifdef pe_data
+
+#Main call, no filtering, collect stats, cleaning at the end (rm files)
+all: setup0 stage0 $(out_dir)/$(out_prefix)_1.f.fastq.stats $(out_dir)/$(out_prefix)_2.f.fastq.stats $(out_dir)/$(out_prefix)_1.f.fastq $(out_dir)/$(out_prefix)_2.f.fastq $(report_dir)/$(out_prefix)_1.f.csv $(report_dir)/$(out_prefix)_2.f.csv  stage6
+	$(shell if [ -e $(f1_n).filter1.fastq.qual.png ]; then mv $(out_dir)/$(f1_n)*.png $(report_dir)/raw_data ; fi)
+	$(shell if [ -e $(f2_n).filter1.fastq.qual.png ]; then mv $(out_dir)/$(f2_n)*.png $(report_dir)/raw_data ; fi)
+	rm -f $(report_dir)/$(f1_n).f.csv
+	ln -s $(abspath $(report_dir)/$(out_prefix)_1.f.csv) $(report_dir)/$(f1_n).f.csv
+	rm -f $(report_dir)/$(f2_n).f.csv
+	ln -s $(abspath $(report_dir)/$(out_prefix)_2.f.csv) $(report_dir)/$(f2_n).f.csv
+	rm -f $(report_dir)/$(f1_n).csv
+	ln -s $(abspath $(report_dir)/$(out_prefix)_1.f.csv) $(report_dir)/$(f1_n).csv
+	rm -f $(report_dir)/$(f2_n).csv
+	ln -s $(abspath $(report_dir)/$(out_prefix)_2.f.csv) $(report_dir)/$(f2_n).csv
+	$(info Skipped fastq filtering.)
+
+$(out_dir)/$(out_prefix)_1.f.fastq:  $(data_dir)/$(f1_n).fastq
+	rm -f $@
+	ln -s $(abspath $(data_dir))/$(f1_n).fastq $@
+
+$(out_dir)/$(out_prefix)_2.f.fastq:  $(data_dir)/$(f2_n).fastq
+	rm -f $@
+	ln -s $(abspath $(data_dir))/$(f2_n).fastq $@
+
+stage6: $(out_dir)/$(out_prefix)_1.f.fastq  $(call report_file,1,$(report_dir)/raw_data/$(f1_n).fastqc.zip $(report_dir)/raw_data/$(f2_n).fastqc.zip)
+	rm -f $(report_dir)/raw_data/$(out_prefix)_1.f.fastqc.zip
+	ln -s $(report_dir)/raw_data/$(f1_n).fastqc.zip $(report_dir)/raw_data/$(out_prefix)_1.f.fastqc.zip
+	rm -f $(report_dir)/raw_data/$(out_prefix)_2.f.fastqc.zip
+	ln -s $(report_dir)/raw_data/$(f2_n).fastqc.zip $(report_dir)/raw_data/$(out_prefix)_2.f.fastqc.zip
+
+
+#Single end reads
+else
+
+$(report_dir)/raw_data/%.fastqc.zip: $(out_dir)/%.fastq
+	$(call run-fastqc,$<) && mv $(report_dir)/raw_data/$*_fastqc.zip $@
+
+$(out_dir)/$(out_prefix).f.fastq:  $(data_dir)/$(f1_n).fastq
+	rm -f $@  
+	ln -s $(abspath $(data_dir))/$(f1_n).fastq $@
+
+#Main call, no filtering, collect stats only
+all: setup0 stage0 $(out_dir)/$(out_prefix).f.fastq $(out_dir)/$(out_prefix).f.fastq.stats   $(report_dir)/$(out_prefix).f.csv    stage6
+	rm -f $(report_dir)/$(f1_n).f.csv
+	ln -s $(abspath $(report_dir)/$(out_prefix).f.csv) $(report_dir)/$(f1_n).f.csv
+	rm -f $(report_dir)/$(f1_n).csv
+	ln -s $(abspath $(report_dir)/$(out_prefix).f.csv) $(report_dir)/$(f1_n).csv
+	$(shell if [ -e $(f1_n).filter1.fastq.qual.png ]; then mv $(out_dir)/$(f1_n)*.png $(report_dir)/raw_data ; fi)
+	$(info Skipped filtering.)
+
+
+stage6: $(call report_file,1,$(report_dir)/raw_data/$(out_prefix).f.fastqc.zip)
+endif
+
+#endif report ($(qual_filtering),report)
+else
+
+# ($(qual_filtering),do not perform qc)
 $(report_dir)/%.f.csv:  $(out_dir)/%.f.fastq 
 	A=`num_reads.sh $<` && echo $*,$$A,$$A,$$A,$$A,$$A > $@.tmp && mv $@.tmp $@
 
@@ -503,6 +576,8 @@ endif
 
 ####endif ($(qual_filtering),on)
 # Quality filtering ON
+endif
+
 else
 
 #Main call, complete filtering, collect stats, cleaning at the end (rm files)
