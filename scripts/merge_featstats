@@ -1,0 +1,152 @@
+#!/usr/bin/env Rscript3
+#; -*- mode: R;-*-
+# =========================================================
+# Copyright 2012-2014,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#    $Id: irap.txt Nuno Fonseca Wed Feb 6 00:51:29 2013$
+# =========================================================
+suppressPackageStartupMessages(library("optparse"))
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+# specify our desired options in a list
+#
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+pdebug.enabled <- FALSE
+
+#######################
+usage <- "merge_featstats --out tsv_filename_prefix [options]"
+option_list <- list(
+  make_option(c("-o","--out"),type="character",default=NULL,help="Output tsv file"),
+  make_option(c("--stats"),type="character",dest="stats.files",default=NULL,help="TSV file names containing mapping statistics."),
+  make_option(c("--labels"),type="character",dest="labels",default=NULL,help="Column names"),
+  make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode")
+)
+
+# 
+mandatory <- c("out")
+
+#
+args <- importArgsfromStdin()
+opt <- myParseArgs(usage = usage,option_list=option_list,mandatory=mandatory,args=args)
+
+irap.css <- opt$css
+pdebug.enabled <- opt$debug
+pdebug.save.state("merge_featstats","p0")
+
+# each label is separated by a semicolon
+opt$stats.files <- gsub(";;*",";",opt$stats.files)
+opt$labels <- gsub(";;*",";",opt$labels)
+labels.v <- strsplit(gsub(" *; *",";",gsub("^;","",opt$labels)),split="[; ]")[[1]]
+tsv.files.v <- strsplit(gsub(" *; *",";",gsub("^;","",opt$stats.files)),split="[; ]")[[1]]
+
+if (length(tsv.files.v)!=length(labels.v)) {
+  perror("Number of input files and labels differ.")
+  q(status=1)
+}
+
+pinfo("Parameters parsed.")
+pdebug.save.state("merge_featstats","p1")
+pinfo("Processing ",length(tsv.files.v)," files")
+  
+read.bam.stats.tsv <- function(tsv.file) {
+  stats.file <- tsv.file
+  if ( ! file.exists(stats.file ) ) {
+    perror("File ",stats.file," not found")
+    q(status=1)
+  }
+  x <- read.table(stats.file,sep="\t",header=FALSE)
+  vals <- as.numeric(x$V2)
+  names(vals) <- as.character(x$V1)
+  vals <- vals[names(vals)!="source"]
+  pinfo("Loaded ",tsv.file)
+  vals
+}
+
+data <- lapply(tsv.files.v,read.bam.stats.tsv)
+names(data) <- labels.v
+df <- data.frame(matrix(unlist(data),byrow=T,ncol=length(data[[1]])))
+colnames(df) <- names(data[[1]])
+rownames(df) <- labels.v
+
+pdebug.save.state("merge_featstats","p1")
+# Gen the matrix with mean, median and sd
+df <- t(df)
+df.m <- as.matrix(df)
+df.median <- apply(df.m,MARGIN=1,FUN=median,na.rm=T)
+df.mean <- apply(df.m,MARGIN=1,FUN=mean,na.rm=T)
+df.sd <- apply(df.m,MARGIN=1,FUN=sd,na.rm=T)
+cn <- colnames(df)
+df2 <- cbind(df,df.median,df.mean,df.sd)
+colnames(df2) <- append(cn,c("Median","Mean","SD"))
+
+
+# sort
+if (nrow(df2) >= 2){
+  t.order <- names(sort(df2[,"Mean"],decreasing=T))
+  df2 <- df2[t.order,]  
+}
+
+
+################
+# compute the %s
+
+nan2zero <- function(v) {
+  v[is.nan(v)] <- 0
+  return(v)
+}
+df.p <- as.data.frame(apply(df2,MARGIN=c(1,2),nan2zero))
+rownames(df.p) <- rownames(df2)
+df.p.s <- colSums(df.p,na.rm=T)
+df.p <- round(sweep(df.p,MARGIN=2,100*1/df.p.s,`*`),2)
+#print(colSums(df.p,na.rm=T))
+if (ncol(df.p)>4) {
+  SD <- apply(df.p[,-c(1,2,3)],1,FUN=sd)
+  SD2 <- apply(df2[,-c(1,2,3)],1,FUN=sd)
+} else {
+  SD <- rep(0,nrow(df.p))
+  SD2 <- rep(0,nrow(df2))
+}
+df.p[,"SD"]<-SD
+df2[,"SD"]<-SD2
+pdebug.save.state("merge_featstats","p2")
+# save to a a file
+out.prefix <- opt$out
+# save files
+raw.stats.file <- paste(out.prefix,"_featstats_raw.tsv",sep="")
+r <- write.tsv(df2,file=paste(raw.stats.file,sep=""),rownames.label="")
+pinfo("Saved ",raw.stats.file)
+
+perc.stats.file <- paste(out.prefix,"_featstats_perc.tsv",sep="")
+r <- write.tsv(df.p,file=paste(perc.stats.file,sep=""),rownames.label="")
+pinfo("Saved ",perc.stats.file)
+
+warns <- warnings()
+if ( !is.null(warns) ) {
+  print(warns)
+}
+q(status=0)
+
+merge_featstats  --stats ";test3_qc/tophat1//PE1.pe.hits.bam.stats;test3_qc/tophat1//PE2.pe.hits.bam.stats;;test3_qc/tophat1//SE1.se.hits.bam.stats;test3_qc/tophat1//SE2.se.hits.bam.stats"  --labels ";PE1;PE2;SE1;SE2"  --out test3_qc/tophat1/tophat1
+
+merge_featstats  --stats ";test3_qc/tophat1//PE1.pe.hits.bam.stats"  --labels ";SE2"  --out test3_qc/tophat1/tophat1
+
