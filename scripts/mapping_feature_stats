@@ -1,0 +1,90 @@
+#!/usr/bin/env Rscript3
+#; -*- mode: R;-*-
+# =========================================================
+# Copyright 2012-2014,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#    $Id: irap.txt Nuno Fonseca Wed Feb 6 00:51:29 2013$
+# =========================================================
+suppressPackageStartupMessages(library("optparse"))
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+# specify our desired options in a list
+#
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+pdebug.enabled <- FALSE
+
+#######################
+usage <- "mapping_feature_stats --in gff_file [options]"
+option_list <- list(
+  make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
+  make_option(c("-i","--in"),type="character",dest="ifile",default=NULL,help="Input GFF3 file"),
+  make_option(c("-c","--colname"),type="character",default=NULL,help="Column name in the output tsv file"),
+  make_option(c("-o","--out"),type="character",default=stdout(),help="Output tsv file"))
+
+multiple.options = list()
+filenames <- c() ;#filenames that must exist (if defined)
+
+# check multiple options values
+mandatory <- c("ifile")
+
+#
+args <- importArgsfromStdin()
+opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory,args=args)
+
+pdebug.enabled <- opt$debug
+pdebug.save.state("mapping_feature_stats","p0")
+
+
+
+if ( is.null(opt$colname) ) {
+  opt$colname<-opt$ifile
+}
+
+f <- opt$ifile
+pinfo("Loading ",f)
+if ( !is.null(file.required(f,fatal=F)) ) {
+# load file
+  x <- load.gff3(f,"gene")
+  pinfo("Loaded ",f)
+  pdebug.save.state("mapping_feature_stats","p1")
+  if ( nrow(x)==0 ) {
+    perror("No gene entries found in file",f)
+    q(status=1)
+  }
+  # slice some columns
+  type.genes <- x[x$type=="gene",c("source","comments")]
+  x <- aggregate(type.genes$comments,list(source=type.genes$source),sum)
+  # change the colname
+  colnames(x)[2] <- opt$colname
+  write.tsv(x,header=T,file=opt$out)
+  q(status=0)
+}
+#warnings()
+q(status=1)
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  IRAP.DIR="/home/nf/Research/Projects/WIP/EREAP/irap9"
+  Sys.setenv(IRAP_DIR=IRAP.DIR)
+}
+

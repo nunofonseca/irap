@@ -34,7 +34,7 @@ source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
 pdebug.enabled <- FALSE
 
 #######################
-usage <- "irap_bam2tsv --out html_file [options]"
+usage <- "irap_bam2tsv --out tsv_filename_prefix [options]"
 option_list <- list(
   make_option(c("-o","--out"),type="character",default=NULL,help="Output tsv file"),
   make_option(c("--pe"),type="character",dest="pe_bams",default=NULL,help="BAM files generated from paired-end libraries"),

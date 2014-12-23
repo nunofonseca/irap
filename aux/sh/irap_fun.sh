@@ -391,6 +391,7 @@ function mapping_report {
 	declare -i mapper_counter=0
 # one report for each mapper
 	WAIT_FOR_IDS_=$WAIT_FOR_IDS
+	declare -i mapper_id=1
 	for d in $mappers_dirs; do
 	    mapper=`basename $d`
 	    p_info "Bam files generated using $mapper..."
@@ -400,12 +401,17 @@ function mapping_report {
 	    if [ "$FILES" != '$d/*.hits.bam' ]; then
 		for p in $pe; do 
 		    let mapper_counter=mapper_counter+1
-		    submit_job "${jobname_prefix}m[$mapper_counter]" "-w  ended($waitfor)"  irap conf=$conf $IRAP_PARAMS se= pe=$p $report_dir/mapping/$mapper.html_doreq
+		    submit_job "${jobname_prefix}m${mapper_id}[$mapper_counter]" "-w  ended($waitfor)"  irap conf=$conf $IRAP_PARAMS se= pe=$p $report_dir/mapping/$mapper.html_doreq
 		done
 		for f in $se ; do
 		    let mapper_counter=mapper_counter+1
-		    submit_job "${jobname_prefix}m[$mapper_counter]" "-w  ended($waitfor)"  irap conf=$conf $IRAP_PARAMS se=$f pe= $report_dir/mapping/$mapper.html_doreq
+		    submit_job "${jobname_prefix}m${mapper_id}[$mapper_counter]" "-w  ended($waitfor)"  irap conf=$conf $IRAP_PARAMS se=$f pe= $report_dir/mapping/$mapper.html_doreq
 		done
+		# when all libs are processed then merge the stats
+		submit_job "${jobname_prefix}m[1]" "-w  ended(\"${jobname_prefix}m${mapper_id}*\")"  irap conf=$conf $IRAP_PARAMS $report_dir/$mapper/featstats_raw.tsv
+		submit_job "${jobname_prefix}m[2]" "-w  ended(\"${jobname_prefix}m${mapper_id}*\")"  irap conf=$conf $IRAP_PARAMS $report_dir/$mapper/genestats_raw.tsv
+		submit_job "${jobname_prefix}m[3]" "-w  ended(\"${jobname_prefix}m${mapper_id}*\")"  irap conf=$conf $IRAP_PARAMS $report_dir/$mapper/stats_raw.tsv
+		let mapper_id=mapper_id+1
 	    fi
             # wait for the reports of all mappers
 	    let counter=counter+1
@@ -421,47 +427,6 @@ function mapping_report {
     fi
 }
 
-function mapping_report_deprecated {
-    waitfor=$1
-    mappers_dirs=`get_cached_value MAPPING_DIRS`
-    report_qc_only=`get_param_value report_qc_only $conf`
-    if [ "$report_qc_only-" != "y-" ] && [ "$mappers_dirs-" != "-" ] ; then
-	declare -i mapper_counter=0
-# one report for each mapper
-	WAIT_FOR_IDS_=$WAIT_FOR_IDS
-	for d in $mappers_dirs; do
-	    mapper=`basename $d`
-	    p_info "Bam files generated using $mapper..."
-	    let c=1
-	    FILES=$d/*.hits.bam
-    #echo $FILES
-	    if [ "$FILES" != '$d/*.hits.bam' ]; then
-		let mapper_counter=mapper_counter+1
-		if [ "$DEBUG-" = "1-" ]; then	    
-		    p_info "running irap_bam_report_lsf $mapper"
-		else
-		    NEW_JOB=`WAIT_FOR_IDS=${waitfor} irap_bam_report_lsf conf=$conf $IRAP_PARAMS mapper=$mapper | grep "JOB=" | cut -f 2 -d\=`	
-		    p_info "running irap_bam_report: $NEW_JOB"
-		    if [ "$NEW_JOB-"  != "-" ] ; then		
-			WAIT_FOR_IDS=
-			submit_job "${jobname_prefix}m[$mapper_counter]"  "-w  ended($NEW_JOB)"  "irap conf=$conf $IRAP_PARAMS mapper=$mapper quant_method=none quant_norm_method=none de_method=none gse_tool=none $name/report/mapping/$mapper.html"
-			WAIT_FOR_IDS=$WAIT_FOR_IDS_
-		    else 
-			p_info "Failed to start irap_bam_report_lsf"
-		    fi
-		fi
-	    fi
-	done
-        # wait for the reports of all mappers
-	let counter=counter+1
-	submit_job "${jobname_prefix}f[$counter]"  "-w ended(\"${jobname_prefix}m*\")"  "irap conf=$conf $IRAP_PARAMS $report_dir/mapping/comparison.html"
-	echo ${jobname_prefix}f
-    else
-	echo $waitfor
-
-    fi
-
-}
 
 function quant_report {
     waitfor=$1

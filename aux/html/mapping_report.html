@@ -219,7 +219,7 @@ mapping.plot <- function(df,
                   xlim=xlim
                   )
     
-    title(ylab=ylab,mgp=c(left.margin-1.25,1,0))
+    #title(ylab=ylab,mgp=c(-1.25,1,0))
 
     par( xpd=NA )
     # legend
@@ -301,7 +301,7 @@ plot.mapping.feat <- function(df,is.small.dataset=FALSE,
     # plot the outliers if any
     par(mar=c(11,6,4,2),bty='n',xpd=NA)
     pdebug("out=",length(out))
-    if ( !is.null(out) ) {
+    if ( !is.null(out) && length(out)>1) {
       # outliers
       out <- out[seq(1,min(big.dataset.max.out,length(out)))]
       w <- 5+max(length(out),10)
@@ -314,7 +314,7 @@ plot.mapping.feat <- function(df,is.small.dataset=FALSE,
                 outpch=16)    
     title(ylab=ylab,mgp=c(5,1,0),main=paste(ncol(df)," libraries",sep=""))
                                         # outliers (detailed)
-    if (!is.null(out) ) {
+    if (!is.null(out) && length(out)>1 ) {
       df <- df[,out[seq(1,min(length(out),big.dataset.max.out))],drop=FALSE]
       par(mar=c(3,3,4,2),bty='n',xpd=NA)
       pdebug("small.dataset 4")
@@ -439,7 +439,7 @@ d <- mapping.plot.nbars(mapping.dfs$perc,
                           "Alignments (1-difference)","Alignments (2-differences)","Alignments (>=3-differences)"),
                         outlier.vals=c("Alignments (perfect)"))
 #
-pdebug("Alignments plots dimension:",d)
+pdebug("plot 3: Alignments plots dimension:",d)
 html <- gen.plot2report(filename=file,
                         dir=out.dir,
                         bg="white",
@@ -449,7 +449,6 @@ html <- gen.plot2report(filename=file,
                         ps=TRUE,
                         caption="",
                         to.plot= function() {
-                          pdebug(colnames(mapping.dfs$perc))
                           pdebug(rownames(mapping.dfs$perc))
                           mapping.plot(mapping.dfs$perc,
                                        legend.horiz=T,
@@ -490,9 +489,10 @@ html <- print.xtable(file="/dev/null",
 
 irap.output.html(html, "Alignment statistics per library: number of reads mapped, unmapped, uniquely mapped, multimaps and spliced; percentage of alignments where a read aligns pefectly (no mismatches), 1 mismatch, 2 mismatches, more than 2 mismatches, and spliced.")
 
-tsv.download.files <- c(raw.stats.file)
-names(tsv.download.files) <- "TSV"
-abs.tsv.download.html <- html.download.bar(tsv.download.files)
+#tsv.download.files <- c(raw.stats.file)
+#names(tsv.download.files) <- "TSV"
+#abs.tsv.download.html <- html.download.bar(tsv.download.files)
+abs.tsv.download.html <- ""
 
 %>
 </DIV>
@@ -536,7 +536,7 @@ irap.output.html(html$html,"Number of alignments overlapping annotated features.
 <H3 class="section"><%=irap.ctr("Figure")%></H3>
 <%
 cols2plot <- NULL
-if ( !is.null(mapping.feat) ) {
+if ( !is.null(mapping.feat) && sum(mapping.feat)>0 ) {
 mapping.feat.sum <- colSums(mapping.feat,na.rm=T)
 mapping.feat.per <- round(sweep(mapping.feat,MARGIN=2,100*1/mapping.feat.sum,`*`),2)
 if (ncol(mapping.feat.per)>4) {
@@ -593,12 +593,13 @@ html <- print.xtable(file="/dev/null",
 
 irap.output.html(html, "Number of alignments overlapping annotated features. Values obtained with bedtools (coverage).")
 
-feat.download.files <- c(feat.stats.file)
-names(feat.download.files) <- "TSV"
-feat.tsv.download.html <- html.download.bar(feat.download.files)
-} else {
-feat.tsv.download.html <-""
+#feat.download.files <- c(feat.stats.file)
+#names(feat.download.files) <- "TSV"
+#feat.tsv.download.html <- html.download.bar(feat.download.files)
+#} else {
 }
+feat.tsv.download.html <-""
+#}
 %>
 </DIV>
 <DIV> <%=feat.tsv.download.html%></DIV>
@@ -716,12 +717,13 @@ html <- print.xtable(file="/dev/null",
 
 irap.output.html(html, "Number of alignments overlapping  exons and introns. Values obtained with bedtools (intersect).")
 
-gene.download.files <- gene.stats.file
-names(gene.download.files) <- "TSV"
-gene.tsv.download.html <- html.download.bar(gene.download.files)
-} else {
-  gene.tsv.download.html <- ""
+#gene.download.files <- gene.stats.file
+#names(gene.download.files) <- "TSV"
+#gene.tsv.download.html <- html.download.bar(gene.download.files)
+#} else {
 }
+  gene.tsv.download.html <- ""
+#}
 %>
 </DIV>
 <DIV> <%=gene.tsv.download.html%></DIV>

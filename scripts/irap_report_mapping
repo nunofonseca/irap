@@ -42,20 +42,19 @@ option_list <- list(
   make_option(c("-o","--out"),type="character",default=NULL,help="Output html file"),
   make_option(c("--bam_stats"),type="character",default=NULL,dest="bam_stats",help="Statistics collected from all BAM files"),
   make_option(c("--bam_statsp"),type="character",default=NULL,dest="bam_statsp",help="Statistics collected from all BAM files (%)"),
+  make_option(c("--bam_fstats"),type="character",default=NULL,dest="bam_fstats",help="Statistics collected from all BAM files"),
+  make_option(c("--bam_fstatsp"),type="character",default=NULL,dest="bam_fstatsp",help="Statistics  collected from all BAM files (%)"),
+  make_option(c("--bam_gstats"),type="character",default=NULL,dest="bam_gstats",help="Statistics  collected from all BAM files (%)"),
   make_option(c("-m","--mapper"),type="character",dest="mapper",default=NULL,help="Name of the mapper"),
-  make_option(c("--pe"),type="character",dest="pe_bams",default=NULL,help="BAM files generated from paired-end libraries"),
-  make_option(c("--se"),type="character",dest="se_bams",default=NULL,help="BAM files generated from single-end libraries"),
-  make_option(c("-p","--pe_labels"),type="character",dest="pe_labels",default=NULL,help="Labels for the BAM files generated from paired-end libraries"),
-  make_option(c("-s","--se_labels"),type="character",dest="se_labels",default=NULL,help="Labels for the BAM files generated from single-end libraries"),
   make_option(c("-t","--html"),type="character",dest="html_template",default=html.temp,help="HTML template file [default: %default]"),
   make_option(c("-c", "--cores"), type="character",default="3",dest="num_cores",help="Number of cores to use ([default %default])")
 )
 
 multiple.options = list()
-filenames <- c("html_template","bam_stats","bam_statsp") ;#filenames that must exist (if defined)
+filenames <- c("html_template","bam_stats","bam_statsp","bam_fstats","bam_fstatsp","bam_gstats") ;#filenames that must exist (if defined)
 
 # check multiple options values
-mandatory <- c("out","bam_stats","mapper","se_bams","pe_bams","se_labels","pe_labels","html_template","bam_statsp")
+mandatory <- c("out","bam_stats","mapper","bam_fstats","bam_fstatsp","html_template","bam_statsp","bam_gstats")
 
 #
 args <- importArgsfromStdin()
@@ -80,6 +79,8 @@ if (num.cores<1) {
 
 pinfo("stats=",opt$bam_stats)
 pinfo("statsp=",opt$bam_statsp)
+pinfo("fstats=",opt$bam_fstats)
+pinfo("fstatsp=",opt$bam_fstatsp)
 pinfo(names(opt))
 irap.assert(num.cores>0)
 
@@ -90,27 +91,6 @@ if ( num.cores>parallel:::detectCores()) {
 
 options("cores"=num.cores)
 
-
-pe.bam.v <- strsplit(gsub(" *; *",";",gsub("^;","",opt$pe_bams)),split="[; ]")[[1]]
-se.bam.v <- strsplit(gsub(" *; *",";",gsub("^;","",opt$se_bams)),split="[; ]")[[1]]
-
-pe.labels.v <- strsplit(gsub(" *; *",";",gsub("^;","",opt$pe_labels)),split="[; ]")[[1]]
-se.labels.v <- strsplit(gsub(" *; *",";",gsub("^;","",opt$se_labels)),split="[; ]")[[1]]
-
-if (sum(length(pe.bam.v)+length(se.bam.v))==0) {
-  perror("At least one bam file needs to be provided.")
-  q(status=1)
-}
-
-if (length(pe.bam.v)!=length(pe.labels.v)) {
-  perror("Number of PE bams and labels differ.")
-  q(status=1)
-}
-if (length(se.bam.v)!=length(se.labels.v)) {
-  perror("Number of SE bams and labels differ.")
-  q(status=1)
-}
-
 pinfo("Parameters parsed.")
 pdebug.save.state("irap_report_mapping","p1")
 
@@ -119,67 +99,6 @@ pdebug.save.state("irap_report_mapping","p1")
 ###########################################
 
 
-##################################################
-
-
-get.mapping.feature.stats <- function(mapper,pe.bam.v,se.bam.v,pe.labels.v,se.labels) {
-  # raw<-mapping.dfs$raw
-  libs <- unique(append(pe.labels.v,se.labels.v))
-  bams <- append(pe.bam.v,se.bam.v)
-  nlibs <- length(libs)
-  pinfo("Processing ",nlibs," BAM files")
-
-  bams.stats.files <- paste(bams,".stats",sep="")
-  names(bams.stats.files) <- libs
-  stats <- list()
-  # Check if file exists
-  for ( n in names(bams.stats.files) ) {
-    f <- bams.stats.files[n]
-    pinfo("Loading ",f)
-    if ( !is.null(file.required(f,fatal=F)) ) {
-      # load file
-      x <- load.gff3(f,"gene")
-      if ( nrow(x)==0 ) {
-        perror("No gene entries found in file",f)
-        q(status=1)
-      }
-      # slice some columns
-      type.genes <- x[x$type=="gene",c("source","comments")]
-      x <- aggregate(type.genes$comments,list(source=type.genes$source),sum)
-      stats[[n]] <- x$x
-      names(stats[[n]]) <- x$source
-    }
-  }
-  aln.stats <- do.call("cbind",stats)
-  if ( is.null(aln.stats) ) {
-    perror("unable to find any .bam.stats file")
-    q(status=1)
-  }
-  if ( ncol(aln.stats)!=nlibs) {
-    pwarning("unable to find all .bam.stats file")
-  }
-  aln.stats.median <- apply(aln.stats,MARGIN=1,FUN=median)
-  aln.stats.mean <- apply(aln.stats,MARGIN=1,FUN=mean)
-  aln.stats.sd <- apply(aln.stats,MARGIN=1,FUN=sd)
-  cols.names <- colnames(aln.stats) 
-  aln.stats <- cbind(aln.stats,aln.stats.median,aln.stats.mean,aln.stats.sd)
-  colnames(aln.stats) <- append(cols.names,c("Median","Mean","SD"))
-  aln.stats <- aln.stats[,append(c("Median","Mean","SD"),cols.names)]
-  if ( is.null(dim(aln.stats))) {
-    m <- as.data.frame(matrix(aln.stats,nrow=1,ncol=length(aln.stats)))
-    #print(aln.stats)
-    #print(stats)
-    colnames(m) <- names(aln.stats)
-    rownames(m) <- names(stats[[1]])
-    aln.stats <- m                
-  }
-  # sort
-  if (nrow(aln.stats) >= 2){
-    t.order <- names(sort(aln.stats[,"Mean"],decreasing=T))
-    aln.stats <- aln.stats[t.order,]  
-  }
-  return(aln.stats)
-}
 
 get.mapping.gene.stats <- function(mapper,pe.bam.v,se.bam.v,pe.labels.v,se.labels) {
   # raw<-mapping.dfs$raw
@@ -240,32 +159,22 @@ if ( is.null(mapping.dfs$raw) || is.null(mapping.dfs$perc) ) {
 }
 #rownames(mapping.dfs$perc) <- mapping.dfs$perc[,1]
 #mapping.dfs$perc <- mapping.dfs$perc[,-1,drop=FALSE]
-mapping.feat <- get.mapping.feature.stats(mapper,pe.bam.v,se.bam.v,pe.labels.v,se.labels.v)
+mapping.feat <- as.matrix(quant.load(opt$bam_fstats))
 # exons/introns
-mapping.genes <- get.mapping.gene.stats(mapper,pe.bam.v,se.bam.v,pe.labels.v,se.labels.v)
+mapping.genes <- as.matrix(quant.load(opt$bam_gstats))
 pdebug.save.state("irap_report_mapping","p3")
 library(brew)
 ####################################
+# save files
+raw.stats.file <- NULL
+perc.stats.file <- NULL
+feat.stats.file <- NULL
+gene.stats.file <- NULL
+
+
 out.dir <- dirname(opt$out)
 out.prefix <- sub(".htm.*","",basename(opt$out))
 
-# save files
-raw.stats.file <- paste(out.prefix,"_mapping_stats_raw.tsv",sep="")
-r <- write.tsv(mapping.dfs$raw,file=paste(out.dir,"/",raw.stats.file,sep=""),rownames.label="")
-pinfo("Saved ",raw.stats.file)
-
-perc.stats.file <- paste(out.prefix,"_mapping_stats_perc.tsv",sep="")
-r <- write.tsv(mapping.dfs$perc,file=paste(out.dir,"/",perc.stats.file,sep=""),rownames.label="")
-pinfo("Saved ",perc.stats.file)
-
-
-feat.stats.file <- paste(out.prefix,"_mapping_stats_feat.tsv",sep="")
-r <- write.tsv(mapping.feat,file=paste(out.dir,"/",feat.stats.file,sep=""),rownames.label="Features")
-pinfo("Saved ",feat.stats.file)
-
-gene.stats.file <- paste(out.prefix,"_mapping_stats_gene.tsv",sep="")
-r <- write.tsv(mapping.genes,file=paste(out.dir,"/",gene.stats.file,sep=""),rownames.label="")
-pinfo("Saved ",gene.stats.file)
 
 pdebug.save.state("irap_report_mapping","p4")
 

@@ -35,15 +35,15 @@ endif
 
 # useful functions
 define set_MAPPING_DIRS=
-$(eval override MAPPING_DIRS:=$(shell ls -d -1 $(name)/{$(shell echo $(SUPPORTED_MAPPERS)| sed 's/ /,/g')} 2>/dev/null)) $(MAPPING_DIRS)
+$(eval override MAPPING_DIRS:=$(shell ls --color=never -d -1 $(name)/{$(shell echo $(SUPPORTED_MAPPERS) | sed 's/ /,/g')}  2>/dev/null ))
 endef
 
 define set_QUANT_DIRS=
-$(eval override QUANT_DIRS:=$(shell ls -d -1 $(shell echo $(foreach d,$(call mapping_dirs),$d/{$(shell echo $(SUPPORTED_QUANT_METHODS)| sed 's/ /,/g')})) 2>/dev/null)) $(QUANT_DIRS)
+$(eval override QUANT_DIRS:=$(shell ls -d -1 $(shell echo $(foreach d,$(call mapping_dirs),$d/{$(shell echo $(SUPPORTED_QUANT_METHODS)| sed 's/ /,/g')})) 2>/dev/null ))
 endef
 
 define set_DE_DIRS=
-$(eval override DE_DIRS:=$(shell ls -d -1 $(shell echo $(foreach d,$(call quant_dirs),$(d)/{$(shell echo $(SUPPORTED_DE_METHODS)| sed 's/ /,/g')})) 2>/dev/null)) $(DE_DIRS)
+$(eval override DE_DIRS:=$(shell ls -d -1 $(shell echo $(foreach d,$(call quant_dirs),$(d)/{$(shell echo $(SUPPORTED_DE_METHODS)| sed 's/ /,/g')})) 2>/dev/null))
 endef
 
 # 1 - exp name
@@ -91,12 +91,9 @@ endef
 endif
 
 # 
-$(call p_debug, dir=$(call mapping_dirs))
-$(call p_debug, dir=$(call mapping_dirs))
-$(call p_debug, dir=$(call quant_dirs))
-$(call p_debug, dir=$(call quant_dirs))
-$(call p_debug, dir=$(call de_dirs))
-$(call p_debug, dir=$(call de_dirs))
+$(call p_debug, mapping_dirs=$(call mapping_dirs))
+$(call p_debug, quant_dirs=$(call quant_dirs))
+$(call p_debug, de_dirs=$(call de_dirs))
 $(call p_debug, cached_vars=$(cached_vars))
 
 # 1 - exp name
@@ -231,27 +228,32 @@ $(name)/report/$(call notdir,$(conf)): $(conf)
 #############################
 phony_targets+=mapping_report quant_report
 
-define mapping_report_targets=
-$(foreach m,$(call mapping_dirs,$(name)), $(name)/report/mapping/$(shell basename $(m)).html) $(name)/report/mapping/comparison.html 
-endef
+mapping_report_targets=$(foreach m,$(call mapping_dirs), $(name)/report/mapping/$(shell basename $(m)).html) $(name)/report/mapping/comparison.html 
 
-#mapping_report_targets=$(foreach m,$(call mapping_dirs,$(name)), $(name)/report/mapping/$(shell basename $(m)).html) $(name)/report/mapping/comparison.html 
 
 mapping_report_files:
 	echo $(call mapping_report_targets)
-	echo $(call mapping_dirs,$(name))
+	echo $(call mapping_dirs)
 
 print_mapping_dirs:
 	echo $(MAPPING_DIRS)
 
 mapping_report: report_setup $(call mapping_report_targets)
 
+
 # files required for producing the mapping report
 MAPPING_REPORT_PRE_STATS=$(foreach p,$(pe),$(name)/$(mapper)/$($(p)_dir)$(p).pe.hits.bam.stats $(name)/$(mapper)/$($(p)_dir)$(p).pe.hits.bam.stats.csv $(name)/$(mapper)/$($(p)_dir)$(p).pe.hits.bam.gene.stats) $(foreach s,$(se),$(name)/$(mapper)/$($(s)_dir)$(s).se.hits.bam.stats.csv $(name)/$(mapper)/$($(s)_dir)$(s).se.hits.bam.gene.stats $(name)/$(mapper)/$($(s)_dir)$(s).se.hits.bam.stats) $(foreach p,$(pe),$(name)/$(mapper)/$($(p)_dir)$(p).pe.hits.bam.gene.stats)
 
 # merge into a single file the statistics collected from the BAMs 
-$(name)/%/%_stats_raw.tsv $(name)/%/%_stats_perc.tsv:  $(foreach p,$(pe),$(name)/%/$($(p)_dir)$(p).pe.hits.bam.stats.csv) $(foreach s,$(se),$(name)/%/$($(s)_dir)$(s).se.hits.bam.stats.csv)
-	$(call pass_args_stdin,irap_bams2tsv,$(name)/$*/bam_stats_raw.tsv, --pe "$(call remove_spaces,$(foreach p,$(pe),;$(name)/$*/$($(p)_dir)$(p).pe.hits.bam))" --se "$(call remove_spaces,$(foreach s,$(se),;$(name)/$*/$($(s)_dir)$(s).se.hits.bam))"  --pe_labels "$(call remove_spaces,$(foreach p,$(pe),;$(p)))" --se_labels "$(call remove_spaces,$(foreach s,$(se),;$(s)))" --out $(name)/$*/$*) && mv $(name)/$*/$*_mapping_stats_raw.tsv $(name)/$*/$*_stats_raw.tsv && mv $(name)/$*/$*_mapping_stats_perc.tsv $(name)/$*/$*_stats_perc.tsv
+$(name)/%/stats_raw.tsv $(name)/%/stats_perc.tsv:  $(foreach p,$(pe),$(name)/%/$($(p)_dir)$(p).pe.hits.bam.stats.csv) $(foreach s,$(se),$(name)/%/$($(s)_dir)$(s).se.hits.bam.stats.csv)
+	$(call pass_args_stdin,irap_bams2tsv,$(name)/$*/bam_stats_raw.tsv, --pe "$(call remove_spaces,$(foreach p,$(pe),;$(name)/$*/$($(p)_dir)$(p).pe.hits.bam))" --se "$(call remove_spaces,$(foreach s,$(se),;$(name)/$*/$($(s)_dir)$(s).se.hits.bam))"  --pe_labels "$(call remove_spaces,$(foreach p,$(pe),;$(p)))" --se_labels "$(call remove_spaces,$(foreach s,$(se),;$(s)))" --out $(name)/$*/$*) && mv $(name)/$*/$*_mapping_stats_raw.tsv $(name)/$*/stats_raw.tsv && mv $(name)/$*/$*_mapping_stats_perc.tsv $(name)/$*/stats_perc.tsv
+
+#
+$(name)/%/featstats_raw.tsv $(name)/%/featstats_perc.tsv:  $(foreach p,$(pe),$(name)/%/$($(p)_dir)$(p).pe.hits.bam.stats) $(foreach s,$(se),$(name)/%/$($(s)_dir)$(s).se.hits.bam.stats)
+	$(call pass_args_stdin,merge_featstats,$(name)/$*/featstats_raw.tsv, --stats "$(call remove_spaces,$(foreach p,$(pe),;$(name)/$*/$($(p)_dir)$(p).pe.hits.bam.stats))$(call remove_spaces,$(foreach p,$(se),;$(name)/$*/$($(p)_dir)$(p).se.hits.bam.stats))"  --labels "$(call remove_spaces,$(foreach p,$(pe) $(se),;$(p)))"  --out $(name)/$*/$*.tmp) && mv $(name)/$*/$*.tmp_featstats_raw.tsv $(name)/$*/featstats_raw.tsv && mv $(name)/$*/$*.tmp_featstats_perc.tsv $(name)/$*/featstats_perc.tsv
+
+$(name)/%/genestats_raw.tsv $(name)/%/genestats_perc.tsv:  $(foreach p,$(pe),$(name)/%/$($(p)_dir)$(p).pe.hits.bam.gene.stats) $(foreach s,$(se),$(name)/%/$($(s)_dir)$(s).se.hits.bam.gene.stats)
+	$(call pass_args_stdin,merge_featstats,$(name)/$*/featstats_raw.tsv, --stats "$(call remove_spaces,$(foreach p,$(pe),;$(name)/$*/$($(p)_dir)$(p).pe.hits.bam.gene.stats))$(call remove_spaces,$(foreach p,$(se),;$(name)/$*/$($(p)_dir)$(p).se.hits.bam.gene.stats))"  --labels "$(call remove_spaces,$(foreach p,$(pe) $(se),;$(p)))"  --out $(name)/$*/$*.gtmp) && mv $(name)/$*/$*.gtmp_featstats_raw.tsv $(name)/$*/genestats_raw.tsv && mv $(name)/$*/$*.gtmp_featstats_perc.tsv $(name)/$*/genestats_perc.tsv
 
 # 
 $(name)/report/mapping/%.html_req:
@@ -262,15 +264,17 @@ $(name)/report/mapping/%.html_doreq: $(MAPPING_REPORT_PRE_STATS)
 
 
 # Mapping report for a specific mapper
-$(name)/report/mapping/%.html: $(name)/%/   $(foreach p,$(pe),$(call must_exist,$(name)/%/$($(p)_dir)$(p).pe.hits.bam)) $(foreach s,$(se),$(call must_exist,$(name)/%/$($(s)_dir)$(s).se.hits.bam)) $(conf) $(call must_exist,$(name)/report/mapping/)  $(name)/%/%_stats_raw.tsv $(name)/%/%_stats_perc.tsv  $(foreach p,$(pe),$(name)/%/$($(p)_dir)$(p).pe.hits.bam.stats $(name)/$(mapper)/$($(p)_dir)$(p).pe.hits.bam.stats.csv $(name)/%/$($(p)_dir)$(p).pe.hits.bam.gene.stats) $(foreach s,$(se),$(name)/%/$($(s)_dir)$(s).se.hits.bam.stats.csv $(name)/%/$($(s)_dir)$(s).se.hits.bam.gene.stats $(name)/%/$($(s)_dir)$(s).se.hits.bam.stats) $(foreach p,$(pe),$(name)/%/$($(p)_dir)$(p).pe.hits.bam.gene.stats)
-	$(call pass_args_stdin,irap_report_mapping,$@, --out $(subst .html,,$@).1.html --mapper $* --pe "$(call remove_spaces,$(foreach p,$(pe),;$(name)/$*/$($(p)_dir)$(p).pe.hits.bam))" --se "$(call remove_spaces,$(foreach s,$(se),;$(name)/$*/$($(s)_dir)$(s).se.hits.bam))"  --pe_labels "$(call remove_spaces,$(foreach p,$(pe),;$(p)))" --se_labels "$(call remove_spaces,$(foreach s,$(se),;$(s)))" --bam_stats $(name)/$*/$*_stats_raw.tsv --bam_statsp $(name)/$*/$*_stats_perc.tsv  --css ../$(CSS_FILE) --cores $(max_threads) ) && mv $(subst .html,,$@).1.html  $@
+$(name)/report/mapping/%.html: $(name)/%/  $(conf) $(call must_exist,$(name)/report/mapping/)  $(name)/%/stats_raw.tsv $(name)/%/stats_perc.tsv  $(name)/%/featstats_raw.tsv $(name)/%/featstats_perc.tsv  $(name)/%/genestats_raw.tsv 
+	$(call pass_args_stdin,irap_report_mapping,$@, --out $(subst .html,,$@).1.html --mapper $* --bam_stats $(name)/$*/stats_raw.tsv --bam_statsp $(name)/$*/stats_perc.tsv --bam_fstats $(name)/$*/featstats_raw.tsv --bam_fstatsp $(name)/$*/featstats_perc.tsv --bam_gstats $(name)/$*/genestats_raw.tsv --css ../$(CSS_FILE) --cores $(max_threads) ) && mv $(subst .html,,$@).1.html  $@
 
 # statistics per bam file
-%.bam.stats: %.bam $(gff3_file_abspath)
+%.bam.gff3: %.bam $(gff3_file_abspath)
 	bedtools coverage -abam $< -counts -b $(gff3_file_abspath) > $@.tmp && \
 	mv $@.tmp $@
 
-# 
+%.bam.stats: %.bam.gff3 
+	mapping_feature_stats --in $< --out $@.tmp -c "`basename $*`" && mv $@.tmp $@
+
 %.bam.stats.csv: %.bam 
 	irapBAM2stats bam=$<
 
@@ -309,15 +313,10 @@ $(subst /align_overall_comparison.png.tsv,,$(subst $(name)/report/mapping/,,$(1)
 endef
 
 # only perform the comparison on the existing TSV files
-$(name)/report/mapping/comparison.html: $(call only_existing_files,$(foreach m,$(call mapping_dirs,$(name)), $(name)/report/mapping/$(shell basename $(m))/align_overall_comparison.png.tsv))
+$(name)/report/mapping/comparison.html: $(call only_existing_files,$(foreach m,$(call mapping_dirs), $(name)/report/mapping/$(shell basename $(m))/align_overall_comparison.png.tsv))
 	mappers_comp_sum.R --tsv "$^" --labels "$(foreach f,$^, $(call mappersFromReportPath,$(f)))" --out $(@D)/comparison --css  ../../$(CSS_FILE) && touch $@
 #	mappers_comp_sum.R --tsv "$^" --labels "$(foreach m,$(call mapping_dirs,$(name)), $(shell basename $(m)))" --out $(@D)/comparison --css  ../irap.css && touch $@
 
-# deprecated
-# detailed info per bam
-#$(name)/report/mapping/$(mapper)/%/index.html: FORCE
-#	bam_report.R --bam $(call path2lib_bam,$*) -d $(@D) --fastq "$(call libname2fastq,$*)" --cores $(max_threads)
-#$(name)/report/mapping/$(mapper)/lib_map_report:  $(foreach p,$(pe),$(name)/report/mapping/$(mapper)/$(p)/index.html $(name)/$(mapper)/$($(p)_dir)$(p).pe.hits.bam.gene.stats $(name)/$(mapper)/$($(p)_dir)$(p).pe.hits.bam.stats) $(foreach s,$(se),$(name)/report/mapping/$(mapper)/$(s)/index.html $(name)/$(mapper)/$($(s)_dir)$(s).se.hits.bam.gene.stats $(name)/$(mapper)/$($(s)_dir)$(s).se.hits.bam.stats)
 
 phony_targets+= 
 
@@ -532,7 +531,7 @@ $(name)/report/index.html: $(conf) $(info_targets) $(qc_html_files) $(call rep_b
 else
 $(name)/report/index.html: $(conf) $(info_targets)  $(call quant_html_files) $(qc_html_files) $(call mapping_report_targets) $(call de_html_files,$(name)) $(call gse_html_files,$(name))  $(call rep_browse,$(name)/report/jbrowse/index.html)  $(name)/report/about.html $(call must_exist,$(name)/report/irap.css) $(call must_exist,$(name)/report/menu.css)
 	cp  $(name)/report/info.html $@ &&
-	irap_report_main $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(name)/report -m "$(call mapping_dirs,$(name))" -q "$(call quant_dirs,$(name))" -d "$(call de_dirs,$(name))" &&
+	irap_report_main $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(name)/report -m "$(call mapping_dirs)" -q "$(call quant_dirs,$(name))" -d "$(call de_dirs,$(name))" &&
 	sleep 2 &&
 	touch $@
 endif
