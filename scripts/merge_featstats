@@ -146,7 +146,4 @@ if ( !is.null(warns) ) {
 }
 q(status=0)
 
-merge_featstats  --stats ";test3_qc/tophat1//PE1.pe.hits.bam.stats;test3_qc/tophat1//PE2.pe.hits.bam.stats;;test3_qc/tophat1//SE1.se.hits.bam.stats;test3_qc/tophat1//SE2.se.hits.bam.stats"  --labels ";PE1;PE2;SE1;SE2"  --out test3_qc/tophat1/tophat1
-
-merge_featstats  --stats ";test3_qc/tophat1//PE1.pe.hits.bam.stats"  --labels ";SE2"  --out test3_qc/tophat1/tophat1
 
