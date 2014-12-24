@@ -418,9 +418,15 @@ juncs_file_abspath:=$(subst .gz,,$(gtf_file_abspath)).juncs
 juncs_file:=$(notdir $(juncs_file_abspath))
 
 
+
+ifndef gff3_file
 # GFF3 file obtained from the gtf file
-gff3_file_abspath:=$(subst .gz,,$(subst .gtf,.gff3,$(gtf_file_abspath)))
-gff3_file:=$(subst .gz,,$(subst .gtf,.gff3,$(gtf_file_abspath)))
+gff3_file_abspath:=$(name)/data/$(patsubst %.gtf,%.gff3,$(subst .gz,,$(gtf_file)))
+else
+gff3_file_abspath:=$(subst .gz,,$(gff3_file))
+endif
+
+gff3_file:=$(notdir $(gff3_file_abspath))
 $(info *       gff3_file  = $(gff3_file_abspath))
 
 
