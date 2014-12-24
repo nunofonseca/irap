@@ -44,7 +44,7 @@ mapping.plot.nbars <- function(df,vals=mapping.vals,
 
   if ( ncol(df)>big.dataset  ) {
     pdebug("big dataset")
-    if ( !is.null(outlier.vals) ) {
+    if ( !is.null(outlier.vals) && max(df,na.rm=T)> 0 ) {
       out.sel.df <- df[outlier.vals,,drop=FALSE]
       bp<-boxplot(x=t(out.sel.df),ylim=c(0,max(out.sel.df,na.rm=T)))
       # find the outliers
