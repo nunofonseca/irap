@@ -114,14 +114,15 @@ get.mapping.stats <- function(pe.bam.v,se.bam.v,pe.labels.v,se.labels.v) {
       q(status=1)
     }
     pinfo("Reading ",stats.file)
-    x <- read.table(stats.file,sep=",",header=FALSE)
+    x <- read.table(stats.file,sep=",",header=FALSE,col.names=c("V1","V2"))
+    if ( nrows(x)==0 ) {
+      perror("Empty file? ",stats.file)
+      q(status=1)
+    }
     vals <- x$V2
     names(vals) <- as.character(x$V1)
     vals
   }
-  #bam.files <- c("/home/nf/big1M.bam","/home/nf/big10M.bam")
-  #  libs<-c("l1","l2")
-  #cat("--------------------------------------------")
   data <- lapply(bam.files,read.bam.stats.csv)
   names(data) <- bam.files
 
@@ -228,4 +229,5 @@ r <- write.tsv(mapping.dfs$perc,file=paste(perc.stats.file,sep=""),rownames.labe
 pinfo("Saved ",perc.stats.file)
 
 warnings()
+
 q()
