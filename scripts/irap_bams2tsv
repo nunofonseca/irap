@@ -115,7 +115,7 @@ get.mapping.stats <- function(pe.bam.v,se.bam.v,pe.labels.v,se.labels.v) {
     }
     pinfo("Reading ",stats.file)
     x <- read.table(stats.file,sep=",",header=FALSE,col.names=c("V1","V2"))
-    if ( nrows(x)==0 ) {
+    if ( nrow(x)==0 ) {
       perror("Empty file? ",stats.file)
       q(status=1)
     }
