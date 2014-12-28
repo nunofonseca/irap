@@ -113,6 +113,7 @@ get.mapping.stats <- function(pe.bam.v,se.bam.v,pe.labels.v,se.labels.v) {
       perror("File ",stats.file," not found")
       q(status=1)
     }
+    pinfo("Reading ",stats.file)
     x <- read.table(stats.file,sep=",",header=FALSE)
     vals <- x$V2
     names(vals) <- as.character(x$V1)
