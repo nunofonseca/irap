@@ -286,7 +286,7 @@ endif
 
 # load library specific information
 ifdef lib.info
-lib_info=$lib.info
+lib_info=$(lib.info)
 endif
 
 ifdef lib_info
