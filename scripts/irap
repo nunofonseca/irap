@@ -937,7 +937,7 @@ endef
 
 # fix the libname by excluding _1 and _2 from PE files
 define fix_libname=
-$(if $(call valid_libname,$(1)),$(1),$(shell echo $(1)|sed "s/_[12]$$//"))
+$(if $(call valid_libname,$(1)),$(1),$(call get_lib_name,$(1)))
 endef
 
 define valid_libname=
@@ -961,8 +961,9 @@ define bam_file_for_lib=
 $(if $(call is_pe_lib,$(1)),$(1).pe.hits.bam,$(1).se.hits.bam)
 endef
 
+
 define get_lib_name=
-$(if $(filter $(1),$(se)),$(1),$(if $(findstring $(1),$(pe)),$(patsubst %_1,%,$(1)),$(if $(findstring $(patsubst %_1,%,$(1)),$(pe)),$(patsubst %_1,%,$(1)),$(1))))
+$(if $(filter $(1),$(se)),$(1),$(if $(findstring $(patsubst %_1,%,$(1)),$(pe)),$(patsubst %_1,%,$(1)),$(if $(findstring $(patsubst %_2,%,$(1)),$(pe)),$(patsubst %_2,%,$(1)),$(1))))
 endef
 
 # 1 -lib
