@@ -1429,7 +1429,7 @@ quality_filtering_and_report: setup	$(STAGE1_OUT_FILES)
 #$(name)/data/%.f.fastq: 
 %.f.fastq: 
 	$(call p_info,Filtering $(call fix_libname,$(notdir $*)))
-	$(call do_quality_filtering_and_report,$(call get_lib_name,$(call fix_libname,$(notdir $*))))
+	$(call do_quality_filtering_and_report,$(call fix_libname,$(notdir $*)))
 #	$(call not_empty,$@)
 
 
