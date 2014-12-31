@@ -937,7 +937,7 @@ endef
 
 # fix the libname by excluding _1 and _2 from PE files
 define fix_libname=
-$(if $(call valid_libname,$(1)),$(1),$(patsubst %_2,%,$(patsubst %_1,%,$(1))))
+$(if $(call valid_libname,$(1)),$(1),$(shell echo $(1)sed "s/_[12]$//"))
 endef
 
 define valid_libname=
