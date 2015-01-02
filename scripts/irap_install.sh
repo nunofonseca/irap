@@ -348,7 +348,7 @@ MONO_VERSION=2.10.8
 MONO_FILE=mono-${MONO_VERSION}.tar.bz2    
 MONO_URL=http://download.mono-project.com/sources/mono/$MONO_FILE
 
-MAKE_VERSION=3.82
+MAKE_VERSION=4.1
 MAKE_FILE=make-${MAKE_VERSION}.tar.gz
 MAKE_URL=http://ftp.gnu.org/gnu/make/$MAKE_FILE
 ##################################
