@@ -76,10 +76,10 @@ ifdef path
  PATH:=$(path):$(PATH)
 endif
 
-# Requires make 3.82 or above
-VERSION_OK=$(shell if [ `make --version|head -n 1 | cut -f3 -d\ ` \< 3.82 ]; then echo 0; else echo 1; fi )
+# Requires make 4.1 or above
+VERSION_OK=$(shell if [ `make --version|head -n 1 | cut -f3 -d\ ` \< 4.1 ]; then echo 0; else echo 1; fi )
 ifeq ($(VERSION_OK),0)
- $(error make version needs to be 3.82 or above)
+ $(error make version needs to be 4.1 or above)
 endif
 
 irap_path=$(shell dirname `which irap`)
@@ -1033,10 +1033,10 @@ endef
 #1-file
 #2-args
 define args2file=
- $(shell rm -f $(1) && touch $(1))
- $(foreach arg,$(2), $(shell echo -n '$(arg) ' >> $(1);))
+ $(file > $(1),$(2))
  $(shell echo >> $(1))
 endef
+# add the new line in the end
 
 ####################
 ###################
