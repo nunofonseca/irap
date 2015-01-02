@@ -2293,7 +2293,7 @@ importArgsfromStdin <- function() {
     # process line
     # for now just split into words
     # TODO: take into account '' or ""
-    args <- mytrim(strsplit(line,split=" ")[[1]])
+    args <- mytrim(strsplit(mytrim(line),split=" ")[[1]])
     # remove "
     args <- sub("^\"","",sub("\"$","",args))
     close(f)
