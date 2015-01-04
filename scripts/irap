@@ -183,11 +183,17 @@ endif
 
 ifndef pe
  pe=
+else
+override pe:=$(sort $(pe))
 endif
 
 ifndef se
  se=
+else
+override se:=$(sort $(se))
 endif
+
+# remove duplicates
 
 #************************
 #Version and license info
