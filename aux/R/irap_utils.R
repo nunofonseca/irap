@@ -117,7 +117,7 @@ formats.cols <- list(
 # TODO: improve error handling
 load.gtf <- function(gtf.file,feature=NULL,selected.attr=NULL) {
 
-  gtf<-read.table(gtf.file,sep="\t",header=F,quote="\"",comment.char = "")
+  gtf<-read.table(gtf.file,sep="\t",header=F,quote="\"",comment.char = "#")
   cnames <- formats.cols$gtf
   colnames(gtf)<-cnames[0:ncol(gtf)]
   #feature <- "CDS"
@@ -130,15 +130,50 @@ load.gtf <- function(gtf.file,feature=NULL,selected.attr=NULL) {
   if ( !is.null(selected.attr) ) {
     gtf.attributes.names<- gtf.attributes.names[gtf.attributes.names %in% selected.attr]
   }
-  for (tag in gtf.attributes.names ) {
-    pattern <- paste("",tag," ([^;]+)",sep="")
-    m<-regexec(pattern,as.vector(gtf$attributes))
-    for ( i in c(1:length(m)) ) { if ( m[[i]][1]==-1 ) { m[[i]]=NA; } }
-    x<-regmatches(as.vector(gtf$attributes),m)
-    for ( i in c(1:length(x)) ) { if ( length(x[[i]])==0 ) { x[[i]]=c(NA,NA); } }
-    vals<-matrix(unlist(x),ncol=2,byrow=T,)[,2]
-    gtf[,tag]<-vals
+  attr2vec <- function(s) {
+    a<-strsplit(s,split=";[ ]?")  
+    a2 <- unlist(strsplit(a[[1]]," ",fixed=T))
+    m <- matrix(a2,nrow=2,byrow=F)
+    x <- m[2,]
+    names(x) <- m[1,]
+    return(x[gtf.attributes.names])
   }
+  attr <- lapply(gtf$attributes,attr2vec)
+  attr2vec(gtf$attributes[1])
+  vals<-matrix(unlist(attr),ncol=length(gtf.attributes.names),byrow=T)
+  colnames(vals) <- gtf.attributes.names
+  gtf <- cbind(gtf,vals)
+  return(gtf[,! colnames(gtf) %in% c("attributes")])
+}
+
+load.gencode.gtf <- function(gtf.file,feature=NULL,selected.attr=NULL) {
+
+  gtf<-read.table(gtf.file,sep="\t",header=F,quote="\"",comment.char = "#")
+  cnames <- formats.cols$gtf
+  colnames(gtf)<-cnames[0:ncol(gtf)]
+  #feature <- "CDS"
+  #selected.attr <- c("gene_id","transcript_id")
+  if (!is.null(feature)) {
+    gtf<- gtf[,gtf$feature==feature,drop=FALSE]
+  }
+  gtf$attributes <- as.character(gtf$attributes)
+  gtf.attributes.names<-c("gene_id","transcript_id","exon_number","gene_name","gene_type","gene_status","transcript type","level","transcript_name","havana_gene")
+  if ( !is.null(selected.attr) ) {
+    gtf.attributes.names<- gtf.attributes.names[gtf.attributes.names %in% selected.attr]
+  }
+  attr2vec <- function(s) {
+    a<-strsplit(s,split=";[ ]?")  
+    a2 <- unlist(strsplit(a[[1]]," ",fixed=T))
+    m <- matrix(a2,nrow=2,byrow=F)
+    x <- m[2,]
+    names(x) <- m[1,]
+    return(x[gtf.attributes.names])
+  }
+  attr <- lapply(gtf$attributes,attr2vec)
+  attr2vec(gtf$attributes[1])
+  vals<-matrix(unlist(attr),ncol=length(gtf.attributes.names),byrow=T)
+  colnames(vals) <- gtf.attributes.names
+  gtf <- cbind(gtf,vals)
   return(gtf[,! colnames(gtf) %in% c("attributes")])
 }
 
@@ -1254,7 +1289,7 @@ quant.check.quant.matrix.OK <- function(filename) {
 ################################################
 #
 
-quant.heatmap <- function(data,nlim=50,key.xlabel="Expression",do.cor=FALSE,density.info="histogram",...) {
+quant.heatmap <- function(data,nlim=50,key.xlabel="Expression",do.cor=FALSE,density.info="histogram",cexRow=0.6,cexCol=0.9,...) {
   suppressPackageStartupMessages(library("gplots"))
   #data <- log2(quant.data.group$mean+1)
   var <- rowVariance(data)
@@ -1279,7 +1314,7 @@ quant.heatmap <- function(data,nlim=50,key.xlabel="Expression",do.cor=FALSE,dens
     key.xlabel <- paste(key.xlabel," correlation",sep="")
   }
   # sort the genes by variability
-  suppressWarnings(irap.heatmap.2(x=as.matrix(data),col = colors, scale = "none",cexCol=0.9,cexRow=0.6,keysize=1,density.info=density.info,trace="none",key.xlabel=key.xlabel,...))
+  suppressWarnings(irap.heatmap.2(x=as.matrix(data),col = colors, scale = "none",cexCol=cexCol,cexRow=cexRow,keysize=1,density.info=density.info,trace="none",key.xlabel=key.xlabel,...))
 }
 
 # general function to plot an heatmap
