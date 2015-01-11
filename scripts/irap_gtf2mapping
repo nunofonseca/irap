@@ -1,4 +1,4 @@
-#!/usr/bin/env Rscript
+#!/usr/bin/env Rscript3
 # =========================================================
 # Copyright 2012-2014,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
 #
@@ -76,12 +76,14 @@ if ( num.cores>detectCores()) {
 
 pdebug.enabled <- opt$debug
 # Disabling multicores due to an error with  RSQLite driver (mm)
-num.cores <- 1
-pwarning("Multi-threading is temporarily disabled due to an error with RSQLite driver that occurs when processing some GTF files.")
+#num.cores <- 1
+#pwarning("Multi-threading is temporarily disabled due to an error with RSQLite driver that occurs when processing some GTF files.")
 options("cores"=num.cores)
 
 gtf.table <- NULL
 gtf.table <- load.gtf(opt$gtf)
+
+pinfo("GTF file loaded: ",opt$gtf," ",nrow(gtf.table)," entries")
 #
 pdebug.save.state("irap_gtf2mapping","p0")
 
@@ -95,25 +97,29 @@ if (length(cols.missing)>0) {
 #
 # exon table
 # exon id=gene+trans+exon number
-exons.f <- gtf.table[gtf.table$feature=="exon",]
+exons.f <- gtf.table[gtf.table$feature=="exon",cols.needed]
 exons.f$ID <- apply(exons.f[,c("gene_id","exon_number")],1,paste,collapse=".")
 # add the sources
 get.source <- function(id,gtf) paste(unique(gtf$source[gtf$ID==id]),collapse=";")
 # transcripts
 get.transcripts <- function(id,gtf) paste(unique(gtf$transcript_id[gtf$ID==id]),collapse=";")
+
+pinfo("#Exons:",nrow(exons.f))
 exons.f$source <- unlist(mclapply(exons.f$ID,get.source,exons.f))
 exons.f$transcript_ids<- unlist(mclapply(exons.f$ID,get.transcripts,exons.f))
 # filter and reorder the columns
 exons.f <- exons.f[,c("ID","gene_id","exon_number","seqid","start","end","strand","source","transcript_ids")]
 exons.f <- unique(exons.f)
+
 ##############
 # transcripts
-trans.f <- gtf.table[gtf.table$feature=="CDS",]
+pinfo("#Transcripts:",nrow(exons.f))
+trans.f <- gtf.table[gtf.table$feature=="CDS",cols.needed]
 trans.f$ID <- trans.f$transcript_id
 trans.f <- trans.f[,c("ID","gene_id","seqid","start","end","strand","source")]
 
 #
-pdebug.save.state("irap_gtf2annot","p3")
+pdebug.save.state("irap_gtf2mapping","p3")
 #
 exons.file <- paste(opt$out_file,"_exons.tsv",sep="")
 trans.file <- paste(opt$out_file,"_trans.tsv",sep="")
