@@ -1,0 +1,108 @@
+#!/bin/env Rscript3
+#; -*- mode: R;-*-
+# =========================================================
+# Copyright 2012-2014,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#    $Id: irap.txt Nuno Fonseca Wed Feb 6 00:51:29 2013$
+# =========================================================
+suppressPackageStartupMessages(library("optparse"))
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+# specify our desired options in a list
+#
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+pdebug.enabled <- FALSE
+
+#######################
+usage <- "irap_qn -i quant_tsv_file [-q quantile_norm_vector -c num_cores] -o output_tsv_file"
+option_list <- list(
+  make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
+  make_option(c("-o","--out"),type="character",default=NULL,help="Output quantification file"),
+  make_option(c("-i"),type="character",default=NULL,dest="tsv_file",help="Quantification matrix"),
+  make_option(c("-q"),type="character",default=NULL,dest="qn_vector_file",help="Filename with the normalization vector to use."),
+  make_option(c("-c", "--cores"), type="character",default="3",dest="num_cores",help="Number of cores to use ([default %default])")
+)
+
+multiple.options = list()
+filenames <- c("tsv_file","qn_vector_file") ;#filenames that must exist (if defined)
+
+# check multiple options values
+mandatory <- c("tsv_file","out")
+
+#
+opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory,args=args)
+
+pdebug.enabled <- opt$debug
+pdebug.save.state("irap_qn","p0")
+
+suppressPackageStartupMessages(library(parallel))
+tryCatch(num.cores <- as.integer(as.numeric(opt$num_cores)),warning=
+         function(w) {
+           perror("Invalid number of cores ",opt$num_cores)
+           q(status=3)    
+       }
+)
+if (num.cores<1) {
+  perror("Invalid number of cores ",opt$num_cores)
+  q(status=3)    
+}
+
+irap.assert(num.cores>0)
+
+if ( num.cores>parallel:::detectCores()) {
+  num.cores <- parallel:::detectCores()
+  pwarning("The number of cores to use exceeds the cores available. Reducing the limit to ",parallel:::detectCores())
+}
+
+options("cores"=num.cores)
+
+tsv.file <- "tophat2_htseq2_gene_raw.tsv"
+quant <- quant.load(opt$tsv_file)
+
+qn_vector <- NULL
+if ( ! is.null(qn_vector_file) ) {
+  qn_vector <- read.tsv(qn_vector_file)
+
+  if (length(qn_vector) != nrow(quant) ) {
+    perror(qn_vector_file, " should have the same number of rows as ",tsv.file)
+    q(status=1)
+  }
+  pinfo("Using provided values for quantile normalization")
+}
+# remove the rpkm from the libname
+colnames(quant) <- gsub(".rpkm","",colnames(quant))
+rownames(quant) <- quant[,1]
+quant <- quant[,-1]
+pinfo("Starting quantile normalization (this may take a while)...")
+x <- quantile_norm(quant,means=qn_vector)
+pinfo("Quantile normalization complete.")
+
+write.tsv(file=opt$out,x=x$qn,rownames.label="Genes")
+pinfo("File gtex_qn.tsv created ")
+if ( is.null(qn_vector)) {
+  means.file <- means.file
+  write.table(file=means.file,x$means,row.names=F,sep="\t")
+  pinfo("File ",means.file," created ")
+}
+
+q(status=0)
