@@ -97,7 +97,7 @@ pinfo("Starting quantile normalization (this may take a while)...")
 x <- quantile_norm(quant,means=qn_vector)
 pinfo("Quantile normalization complete.")
 
-write.tsv(file=opt$out,x=x$qn,rownames.label="Genes")
+write.table(file=opt$out,x=x$qn,sep="\t",row.names=TRUE)
 pinfo("File ",opt$out," created ")
 if ( is.null(qn_vector)) {
   means.file <- paste(gsub(".tsv","",opt$out),".means.tsv",sep="")
