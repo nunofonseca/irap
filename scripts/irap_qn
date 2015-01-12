@@ -38,8 +38,8 @@ usage <- "irap_qn -i quant_tsv_file [-q quantile_norm_vector -c num_cores] -o ou
 option_list <- list(
   make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
   make_option(c("-o","--out"),type="character",default=NULL,help="Output quantification file"),
-  make_option(c("-i"),type="character",default=NULL,dest="tsv_file",help="Quantification matrix"),
-  make_option(c("-q"),type="character",default=NULL,dest="qn_vector_file",help="Filename with the normalization vector to use."),
+  make_option(c("-i","--in"),type="character",default=NULL,dest="tsv_file",help="Quantification matrix"),
+  make_option(c("-q","--qn_vec"),type="character",default=NULL,dest="qn_vector_file",help="Filename with the normalization vector to use."),
   make_option(c("-c", "--cores"), type="character",default="3",dest="num_cores",help="Number of cores to use ([default %default])")
 )
 
