@@ -50,6 +50,7 @@ filenames <- c("tsv_file","qn_vector_file") ;#filenames that must exist (if defi
 mandatory <- c("tsv_file","out")
 
 #
+args <- commandArgs(trailingOnly = TRUE)
 opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory,args=args)
 
 pdebug.enabled <- opt$debug
@@ -76,12 +77,13 @@ if ( num.cores>parallel:::detectCores()) {
 
 options("cores"=num.cores)
 
-tsv.file <- "tophat2_htseq2_gene_raw.tsv"
+pinfo("Loading ",opt$tsv_file)
 quant <- quant.load(opt$tsv_file)
+pinfo("Loading ",opt$tsv_file, " complete")
 
 qn_vector <- NULL
-if ( ! is.null(qn_vector_file) ) {
-  qn_vector <- read.tsv(qn_vector_file)
+if ( ! is.null(opt$qn_vector_file) ) {
+  qn_vector <- read.tsv(opt$qn_vector_file)
 
   if (length(qn_vector) != nrow(quant) ) {
     perror(qn_vector_file, " should have the same number of rows as ",tsv.file)
@@ -91,16 +93,14 @@ if ( ! is.null(qn_vector_file) ) {
 }
 # remove the rpkm from the libname
 colnames(quant) <- gsub(".rpkm","",colnames(quant))
-rownames(quant) <- quant[,1]
-quant <- quant[,-1]
 pinfo("Starting quantile normalization (this may take a while)...")
 x <- quantile_norm(quant,means=qn_vector)
 pinfo("Quantile normalization complete.")
 
 write.tsv(file=opt$out,x=x$qn,rownames.label="Genes")
-pinfo("File gtex_qn.tsv created ")
+pinfo("File ",opt$out," created ")
 if ( is.null(qn_vector)) {
-  means.file <- means.file
+  means.file <- paste(gsub(".tsv","",opt$out),".means.tsv",sep="")
   write.table(file=means.file,x$means,row.names=F,sep="\t")
   pinfo("File ",means.file," created ")
 }
