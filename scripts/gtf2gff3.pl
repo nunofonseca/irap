@@ -16,7 +16,7 @@ while (<>) {
 	@v = split /\t/;
 	next unless $v[2] eq 'exon';
 	#$v[0] = 'chr' . $v[0] unless index($v[0], 'chr') == 0;
-	($g,$tr) = $v[8] =~ /gene_id "([^;]+);.* transcript_id "([^;]+)/;
+	($g,$tr) = $v[8] =~ /gene_id \"?([^;"]+)\"?;.* transcript_id \"?([^;"]+)\"?/;
 	if ($tr ne $last_tr) {
 		push @trs, [@exons];
 		if ($g ne $last_g) {
@@ -47,8 +47,8 @@ sub process {
 	my ($exon_info_stringA, $exon_info_stringB);
 
 
-	($gid) = $trs[0]->[0]->[8] =~ /gene_id "([^"]+)"/;
-	($gname) = $trs[0]->[0]->[8] =~ /gene_name "([^"]+)"/;
+	($gid) = $trs[0]->[0]->[8] =~ /gene_id \"?([^;\"]+)\"/;
+	($gname) = $trs[0]->[0]->[8] =~ /gene_name \"?([^;\"]+)\"?/;
 	$gname =~ tr/;/./;
 
 	foreach my $exons (@trs) {
@@ -57,7 +57,7 @@ sub process {
 		$start = $starts[0];
 		$end = $ends[0];
 
-		($tid) = $exons->[0]->[8] =~ /transcript_id "([^"]+)"/;
+		($tid) = $exons->[0]->[8] =~ /transcript_id \"?([^;\"]+)\"?/;
 		$exon_info_stringA = "ID=$tid.";
 		$exon_info_stringB = ";Name=$gname;Parent=$tid\n";
 
