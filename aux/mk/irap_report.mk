@@ -175,7 +175,7 @@ clean_report:
 phony_targets+=report_setup clean_report
 
 
-report_setup: $(call must_exist,$(name)/report) $(call must_exist,$(name)/report/mapping/) $(call must_exist,$(name)/report/de/) $(call must_exist,$(name)/report/quant/) $(call rep_browse,report_browser_setup) $(call must_exist,$(name)/report/irap.css) $(call must_exist,$(name)/report/menu.css)
+report_setup: $(call must_exist,$(name)/report) $(call must_exist,$(name)/report/mapping/) $(call must_exist,$(name)/report/de/) $(call must_exist,$(name)/report/quant/) $(call rep_browse,report_browser_setup) $(call must_exist,$(name)/report/irap.css) $(call must_exist,$(name)/report/menu.css) $(feat_mapping_file)
 
 $(name)/report/:
 	mkdir -p $@
