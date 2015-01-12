@@ -2335,3 +2335,28 @@ importArgsfromStdin <- function() {
   }
   return(args)
 }
+
+## quantile_norm(quantile_norm(df),quantile_norm(df)$means)
+quantile_norm_vect <- function(v,qn_values) {
+
+  if ( length(v)!=length(qn_values) ) {
+    error("vector v and qn_means should have the same length")
+  }
+  p <- rank(v,ties.method="max")
+  return(qn_values[p])
+}
+
+quantile_norm <- function(df,means=NULL){
+  if ( ! is.data.frame(df) ) {
+    error("Expected a data frame")
+  }
+  # increasing
+  ranks <- apply(df,2,rank,ties.method="max")
+  # sort: increasing
+  if (is.null(means) ) {
+    means <- apply(data.frame(apply(df, 2, sort)), 1, mean, na.rm=T)
+  }
+  df_qn<- apply(ranks, 2, quantile_norm_vect, means)
+  rownames(df_qn) <- rownames(df)
+  return(list(qn=df_qn,means=means))
+}
