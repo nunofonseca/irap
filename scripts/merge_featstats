@@ -74,14 +74,14 @@ read.bam.stats.tsv <- function(tsv.file) {
     perror("File ",stats.file," not found")
     q(status=1)
   }
-  x <- read.table(stats.file,sep="\t",header=FALSE,,col.names=c("V1","V2"))
+  # ignore first line
+  x <- read.table(stats.file,sep="\t",header=TRUE,col.names=c("V1","V2"))
   if ( nrow(x)==0 ) {
     perror("Empty file? ",stats.file)
     q(status=1)
   }
   vals <- as.numeric(x$V2)
   names(vals) <- as.character(x$V1)
-  vals <- vals[names(vals)!="source"]
   pinfo("Loaded ",tsv.file)
   vals
 }
