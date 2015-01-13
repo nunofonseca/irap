@@ -282,7 +282,7 @@ plot.mapping.feat <- function(df,is.small.dataset=FALSE,
     out.sel.df <- df
     pdebug(colnames(df))
     pdebug(rownames(df))
-    bp<-boxplot(x=t(out.sel.df),add=F,out=T,names=rownames(out.sel.df),ylim=ylim)
+    bp<-boxplot(x=t(out.sel.df),add=F,out=F,names=rownames(out.sel.df),ylim=ylim)
     # find the outliers
     pdebug("bp computed")
     min.vals <- bp$stats[5,]
