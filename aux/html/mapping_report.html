@@ -310,8 +310,8 @@ plot.mapping.feat <- function(df,is.small.dataset=FALSE,
       layout(matrix(c(1,2),ncol=2),widths = widths)
       pdebug("widths=",widths)
     }
-    bp<-boxplot(x=t(df),col=cols,las=2,names=rownames(df),ylim=ylim,add=F,out=F,
-                outpch=16)    
+    bp<-boxplot(x=t(df),col=cols,las=2,names=rownames(df),ylim=ylim,add=F,out=F)
+#                outpch=16)    
     title(ylab=ylab,mgp=c(5,1,0),main=paste(ncol(df)," libraries",sep=""))
                                         # outliers (detailed)
     if (!is.null(out) && length(out)>1 ) {
