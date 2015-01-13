@@ -85,8 +85,8 @@ qn_vector <- NULL
 if ( ! is.null(opt$qn_vector_file) ) {
   qn_vector <- read.tsv(opt$qn_vector_file)
 
-  if (length(qn_vector) != nrow(quant) ) {
-    perror(qn_vector_file, " should have the same number of rows as ",tsv.file)
+  if (length(qn_vector) < nrow(quant) ) {
+    perror(opt$qn_vector_file, " should have the same number of rows as ",opt$tsv.file)
     q(status=1)
   }
   pinfo("Using provided values for quantile normalization")
