@@ -110,7 +110,7 @@ mapping.plot <- function(df,
                          recursive=FALSE,
                          outlier.vals=outlier.vals) {
 
-  cex <- 0.85
+  cex <- 0.80
   df.rows <- vals
   # filter out some cols
   if (!is.null(exclude.cols)) {
@@ -261,7 +261,7 @@ plot.mapping.feat <- function(df,is.small.dataset=FALSE,
                               big.dataset.max.out=40,ylim=NULL)
 {
 
-  cex <- 0.85
+  cex <- 0.80
                                         # filter out some cols
   if (!is.null(sel.columns)) {
     df <- df[,sel.columns,drop=FALSE]
@@ -331,7 +331,7 @@ plot.mapping.feat <- function(df,is.small.dataset=FALSE,
     par(mar=c(9,5,4,11))
     bp <- barplot(as.matrix(df),las=2,
                   beside=F,col=cols,                  
-                  horiz=F,cex.axis=0.8,
+                  horiz=F,cex.axis=0.75,
                   xaxs="i",xlim=c(-0.1,0.1+ncol(df)),
                   ylim=ylim,
                   width=0.8)
