@@ -1100,8 +1100,6 @@ endef
 
 endif
 
-# save
-$(call cached_var,BIG_EXP)
 ################################################################################
 # TODO: STAGE0
 SETUP_DATA_FILES=
