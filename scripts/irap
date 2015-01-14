@@ -1074,13 +1074,13 @@ endef
 # When the number of libraries is greater than BIG_LIM then pass the arguments
 # to some scripts from stdin
 ifndef BIG_LIM
-BIG_LIM:=600
+BIG_LIM:=400
 endif
 
 ifeq ($(shell expr $(words $(se) $(pe)) \<  $(BIG_LIM)),0)
-#($(word 1,$(sort $(BIG_LIM) $(words $(se) $(pe))))),$(BIG_LIM))
 # too many libs to be able to pass them as an argument
 $(call p_info, Big number of libraries mode (>$(BIG_LIM)))
+BIG_EXP=1
 # cmd=$1
 # out_file=$2
 # args=$3
@@ -1089,6 +1089,7 @@ $(call args2file,$(2).in,$(3)) cat $(2).in | $(1) -stdin && rm -f $(2).in
 endef
 
 else
+BIG_EXP=0
 #$(call p_info, Small number of libraries mode)
 # cmd=$1
 # out_file=$2
@@ -1099,6 +1100,8 @@ endef
 
 endif
 
+# save
+$(call cached_var,BIG_EXP)
 ################################################################################
 # TODO: STAGE0
 SETUP_DATA_FILES=
