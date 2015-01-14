@@ -80,13 +80,16 @@ options("cores"=num.cores)
 pinfo("Loading ",opt$tsv_file)
 quant <- quant.load(opt$tsv_file)
 pinfo("Loading ",opt$tsv_file, " complete")
+pinfo("# genes:",nrow(quant))
 
 qn_vector <- NULL
 if ( ! is.null(opt$qn_vector_file) ) {
+  pinfo("Loading ",opt$qn_vector_file)
   qn_vector <- read.tsv(opt$qn_vector_file)
-
-  if (length(qn_vector) < nrow(quant) ) {
-    perror(opt$qn_vector_file, " should have the same number of rows as ",opt$tsv.file)
+  pinfo("Loading ",opt$qn_vector_file, " complete")
+  pinfo("# genes:",nrow(qn_vector))
+  if (nrow(qn_vector) < nrow(quant) ) {
+    perror(opt$qn_vector_file, " should have the same number or more rows than ",opt$tsv.file)
     q(status=1)
   }
   pinfo("Using provided values for quantile normalization")
@@ -94,10 +97,11 @@ if ( ! is.null(opt$qn_vector_file) ) {
 # remove the rpkm from the libname
 colnames(quant) <- gsub(".rpkm","",colnames(quant))
 pinfo("Starting quantile normalization (this may take a while)...")
-x <- quantile_norm(quant,means=qn_vector)
+x <- quantile_norm(quant,means=qn_vector$x)
 pinfo("Quantile normalization complete.")
 
-write.table(file=opt$out,x=x$qn,sep="\t",row.names=TRUE)
+#write.table(file=opt$out,x=x$qn,sep="\t",row.names=TRUE)
+write.tsv(file=opt$out,x=x$qn,rownames.label="Gene",fix=FALSE)
 pinfo("File ",opt$out," created ")
 if ( is.null(qn_vector)) {
   means.file <- paste(gsub(".tsv","",opt$out),".means.tsv",sep="")
