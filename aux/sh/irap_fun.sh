@@ -367,7 +367,7 @@ function final_job {
 declare -i counter=0
 
 
-# Report jobs: with the exception of the initial jobs, most jobs have the same prefix
+
 function qc_report {
     waitfor=$1
     echo " * QC Report "
@@ -388,11 +388,11 @@ function mapping_report {
     mappers_dirs=`get_cached_value MAPPING_DIRS`
     report_qc_only=`get_param_value report_qc_only $conf`
     if [ "$report_qc_only-" != "y-" ] && [ "$mappers_dirs-" != "-" ] ; then
-	declare -i mapper_counter=0
 # one report for each mapper
 	WAIT_FOR_IDS_=$WAIT_FOR_IDS
 	declare -i mapper_id=1
 	for d in $mappers_dirs; do
+	    declare -i mapper_counter=0
 	    mapper=`basename $d`
 	    p_info "Bam files generated using $mapper..."
 	    let c=1
@@ -411,8 +411,8 @@ function mapping_report {
 		submit_job "${jobname_prefix}m[1]" "-w  ended(\"${jobname_prefix}m${mapper_id}*\")"  irap conf=$conf $IRAP_PARAMS $report_dir/$mapper/featstats_raw.tsv
 		submit_job "${jobname_prefix}m[2]" "-w  ended(\"${jobname_prefix}m${mapper_id}*\")"  irap conf=$conf $IRAP_PARAMS $report_dir/$mapper/genestats_raw.tsv
 		submit_job "${jobname_prefix}m[3]" "-w  ended(\"${jobname_prefix}m${mapper_id}*\")"  irap conf=$conf $IRAP_PARAMS $report_dir/$mapper/stats_raw.tsv
-		let mapper_id=mapper_id+1
 	    fi
+	    let mapper_id=mapper_id+1
             # wait for the reports of all mappers
 	    let counter=counter+1
 	    submit_job "${jobname_prefix}f[$counter]"  "-w ended(\"${jobname_prefix}m*\")"  "irap conf=$conf $IRAP_PARAMS $report_dir/mapping/$mapper.html"
