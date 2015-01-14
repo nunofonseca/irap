@@ -1013,13 +1013,15 @@ fix.cufflinks.fpkms <- function(t,id.col=1,value.col=2) {
 
 #######################################################
 #
-write.tsv <- function(x,file,header=TRUE,rownames.label=NULL) {
+write.tsv <- function(x,file,header=TRUE,rownames.label=NULL,fix=TRUE) {
   #
   if (!is.null(x)) {
     if (!is.matrix(x)) {
       x <- as.matrix(x)
     }
-    x <- apply(x,c(1,2),gsub,pattern="'",replacement="")
+    if (fix) {
+      x <- apply(x,c(1,2),gsub,pattern="'",replacement="")
+    }
     if ( !is.null(rownames.label) ) {
       y <- cbind(rownames(x),x)
       colnames(y) <- append(rownames.label,colnames(x))
@@ -2338,10 +2340,12 @@ importArgsfromStdin <- function() {
 
 ## quantile_norm(quantile_norm(df),quantile_norm(df)$means)
 quantile_norm_vect <- function(v,qn_values) {
-
-  if ( length(v)!=length(qn_values) ) {
-    error("vector v and qn_means should have the same length")
+  lv <- length(v)
+  lqn <- length(qn_values)
+  if ( lv!=lqn ) {
+    perror("length of vector v (",lv,") is different from qn_means' length (",lqn,")")
   }
+  
   p <- rank(v,ties.method="max")
   return(qn_values[p])
 }
@@ -2349,7 +2353,23 @@ quantile_norm_vect <- function(v,qn_values) {
 quantile_norm <- function(df,means=NULL){
   if ( ! is.data.frame(df) ) {
     error("Expected a data frame")
+  }  
+  #
+  if ( ! is.null(means)) {
+    l1 <- nrow(df)
+    l2 <- length(means)
+    if ( l1 != l2 ) {
+      pwarning("Number of rows in data frame (",l1,") does not match with the length of quantile normalized means vector (",l2,")")
+      if ( l1 > l2 ) {
+        perror("Unable to proceed")
+      }
+      # l1 <l2
+      offset <- l2-l1
+      means <- means[append(2,seq(offset+2,l2))]
+      #pinfo(length(means),"==",l1)
+    }  
   }
+
   # increasing
   ranks <- apply(df,2,rank,ties.method="max")
   # sort: increasing
