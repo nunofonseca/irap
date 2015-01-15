@@ -2352,7 +2352,7 @@ quantile_norm_vect <- function(v,qn_values) {
 
 quantile_norm <- function(df,means=NULL){
   if ( ! is.data.frame(df) ) {
-    error("Expected a data frame")
+    perror("Expected a data frame")
   }  
   #
   if ( ! is.null(means)) {
