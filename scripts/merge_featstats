@@ -39,7 +39,7 @@ option_list <- list(
   make_option(c("-o","--out"),type="character",default=NULL,help="Output tsv file"),
   make_option(c("--stats"),type="character",dest="stats.files",default=NULL,help="TSV file names containing mapping statistics."),
   make_option(c("--labels"),type="character",dest="labels",default=NULL,help="Column names"),
-  make_option(c("--header"),type="store_true",dest="header",default=FALSE,help="tsv file has a header (default: False)"),
+  make_option(c("--header"),action="store_true",dest="wh",default=FALSE,help="tsv file has a header"),
   make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode")
 )
 
