@@ -39,7 +39,7 @@ atlas_wrap_up_clean:
 
 
 # TODO: add the plots for mapping...check if all files are there!
-ATLAS_REPORT_FILES=$(name)/report/qc.html  $(name)/report/qc.tsv $(name)/report/read_filtering_plot.png.eps $(if $(call GEN_REPORT_QC_ONLY),,$(name)/report/mapping/$(mapper).html  $(name)/report/mapping/$(mapper)*.png.eps  $(name)/report/qc.html $(shell find $name/report/riq/ -name "fastqc_report.html") $(shell find $name/report/riq/ -type d -name "Images") $(shell find  $name/report/riq/ -type d -name "Icons")  $(name)/report/software.tsv $(name)/report/info.html $(name)/report/irap.conf $(ATLAS_IMAGES2CONVERT) $(ATLAS_SCALED_IMAGES)
+ATLAS_REPORT_FILES=$(name)/report/qc.html  $(name)/report/qc.tsv $(name)/report/read_filtering_plot.png.eps $(if $(call GEN_REPORT_QC_ONLY),,$(name)/report/mapping/$(mapper).html  $(name)/report/mapping/$(mapper)*.png.eps  $(name)/report/qc.html $(shell find $name/report/riq/ -name "fastqc_report.html") $(shell find $name/report/riq/ -type d -name "Images") $(shell find  $name/report/riq/ -type d -name "Icons")  $(name)/report/software.tsv $(name)/report/info.html $(name)/report/irap.conf $(ATLAS_IMAGES2CONVERT) $(ATLAS_SCALED_IMAGES))
 
 
 $(name)/atlas_html.tar.gz: $(name)/report $(name)/report/software.tsv $(name)/report/irap.conf $(ATLAS_SCALED_IMAGES)
