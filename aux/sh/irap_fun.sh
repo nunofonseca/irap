@@ -412,14 +412,14 @@ function mapping_report {
 		submit_job "${jobname_prefix}m${mapper_id}f[2]" "-w  ended(\"${jobname_prefix}m${mapper_id}j*\")"  irap conf=$conf $IRAP_PARAMS $report_dir/$mapper/genestats_raw.tsv
 		submit_job "${jobname_prefix}m${mapper_id}f[3]" "-w  ended(\"${jobname_prefix}m${mapper_id}j*\")"  irap conf=$conf $IRAP_PARAMS $report_dir/$mapper/stats_raw.tsv
 	    fi
-	    let mapper_id=mapper_id+1
             # wait for the reports of all mappers
 	    let counter=counter+1
 	    submit_job "${jobname_prefix}f[$counter]"  "-w ended(\"${jobname_prefix}m${mapper_id}f*\")"  "irap conf=$conf $IRAP_PARAMS $report_dir/mapping/$mapper.html"
+	    let mapper_id=mapper_id+1
 	done
-        # wait for the reports of all mappers
+        # wait for the reports of all mappers"22164809em2f*: N
 	let counter=counter+1
-	submit_job "${jobname_prefix}mf[$counter]"  "-w ended(\"${jobname_prefix}m*\")"  "irap conf=$conf $IRAP_PARAMS $report_dir/mapping/comparison.html"
+	submit_job "${jobname_prefix}[$counter]"  "-w ended(\"${jobname_prefix}m*\")"  "irap conf=$conf $IRAP_PARAMS $report_dir/mapping/comparison.html"
 	echo ${jobname_prefix}mf
     else
 	echo $waitfor
