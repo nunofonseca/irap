@@ -401,21 +401,21 @@ function mapping_report {
 	    if [ "$FILES" != '$d/*.hits.bam' ]; then
 		for p in $pe; do 
 		    let mapper_counter=mapper_counter+1
-		    submit_job "${jobname_prefix}m${mapper_id}[$mapper_counter]" "-w  ended($waitfor)"  irap conf=$conf $IRAP_PARAMS se= pe=$p $report_dir/mapping/$mapper.html_doreq
+		    submit_job "${jobname_prefix}m${mapper_id}j[$mapper_counter]" "-w  ended($waitfor)"  irap conf=$conf $IRAP_PARAMS se= pe=$p $report_dir/mapping/$mapper.html_doreq
 		done
 		for f in $se ; do
 		    let mapper_counter=mapper_counter+1
-		    submit_job "${jobname_prefix}m${mapper_id}[$mapper_counter]" "-w  ended($waitfor)"  irap conf=$conf $IRAP_PARAMS se=$f pe= $report_dir/mapping/$mapper.html_doreq
+		    submit_job "${jobname_prefix}m${mapper_id}j[$mapper_counter]" "-w  ended($waitfor)"  irap conf=$conf $IRAP_PARAMS se=$f pe= $report_dir/mapping/$mapper.html_doreq
 		done
 		# when all libs are processed then merge the stats
-		submit_job "${jobname_prefix}m[1]" "-w  ended(\"${jobname_prefix}m${mapper_id}*\")"  irap conf=$conf $IRAP_PARAMS $report_dir/$mapper/featstats_raw.tsv
-		submit_job "${jobname_prefix}m[2]" "-w  ended(\"${jobname_prefix}m${mapper_id}*\")"  irap conf=$conf $IRAP_PARAMS $report_dir/$mapper/genestats_raw.tsv
-		submit_job "${jobname_prefix}m[3]" "-w  ended(\"${jobname_prefix}m${mapper_id}*\")"  irap conf=$conf $IRAP_PARAMS $report_dir/$mapper/stats_raw.tsv
+		submit_job "${jobname_prefix}m${mapper_id}f[1]" "-w  ended(\"${jobname_prefix}m${mapper_id}j*\")"  irap conf=$conf $IRAP_PARAMS $report_dir/$mapper/featstats_raw.tsv
+		submit_job "${jobname_prefix}m${mapper_id}f[2]" "-w  ended(\"${jobname_prefix}m${mapper_id}j*\")"  irap conf=$conf $IRAP_PARAMS $report_dir/$mapper/genestats_raw.tsv
+		submit_job "${jobname_prefix}m${mapper_id}f[3]" "-w  ended(\"${jobname_prefix}m${mapper_id}j*\")"  irap conf=$conf $IRAP_PARAMS $report_dir/$mapper/stats_raw.tsv
 	    fi
 	    let mapper_id=mapper_id+1
             # wait for the reports of all mappers
 	    let counter=counter+1
-	    submit_job "${jobname_prefix}f[$counter]"  "-w ended(\"${jobname_prefix}m*\")"  "irap conf=$conf $IRAP_PARAMS $report_dir/mapping/$mapper.html"
+	    submit_job "${jobname_prefix}f[$counter]"  "-w ended(\"${jobname_prefix}m${mapper_id}f*\")"  "irap conf=$conf $IRAP_PARAMS $report_dir/mapping/$mapper.html"
 	done
         # wait for the reports of all mappers
 	let counter=counter+1
