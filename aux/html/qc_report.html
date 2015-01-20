@@ -1,6 +1,9 @@
 <% brew::brew(get.path2template("page.header")) %>
 
 <%
+cols <- c("green","yellow","purple","blue","red")
+big.dataset <- 20
+
 library(xtable)
 dummy.data <- function(n=200) {
   NSAMPLES <- n
@@ -14,14 +17,209 @@ dummy.data <- function(n=200) {
   colnames(m) <- c("Passed", "Unpaired", "Ns", "Contamination","Quality","Lib")
   return(m)
 }
-#bp.data<-dummy.data()
-#bp.data.orig<-bp.data
-#df<-bp.data.orig[seq(1,2),]
-#df<-bp.data.orig[seq(1,5),]
-#df<-bp.data.orig[seq(1,10),]
-#df<-bp.data.orig[seq(1,15),]
-#df<-bp.data.orig[seq(1,25),]
-#df<-bp.data.orig
+
+gen.qc.plot <- function(df,cols=NULL,ylab="Number of reads") {
+  ########################
+  # Plot 
+  legend <- c("Passed", "Unpaired", "Ns", "Contamination","Quality")
+  if (is.null(cols)) {
+    cols <- c("green","yellow","purple","blue","red")
+  }
+                                        #rainbow(length(legend))
+  bp.data <- t(as.matrix(df[,legend]))
+  rownames(bp.data) <- legend
+  n <- length(colnames(bp.data))
+  cex <- NULL
+  if ( n>10 ) { cex <- 0.5 } else { cex=0.8}
+  bp <- barplot( bp.data, beside = FALSE, col=cols,  las=2 , cex.axis=cex, cex.names=0.8, xaxs="i",xlim=c(-0.2,0.2+n),width=0.8)
+  #par( xpd=NA , mar=c(9,6,4,8))
+  title(ylab=ylab,mgp=c(5,1,0))
+  #bp.data <- t(df)
+  legend(x=ncol(bp.data)+1,y=max(colSums(bp.data)),inset=c(0,0),legend=legend,fill=cols,horiz=FALSE, cex=0.80,bty='n')                          
+  for( i in c(1:length(colnames(bp.data))) ) {
+    total <- sum(bp.data[,i])
+    f <- c()
+    y <- c()
+    f[1] <- round(bp.data[1,i]*100/total)
+    y[1] <- bp.data[1,i]
+    f[2] <- round(bp.data[2,i]*100/total)
+    y[2] <- sum(bp.data[c(1:2),i])  
+    f[3] <- round(bp.data[3,i]*100/total)
+    y[3] <- sum(bp.data[c(1:3),i])
+    f[4] <- round(bp.data[4,i]*100/total)
+    y[4] <- sum(bp.data[c(1:4),i])
+    f[5] <- round(bp.data[5,i]*100/total)
+    y[5] <- sum(bp.data[c(1:5),i])
+    for( r in c(1:5) ){
+      #pinfo(f[r])
+      if ( sum(is.na(f))==0 && f[r]>2) {
+        #
+        #legend( bp[i], y[r]-bp.data[r,i]/2, paste("~",f[r], "%", sep=""), bty="n", xjust=0.5, yjust=0.5)
+        #pinfo(bp[i]," ",y[r]--bp.data[r,i]/2)
+        text( bp[i], y[r]-bp.data[r,i]/2, paste("",f[r], "%", sep=""),cex=cex,las=2,col="black",srt=90)      
+      }
+    }
+  }
+  bp
+}
+
+
+
+plot.nbars <- function(df,vals=NULL,
+                               exclude.cols = NULL,
+                               out.beside=TRUE,
+                               big.dataset.max.out=20,
+                               outlier.vals=NULL) {
+  #print(xtable(df),type="html")
+  out <- NULL
+  if ( is.null(vals) ) {
+    vals <- rownames(df)
+  }
+  if ( is.null(outlier.vals) ) {
+    outlier.vals <- rownames(df)
+  }
+
+  df <- df[vals,,drop=FALSE]
+  nbars1 <- 0
+  nbars2 <- 0
+  w <- 1
+  if (!is.null(exclude.cols)) {
+    df <- df[,!colnames(df) %in% exclude.cols,drop=FALSE]
+  }
+
+  if ( ncol(df)>big.dataset  ) {
+    pdebug("big dataset")
+    if ( !is.null(outlier.vals) && max(df,na.rm=T)> 0 ) {
+      out.sel.df <- df[outlier.vals,,drop=FALSE]
+      bp<-boxplot(x=t(out.sel.df),ylim=c(0,max(out.sel.df,na.rm=T)))
+      # find the outliers
+      min.vals <- bp$stats[5,]
+      max.vals <- bp$stats[1,]
+      names(min.vals) <- rownames(out.sel.df)
+      names(max.vals) <- rownames(out.sel.df)
+      out <- c()
+      for ( n in names(min.vals)[names(min.vals) %in% rownames(out.sel.df)] ) {
+        tmp.out <- colnames(df)[as.matrix(df[n,,drop=FALSE])<min.vals[n] | as.matrix(df[n,,drop=FALSE])>max.vals[n]]
+        if ( !is.null(tmp.out)) {
+          out <- append(out,tmp.out)
+        }
+      }
+      if ( length(out) == 0 ) {
+        out <- NULL
+      } else {
+        out <- unique(out)
+      }
+      pdebug("# out=",length(out),"/",ncol(df))
+    }
+  } else {
+    nbars <- ncol(df)
+    w <- 1
+    return(list(nbars=nbars,w=w,nbars1=w,nbars2=0,out=NULL,widths=1))
+  }
+  if ( !is.null(out) ) {
+    out <- out[seq(1,min(big.dataset.max.out,length(out)))]
+    nbars1 <- max(nrow(df),5)
+    pdebug("w=",w," nrow(df)=",nrow(df))
+    if ( out.beside ) {
+      nbars2 <- max(length(out)*nrow(df),20)
+    } else {
+      nbars2 <- max(length(out),20)
+    }
+    # make the first bars a bit bigger
+    #nbars1 <- nbars1*2
+    w <- nbars1+nbars2   
+    widths <- c(nbars1/w*10,nbars2/w*10)
+    pdebug("nbars1=",nbars1," nbars2=",nbars2)
+    widths <- widths/sum(widths)
+    widths[1] <- max(widths[1],0.40)
+    widths[2] <- min(widths[2],0.60)
+    nbars <- w
+  } else  {
+    pdebug("out == NULL?")
+    widths <- 1
+    nbars  <- nrow(df)
+    nbars1 <- nbars
+  }
+  return(list(nbars=nbars,w=w,nbars1=nbars1,nbars2=nbars2,out=out,widths=widths))
+}
+
+qc.barplot2 <- function(df,
+                        cols,
+                         is.small.dataset=FALSE,
+                         big.dataset.max.out=20,
+                         df.cols=NULL,
+                         out.beside=TRUE,
+                         legend.horiz=NULL,
+		         legend.beside=TRUE,
+                         vals=NULL,
+                         recursive=FALSE,
+                         outlier.vals=NULL) {
+
+  #print(xtable(df),type="html")
+  # remove Mean, SD and Median
+  df <- df[!rownames(df) %in% c("SD","Mean","Median"),,drop=FALSE]
+  cex <- 0.85
+  if ( is.null(df.cols) ) {
+    df.cols <- colnames(df)
+  }
+  labels <- df.cols
+  if ( is.null(cols) ) {
+    cols <- rainbow(length(df.cols))
+  }
+  #df.orig <- df
+  df <- df[,df.cols,drop=FALSE]
+  #print(xtable(df),type="html")
+  if ( is.small.dataset==FALSE  && ! recursive && nrow(df)>big.dataset) {
+    pdebug("Big dataset mode")
+    # 
+    # plot the outliers if any
+    par(mar=c(9,6,4,1),bty='n',xpd=NA)
+    pdebug(">>",colnames(df))
+    #print(df)
+    d <- plot.nbars(t(df),outlier.vals=outlier.vals,big.dataset.max.out=big.dataset.max.out,out.beside=out.beside)
+    if ( !is.null(d$out)  ) {
+      # ok, we have outliers
+      widths <- d$widths*100
+      pdebug("nbars1=",d$nbars1," nbars2=",d$nbars2)
+      layout(matrix(c(1,2),ncol=2),widths = widths)
+      pdebug("widths=",widths)
+    }
+    # plot the distrib
+    bp<-boxplot(x=df,col=cols,las=2,names=labels,add=F,outline=FALSE)
+    title(ylab="Number of reads",mgp=c(4,1,0),main=paste(nrow(df)," files",sep=""))
+    # outliers (detailed)
+    if (!is.null(d$out) ) {
+      pdebug("out=",d)      
+      df <- df[d$out,,drop=FALSE]
+      par(mar=c(9,3,4,8),bty='n',xpd=NA)
+      bp <- gen.qc.plot(df,ylab="")
+      return(bp)
+    }
+  } else {
+    # default values
+    top.margin <- 4
+    right.margin <-9
+    left.margin <- 5
+    bot.margin <- 9
+    if ( nrow(df)<=big.dataset)  {
+      if (max(df,na.rm=T)>100) {
+        left.margin <- left.margin*1.20
+        right.margin <- right.margin*1.20
+      }
+    } else {
+      if (max(df)<=100) {
+        left.margin <- left.margin*0.90
+        right.margin <- right.margin*0.90
+      }
+    }
+    par(xpd=NA,mar=c(bot.margin,left.margin,top.margin,right.margin))
+    #pdebug(head(df))
+    bp <- gen.qc.plot(df)
+    pdebug("Exiting 2")
+    return(bp)
+  }
+}
+#dev.off()
 %>
   
 <%# Comment -- wrap up everything in a div %>
@@ -65,6 +263,40 @@ irap.output.html(html, "The following table shows information, per
 <DIV> <%=qc.tsv.download.html%></DIV>
 
 
+
+<%
+#<H3 class="section">=irap.ctr("Figure")</H3>
+
+file <- "read_info_plot.png"
+#filepath <- "/tmp"
+filepath <- paste(out.dir,sep="")
+
+# handle experiments with a huge number of libs
+html <- gen.plot2report(filename=file,
+                        dir=filepath,
+                        bg="white",
+                        width=500,
+                        height=400,
+                        html=TRUE,
+                        ps=TRUE,
+                        caption="",
+                        to.plot= function() {
+                          #print(xtable(df),type="html")
+                          data.info <- table2[c("Reads","Read Length","Median quality","GC%"),]
+                          data.info <- data.info[,!colnames(data.info) %in% c("SD","Mean","Median"),drop=FALSE]
+                          par(mar=c(4,4,4,2),bty='n',xpd=NA)
+                          layout(matrix(c(1,2,3,4),ncol=4))
+                          boxplot(as.numeric(data.info["Reads",]),xlab="Number of reads",las=2,ylim=c(0,max(as.numeric(data.info["Reads",]))),col=cols[1])
+                           boxplot(as.numeric(data.info["Read Length",]),xlab="Read length",las=2,ylim=c(0,max(as.numeric(data.info["Read Length",]))),col=cols[2],ylab="bases")
+                          boxplot(as.numeric(data.info["Median quality",]),xlab="Median Quality",las=2,ylim=c(0,45),col=cols[3],ylab="Phred quality score")
+                          boxplot(as.numeric(data.info["GC%",]),xlab="GC%",las=2,ylim=c(0,100),col=cols[4],ylab="%")
+                          title(main=paste(ncol(data.info)," files",sep=""))
+                        }
+                        )
+#  irap.output.html(html$html,"Distribution of the number of reads per library, median read length, median base quality, and median GC%.")
+
+%>
+  
 <H2 class="section">QC Filtering Summary<A NAME='plot'/></H2>
 
 <H3 class="section"><%=irap.ctr("Figure")%></H3>
@@ -72,19 +304,15 @@ irap.output.html(html, "The following table shows information, per
 file <- "read_filtering_plot.png"
 #filepath <- "/tmp"
 filepath <- paste(out.dir,sep="")
-n <- length(rownames(df))
-#df<-t(bp.data)
+
 nlibs<-nrow(df)
-width=max(400,10*nlibs)
+if ( nrow(df) > big.dataset ) {
+    width=900
+  } else {
+    width=500
+}
 if (conf.is.qc.enabled(conf)) {
   # handle experiments with a huge number of libs
-  if ( nlibs > 100 ) {
-    o <- boxplot(t(apply(df[c("Passed","Unpaired","Contamination","Quality"),],c(1,2),as.numeric)),outline=T,las=2)
-    d <- t(df[c("Passed","Unpaired","Contamination","Quality"),])
-    d <- apply(d,c(1,2),as.numeric)
-    o <- boxplot(d,outline=T,las=2,ylim=max(d,na.rm=T))
-    head(df)
-    print(o$out)
     html <- gen.plot2report(filename=file,
                             dir=filepath,
                             bg="white",
@@ -94,24 +322,10 @@ if (conf.is.qc.enabled(conf)) {
                             ps=TRUE,
                             caption="",
                             to.plot= function() {
-                              gen.qc.plot(df)
+                              #print(xtable(df),type="html")
+	                      qc.barplot2(df,cols,df.cols=c("Passed", "Unpaired", "Ns", "Contamination","Quality"))
                             }
                             )
-  } else {
-    html <- gen.plot2report(filename=file,
-                            dir=filepath,
-                            bg="white",
-                            width=width,
-                            height=400,
-                            html=TRUE,
-                            ps=TRUE,
-                            caption="",
-                            to.plot= function() {
-                              gen.qc.plot(df)
-                            }
-                            )
-  }
-
   irap.output.html(html$html,"Number of reads per library that passed the filtering process and that were filtered out because of quality, contamination, having uncalled bases (Ns), unpaired reads (only applicable to paired-end libraries).")
 } else {
   irap.output.html("<p>Filtering disabled.</p>")

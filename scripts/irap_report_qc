@@ -200,51 +200,7 @@ raw.summary.dataframe <- function(conf) {
   return(df)
 }
 
-gen.qc.plot <- function(df) {
-  ########################
-  # Plot 
-  legend <- c("Passed", "Unpaired", "Ns", "Contamination","Quality")
-  cols <- c("green","yellow","purple","blue","red")
-                                        #rainbow(length(legend))
-  bp.data <- t(as.matrix(df[,legend]))
-  colnames(bp.data) <- as.character(as.character(df[,c("Lib")]))
-  rownames(bp.data) <- legend
-  n <- length(colnames(bp.data))
-  cex <- NULL
-  if ( n>10 ) { cex <- 0.5 } else { cex=0.8}
-  par( xpd=NA , mar=c(9,6,4,2))
-  #bp <- barplot( bp.data, beside = FALSE, col=cols, las=2 , cex.axis=cex, cex.names=0.8)
-  bp <- barplot( bp.data, beside = FALSE, col=cols,  las=2 , cex.axis=cex, cex.names=0.8, xaxs="i",xlim=c(-0.2,0.2+n),width=0.8)
-  par( xpd=NA , mar=c(9,6,4,2))
-  title(ylab="Number of reads",mgp=c(5,1,0))
-  legend("top",inset=c(0,-0.10),legend=legend,fill=cols,horiz=TRUE, cex=0.70,bty='n')                          
-  #legend( "bottomleft", legend=legend, fill=cols,horiz=TRUE, cex=0.7, bg="white")
-  for( i in c(1:length(colnames(bp.data))) ) {
-    total <- sum(bp.data[,i])
-    f <- c()
-    y <- c()
-    f[1] <- round(bp.data[1,i]*100/total)
-    y[1] <- bp.data[1,i]
-    f[2] <- round(bp.data[2,i]*100/total)
-    y[2] <- sum(bp.data[c(1:2),i])  
-    f[3] <- round(bp.data[3,i]*100/total)
-    y[3] <- sum(bp.data[c(1:3),i])
-    f[4] <- round(bp.data[4,i]*100/total)
-    y[4] <- sum(bp.data[c(1:4),i])
-    f[5] <- round(bp.data[5,i]*100/total)
-    y[5] <- sum(bp.data[c(1:5),i])
-    for( r in c(1:5) ){
-      #pinfo(f[r])
-      if ( sum(is.na(f))==0 && f[r]>2) {
-        #
-        #legend( bp[i], y[r]-bp.data[r,i]/2, paste("~",f[r], "%", sep=""), bty="n", xjust=0.5, yjust=0.5)
-        #pinfo(bp[i]," ",y[r]--bp.data[r,i]/2)
-        text( bp[i], y[r]-bp.data[r,i]/2, paste("",f[r], "%", sep=""),cex=cex,las=2,col="black",srt=90)      
-      }
-    }
-  }
-  bp
-}
+
 # add median, sd columns to the table (it is only applicable to some rows)
 qc.expand.table <- function(dft,conf) {
   #dft <- t(df)
@@ -417,7 +373,8 @@ pdebug.save.state("irap_report_qc","p1")
 ############################
 # reads info
 df <- raw.summary.dataframe(conf)
-
+print(head(df))
+print(head(t(df)))
 ############################
 # passed=number of reads
 if (!conf.is.qc.enabled(conf)) {
@@ -457,7 +414,7 @@ q()
 
 IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
 if ( IRAP.DIR == "" ) {
-  IRAP.DIR="/home/nf/Research/Projects/WIP/EREAP/ereap_install"
+  IRAP.DIR="/home/nf/Research/Projects/WIP/EREAP/irap"
   Sys.setenv(IRAP_DIR=IRAP.DIR)
 }
 
