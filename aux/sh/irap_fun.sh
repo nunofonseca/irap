@@ -70,7 +70,7 @@ if [ ! -e "$conf" ]; then
 	exit 1
 fi
 #DATA_DIR=$2
-data_dir=`grep "^data_dir=" $conf|cut -f 2 -d=`
+data_dir=`grep "^data_dir=" $conf|cut -f 2 -d=|tail -n 1`
 
 shift 1
 IRAP_PARAMS=$*
@@ -81,13 +81,13 @@ IRAP_PAR_CMD="$0 conf=$conf $IRAP_PARAMS"
 ## Load config file
 echo " * Trying to load configuration file $conf..."
 #name
-name=`grep "^name=" $conf|cut -f 2 -d=`
-se="`grep "^se=" $conf|cut -f 2 -d=`"
-pe="`grep "^pe=" $conf|cut -f 2 -d=`"
-mapper="`grep "^pe=" $conf|cut -f 2 -d=`"
-contrasts="`grep "^contrasts=" $conf|cut -f 2 -d=`"
+name=`grep "^name=" $conf|cut -f 2 -d= |tail -n 1`
+se="`grep "^se=" $conf|cut -f 2 -d=` tail -n 1`"
+pe="`grep "^pe=" $conf|cut -f 2 -d=` tail -n 1`"
+mapper="`grep "^pe=" $conf|cut -f 2 -d= |tail -n 1`"
+contrasts="`grep "^contrasts=" $conf|cut -f 2 -d= | tail -n 1`"
 # log_dir
-log_dir=`grep "^log_dir=" $conf|cut -f 2 -d=`
+log_dir=`grep "^log_dir=" $conf|cut -f 2 -d= | tail -n 1`
 report_dir=$name/report
 echo " * Configuration loaded."
 
