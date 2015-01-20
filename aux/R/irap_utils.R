@@ -1291,16 +1291,17 @@ quant.check.quant.matrix.OK <- function(filename) {
 ################################################
 #
 
-quant.heatmap <- function(data,nlim=50,key.xlabel="Expression",do.cor=FALSE,density.info="histogram",cexRow=0.6,cexCol=0.9,...) {
+quant.heatmap <- function(data,nlim=100,key.xlabel="Expression",do.cor=FALSE,density.info="histogram",cexRow=0.6,cexCol=0.9,...) {
   suppressPackageStartupMessages(library("gplots"))
   #data <- log2(quant.data.group$mean+1)
   var <- rowVariance(data)
-  ncol <- nlim
-  if (is.na(nlim)) {
-    ncol <- max(100,nrow(data))
-  }
+  ## if (is.na(nlim)) {
+  ##   ncol <- max(100,nrow(data))
+  ## } else {
+  ##   ncol <- min(nlim,ncol(data))
+  ## }
   if (is.na(nlim) && do.cor==FALSE) {
-    ncol <- nlim
+    #ncol <- nlim
     if (is.na(nlim) || (nlim==nrow(data) && nlim>500)) {    
       nlim <- 500
     }
@@ -1310,11 +1311,12 @@ quant.heatmap <- function(data,nlim=50,key.xlabel="Expression",do.cor=FALSE,dens
     select <- order(var,decreasing=TRUE)[c(1:nlim)]
     data <- data[select,,drop=FALSE]
   }
-  colors <- topo.colors(ncol)
   if ( do.cor ) {
     data <- cor(data)
     key.xlabel <- paste(key.xlabel," correlation",sep="")
   }
+  colors <- topo.colors(ncol(data))
+
   # sort the genes by variability
   suppressWarnings(irap.heatmap.2(x=as.matrix(data),col = colors, scale = "none",cexCol=cexCol,cexRow=cexRow,keysize=1,density.info=density.info,trace="none",key.xlabel=key.xlabel,...))
 }
