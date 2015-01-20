@@ -44,8 +44,7 @@ ATLAS_REPORT_FILES=$(name)/report/qc.html  $(name)/report/qc.tsv $(name)/report/
 
 $(name)/atlas_html.tar.gz: $(name)/report $(name)/report/software.tsv $(name)/report/irap.conf $(ATLAS_SCALED_IMAGES)
 	mkdir -p $(name)/atlas && rm -rf $(name)/atlas/* && \
-	$(file > .atlas_wrap_up_files, $(ATLAS_REPORT_FILES)) && \
-	tar czvf $(name)/tmp.atlas.tgz   --files-from  .atlas_wrap_up_files &&\
+	$(file > .atlas_wrap_up_files, $(ATLAS_REPORT_FILES)) tar czvf $(name)/tmp.atlas.tgz   --files-from  .atlas_wrap_up_files &&\
 	cd $(name)/atlas && tar xzvf ../tmp.atlas.tgz && rm ../tmp.atlas.tgz && mv $(name)/report/* . && rm -rf $(name) .atlas_wrap_up_files  && \
 	find . -name "*.scaled.png"  -exec rename .scaled.png .png {} \;  && \
 	for html_file in `find . -name "*.htm*"`; do atlas_clean_html.sh $$html_file; done && \
