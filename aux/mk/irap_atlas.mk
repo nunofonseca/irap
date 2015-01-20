@@ -39,12 +39,13 @@ atlas_wrap_up_clean:
 
 
 # TODO: add the plots for mapping...check if all files are there!
-ATLAS_REPORT_FILES=$(name)/report/qc.html  $(name)/report/qc.tsv $(name)/report/read_filtering_plot.png.eps $(if $(call GEN_REPORT_QC_ONLY),,$(name)/report/mapping/$(mapper).html  $(name)/report/mapping/$(mapper)*.png.eps  $(name)/report/qc.html $(shell find $name/report/riq/ -name "fastqc_report.html") $(shell find $name/report/riq/ -type d -name "Images") $(shell find  $name/report/riq/ -type d -name "Icons")  $(name)/report/software.tsv $(name)/report/info.html $(name)/report/irap.conf $(ATLAS_IMAGES2CONVERT) $(ATLAS_SCALED_IMAGES))
+ATLAS_REPORT_FILES=$(name)/report/qc.html  $(name)/report/qc.tsv $(name)/report/read_filtering_plot.png.eps $(if $(call GEN_REPORT_QC_ONLY),,$(name)/report/mapping/$(mapper).html  $(shell ls $(name)/report/mapping/$(mapper)*.png.eps)  $(name)/report/qc.html $(shell find $(name)/report/riq/ -name "fastqc_report.html" -print) $(shell find $(name)/report/riq/ -type d -name "Images"  -print) $(shell find  $(name)/report/riq/ -type d -name "Icons" -print)  $(name)/report/software.tsv $(name)/report/info.html $(name)/report/irap.conf $(ATLAS_IMAGES2CONVERT) $(ATLAS_SCALED_IMAGES))
 
 
 $(name)/atlas_html.tar.gz: $(name)/report $(name)/report/software.tsv $(name)/report/irap.conf $(ATLAS_SCALED_IMAGES)
-	mkdir -p $(name)/atlas && rm -rf $(name)/atlas/* && \
-	$(file > .atlas_wrap_up_files, $(ATLAS_REPORT_FILES)) tar czvf $(name)/tmp.atlas.tgz   --files-from  .atlas_wrap_up_files &&\
+	mkdir -p $(name)/atlas && rm -rf $(name)/atlas/* .atlas_wrap_up_files && \
+        ( for e in $(ATLAS_REPORT_FILES) ; do echo $$e >> .atlas_wrap_up_files; done ) &&\
+	tar czvf $(name)/tmp.atlas.tgz   --files-from  .atlas_wrap_up_files &&\
 	cd $(name)/atlas && tar xzvf ../tmp.atlas.tgz && rm ../tmp.atlas.tgz && mv $(name)/report/* . && rm -rf $(name) .atlas_wrap_up_files  && \
 	find . -name "*.scaled.png"  -exec rename .scaled.png .png {} \;  && \
 	for html_file in `find . -name "*.htm*"`; do atlas_clean_html.sh $$html_file; done && \
