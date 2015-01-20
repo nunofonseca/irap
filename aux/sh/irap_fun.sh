@@ -82,8 +82,8 @@ IRAP_PAR_CMD="$0 conf=$conf $IRAP_PARAMS"
 echo " * Trying to load configuration file $conf..."
 #name
 name=`grep "^name=" $conf|cut -f 2 -d= |tail -n 1`
-se="`grep "^se=" $conf|cut -f 2 -d=` |tail -n 1`"
-pe="`grep "^pe=" $conf|cut -f 2 -d=` |tail -n 1`"
+se="`grep "^se=" $conf|cut -f 2 -d= |tail -n 1`"
+pe="`grep "^pe=" $conf|cut -f 2 -d= |tail -n 1`"
 mapper="`grep "^mapper=" $conf|cut -f 2 -d= |tail -n 1`"
 contrasts="`grep "^contrasts=" $conf|cut -f 2 -d= | tail -n 1`"
 # log_dir
