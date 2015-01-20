@@ -84,7 +84,7 @@ echo " * Trying to load configuration file $conf..."
 name=`grep "^name=" $conf|cut -f 2 -d= |tail -n 1`
 se="`grep "^se=" $conf|cut -f 2 -d=` tail -n 1`"
 pe="`grep "^pe=" $conf|cut -f 2 -d=` tail -n 1`"
-mapper="`grep "^pe=" $conf|cut -f 2 -d= |tail -n 1`"
+mapper="`grep "^mapper=" $conf|cut -f 2 -d= |tail -n 1`"
 contrasts="`grep "^contrasts=" $conf|cut -f 2 -d= | tail -n 1`"
 # log_dir
 log_dir=`grep "^log_dir=" $conf|cut -f 2 -d= | tail -n 1`
