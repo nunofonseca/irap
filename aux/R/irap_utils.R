@@ -1253,7 +1253,7 @@ load.annot <- function(file) {
 # returns NULL in case of failure
 quant.load <- function(f,clean.cuff=FALSE) {
   tsv.data <- NULL
-  tryCatch(tsv.data <- read.tsv(f),error=function(x) NULL)
+  tryCatch(tsv.data <- read.tsv(f),error=function(x) NULL,check.names=FALSE)
   if ( !is.null(tsv.data) && ncol(tsv.data)>1 ) {
     rownames(tsv.data) <- as.character(tsv.data[,1])
     tsv.data <- tsv.data[,-1,drop=FALSE]
