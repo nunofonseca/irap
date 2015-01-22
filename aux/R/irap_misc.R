@@ -241,7 +241,7 @@ irap.heatmap.2 <- function (x, Rowv = TRUE, Colv = if (symm) "Rowv" else TRUE,
     density.info = c("histogram", "density", "none"), denscol = tracecol, 
     symkey = min(x < 0, na.rm = TRUE) || symbreaks, densadj = 0.25, 
     main = NULL, xlab = NULL, ylab = NULL, lmat = NULL, lhei = NULL, 
-    lwid = NULL, ...) 
+    lwid = NULL,...) 
 {
     scale01 <- function(x, low = min(x), high = max(x)) {
         x <- (x - low)/(high - low)

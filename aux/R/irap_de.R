@@ -45,6 +45,9 @@ process.cmdline.args <- function(cmd) {
   mandatory <- c("tsv_file","out","labels","contrasts")
   opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
 
+  if (opt$debug) {
+    pdebug.enable()
+  }
   #
   # back compat.
   # ;, separate list of groups : ex. file1,file2;file3,file4
