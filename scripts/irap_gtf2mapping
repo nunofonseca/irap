@@ -100,13 +100,13 @@ if (length(cols.missing)>0) {
 exons.f <- gtf.table[gtf.table$feature=="exon",cols.needed]
 exons.f$ID <- apply(exons.f[,c("gene_id","exon_number")],1,paste,collapse=".")
 # add the sources
-get.source <- function(id,gtf) paste(unique(gtf$source[gtf$ID==id]),collapse=";")
+get.source <- function(id) paste(unique(exons.f$source[exons.f$ID==id]),collapse=";")
 # transcripts
-get.transcripts <- function(id,gtf) paste(unique(gtf$transcript_id[gtf$ID==id]),collapse=";")
+get.transcripts <- function(id) paste(unique(exons.f$transcript_id[exons.f$ID==id]),collapse=";")
 
 pinfo("#Exons:",nrow(exons.f))
-exons.f$source <- unlist(mclapply(exons.f$ID,get.source,exons.f))
-exons.f$transcript_ids<- unlist(mclapply(exons.f$ID,get.transcripts,exons.f))
+exons.f$source <- unlist(mclapply(exons.f$ID,get.source))
+exons.f$transcript_ids<- unlist(mclapply(exons.f$ID,get.transcripts))
 # filter and reorder the columns
 exons.f <- exons.f[,c("ID","gene_id","exon_number","seqid","start","end","strand","source","transcript_ids")]
 exons.f <- unique(exons.f)
