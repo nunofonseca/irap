@@ -55,7 +55,7 @@ jbrowser_stage1_targets:
 # Add reference and annotation track
 report_browser_setup: $(name)/report/jbrowse.setup.ok \
 		      $(name)/report/jbrowse/refs.ok $(name)/report/jbrowse/annot.ok \
-	               $(name)/report/menu.html
+	               $(name)/report/menu.html $(gff3_file_abspath).csv
 
 $(name)/report/menu.html:
 	$(call p_error,"please run irap with the report option")
