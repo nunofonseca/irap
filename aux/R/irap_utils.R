@@ -131,15 +131,15 @@ load.gtf <- function(gtf.file,feature=NULL,selected.attr=NULL) {
     gtf.attributes.names<- gtf.attributes.names[gtf.attributes.names %in% selected.attr]
   }
   attr2vec <- function(s) {
-    a<-strsplit(s,split=";[ ]?")  
+    a<-strsplit(mytrim(s),split=";[ ]?")  
     a2 <- unlist(strsplit(a[[1]]," ",fixed=T))
     m <- matrix(a2,nrow=2,byrow=F)
-    x <- m[2,]
+    x <- m[2,,drop=FALSE]
     names(x) <- m[1,]
     return(x[gtf.attributes.names])
   }
   attr <- lapply(gtf$attributes,attr2vec)
-  attr2vec(gtf$attributes[1])
+  #attr2vec(gtf$attributes[1])
   vals<-matrix(unlist(attr),ncol=length(gtf.attributes.names),byrow=T)
   colnames(vals) <- gtf.attributes.names
   gtf <- cbind(gtf,vals)
