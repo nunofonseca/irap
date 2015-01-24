@@ -457,7 +457,7 @@ species2dbs <- function(species.name) {
   if ( regexpr("^human",n.species,ignore.case=T,perl=T)!=-1 ||
        regexpr("^homo.*",n.species,ignore.case=T,perl=T)!=-1 ||
       n.species=="hs" ) {
-    species.name <- "Homo Sapiens"
+    species <- "Homo Sapiens"
     library("org.Hs.eg.db")
     go.db <- org.Hs.egGO
     pfam.db <- org.Hs.egPFAM
