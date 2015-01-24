@@ -182,7 +182,7 @@ SOAP2_VERSION=2.21
 SOAP2_FILE=soap${SOAP2_VERSION}release.tar.gz
 SOAP2_URL=http://soap.genomics.org.cn/down/$SOAP2_FILE
 # 
-STAR_VERSION=2.4.0b
+STAR_VERSION=2.4.0i
 STAR_FILE=STAR_${STAR_VERSION}.tar.gz
 STAR_URL=https://github.com/alexdobin/STAR/archive/$STAR_FILE
 #STAR_FILE=STAR_${STAR_VERSION}e.Linux_x86_64.tgz
@@ -551,8 +551,10 @@ function star_install {
     tar xzvf $STAR_FILE
     pushd STAR-STAR_$STAR_VERSION
     mkdir -p $BIN_DIR/star/bin
-    cp STARstatic $BIN_DIR/star/bin/star
-    cp STARstatic $BIN_DIR/star/bin/
+    cp bin/Linux_x86_64_static/STAR $BIN_DIR/star/bin/star
+    cp bin/Linux_x86_64_static/STAR $BIN_DIR/star/bin/STAR
+#    cp STARstatic $BIN_DIR/star/bin/star
+#    cp STARstatic $BIN_DIR/star/bin/
     pinfo "$MAPPER installation complete."    
 }
 
@@ -1008,9 +1010,10 @@ install.packages("gplots_2.11.0.tar.gz",type="source",repos=NULL)
 # RSQLite_1 does not compile
 download.file("http://cran.r-project.org/src/contrib/Archive/RSQLite/RSQLite_0.11.4.tar.gz","RSQLite_0.11.4.tar.gz")
 install.packages("RSQLite_0.11.4.tar.gz",type="source",repos=NULL)
-biocLite('GO.db',ask=FALSE, suppressUpdates=TRUE)
+
 
 source("http://bioconductor.org/biocLite.R")
+biocLite('GO.db',ask=FALSE, suppressUpdates=TRUE)
 biocLite("Rsamtools",ask=FALSE, suppressUpdates=TRUE)
 #biocLite('cummeRbund',ask=FALSE, suppressUpdates=FALSE)
 biocLite('edgeR',ask=FALSE, suppressUpdates=FALSE)
@@ -1089,7 +1092,8 @@ biocLite(packages2install,ask=FALSE, suppressUpdates=FALSE)
 biocLite("piano",ask=FALSE, suppressUpdates=FALSE)
 #biocLite("org.Hs.eg.db",ask=FALSE, suppressUpdates=FALSE)
 biocLite('RCurl',ask=FALSE, suppressUpdates=FALSE)
-biocLite('GO.db',ask=FALSE, suppressUpdates=FALSE)
+# http://bioconductor.org/packages/2.13/data/annotation/src/contrib/GO.db_2.10.1.tar.gz fails to install
+#biocLite('GO.db',ask=FALSE, suppressUpdates=FALSE)
 #biocLite("topGO",ask=FALSE, suppressUpdates=FALSE)
 #biocLite("biomaRt",ask=FALSE, suppressUpdates=FALSE)
 
