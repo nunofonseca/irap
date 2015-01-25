@@ -460,7 +460,7 @@ species2dbs <- function(species.name) {
     species <- "Homo Sapiens"
     library("org.Hs.eg.db")
     go.db <- org.Hs.egGO
-    pfam.db <- org.Hs.egPFAM
+    #pfam.db <- org.Hs.egPFAM
     lgn.db <- org.Hs.egGENENAME
     symbol.db <- org.Hs.egSYMBOL
     ensembl.db <- org.Hs.egENSEMBL
@@ -472,7 +472,6 @@ species2dbs <- function(species.name) {
       species <- "mus musculus"
       library("org.Mm.eg.db")
       go.db <- org.Mm.egGO
-      pfam.db <- org.Mm.egPFAM
       lgn.db <- org.Mm.egGENENAME
       symbol.db <- org.Mm.egSYMBOL
       ensembl.db <- org.Mm.egENSEMBL
@@ -485,7 +484,6 @@ species2dbs <- function(species.name) {
       library("org.EcK12.eg.db")
       go.db <- org.EcK12.egGO
       # how to get the entrez ids from the ensembl gene id?
-      pfam.db <- NA
       lgn.db <- org.EcK12.egGENENAME
       symbol.db <- org.EcK12.egSYMBOL
       ensembl.db <- NA
@@ -509,10 +507,9 @@ species2dbs <- function(species.name) {
       species <- "Pig"
       library('org.Ss.eg.db')
       go.db <- org.Ss.egGO
-      pfam.db <- NA
       lgn.db <- org.Ss.egGENENAME
       symbol.db <- org.Ss.egSYMBOL
-      ensembl.db <- NA
+      ensembl.db <-org.Ss.egENSEMBL
       kegg.db <- org.Ss.egPATH
     } else {
       pwarning("species2dbs: Unable to get annotation for species ",n.species,".")
@@ -523,7 +520,6 @@ species2dbs <- function(species.name) {
   return(list("n.species"=n.species,
               "species"=species,
               "go.db"=go.db,
-              "pfam.db"=pfam.db,
               "lgn.db"= lgn.db,
               "symbol.db"=symbol.db,
               "kegg.db"=kegg.db,
@@ -552,20 +548,22 @@ annot.expand.fields <- function(annot.table) {
   return(annot.table)
 }
 # entrez gene identifier
-annot.get.egi <- function(gid,dbs) {
+annot.get.egi <- function(gids,dbs) {
   library("GO.db")
-  db <- dbs$symbol.db
-  egi <- revmap(db)[[gid]]
+  id2egi<-ls(dbs$symbol.db)
+  names(id2egi) <- ls(revmap(dbs$symbol.db))
+  egi <- id2egi[gids]
   #pdebug(gid,"---",egi)
-  if (is.null(egi)) {
-    db <- dbs$ens.db
-    egi<-revmap(db)[[gid]]
+  if (is.null(egi) || sum(!is.na(egi))==0) {
+      id2egi<-ls(dbs$ens.db)
+      names(id2egi) <- ls(revmap(dbs$ens.db))
+      egi <- id2egi[gids]      
   }
   #pick the first  (ensembl mapping may return mul. entries)
-  if (is.null(egi) || is.na(egi)) {
+  if (is.null(egi) || sum(!is.na(egi))==0 ) {
     return(NA)
   }
-  return(egi[1]) 
+  return(egi) 
 }
 #egi - entrez gene identifier
 annot.get.go <- function(egi,dbs) {
