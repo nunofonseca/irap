@@ -80,47 +80,43 @@ pdebug.enabled <- opt$debug
 options("cores"=num.cores)
 
 gtf.table <- NULL
-gtf.table <- load.gtf(opt$gtf,selected.attr=c("gene_id","gene_name"))
+gtf.table <- load.gtf(opt$gtf,selected.attr=c("gene_id","gene_name",feature="gene"))
+#head(gtf.table)
 #
 pdebug.save.state("irap_gtf2annot","p0")
 # 
-#gtf.table <- gtf.table[gtf.table$feature=="CDS",]
-#irap.assert(nrow(gtf.table)>0,"No CDS features found in GTF file")
 # genes
-gene.ids <- unique(gtf.table$gene_id)
+gene.idx<-which(gtf.table$feature=="gene" | gtf.table$feature=="CDS")
+# subset the table
+gtf.table <- gtf.table[gene.idx,,drop=FALSE]
+if ( nrow(gtf.table) ==0 ) {
+  perror("No genes found in GTF file ",opt$gtf," !")
+  q(status=1)
+}
+# check if the gene ids are unique
+gene.ids <- unique(gtf.table$"gene_id")
+pinfo("N. genes=",length(gene.ids))
 pdebug("out_file=",opt$out_file)
-#print(head(gtf.table))
-# collect the biotype for each gene
-get.biotype <- function(gene.id) {
-  paste(unique(gtf.table$gene_biotype[gtf.table$gene_id==gene.id]),collapse=";")
+if ( nrow(gtf.table)!=length(gene.ids)) {
+  pwarning("Ignoring duplicated entries found in GTF...")
+  print(paste(gtf.table$gene_id[duplicated(gtf.table$gene_id)],sep=","))
+  # remove the duplicates
+  gtf.table <- gtf.table[!duplicated(gtf.table$gene_id),,drop=FALSE]
 }
-get.source <- function(gene.id) {
-  paste(unique(gtf.table$source[gtf.table$gene_id==gene.id]),collapse=";")
-}
-biotypes <- unlist(mclapply(gene.ids,get.source))
-#names(biotypes) <- gene.ids
+
+biotypes <- gtf.table[,"source"]
 pdebug.save.state("irap_gtf2annot","p1")
 pdebug("biotypes collected")
 # start-end
-get.gene.start <- function(gene.id) {
-  min(gtf.table$start[gtf.table$gene_id==gene.id])
-}
-get.gene.end <- function(gene.id) {
-  max(gtf.table$end[gtf.table$gene_id==gene.id])
-}
-get.chr <- function(gene.id) {
-  gtf.table$seqid[gtf.table$gene_id==gene.id][1]
-}
-get.gene.name <- function(gene.id) {
-  gsub("\\.[0-9]+$","",gtf.table[gtf.table$gene_id==gene.id,"gene_name"])[1]
-}
+name.v <- gsub("\\.[0-9]+$","",gtf.table[,"gene_name"])
 
-name.v <- unlist(mclapply(gene.ids,get.gene.name))
-pdebug("names collected")		
+pdebug("names collected")
+chr<- gtf.table[,"seqid"]
 gc(verbose=FALSE)
-start <- unlist(mclapply(gene.ids,get.gene.start))
-end<- unlist(mclapply(gene.ids,get.gene.end))
-chr<- unlist(mclapply(gene.ids,get.chr))
+start <- gtf.table[,"start"]
+end <- gtf.table[,"end"]
+
+
 pdebug("location collected")
 gc(verbose=FALSE)
 #pdebug.save.state("irap_gtf2annot","p2")
@@ -144,6 +140,7 @@ gc()
 dbs <- species2dbs(opt$species)
 pdebug("species2dbs complete")
 pdebug("dbs=",dbs)
+
 if( sum(is.na(dbs))==1 && !is.vector(dbs) ) {
   r.table[,"GO"] <- NA
                                         #  r.table[,"Pfam"] <- NA
@@ -160,7 +157,7 @@ if( sum(is.na(dbs))==1 && !is.vector(dbs) ) {
     r.table[,"KEGG"] <- NA
   } else {
     pdebug("species DB found")
-    r.table[,"egi"] <- unlist(lapply(as.character(r.table[,"ID"]),annot.get.egi,dbs))
+    r.table[,"egi"] <- annot.get.egi(as.character(r.table[,"ID"]),dbs)
     pdebug("Entrez gene identifiers collected")
     safe.annot.get.go <- function(egi,dbs) {
       v <- try(annot.get.go(egi,dbs))
@@ -216,3 +213,5 @@ if(opt$out_file=="") {
     save(gene.annot,file=paste(opt$out_file,".Rdata",sep=""))
 }
 q(status=0)
+
+
