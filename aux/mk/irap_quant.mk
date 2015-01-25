@@ -157,7 +157,7 @@ endef
 #6- lib
 define run_htseq=
 	samtools view -F 4 $(1) | \
-	htseq-count $(call htseq_sam_output_param,$(3))  $(call htseq_mode_param,$(4)) $(call htseq_strand_params,$(6)) $(call htseq_id_param,$(5))  $(htseq_params) - $(2)  > $(3).tmp && \
+	htseq-count  $(call htseq_sam_output_param,$(3))  $(call htseq_mode_param,$(4)) $(call htseq_strand_params,$(6)) $(call htseq_id_param,$(5))  $(htseq_params) - $(2)  > $(3).tmp && \
 	tail -n -5 $(3).tmp > $(3).$(4).stats &&\
 	head -n -5 $(3).tmp > $(3).tmp2 &&\
 	mv $(3).tmp2 $(3) && rm -f $(3).tmp
@@ -349,6 +349,7 @@ define make-htseq-quant-rule=
 $(call lib2quant_folder,$(1))$(3).$(4)s.raw.$(2).tsv: $(call lib2bam_folder,$(1))$(3).hits.byname.bam $(5)
 	mkdir -p $$(@D) && $$(call run_$(2),$$<,$(5),$$@,$(4),$(1))
 endef
+
 
 # generate the rules for htseq
 ifeq ($(patsubst htseq%,,$(quant_method)),)

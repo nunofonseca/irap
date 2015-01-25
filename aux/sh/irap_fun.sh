@@ -324,6 +324,7 @@ function GSA_jobs {
     # GSA
     CUR_STAGE=GSA
     DEP=$waitfor
+    de_ofiles=`irap conf=$conf de_files $IRAP_PARAMS|tail -n 1`
     if [ "$de_ofiles-" != "-" ]; then
         #####
         # GSA
