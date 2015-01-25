@@ -1028,7 +1028,7 @@ biocLite('igraph',ask=FALSE, suppressUpdates=FALSE)
 biocLite("org.Hs.eg.db",ask=FALSE, suppressUpdates=FALSE)
 
 #biocLite("topGO",ask=FALSE, suppressUpdates=TRUE)
-#biocLite("biomaRt",ask=FALSE, suppressUpdates=FALSE)
+#biocLite("biomaRt",ask=FALSE, suppressUpdates=TRUE)
 
 biocLite('goseq',ask=FALSE, suppressUpdates=TRUE)
 
@@ -1054,7 +1054,7 @@ species2db<-matrix(c('org.Ag.eg.db','Anopheles',
 'org.Xl.eg.db','Xenopus'),byrow=T,ncol=2)
 colnames(species2db)<-c("db","species")
 for (p in species2db[,'db']) {
-biocLite(p,ask=FALSE)
+biocLite(p,ask=FALSE,supressUpdates=TRUE)
 }
 
 q()

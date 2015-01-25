@@ -57,7 +57,7 @@ option_list <- list(
   make_option(c("-c", "--cores"), type="character",default="2",dest="num_cores",help="Number of cores to use ([default %default])"),
   make_option(c("-e", "--minedge"), type="numeric", dest="minedge", default=3,help="Minimum number of genes shared between two gene sets (used only in the plots) [default: %default]"),
   make_option(c("-t", "--top"), type="numeric", dest="top", default=Inf,help="Top gene sets used in the plot [default: %default]"),
-  make_option(c("--annot-only"),action="store_true",dest="annot.only",default=FALSE,help="Consider only genes with annotation [default %default]"),
+  make_option(c("--annot-only"),action="store_true",dest="annot.only",default=TRUE,help="Consider only genes with annotation [default %default]"),
   make_option(c("--plot-annot-only"),action="store_true",dest="plot.annot.only",default=FALSE,help="Plot  only genes with annotation [default %default]"),
   make_option(c("--dup-use-best"),action="store_true",dest="dup.use.best",default=TRUE,help="Pick the best statistic (e.g., lowest p-value) for duplicated genes [default %default]"),
   make_option(c("--dup-best-stat"),type="character",dest="dup.best.stat",default="fold-change",help="Statistic used to eliminate duplicated genes [default %default]"),
@@ -305,10 +305,14 @@ if ( opt$annot.only ) {
   pinfo("Excluded ",n1-n2," genes with no annotation")
 }
 
+
+
+
 set1.annot <- gene2go[gene2go[,1] %in% set1,,drop=FALSE]
 set2.annot <- gene2go[gene2go[,1] %in% set2,,drop=FALSE]
 print.empty <- FALSE
 
+#  set2.annot[is.na(set2.annot$go.id),"go.id"]<-""
 minSizeLim <- opt$min.size
 maxSizeLim <- opt$max.size
 pinfo("#Genes=",length(set2)," #genes (pvalue<=",pval.lim,")=",length(set1))
@@ -333,7 +337,7 @@ pdebug.save.state("irap_GSE_piano","p1")
 if ( length(set2)>=minSizeLim && print.empty==FALSE )  {
   print.empty <- FALSE  
   myGSC <- loadGSC(set2.annot)
-  if ( opt$method=="fisher-exact" ) {    
+  if ( opt$method=="fisher-exsact" ) {    
     # runGSAhyper only uses the group membership of
     # each gene (in/not in gene set, significant/non-significant).
     genesinMyGSC <- unique(unlist(myGSC$gsc))      

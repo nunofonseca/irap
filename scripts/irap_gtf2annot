@@ -98,8 +98,8 @@ gene.ids <- unique(gtf.table$"gene_id")
 pinfo("N. genes=",length(gene.ids))
 pdebug("out_file=",opt$out_file)
 if ( nrow(gtf.table)!=length(gene.ids)) {
-  pwarning("Ignoring duplicated entries found in GTF...")
-  print(paste(gtf.table$gene_id[duplicated(gtf.table$gene_id)],sep=","))
+  pwarning("Ignoring duplicated entries found in GTF (showing first 10)...")
+  print(paste(head(gtf.table$gene_id[duplicated(gtf.table$gene_id)],10),sep=","))
   # remove the duplicates
   gtf.table <- gtf.table[!duplicated(gtf.table$gene_id),,drop=FALSE]
 }
