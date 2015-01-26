@@ -1031,7 +1031,7 @@ write.tsv <- function(x,file,header=TRUE,rownames.label=NULL,fix=TRUE) {
 }
 
 read.tsv <- function(file,header=T) {
-  read.csv(file,sep="\t",header,quote="\"")
+  read.table(file,sep = "\t", header=header, quote = "\"",check.names=FALSE)
 }
 
 #
