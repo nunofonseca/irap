@@ -80,10 +80,10 @@ path2name  <- function(dirs) {
 # add report to the path (assuming that the first folder is the exp. name)
 path2report <- function(file) {
   l <- strsplit(file,"/")[[1]]
-  perror(l)
   l1 <- l[1]
   lr <- paste(l[-1],collapse="/")
   path2file <- paste(l1,"/","report/",lr,sep="")
+  pwarning(file,"->",path2file)
   return(path2file)
 }
 
@@ -114,8 +114,8 @@ gen.toplevel.menu <- function(menufile) {
 	 <li><a href='TTOPLEVELversions.html'>Software</a></li>
      </ul>
   </li>")
-  if (file.exists(path2report("jbrowse/index.html"))) {
-    cat(" <li><a href='TTOPLEVELjbrowse/index.html'>Genome Browser</a>
+  if (file.exists(paste(name,"/report/jbrowse/index.html",sep=""))) {
+    cat(" <li><a href='TTOPLEVELjbrowse/index.html'>Genome Browser</a></li>
 ")
   }
   cat("
@@ -239,21 +239,25 @@ gen.toplevel.menu <- function(menufile) {
             ############
             # GSE links
             # GO terms
-            gse.go.file <- path2report(sub("_de.tsv",".gse.piano.fisher.go.html",file))
-            # KEGG Pathway
-            gse.kegg.file <- path2report(sub("_de.tsv",".gse.piano.fisher.kegg.html",file))
-            if ( file.exists(gse.go.file) || file.exists(gse.kegg.file) ) {
-              # GSE submenu
-              cat(paste('<li><a name="">GSE</a><ul>',sep=''))
-              gse.files <- c(gse.go.file,gse.kegg.file)
-              names(gse.files) <- c("GO","KEGG")
-              for ( f in names(gse.files)) {
-                if ( file.exists(gse.files[f]) ) {
-                  html <- paste("<li><a href=",path2reporthtml(gse.files[f]),">",f,"</a></li> ",sep="")
-                  cat(html)
+            gse.methods <- c("mean","median","sum","fisher","fisher-exact","stouffer","tailStrength","wilcoxon","reporter","page")
+
+            for ( gse.method in gse.methods) {
+              gse.go.file <- path2report(sub("_de.tsv",paste(".gse.piano.",gse.method,".go.html",sep=""),file))
+# KEGG Pathway
+              gse.kegg.file <- path2report(sub("_de.tsv",paste(".gse.piano.",gse.method,".kegg.html",sep=""),file))
+              if ( file.exists(gse.go.file) || file.exists(gse.kegg.file) ) {
+# GSE submenu
+                cat(paste('<li><a name="">GSE ',gse.method,'</a><ul>',sep=''))
+                gse.files <- c(gse.go.file,gse.kegg.file)
+                names(gse.files) <- c("GO","KEGG")
+                for ( f in names(gse.files)) {
+                  if ( file.exists(gse.files[f]) ) {
+                    html <- paste("<li><a href=",path2reporthtml(gse.files[f]),">",f,"</a></li> ",sep="")
+                    cat(html)
+                  }
                 }
+                cat("</ul>");              
               }
-              cat("</ul>");              
             }
           }
         }
@@ -279,7 +283,7 @@ gen.toplevel.menu <- function(menufile) {
 # Toplevel menu - needs to be updated to show the links to new results 
 if (!opt$reuse_menu) {
   pinfo("Generating menu.html...")
-  gen.toplevel.menu(paste(opt$rep_dir,"menu.html",sep="/"))
+ gen.toplevel.menu(paste(opt$rep_dir,"menu.html",sep="/"))
   pinfo("Generating menu.html...done.")
 }
 #save.image()

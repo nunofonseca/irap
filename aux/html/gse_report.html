@@ -74,8 +74,13 @@ if ( !is.null(gse.res.filt) ) {
 %>
 
 <a name="np"/>
-<H3 class="section"><%=irap.ctr("Figure")%> Non-directional</H3>
+
 <%
+if (opt$gse_method!="piano:fisher-exact") {
+   cat(paste("<H3 class=\"section\">",irap.ctr("Figure")," Non-directional</H3>",sep=""))
+} else {
+   cat(paste("<H3 class=\"section\">",irap.ctr("Figure")," Fisher-exact</H3>",sep=""))
+}
 if ( !is.null(gse.png.file.nd) && gse.png.file.nd!="" ) {
    html<-paste(c("<IMG width=\"800\" src=\"",gse.png.file.nd,"\"></IMG>"),sep="")
 } else {
@@ -84,15 +89,17 @@ if ( !is.null(gse.png.file.nd) && gse.png.file.nd!="" ) {
 irap.output.html(html,network.plot.info)
 %>
 
-<H3 class="section"><%=irap.ctr("Figure")%> Distinct directional</H3>
-<%
-if ( !is.null(gse.png.file.dd) && gse.png.file.dd!="" ) {
-   html<-paste("<IMG width=\"800\" src=\"",gse.png.file.dd,"\"></IMG>",sep="")
-} else {
-   html<-"<p>Insufficient data, unable to generate the plot.</p>"
-}
-irap.output.html(html,network.plot.info)
 
+<%
+if (opt$gse_method!="piano:fisher-exact") {
+   cat(paste("<H3 class=\"section\">",irap.ctr("Figure"),">Distinct directional</H3>",sep=""))
+   if ( !is.null(gse.png.file.dd) && gse.png.file.dd!="" ) {
+      html<-paste("<IMG width=\"800\" src=\"",gse.png.file.dd,"\"></IMG>",sep="")
+   } else {
+      html<-"<p>Insufficient data, unable to generate the plot.</p>"
+   }
+irap.output.html(html,network.plot.info)
+ }
 %>
 
 
