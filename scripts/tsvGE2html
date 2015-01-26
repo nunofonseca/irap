@@ -168,7 +168,7 @@ if (is.irap.empty(table)) {
   q(status=0)
 }
 # fix id column name
-colnames(table)[1] <- "ID"
+#colnames(table)[1] <- "ID"
 
 # add rownames table
 # feature=gene=> gene_id
