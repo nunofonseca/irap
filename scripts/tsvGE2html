@@ -176,17 +176,17 @@ if (is.irap.empty(table)) {
 #         exon => gene+exon#
 #
 # check for duplicates
-ndups <- sum(duplicated(table[,"ID"]))
-if (ndups > 0 ) {
-  duplicates <- table[duplicated(table[,"ID"]),"ID"]
-  perror("Found ",length(unique(duplicates))," transcript(s) with multiple entries.")
-  perror("E.g.,",unique(as.character(duplicates))[1])
-  if (length(unique(duplicates))>1) {
-    perror("E.g.,",unique(as.character(duplicates))[2])
-  }
-  q(status=1)
-}
-rownames(table) <- as.character(table[,"ID"])
+## ndups <- sum(duplicated(table[,"ID"]))
+## if (ndups > 0 ) {
+##   duplicates <- table[duplicated(table[,"ID"]),"ID"]
+##   perror("Found ",length(unique(duplicates))," gene(s) with multiple entries.")
+##   perror("E.g.,",unique(as.character(duplicates))[1])
+##   if (length(unique(duplicates))>1) {
+##     perror("E.g.,",unique(as.character(duplicates))[2])
+##   }
+##   q(status=1)
+## }
+@@rownames(table) <- as.character(table[,"ID"])
 
 # fix colnames (.rpkm)
 if ( opt$metric == "rpkm" ) {
