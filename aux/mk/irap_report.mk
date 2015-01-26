@@ -117,7 +117,7 @@ endef
 
 # input,output,options,pipeline,contrast
 define run_gse_report=
-irap_report_gse --tsv $1 --out $2 $3  --gse_method "$(gse_tool):$(gse_method)" --pipeline $4 --contrast $5 --pvalue $(gse_pvalue)  --css ../../../$(CSS_FILE)
+irap_report_gse --tsv $1 --out $2 $3  --gse_method "$(gse_tool):$(gse_method)" --pipeline $4 --contrast $5 --pvalue $(gse_pvalue)  --css ../../../$(CSS_FILE) $(if $(findstring .kegg.,$1),--pathway)
 endef
 
 
