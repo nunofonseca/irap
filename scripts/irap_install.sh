@@ -201,7 +201,7 @@ bwa_VERSION=0.7.4
 bwa_FILE=bwa-${bwa_VERSION}.tar.bz2
 bwa_URL=http://sourceforge.net/projects/bio-bwa/files/$bwa_FILE
 # 
-osa_VERSION=2.1.14
+osa_VERSION=4.0.2.1
 osa_FILE=OSAv$osa_VERSION.zip
 osa_URL=http://www.omicsoft.com/osa/software/$osa_FILE
 #
