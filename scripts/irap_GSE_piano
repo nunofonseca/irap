@@ -335,7 +335,8 @@ if ( length(set1)<=2 ) {
 #pinfo(minSizeLim)
 pdebug.save.state("irap_GSE_piano","p1")
 if ( length(set2)>=minSizeLim && print.empty==FALSE )  {
-  print.empty <- FALSE  
+  print.empty <- FALSE
+  pinfo("Loading GSC...")
   myGSC <- loadGSC(set2.annot)
   if ( opt$method=="fisher-exact" ) {    
     # runGSAhyper only uses the group membership of
