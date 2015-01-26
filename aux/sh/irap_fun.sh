@@ -409,9 +409,9 @@ function mapping_report {
 		    submit_job "${jobname_prefix}m${mapper_id}j[$mapper_counter]" "-w  ended($waitfor)"  irap conf=$conf $IRAP_PARAMS se=$f pe= $report_dir/mapping/$mapper.html_doreq
 		done
 		# when all libs are processed then merge the stats
-		submit_job "${jobname_prefix}m${mapper_id}f[1]" "-w  ended(\"${jobname_prefix}m${mapper_id}j*\")"  irap conf=$conf $IRAP_PARAMS $report_dir/$mapper/featstats_raw.tsv
-		submit_job "${jobname_prefix}m${mapper_id}f[2]" "-w  ended(\"${jobname_prefix}m${mapper_id}j*\")"  irap conf=$conf $IRAP_PARAMS $report_dir/$mapper/genestats_raw.tsv
-		submit_job "${jobname_prefix}m${mapper_id}f[3]" "-w  ended(\"${jobname_prefix}m${mapper_id}j*\")"  irap conf=$conf $IRAP_PARAMS $report_dir/$mapper/stats_raw.tsv
+		submit_job "${jobname_prefix}m${mapper_id}f[1]" "-w  ended(\"${jobname_prefix}m${mapper_id}j*\")"  irap conf=$conf $IRAP_PARAMS $name/$mapper/featstats_raw.tsv
+		submit_job "${jobname_prefix}m${mapper_id}f[2]" "-w  ended(\"${jobname_prefix}m${mapper_id}j*\")"  irap conf=$conf $IRAP_PARAMS $name/$mapper/genestats_raw.tsv
+		submit_job "${jobname_prefix}m${mapper_id}f[3]" "-w  ended(\"${jobname_prefix}m${mapper_id}j*\")"  irap conf=$conf $IRAP_PARAMS $name/$mapper/stats_raw.tsv
 	    fi
             # wait for the reports of all mappers
 	    let counter=counter+1
