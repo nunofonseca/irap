@@ -186,7 +186,7 @@ if (is.irap.empty(table)) {
 ##   }
 ##   q(status=1)
 ## }
-@@rownames(table) <- as.character(table[,"ID"])
+##rownames(table) <- as.character(table[,"ID"])
 
 # fix colnames (.rpkm)
 if ( opt$metric == "rpkm" ) {
