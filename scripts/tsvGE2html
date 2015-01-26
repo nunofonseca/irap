@@ -158,10 +158,11 @@ file.prefix <- opt$out
 
 # load TSV
 # TODO: trap and report errors
-table <- read.table(opt$tsv_file,sep = "\t", header=T, quote = "\"",check.names=FALSE),error=function(x) NULL)
+table <- NULL
+tryCatch(table <- read.table(opt$tsv_file,sep = "\t", header=T, quote = "\"",check.names=FALSE),error=function(x) NULL)
 pinfo("data loaded=",nrow(table)," rows ",ncol(table)," cols")
 
-if (is.irap.empty(table)) {
+if (is.null(table) || is.irap.empty(table)) {
   pwarning("'empty' input file: ",opt$tsv_file)
   # generate an empty file
   brew.wrapper(get.path2template("no_data"),o.html.file)  
