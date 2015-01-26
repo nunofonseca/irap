@@ -137,6 +137,7 @@ cols.to.keep.back <- c("Name","Genes..tot.","Genes..up.","Genes..down.",
 cols.to.keep <- c("Name","Genes (tot)","Genes (up)","Genes (down)",
                            "p adj (dist.dir.up)","p adj (dist.dir.dn)",
                            "p adj (non.dir.)")
+pinfo("Number of columns:",ncol(gse.res))
 # fisher exact
 if (ncol(gse.res)==9 ) {
   cols.to.keep <-  c("Name","Genes (tot)","Stat (non-dir.) p","p adj (non-dir.)",
@@ -161,7 +162,7 @@ if ( length(colnames(gse.res))==1 ) {
     # back compatibility
   #  cols.to.keep <- cols.to.keep.back
   #}
-  not.in <- ! cols.to.keep %in% colnames(gse.res)
+  #not.in <- ! cols.to.keep %in% colnames(gse.res)
   if (sum(not.in) > 0 ) {
     pinfo("Columns found")
     pinfo(colnames(gse.res))
@@ -220,6 +221,14 @@ if (!is.null(gse.res) ) {
   raw.tsv.file <- paste(out.prefix,".tsv",sep="")
   r <- write.tsv(gse.res.filt,file=paste(out.dir,"/",raw.tsv.file,sep=""))
   pinfo("Saved ",out.dir,"/",raw.tsv.file)
+
+  if (opt$is.pathway.analysis) {
+    # assume kegg
+    get.kegg.url <- function(id) {      
+      sprintf("<A href='http://www.genome.jp/dbget-bin/www_bget?map%05d' target='_blank'>%05d</A>",id,id)
+    }
+    gse.res.filt$Name <- sapply(gse.res.filt$Name,FUN=get.kegg.url)    
+  }
 
 }
 pinfo("Generating HTML...")
