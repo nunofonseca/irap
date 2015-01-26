@@ -158,7 +158,7 @@ file.prefix <- opt$out
 
 # load TSV
 # TODO: trap and report errors
-table <- read.tsv(opt$tsv_file)
+table <- quant.load(opt$tsv_file)
 pinfo("data loaded=",nrow(table)," rows ",ncol(table)," cols")
 
 if (is.irap.empty(table)) {
