@@ -892,7 +892,7 @@ max_mem_gb:=$(shell expr $(max_mem) \/ 1000)
 
 # set memory (in bytes) to 75% of the max. memory available
 ifndef SAMTOOLS_SORT_MEM
- SAMTOOLS_SORT_MEM:=`expr $(max_mem) \* 1000000 \* 75 \/ 100`
+ SAMTOOLS_SORT_MEM:=`expr $(max_mem) \* 1000000 \* 65 \/ 100`
 endif
 
 ifndef feat_length
