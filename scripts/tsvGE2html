@@ -158,7 +158,7 @@ file.prefix <- opt$out
 
 # load TSV
 # TODO: trap and report errors
-table <- quant.load(opt$tsv_file)
+table <- read.table(opt$tsv_file,sep = "\t", header=T, quote = "\"",check.names=FALSE),error=function(x) NULL)
 pinfo("data loaded=",nrow(table)," rows ",ncol(table)," cols")
 
 if (is.irap.empty(table)) {
@@ -168,7 +168,7 @@ if (is.irap.empty(table)) {
   q(status=0)
 }
 # fix id column name
-#colnames(table)[1] <- "ID"
+colnames(table)[1] <- "ID"
 
 # add rownames table
 # feature=gene=> gene_id
@@ -176,17 +176,17 @@ if (is.irap.empty(table)) {
 #         exon => gene+exon#
 #
 # check for duplicates
-## ndups <- sum(duplicated(table[,"ID"]))
-## if (ndups > 0 ) {
-##   duplicates <- table[duplicated(table[,"ID"]),"ID"]
-##   perror("Found ",length(unique(duplicates))," gene(s) with multiple entries.")
-##   perror("E.g.,",unique(as.character(duplicates))[1])
-##   if (length(unique(duplicates))>1) {
-##     perror("E.g.,",unique(as.character(duplicates))[2])
-##   }
-##   q(status=1)
-## }
-##rownames(table) <- as.character(table[,"ID"])
+ndups <- sum(duplicated(table[,"ID"]))
+if (ndups > 0 ) {
+  duplicates <- table[duplicated(table[,"ID"]),"ID"]
+  perror("Found ",length(unique(duplicates))," gene(s) with multiple entries.")
+  perror("E.g.,",unique(as.character(duplicates))[1])
+  if (length(unique(duplicates))>1) {
+    perror("E.g.,",unique(as.character(duplicates))[2])
+  }
+  q(status=1)
+}
+rownames(table) <- as.character(table[,"ID"])
 
 # fix colnames (.rpkm)
 if ( opt$metric == "rpkm" ) {
