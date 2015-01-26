@@ -137,17 +137,20 @@ cols.to.keep.back <- c("Name","Genes..tot.","Genes..up.","Genes..down.",
 cols.to.keep <- c("Name","Genes (tot)","Genes (up)","Genes (down)",
                            "p adj (dist.dir.up)","p adj (dist.dir.dn)",
                            "p adj (non.dir.)")
+sort.col <- "Genes (tot)"
 pinfo("Number of columns:",ncol(gse.res))
 # fisher exact
 if (ncol(gse.res)==9 ) {
   cols.to.keep <-  c("Name","Genes (tot)","Stat (non-dir.) p","p adj (non-dir.)",
                      "Significant..in.gene.set.","Non.significant..in.gene.set.",
                      "Significant..not.in.gene.set.","Non.significant..not.in.gene.set.","effect.size")
+  sort.col <- "p adj (non-dir.)"
 } else if (ncol(gse.res)==13) {
   cols.to.keep <- c("Name","Genes (tot)","Stat (non-dir.)",
                     "p (non-dir.)","p adj (non-dir.)",
                     "Genes (up)","p (mix.dir.up)","p adj (mix.dir.up)",
                     "Genes (down)","p (mix.dir.dn)","p adj (mix.dir.dn)")
+  sort.col <- "p adj (non-dir.)"
 }
 #if ( length(colnames(gse.res)) != 19 ) {
 #  perror("expected 19 columns in ",opt$tsv," but found ",length(colnames(gse.res)))
@@ -182,6 +185,8 @@ if ( length(colnames(gse.res))==1 ) {
 
 }
 
+# sort
+gse.res.filt <- gse.res.filt[order(gse.res[,sort.col]),]
 
 library(brew)
 
