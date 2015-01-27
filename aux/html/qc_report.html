@@ -233,7 +233,7 @@ qc.barplot2 <- function(df,
 <%
 # anchor: qc_sum_table
 table2.rows <- c("reads","length","median.base.qual","mean.base.qual","sd.base.qual","GC")
-rownames(etdf)
+#rownames(etdf)
 table2 <- etdf[table2.rows,]
 rownames(table2) <- c("Reads","Read Length","Median quality","Mean quality","Quality SD","GC%")
 xt <- xtable(table2,
@@ -286,8 +286,8 @@ html <- gen.plot2report(filename=file,
                           data.info <- data.info[,!colnames(data.info) %in% c("SD","Mean","Median"),drop=FALSE]
                           par(mar=c(4,4,4,2),bty='n',xpd=NA)
                           layout(matrix(c(1,2,3,4),ncol=4))
-                          boxplot(as.numeric(data.info["Reads",]),xlab="Number of reads",las=2,ylim=c(0,max(as.numeric(data.info["Reads",]))),col=cols[1])
-                           boxplot(as.numeric(data.info["Read Length",]),xlab="Read length",las=2,ylim=c(0,max(as.numeric(data.info["Read Length",]))),col=cols[2],ylab="bases")
+                          boxplot(as.numeric(data.info["Reads",]),xlab="Number of reads",las=2,ylim=c(0,max(as.numeric(data.info["Reads",]),na.rm=T)),col=cols[1])
+                           boxplot(as.numeric(data.info["Read Length",]),xlab="Read length",las=2,ylim=c(0,max(as.numeric(data.info["Read Length",]),na.rm=T)),col=cols[2],ylab="bases")
                           boxplot(as.numeric(data.info["Median quality",]),xlab="Median Quality",las=2,ylim=c(0,45),col=cols[3],ylab="Phred quality score")
                           boxplot(as.numeric(data.info["GC%",]),xlab="GC%",las=2,ylim=c(0,100),col=cols[4],ylab="%")
                           title(main=paste(ncol(data.info)," files",sep=""))
