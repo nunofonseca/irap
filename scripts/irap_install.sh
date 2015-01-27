@@ -930,13 +930,17 @@ q
 EOF
 # 
     # upgrade cpan
+    #cpan autobundle
     cpan -f  -i App::cpanminus
     cpanm -f -i YAML   < /dev/null
     cpan -i -f ExtUtils::MakeMaker  < /dev/null
     cpan -f -i Parse::CPAN::Meta < /dev/null
     cpan -f -i  CPAN < /dev/null
     cpan -f CPAN::Meta::Converter < /dev/null
-    
+
+    cpan -f -i YAML   < /dev/null
+    cpanm -f -i CPAN     CPAN::Meta::Requirements  ExtUtils::MakeMaker  Parse::CPAN::Meta  CPAN::Meta::Converter < /dev/null
+
 
     # set permissions 
     chmod +w $IRAP_DIR/bin/*
@@ -952,7 +956,7 @@ function perl_packages_install {
     perl_cpan_install
     pinfo "Installing perl packages..."
     #    Test::Requisites
-    PACKAGES="Algorithm::Munkres     Array::Compare    Math::Random    Sort::Naturally    Sub::Install Sub::Uplevel     Params::Util    List::MoreUtils    Math::Round    DB_File    Test     Test::Fatal    Test::Run    Test::NoWarnings    Error    XML::Parser    XML::Simple    XML::SAX    XML::SAX::Writer    XML::Writer JSON Hash::Merge  Devel::Size Heap::Simple::Perl PerlIO::locale Compress::Raw::Zlib Locale::Maketext::Lexicon Build"    
+    PACKAGES="Algorithm::Munkres     Array::Compare    Math::Random    Sort::Naturally    Sub::Install Sub::Uplevel     Params::Util    List::MoreUtils    Math::Round    DB_File    Test     Test::Fatal    Test::Run    Test::NoWarnings  Test::Exception  Error    XML::Parser    XML::Simple    XML::SAX    XML::SAX::Writer    XML::Writer JSON Hash::Merge  Devel::Size  PerlIO::locale Compress::Raw::Zlib Locale::Maketext::Lexicon Build GD Module::CoreList ExtUtils::MakeMaker"    
 
     set +e
     for p in $PACKAGES; do
@@ -960,6 +964,7 @@ function perl_packages_install {
        cpanm  $p < /dev/null
     done
     set -e
+    cpan -f Heap::Simple::Perl
     # SAMTOOLS needs to be recompiled :(
     mkdir -p $IRAP_DIR/tmp
     pushd $IRAP_DIR/tmp
@@ -1419,10 +1424,10 @@ function jbrowse_install {
     # TODO: do it only once
     # perl_packages_install
 
-    cpan -f -i Module::CoreList  < /dev/null
-    cpan -f -i ExtUtils::MakeMaker < /dev/null
-    cpan -f -i Build < /dev/null
-    cpanm -v   GD
+    #cpan -f -i Module::CoreList  < /dev/null
+    #cpan -f -i ExtUtils::MakeMaker < /dev/null
+    #cpan -f -i Build < /dev/null
+    #cpanm -v   GD
     #
     download_software SAMTOOLS
     tar xvjf $SAMTOOLS_FILE
