@@ -65,11 +65,13 @@ int main(int argc, char *argv[])
 
   // Open file and exit if error
   //in = strcmp(argv[1], "-")? bam_open(argv[1], "rb") : bam_dopen(fileno(stdin), "rb");
+  //fprintf(stderr,"Options ok\n");
   in = bam_open(argv[1], "rb");
   if (in == 0 ) {  
     fprintf(stderr, "ERROR: Fail to open BAM file %s\n", argv[1]);  
     return 1;  
   }  
+  //fprintf(stderr,"BAM opened\n");
   assert(strcpy(database,argv[1])!=NULL);
   assert(strcat(database,".ridx")!=NULL);
   remove(database);
@@ -122,7 +124,6 @@ int main(int argc, char *argv[])
     isNotPassingQualityControls=(aln->core.flag & BAM_FQCFAIL ) ? TRUE:FALSE;
     isDuplicate=(aln->core.flag & BAM_FDUP) ? TRUE: FALSE;
 
-
     BOOLEAN isSpliced=FALSE;
     BOOLEAN hasSimpleCigar=TRUE;
     int nSpliced=0;
@@ -134,8 +135,8 @@ int main(int argc, char *argv[])
 	if ( l == 'N' ) { isSpliced=TRUE; hasSimpleCigar=FALSE;++nSpliced;}	  
 	if ( l != 'M' && l!='=' ) {  hasSimpleCigar=FALSE;}	  
       }
-    }   
-    //printf(stderr,"\n");
+    } 
+    //fprintf(stderr,"read %ld\n",num_alns);
     // isDuplicate,isNotPassingQualityControls,
     // isSpliced,isPAired,isPrimary,hasSimpleCigar,isSecondMateRead,isProperPair,nh,nm,qual/mapq,xs
     sprintf(sSQL,"INSERT into bam_index values (%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,'%c')",
@@ -143,7 +144,7 @@ int main(int argc, char *argv[])
 	   nSpliced,isPaired,isPrimary,isMapped,hasSimpleCigar,isSecondMateRead,isProperPair,
 	   (nh==0?0:bam_aux2i(nh)),(nm==0?0:bam_aux2i(nm)),
 	    aln->core.qual,
-	   (xs==0?' ':bam_aux2A(xs)));
+	    (xs==0?' ':(bam_aux2A(xs)==0?' ':bam_aux2A(xs))));
     sqlite3_exec(db, sSQL, NULL, NULL, &sErrMsg);
     SQLITE_CHECK_ERROR();
     ++num_alns;
