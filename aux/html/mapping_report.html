@@ -3,6 +3,7 @@
 <%
 library(xtable)
 
+aggr.cols<-c("Median","Mean","SD")
 bar.width<-25
 # how many libraries should we have to consider a dataset as 'big'?
 big.dataset <- 10
@@ -192,6 +193,7 @@ mapping.plot <- function(df,
       ylab <- ""
       left.margin <- 1
     }
+
     if ( ncol(df)<=big.dataset)  {
       if (max(df)>100) {
         left.margin <- left.margin*1.20
@@ -537,11 +539,14 @@ irap.output.html(html$html,"Number of alignments overlapping annotated features.
 <H3 class="section"><%=irap.ctr("Figure")%></H3>
 <%
 cols2plot <- NULL
+pdebug("figure2")
+mapping.feat.per<-NULL
 if ( !is.null(mapping.feat) && sum(mapping.feat)>0 ) {
 mapping.feat.sum <- colSums(mapping.feat,na.rm=T)
 mapping.feat.per <- round(sweep(mapping.feat,MARGIN=2,100*1/mapping.feat.sum,`*`),2)
-if (ncol(mapping.feat.per)>4) {
-  SD <- apply(mapping.feat.per[,-c(1,2,3)],1,FUN=sd)
+mapping.feat.per.f <- mapping.feat.per[,!colnames(mapping.feat.per) %in% aggr.cols]
+if (ncol(mapping.feat.per.f)>1) {
+  SD <- apply(mapping.feat.per.f,1,FUN=sd)
 } else {
   SD <- rep(0,nrow(mapping.feat.per))
 }
@@ -578,7 +583,9 @@ irap.output.html(html$html,"Percentage of alignments per library overlapping ann
 <H3 class="section"><%=irap.ctr("Table")%></H3>
 <DIV class="table_wrapper">
 <%
-if ( ! is.null(mapping.feat) ) {
+pdebug("table2")
+if ( ! is.null(mapping.feat) && sum(mapping.feat)>0  ) {
+pdebug("table2.1")
 xt <- xtable(round(mapping.feat[feat.order,cols2plot,drop=FALSE],0),
              caption="",
              digits=0,
@@ -609,8 +616,9 @@ feat.tsv.download.html <-""
 <H3 class="section"><%=irap.ctr("Table")%></H3>
 <DIV class="table_wrapper">
 <%
+pdebug("table3")
 if ( !is.null(mapping.feat.per) ) {
-xt <- xtable(mapping.feat.per,
+   xt <- xtable(mapping.feat.per,
              caption="",
              label="map_feat_table_per")
 
@@ -632,11 +640,15 @@ irap.output.html(html, "Percentage of alignments overlapping annotated features.
 <!-- number of reads mapping to exonic regions, intronic regions, other -->
 <H3 class="section"><%=irap.ctr("Figure")%></H3>
 <%
-if ( !is.null(mapping.genes) ) {
+pdebug("Figure 4")
+mapping.genes.per <- NULL
+if ( !is.null(mapping.genes) && sum(mapping.genes)>0 ) {
+pdebug("Figure 4.1")
 mapping.genes.sum <- colSums(mapping.genes,na.rm=T)
 mapping.genes.per <- round(sweep(mapping.genes,MARGIN=2,100*1/mapping.genes.sum,`*`),2)
-if (ncol(mapping.genes.per)>4) {
-  SD <- apply(mapping.genes.per[,-c(1,2,3)],1,FUN=sd)
+mapping.genes.per.f <- mapping.genes.per[,!colnames(mapping.genes.per) %in% aggr.cols]
+if (ncol(mapping.genes.per.f)>1) {
+  SD <- apply(mapping.genes.per.f,1,FUN=sd)
 } else {
   SD <- rep(0,nrow(mapping.genes.per))
 }
@@ -675,6 +687,7 @@ irap.output.html(html$html,"Percentage of alignments overlapping introns and exo
   <H3 class="section"><%=irap.ctr("Table")%></H3>  
 <DIV class="table_wrapper">
 <%
+pdebug("Figure 5")
 if ( !is.null(mapping.genes.per) ) {
 # percentages
 p.mapping.genes <- mapping.genes.per

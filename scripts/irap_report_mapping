@@ -163,6 +163,11 @@ mapping.feat <- as.matrix(quant.load(opt$bam_fstats))
 # exons/introns
 mapping.genes <- as.matrix(quant.load(opt$bam_gstats))
 pdebug.save.state("irap_report_mapping","p3")
+if (opt$debug) {
+  print(mapping.genes)
+  print(mapping.feat)
+  print(mapping.dfs)
+}
 library(brew)
 ####################################
 # save files

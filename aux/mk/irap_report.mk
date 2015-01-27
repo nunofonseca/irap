@@ -203,8 +203,13 @@ qc_html_files=$(name)/report/qc.html
 
 qc_report: $(qc_html_files)
 
+ifeq ($(qc),none)
+$(name)/report/qc.html: 
+
+else
 $(name)/report/qc.html: $(conf) $(call must_exist,$(name)/data/)
 	irap_report_qc $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(name)/report || ( rm -f $@ && exit 1)
+endif
 
 #############################
 # TODO: info.html

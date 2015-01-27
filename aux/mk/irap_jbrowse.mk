@@ -57,6 +57,7 @@ report_browser_setup: $(name)/report/jbrowse.setup.ok \
 		      $(name)/report/jbrowse/refs.ok $(name)/report/jbrowse/annot.ok \
 	               $(name)/report/menu.html $(gff3_file_abspath).csv
 
+# irap_report_main generates the menu
 $(name)/report/menu.html:
 	$(call p_error,"please run irap with the report option")
 

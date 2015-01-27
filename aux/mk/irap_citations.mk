@@ -95,7 +95,7 @@ empty_citation=
 empty_bibtex=
 
 # first and foremost, IRAP :)
-IRAP_citation="IRAP - http://code.google.com/p/irap/"
+IRAP_citation="Nuno A. Fonseca, Robert Petryszak, John Marioni, Alvis Brazma. iRAP - an integrated RNA-seq Analysis Pipeline. bioRxiv 2014. doi: http://dx.doi.org/10.1101/005991"
 IRAP_bibtex=irap.bib
 IRAP_version=$(version)
 IRAP_analysis="Pipeline"

@@ -118,6 +118,7 @@ gen.toplevel.menu <- function(menufile) {
     cat(" <li><a href='TTOPLEVELjbrowse/index.html'>Genome Browser</a></li>
 ")
   }
+  if (file.exists(paste(name,"/report/qc.html",sep=""))) {
   cat("
   <li><a href='TTOPLEVELqc.html'>QC</a>
     <ul>
@@ -125,6 +126,9 @@ gen.toplevel.menu <- function(menufile) {
       <li><a href='TTOPLEVELqc.html#plot'>QC Filtering Summary</a></li>
     </ul>
  </li>
+")
+  }
+  cat("
  <li><a name=''>Mapping</a>
  <ul>")
   # Mappers

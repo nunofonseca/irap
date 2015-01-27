@@ -223,7 +223,7 @@ def_min_read_quality=10
 #Trim all reads to the minimum read size after quality trimming - y/n
 def_trim_reads=y
 
-# Quality filtering - on/off (alias: qc)
+# Quality filtering - on/off/none (alias: qc)
 def_qual_filtering=on
 
 #Software for mapping (reads -> genome/transcriptome)
@@ -610,7 +610,7 @@ $(info *	tmp_dir=$(tmp_dir) (temporary directory))
 #******************
 # Quality filtering
 #******************
-# on|off|report
+# on|off|report|none
 ifdef qc
  qual_filtering=$(qc)
 endif
@@ -1438,6 +1438,20 @@ qc: quality_filtering_and_report
 # TODO:	signature=filtering parameters (if they are the same then avoid recomputation between experiments)  minlen=$(min_read_len) min_qual=$(min_qual) qual_perc=$(min_qu
 quality_filtering_and_report: setup	$(STAGE1_OUT_FILES)
 	$(call p_info,[DONE] Quality filtering)
+
+
+ifeq ($(qc),none)
+$(info QC disabled)
+# QC is disabled (no report, no filtering)
+%.f.fastq: 
+	$(call p_info,Filtering disabled $(call fix_libname,$(notdir $*)))
+	echo $(data_dir)/raw_data/$(raw_folder)$($(call fix_libname,$(notdir $*))_dir) $(name)/data$($(call fix_libname,$(notdir $*))_dir) $(name)/report/riq$($(call fix_libname,$(notdir $*))) 
+	$(foreach f,$($(call fix_libname,$(notdir $*))),ln -s $(data_dir)/raw_data/$(raw_folder)$($(call fix_libname,$(notdir $*))_dir)/$f -t $(name)/report/riq$($(call fix_libname,$(notdir $*))) $(subst .fastq,.f.fastq,$f ;)) 
+
+# nothing to do
+clean_quality_filtering_and_report_cleanup:
+
+else
 # SE 
 #$(name)/data/%.f.fastq: 
 %.f.fastq: 
@@ -1449,6 +1463,7 @@ quality_filtering_and_report: setup	$(STAGE1_OUT_FILES)
 # Cleanup
 clean_quality_filtering_and_report_cleanup:
 	$(foreach p,$(se) $(pe),$(call do_quality_filtering_and_report_cleanup,$(p));)
+endif
 
 ################################################################################
 # Mapping
