@@ -33,6 +33,7 @@ iRAP.docker: irap_docker_template
 	cp irap_docker_template $@
 
 docker_files: iRAP-devel.docker iRAP.docker iRAP-devel-pcawg.docker iRAP-pcawg.docker
+
 iRAP-devel.docker: irap_docker_template
 	cp irap_docker_template $@.tmp &&\
 	sed -i -E 's|^RUN (./scripts.*)|RUN git checkout devel && \1|' $@.tmp &&\
