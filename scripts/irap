@@ -619,6 +619,9 @@ ifndef qual_filtering
  qual_filtering=$(def_qual_filtering)
 endif
 
+# alias
+qc=$(qual_filtering)
+
 ifndef trim_reads
  trim_reads=$(def_trim_reads)
 endif
