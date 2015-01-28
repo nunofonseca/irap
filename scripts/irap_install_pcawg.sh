@@ -22,9 +22,9 @@
 # =========================================================
 # Install step by step (assumes that dependencies are already installed in docker)
 
-DIR=$1
 
 
+DIR=
 SRC_DIR=.
 OPTERR=0
 while getopts "s:a:"  Option
@@ -45,7 +45,7 @@ if [ ! -e  scripts/irap_install.sh ]; then
     echo "This script should be executed from iRAP's installation directory"
     exit 1
 fi
-
+echo DIR=$DIR
 export IRAP_DIR=$DIR
 ./scripts/irap_install.sh -s $SRC_DIR  -x make
 ./scripts/irap_install.sh -s $SRC_DIR -x gnuplot
