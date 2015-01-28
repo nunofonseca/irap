@@ -620,7 +620,9 @@ ifndef qual_filtering
 endif
 
 # alias
+ifndef qc
 qc=$(qual_filtering)
+endif
 
 ifndef trim_reads
  trim_reads=$(def_trim_reads)
@@ -1377,7 +1379,7 @@ $(name)/data/gene.annot.tsv.Rdata: $(refgeneannot_file).Rdata
 #endif
 
 $(name)/data/empty.gene.annot.tsv: 
-	echo '"ID","Name","locus","source","lname","GO","GOterm","KEGG"' > $@
+	echo '"ID","Name","locus","source","lname","GO","GOterm","KEGG"' | tr "," "\t" > $@
 
 # collect genes, transcripts and exons lengths
 # generate only once
