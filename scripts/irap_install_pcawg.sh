@@ -27,7 +27,7 @@ DIR=$1
 
 SRC_DIR=.
 OPTERR=0
-while getopts "s:c:"  Option
+while getopts "s:a:"  Option
 do
     case $Option in
 # update/reinstall
