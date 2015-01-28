@@ -23,6 +23,19 @@
 # Install step by step (assumes that dependencies are already installed in docker)
 
 DIR=$1
+
+
+SRC_DIR=.
+OPTERR=0
+while getopts "s:c:"  Option
+do
+    case $Option in
+# update/reinstall
+        a ) install=all;DIR=$OPTARG;;# send all output to a log file
+        s ) SRC_DIR=$OPTARG;;# send all output to a log file
+    esac
+done
+
 if [ "$DIR-" = "-" ]; then
     echo "You need to provide the instalation directory" > /dev/stderr
     exit 1
@@ -34,18 +47,18 @@ if [ ! -e  scripts/irap_install.sh ]; then
 fi
 
 export IRAP_DIR=$DIR
-./scripts/irap_install.sh -s . -x make
-./scripts/irap_install.sh -s . -x gnuplot
-./scripts/irap_install.sh -s . -x YAP
-./scripts/irap_install.sh -s . -x samtools
-./scripts/irap_install.sh -s . -x bedtools
-./scripts/irap_install.sh -s . -x picard
-./scripts/irap_install.sh -s . -x core
+./scripts/irap_install.sh -s $SRC_DIR  -x make
+./scripts/irap_install.sh -s $SRC_DIR -x gnuplot
+./scripts/irap_install.sh -s $SRC_DIR -x YAP
+./scripts/irap_install.sh -s $SRC_DIR -x samtools
+./scripts/irap_install.sh -s $SRC_DIR -x bedtools
+./scripts/irap_install.sh -s $SRC_DIR -x picard
+./scripts/irap_install.sh -s $SRC_DIR -x core
 source $DIR/irap_setup.sh
-./scripts/irap_install.sh -s . -x tophat2
-./scripts/irap_install.sh -s . -x bowtie2
-./scripts/irap_install.sh -s . -x star
-./scripts/irap_install.sh -s . -x fastq_qc
-./scripts/irap_install.sh -s . -v
+./scripts/irap_install.sh -s $SRC_DIR -x tophat2
+./scripts/irap_install.sh -s $SRC_DIR -x bowtie2
+./scripts/irap_install.sh -s $SRC_DIR -x star
+./scripts/irap_install.sh -s $SRC_DIR -x fastq_qc
+./scripts/irap_install.sh -s $SRC_DIR -v
 exit 0
 
