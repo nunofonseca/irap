@@ -13,3 +13,10 @@ WORKDIR /opt/irap_clone
 RUN git checkout devel && ./scripts/irap_install.sh -a /irap_install -s . && rm -rf /irap_install/tmp
 RUN echo source /irap_install/irap_setup.sh >> ~/.bash_profile && echo source /irap_install/irap_setup.sh >> ~/.bashrc
 
+RUN echo '#!/bin/env bash' > /usr/bin/irap
+RUN echo 'source /irap_install/irap_setup.sh' >> /usr/bin/irap
+RUN echo '/irap_install/scripts/irap "$@"' >> /usr/bin/irap
+RUN chmod u+x /usr/bin/irap
+
+#ENTRYPOINT ["irap"]
+
