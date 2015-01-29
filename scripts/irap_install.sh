@@ -141,7 +141,7 @@ BFAST_VERSION=0.7.0a
 BFAST_FILE=bfast-$BFAST_VERSION.tar.gz
 BFAST_URL=http://sourceforge.net/projects/bfast/files/bfast/0.7.0/$BFAST_FILE
 #
-bowtie1_VERSION=1.0.1
+bowtie1_VERSION=1.1.1
 bowtie1_FILE=bowtie-${bowtie1_VERSION}-linux-x86_64.zip
 bowtie1_URL=http://sourceforge.net/projects/bowtie-bio/files/bowtie/$bowtie1_VERSION/$bowtie1_FILE
 #
@@ -165,10 +165,17 @@ tophat1_FILE=tophat-${tophat1_VERSION}.Linux_x86_64.tar.gz
 tophat1_URL=http://tophat.cbcb.umd.edu/downloads/$tophat1_FILE
 
 #
+#tophat2_VERSION=2.0.13
+#tophat2_FILE=tophat-${tophat2_VERSION}.Linux_x86_64.tar.gz
+#tophat2_URL=http://tophat.cbcb.umd.edu/downloads/$tophat2_FILE
+#tophat2_URL=http://ccb.jhu.edu/software/tophat/downloads/$tophat2_FILE
+
+# version used in the pcawg SOP
 tophat2_VERSION=2.0.12
 tophat2_FILE=tophat-${tophat2_VERSION}.Linux_x86_64.tar.gz
 #tophat2_URL=http://tophat.cbcb.umd.edu/downloads/$tophat2_FILE
 tophat2_URL=http://ccb.jhu.edu/software/tophat/downloads/$tophat2_FILE
+
 #
 SMALT_VERSION=0.7.4
 SMALT_FILE=smalt-$SMALT_VERSION.tgz
@@ -202,7 +209,7 @@ bwa_FILE=bwa-${bwa_VERSION}.tar.bz2
 bwa_URL=http://sourceforge.net/projects/bio-bwa/files/$bwa_FILE
 # 
 osa_VERSION=4.0.2.1
-osa_FILE=OSAv$osa_VERSION.zip
+osa_FILE=OSAv$osa_VERSION.zip]
 osa_URL=http://www.omicsoft.com/osa/software/$osa_FILE
 #
 EMBAM_VERSION=0.1.14
@@ -237,10 +244,15 @@ R3_VERSION=3.0.2
 R3_FILE=R-${R3_VERSION}.tar.gz 
 R3_URL=http://cran.r-project.org/src/base/R-3/$R3_FILE
 
-# new: 0.1.19
+# 
 SAMTOOLS_VERSION=0.1.18
 SAMTOOLS_FILE=samtools-$SAMTOOLS_VERSION.tar.bz2
 SAMTOOLS_URL=http://sourceforge.net/projects/samtools/files/samtools/$SAMTOOLS_VERSION/$SAMTOOLS_FILE
+
+# new samtools
+SAMTOOLS1_VERSION=1.1
+SAMTOOLS1_FILE=samtools-$SAMTOOLS1_VERSION.tar.bz2
+SAMTOOLS1_URL=http://sourceforge.net/projects/samtools/files/samtools/$SAMTOOLS1_VERSION/$SAMTOOLS1_FILE
 
 
 ZLIB_VERSION=1.2.8
@@ -432,7 +444,7 @@ function bowtie1_install {
     #export BITS=64
     #make clean
     #make -j 4 all
-    FILES="bowtie bowtie-build bowtie-inspect"
+    FILES="bowtie bowtie-*"
     install_binary $MAPPER . $FILES 
     install_binary $MAPPER scripts \*
     pinfo "$MAPPER installation complete."
@@ -835,8 +847,9 @@ function deps_install {
     R_install
     R3_install
     YAP_install
-    # 
+    # some mappers (e.g., tophat) still require samtools 0.x
     samtools_install
+    samtools1_install
     bedtools_install
     picard_install
     pinfo "Installing dependencies...done."
@@ -852,13 +865,24 @@ function samtools_install {
     pushd samtools-${SAMTOOLS_VERSION}
     make -j $J
     make -j $J razip
-    cp samtools razip bcftools/bcftools $BIN_DIR
-    cp libbam.a $LIB_DIR
+    mkdir -p $BIN_DIR/samtools0.x
+    cp samtools razip bcftools/bcftools $BIN_DIR/samtools0.x
+    popd
+    pinfo "Downloading, compiling, and installing SAMTools...done."
+}
+
+function samtools1_install {
+    pinfo "Downloading, compiling, and installing SamTools 1.x..."
+    download_software SAMTOOLS1
+    tar xvjf $SAMTOOLS1_FILE
+    pushd samtools-${SAMTOOLS1_VERSION}
+    make -j $J prefix=$IRAP_DIR
+    make prefix=$IRAP_DIR install
     mkdir -p $INC_DIR/bam
     cp *.h $INC_DIR/bam
     cp libbam.a $INC_DIR/bam
     popd
-    pinfo "Downloading, compiling, and installing SAMTools...done."
+    pinfo "Downloading, compiling, and installing SAMTools 1.x...done."
 }
 
 ######################################################
