@@ -1251,7 +1251,7 @@ endif
 
 # sort a bam file by name and index
 %.byname.bam: %.bam
-	samtools sort -n -m $(SAMTOOLS_SORT_MEM) $< $*.byname.tmp && mv $*.byname.tmp.bam $@ 
+	samtools sort -n -m $(SAMTOOLS_SORT_MEM) -T $*.byname.tmp -o $*.byname.tmp.bam $< && mv $*.byname.tmp.bam $@ 
 
 # index a bam file
 %.bam.bai: %.bam
@@ -1680,11 +1680,11 @@ $(name)/$(mapper)/scripture/%.pe.scripture.tsv: $(name)/$(mapper)/%.pe.hits.bam 
 
 
 $(name)/$(mapper)/$(quant_method)/alignments.bam: $(foreach p,$(pe),$(name)/$(mapper)/$(p).pe.hits.byname.bam) $(foreach s,$(se),$(name)/$(mapper)/$(s).se.hits.byname.bam)
-	$(call samcat,$^) >  $@.tmp.bam  && samtools sort -m $(SAMTOOLS_SORT_MEM)  $@.tmp.bam $@.sorted  && mv  $@.sorted.bam $@  && samtools index $@
+	$(call samcat,$^) | samtools sort -m $(SAMTOOLS_SORT_MEM) -T $@.sorted -o $@.sorted.bam -  && mv  $@.sorted.bam $@  && samtools index $@
 
 
 $(name)/$(mapper)/$(quant_method)/alignments.bam.paired.bam: $(foreach p,$(pe),$(name)/$(mapper)/$(p).pe.hits.byname.bam)
-	$(call samcat,$^) > $@.unsorted.bam && samtools sort  -m $(SAMTOOLS_SORT_MEM) $@.unsorted.bam $@.tmp && mv $@.tmp.bam $@ && samtools index $@
+	$(call samcat,$^) | samtools sort  -m $(SAMTOOLS_SORT_MEM) -T $@.tmp -o $@.tmp.bam -  && mv $@.tmp.bam $@ && samtools index $@
 
 #
 #A 2-column tab separated file containing the chromosome name and size for the organism.
