@@ -895,10 +895,17 @@ endif
 # max memory in GB
 max_mem_gb:=$(shell expr $(max_mem) \/ 1000)
 
-# set memory (in bytes) to 75% of the max. memory available
+# set memory (in bytes) to 65% of the max. memory available
+#ifndef SAMTOOLS_SORT_MEM
+# SAMTOOLS_SORT_MEM:=`expr $(max_mem) \* 1000000 \* 65 \/ 100`
+#endif
+
+
+# samtools 1.x
 ifndef SAMTOOLS_SORT_MEM
- SAMTOOLS_SORT_MEM:=`expr $(max_mem) \* 1000000 \* 65 \/ 100`
+ SAMTOOLS_SORT_MEM:=$(shell bash -c "expr $(max_mem_gb) \* 75 \/ 100")G
 endif
+
 
 ifndef feat_length
 feat_length=$(name)/data/lengths.Rdata
