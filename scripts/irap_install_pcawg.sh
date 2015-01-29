@@ -50,6 +50,7 @@ export IRAP_DIR=$DIR
 ./scripts/irap_install.sh -s $SRC_DIR  -x make
 ./scripts/irap_install.sh -s $SRC_DIR -x gnuplot
 ./scripts/irap_install.sh -s $SRC_DIR -x YAP
+./scripts/irap_install.sh -s $SRC_DIR -x samtools1
 ./scripts/irap_install.sh -s $SRC_DIR -x samtools
 ./scripts/irap_install.sh -s $SRC_DIR -x bedtools
 ./scripts/irap_install.sh -s $SRC_DIR -x picard
