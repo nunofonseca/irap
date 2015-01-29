@@ -1,5 +1,7 @@
 CFLAGS=-O1
 #CFLAGS=-g -DDEBUG
+IDIRS=$(IRAP_DIR)/bin/samtools0.x/include/
+LIBDIRS=$(IRAP_DIR)/bin/samtools0.x/lib
 
 OFILES=bam_fix_NH  bam_pe_insert bam_rm_NH bam_fix_se_flag bam_tophat2_fix bamRindex
 
@@ -9,31 +11,31 @@ clean:
 	rm -f *.o $(OFILES) bam_fix_se_flag
 
 bam_pe_insert: bam_pe_insert.c
-	gcc  $<   -L $(IRAP_DIR)/lib -lbam -lm -lz -o $@  -I $(IRAP_DIR)/include/bam/ 
+	gcc  $<   -L $(LIBDIRS) -lbam -lm -lz -o $@  -I $(IDIRS) 
 
 bam_tophat2_fix: bam_tophat2_fix.c
-	gcc  $<   -L $(IRAP_DIR)/lib -lbam -lm -lz -o $@  -I $(IRAP_DIR)/include/bam/ 
+	gcc  $<   -L $(LIBDIRS) -lbam -lm -lz -o $@  -I $(IDIRS) 
 
 
 # -lrt
 bamRindex: bamRindex.c
-	gcc  $<   -L $(IRAP_DIR)/lib -lbam -lm -lz -lsqlite3  -o $@  -I $(IRAP_DIR)/include/bam/ 
+	gcc  $<   -L $(LIBDIRS) -lbam -lm -lz -lsqlite3  -o $@  -I $(IDIRS) 
 
 
 bam_fix_se_flag: bam_fix_se_flag.c
-	gcc  $(CFLAGS) $^   -L $(IRAP_DIR)/lib -lbam -lm -lz -o $@  -I $(IRAP_DIR)/include/bam/ 
+	gcc  $(CFLAGS) $^   -L $(LIBDIRS) -lbam -lm -lz -o $@  -I $(IDIRS) 
 
 bam_fix_NH: bam_fix_NH.o ../fastq_utils/hash.o
-	gcc  $(CFLAGS) $^   -L $(IRAP_DIR)/lib -lbam -lm -lz -o $@  -I $(IRAP_DIR)/include/bam/ 
+	gcc  $(CFLAGS) $^   -L $(LIBDIRS) -lbam -lm -lz -o $@  -I $(IDIRS) 
 
 bam_rm_NH: bam_rm_NH.o 
-	gcc  $(CFLAGS) $^   -L $(IRAP_DIR)/lib -lbam -lm -lz -o $@  -I $(IRAP_DIR)/include/bam/ 
+	gcc  $(CFLAGS) $^   -L $(LIBDIRS) -lbam -lm -lz -o $@  -I $(IDIRS) 
 
 bam_fix_NH.o: bam_fix_NH.c
-	gcc $(CFLAGS) -c  $<   -I $(IRAP_DIR)/include/bam/ 
+	gcc $(CFLAGS) -c  $<   -I $(IDIRS) 
 
 bam_rm_NH.o: bam_rm_NH.c
-	gcc $(CFLAGS) -c  $<   -I $(IRAP_DIR)/include/bam/ 
+	gcc $(CFLAGS) -c  $<   -I $(IDIRS) 
 
 ../fastq_utils/hash.o: ../fastq_utils/hash.c ../fastq_utils/hash.h
 	gcc $(CFLAGS) -c $<

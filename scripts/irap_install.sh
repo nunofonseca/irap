@@ -865,8 +865,12 @@ function samtools_install {
     pushd samtools-${SAMTOOLS_VERSION}
     make -j $J
     make -j $J razip
-    mkdir -p $BIN_DIR/samtools0.x
-    cp samtools razip bcftools/bcftools $BIN_DIR/samtools0.x
+    mkdir -p $BIN_DIR/samtools0.x/bin
+    cp samtools razip bcftools/bcftools $BIN_DIR/samtools0.x/bin
+    mkdir -p $BIN_DIR/samtools0.x/lib
+    mkdir -p $BIN_DIR/samtools0.x/include
+    cp *.h $BIN_DIR/samtools0.x/include
+    cp libbam.a $BIN_DIR/samtools0.x/lib
     popd
     pinfo "Downloading, compiling, and installing SAMTools...done."
 }
