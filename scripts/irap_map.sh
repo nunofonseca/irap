@@ -47,14 +47,15 @@ export PATH=$IRAP_DIR/bin/$MAPPER:$IRAP_DIR/bin/$MAPPER/bin:$IRAP_DIR/bin/:$PATH
 ##########################################################
 # special cases (dependencies between mappers
 if [ $MAPPER = "tophat1" ]; then
-    export PATH=$IRAP_DIR/bin/bowtie1/bin:$PATH
+    # samtools 0.x is required by tophat
+    export PATH=$IRAP_DIR/bin/samtools0.x/:$IRAP_DIR/bin/bowtie1/bin:$PATH
 fi
 if [ $MAPPER = "bwa2" ]; then
     export LD_LIBRARY_PATH=$IRAP_DIR/bin/bwa/lib:$LD_LIBRARY_PATH
     export PATH=$IRAP_DIR/bin/bwa/bin:$PATH
 fi
 if [ $MAPPER = "tophat2" ]; then
-    export PATH=$IRAP_DIR/bin/bowtie2/bin:$PATH
+    export PATH=$IRAP_DIR/bin/samtools0.x/:$IRAP_DIR/bin/bowtie2/bin:$PATH
 fi
 if [ $MAPPER = "bismark" ]; then
     export PATH=$IRAP_DIR/bin/bowtie2/bin:$IRAP_DIR/bin/bowtie1/bin:$PATH
