@@ -880,6 +880,8 @@ function samtools1_install {
     make prefix=$IRAP_DIR install
     mkdir -p $INC_DIR/bam
     cp *.h $INC_DIR/bam
+    mkdir  -p $INC_DIR/bam/htslib-1.1
+    cp htslib-1.1/*.h $INC_DIR/bam/htslib-1.1
     cp libbam.a $INC_DIR/bam
     popd
     pinfo "Downloading, compiling, and installing SAMTools 1.x...done."
