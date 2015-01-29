@@ -664,6 +664,7 @@ $(call p_info,[ERROR] Mapping)
 $(error $(mapper) not implemented)
 endif
 
+mapper:=$(strip $(mapper))
 #***************************
 # Quantification/Transcr. assembly program
 #***************************
@@ -710,7 +711,7 @@ $(call p_info,[ERROR] quant_method)
 $(error $(quant_method) not supported)
 endif
 
-
+quant_method:=$(strip $(quant_method))
 $(info *	quant_method=$(quant_method))
 
 ifndef exon_quant
@@ -803,6 +804,7 @@ $(call p_info,[ERROR] de_method)
 $(error $(de_method) not supported)
 endif
 
+de_method:=$(strip $(de_method))
 $(info *	de_method=$(de_method))
 
 ifndef de_pvalue_cutoff=
