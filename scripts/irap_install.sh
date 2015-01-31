@@ -209,7 +209,7 @@ bwa_FILE=bwa-${bwa_VERSION}.tar.bz2
 bwa_URL=http://sourceforge.net/projects/bio-bwa/files/$bwa_FILE
 # 
 osa_VERSION=4.0.2.1
-osa_FILE=OSAv$osa_VERSION.zip]
+osa_FILE=OSAv$osa_VERSION.zip
 osa_URL=http://www.omicsoft.com/osa/software/$osa_FILE
 #
 EMBAM_VERSION=0.1.14
@@ -1658,6 +1658,20 @@ function NURD_install {
     cp NURD $IRAP_DIR/bin
     popd
     pinfo "NURD installation complete."    
+}
+
+
+function pip_install {
+
+    # only install pip if not already installed
+    PATH2PIP=`which pip 2> /dev/null`
+    if [ "$PATH2PIP-" == "-" ]; then
+	wget --no-check-certificate https://bootstrap.pypa.io/get-pip.py
+	python get-pip.py --user
+	pinfo "PIP installation complete."    
+    else
+	pinfo "pip already installed"
+    fi
 }
 
 function numpy_install {
