@@ -35,8 +35,9 @@ endif
 
 # useful functions
 define set_MAPPING_DIRS=
-$(eval override MAPPING_DIRS:=$(shell ls --color=never -d -1 $(name)/{$(shell echo $(SUPPORTED_MAPPERS) | sed 's/ /,/g')}  2>/dev/null ))
+$(eval override MAPPING_DIRS:=$(shell ls --color=never -d -1 $(name)/$(mapper) | sed 's/ /,/g')}  2>/dev/null ))
 endef
+#$(eval override MAPPING_DIRS:=$(shell ls --color=never -d -1 $(name)/{$(shell echo $(SUPPORTED_MAPPERS) | sed 's/ /,/g')}  2>/dev/null ))
 
 define set_QUANT_DIRS=
 $(eval override QUANT_DIRS:=$(shell ls -d -1 $(shell echo $(foreach d,$(call mapping_dirs),$d/{$(shell echo $(SUPPORTED_QUANT_METHODS)| sed 's/ /,/g')})) 2>/dev/null ))
@@ -234,6 +235,7 @@ $(name)/report/$(call notdir,$(conf)): $(conf)
 phony_targets+=mapping_report quant_report
 
 mapping_report_targets=$(foreach m,$(call mapping_dirs), $(name)/report/mapping/$(shell basename $(m)).html) 
+
 #$(name)/report/mapping/comparison.html 
 
 
@@ -330,9 +332,14 @@ phony_targets+=
 phony_targets+=quant_report quant_report_files
 silent_targets+=quant_report quant_report_files
 
+# define set_QUANT_HTML_FILES=
+# $(eval override QUANT_HTML_FILES=$(foreach q,$(SUPPORTED_QUANT_METHODS),$(foreach m,$(SUPPORTED_MAPPERS),$(foreach f,gene exon transcript,$(foreach metric,raw nlib rpkm,$(call quant_target,$(m),$(q),$(metric),$(f)) ))))) $(QUANT_HTML_FILES)
+# endef
+
 define set_QUANT_HTML_FILES=
-$(eval override QUANT_HTML_FILES=$(foreach q,$(SUPPORTED_QUANT_METHODS),$(foreach m,$(SUPPORTED_MAPPERS),$(foreach f,gene exon transcript,$(foreach metric,raw nlib rpkm,$(call quant_target,$(m),$(q),$(metric),$(f)) ))))) $(QUANT_HTML_FILES)
+$(eval override QUANT_HTML_FILES=$(foreach q,$(SUPPORTED_QUANT_METHODS),$(foreach m,$(mapper),$(foreach f,gene exon transcript,$(foreach metric,raw nlib rpkm,$(call quant_target,$(m),$(q),$(metric),$(f)) ))))) $(QUANT_HTML_FILES)
 endef
+
 
 # disable for Atlas
 ifdef atlas_run
