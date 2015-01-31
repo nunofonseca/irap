@@ -66,11 +66,7 @@ pdebug.save.state("irap_raw2metric","p0")
 
 # load TSV
 # TODO: trap and report errors
-table <- read.tsv(opt$tsv_file)
-rownames(table) <- table[,1]
-libnames <- colnames(table)[-1]
-ids <- table[,1]
-table <- table[,-1]
+table <- quant.load(opt$tsv_file)
 # matrix may contain a single column with values
 if ( is.vector(table) ) {
   names(table) <- ids
