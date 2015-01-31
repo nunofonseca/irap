@@ -373,14 +373,14 @@ function qc_report {
     waitfor=$1
     echo " * QC Report "
     let counter=counter+1
-    submit_job "${jobname_prefix}f[$counter]" "-w ended(\"$waitfor\")"  "$cmd conf=$conf qc_report $IRAP_PARAMS"
+    submit_job "${jobname_prefix}f[$counter]" "-w ended(\"$waitfor\")"  "$cmd conf=$conf qc_report $IRAP_PARAMS browsing=n"
 }
 
 function init_page_report {
     waitfor=$1    
     echo " * Information page "
     let counter=counter+1
-    submit_job "${jobname_prefix}f[$counter]" "-w ended(\"${waitfor}\")"  "$cmd conf=$conf info_report $IRAP_PARAMS"
+    submit_job "${jobname_prefix}f[$counter]" "-w ended(\"${waitfor}\")"  "$cmd conf=$conf info_report $IRAP_PARAMS browsing=n"
 }
 
 
@@ -402,25 +402,25 @@ function mapping_report {
 	    if [ "$FILES" != '$d/*.hits.bam' ]; then
 		for p in $pe; do 
 		    let mapper_counter=mapper_counter+1
-		    submit_job "${jobname_prefix}m${mapper_id}j[$mapper_counter]" "-w  ended($waitfor)"  irap conf=$conf $IRAP_PARAMS se= pe=$p $report_dir/mapping/$mapper.html_doreq
+		    submit_job "${jobname_prefix}m${mapper_id}j[$mapper_counter]" "-w  ended($waitfor)"  irap conf=$conf $IRAP_PARAMS browsing=n se= pe=$p $report_dir/mapping/$mapper.html_doreq
 		done
 		for f in $se ; do
 		    let mapper_counter=mapper_counter+1
-		    submit_job "${jobname_prefix}m${mapper_id}j[$mapper_counter]" "-w  ended($waitfor)"  irap conf=$conf $IRAP_PARAMS se=$f pe= $report_dir/mapping/$mapper.html_doreq
+		    submit_job "${jobname_prefix}m${mapper_id}j[$mapper_counter]" "-w  ended($waitfor)"  irap conf=$conf $IRAP_PARAMS browsing=n se=$f pe= $report_dir/mapping/$mapper.html_doreq
 		done
 		# when all libs are processed then merge the stats
-		submit_job "${jobname_prefix}m${mapper_id}f[1]" "-w  ended(\"${jobname_prefix}m${mapper_id}j*\")"  irap conf=$conf $IRAP_PARAMS $name/$mapper/featstats_raw.tsv
-		submit_job "${jobname_prefix}m${mapper_id}f[2]" "-w  ended(\"${jobname_prefix}m${mapper_id}j*\")"  irap conf=$conf $IRAP_PARAMS $name/$mapper/genestats_raw.tsv
-		submit_job "${jobname_prefix}m${mapper_id}f[3]" "-w  ended(\"${jobname_prefix}m${mapper_id}j*\")"  irap conf=$conf $IRAP_PARAMS $name/$mapper/stats_raw.tsv
+		submit_job "${jobname_prefix}m${mapper_id}f[1]" "-w  ended(\"${jobname_prefix}m${mapper_id}j*\")"  irap conf=$conf $IRAP_PARAMS browsing=n $name/$mapper/featstats_raw.tsv
+		submit_job "${jobname_prefix}m${mapper_id}f[2]" "-w  ended(\"${jobname_prefix}m${mapper_id}j*\")"  irap conf=$conf $IRAP_PARAMS browsing=n $name/$mapper/genestats_raw.tsv
+		submit_job "${jobname_prefix}m${mapper_id}f[3]" "-w  ended(\"${jobname_prefix}m${mapper_id}j*\")"  irap conf=$conf $IRAP_PARAMS browsing=n $name/$mapper/stats_raw.tsv
 	    fi
             # wait for the reports of all mappers
 	    let counter=counter+1
-	    submit_job "${jobname_prefix}f[$counter]"  "-w ended(\"${jobname_prefix}m${mapper_id}f*\")"  "irap conf=$conf $IRAP_PARAMS $report_dir/mapping/$mapper.html"
+	    submit_job "${jobname_prefix}f[$counter]"  "-w ended(\"${jobname_prefix}m${mapper_id}f*\")"  "irap conf=$conf $IRAP_PARAMS browsing=n $report_dir/mapping/$mapper.html"
 	    let mapper_id=mapper_id+1
 	done
         # wait for the reports of all mappers"22164809em2f*: N
 	let counter=counter+1
-	submit_job "${jobname_prefix}[$counter]"  "-w ended(\"${jobname_prefix}m*\")"  "irap conf=$conf $IRAP_PARAMS $report_dir/mapping/comparison.html"
+	submit_job "${jobname_prefix}[$counter]"  "-w ended(\"${jobname_prefix}m*\")"  "irap conf=$conf $IRAP_PARAMS browsing=n $report_dir/mapping/comparison.html"
 	echo ${jobname_prefix}mf
     else
 	echo $waitfor
@@ -438,7 +438,7 @@ function quant_report {
     quant_ofiles=`get_cached_value QUANT_HTML_FILES`
     for f in $quant_ofiles; do
 	let counter=counter+1
-	submit_job "${jobname_prefix}f[$counter]"  "-w ended(\"$waitfor\")"  "irap conf=$conf $IRAP_PARAMS $f"
+	submit_job "${jobname_prefix}f[$counter]"  "-w ended(\"$waitfor\")"  "irap conf=$conf $IRAP_PARAMS browsing=n $f"
     done
 }
 
@@ -451,7 +451,7 @@ function DE_report {
     for f in $de_ofiles; do
 	let counter=counter+1
 	p_info "DE: $f"
-	submit_job "${jobname_prefix}f[$counter]"  "-w ended(\"${waitfor}\")"  "irap conf=$conf  $IRAP_PARAMS $f"
+	submit_job "${jobname_prefix}f[$counter]"  "-w ended(\"${waitfor}\")"  "irap conf=$conf  $IRAP_PARAMS browsing=n $f"
     done
 }
 
@@ -464,12 +464,12 @@ function gsa_report {
     for f in $gse_ofiles; do
 	let counter=counter+1
 	p_info "GSA: $f"
-	submit_job "${jobname_prefix}f[$counter]"  "-w ended(\"$waitfor\")"  "irap conf=$conf  $IRAP_PARAMS $f"
+	submit_job "${jobname_prefix}f[$counter]"  "-w ended(\"$waitfor\")"  "irap conf=$conf  $IRAP_PARAMS browsing=n $f"
     done
 }
 
 function finish_report {
 # update the menu 
-   submit_job "${jobname_prefix}u" -w "ended(\"${jobname_prefix}f*\")"  "$cmd conf=$conf report  $IRAP_PARAMS"
+   submit_job "${jobname_prefix}u" -w "ended(\"${jobname_prefix}f*\")"  "$cmd conf=$conf report  $IRAP_PARAMS browsing=n"
    echo ${jobname_prefix}u
 }
