@@ -35,7 +35,7 @@ endif
 
 # useful functions
 define set_MAPPING_DIRS=
-$(eval override MAPPING_DIRS:=$(shell ls --color=never -d -1 $(name)/$(mapper) | sed 's/ /,/g')}  2>/dev/null ))
+$(eval override MAPPING_DIRS:=$(shell ls --color=never -d -1 $(name)/$(mapper) | sed 's/ /,/g')  2>/dev/null ))
 endef
 #$(eval override MAPPING_DIRS:=$(shell ls --color=never -d -1 $(name)/{$(shell echo $(SUPPORTED_MAPPERS) | sed 's/ /,/g')}  2>/dev/null ))
 
