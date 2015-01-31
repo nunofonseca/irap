@@ -99,7 +99,7 @@ if ( opt$metric == "rpkm" ) {
   #(read count  * 1,000,000) / (total number of reads * kilobase of gene/transcript/exon)
   rpkm <- countstable2rpkms(table,lengths[[opt$feature]])
   if ( is.vector(rpkm) ) {
-    rpkm <- data.frame(cbind(names(rpkm),rpkm),check.names=F))
+    rpkm <- data.frame(cbind(names(rpkm),rpkm),check.names=F)
     colnames(rpkm) <- append(capitalize(opt$feature),libnames)
   } else {
     rpkm <- data.frame(cbind(rownames(rpkm),rpkm),check.names=F)
