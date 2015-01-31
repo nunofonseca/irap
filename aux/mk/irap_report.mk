@@ -233,7 +233,8 @@ $(name)/report/$(call notdir,$(conf)): $(conf)
 #############################
 phony_targets+=mapping_report quant_report
 
-mapping_report_targets=$(foreach m,$(call mapping_dirs), $(name)/report/mapping/$(shell basename $(m)).html) $(name)/report/mapping/comparison.html 
+mapping_report_targets=$(foreach m,$(call mapping_dirs), $(name)/report/mapping/$(shell basename $(m)).html) 
+#$(name)/report/mapping/comparison.html 
 
 
 mapping_report_files:
