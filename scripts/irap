@@ -1257,7 +1257,9 @@ endif
 
 # index a bam file
 %.bam.bai: %.bam
-	samtools index $< $@.tmp && mv $@.tmp $@
+	samtools index $<
+# samtools 1.1 does not support the second argument :(
+#	samtools index $< $@.tmp && mv $@.tmp $@
 
 #
 # bigWig from bed 
