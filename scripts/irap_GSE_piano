@@ -98,7 +98,7 @@ pinfo("Reading ",opt$tsv.file)
 df <- tryCatch(read.tsv(opt$tsv.file,header=T),error=function(x) NULL)
 
 if (is.null(df) ) {
-   perror("Empty file ",opt$tsv.file,"?")
+   perror("Error reading the file or empty file ",opt$tsv.file,"?")
    q(status=1)
 }  
 pdebug.save.state("irap_GSE_piano","p0")
