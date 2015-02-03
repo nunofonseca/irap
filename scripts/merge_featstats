@@ -111,7 +111,7 @@ if ( max(lens,na.rm=T)!=min(lens,na.rm=T) ) {
   q(status=1)
 }
 
-df <- data.frame(matrix(unlist(data),byrow=T,ncol=length(data[[1]])))
+df <- data.frame(matrix(unlist(data),byrow=T,ncol=length(data[[1]])),check.names=F)
 colnames(df) <- names(data[[1]])
 rownames(df) <- labels.v
 

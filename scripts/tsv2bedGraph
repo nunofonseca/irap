@@ -138,7 +138,7 @@ get.col <- function(table,col,fatal=TRUE) {
   return(NULL)
 }
 # load values
-tsv <- read.table(opt$tsv_file,sep="\t",header=TRUE,quote="\"",comment.char="")
+tsv <- read.table(opt$tsv_file,sep="\t",header=TRUE,quote="\"",comment.char="",check.names=F)
 tsv.sel.id <- as.character(tsv[,get.col(tsv,opt$id_col)])
 #
 not.found <- tsv.sel.id[!as.character(tsv.sel.id) %in% as.character(sel[,1])]
