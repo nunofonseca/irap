@@ -2301,7 +2301,7 @@ runGSAhyper2 <- function (genes, pvalues, pcutoff, universe,
                         "Non-significant (in gene set)", "Significant (not in gene set)", 
                         "Non-significant (not in gene set)")
   
-  hist(resTab[,"p-value"])
+  #hist(resTab[,"p-value"])
 
   res <- list()
   res$pvalues <- resTab[,"p-value"]
