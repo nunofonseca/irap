@@ -39,7 +39,7 @@ sop=pawg3_th2_mapping
 # uncomment the following line to use Star for mapping
 # or override in the command line
 #sop=pawg3_star_mapping
-
+data_dir=$IRAP_DIR/data
 
 # Folder where all results will be placed
 name=pcawg
@@ -64,5 +64,6 @@ name=pcawg
 EOF
 
 # Generate the index for TH2 and Star
+pushd $IRAP_DIR
 irap conf=$IRAP_DIR/pcawg.conf sop=pawg3_th2_mapping stage0
 irap conf=$IRAP_DIR/pcawg.conf sop=pawg3_star_mapping stage0
