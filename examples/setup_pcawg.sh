@@ -27,34 +27,42 @@ gunzip $DATA_DIR/reference/homo_sapiens/hs37d5.genome.chr_only.fa.gz
 # Fix the gtf
 zcat $DATA_DIR/reference/homo_sapiens/gencode.v19.annotation.gtf.gz | tail -n +6 | sed -e "s/^chrM/MT/g;s/^chr//g" > $DATA_DIR/reference/homo_sapiens/gencode.v19.annotation.hs37d5_chr.gtf
 
+# metadata.tsv
+wget https://docs.google.com/spreadsheets/d/1ukkgAO_G1g2PwFa-s4-0Pe8mjXOVH7EfRNMPRp2ydG4/export?format=tsv -O $IRAP_DIR/metadata.tsv
+
+
 # template irap configuration file
-cat <<EOF 
+cat <<EOF > $IRAP_DIR/pcawg.conf
 # irap configuration template
 # Mapping SOP
 sop=pawg3_th2_mapping
 # uncomment the following line to use Star for mapping
+# or override in the command line
 #sop=pawg3_star_mapping
 
 
 # Folder where all results will be placed
-name=pcawg_example
+name=pcawg
 
 ######################
 # Add the samples 
-se=e100831_UNC2-RDR300275_00022_FC_62ERGAAXX.6
-pe=e110302_UNC11-SN627_0067_BB04EPABXX.6
+# se=e100831_UNC2-RDR300275_00022_FC_62ERGAAXX.6
+# pe=e110302_UNC11-SN627_0067_BB04EPABXX.6
 
-e100831_UNC2-RDR300275_00022_FC_62ERGAAXX.6=100831_UNC2-RDR300275_00022_FC_62ERGAAXX.6.fastq
-e100831_UNC2-RDR300275_00022_FC_62ERGAAXX.6_rs=76
-e100831_UNC2-RDR300275_00022_FC_62ERGAAXX.6_qual=33
+# e100831_UNC2-RDR300275_00022_FC_62ERGAAXX.6=100831_UNC2-RDR300275_00022_FC_62ERGAAXX.6.fastq
+# e100831_UNC2-RDR300275_00022_FC_62ERGAAXX.6_rs=76
+# e100831_UNC2-RDR300275_00022_FC_62ERGAAXX.6_qual=33
 
 
-e110302_UNC11-SN627_0067_BB04EPABXX.6=110302_UNC11-SN627_0067_BB04EPABXX.6_1.fastq 110302_UNC11-SN627_0067_BB04EPABXX.6_2.fastq
-e110302_UNC11-SN627_0067_BB04EPABXX.6_rs=50
-e110302_UNC11-SN627_0067_BB04EPABXX.6_qual=33
-e110302_UNC11-SN627_0067_BB04EPABXX.6_ins=350
-e110302_UNC11-SN627_0067_BB04EPABXX.6_sd=300
-
+# e110302_UNC11-SN627_0067_BB04EPABXX.6=110302_UNC11-SN627_0067_BB04EPABXX.6_1.fastq 110302_UNC11-SN627_0067_BB04EPABXX.6_2.fastq
+# e110302_UNC11-SN627_0067_BB04EPABXX.6_rs=50
+# e110302_UNC11-SN627_0067_BB04EPABXX.6_qual=33
+# e110302_UNC11-SN627_0067_BB04EPABXX.6_ins=350
+# e110302_UNC11-SN627_0067_BB04EPABXX.6_sd=300
 
 
 EOF
+
+# Generate the index for TH2 and Star
+irap conf=$IRAP_DIR/pcawg.conf sop=pawg3_th2_mapping stage0
+irap conf=$IRAP_DIR/pcawg.conf sop=pawg3_star_mapping stage0
