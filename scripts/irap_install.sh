@@ -1660,11 +1660,15 @@ function NURD_install {
     pinfo "NURD installation complete."    
 }
 
-
-function pip_install {
-
+# python packages
+function python_install {
+    pinfo "Installing python packages..."
     # only install pip if not already installed
+    set +e
     PATH2PIP=`which pip 2> /dev/null`
+    set -e
+    CFLAGS_bak=$CFLAGS
+    export CFLAGS=`echo $CFLAGS|sed -E "s|\-I[^ ]*boost||g"`
     if [ "$PATH2PIP-" == "-" ]; then
 	wget --no-check-certificate https://bootstrap.pypa.io/get-pip.py
 	python get-pip.py --user
@@ -1672,6 +1676,9 @@ function pip_install {
     else
 	pinfo "pip already installed"
     fi
+    $IRAP_DIR/python/bin/pip install pysam --user    
+    export CFLAGS=$CFLAGS_bak
+    pinfo "python packages installed"
 }
 
 function numpy_install {
