@@ -75,6 +75,13 @@ options(warn=1)
 pinfo("Loading gtf file ",opt$gtf_file)
 gtf <- load.gtf(opt$gtf_file)
 pinfo("Loading gtf file ",opt$gtf_file," complete.")
+colsOfInterest <- c("start","end","feature","gene_id","transcript_id","exon_number")
+
+if ( sum(!colsOfInterest %in% colnames(gtf)) > 0 ) {
+  perror("Missing data in GTF file:",colsOfInterest[!colsOfInterest %in% colnames(gtf)])
+  q(status=1)
+}
+gtf <- gtf[,colsOfInterest]
 
 # compute the lengths
 pinfo("Computing length of genes...")
