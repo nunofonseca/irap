@@ -607,10 +607,11 @@ int main(int argc, char **argv ) {
     //fprintf(stderr,"%d %d %d %s\n",argc,nopt,argc-nopt,argv[2+nopt]);
     if ( !strncmp(argv[2+nopt],"pe",2) ) {
       is_interleaved=1;
-    } else  {
-      fd2=open_fastq(argv[2+nopt]);
-      gzclose(fd2);
-    }
+    } 
+    //else  {
+    //  fd2=open_fastq(argv[2+nopt]);
+    //  gzclose(fd2);
+    //
   }
 
   // ************************************************************
