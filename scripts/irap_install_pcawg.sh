@@ -48,18 +48,25 @@ fi
 echo DIR=$DIR
 export IRAP_DIR=$DIR
 ./scripts/irap_install.sh -s $SRC_DIR  -x make
+./scripts/irap_install.sh -s $SRC_DIR  -x zlib
+./scripts/irap_install.sh -s $SRC_DIR  -x perl
+#./scripts/irap_install.sh -s $SRC_DIR  -x R
 ./scripts/irap_install.sh -s $SRC_DIR -x gnuplot
 ./scripts/irap_install.sh -s $SRC_DIR -x YAP
 ./scripts/irap_install.sh -s $SRC_DIR -x samtools1
 ./scripts/irap_install.sh -s $SRC_DIR -x samtools
 ./scripts/irap_install.sh -s $SRC_DIR -x bedtools
-./scripts/irap_install.sh -s $SRC_DIR -x picard
+#./scripts/irap_install.sh -s $SRC_DIR -x picard
+
 ./scripts/irap_install.sh -s $SRC_DIR -x core
 source $DIR/irap_setup.sh
+./scripts/irap_install.sh -s $SRC_DIR  -x perl_packages
 ./scripts/irap_install.sh -s $SRC_DIR -x tophat2
 ./scripts/irap_install.sh -s $SRC_DIR -x bowtie2
+./scripts/irap_install.sh -s $SRC_DIR -x bowtie1
 ./scripts/irap_install.sh -s $SRC_DIR -x star
 ./scripts/irap_install.sh -s $SRC_DIR -x fastq_qc
+./scripts/irap_install.sh -s $SRC_DIR -x htseq
 ./scripts/irap_install.sh -s $SRC_DIR -v
 # iRAP is now installed...
 # install all the data needed by pcawg
