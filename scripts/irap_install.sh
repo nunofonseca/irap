@@ -992,10 +992,10 @@ function perl_packages_install {
     set +e
     for p in $PACKAGES; do
        pinfo "Package $p"
-       cpanm  $p < /dev/null
+       cpanm   $p < /dev/null
     done
     set -e
-    cpan -f Heap::Simple::Perl
+    cpanm  Heap::Simple::Perl
     # SAMTOOLS needs to be recompiled :(
     mkdir -p $IRAP_DIR/tmp
     pushd $IRAP_DIR/tmp
