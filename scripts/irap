@@ -556,8 +556,8 @@ endif
 # ex.
 # groups=group1 group2 group3 
 ifndef groups
-$(info *	 groups=  parameter not defined, using the groups in the contrasts (if defined).)
-groups=$(contrasts)
+$(info *	 groups=  parameter not defined, this should be defined if you intend to generate an HTML report for the inferred gene/level/transcript quantification)
+groups=
 else
 $(foreach g,$(groups),$(call check_param_ok,$(g)))
 $(info *	groups=$(groups))
@@ -1462,7 +1462,7 @@ $(info QC disabled)
 %.f.fastq: 
 	$(call p_info,Filtering disabled $(call fix_libname,$(notdir $*)))
 	echo $(data_dir)/raw_data/$(raw_folder)$($(call fix_libname,$(notdir $*))_dir) $(name)/data$($(call fix_libname,$(notdir $*))_dir) $(name)/report/riq/
-	$(foreach f,$($(call fix_libname,$(notdir $*))),ln -s $(data_dir)/raw_data/$(raw_folder)$($(call fix_libname,$(notdir $*))_dir)/$f -t $(name)/report/riq/ $(subst .fastq,.f.fastq,$f ;)) 
+	$(foreach f,$($(call fix_libname,$(notdir $*))),ln -s $(abspath $(data_dir)/raw_data/$(raw_folder)$($(call fix_libname,$(notdir $*))_dir)/$f) $(name)/data$($(call fix_libname,$(notdir $*))_dir)/$(notdir $*).f.fastq)
 
 # nothing to do
 clean_quality_filtering_and_report_cleanup:
