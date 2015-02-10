@@ -220,6 +220,9 @@ if ( opt$feature != "gene" ) {
 # feat==gene
   if ( !is.null(opt$annotation) ) {
     annot.table <- load.annot(opt$annotation)
+    if ( nrow(annot.table)==0 ) {
+      annot.table <- NULL
+    }
   }
   # Annotation should be mandatory
   fields <- list(
