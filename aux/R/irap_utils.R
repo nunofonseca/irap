@@ -1243,6 +1243,9 @@ load.annot <- function(file) {
     }       
     save(list=c("annot.table"),file=cached.annot)
   }
+  if ( nrow(annot.table) == 0  ) {
+    return(NULL)
+  }
   annot.table <- annot.expand.fields(annot.table)
   pdebug("Loading annotation (done)")
   return(annot.table)
