@@ -1,10 +1,10 @@
 #!/bin/env bash
 # wrapper to run iRAP in a docker container
-
+# all data should be accessible from the current working directory
 if [ "$IRAP_DOCKER_IMAGE-" == "-" ]; then
    echo "ERROR: Please define the environment variable IRAP_DOCKER_IMAGE with the ID of docker image to use"
    exit 1
 fi
-
+#
 # override the entry point to start irap in the current folder
-docker run -v `pwd`:/irap_data --entrypoint="env" -i -t $IRAP_DOCKER_IMAGE bash -c "cd /irap_data && pwd && ls && irap $*"
+docker run -v `pwd`:/irap_data --entrypoint="env" -i -t $IRAP_DOCKER_IMAGE bash -c "cd /irap_data && irap $*"
