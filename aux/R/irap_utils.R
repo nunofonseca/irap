@@ -1240,16 +1240,17 @@ load.annot <- function(file) {
     annot.table <- tryCatch(read.tsv(file),error=function(x) NULL)
     if ( is.null(annot.table) ) {
       pdebug("Loading annotation (failed)")
-      return(NULL);
+      return(NULL)
     }       
     save(list=c("annot.table"),file=cached.annot)
   }
   if ( nrow(annot.table) == 0  ) {
     pdebug("Loading annotation (done) - empty file")
-    return(NULL)
+    annot.table <- NULL
+  } else {
+    annot.table <- annot.expand.fields(annot.table)
+    pdebug("Loading annotation (done)")
   }
-  annot.table <- annot.expand.fields(annot.table)
-  pdebug("Loading annotation (done)")
   return(annot.table)
 }
 # load a file with a quant. matrix
