@@ -1231,19 +1231,25 @@ load.annot <- function(file) {
   }
   pdebug("Loading annotation=",file)
   cached.annot <- paste(file,".Rdata",sep="")
-  if ( file.exists(cached.annot) ) {
-    load(cached.annot)
-    if ( exists("gene.annot")) {
-      annot.table <- gene.annot
-    }
-  } else {
-    annot.table <- tryCatch(read.tsv(file),error=function(x) NULL)
-    if ( is.null(annot.table) ) {
-      pdebug("Loading annotation (failed)")
-      return(NULL)
-    }       
-    save(list=c("annot.table"),file=cached.annot)
+  #if ( file.exists(cached.annot) ) {
+  #  load(cached.annot)
+  #  if ( exists("gene.annot")) {
+  #    annot.table <- gene.annot
+  #  }
+  #} else {
+  #
+  if (!file.exists(file) ) {
+    perror("File ",file," not found")
+    quit(status=1)
   }
+  annot.table <- tryCatch(read.tsv(file),error=function(x) return(NULL))
+  if ( is.null(annot.table) ) {
+    pdebug("Loading annotation (failed)")
+    return(NULL)
+  }       
+  #  save(list=c("annot.table"),file=cached.annot)
+  #}
+  pinfo("Load annot...")
   if ( nrow(annot.table) == 0  ) {
     pdebug("Loading annotation (done) - empty file")
     annot.table <- NULL
