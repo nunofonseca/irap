@@ -356,8 +356,8 @@ ifeq ($(patsubst htseq%,,$(quant_method)),)
 $(foreach l,$(se),$(eval $(call make-htseq-quant-rule,$(l),$(quant_method),$(l).se,gene,$(gtf_file_abspath))))	
 $(foreach l,$(pe),$(eval $(call make-htseq-quant-rule,$(l),$(quant_method),$(l).pe,gene,$(gtf_file_abspath))))
 ifeq ($(exon_quant),y)
-$(foreach l,$(se),$(eval $(call make-htseq-quant-rule,$(l),$(quant_method),$(l).se,exon,$(gtf_file_abspath).exon_id.gtf)))	
-$(foreach l,$(pe),$(eval $(call make-htseq-quant-rule,$(l),$(quant_method),$(l).pe,exon,$(gtf_file_abspath).exon_id.gtf)))
+$(foreach l,$(se),$(eval $(call make-htseq-quant-rule,$(l),$(quant_method),$(l).se,exon,$(gtf_file_wexonid))))	
+$(foreach l,$(pe),$(eval $(call make-htseq-quant-rule,$(l),$(quant_method),$(l).pe,exon,$(gtf_file_wexonid))))
 endif
 ifeq ($(transcript_quant),y)
 $(foreach l,$(se),$(eval $(call make-htseq-quant-rule,$(l),$(quant_method),$(l).se,transcript,$(gtf_file_abspath))))	
@@ -399,11 +399,11 @@ $(name)/$(mapper)/basic/exons.raw.basic.tsv:
 #$(name)/$(mapper)/basic/exons.rpkm.basic.tsv: $(name)/$(mapper)/basic/exons.raw.basic.tsv $(feat_length)
 #	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature exon --metric rpkm --out $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/basic/%.genes.raw.basic.tsv $(name)/$(mapper)/basic/%.exons.raw.basic.tsv: $(name)/$(mapper)/%.se.hits.byname.bam $(gtf_file_abspath).exon_id.gtf
-	$(call run_naive_count,$<,$(gtf_file_abspath).exon_id.gtf,$(@D)/$*.genes.raw.basic.tsv,$(@D)/$*.exons.raw.basic.tsv)
+$(name)/$(mapper)/basic/%.genes.raw.basic.tsv $(name)/$(mapper)/basic/%.exons.raw.basic.tsv: $(name)/$(mapper)/%.se.hits.byname.bam $(gtf_file_wexonid)
+	$(call run_naive_count,$<,$(gtf_file_wexonid),$(@D)/$*.genes.raw.basic.tsv,$(@D)/$*.exons.raw.basic.tsv)
 
-$(name)/$(mapper)/basic/%.genes.raw.basic.tsv $(name)/$(mapper)/basic/%.exons.raw.basic.tsv: $(name)/$(mapper)/%.pe.hits.byname.bam $(gtf_file_abspath).exon_id.gtf
-	$(call run_naive_count,$<,$(gtf_file_abspath).exon_id.gtf,$(@D)/$*.genes.raw.basic.tsv,$(@D)/$*.exons.raw.basic.tsv)
+$(name)/$(mapper)/basic/%.genes.raw.basic.tsv $(name)/$(mapper)/basic/%.exons.raw.basic.tsv: $(name)/$(mapper)/%.pe.hits.byname.bam $(gtf_file_wexonid)
+	$(call run_naive_count,$<,$(gtf_file_wexonid),$(@D)/$*.genes.raw.basic.tsv,$(@D)/$*.exons.raw.basic.tsv)
 
 $(name)/$(mapper)/basic/%.transcripts.raw.basic.tsv: $(name)/$(mapper)/%.pe.hits.byname.bam
 	$(call p_info, Warning! Basic method does not produce quantification at transcript level (in TODO). Generating empty file $@.)
