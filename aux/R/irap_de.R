@@ -89,12 +89,19 @@ process.cmdline.args <- function(cmd) {
     }
   } else {
     pinfo("Annot. file=",opt$annotation)
+    is.empty <- FALSE
     opt$annot <- load.annot(as.character(opt$annotation))
-    if ( is.null(opt$annot) ||  nrow(opt$annot) ==0 ) {
+    if ( is.null(opt$annot) ) {
+      is.empty <- TRUE
+    } else if ( nrow(opt$annot) ==0 ) {
+      is.empty <- TRUE
+    }
+    if (is.empty==TRUE) {
       pinfo("Empty annotation file.")
       opt$annot <- NULL
       opt$annotation <- NULL
     }
+    
   }
   
   ######################
