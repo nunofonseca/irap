@@ -126,19 +126,24 @@ load.gtf <- function(gtf.file,feature=NULL,selected.attr=NULL) {
     gtf<- gtf[gtf$feature==feature,,drop=FALSE]
   }
   gtf$attributes <- as.character(gtf$attributes)
-  gtf.attributes.names<-c("gene_id","transcript_id","exon_number","gene_name","gene_biotype","transcript_name","protein_id")
+  gtf.attributes.names<-c("gene_id","transcript_id","exon_number","gene_name","gene_biotype","transcript_name","protein_id","exon_id")
   if ( !is.null(selected.attr) ) {
     gtf.attributes.names<- gtf.attributes.names[gtf.attributes.names %in% selected.attr]
   }
-  attr2vec <- function(s) {
-    a<-strsplit(mytrim(s),split=";[ ]?")  
+  num.attr <- length(gtf.attributes.names)
+  attr2vec <- function(s,gtf.attributes.names) {
+    a<-strsplit(mytrim(s),split=";([ ]?)+")  
     a2 <- unlist(strsplit(a[[1]]," ",fixed=T))
     m <- matrix(a2,nrow=2,byrow=F)
     x <- m[2,,drop=FALSE]
     names(x) <- m[1,]
-    return(x[gtf.attributes.names])
+    r <- rep(NA,num.attr)
+    names(r) <- gtf.attributes.names
+    attr.int <- names(x)[names(x)%in% gtf.attributes.names]
+    r[attr.int] <- x[attr.int]
+    return(r)
   }
-  attr <- lapply(gtf$attributes,attr2vec)
+  attr <- lapply(gtf$attributes,attr2vec,gtf.attributes.names)
   #attr2vec(gtf$attributes[1])
   vals<-matrix(unlist(attr),ncol=length(gtf.attributes.names),byrow=T)
   colnames(vals) <- gtf.attributes.names
@@ -157,7 +162,7 @@ load.gencode.gtf <- function(gtf.file,feature=NULL,selected.attr=NULL) {
     gtf<- gtf[,gtf$feature==feature,drop=FALSE]
   }
   gtf$attributes <- as.character(gtf$attributes)
-  gtf.attributes.names<-c("gene_id","transcript_id","exon_number","gene_name","gene_type","gene_status","transcript type","level","transcript_name","havana_gene")
+  gtf.attributes.names<-c("gene_id","transcript_id","exon_number","gene_name","gene_type","gene_status","transcript type","level","transcript_name","havana_gene","exon_id")
   if ( !is.null(selected.attr) ) {
     gtf.attributes.names<- gtf.attributes.names[gtf.attributes.names %in% selected.attr]
   }
@@ -313,7 +318,7 @@ get.exon.length.from.gtf <- function(gtf,filter.biotype=NULL) {
   gtf <- gtf[gtf$feature=="exon",,drop=FALSE]  
   elen <- abs(gtf$start-gtf$end)+1
   gtf$elength <- elen
-  gtf[,c("gene_id","transcript_id","exon_number","elength")]
+  gtf[,c("exon_id","gene_id","transcript_id","exon_number","elength")]
 }
 
 

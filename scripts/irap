@@ -1034,6 +1034,12 @@ define  get_group_bam_files=
 $(foreach l,$($(1)), $(call path2lib_bam,$(l)))
 endef
 
+# save all variables defined in Make (filename)
+define vars2file=
+$(file > $(1))
+$(foreach ivar,$(.VARIABLES),$(if $(filter $(origin $(ivar)),'file' 'command line',$(file >> $(1),$(ivar)=$($(ivar))))))
+endef
+#$(call vars2file,/tmp/lixo)
 
 # the bam file names of each group are concatened using ,
 define  get_contrast_bam_files=

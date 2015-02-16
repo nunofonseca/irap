@@ -88,7 +88,13 @@ pdebug("data loaded")
 
 if (opt$feature=="exon" ) {
   #eids <- paste(exon.length$gene_id,exon.length$transcript_id,exon.length$exon_number,sep=".")
-  eids <- paste(exon.length$gene_id,exon.length$exon_number,sep=".")
+  #eids <- paste(exon.length$gene_id,exon.length$exon_number,sep=".")
+  if ( sum( "exon_id" %in% colnames(exon.length)) > 0 ) {
+    eids <- as.character(exon.length$exon_id)
+  } else { 	     
+    # backward compatibility
+    eids <- paste(exon.length$gene_id,exon.length$exon_number,sep=".")
+  }
   exon.length <- exon.length[,"elength"]
   names(exon.length) <- eids
 }
