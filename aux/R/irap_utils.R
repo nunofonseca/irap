@@ -1239,11 +1239,13 @@ load.annot <- function(file) {
   } else {
     annot.table <- tryCatch(read.tsv(file),error=function(x) NULL)
     if ( is.null(annot.table) ) {
-       return(NULL);
+      pdebug("Loading annotation (failed)")
+      return(NULL);
     }       
     save(list=c("annot.table"),file=cached.annot)
   }
   if ( nrow(annot.table) == 0  ) {
+    pdebug("Loading annotation (done) - empty file")
     return(NULL)
   }
   annot.table <- annot.expand.fields(annot.table)
