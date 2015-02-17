@@ -75,7 +75,8 @@ if ( num.cores>parallel:::detectCores()) {
   pwarning("The number of cores to use exceeds the cores available. Reducing the limit to ",parallel:::detectCores())
 }
 
-options("cores"=num.cores)
+options(cores=num.cores)
+options(mc.cores=num.cores)
 
 pinfo("Loading ",opt$tsv_file)
 quant <- quant.load(opt$tsv_file)
