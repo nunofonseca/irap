@@ -130,6 +130,7 @@ if ( num.cores>detectCores()) {
   pwarning("The number of cores to use exceeds the cores available. Reducing the limit to ",detectCores())
 }
 
+options(mc.cores=num.cores)
 #save.image("debug.Rdata")
 #load("debug.Rdata")
 #####################$
