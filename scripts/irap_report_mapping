@@ -90,6 +90,7 @@ if ( num.cores>parallel:::detectCores()) {
 }
 
 options("cores"=num.cores)
+options(mc.cores=num.cores)
 
 pinfo("Parameters parsed.")
 pdebug.save.state("irap_report_mapping","p1")
