@@ -46,6 +46,7 @@ if [ ! -e  scripts/irap_install.sh ]; then
     exit 1
 fi
 echo DIR=$DIR
+set -e 
 export IRAP_DIR=$DIR
 ./scripts/irap_install.sh -s $SRC_DIR  -x make
 ./scripts/irap_install.sh -s $SRC_DIR  -x zlib
@@ -56,7 +57,6 @@ export IRAP_DIR=$DIR
 ./scripts/irap_install.sh -s $SRC_DIR -x samtools1
 ./scripts/irap_install.sh -s $SRC_DIR -x samtools
 ./scripts/irap_install.sh -s $SRC_DIR -x bedtools
-#./scripts/irap_install.sh -s $SRC_DIR -x picard
 
 ./scripts/irap_install.sh -s $SRC_DIR -x core
 source $DIR/irap_setup.sh
