@@ -733,11 +733,12 @@ $(info *	transcript_quant=$(transcript_quant))
 
 ifeq ($(exon_quant),y) 
 $(info Exon quantification requires that all exons in the gtf file have an exon_id attribute)
+endif
 ifndef gtf_file_wexonid
 gtf_file_wexonid=$(gtf_file_abspath)
 #$(gtf_file_wexonid)=$(gtf_file_abspath).exon_id.gtf
 endif
-endif
+
 ##################################
 # method to normalize the counts
 ##################################
