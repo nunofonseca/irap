@@ -69,7 +69,8 @@ if ( num.cores>detectCores()) {
 }
 
 #pdebug.enabled <- opt$debug
-options("cores"=num.cores)
+options(cores=num.cores)
+options(mc.cores=num.cores)
 options(warn=1)
 # Load gtf file
 pinfo("Loading gtf file ",opt$gtf_file)
@@ -86,6 +87,7 @@ gtf <- gtf[,colsOfInterest]
 # compute the lengths
 pinfo("Computing length of genes...")
 gene.length  <- get.gene.length.from.gtf(gtf)
+q(status=0)
 pinfo("Computing length of transcripts...")
 trans.length <- get.transcript.length.from.gtf(gtf)
 pinfo("Computing length of exons...")

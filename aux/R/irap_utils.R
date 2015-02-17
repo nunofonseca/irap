@@ -116,8 +116,10 @@ formats.cols <- list(
 
 # TODO: improve error handling
 load.gtf <- function(gtf.file,feature=NULL,selected.attr=NULL) {
-
-  gtf<-read.table(gtf.file,sep="\t",header=F,quote="\"",comment.char = "#")
+  suppressPackageStartupMessages(library(parallel))
+  gtf<-read.table(gtf.file,sep="\t",header=F,quote="\"",comment.char = "#",
+                  nrows=5000000,
+                  colClasses=c('character','character','character','integer','integer','character','character','character','character'))
   cnames <- formats.cols$gtf
   colnames(gtf)<-cnames[0:ncol(gtf)]
   #feature <- "CDS"
@@ -143,11 +145,12 @@ load.gtf <- function(gtf.file,feature=NULL,selected.attr=NULL) {
     r[attr.int] <- x[attr.int]
     return(r)
   }
-  attr <- lapply(gtf$attributes,attr2vec,gtf.attributes.names)
+  attr <- mclapply(gtf$attributes,attr2vec,gtf.attributes.names)
   #attr2vec(gtf$attributes[1])
   vals<-matrix(unlist(attr),ncol=length(gtf.attributes.names),byrow=T)
   colnames(vals) <- gtf.attributes.names
   gtf <- cbind(gtf,vals)
+  #print(head(gtf))
   return(gtf[,! colnames(gtf) %in% c("attributes")])
 }
 
