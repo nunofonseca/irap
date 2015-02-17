@@ -77,7 +77,8 @@ pdebug.enabled <- opt$debug
 # Disabling multicores due to an error with  RSQLite driver (mm)
 #num.cores <- 1
 #pwarning("Multi-threading is temporarily disabled due to an error with RSQLite driver that occurs when processing some GTF files.")
-options("cores"=num.cores)
+options(cores=num.cores)
+options(mc.cores=num.cores)
 
 gtf.table <- NULL
 gtf.table <- load.gtf(opt$gtf,selected.attr=c("gene_id","gene_name",feature="gene"))
