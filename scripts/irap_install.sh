@@ -989,7 +989,7 @@ function perl_packages_install {
     #    Test::Requisites
     PACKAGES="Algorithm::Munkres     Array::Compare    Math::Random    Sort::Naturally    Sub::Install Sub::Uplevel     Params::Util    List::MoreUtils    Math::Round    DB_File    Test     Test::Fatal    Test::Run    Test::NoWarnings  Test::Exception  Error    XML::Parser    XML::Simple    XML::SAX    XML::SAX::Writer    XML::Writer JSON Hash::Merge  Devel::Size  PerlIO::locale Compress::Raw::Zlib Locale::Maketext::Lexicon Build GD Module::CoreList ExtUtils::MakeMaker"    
 
-    set +e
+    set -e
     for p in $PACKAGES; do
        pinfo "Package $p"
        cpanm   $p < /dev/null
