@@ -16,4 +16,4 @@ if [ "$IRAP_DOCKER_IMAGE-" == "-" ]; then
 fi
 
 # download data
-docker run -v `pwd`:/irap_data --entrypoint="env" -i -t $IRAP_DOCKER_IMAGE bash -c "cd /irap_data && opt/irap_clone/pcawg/pcawg_download_data.sh /irap_data/$foldername"
+docker run -v `pwd`:/irap_data --entrypoint="env" -i -t $IRAP_DOCKER_IMAGE bash -c "cd /irap_data && /opt/irap_clone/pcawg/pcawg_download_data.sh /irap_data/$foldername"
