@@ -291,16 +291,46 @@ get.transcript.length.from.gtf <- function(gtf,filter.biotype=NULL) {
   # TODO: validate gtf
   # protein coding
   suppressPackageStartupMessages(library(parallel))
+  library(RSQLite)
+  gtf.con <- dbConnect(RSQLite::SQLite(), ":memory:")
+# create a table for the GTF data
+  dbWriteTable(gtf.con,"GTF",gtf)
+
+  bio.sql <- ""
   if ( !is.null(filter.biotype) ) {
-    gtf <- gtf[gtf$gene_biotype==filter.biotype,,drop=FALSE]
+    bio.sql <- paste(" AND gene_biotype='",filter.biotype,sep="")
   }
   # compute the length for each transcript
-  gtf <- gtf[gtf$feature=="exon",,drop=FALSE]
-  transcript.ids <- unique(gtf$transcript_id)
-  tlen <- unlist(mclapply(transcript.ids,get.transcript.length,gtf))
-  names(tlen) <- transcript.ids
-  tlen  
+  gene.ids <- unique(dbGetQuery(gtf.con,paste("select gene_id from GTF where feature='exon' ",bio.sql,sep=""))[,1])
+  
+  get.gene.transcripts.length <- function(gene.id,gtf.con,bio.sql) {
+    gtf <-  dbGetQuery(gtf.con,paste("select * from GTF where feature='exon' and gene_id='",gene.id,"' ",bio.sql,sep=""))
+    transcript.ids <- unique(gtf$transcript_id)
+    tlen <- unlist(mclapply(transcript.ids,get.transcript.length,gtf))
+    names(tlen) <- transcript.ids
+    return(tlen)
+  }
+  tlen <- unlist(mclapply(gene.ids,get.gene.transcripts.length,gtf.con,bio.sql=bio.sql))
+  dbDisconnect(gtf.con)
+  return(tlen)
 }
+
+## # Given a matrix obtained from a gtf file returns a vector with the length of the transcripts
+## get.transcript.length.from.gtf <- function(gtf,filter.biotype=NULL) {
+##   # TODO: validate gtf
+##   # protein coding
+##   suppressPackageStartupMessages(library(parallel))
+##   if ( !is.null(filter.biotype) ) {
+##     gtf <- gtf[gtf$gene_biotype==filter.biotype,,drop=FALSE]
+##   }
+##   # compute the length for each transcript
+##   gtf <- gtf[gtf$feature=="exon",,drop=FALSE]
+##   transcript.ids <- unique(gtf$transcript_id)
+##   tlen <- unlist(mclapply(transcript.ids,get.transcript.length,gtf))
+##   names(tlen) <- transcript.ids
+##   tlen  
+## }
+
 
 #
 get.transcript.length <-  function(transcript.id,gtf.data) {
