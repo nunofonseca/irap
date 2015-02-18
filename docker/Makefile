@@ -16,7 +16,7 @@ iRAP-devel-pcawg.docker.tar.gz: ../Makefile iRAP-devel-pcawg.docker
 	docker save $$IMAGE |gzip> $@.tmp && mv $@.tmp $@
 
 iRAP-devel.docker.tar.gz: ../Makefile iRAP-devel.docker
-	IMAGE=`cat iRAP-devel-pcawg.docker| sudo docker build --rm --tag fedora/irap-pcawg:devel -  | grep "Successfully built" | cut -f 3 -d\ ` && \
+	IMAGE=`cat iRAP-devel.docker| sudo docker build --rm --tag fedora/irap:devel -  | grep "Successfully built" | cut -f 3 -d\ ` && \
 	docker save $$IMAGE |gzip> $@.tmp && mv $@.tmp $@
 
 
