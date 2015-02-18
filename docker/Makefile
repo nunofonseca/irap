@@ -41,4 +41,4 @@ iRAP-devel.docker: irap_docker_template
 
 
 %-pcawg.docker: %.docker
-	sed 's/irap_install.sh/irap_install_pcawg.sh/'  $< > $@
+	sed 's|scripts/irap_install.sh|pcawg/irap_install_pcawg.sh|'  $< > $@
