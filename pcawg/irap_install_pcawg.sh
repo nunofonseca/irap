@@ -67,7 +67,6 @@ source $DIR/irap_setup.sh
 ./scripts/irap_install.sh -s $SRC_DIR -x star
 ./scripts/irap_install.sh -s $SRC_DIR -x fastq_qc
 ./scripts/irap_install.sh -s $SRC_DIR -x htseq
-./scripts/irap_install.sh -s $SRC_DIR -x perl_packages
 ./scripts/irap_install.sh -s $SRC_DIR -v
 # iRAP is now installed...
 # install all the data needed by pcawg
