@@ -1,6 +1,11 @@
 #!/bin/bash
 
-DATA_DIR=$IRAP_DIR/data
+if [ "$1-" == "-" ]; then
+    DATA_DIR=$IRAP_DIR/data
+else
+    DATA_DIR=$1
+fi
+
 set -e
 
 echo Installing data to $DATA_DIR
@@ -28,7 +33,7 @@ gunzip $DATA_DIR/reference/homo_sapiens/hs37d5.genome.chr_only.fa.gz
 zcat $DATA_DIR/reference/homo_sapiens/gencode.v19.annotation.gtf.gz | tail -n +6 | sed -e "s/^chrM/MT/g;s/^chr//g" > $DATA_DIR/reference/homo_sapiens/gencode.v19.annotation.hs37d5_chr.gtf
 
 # metadata.tsv
-wget https://docs.google.com/spreadsheets/d/1ukkgAO_G1g2PwFa-s4-0Pe8mjXOVH7EfRNMPRp2ydG4/export?format=tsv -O $IRAP_DIR/metadata.tsv
+wget http://www.ebi.ac.uk/~nf/pcawg/metadata.tsv -O $IRAP_DIR/metadata.tsv
 
 
 # template irap configuration file
@@ -65,5 +70,5 @@ EOF
 
 # Generate the index for TH2 and Star
 pushd $IRAP_DIR
-irap conf=$IRAP_DIR/pcawg.conf sop=pawg3_th2_mapping stage0
-irap conf=$IRAP_DIR/pcawg.conf sop=pawg3_star_mapping stage0
+#irap conf=$IRAP_DIR/pcawg.conf sop=pawg3_th2_mapping stage0
+#irap conf=$IRAP_DIR/pcawg.conf sop=pawg3_star_mapping stage0
