@@ -924,6 +924,9 @@ function bedtools_install {
 # Perl packages
 # TODO: move from cpan to cpanm
 function perl_cpan_install {
+    if [ -e ~/.cpan.irap.done ]; then
+	pinfo "Skipping cpan init...already done"
+    else
     pinfo "Initializing CPAN..."
     pinfo "! Internet access required !"
     if  [ ! -e ~/.cpan/ ]; then
@@ -962,21 +965,37 @@ EOF
 # 
     # upgrade cpan
     #cpan autobundle
-    cpan -f  -i App::cpanminus
+    cpan -i -f Bundle::CPAN
+    cpan -f -i App::cpanminus
     cpanm -f -i YAML   < /dev/null
     cpan -i -f ExtUtils::MakeMaker  < /dev/null
-    cpan -f -i Parse::CPAN::Meta < /dev/null
+    cpan --self-contained -f -i Parse::CPAN::Meta < /dev/null
     cpan -f -i  CPAN < /dev/null
     cpan -f CPAN::Meta::Converter < /dev/null
 
     cpan -f -i YAML   < /dev/null
-    cpanm -f -i CPAN     CPAN::Meta::Requirements  ExtUtils::MakeMaker  Parse::CPAN::Meta  CPAN::Meta::Converter < /dev/null
+    cpanm -f -i CPAN    CPAN::Meta::YAML CPAN::Meta::Requirements  ExtUtils::MakeMaker    CPAN::Meta::Converter < /dev/null
 
 
     # set permissions 
     chmod +w $IRAP_DIR/bin/*
     pinfo "Configuring CPAN...done."
+    touch ~/.cpan.irap.done
+  fi
 }
+
+function perl_bundle_install {
+
+    perl_cpan_install
+	
+    pinfo "Installing perl bundle..."
+    mkdir -p ~/.cpan/Bundle
+    # cpan -a 
+    mv $SRC_DIR/aux/irap.pm  ~/.cpan/Bundle
+    cpan Bundle::irap < /dev/null
+    pinfo "Installing perl bundle...done."
+}
+
 function perl_packages_install {
     mkdir -p $IRAP_DIR/perl
     #
