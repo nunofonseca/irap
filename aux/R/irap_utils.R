@@ -113,7 +113,6 @@ formats.cols <- list(
   gff3=c("seqid","source","type","start","end","score","strand","phase","attributes","comments"),
   gtf=c("seqid","source","feature","start","end","score","strand","frame","attributes")
   )
-
 # TODO: improve error handling
 load.gtf <- function(gtf.file,feature=NULL,selected.attr=NULL) {
   suppressPackageStartupMessages(library(parallel))
@@ -357,7 +356,9 @@ get.exon.length.from.gtf <- function(gtf,filter.biotype=NULL) {
 
 load.gff3 <- function(file,type="gene") {
   # load the gff3 file
-  gff3<-try(read.table(file,sep="\t",header=F,quote="\"",comment.char =""))
+  gff3<-try(read.table(file,sep="\t",header=F,quote="\"",comment.char ="",
+                       nrows=5000000,
+                       colClasses=c('character','character','character','integer','integer','character','character','character','character')))
   if(class(gff3)=='try-error') {
     gff3=as.data.frame(matrix(nrow=0,ncol=length(formats.cols$gff3)))
   }
