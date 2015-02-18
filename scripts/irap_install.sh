@@ -963,6 +963,18 @@ o conf commit
 q
 EOF
 # 
+    # upgrade cpan
+    #cpan autobundle    
+    cpan -f -i App::cpanminus
+    cpanm -f -i YAML   < /dev/null
+    #cpanm -f -i Test::More@0.99 < /dev/null
+    cpanm -i -f ExtUtils::MakeMaker  < /dev/null 
+    # perhaps install the latest perl?
+    cpan -u
+    # don't test
+    #cpanm -n -i  Bundle::CPAN
+    cpanm -i  CPAN < /dev/null
+
     # set permissions 
     chmod +w $IRAP_DIR/bin/*
     pinfo "Configuring CPAN...done."
@@ -989,21 +1001,7 @@ function perl_packages_install {
     export PATH=$IRAP_DIR/bin:$PATH
     
     # TODO: do it only once
-    if [ ! -e ~/.cpan.irap.done2 ]; then
-	perl_cpan_install
-	#cpan autobundle
-	cpan -i -f Bundle::CPAN
-	cpan -f -i App::cpanminus
-	cpanm -f -i YAML   < /dev/null
-	cpan -i -f ExtUtils::MakeMaker  < /dev/null
-	cpan --self-contained -f -i Parse::CPAN::Meta < /dev/null
-	cpan -f -i  CPAN < /dev/null
-	cpan -f CPAN::Meta::Converter < /dev/null
-	
-	cpan -f -i YAML   < /dev/null
-	cpanm -f -i CPAN    CPAN::Meta::YAML CPAN::Meta::Requirements  ExtUtils::MakeMaker    CPAN::Meta::Converter < /dev/null
-	touch ~/.cpan.irap.done2
-    fi
+    perl_cpan_install
     pinfo "Installing perl packages..."
     #    Test::Requisites
     PACKAGES="Algorithm::Munkres     Array::Compare    Math::Random    Sort::Naturally    Sub::Install Sub::Uplevel     Params::Util    List::MoreUtils    Math::Round    DB_File    Test     Test::Fatal    Test::Run    Test::NoWarnings  Test::Exception  Error    XML::Parser    XML::Simple    XML::SAX    XML::SAX::Writer    XML::Writer JSON Hash::Merge  Devel::Size  PerlIO::locale Compress::Raw::Zlib Locale::Maketext::Lexicon Build GD Module::CoreList ExtUtils::MakeMaker"    
@@ -1014,7 +1012,8 @@ function perl_packages_install {
        cpanm   $p < /dev/null
     done
     set -e
-    cpanm  Heap::Simple::Perl
+    # the tests fail...
+    cpanm -n  -i Heap::Simple::Perl
     # SAMTOOLS needs to be recompiled :(
     mkdir -p $IRAP_DIR/tmp
     pushd $IRAP_DIR/tmp
