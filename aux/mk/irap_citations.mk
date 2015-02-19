@@ -210,6 +210,11 @@ cuffdiff2_citation=Trapnell, Cole, David G. Hendrickson, Martin Sauvageau, Loyal
 cuffdiff2_bibtex=cuffdiff2.bib
 cuffdiff2_analysis="Differential gene expression"
 
+#### 
+stringtie_citation=Mihaela Pertea, Geo M Pertea, Corina M Antonescu, Tsung-Cheng Chang, Joshua T Mendell and Steven L Salzberg. "StringTie enables improved reconstruction of a transcriptome from RNA-seq reads", Nature Biotechnology (2015).
+stringtie_bibtex=stringtie.bib
+stringtie_analysis="Gene/transcript quantification"
+
 ####
 DESeq_citation=Anders, Simon, and Wolfgang Huber. "Differential expression analysis for sequence count data." Genome Biol 11, no. 10 (2010): R106.
 DESeq_bibtex=deseq.bib
