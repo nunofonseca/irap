@@ -31,6 +31,10 @@ endif
 
 run_picard=java -jar $(abspath  $(irap_path)/../bin/picard-tools/$(1).jar)
 
+# 1 - bam
+# 2 - libname
+bam_rehead=$(if $($(2)_shl),irap_bam_rehead $(1) "$($(2)_shl)",true)
+
 ########################################################################
 # Quality encoding parameters
 #
@@ -164,10 +168,11 @@ endef
 bowtie2_map_params+= --end-to-end -k $(max_hits) -p $(max_threads)  $(bowtie2_map_options)
 # 0xC filter correctly paired alignemnts
 define run_bowtie2_map=
-	irap_map.sh  bowtie2 bowtie2  $(bowtie2_map_params) -x $(subst .1.bt2,,$(index_files)) $(call bowtie2_file_params,$(1),$(2))  | \
+	irap_map.sh  bowtie2 bowtie2  $(bowtie2_map_params)  $(if $($(1)_rgid),--rg-id $($(1)_rgid),) -x $(subst .1.bt2,,$(index_files)) $(call bowtie2_file_params,$(1),$(2))  | \
 	samtools view -T $(reference_abspath) -F 0xC -bS - > $(3).tmp.bam && \
 	$(call bam_fix_nh,$(3).tmp.bam,-) | \
 	samtools sort -m $(SAMTOOLS_SORT_MEM) -T $(3).tmp -o $(3).tmp.bam -  && \
+	$(call bam_rehead,$(3).tmp.bam,$(1)) && \
 	rm -f $(3).tmp2.bam && \
 	mv $(3).tmp.bam $(3)
 endef
@@ -260,9 +265,10 @@ tophat_reference_prefix=$(reference_prefix)
 # TODO: test and do the same to tophat2
 define run_tophat1_map=
         $(call tophat_setup_dirs,$(1))
-	irap_map.sh tophat1 tophat  -p $(max_threads) $(call tophat_seglength_option,$($(1)_rs),$(1)) $(call tophat_qual_option,$($(1)_qual)) $(call tophat_strand_params,$(1)) $(tophat1_map_params) $(call tophat_ins_sd_params,$(1)) -G $(gtf_file_abspath) --tmp-dir $(call lib2bam_folder,$(1))$(1)/tmp -o $(call lib2bam_folder,$(1))$(1)	 $(tophat_reference_prefix) $(2) &&\
-	samtools sort -m $(SAMTOOLS_SORT_MEM) -T  $(3).tmp -o  $(3).tmp.bam $(call lib2bam_folder,$(1))$(1)/accepted_hits.bam  && \
-	mv $(3).tmp.bam $(3)
+	irap_map.sh tophat1 tophat  -p $(max_threads) $(call tophat_seglength_option,$($(1)_rs),$(1)) $(call tophat_qual_option,$($(1)_qual)) $(call tophat_strand_params,$(1)) $(tophat1_map_params) $(call tophat_ins_sd_params,$(1)) --no-sort-bam  $(if $($(1)_rgid),--rg-id $($(1)_rgid) --rg-sample $($(1)_rgid)) -G $(gtf_file_abspath) --tmp-dir $(call lib2bam_folder,$(1))$(1)/tmp -o $(call lib2bam_folder,$(1))$(1)	 $(tophat_reference_prefix) $(2) &&\
+	samtools sort -m $(SAMTOOLS_SORT_MEM) -T $(call lib2bam_folder,$(1))$(1)/$(1) -o $(call lib2bam_folder,$(1))$(1)/$(1).bam $(call lib2bam_folder,$(1))$(1)/accepted_hits.bam  && \
+	$(call bam_rehead,$(call lib2bam_folder,$(1))$(1)/$(1).bam,$(1)) && \
+	mv $(call lib2bam_folder,$(1))$(1)/$(1).bam $(3)	
 endef
 
 
@@ -273,10 +279,11 @@ endef
 # bam_tophat2_pe_fix fix unmapped reads flags
 define run_tophat2_map=
         $(call tophat_setup_dirs,$(1))
-	irap_map.sh tophat2 tophat2  -p $(max_threads) $(call tophat_seglength_option,$($(1)_rs),$(1)) $(call tophat_qual_option,$($(1)_qual)) $(call tophat_strand_params,$(1)) $(tophat2_map_params) $(call tophat_ins_sd_params,$(1)) -G $(gtf_file_abspath) --tmp-dir $(call lib2bam_folder,$(1))$(1)/tmp -o $(call lib2bam_folder,$(1))$(1) --transcriptome-index $(call tophat2_trans_index_filename,$(file_indexed),$(file_indexed))/  --rg-id $(1) --rg-sample $(1)  $(tophat_reference_prefix) $(2) && \
+	irap_map.sh tophat2 tophat2  -p $(max_threads) $(call tophat_seglength_option,$($(1)_rs),$(1)) $(call tophat_qual_option,$($(1)_qual)) $(call tophat_strand_params,$(1)) $(tophat2_map_params) $(call tophat_ins_sd_params,$(1)) -G $(gtf_file_abspath) --tmp-dir $(call lib2bam_folder,$(1))$(1)/tmp -o $(call lib2bam_folder,$(1))$(1) --transcriptome-index $(call tophat2_trans_index_filename,$(file_indexed),$(file_indexed))/  $(if $($(1)_rgid),--rg-id "$($(1)_rgid)" --rg-sample "$($(1)_rgid"))   $(tophat_reference_prefix) $(2) && \
 	samtools merge - $(call lib2bam_folder,$(1))$(1)/accepted_hits.bam $(call lib2bam_folder,$(1))$(1)/unmapped.bam | \
 	bam_tophat2_fix - - | \
 	samtools sort -m $(SAMTOOLS_SORT_MEM) -T $(call lib2bam_folder,$(1))$(1)/$(1) -o $(call lib2bam_folder,$(1))$(1)/$(1).bam  -  &&\
+	$(call bam_rehead,$(call lib2bam_folder,$(1))$(1)/$(1).bam,$(1)) && \
 	mv $(call lib2bam_folder,$(1))$(1)/$(1).bam $(3)
 endef
 
@@ -352,9 +359,11 @@ $(1).gsnap
 endef
 
 
+
 define run_gsnap_map=
-	irap_map.sh gsnap gsnap $(gsnap_map_params) $(call gsnap_ins_param,$(1))  -D $(reference_dir) -d `basename $(index_files)|sed "s/.index//"` $(2)  | samtools view -T $(reference_abspath) -bS - | \
+	irap_map.sh gsnap gsnap $(gsnap_map_params) $(if $($(1)_rgid),--read-group-id $($(1)_rgid),)  $(call gsnap_ins_param,$(1))  -D $(reference_dir) -d `basename $(index_files)|sed "s/.index//"` $(2)  | samtools view -T $(reference_abspath) -bS - | \
 	samtools sort -m $(SAMTOOLS_SORT_MEM) -T $(3).tmp -o $(3).tmp.bam  -  && \
+	$(call bam_rehead,$(3).tmp.bam,$(1)) && \
 	mv $(3).tmp.bam $(3) 
 endef
 
@@ -407,6 +416,7 @@ define run_soapsplice_map=
 	samtools view -H  $(3).unsrt2.bam >> $(3).tmp.H && \
 	samtools reheader $(3).tmp.H $(3).unsrt2.bam | samtools sort -m $(SAMTOOLS_SORT_MEM) -T $(3).tmp -o $(3).tmp.bam  -  && \
 	rm -f $(3).tmp.H  $(3).unsrt2.bam && \
+	$(call bam_rehead,$(3).tmp.bam,$(1)) && \
 	mv $(3).tmp.bam $(3)
 endef
 
@@ -532,10 +542,11 @@ endef
 #	 sed -i  -e 's/\([a-zA-Z0-9]\+\) dna:/\1:/g' $(3).gem.map &&
 define run_gem_map=
 	 irap_map.sh GEM gem-mapper $(gem_map_params) $(call gem_pairing_param,$(1)) $(call gem_qual_option,$($(1)_qual)) -I $(subst .index,.index.gem,$(index_files)) -i $(2) -o $(3).gem && \
-	 irap_map.sh GEM  gem-2-sam -i $(3).gem.map -I $(index_files) --emit-correct-flags -T $(max_threads) $(call gem2sam_pairing_param,$(1)) $(call gem_qual_option,$($(1)_qual)) -o /dev/fd/1 | sed  -e 's/\([a-zA-Z0-9]\+\) dna/\1/g'   | \
+	 irap_map.sh GEM  gem-2-sam -i $(3).gem.map -I $(index_files) --emit-correct-flags -T $(max_threads) $(call gem2sam_pairing_param,$(1)) $(call gem_qual_option,$($(1)_qual)) $(if $($(1)_rgid),--read-group  "ID=$($(1)_rgid)",)  -o /dev/fd/1 | sed  -e 's/\([a-zA-Z0-9]\+\) dna/\1/g'   | \
 	 samtools  view -T $(reference_abspath) -bS - > $(3).tmp2.bam &&\
 	 bam_fix_se_flag $(3).tmp2.bam - | \
 	 samtools sort -m $(SAMTOOLS_SORT_MEM) -T $(3).tmp  -o $(3).tmp.bam -   && \
+	 $(call bam_rehead,$(3).tmp.bam,$(1)) && \
 	 mv $(3).tmp.bam $(3) && rm -rf $(3).tmp2* $(3).tmp.*
 endef
 
@@ -709,12 +720,14 @@ endef
 
 
 #  --sjdbFileChrStartEnd  $(juncs_file_abspath)
-# irap conf=test3.conf mapper=star quant_method=basic   exon_quant=y  transcript_quant=y de_method=none  stage2
 define run_star_map=
 	 irap_map.sh star star $(star_map_params) --genomeDir $(call star_index_dirname,$(file_indexed)) \
-	--readFilesIn $(2) --outFileNamePrefix $(3) --outSAMtype BAM Unsorted &&\
+	--readFilesIn $(2) --outFileNamePrefix $(3) --outSAMtype BAM Unsorted $(if $($(1)_rgid),--outSAMattrRGline "ID:$($(1)_rgid)",) \
+	$(if $(filter-out n,$(transcript_quant)), --quantMode TranscriptomeSAM, )  &&\
 	bam_fix_se_flag $(3)Aligned.out.bam - | \
 	samtools sort -m $(SAMTOOLS_SORT_MEM) -T  $(3).tmp  -o $(3).tmp.bam -  && \
+	$(call bam_rehead,$(3).tmp.bam,$(1)) && \
+	$(if $(filter-out n,$(transcript_quant)),mv $(3)Aligned.toTranscriptome.out.bam $(3).trans.bam,true) &&\
 	mv $(3).tmp.bam $(3) && rm -f $(3)Aligned.out.bam 
 endef
 
@@ -795,6 +808,7 @@ define run_osa_map=
 	 irap_map.sh osa osa.exe -alignrna `dirname $(file_indexed)` $(call osa_ref_lib_name,$(file_indexed)) \
 	 $(call osa_index_dirname,$(file_indexed))/ReferenceLibrary/$(call osa_ref_lib_name,$(file_indexed))_GeneModels/$(call osa_gene_model_name) $(3).conf && \
 	samtools sort -m $(SAMTOOLS_SORT_MEM) -T $(3).tmp -o $(3).tmp.bam `dirname $(3)`/$(if $(findstring $(1),$(pe)),$(1)_f.bam,$(1).f.bam)  &&\
+	$(call bam_rehead,$(3).tmp.bam,$(1)) && \
 	mv $(3).tmp.bam $(3) && rm -f `dirname $(3)`/$(1)_f.bam  && rm -f $(3).conf
 endef
 
@@ -849,10 +863,11 @@ endef
 # BAM file does not contain the NH flag and the mate information is not ok (htseq fails)
 define run_mapsplice_map=
 	 irap_map.sh mapsplice python $(IRAP_DIR)/bin/mapsplice/mapsplice.py  $(mapsplice_map_params) --threads	 $(max_threads) --bam -o  $(call lib2bam_folder,$(1))$(1) -c $(call mapsplice_index_prefix,$(file_indexed)) -x $(call mapsplice_index_prefix,$(file_indexed)) $(call mapsplice_file_params,$(1),$(2)) &&\
-	samtools fixmate  $(call lib2bam_folder,$(1))$(1)/alignments.bam $(3).fix && \
-	$(call bam_fix_nh,$(3).fix,-) | \
+	samtools fixmate  $(call lib2bam_folder,$(1))$(1)/alignments.bam $(3).fix.bam && \
+	$(call bam_fix_nh,$(3).fix.bam,-) | \
 	samtools sort -m $(SAMTOOLS_SORT_MEM) -T $(3).tmp -o $(3).tmp.bam -  && \
-	mv $(3).tmp.bam $(3) && rm -f $(3).fix
+	$(call bam_rehead,$(3).tmp.bam,$(1)) && \
+	mv $(3).tmp.bam $(3) && rm -f $(3).fix.bam
 endef
 
 ########################################################################

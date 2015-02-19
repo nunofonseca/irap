@@ -1,0 +1,25 @@
+#!/bin/bash
+# change the header of a BAM file
+# irap_bam_rehead bam header_lines2add
+
+if [  "$1-" == "-" ]; then
+   echo "Usage: irap_bam_rehead bam_filename header_lines2add" 
+   exit 1
+fi
+
+if [ ! -e  $1 ] ; then
+   echo "$1 not found"
+   exit 1
+fi
+
+set -e 
+# get the current header
+# remove the existing read groups
+samtools view -H $1 | grep -v "^@RG" > $1.header
+# add the new lines
+lines=`echo $2|sed "s/@/\\\\\@/g"`
+perl -e "print \"$lines\";" >> $1.header
+samtools reheader $1.header $1 > $1.new && mv $1.new $1
+rm -f $1.header
+
+exit 0

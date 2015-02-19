@@ -130,6 +130,14 @@ strand_value_ok=$(if $(filter $($(1)),$(VALID_STRAND_OPTIONS)),invalid option $(
 # check if stranded information is ok
 check_libstrand_ok=$(if $(call is_defined,$(1)_strand),$(if $(call strand_value_ok,$(1)_strand),$(call set_has_stranded_data,$(1)) $($(1)_strand),$(call p_error,Invalid strand option for lib $(1) - $($(1)_strand))))
 
+# validate the read group id info
+check_rgid_ok=$(call get_rgid,$(1))
+get_rgid=$(if $(call is_defined,$(1)_rg),$($(1)_rgid),)
+
+# sam header
+# add @rg if not defined
+check_sheader_ok=$(if $(call is_defined,$(1)_shl),$($(1)_shl),$(if $($(1)_rgid),'@RG	ID:$($(1)_rgid)',))
+
 has_stranded_data=no
 set_has_stranded_data=$(if $(filter both,$($(1)_strand)),,$(eval has_stranded_data=yes))
 
@@ -477,6 +485,10 @@ ifdef se
  # check if fastq file is in a different directory
  $(foreach l,$(se),$(eval $(l)_dir=$(call check_libdir_ok,$(l))))
  $(foreach l,$(se),$(eval $(l)_strand=$(call check_libstrand_ok,$(l)))) 
+# read group id
+ $(foreach l,$(se),$(eval $(l)_rgid=$(call check_rgid_ok,$(l)))) 
+# sam header (may/should include @RG)
+ $(foreach l,$(se),$(eval $(l)_shl=$(call check_sheader_ok,$(l)))) 
  #$(foreach l,$(se),$(info $(l)_dir=$($(l)_dir)))
  #$(foreach l,$(se),$(info $(l)_dir=$($(l)_dir)))
  #$(foreach l,$(se),$(info $(l)_dir=$(call check_libdir_ok,$(l))))
@@ -500,12 +512,18 @@ ifdef pe
  #  insert size
  #  sd
  #  read size
+ #  read group id
+ #  shl (sam header lines)
  # for each lib
  rs_list=
  set_rs_list=$(eval rs_list+= $($(1)))
  $(foreach l,$(pe),$(call check_pe_libname_ok,$(l)))
  $(foreach l,$(pe),$(eval $(l)_dir=$(call check_libdir_ok,$(l))))
  $(foreach l,$(pe),$(eval $(l)_strand=$(call check_libstrand_ok,$(l))))
+# read group id
+ $(foreach l,$(pe),$(eval $(l)_rgid=$(call check_rgid_ok,$(l)))) 
+# sam header lines (may/should include @RG)
+ $(foreach l,$(pe),$(eval $(l)_shl=$(call check_sheader_ok,$(l)))) 
  #$(foreach l,$(pe),$(info $(l)_dir=$($(l)_dir)))
  $(foreach l,$(pe),$(call check_param_ok,$(l)_sd))
  $(foreach l,$(pe),$(call check_param_ok,$(l)_ins))
