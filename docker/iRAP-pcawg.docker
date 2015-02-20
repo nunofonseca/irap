@@ -8,15 +8,14 @@ RUN sed -i "s/failovermethod=priority/failovermethod=roundrobin/" /etc/yum.repos
 
 # 
 WORKDIR /opt
-RUN git clone http://code.google.com/p/irap/ irap_clone
+RUN git clone http://code.google.com/p/irap/ irap_clone  
 WORKDIR /opt/irap_clone
-RUN ./scripts/irap_install_pcawg.sh -a /irap_install -s . && rm -rf /irap_install/tmp
+RUN git checkout devel && ./pcawg/irap_install_pcawg.sh -a /irap_install -s . && rm -rf /irap_install/tmp 
 RUN echo source /irap_install/irap_setup.sh >> ~/.bash_profile && echo source /irap_install/irap_setup.sh >> ~/.bashrc
 
 RUN echo '#!/bin/env bash' > /usr/bin/irap
 RUN echo 'source /irap_install/irap_setup.sh' >> /usr/bin/irap
 RUN echo '/irap_install/scripts/irap "$@"' >> /usr/bin/irap
 RUN chmod u+x /usr/bin/irap
-
 #ENTRYPOINT ["irap"]
 
