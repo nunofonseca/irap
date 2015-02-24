@@ -26,6 +26,7 @@ set -e
 ###################################
 # load shared code
 LSF_CMD=irap_jbrowse_lsf
+source $IRAP_DIR/aux/sh/irap_fun.sh
 source $IRAP_DIR/aux/sh/lsf_shared_code.sh
 
 ###################################
