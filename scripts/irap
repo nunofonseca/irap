@@ -718,10 +718,10 @@ ifndef quant_method
 endif
 
 #SUPPORTED_QUANT_METHODS=basic htseq1 htseq2 cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd scripture flux_cap
-SUPPORTED_QUANT_METHODS=basic htseq1 htseq2 cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd scripture flux_cap nurd 
+SUPPORTED_QUANT_METHODS=basic htseq1 htseq2 cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd scripture flux_cap nurd stringtie
 
 # methods that produce transcript level quantification by default
-TRANS_QUANT_METHODS=flux_cap cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd nurd
+TRANS_QUANT_METHODS=flux_cap cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd nurd stringtie 
 
 #rsem isoem sailfish bitseq
 ifeq (,$(filter $(quant_method),$(SUPPORTED_QUANT_METHODS) none))
@@ -773,12 +773,17 @@ ifndef quant_norm_method
      $(call info,*	overriding quant_norm_method!)
      override quant_norm_method=$(quant_method)
     else
-     quant_norm_method=$(def_quant_norm_method)
+     ifneq (,$(findstring stringtie,$(quant_method)))
+      $(call info,*	overriding quant_norm_method!)
+      override quant_norm_method=$(quant_method)
+     else
+      quant_norm_method=$(def_quant_norm_method)
+     endif
     endif
    endif
   endif
 endif
-SUPPORTED_COUNT_NMETHODS=cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd deseq flux_cap  nurd
+SUPPORTED_COUNT_NMETHODS=cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd deseq flux_cap  nurd stringtie
 ifeq (,$(filter $(quant_norm_method),none $(SUPPORTED_COUNT_NMETHODS)))
 $(call p_info,[ERROR] quant_norm_method)
 $(error $(quant_norm_method) not supported)
