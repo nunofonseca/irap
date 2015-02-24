@@ -16,10 +16,10 @@ fi
 libname=l`basename $1|sed -E "s/((_[12])?\.fastq[^ ]*)//" ` 
 dir=`dirname $1` 
 
-nreads=`echo $A| sed -E "s/.*Number of reads: ([0-9]+) ([0-9]*).*/\1 \2/" ` 
+nreads=`echo $A| sed -E "s/.*Number of reads: ([0-9]+)\s?([0-9]*).*/\1 \2/" ` 
 qual_range=`echo $A| sed -E "s/.*Quality encoding range: ([0-9]+) ([0-9]+).*/\1 \2/" ` 
 qual=`echo $A| sed -E "s/.*Quality encoding: ([0-9]+).*/\1/" ` 
-rs=`echo $A| sed -E "s/.*Read length: ([0-9]+) .*/\1/" ` 
+rs=`echo $A| sed -E "s/.*Read length: ([0-9]+).*/\1/" ` 
 rs_range=`echo $A| sed -E "s/.*Read length: ([0-9]+) ([0-9]+).*/\1 \2/" ` 
 
 
