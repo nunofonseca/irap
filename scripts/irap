@@ -1163,6 +1163,7 @@ STAGE2_OUT_FILES=$(foreach p,$(pe), $(call lib2bam_folder,$(p))$(p).pe.hits.bam)
 
 STAGE2BYNAME_OUT_FILES=$(foreach p,$(pe), $(call lib2bam_folder,$(p))$(p).pe.hits.byname.bam) $(foreach s,$(se), $(call lib2bam_folder,$(s))$(s).se.hits.byname.bam)
 
+bam_files=$(STAGE2_OUT_FILES)
 ################################################################################
 # Default target
 all: setup quality_filtering_and_report mapping quantification DE GSE

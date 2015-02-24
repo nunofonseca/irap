@@ -101,7 +101,7 @@ phony_targets+= $(name)/$(mapper)/%.bam.tracks
 
 jbrowser_bam_targets=
 jbrowser_stage2_targets: 
-	echo $(subst .bam,.bam.tracks,$(call bam_files,$(name)))
+	echo $(subst .bam,.bam.tracks,$(bam_files))
 
 %.bam.tracks: %.bam.bw
 	$(call p_info,"BAM tracks for $(notdir $*).bam generated.")
