@@ -1,22 +1,28 @@
 #!/bin/bash
 
 if [ "$*-" == "-"  ]; then
-    echo "fastq_info.sh .fastq [.fastq]" 
+    echo "fastq_info.sh .fastq [.fastq]" > /dev/stderr
     exit 1
 fi
 
-A="`fastq_info $*`" 
+A="`fastq_info $* 2>/dev/stdout | tee /dev/stderr |tail -n 5`"  
 ret=$?
 if [ $ret != 0 ]; then
     echo "ERROR" > /dev/stderr
     exit $ret
 fi
 
-#echo 
+f1=$1
+if [ "$f1" == "-f" ]; then
+    f1=$2
+fi
+
+#
+#echo $A 
 libname=l`basename $1|sed -E "s/((_[12])?\.fastq[^ ]*)//" ` 
 dir=`dirname $1` 
 
-nreads=`echo $A| sed -E "s/.*Number of reads: ([0-9]+)\s?([0-9]*).*/\1 \2/" ` 
+nreads=`echo $A| sed -E "s/.*Number of reads: ([0-9]+).?([0-9]*).*/\1 \2/" ` 
 qual_range=`echo $A| sed -E "s/.*Quality encoding range: ([0-9]+) ([0-9]+).*/\1 \2/" ` 
 qual=`echo $A| sed -E "s/.*Quality encoding: ([0-9]+).*/\1/" ` 
 rs=`echo $A| sed -E "s/.*Read length: ([0-9]+).*/\1/" ` 
