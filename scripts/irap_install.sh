@@ -263,6 +263,10 @@ BEDTOOLS_VERSION=2.17.0
 BEDTOOLS_FILE=BEDTools.v$BEDTOOLS_VERSION.tar.gz
 BEDTOOLS_URL=http://bedtools.googlecode.com/files/$BEDTOOLS_FILE
    
+stringtie_VERSION=1.0.0
+stringtie_FILE=stringtie-${stringtie_VERSION}.Linux_x86_64.tar.gz
+stringtie_URL=http://ccb.jhu.edu/software/stringtie/dl/$stringtie_FILE
+
 cufflinks1_VERSION=1.3.0
 cuffdiff1_VERSION=1.3.0
 cufflinks1_FILE=cufflinks-${cufflinks1_VERSION}.Linux_x86_64.tar.gz
@@ -317,7 +321,7 @@ Sailfish_FILE=Sailfish-${Sailfish_VERSION}-Linux_x86-64.tar.gz
 Sailfish_URL=http://github.com/kingsfordgroup/sailfish/releases/download/v$Sailfish_VERSION/$Sailfish_FILE
 
 #
-rsem_VERSION=1.2.8
+rsem_VERSION=1.2.9
 rsem_FILE=rsem-${rsem_VERSION}.tar.gz
 rsem_URL=http://deweylab.biostat.wisc.edu/rsem/src/$rsem_FILE
 
@@ -1185,6 +1189,19 @@ EOF
     #pinfo "installing EMBAM...done."
     pinfo "Installing R-3.x packages...done."
 }
+######################################################
+# Stringtie
+function stringtie_install {
+
+# Short reads - Transcript assembly, abundance and differential expression estimations
+    pinfo "Downloading and installing StringTie..."
+    download_software stringtie
+    tar xzvf $stringtie_FILE
+    # file name conflict with cufflinks2
+    mkdir -p $BIN_DIR/stringtie
+    cp stringtie-${stringtie_VERSION}*/* $BIN_DIR/stringtie
+    pinfo "Downloading and installing StringTie...done."
+}
 
 ######################################################
 # Cufflinks1
@@ -1364,9 +1381,10 @@ function quant_install {
     flux_capacitor_install
     scripture_install
     NURD_install
+    #stringtie_install
+    #rsem_install
     #IsoEM_install
     #Sailfish_install
-    #rsem_install
     #mmseq_install
     #ireckon_install
 }
