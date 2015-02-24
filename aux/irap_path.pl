@@ -233,7 +233,7 @@ m('star',_,'',no).
 m('osa',_,'',no).
 m('mapsplice',_,'',no).
 
-all_quant([htseq1,htseq2,basic,flux_cap,cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,nurd]).
+all_quant([htseq1,htseq2,basic,flux_cap,cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,nurd,stringtie,stringtie_nd]).
 all_quant_norm([flux_cap,cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,none,deseq]).
 all_de([deseq,edger,voom,cuffdiff1,cuffdiff2,cuffdiff1_nd,cuffdiff2_nd,none]).
 
@@ -244,6 +244,8 @@ qr('cufflinks1',m(M),'BAM flags...',stranded):-m(M,_,_,_S),not member(M,[soapspl
 qr('cufflinks1_nd',m(M),'BAM flags...',stranded):-m(M,_,_,_S),not member(M,[soapsplice]).
 qr('cufflinks2',m(M),'BAM flags...',stranded):-m(M,_,_,_S),not member(M,[soapsplice]).
 qr('cufflinks2_nd',m(M),'BAM flags...',stranded):-m(M,_,_,_S),not member(M,[soapsplice]).
+qr('stringtie',m(M),'BAM flags...',stranded):-m(M,_,_,_S),not member(M,[soapsplice]).
+qr('stringtie_nd',m(M),'BAM flags...',stranded):-m(M,_,_,_S),not member(M,[soapsplice]).
 qr('flux_cap',m(M),'',no):-m(M,_,_,_S).
 qr('scripture',m(M),'',no):-m(M,_,_,_S).
 qr('nurd',m(M),'',no):-m(M,_,_,_S).
