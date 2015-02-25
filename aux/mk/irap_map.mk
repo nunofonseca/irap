@@ -278,7 +278,7 @@ endef
 define run_tophat2_map=
         $(call tophat_setup_dirs,$(1))
 	irap_map.sh tophat2 tophat2  -p $(max_threads) $(call tophat_seglength_option,$($(1)_rs),$(1)) $(call tophat_qual_option,$($(1)_qual)) $(call tophat_strand_params,$(1)) $(tophat2_map_params) $(call tophat_ins_sd_params,$(1)) -G $(gtf_file_abspath) --tmp-dir $(call lib2bam_folder,$(1))$(1)/tmp -o $(call lib2bam_folder,$(1))$(1) --transcriptome-index $(call tophat2_trans_index_filename,$(file_indexed),$(file_indexed))/  $(if $($(1)_rgid),--rg-id "$($(1)_rgid)" --rg-sample "$($(1)_rgid)")   $(tophat_reference_prefix) $(2) && \
-	$(if $($(1)_rgid),samtools view $(call lib2bam_folder,$(1))$(1)/unmapped.bam | sed "s/$$$$/\tRG:Z:$($(1)_rgid)/" | samtools view -b - > $(call lib2bam_folder,$(1))$(1)/unmapped2.bam && mv $(call lib2bam_folder,$(1))$(1)/unmapped2.bam $(call lib2bam_folder,$(1))$(1)/unmapped.bam  && ) \
+	$(if $($(1)_rgid), $(call addRG2BAM,$(call lib2bam_folder,$(1))$(1)/unmapped.bam,$($(1)_rgid)) && ) \
 	samtools merge - $(call lib2bam_folder,$(1))$(1)/accepted_hits.bam $(call lib2bam_folder,$(1))$(1)/unmapped.bam | \
 	bam_tophat2_fix - - | \
 	samtools sort -m $(SAMTOOLS_SORT_MEM) -T $(call lib2bam_folder,$(1))$(1)/$(1) -o $(call lib2bam_folder,$(1))$(1)/$(1).bam  -  &&\
@@ -286,6 +286,11 @@ define run_tophat2_map=
 	mv $(call lib2bam_folder,$(1))$(1)/$(1).bam $(3)
 endef
 
+# 1-bam
+# 2-rgid
+define addRG2BAM= 
+	samtools view -H $(1) > $(1).header && echo -e "@RG\tID:$(2)" >> $(1).header &&  samtools view $(1) | sed "s/$$$$/\tRG:Z:$(2)/" | samtools view -b - | samtools reheader $(1).header /dev/stdin > $(1)
+endef
 
 ####################################################
 # SMALT
