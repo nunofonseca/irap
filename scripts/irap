@@ -132,7 +132,7 @@ check_libstrand_ok=$(if $(call is_defined,$(1)_strand),$(if $(call strand_value_
 
 # validate the read group id info
 check_rgid_ok=$(call get_rgid,$(1))
-get_rgid=$(if $(call is_defined,$(1)_rg),$($(1)_rgid),)
+get_rgid=$(if $(call is_defined,$(1)_rgid),$($(1)_rgid),)
 
 # sam header
 # add @rg if not defined
