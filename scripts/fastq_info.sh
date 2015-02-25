@@ -13,8 +13,8 @@ if [ $ret != 0 ]; then
 fi
 
 f1=$1
-nfiles=`echo $* | wc -w`
-if [ "$f1" == "-f" ]; then
+let nfiles=`echo $* | wc -w`
+if [ "$1" == "-f" ] || [ "$2" == "-f" ] || [ "$3" == "-f" ]; then
     f1=$2
     let nfiles=nfiles-1
 fi
