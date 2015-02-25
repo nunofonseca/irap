@@ -13,8 +13,10 @@ if [ $ret != 0 ]; then
 fi
 
 f1=$1
+
 if [ "$f1" == "-f" ]; then
     f1=$2
+    let nfiles=nfiles-1
 fi
 
 #
@@ -42,7 +44,7 @@ echo "#range: $qual_range"
 echo ${libname}_qual=$qual
 echo ${libname}_strand=both
 # PE
-if [ "$2-" != "-" ]; then
+if [ $nfiles -gt 1 ]; then
     echo ${libname}_ins=400
     echo ${libname}_sd=350
     echo "#pe=$libname"
