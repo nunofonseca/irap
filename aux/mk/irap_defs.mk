@@ -54,7 +54,7 @@ gse_tool?=none
 override reference:=hs37d5.genome.chr_only.fa
 override gtf_file:=gencode.v19.annotation.hs37d5_chr.gtf
 override star_index_params:= --sjdbOverhang 100 
-override star_map_options:= --outFilterMultimapScoreRange 1  --outFilterMismatchNmax 10 --alignIntronMax 500000 --alignMatesGapMax 1000000 --sjdbScore 2 --alignSJDBoverhangMin 1 --outFilterMatchNminOverLread 0.33 --outFilterScoreMinOverLread 0.33
+override star_map_options:= --outFilterMultimapScoreRange 1  --outFilterMismatchNmax 20 --alignIntronMax 500000 --alignMatesGapMax 1000000 --sjdbScore 2 --alignSJDBoverhangMin 1 --outFilterMatchNminOverLread 0.33 --outFilterScoreMinOverLread 0.33 --outSAMstrandField intronMotif  --outSAMattributes NH HI NM MD AS XS  --outSAMunmapped Within  --outSAMheaderHD @HD VN:1.4
 override max_hits=20
 #
 
