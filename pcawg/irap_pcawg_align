@@ -1,0 +1,169 @@
+#!/bin/bash
+sop=$1
+tarball=$2
+id=$3
+irap_options=$4
+
+VERSION=1
+# This is the folder where pcawg_download_data.sh dumps all data (Reference genome, annotation, fastq files,...)
+DATA_TOPLEVEL_DIR=test_data
+metadata_file=$DATA_TOPLEVEL_DIR/metadata.tsv
+
+if [ "$id-" == "-" ]; then
+   echo "Usage: irap_pcawg_align  SOP tar.gz ID" > /dev/stderr
+   exit 1
+fi
+
+
+if [ "$sop-" == "-" ]; then
+    echo "sop not defined"
+    exit 1
+fi
+
+if [ "$tarball-" == "-" ]; then
+    echo "tarball with the fastq files not provided"
+    exit 1
+fi
+
+if [ ! -e $tarball ]; then
+   echo "$tarball not found" > /dev/stderr
+   exit 1
+fi
+
+
+if [ "$id-" == "-" ]; then
+    echo "ID not provided"
+    exit 1
+fi
+
+if [ "$IRAP_DOCKER_IMAGE-" == "-" ]; then
+   echo "ERROR: Please define the environment variable IRAP_DOCKER_IMAGE with the ID of docker image to use"
+   exit 1
+fi
+set -e 
+
+if [ $sop == "pawg3_th2_mapping" ]; then
+    mapper=tophat2
+    MAPPER=TopHat2
+else
+    mapper=star
+    MAPPER=Star
+fi
+
+
+function pinfo { 
+    echo "[INFO: $*]"
+}
+
+function perror { 
+    echo "[ERROR: $*]"
+}
+
+function run_docker_exitOnError {
+    run_docker $*
+    if [ $? != 0 ]; then
+	perror "Docker run failed: $*"
+	exit 1
+    fi
+}
+
+function run_docker {
+    echo "RUN: $*"
+    docker run -v `pwd`:/irap_data --entrypoint="env" -i -t $IRAP_DOCKER_IMAGE bash -c "source /irap_install/irap_setup.sh && cd /irap_data && $*"
+}
+###############################################################
+# place the tarball in the right folder
+BAMS=
+TARGET_DIR=$DATA_TOPLEVEL_DIR/raw_data/homo_sapiens/$id
+
+rm -rf $TARGET_DIR
+
+mkdir -p $TARGET_DIR
+fp_tarball=`readlink -f $tarball`
+pushd $TARGET_DIR > /dev/null 
+pinfo "Unpacking fastq files to $TARGET_DIR"
+tar xvf $fp_tarball 
+set +e
+fastq_files=`ls -q -1 --color=never  *.fastq *.fastq.gz 2> /dev/null  | sort -u `
+set -e
+pinfo "FASTQ files found: $fastq_files"
+popd > /dev/null 
+
+# run fastq_info on the file
+pinfo "Validating FASTQ files..."
+fastq_files_prefix=`echo $fastq_files|sed "s/_[12].fastq.gz//g;s/_[12].fastq//g;s/.fastq.gz//g;s/.fastq//g"|sort -u`
+set +e
+pinfo "FASTQ files prefix: $fastq_files_prefix"
+for f in $fastq_files_prefix; do
+    pinfo "Processing library $f"
+    # run fastq_info with -f to replace bases with . by N (this was observed in several fastq files)
+    # Directory with he path to the fastq files should be the toplevel raw folder
+    pushd $TARGET_DIR/..
+    pinfo "Validating $f/$id..."
+    fastq_files="`ls -q --color=never $id/${f}{_1,_2,}.fastq* 2>/dev/null | tr "\n" " " `"
+    pinfo "FASTQ files: $fastq_files"
+    popd
+    # TODO: remove full path to fastq_info.sh
+    run_docker  "cd $TARGET_DIR/.. && fastq_info.sh  $fastq_files -f > $id/$f.info.tmp && rm $fastq_files && rename .fastq.gz_fix.fastq.gz .fastq.gz  $id/*_fix.* && mv $id/$f.info.tmp $id/$f.info"
+    libs=`grep -E "^#(se|pe)=" $TARGET_DIR/$f.info|sed "s/#//"`
+    libname=`echo $libs|cut -f 2 -d=`
+    if [ $? == 0 ] ; then
+	pinfo "Validating $f/$id...done."
+	pinfo "Lib. details: $TARGET_DIR/$f.info"
+	# look for the analysis id in the metadata file
+	pinfo "Generating SAM/BAM header from metadata..."
+	run_docker "/opt/irap_clone/pcawg/pcawg_sam_header.sh $id $f $metadata_file > $TARGET_DIR/$f.header.tmp && mv $TARGET_DIR/$f.header.tmp $TARGET_DIR/$f.header"
+	if [ $? == 0 ]; then
+		echo $TARGET_DIR/$f.header
+		rg_id=`grep "@RG" $TARGET_DIR/$f.header | cut -f 2 |cut -f 2- -d:`
+		# add the sam header to the info file
+		echo -n "${libname}_shl=" >> $TARGET_DIR/$f.info
+		cat $TARGET_DIR/$f.header | tr "\n" "|" | sed "s/|/\\\n/g" | tr "\t" "|" | sed "s/|/\\\t/g" >>  $TARGET_DIR/$f.info	
+		echo "" >> $TARGET_DIR/$f.info
+		echo "${libname}_rgid=$rg_id" >> $TARGET_DIR/$f.info		
+		echo "${libname}_rg=$rg_id" >> $TARGET_DIR/$f.info		
+		cat $TARGET_DIR/$f.info
+		pinfo "Collecting information to include in the BAM headers...done."
+		pinfo "Aligning data..."
+		run_docker "irap conf=test_data/pcawg.conf sop=$sop qc=none data_dir=$DATA_TOPLEVEL_DIR $libs lib.info=$TARGET_DIR/$f.info $irap_options"
+		if [ $? == 0 ]; then
+		    # rename the bam		
+		    mv pcawg/$mapper/$id/l$f.*.hits.bam  pcawg/$mapper/$id/$f.bam
+		    pinfo "BAM in pcawg/$mapper/$id/$f.bam"
+		    BAMS="$BAMS pcawg/$mapper/$id/$f.bam"
+		else
+		    perror "FAILED: generating pcawg/$mapper/$id/$f.bam"
+		fi
+	else
+	    perror "FAILED: generating SAM/BAM header from metadata $id/$f"
+	fi
+    else
+	perror "collecting information and validating $f/$id...failed."
+    fi
+
+done
+set +e
+
+# fail if no info file(s) is found
+fastq_info_files=`ls -1 --color=never  $TARGET_DIR/*.info 2> /dev/null`
+if [ "$fastq_info_files-" == "-" ]; then
+    echo "ERROR: $id FASTQ validation failed for all libraries"
+    exit 1
+fi
+
+#
+nbams=`echo $BAMS|wc -w` 
+if [ "$nbams" ==  "0" ]; then
+    perror "Failed to produce BAM file."
+    exit 1
+fi
+if [ "$nbams" ==  "1" ]; then
+    mv $BAMS $id.$MAPPER.v$VERSION.bam
+    pinfo "Final BAM:  $id.$MAPPER.v$VERSION.bam"
+    exit 0
+fi
+# Merge the BAM files
+pinfo "Merging BAMS: $BAMS"
+run_docker "samtools merge -f -c $id.$MAPPER.v$VERSION.bam $BAMS"
+pinfo "Final BAM:  $id.$MAPPER.v$VERSION.bam"
+exit 0
