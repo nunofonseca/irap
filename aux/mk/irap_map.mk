@@ -289,7 +289,7 @@ endef
 # 1-bam
 # 2-rgid
 define addRG2BAM= 
-	samtools view -H $(1) > $(1).header && echo -e "@RG\tID:$(2)" >> $(1).header &&  samtools view $(1) | sed "s/$$$$/\tRG:Z:$(2)/" | samtools view -b - | samtools reheader $(1).header /dev/stdin > $(1)
+	samtools view -H $(1) > $(1).header && echo -e "@RG\tID:$(2)" >> $(1).header &&  samtools view $(1) | sed "s/$$$$/\tRG:Z:$(2)/" | samtools view -b - | samtools reheader $(1).header /dev/stdin > $(1).tmp && mv $(1).tmp $(1)
 endef
 
 ####################################################
