@@ -33,12 +33,16 @@ JBROWSE_WIG_DIR=$(JBROWSE_RDIR)/raw/wig
 JBROWSE_BAM_DIR=$(JBROWSE_RDIR)/raw/bam
 #JBROWSE_RAW_DATA=$(name)/report/jbrowse/raw
 
-#
+# alias
+ifdef browser
+browsing=$(browser)
+endif
+
 def_browsing=n
 ifndef browsing
 browsing=$(def_browsing)
 endif
-
+sas
 #ex. $(call rep_browse,dep1 ...) 
 define rep_browse=
 $(if $(subst y,,$(browsing)),,$(1))
