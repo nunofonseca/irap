@@ -49,7 +49,7 @@ endef
 
 # 1 - exp name
 define set_GSE_HTML_FILES=
-$(eval override GSE_HTML_FILES:=$(subst $(name)/,$(name)/report/,$(foreach d,$(call de_dirs,$(1)),$(foreach c,$(contrasts),$(subst .tsv,.html,$(call quiet_ls,$(d)/$(c)*.gse.*.tsv))))) $(GSE_HTML_FILES)
+$(eval override GSE_HTML_FILES:=$(subst $(name)/,$(name)/report/,$(foreach d,$(call de_dirs,$(1)),$(foreach c,$(contrasts),$(subst .tsv,.html,$(call quiet_ls,$(d)/$(c)*.gse.*.tsv)))))) $(GSE_HTML_FILES)
 endef
 
 
