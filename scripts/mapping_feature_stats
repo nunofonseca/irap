@@ -73,7 +73,7 @@ if ( !is.null(file.required(f,fatal=F)) ) {
   }
   # slice some columns
   type.genes <- x[x$type=="gene",c("source","comments")]
-  x <- aggregate(type.genes$comments,list(source=type.genes$source),sum)
+  x <- aggregate(as.numeric(type.genes$comments),list(source=type.genes$source),sum)
   # change the colname
   colnames(x)[2] <- opt$colname
   write.tsv(x,header=T,file=opt$out)
