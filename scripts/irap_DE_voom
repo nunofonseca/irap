@@ -35,8 +35,7 @@ source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
 source(paste(IRAP.DIR,"aux/R","irap_de.R",sep="/"))
 
 cmd <- "irap_DE_voom"
-pwarning("VOOM support: Under development!!!!!!!")
-
+pwarning("VOOM support: Under development!")
 
 opt <- process.cmdline.args(cmd)
 pinfo("Parameters parsed.")
@@ -57,8 +56,10 @@ opt$conds <- map.conds2cols(opt$label2group,colnames(data.f))
 library(limma)
 #Note: TODO counts of technical replicates  have to be summed up into a single column
 #conds.f <- factor(conds)
-design <- model.matrix(~ 0 + opt$conds)
-colnames(design) <- gsub("opt.conds", "", colnames(design)) #fix col names
+conds <-  as.factor(opt$conds)
+design <- model.matrix(~ 0 + conds)
+colnames(design) <- gsub("conds", "", colnames(design)) #fix col names
+#print(colnames(design))
 # reorder
 design <- design[,opt$labels.v]
 pinfo("Vooming...")
