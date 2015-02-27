@@ -1765,7 +1765,7 @@ endef
 phony_targets+= $(quant_norm_method)_nquant
 
 print_stage3_files:
-	echo $(STAGE3_TSV_FILES)
+	echo $(STAGE3_OUT_FILES)
 
 $(quant_norm_method)_nquant: $(quant_method)_quant $($(quant_norm_method)_nquant_files)
 
