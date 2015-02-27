@@ -54,6 +54,7 @@ pdebug.save.state("irap_DE_edgeR","2")
 data.f <- filter.read.counts.table(data,opt)
 data.f <- handle.tech.replicates(data.f,opt)
 opt$conds <- map.conds2cols(opt$label2group,colnames(data.f))
+
 ############
 library(edgeR)
 
@@ -86,7 +87,7 @@ if (min(table(opt$conds))>1) {
   pinfo("Estimating tagwise dispersion...done")
 } else {
   # No replicates
-  perror("Refusing to estimate dispersion without replicates!")
+  perror("Unable to estimate dispersion without replicates!")
   q(status=2)
 }
 # pairwise comparison
