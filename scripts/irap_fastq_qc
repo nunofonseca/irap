@@ -322,9 +322,9 @@ go: all
 %.fastq.stats: %.fastq
 	fastx_quality_stats -Q $(qual) -i $< -o $@.tmp && mv $@.tmp $@
 
-# 
+###########
+# BAM2FASTQ
 ifeq ($(PE),OFF)
-# generate the fastq from BAM
 %.fastq: %.bam
 	bamToFastq -i $^ -fq $@.tmp  && mv $@.tmp $@
 else
@@ -333,7 +333,7 @@ else
 %_1.fastq %_2.fastq: %.bam
 	$(info Converting bam to fastq...note that the bam file needs to be sorted by name.)
 	samtools sort -n $< $<.sorted && \
-	bamToFastq -i $^.sorted.bam -fq $*_1.fastq.tmp -fq2 $*_2.fastq.tmp && mv $*_1.fastq.tmp $*_1.fastq && mv $*_2.fastq.tmp $*_2.fastq
+	bamToFastq -i $^.sorted.bam -fq $*_1.fastq.tmp -fq2 $*_2.fastq.tmp && mv $*_2.fastq.tmp $*_2.fastq && mv $*_1.fastq.tmp $*_1.fastq 
 endif
 
 #Generate initial statistics from the input fastq file
@@ -350,8 +350,6 @@ define run-fastqc =
 endef
 
 setup0: $(report_dir)/raw_data $(out_dir)
-#	@mkdir -p $(report_dir)/raw_data
-#	@mkdir -p $(out_dir)
 
 $(report_dir)/raw_data:
 	mkdir -p $@
@@ -367,7 +365,7 @@ $(out_dir):
 # Output: in raw_data/, zipped directory containing the stats summary as text file, HTML and .PNG images  
 
 #Pair end reads
-ifeq (pe_data,1)
+ifeq ($(pe_data),1)
 stage0: $(call report_file,1,$(report_dir)/raw_data/$(f1_n).fastqc.zip $(report_dir)/raw_data/$(f2_n).fastqc.zip)
 
 # [TODO] the two following  rules can probably be merged into one...
@@ -393,7 +391,7 @@ endif
 # Output: text file (*.f.csv) with number of reads in each STAGE-x fastq files
 
 #Pair end reads
-ifeq (pe_data,1)
+ifeq ($(pe_data),1)
 stage5: $(report_dir)/$(f1_n).f.csv $(report_dir)/$(f2_n).f.csv $(report_dir)/$(f1_n).sing.csv  
 
 else
@@ -450,7 +448,7 @@ stage5:
 
 
 #Paired end reads
-ifeq (pe_data,1)
+ifeq ($(pe_data),1)
 
 #Main call, no filtering, collect stats, cleaning at the end (rm files)
 all: setup0 stage0 $(out_dir)/$(out_prefix)_1.f.fastq.stats $(out_dir)/$(out_prefix)_2.f.fastq.stats $(out_dir)/$(out_prefix)_1.f.fastq $(out_dir)/$(out_prefix)_2.f.fastq $(report_dir)/$(out_prefix)_1.f.csv $(report_dir)/$(out_prefix)_2.f.csv  stage6
@@ -519,7 +517,7 @@ stage5:
 
 
 #Paired end reads
-ifeq (pe_data,1)
+ifeq ($(pe_data),1)
 
 #Main call, no filtering, collect stats, cleaning at the end (rm files)
 all: setup0 stage0 $(out_dir)/$(out_prefix)_1.f.fastq.stats $(out_dir)/$(out_prefix)_2.f.fastq.stats $(out_dir)/$(out_prefix)_1.f.fastq $(out_dir)/$(out_prefix)_2.f.fastq $(report_dir)/$(out_prefix)_1.f.csv $(report_dir)/$(out_prefix)_2.f.csv  stage6
@@ -586,7 +584,7 @@ all: setup0 stage0 stage1 stage2 stage3 stage3 stage4 stage5 stage6
 	$(shell if [ -e $(f1_n).filter1.fastq.qual.png ]; then mv $(out_dir)/$(f1_n)*.png $(report_dir)/raw_data ; fi)
 
 #Paired end reads
-ifeq (pe_data,1)
+ifeq ($(pe_data),1)
 	$(shell if [ -e $(f2_n).filter1.fastq.qual.png ]; then mv $(out_dir)/$(f2_n)*.png $(report_dir)/raw_data ; fi)
 endif
 	$(info * Filtering complete.)
@@ -599,7 +597,7 @@ endif
 # Filter: base quality, read length after filtering, artifacts of experimental procedure
 
 #Paired end reads
-ifeq (pe_data,1)
+ifeq ($(pe_data),1)
 stage1: $(out_dir)/$(f1_n).filter1.fastq  $(out_dir)/$(f2_n).filter1.fastq $(call report_file,0,$(out_dir)/$(f1_n).filter1.stats.txt $(out_dir)/$(f2_n).filter1.stats.txt)
 
 #Single reads
@@ -632,7 +630,7 @@ $(out_dir)/%.filter1.fastq: $(data_dir)/%.fastq
 # Filter: E.coli contamination - remove any E.coli contaminated reads
 
 #Paired end reads
-ifeq (pe_data,1)
+ifeq ($(pe_data),1)
 stage2: $(out_dir)/$(f1_n).filter2.fastq $(out_dir)/$(f2_n).filter2.fastq $(call report_file,0,$(out_dir)/$(f1_n).filter2.stats.txt  $(out_dir)/$(f2_n).filter2.stats.txt)
 
 #Single end reads
@@ -660,7 +658,7 @@ endif
 # Filter: remove any reads containing any number of Ns
 
 #Paired end reads
-ifeq (pe_data,1)
+ifeq ($(pe_data),1)
 stage3: $(out_dir)/$(f1_n).filter3.fastq $(out_dir)/$(f2_n).filter3.fastq $(call report_file,0,$(out_dir)/$(f1_n).filter3.stats.txt $(out_dir)/$(f2_n).filter3.stats.txt)
 
 #Single end end reads
@@ -680,7 +678,7 @@ $(out_dir)/%.filter3.fastq: $(out_dir)/%.filter2.fastq
 #         If reads were not paired, the output file is a copy of the input file.
 
 #Paired end reads
-ifeq (pe_data,1)
+ifeq ($(pe_data),1)
 stage4:	$(out_dir)/$(f1_n).f.fastq
 
 $(out_dir)/$(f1_n).f.fastq $(out_dir)/$(f2_n).f.fastq $(out_dir)/$(f1_n).sing.fastq: $(out_dir)/$(f1_n).filter3.fastq $(out_dir)/$(f2_n).filter3.fastq
@@ -702,7 +700,7 @@ endif
 # Output: file name contains the "out_prefix"; fastq file (symbolic link to stage-4 fastq file), stats as a text file ($out_prefix.f.fastq.stats) and PNG images ($output_prefix.f.*.png)
 
 #Paired end reads
-ifeq (pe_data,1)
+ifeq ($(pe_data),1)
 
 stage6:	$(out_dir)/$(out_prefix)_1.f.fastq  $(call report_file,1,$(report_dir)/$(out_prefix)_1.f.qual.png $(report_dir)/$(out_prefix)_2.f.qual.png $(report_dir)/raw_data/$(out_prefix)_1.f.fastqc.zip $(report_dir)/raw_data/$(out_prefix)_2.f.fastqc.zip $(report_dir)/raw_data/$(out_prefix)_sing.f.fastqc.zip)
 
@@ -768,7 +766,7 @@ $(report_dir)/raw_data/%.fastqc.zip: $(out_dir)/%.fastq
 clean:
 	rm -f $(out_dir)/$(f1_n).filter{1,2,3}.fastq
 
-ifeq (pe_data,1)
+ifeq ($(pe_data),1)
 	rm -f $(out_dir)/$(f2_n).filter{1,2,3}.fastq
 endif
 
@@ -776,7 +774,7 @@ clean_all:
 	rm -f $(out_dir)/$(f1_n).filter{1,2,3}.fastq
 	rm -f $(out_dir)/$(f1_n).filter{1,2,3}.*.png
 	rm -f $(out_dir)/$(f1_n).filter{1,2,3}.*.txt
-ifeq (pe_data,1)
+ifeq ($(pe_data),1)
 	rm -f $(out_dir)/$(f2_n).filter{1,2,3}.fastq
 	rm -f $(out_dir)/$(f2_n).filter{1,2,3}.*.png
 	rm -f $(out_dir)/$(f2_n).filter{1,2,3}.*.txt
@@ -793,7 +791,7 @@ clean_for_testing:
 	rm -f $(out_dir)/$(out_prefix).f.*.png
 	rm -f $(out_dir)/$(out_prefix).f.*.stats
 	rm -f $(out_dir)/$(out_prefix).f.fastq
-ifeq (pe_data,1)
+ifeq ($(pe_data),1)
 	rm -f $(out_dir)/$(f2_n).filter{1,2,3}.fastq
 	rm -f $(out_dir)/$(f2_n).filter{1,2,3}.*.png
 	rm -f $(out_dir)/$(f2_n).filter{1,2,3}.*.txt
