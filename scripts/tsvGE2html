@@ -220,7 +220,7 @@ if ( opt$feature != "gene" ) {
 # feat==gene
   if ( !is.null(opt$annotation) ) {
     annot.table <- load.annot(opt$annotation)
-    if ( nrow(annot.table)==0 ) {
+    if ( ! is.null(annot.table) && nrow(annot.table)==0 ) {
       annot.table <- NULL
     }
   }
