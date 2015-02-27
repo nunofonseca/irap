@@ -1,0 +1,229 @@
+#!/bin/bash
+VERSION=1
+#irap_single_lib -1 fastq_file [-2 fastq_file2] -c conf  [-s strand (first,second,both)] -m MEM -t threads -i irap_options [-0] [-h]
+f1=
+f2=
+conf=
+strand=both
+mem=4000000000
+threads=1
+irap_options=
+do_stage0=no
+#
+function print_usage {
+cat <<EOF
+iRAP wrapper to process a single library
+Usage: irap_single_lib -1 fastq_file [-2 fastq_file2] -c irap.configuration  [-s strand (first,second,both)] [-m MEM] [-t threads] [-i irap_options] [-0] [-h]
+
+-0  - should be executed once for each
+species/genome/annotation to generate the indexes and other files
+necessary for the analysis.
+
+-m MEM - value in bytes
+
+
+EOF
+}
+
+
+function pinfo { 
+    echo "[INFO: $*]"
+}
+
+function perror { 
+    echo "[ERROR: $*]" > /dev/stderr
+}
+
+
+function get_fileprefix {
+    filename=`basename $1`
+    filepref=`echo $filename|sed "s/.fastq.*//"`
+    echo $filepref
+}
+
+
+# two levels - 
+# L1: ~1.7K folders
+function get_folder {
+    filename=`basename $1`
+    filepref=`get_fileprefix $1`
+    md5=`echo $filename|md5sum`
+    fl=`echo $md5|cut -b 1,2`
+    echo $fl/$filepref
+}
+
+function get_data_dir {
+    # lookup in the conf file
+    # 
+    d=`echo $irap_options|grep "data_dir="`
+    if [ "$d-" != "-" ]; then
+	d=`echo $irap_options|sed -E "s/.*\s?data_dir=([^\s]+).*/\1/"`
+    else
+	d=`grep -E "^\s*data_dir=" $conf | cut -f 2 -d\=`
+	if [ "$d-" == "-" ]; then
+	    # check if it is already defined
+	    if [ "$data_dir-" == "-" ]; then
+		perror "Unable to find iRAP's data directory"
+		exit 1
+	    fi
+	fi
+    fi
+    echo $d
+}
+
+function run_AND_timeIt {
+    label=$1
+    file=$2
+    shift 2
+    /usr/bin/time -o $file -a --format "$label\t%E\t%M\t%D" $*
+}
+################################################
+# 
+while getopts "1:2:c:s:m:t:i:h0"  Option
+do
+    case $Option in
+
+	0 ) do_stage0=yes;;
+        1 ) f1=$OPTARG;;
+        2 ) f2=$OPTARG;;# send all output to a log file
+        c ) conf=$OPTARG;;# send all output to a log file
+	s ) strand=$OPTARG;;# send all output to a log file
+	m ) mem=$OPTARG;;
+	i ) irap_options=$OPTARG;;
+        h ) print_usage; exit;;
+    esac
+done
+
+if [ "$f1-" == "-" ]; then
+    print_error "ERROR: -1 parameter not provided" 
+    print_usage
+    exit 1
+fi
+
+if [ "$conf-" == "-" ]; then
+    print_error "ERROR: -c parameter not provided" 
+    print_usage
+    exit 1
+fi
+
+# Check if the files exist
+if [ ! -e $f1 ] ; then
+    perror "File $f1 not found"    
+    exit 1
+fi
+
+if [ "$f2-" != "-" ] && [ ! -e $f2] ; then
+    perror "File $f1 not found"    
+    exit 1
+fi
+
+
+if [ ! -e $conf ] ; then
+    perror "File $f1 not found"    
+    exit 1
+fi
+
+set -e 
+
+
+fp_f1=`readlink -f $f1`
+f1_bn=`basename $f1`
+if [ "$f2-" == "-" ]; then
+    fp_f2=
+else
+    fp_f2=`readlink -f $f2`
+    f2_bn=`basename $f2`
+fi
+
+###############################################################
+# place the tarball in the right folder
+DATA_DIR=`get_data_dir`
+pinfo "Data dir.=$DATA_DIR"
+folder=`get_folder $f1`
+
+
+TARGET_DIR=$DATA_DIR/raw_data/single_file/$folder
+
+mkdir -p $TARGET_DIR
+
+
+# put the fastq files in the "expected" folder
+pushd $TARGET_DIR > /dev/null 
+pinfo "Unpacking fastq files to $TARGET_DIR"
+if [ -e `basename $f1` ]; then
+    pinfo "WARNING: symlink in $TARGET_DIR already exists..."
+    rm `basename $f1`    
+fi
+ln -s $fp_f1 .
+rp_f2=
+if [ "$f2-" != "-" ]; then
+    ln -s $fp_f2 .
+    rp_f2=$folder/$f2_bn
+fi
+pinfo "FASTQ files in place"
+popd > /dev/null 
+
+# run fastq_info on the file
+pinfo "Validating FASTQ files..."
+pinfo "FASTQ files: $f1 $f2"
+# Move to the raw data top-level folder
+pushd $DATA_DIR/raw_data/single_file/ >/dev/null
+run_AND_timeIt "fastqInfo" `get_fileprefix $f1`.time time fastq_info.sh  $folder/$f1_bn $rp_f2  > $folder/$f1_bn.info.tmp && mv $folder/$f1_bn.info.tmp $folder/$f1_bn.info
+if [ $? != 0 ] ; then
+    perror "FASTQ validation failed"
+    exit 1
+fi
+pinfo "Validation...done."
+libs=`grep -E "^#(se|pe)=" $folder/$f1_bn.info|sed "s/#//"`
+libname=`echo $libs|cut -f 2 -d=`
+# Add strand information
+echo ${libname}_strand=$strand >> $folder/$f1_bn.info
+pinfo "Lib. details: $DATA_DIR/$folder/$f1_bn.info"
+sed -i -E "s/^#(se|pe)=/\1=/" $folder/$f1_bn.info		
+# look for the analysis id in the metadata file
+echo "${libname}_rgid=" >> $folder/$f1_bn.info		
+popd 
+INFO_FILE=$TARGET_DIR/$f1_bn.info
+########
+# Check if stage0 is ok
+irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE  $irap_options max_mem=$mem max_threads=$threads stage0 -n -q
+if [ $? !=  0 ]; then
+    if [ $do_stage0=="yes" ]; then
+	perror "Stage0 incomplete - use -0 to run stage0"
+	exit 1
+    else
+	pinfo "Warning: running iRAP stage0"
+    fi
+fi
+pinfo "Aligning data..."
+run_AND_timeIt "iRAP" `get_fileprefix $f1`.time  irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE $irap_options max_mem=$mem max_threads=$threads raw_folder=single_file
+if [ $? != 0 ]; then
+    perror "iRAP failed"
+    exit 1
+fi
+pinfo "Aligning data...complete."
+
+
+tdir=`dirname $f1`
+fileprefix=`get_fileprefix $f1`
+pinfo "Copying final files to $tdir"
+
+# QC report
+# test1/report/riq/1f/f1/f1.csv
+
+# BAM
+# test1/tophat1/1f/f1/lf1.se.hits.byname.bam
+BAM=`irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE $irap_options print_stage2_files|tail -n 1`
+if [ ! -e "$BAM" ]; then
+    perror "Ooops: $BAM not found"
+    exit 1
+fi
+mv $BAM $tdir/$f1_bn.bam
+
+# Quantification
+TSVs=`irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE $irap_options print_stage3_files|tail -n 1`
+mv $TSVs $tdir
+# 
+# test1/tophat1/htseq2/genes.rpkm.deseq.tsv.tmp
+pinfo "Files in $tdir"
+exit 0
