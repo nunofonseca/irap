@@ -49,13 +49,14 @@ endef
 
 # 1 - exp name
 define set_GSE_HTML_FILES=
-$(eval override GSE_HTML_FILES:=$(subst $(name)/,$(name)/report/,$(foreach d,$(call de_dirs,$(1)),$(subst .tsv,.html,$(call quiet_ls,$(d)/*.gse.*.tsv))))) $(GSE_HTML_FILES)
+$(eval override GSE_HTML_FILES:=$(subst $(name)/,$(name)/report/,$(foreach d,$(call de_dirs,$(1)),$(foreach c,$(contrasts),$(subst .tsv,.html,$(call quiet_ls,$(d)/$(c)*.gse.*.tsv))))) $(GSE_HTML_FILES)
 endef
 
 
 # 1 - exp name
+# include only 'valid' contrasts
 define set_DE_HTML_FILES=
-$(eval override  DE_HTML_FILES=$(subst $(name)/,$(name)/report/,$(foreach d,$(call de_dirs,$(1)),$(subst .tsv,.html,$(call quiet_ls,$(d)/*_de.tsv)))))
+$(eval override  DE_HTML_FILES=$(subst $(name)/,$(name)/report/,$(foreach d,$(call de_dirs,$(1)),$(foreach c,$(contrasts),$(subst .tsv,.html,$(call quiet_ls,$(d)/$(c)*_de.tsv))))))
 endef
 
 # mapper quant raw|nlib|rpkm gene|exon|trans
