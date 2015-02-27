@@ -42,7 +42,7 @@ def_browsing=n
 ifndef browsing
 browsing=$(def_browsing)
 endif
-sas
+
 #ex. $(call rep_browse,dep1 ...) 
 define rep_browse=
 $(if $(subst y,,$(browsing)),,$(1))
