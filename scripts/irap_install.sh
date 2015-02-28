@@ -1133,7 +1133,7 @@ function R3_packages_install {
 repo<-"$CRAN_REPO"
 packages2install<-c("multicore","parallel","intervals","gclus",'R2HTML',"agricolae",
              "optparse","brew","reshape","gtools","gdata","caTools",
-             "sfsmisc","gplots","lattice")
+             "sfsmisc","gplots","lattice","data.table")
 
 for (p in packages2install ) {
    install.packages(p,repo=repo)
