@@ -53,8 +53,8 @@ pdebug.enabled <- opt$debug
 
 pdebug("TSVFILE=",opt$tsv_file)
 
-x <- read.tsv(opt$tsv_file,header=F)
-colnames(x)<-c("gene","n.isoforms","gene.reads","isoforms","isoforms.expr","genes.expr")
+x <- read.table(opt$tsv_file,header=F,sep="\t",comment.char="",fill=T,nrows=5000000,col.names=c("gene","n.isoforms","gene.reads","isoforms","isoforms.expr","genes.expr"))
+
 pdebug("data loaded")
 
 #
