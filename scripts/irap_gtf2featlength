@@ -83,15 +83,18 @@ if ( sum(!colsOfInterest %in% colnames(gtf)) > 0 ) {
   q(status=1)
 }
 gtf <- gtf[,colsOfInterest]
-
+gtf <- gtf[gtf$feature=="exon",]
+pinfo("Using ",nrow(gtf)," exons")
 # compute the lengths
 pinfo("Computing length of genes...")
 gene.length  <- get.gene.length.from.gtf(gtf)
+print(head(gene.length))
 pinfo("Computing length of transcripts...")
 trans.length <- get.transcript.length.from.gtf(gtf)
+print(head(trans.length))
 pinfo("Computing length of exons...")
 exon.length  <- get.exon.length.from.gtf(gtf)
-
+print(head(exon.length))
 # save as Rdata files
 out.file <- paste(opt$out,".Rdata",sep="")
 save(gene.length,trans.length,exon.length,file=out.file)
