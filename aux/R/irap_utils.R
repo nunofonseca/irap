@@ -209,22 +209,23 @@ get.gene.length.from.gtf.file <- function(gtf.file,filter.biotype=NULL,length.mo
 ## }
 
 get.gene.length.from.gtf <- function(gtf,filter.biotype=NULL,length.mode="union.exons") {
-  # TODO: validate gtf
-  # protein coding
   library(data.table)
   dt <- as.data.table(gtf)
 
   if ( !is.null(filter.biotype) ) {
     dt<-subset(dt,gene_biotype==filter.biotype)
   }  
-  dt<-subset(dt,feature=="exon",c("feature","gene_id","start","end"))
+  dt<-subset(dt,feature=="exon",c("feature","gene_id","start","end"))  
   setkey(dt,"gene_id")
 
-  suppressPackageStartupMessages(library(parallel))
-  # compute the length for each exon
   gene.ids <- unique(dt$gene_id)
+  #glen <-unlist(mclapply(x,FUN=pgenes.length,gene.ids,i2p,dt=dt,mode=length.mode,exons.only=TRUE))
   #pinfo(gene.ids)
-  glen <-mclapply(gene.ids,FUN=get.gene.length,gtf.data=dt,mode=length.mode,exons.only=TRUE)
+  pget.gene.length <- function(gene.id) {
+    return(get.gene.length(gene.id,gtf.data=dt,mode=length.mode,exons.only=TRUE))
+  }
+  gc()
+  glen <- unlist(mcMap(pget.gene.length,gene.ids),recursive=FALSE)
   names(glen) <- gene.ids
   glen  
 }
@@ -239,8 +240,9 @@ get.gene.length <- function(gene.id,gtf.data,mode="sum.exons",lim=+Inf,do.plot=F
     dt <- gtf.data
   }
   dt <- dt[list(gene.id)]
+  #print(gene.id)
   #print(nrow(dt))
-  #print(dt)
+  #print(head(dt))
   start.end <- as.matrix(subset(dt,,c("start","end"),drop=FALSE))
   #print(start.end)
   #gene.ids <- unique(dt$gene_id)
@@ -364,7 +366,7 @@ get.transcript.length.from.gtf <- function(gtf,filter.biotype=NULL) {
   # compute the length for each transcript
   gene.ids <- unique(dt$gene_id)
   
-  get.gene.transcripts.length <- function(gene.id,dt) {
+  get.gene.transcripts.length <- function(gene.id) {
     gtf <- dt[list(gene.id),drop=FALSE]
     transcript.ids <- unique(gtf$transcript_id)
     transcript.ids <- transcript.ids[!is.na(transcript.ids)]
@@ -373,7 +375,8 @@ get.transcript.length.from.gtf <- function(gtf,filter.biotype=NULL) {
     names(tlen) <- transcript.ids
     return(tlen)
   }
-  tlen <- unlist(mclapply(gene.ids,get.gene.transcripts.length,dt))
+  gc()
+  tlen <- unlist(mcMap(get.gene.transcripts.length,gene.ids),recursive=FALSE)
   dt <- NULL
   return(tlen)
 }
