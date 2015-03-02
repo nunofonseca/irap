@@ -40,11 +40,12 @@ bam_rm_NH.o: bam_rm_NH.c
 ../fastq_utils/hash.o: ../fastq_utils/hash.c ../fastq_utils/hash.h
 	gcc $(CFLAGS) -c $<
 
-tests: run_bam_fix_tests
+tests: run_bam_fix_tests run_bamRindex_tests
 
 run_bam_fix_tests: tests/bam_fix_NH_test1.bam tests/bam_fix_NH_test2.bam tests/bam_fix_NH_test3.bam
 	for f in $^; do ./bam_fix_NH $$f /dev/null >/dev/null; done && echo "bam_fix_nh OK"
 
-# TODO
+# Initial tests
+# TODO: improve this
 run_bamRindex_tests: tests/bam_fix_NH_test1.bam tests/bam_fix_NH_test2.bam tests/bam_fix_NH_test3.bam
 	for f in $^; do ./bamRindex $$f; done && echo "bamRindex OK"
