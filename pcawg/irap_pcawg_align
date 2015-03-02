@@ -164,6 +164,6 @@ if [ "$nbams" ==  "1" ]; then
 fi
 # Merge the BAM files
 pinfo "Merging BAMS: $BAMS"
-run_docker "samtools merge -f -c $id.$MAPPER.v$VERSION.bam $BAMS"
+run_docker "samtools merge -f  $id.$MAPPER.v$VERSION.bam $BAMS"
 pinfo "Final BAM:  $id.$MAPPER.v$VERSION.bam"
 exit 0
