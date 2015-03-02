@@ -1,6 +1,6 @@
 #; -*- mode: Makefile;-*-
 # =========================================================
-# Copyright 2012-2014,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+# Copyright 2012-2015,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
 #
 # This file is part of iRAP.
 #
@@ -74,6 +74,28 @@ define run_cuffdiff=
 endef
 
 
+#*****************
+# Stringtie
+#*****************
+ifndef stringtie_params
+	stringtie_params=-s 190000000
+endif
+
+stringtie_params+= 
+
+# params
+# 1- bam file
+# 2- library name 
+# Use irap_mapper.sh for now to set up the environment
+# output:
+# $(2).t_data.ctab - fpkm per transcript|gene
+# $(2).gtf - fpkm per transcript/exon
+# use -l CUFF to reuse the cufflinks code
+define run_stringtie=
+	irap_wrapper.sh stringtie stringtie -p $(max_threads) -l CUFF -o $(call lib2quant_folder,$(2))$(2).tmp.gtf -B $(call lib2quant_folder,$(2))$(2).tmp -C $(call lib2quant_folder,$(2))$(2).cov.tmp.gtf  -G $(gtf_file_abspath)  $(stringtie_params) $(1) && rename .tmp. . $(call lib2quant_folder,$(2))$(2)*.tmp*
+endef
+
+
 ###########################################################
 #
 ifndef ireckon_params=
@@ -90,7 +112,7 @@ define run_ireckon=
 	irap_wrapper.sh ireckon ireckon $(1)  $(2) -o $(name)/$(mapper)/ireckon/$(2) $(ireckon_params) &&\
 	mv $(name)/$(mapper)/ireckon/$(2)/result.gtf $(5)
 #output_dir/
-# $(call ireckon_lib_option) $(gtf_file_abspath) $(cufflinks1_params)
+
 endef
 
 
@@ -523,3 +545,47 @@ endif
 	@$(call empty_file,$@)
 
 
+#################################################
+# Stringtie
+define make-stringtie-quant-rule=
+$(call lib2quant_folder,$(1))$(3).stringtie.gtf: $(call lib2bam_folder,$(1))$(3).hits.bam
+	mkdir -p $(call lib2quant_folder,$(1))
+	$(call run_stringtie,$(call lib2bam_folder,$(1))$(3).hits.bam,$(1),$(call lib2quant_folder,$(1))$(3).stringtie.isoforms.fpkm_tracking,$(call lib2quant_folder,$(1))$(3).stringtie.genes.fpkm_tracking)
+
+
+$(call lib2quant_folder,$(1))$(3).transcripts.raw.$(quant_method).tsv: $(call lib2quant_folder,$(1))$(3).stringtie.gtf
+	$$(call p_info,Warning! Stringtie produces FPKMS and does not provide counts. Generating pseudo counts $$@.)
+#	$$(call stringtie2counts_t,$(3),$$(@D),$$^,$(quant_method))
+
+$(call lib2quant_folder,$(1))$(3).genes.raw.$(quant_method).tsv: $(call lib2quant_folder,$(1))$(3).stringtie.gtf
+	$$(call p_info,Warning! Stringtie produces FPKMS and does not provide counts. Generating pseudo counts $$@.)
+#	$$(call stringtie2counts_g,$(3),$$(@D),$$^,$(quant_method))
+
+endef
+
+# generate the rules for stringtie
+ifeq ($(patsubst stringtie%,,$(quant_method)),)
+$(foreach l,$(se),$(eval $(call make-stringtie-quant-rule,$(l),$(quant_method),$(l).se,gene)))	
+$(foreach l,$(pe),$(eval $(call make-stringtie-quant-rule,$(l),$(quant_method),$(l).pe,gene)))
+
+# stringtie* specific rules
+$(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).tsv)
+	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) )  > $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/$(quant_method)/%xons.raw.$(quant_method).tsv: 
+	$(call p_info,Warning! Stringtie produces FPKMS and does not provide counts. Generating empty file $@.)
+	@$(call empty_file,$@)
+
+$(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).tsv) 
+	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) ) > $@.tmp && mv $@.tmp $@
+
+# Run Cuffmerge on all your assemblies to create a single merged transcriptome annotation
+$(name)/$(mapper)/$(quant_method)/$(name).merged.gtf:  $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.cuff.gtf) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.cuff.gtf) $(name)/$(mapper)/$(quant_method)/$(name).assemblies.txt
+	$(call run_cuffmerge,$(quant_method),$@)
+
+# cuffmerge' assemblies.txt - lists the assembly file for each sample. 
+$(name)/$(mapper)/$(quant_method)/$(name).assemblies.txt: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.cuff.gtf) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.cuff.gtf)
+	rm -f $@
+	touch $@.tmp && for f in $^; do echo $$f >> $@.tmp ; done && mv $@.tmp $@
+
+endif
