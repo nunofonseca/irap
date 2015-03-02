@@ -218,6 +218,7 @@ if [ ! -e "$BAM" ]; then
     perror "Ooops: $BAM not found"
     exit 1
 fi
+
 mv $BAM $tdir/$f1_bn.bam
 
 # Quantification
