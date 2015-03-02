@@ -646,7 +646,7 @@ function mappers_install {
    gsnap_install 
    osa_install
    star_install
-# mapsplice_install
+   mapsplice_install
 }
 
 ########################
