@@ -603,10 +603,10 @@ int main(int argc, char **argv ) {
   gzFile fd_fix=NULL;
 
   if (argc-nopt ==3) {
-    is_paired_data=1;
+    is_paired_data=TRUE;
     //fprintf(stderr,"%d %d %d %s\n",argc,nopt,argc-nopt,argv[2+nopt]);
     if ( !strncmp(argv[2+nopt],"pe",2) ) {
-      is_interleaved=1;
+      is_interleaved=FALSE;
     } 
     //else  {
     //  fd2=open_fastq(argv[2+nopt]);
