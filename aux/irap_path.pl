@@ -33,7 +33,7 @@ go:-
 	halt.
 
 handle_args([File]):-!,
-    start_graph(File).
+		     start_graph(File).
 
 handle_args([M,Q,N,D]):-!,
     (valid_combination([M,Q,N,D,none,no])->
@@ -127,10 +127,10 @@ type2label(gse, 'GSE','style=filled; color=lightgrey;labeljust=r;').
 
 %node(+nodeType,NodeName,-Label,-Style)
 node(m,N,N,'[color=salmon2,style=filled]'):-
-    m(N,_,_),
+    m(N,_,_,_Strand),
     not N==none.
 node(qr,N,N,'[color=coral3,style=filled]'):-
-    qr(N,_,_),
+    qr(N,_,_,_),
     not N==scripture,
     not N==basic,
     not N==none.
@@ -148,21 +148,25 @@ node(gse,GSE,GSE,Style):-
     atom_concat(['[color=lightsteelblue1,style=filled,label=',GSE,']'],Style).
 
 
+
 save_nodes:-
-    member(T,[m,qr,de,gse]),
+    (all_mappers(Ls),T=m;all_quant(Ls),T=qr;all_quant_norm(Ls),T=de;all_de(Ls),T=de;Ls=[piano],T=gse),
     (start_cluster(T);end_cluster,fail),
     graph_format('~w [style=invis]~n',[T]),
-    all(Label,node(T,_NodeName,Label,_),Ls),
+    format('Nodes: ~w: ~w~n',[T,Ls]),
     member(L,Ls),
-    once(node(T,N,L,Attrs)),
+    node(T,N,L,Attrs),
     graph_format('~w ~w;~n',[N,Attrs]),
     fail.
 save_nodes.
 
 save_edges:-
-    all((QR1,Map1),(m(Map1,_,_,_),qr(QR1,m(Map1),_)),L),
-    member((QR,Map),L),
-    qr(QR,m(Map),_),
+    all_mappers(Ls),
+    all_quant(Qs),
+    member(Map,Ls),
+    member(QR,Qs),
+    once(m(Map,_,_,_)),
+    qr(QR,m(Map),_,_),
     not QR='none',
     not QR==scripture,
     not QR==basic,
@@ -170,19 +174,19 @@ save_edges:-
     fail.
 
 save_edges:-fail,
-    all((QN1,QR1),(qr(QR1,_,_),qn(QN1,qr(QR1),_)),L),
+    all((QN1,QR1),(qr(QR1,_,_,_),qn(QN1,qr(QR1),_,_)),L),
     format('~w~n',L),
     member((QN,QR),L),
-    qn(QN,qr(QR),_),
+    qn(QN,qr(QR),_,_),
     once(node(qn,QN,QNL,_)),
-    once(node(qr,QR,QRL,_)),
+    once(node(qr,QR,QRL,_,_)),
     not QNL='none',
     not QRL='none',
     graph_format('~w -> ~w;~n',[QRL,QNL]),
     fail.
 
 save_edges:-fail,
-    all((DE1,QR1,QN1),(qr(QR1,_,_),qn(QN1,qr(QR1),_),de(DE1,(_,(qr(QR1),qn(QN1))),_)),L),
+    all((DE1,QR1,QN1),(qr(QR1,_,_,_),qn(QN1,qr(QR1),_),de(DE1,(_,(qr(QR1),qn(QN1))),_)),L),
     member((DE,QR,QN),L),
     de(DE,(qr(QR),qn(QN)),_),
     graph_format('~w -> ~w;~n',[QR,DE]),
@@ -190,19 +194,27 @@ save_edges:-fail,
 
 
 save_edges:-
-    all((DE1,QR1),(qr(QR1,_,_),de(DE1,(qr(QR1),_),_)),L),
-    member((DE,QR),L),
-    once(node(qr,QRE,QR,_)),
-    once(node(de,NDE,DE,_)),
-    graph_format('~w -> ~w;~n',[QRE,NDE]),
+    all_quant(Qs),
+    all_de(DEs),
+    member(QR,Qs),
+    not QR=='basic',
+    not QR=='none',
+    member(DE,DEs),
+    not DE=='none',
+    once(qr(QR,_,_,_)),
+    once(de(DE,(qr(QR),_),_)),
+    graph_format('~w -> ~w;~n',[QR,DE]),
     fail.
 
 save_edges:-
-    all((DE1,GSE1),(de(DE1,_,_),gse(GSE1,de(DE1),_)),L),
-    member((DE,GSE),L),
-    %once(node(de,DE,_,_)),
-    %once(node(gse,GSE,de(DE),_)),
-    not GSE==none,
+    GSEs=[piano],
+    all_de(DEs),
+    member(GSE,GSEs),
+    not GSE=='none',
+    member(DE,DEs),
+    not DE=='none',
+    once(de(DE,_,_)),
+    once(gse(GSE,de(DE),_)),
     graph_format('~w -> ~w;~n',[DE,GSE]),
     fail.
 
@@ -233,6 +245,7 @@ m('star',_,'',no).
 m('osa',_,'',no).
 m('mapsplice',_,'',no).
 
+all_mappers(X):-all(M,m(M,_,_,_),X).
 all_quant([htseq1,htseq2,basic,flux_cap,cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,nurd,stringtie,stringtie_nd]).
 all_quant_norm([flux_cap,cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,none,deseq]).
 all_de([deseq,edger,voom,cuffdiff1,cuffdiff2,cuffdiff1_nd,cuffdiff2_nd,none]).
