@@ -1,5 +1,5 @@
 
-IRAP_VERSION=0.4.3d
+IRAP_VERSION=0.6.0
 
 # Create a docker container
 iRAP.docker.tar.gz: ../Makefile iRAP.docker
