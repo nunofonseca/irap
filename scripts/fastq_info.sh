@@ -11,6 +11,9 @@ if [ $ret != 0 ]; then
     echo "ERROR" > /dev/stderr
     exit $ret
 fi
+if [ `echo "$A"|grep -c -i "Error" ` != 0 ]; then
+    exit 1
+fi
 
 f1=$1
 let nfiles=`echo $* | wc -w`
