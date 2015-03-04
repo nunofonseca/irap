@@ -73,9 +73,13 @@ function get_data_dir {
 
 function run_AND_timeIt {
     label=$1
-    file=$2
+    logfile=$2
     shift 2
-    /usr/bin/time -o $file -a --format "$label\t%E\t%M\t%D" $*
+    datetime=`date "+%F %R"`
+    #echo "CMD: $*" > /dev/stderr
+    # label\tTime elapsed\tTime leapsed(Seconds)\taximum resident set size\t
+    /usr/bin/time -o $logfile -a --format "$label\t%E\t%e\t%M\t$datetime" $*
+    #echo "EXIT:$?" > /dev/stderr
 }
 ################################################
 # 
@@ -135,18 +139,19 @@ else
     f2_bn=`basename $f2`
 fi
 
-###############################################################
+set -e
+
+################################################
 # place the tarball in the right folder
 DATA_DIR=`get_data_dir`
 pinfo "Data dir.=$DATA_DIR"
 folder=`get_folder $f1`
 
-
 TARGET_DIR=$DATA_DIR/raw_data/single_file/$folder
 
 mkdir -p $TARGET_DIR
 
-
+###################################################
 # put the fastq files in the "expected" folder
 pushd $TARGET_DIR > /dev/null 
 pinfo "Unpacking fastq files to $TARGET_DIR"
@@ -160,15 +165,27 @@ if [ "$f2-" != "-" ]; then
     ln -s $fp_f2 .
     rp_f2=$folder/$f2_bn
 fi
+
 pinfo "FASTQ files in place"
 popd > /dev/null 
 
+################################################
+tdir=$PWD/out/`dirname $f1`
+fileprefix=`get_fileprefix $f1`
+pinfo "Final files will be placed in $tdir"
+mkdir -p $tdir
+################################################
+# TSV with the time and memory used
+time_log_file=$tdir/`get_fileprefix $f1`.time
+pinfo "Time log file in $time_log_file"
+touch $time_log_file
+################################################
 # run fastq_info on the file
 pinfo "Validating FASTQ files..."
 pinfo "FASTQ files: $f1 $f2"
 # Move to the raw data top-level folder
 pushd $DATA_DIR/raw_data/single_file/ >/dev/null
-run_AND_timeIt "fastqInfo" `get_fileprefix $f1`.time time fastq_info.sh  $folder/$f1_bn $rp_f2  > $folder/$f1_bn.info.tmp && mv $folder/$f1_bn.info.tmp $folder/$f1_bn.info
+run_AND_timeIt "fastqInfo" $time_log_file time fastq_info.sh  $folder/$f1_bn $rp_f2  > $folder/$f1_bn.info.tmp && mv $folder/$f1_bn.info.tmp $folder/$f1_bn.info
 if [ $? != 0 ] ; then
     perror "FASTQ validation failed"
     exit 1
@@ -196,7 +213,7 @@ if [ $? !=  0 ]; then
     fi
 fi
 pinfo "Aligning data..."
-run_AND_timeIt "iRAP" `get_fileprefix $f1`.time  irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE $irap_options max_mem=$mem max_threads=$threads raw_folder=single_file
+run_AND_timeIt "iRAP" $time_log_file  irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE $irap_options max_mem=$mem max_threads=$threads raw_folder=single_file
 if [ $? != 0 ]; then
     perror "iRAP failed"
     exit 1
@@ -204,9 +221,6 @@ fi
 pinfo "Aligning data...complete."
 
 
-tdir=`dirname $f1`
-fileprefix=`get_fileprefix $f1`
-pinfo "Copying final files to $tdir"
 
 # QC report
 # test1/report/riq/1f/f1/f1.csv
