@@ -151,7 +151,7 @@ TARGET_DIR=$DATA_DIR/raw_data/single_file/$folder
 
 mkdir -p $TARGET_DIR
 
-###################################################
+################################################
 # put the fastq files in the "expected" folder
 pushd $TARGET_DIR > /dev/null 
 pinfo "Unpacking fastq files to $TARGET_DIR"
