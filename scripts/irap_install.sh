@@ -567,7 +567,7 @@ function star_install {
     tar xzvf $STAR_FILE
     pushd STAR-STAR_$STAR_VERSION
     mkdir -p $BIN_DIR/star/bin
-    rm -f $BIN_DIR/star/bin/star $BIN_DIR/star/bin/STAR
+    rm -rf $BIN_DIR/star/bin/star/* $BIN_DIR/star/bin/STAR/*
     cp bin/Linux_x86_64_static/STAR $BIN_DIR/star/bin/star
     cp bin/Linux_x86_64_static/STAR $BIN_DIR/star/bin/STAR
 #    cp STARstatic $BIN_DIR/star/bin/star
