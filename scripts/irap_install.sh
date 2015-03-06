@@ -1010,7 +1010,7 @@ function perl_packages_install {
     perl_cpan_install
     pinfo "Installing perl packages..."
     #    Test::Requisites
-    PACKAGES="Algorithm::Munkres     Array::Compare    Math::Random    Sort::Naturally    Sub::Install Sub::Uplevel     Params::Util    List::MoreUtils    Math::Round    DB_File    Test     Test::Fatal    Test::Run    Test::NoWarnings  Test::Exception  Error    XML::Parser    XML::Simple    XML::SAX    XML::SAX::Writer    XML::Writer JSON Hash::Merge  Devel::Size  PerlIO::locale Compress::Raw::Zlib Locale::Maketext::Lexicon Build GD Module::CoreList ExtUtils::MakeMaker"    
+    PACKAGES="Algorithm::Munkres     Array::Compare    Math::Random    Sort::Naturally    Sub::Install Sub::Uplevel     Params::Util    List::MoreUtils    Math::Round    DB_File    Test     Test::Fatal    Test::Run    Test::NoWarnings  Test::Exception  Error    XML::Parser    XML::Simple    XML::SAX    XML::SAX::Writer    XML::Writer JSON Hash::Merge  Devel::Size  PerlIO::locale Compress::Raw::Zlib Locale::Maketext::Lexicon Build Module::CoreList ExtUtils::MakeMaker"    
 
     set -e
     for p in $PACKAGES; do
@@ -1020,6 +1020,8 @@ function perl_packages_install {
     set -e
     # the tests fail...
     cpanm -n  -i Heap::Simple::Perl
+    # 
+    cpanm -n  -i L/LD/LDS/GD-2.50.tar.gz
     # SAMTOOLS needs to be recompiled :(
     mkdir -p $IRAP_DIR/tmp
     pushd $IRAP_DIR/tmp
@@ -1133,7 +1135,7 @@ function R3_packages_install {
     pinfo "Installing R-3.x packages..."
     R3 --no-save <<EOF
 repo<-"$CRAN_REPO"
-packages2install<-c("multicore","parallel","intervals","gclus",'R2HTML',"agricolae",
+packages2install<-c("intervals","gclus",'R2HTML',"agricolae",
              "optparse","brew","reshape","gtools","gdata","caTools",
              "sfsmisc","gplots","lattice","data.table")
 
