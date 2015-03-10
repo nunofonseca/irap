@@ -28,6 +28,7 @@ process.cmdline.args <- function(cmd) {
   
   usage <- paste(cmd," --tsv file --min min.reads --contrasts contrast.def --labels label1;label2;... --annotation tsv.file [--annot-genes-only] --out outprefix",sep="")
   option_list <- list(
+    make_option(c("--independent-filtering"),action="store_true",dest="indfilter",default=FALSE,help="Use independent filtering (DESeq2 only) [default %default]"),
     make_option(c("-m", "--min"), type="character", dest="min_count", default=NULL,help="exclude genes with counts < min"),
     make_option(c("--contrasts"), type="character", dest="contrasts", default=NULL,help="contrasts definition."),
     make_option(c("--tech-rep"), type="character", dest="tech_replicates", default=NULL,help="technical replicates. E.g., 'L1R1,L1R2;L2R1,L2R2,L2R3'"),
