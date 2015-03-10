@@ -84,8 +84,12 @@ $(info *)
 
 #***********************
 # Name of the experiment
-ifndef file.list
- $(call p_error, missing argument file.list!)
+ifndef file_list	
+ifdef file.list
+file_list=$(file.list)
+else
+ $(call p_error, missing argument file_list!)
+endif
 endif
 
 # avoid passing the list of files as an argument (size limitations)
