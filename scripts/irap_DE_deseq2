@@ -1,0 +1,147 @@
+#!/usr/bin/env Rscript3
+# =========================================================
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#    $Id: irap.txt Nuno Fonseca Tue Jan 29 23:13:16 2013$
+# =========================================================
+
+###############################################################
+suppressPackageStartupMessages(library("optparse"))
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+#
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+source(paste(IRAP.DIR,"aux/R","irap_de.R",sep="/"))
+
+cmd <- "irap_DE_deseq2"
+opt <- process.cmdline.args(cmd)
+pinfo("Parameters parsed.")
+
+if ( length(opt$labels.v) > 2 ) {
+  perror("irap_DE_deseq2 only supports pairwise comparisons!");
+  q(status=2);
+}
+system(paste("mkdir -p ",opt$out));
+data <- quant.load(opt$tsv_file)
+## debug
+pdebug.save.state("irap_DE_deseq2","1")
+## 
+data.f <- filter.read.counts.table(data,opt)
+data.f <- handle.tech.replicates(data.f,opt)
+
+#
+opt$conds <- map.conds2cols(opt$label2group,colnames(data.f))
+colData <- data.frame(Contrast=opt$conds)
+rownames(colData) <- colnames(data.f)
+## untreated or control should be first (use the labels...)
+# opt$labels.v[1] should appear first
+i1 <- which(colData$Contrast==opt$labels.v[1])
+i2 <- which(colData$Contrast!=opt$labels.v[1])
+colData <- rbind(colData[i1,,drop=FALSE],colData[i2,,drop=FALSE])
+
+#########################
+library(DESeq2)
+#Note:counts of technical replicates  have to be summed up into a single column
+
+#cds <- newCountDataSet(data.f,opt$conds)
+
+
+colData
+pinfo("Generating DESeq Dataset")
+ddsMat <- DESeqDataSetFromMatrix(countData = as.matrix(data.f),
+                                 colData = colData,
+                                 design = formula(~ Contrast))
+
+pinfo("Running DESeq")
+dds <- NULL
+try(dds<-DESeq(ddsMat))
+if(class(dds) == "try-error" || is.null(dds) ) {
+     perror("Ooops, DESeq2 failed...")
+     q(status=2)     
+}
+#colData(dds)
+
+pinfo("OK")
+
+#"rlog transformation". This replaced the VST in DESeq.  It transforms
+#the average of the genes across samples to a log2 scale but "pulls
+#in" those genes for which the evidence for strong fold changes is
+#weak due to low counts.
+# rlogTransformation( dds )
+
+# Independent filtering (option)
+# adjusted p-values of the genes that do not pass the test are set to NA
+# exclude tests that have no or little chance of showing significant evidence
+pinfo("Collecting results...")
+#opt$indfilter=T
+res<-results(dds,contrast=append("Contrast",opt$labels.v),independentFiltering=opt$indfilter)
+
+# sort
+res<-as.data.frame(res[order(res$padj),])
+
+#
+# column names are different from DESeq1
+# add baseMeanA and baseMeanB and id
+# add the id column
+id <- rownames(res)
+res <- cbind(id,as.data.frame(res))
+
+# normalized counts
+ncts <- counts(dds,normalized=TRUE)
+#
+#
+aCols <- which(colData$Contrast==opt$labels.v[1])
+bCols <- which(colData$Contrast!=opt$labels.v[2])
+baseMeanA <- rowMeans(ncts[,aCols])
+baseMeanB <- rowMeans(ncts[,bCols])
+res <- cbind(res,baseMeanA)
+res <- cbind(res,baseMeanB)
+res <- res[,c("id","baseMean","baseMeanA","baseMeanB","log2FoldChange","lfcSE","stat","pvalue","padj")]
+
+## annotate the gene list
+if ( !is.null(opt$annotation) && !is.na(opt$annotation)) {
+   res.annot <- res[order(res$pvalue),];
+   match.v  <- match(res.annot$id,opt$annot[,1]);
+   res.annot <- cbind(res.annot,opt$annot[match.v,])
+} else {
+   res.annot <- res;
+}
+
+res.annot <- res.annot[order(res.annot$padj),];
+
+save.de2tsv(res.annot,ofile.prefix=opt$out)
+# save the objects
+save(opt,res.annot,dds,data,data.f,file=paste(opt$out,"de.Rdata",sep="/"))
+quit(save="no",status=0)
+
+######################################
+irap_DE_deseq2_debug <- function(rdata.obj) {
+  load(rdata.obj,envir=.GlobalEnv)
+  pdebug.rdata()
+  source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+  library(DESeq2)
+}
+IRAP.DIR="/home/nf/Research/Projects/WIP/EREAP/irap"
+IRAP.DIR=getwd()
+Sys.setenv(IRAP_DIR=IRAP.DIR)
+rdata.obj="irap_DE_deseq2.Rdata"
+irap_DE_deseq2_debug("irap_DE_deseq2.Rdata")
