@@ -26,7 +26,7 @@ $(info * Atlas mode enabled)
 SETUP_DATA_FILES=$(feat_mapping_file)
 endif
 # Reduce the resolution of some images
-ATLAS_IMAGES2CONVERT=$(shell ls -1 $(name)/report/read_filtering_plot.png $(name)/report/mapping/$(mapper)*.png 2>/dev/null | grep -v orig.png | grep -v scaled.png )
+ATLAS_IMAGES2CONVERT=$(shell ls -1 $(name)/report/read_filtering_plot.png $(if $(call GEN_REPORT_QC_ONLY),,$(name)/report/mapping/$(mapper)*.png) 2>/dev/null | grep -v orig.png | grep -v scaled.png )
 ATLAS_SCALED_IMAGES=$(subst .png,.scaled.png,$(ATLAS_IMAGES2CONVERT))
 
 atlas_wrap_up: $(name)/atlas_html.tar.gz
@@ -39,7 +39,7 @@ atlas_wrap_up_clean:
 
 
 # TODO: add the plots for mapping...check if all files are there!
-ATLAS_REPORT_FILES=$(name)/report/qc.html  $(name)/report/qc.tsv $(name)/report/read_filtering_plot.png.eps $(if $(call GEN_REPORT_QC_ONLY),,$(name)/report/mapping/$(mapper).html  $(shell ls $(name)/report/mapping/$(mapper)*.png.eps)  $(name)/report/qc.html $(shell find $(name)/report/riq/ -name "fastqc_report.html" -print) $(shell find $(name)/report/riq/ -type d -name "Images"  -print) $(shell find  $(name)/report/riq/ -type d -name "Icons" -print)  $(name)/report/software.tsv $(name)/report/info.html $(name)/report/irap.conf $(ATLAS_IMAGES2CONVERT) $(ATLAS_SCALED_IMAGES))
+ATLAS_REPORT_FILES=$(name)/report/qc.html  $(name)/report/qc.tsv $(name)/report/read_filtering_plot.png.eps $(name)/report/software.tsv $(name)/report/info.html $(name)/report/irap.conf $(name)/report/qc.html $(shell find $(name)/report/riq/ -name "fastqc_report.html" -print) $(shell find $(name)/report/riq/ -type d -name "Images"  -print) $(shell find  $(name)/report/riq/ -type d -name "Icons" -print) $(ATLAS_IMAGES2CONVERT) $(ATLAS_SCALED_IMAGES)  $(if $(call GEN_REPORT_QC_ONLY),,$(name)/report/mapping/$(mapper).html  $(shell ls $(name)/report/mapping/$(mapper)*.png.eps))
 
 
 
