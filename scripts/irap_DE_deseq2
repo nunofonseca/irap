@@ -93,6 +93,9 @@ pinfo("OK")
 # exclude tests that have no or little chance of showing significant evidence
 pinfo("Collecting results...")
 #opt$indfilter=T
+if ( opt$indfilter ) {
+   pinfo("Independent filtering enabled")
+}
 res<-results(dds,contrast=append("Contrast",opt$labels.v),independentFiltering=opt$indfilter)
 
 # sort
@@ -110,9 +113,19 @@ ncts <- counts(dds,normalized=TRUE)
 #
 #
 aCols <- which(colData$Contrast==opt$labels.v[1])
-bCols <- which(colData$Contrast!=opt$labels.v[2])
-baseMeanA <- rowMeans(ncts[,aCols])
-baseMeanB <- rowMeans(ncts[,bCols])
+bCols <- which(colData$Contrast==opt$labels.v[2])
+#pinfo("A=",aCols)
+#pinfo("B=",bCols)
+if ( length(aCols) == 1 ) {
+  baseMeanA <- ncts[,aCols]
+} else {
+  baseMeanA <- rowMeans(ncts[,aCols])
+}
+if ( length(bCols) == 1 ) {
+   baseMeanB <- ncts[,bCols]
+} else {
+   baseMeanB <- rowMeans(ncts[,bCols])
+}
 res <- cbind(res,baseMeanA)
 res <- cbind(res,baseMeanB)
 res <- res[,c("id","baseMean","baseMeanA","baseMeanB","log2FoldChange","lfcSE","stat","pvalue","padj")]
