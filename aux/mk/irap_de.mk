@@ -51,6 +51,22 @@ irap_DE_deseq --tsv $(1) --min $(de_min_count) --contrasts "$(call get_contrast_
 endef
 
 #************
+# DESeq2
+#************
+# 1=counts file
+# 2=contrast
+# 3=de tsv file
+# TODO: include support for technical replicates
+ifndef deseq2_params
+deseq2_params=
+endif
+#--independent-filtering
+
+define run_deseq2=
+irap_DE_deseq2 --tsv $(1) --min $(de_min_count) --contrasts "$(call get_contrast_def,$(2))" --labels "$(call get_contrast_labels,$(2))" $(deseq2_params) --out $(3) $(call get_de_annot) $(call get_de_annot_genes_only)
+endef
+
+#************
 # edgeR
 #************
 
@@ -120,6 +136,11 @@ $(name)/$(mapper)/$(quant_method)/deseq/%.genes_de.tsv $(name)/$(mapper)/$(quant
 	$(call run_deseq,$<,$*,$(@D)/$*.deseq) && mv $(@D)/$*.deseq/de.tsv $(@D)/$*.genes_de.tsv && mv $(@D)/$*.deseq/de.Rdata $(@D)/$*.genes_de.Rdata
 
 #ex. irap_DE_deseq matrix_file.tsv  "colnameA,colnameB,colnameC;colnameD,colnameF" "grouplabel1,grouplabel2" oprefix [annot.file.tsv] [tech.replicates.def]
+
+# DESEQ2
+$(name)/$(mapper)/$(quant_method)/deseq2/%.genes_de.tsv $(name)/$(mapper)/$(quant_method)/deseq2/%.genes_de.Rdata: $(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv $(annot_tsv) 
+	$(call run_deseq2,$<,$*,$(@D)/$*.deseq2) && mv $(@D)/$*.deseq2/de.tsv $(@D)/$*.genes_de.tsv && mv $(@D)/$*.deseq2/de.Rdata $(@D)/$*.genes_de.Rdata
+
 
 # EDGER
 $(name)/$(mapper)/$(quant_method)/edger/%.genes_de.tsv $(name)/$(mapper)/$(quant_method)/edger/%.genes_de.Rdata: $(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv $(annot_tsv) 
