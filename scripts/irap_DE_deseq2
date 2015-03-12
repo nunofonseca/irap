@@ -98,8 +98,7 @@ if ( opt$indfilter ) {
 }
 res<-results(dds,contrast=append("Contrast",opt$labels.v),independentFiltering=opt$indfilter)
 
-# sort
-res<-as.data.frame(res[order(res$padj),])
+
 
 #
 # column names are different from DESeq1
@@ -129,6 +128,12 @@ if ( length(bCols) == 1 ) {
 res <- cbind(res,baseMeanA)
 res <- cbind(res,baseMeanB)
 res <- res[,c("id","baseMean","baseMeanA","baseMeanB","log2FoldChange","lfcSE","stat","pvalue","padj")]
+
+pinfo("Note: the log2FoldChange column contains 'shrunken' log2 foldchange. See DESeq2 documentation for more information.")
+# This has little effect on genes with high number of counts.
+
+# sort
+res<-as.data.frame(res[order(res$padj),])
 
 ## annotate the gene list
 if ( !is.null(opt$annotation) && !is.na(opt$annotation)) {
