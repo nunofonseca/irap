@@ -79,6 +79,7 @@ de_cuffdiff2=cuffdiff2
 de_cuffdiff1_nd=cuffdiff1
 de_cuffdiff2_nd=cuffdiff2
 de_deseq=DESeq
+de_deseq2=DESeq
 de_dexseq=DEXSeq
 de_bayseq=baySeq
 de_voom=baySeq
@@ -219,6 +220,12 @@ stringtie_analysis="Gene/transcript quantification"
 DESeq_citation=Anders, Simon, and Wolfgang Huber. "Differential expression analysis for sequence count data." Genome Biol 11, no. 10 (2010): R106.
 DESeq_bibtex=deseq.bib
 DESeq_analysis="Differential gene expression"
+
+
+####
+DESeq2_citation=Anders, Love MI, Huber W and Anders S (2014). "Moderated estimation of fold change and dispersion for RNA-seq data with DESeq2." Genome Biology, 15, pp. 550.
+DESeq2_bibtex=deseq2.bib
+DESeq2_analysis="Differential gene expression"
 
 ####
 edgeR_citation=Robinson, Mark D., Davis J. McCarthy, and Gordon K. Smyth. "edgeR: a Bioconductor package for differential expression analysis of digital gene expression data." Bioinformatics 26, no. 1 (2010): 139-140.

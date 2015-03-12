@@ -71,10 +71,10 @@ $(info * atlas_run mode (overriding some options))
 raw_folder=$(name)_$(species)
 # no need for annotation 
 annot_tsv=off
-de_method=deseq2
+de_method?=deseq2
 # deseq2 with independent filtering
 deseq2_params=--independent-filtering
-quant_method=htseq2
-mapper=tophat2
+quant_method?=htseq2
+mapper?=tophat2
 endif
 
