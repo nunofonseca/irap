@@ -248,7 +248,7 @@ m('mapsplice',_,'',no).
 all_mappers(X):-all(M,m(M,_,_,_),X).
 all_quant([htseq1,htseq2,basic,flux_cap,cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,nurd,stringtie,stringtie_nd]).
 all_quant_norm([flux_cap,cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,none,deseq]).
-all_de([deseq,edger,voom,cuffdiff1,cuffdiff2,cuffdiff1_nd,cuffdiff2_nd,none]).
+all_de([deseq,edger,voom,cuffdiff1,cuffdiff2,cuffdiff1_nd,cuffdiff2_nd,deseq2,none]).
 
 qr('htseq1',m(M),'Only requires the NH flag defined',stranded):-m(M,_,_,_S).
 qr('htseq2',m(M),'Only requires the NH flag defined',stranded):-m(M,_,_,_S).
@@ -277,10 +277,12 @@ qn(cufflinks2_nd,qr(cufflinks2_nd),_,stranded).
 qn(nurd,qr(nurd),_,no).
 qn(flux_cap,qr(flux_cap),_,no).
 qn(deseq,qr(QR),_,_):-member(QR,[flux_cap,basic,htseq1,htseq2]).
+qn(deseq2,qr(QR),_,_):-member(QR,[flux_cap,basic,htseq1,htseq2]).
 qn(none,qr(_),_,_).
 
 
 de(deseq,(qr(QR),qn(QN)),_):-all_quant(ALL_QN),member(QR,ALL_QN),all_quant_norm(ALL_QNorm),member(QN,ALL_QNorm).
+de(deseq2,(qr(QR),qn(QN)),_):-all_quant(ALL_QN),member(QR,ALL_QN),all_quant_norm(ALL_QNorm),member(QN,ALL_QNorm).
 de(edger,(qr(QR),qn(QN)),_):-all_quant(ALL_QN),member(QR,ALL_QN),all_quant_norm(ALL_QNorm),member(QN,ALL_QNorm).
 de(voom,(qr(QR),qn(QN)),_):-all_quant(ALL_QN),member(QR,ALL_QN),all_quant_norm(ALL_QNorm),member(QN,ALL_QNorm).
 %de(dexseq,(qr(QR),qn(QN)),_):-member(QR,[htseq1,htseq2,basic,flux_cap]),member(QN,[deseq,flux_cap,none]).

@@ -829,7 +829,7 @@ ifndef de_method
  de_method=$(def_de_method)
 endif
 
-SUPPORTED_DE_METHODS=cuffdiff1 cuffdiff2 cuffdiff1_nd cuffdiff2_nd deseq edger voom
+SUPPORTED_DE_METHODS=cuffdiff1 cuffdiff2 cuffdiff1_nd cuffdiff2_nd deseq edger voom deseq2
 ifeq (,$(filter $(de_method),none $(SUPPORTED_DE_METHODS)))
 $(call p_info,[ERROR] de_method)
 $(error $(de_method) not supported)
