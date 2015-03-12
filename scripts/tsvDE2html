@@ -59,7 +59,7 @@ option_list <- list(
 # check multiple options values
 multiple.options = list(
   feature=c('gene','exon','CDS'),
-  flavour=c('cuffdiff','deseq','cuffdiff1','cuffdiff2','edger','voom')
+  flavour=c('cuffdiff','deseq','cuffdiff1','cuffdiff2','edger','voom','deseq2')
   )
 mandatory <- c("tsv_file","out")
 opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
@@ -144,14 +144,18 @@ if (opt$flavour == "cuffdiff" || opt$flavour == "cuffdiff1" || opt$flavour == "c
   table[,fields$FOLDCHANGE_MEDIAN] <- log2(median)
   fields$groups <- tcols
 }
-if ( opt$flavour == "deseq" ) {
+if ( opt$flavour == "deseq" || opt$flavour == "deseq2" ) {
   # exclude the rows based on the analysis
   # nothing to do
-
   # features
   if ( opt$feature ==  "gene" ) {
-    fields$cols2sel <- c("id","baseMean","baseMeanA","baseMeanB","foldChange","log2FoldChange","pval","padj")
-    fields$cols2tsv <- fields$cols2sel
+    if ( opt$flavour == "deseq" ) {
+      fields$cols2sel <- c("id","baseMean","baseMeanA","baseMeanB","foldChange","log2FoldChange","pval","padj")
+    } else {
+      #opt$flavour == "deseq2"
+      fields$cols2sel <- c("id","baseMean","baseMeanA","baseMeanB","log2FoldChange", "stat","pvalue","padj")
+    }
+    fields$cols2tsv <- fields$cols2sel    
   } else {
     perror("DESeq does only support DE analysis at gene level")    
   }
@@ -246,14 +250,17 @@ uncut.table <- table
 #exclude NA and empty lines
 #table <- table[!is.na(table[,fields$PVALUE.FIELD]),]
 #table <- table[table[,1]!='',]
+#print(tail(table))
 if (is.factor(table[,fields$PVALUE.FIELD])) {
-  table <- table[my.factor2numeric(table[,fields$PVALUE.FIELD])<=as.numeric(opt$`cut-off`),]
+  table <- table[!is.na(table[,fields$PVALUE.FIELD]),,drop=FALSE]
+  table <- table[my.factor2numeric(table[,fields$PVALUE.FIELD])<=as.numeric(opt$`cut-off`),,drop=FALSE]
 } else {
-  table <- table[as.numeric(table[,fields$PVALUE.FIELD])<=as.numeric(opt$`cut-off`),]
+  table <- table[!is.na(table[,fields$PVALUE.FIELD]),,drop=FALSE]
+  table <- table[as.numeric(table[,fields$PVALUE.FIELD])<=as.numeric(opt$`cut-off`),,drop=FALSE]
 }
 after <- nrow(table)
-pdebug("New table with ",after, "(before ",before,")")
-
+pdebug("New table with ",after, " (before ",before,")")
+#print(head(table))
 
 
 DE.fold.change.plot <- function(res,
