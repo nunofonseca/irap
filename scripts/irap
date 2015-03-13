@@ -235,7 +235,7 @@ def_trim_reads=y
 def_qual_filtering=on
 
 #Software for mapping (reads -> genome/transcriptome)
-def_mapper=tophat1
+def_mapper=tophat2
 def_mapper_splicing=yes
 
 #Software for differential expression
