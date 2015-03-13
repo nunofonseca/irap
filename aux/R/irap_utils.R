@@ -430,7 +430,7 @@ load.gff3 <- function(file,type="gene",attrs=TRUE) {
     gff3=as.data.frame(matrix(nrow=0,ncol=length(formats.cols$gff3)))
   }
   #print(head(gff3))
-  cnames <- formats.cols$gff3
+  cnames <- formats.cols$gff3[seq(1,ncol(gff3))]
   colnames(gff3)<-cnames[0:ncol(gff3)]
   gff3$attributes <- as.character(gff3$attributes)
 
