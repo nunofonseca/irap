@@ -424,11 +424,12 @@ if ( length(set2)>=minSizeLim && print.empty==FALSE )  {
                              cexLegend=1.1,main=opt$title,
                              long.names=long.names[sel]),error=function(x) NULL)
       plot.file <- paste(opt$out,"_class_non_dir_both.png",sep="")
-      pinfo("Generating plot ",plot.file)
+
       system(paste("rm -f ",plot.file,sep=""))
 
       if ( !is.null(g) ) {
       #
+        pinfo("Generating plot ",plot.file)
         gen.plot2report(filename=plot.file,
                          width=550,
                         height=550,
@@ -441,6 +442,8 @@ if ( length(set2)>=minSizeLim && print.empty==FALSE )  {
                                             cexLegend=1.1,main=opt$title,
                                             long.names=long.names[sel])
                         })
+      } else {
+        pwarning("Skipping plot generation")
       }
     } else {
       pwarning("Insufficient gene sets (",sel,") to draw a plot - plot not generated.")
