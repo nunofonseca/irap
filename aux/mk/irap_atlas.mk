@@ -49,7 +49,7 @@ $(name)/atlas_html.tar.gz: $(name)/report $(name)/report/software.tsv $(name)/re
 	cd $(name)/atlas && tar xzvf ../tmp.atlas.tgz && rm ../tmp.atlas.tgz && mv $(name)/report/* . && rm -rf $(name) .atlas_wrap_up_files  && \
 	find . -name "*.scaled.png"  -exec rename .scaled.png .png {} \;  && \
 	for html_file in `find . -name "*.htm*"`; do atlas_clean_html.sh $$html_file; done && \
-	cd .. && tar czvf $(@F).tmp  atlas/ && mv $(@F).tmp $(@F) &&\
+	cd .. && tar czvf $(@F).tmp  atlas/ && mv $(@F).tmp $(@F) && rm -rf atlas/ &&\
 	echo Created $@
 # remove header, footer and menu
 # rename the scaled images
