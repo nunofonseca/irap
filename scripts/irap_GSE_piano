@@ -418,22 +418,30 @@ if ( length(set2)>=minSizeLim && print.empty==FALSE )  {
       fisherRes$sSizes <- sSizes
       fisherRes$resTab <- fisherRes$resTab[sel,,drop=FALSE]
       #fisherRes <- fisherRes.bak
-      #
+      g <- fisherNetworkPlot(fisherRes,edgeWidth=c(2,20),
+                             adjusted=T,significance=opt$gs_fdr,
+                             label="names",
+                             cexLegend=1.1,main=opt$title,
+                             long.names=long.names[sel])
       plot.file <- paste(opt$out,"_class_non_dir_both.png",sep="")
       pinfo("Generating plot ",plot.file)
       system(paste("rm -f ",plot.file,sep=""))
-      gen.plot2report(filename=plot.file,
+
+      if ( !is.null(g) ) {
+      #
+        gen.plot2report(filename=plot.file,
                          width=550,
-                         height=550,
-                         html=FALSE,
-                         ps=TRUE,
-                         to.plot = function () {
-                           fisherNetworkPlot(fisherRes,edgeWidth=c(2,20),
-                                             adjusted=T,significance=opt$gs_fdr,
-                                             label="names",
-                                             cexLegend=1.1,main=opt$title,
-                                             long.names=long.names[sel])
-                         })
+                        height=550,
+                        html=FALSE,
+                        ps=TRUE,
+                        to.plot = function () {
+                          fisherNetworkPlot(fisherRes,edgeWidth=c(2,20),
+                                            adjusted=T,significance=opt$gs_fdr,
+                                            label="names",
+                                            cexLegend=1.1,main=opt$title,
+                                            long.names=long.names[sel])
+                        })
+      }
     } else {
       pwarning("Insufficient gene sets (",sel,") to draw a plot - plot not generated.")
     }

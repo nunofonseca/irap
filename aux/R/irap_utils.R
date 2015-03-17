@@ -2144,7 +2144,7 @@ fisherNetworkPlot <- function (gsaRes,
   if (all(!tmp))  {
     warning("no overlap between gene sets found, try to decrease argument overlap or increase argument significance...fixing it for now")
     diag(tmp) <- 1
-#    return(NULL)
+    return(NULL)
   }
   g <- graph.adjacency(tmp, mode = "undirected", diag = FALSE)
   
