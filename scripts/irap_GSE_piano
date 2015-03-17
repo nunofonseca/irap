@@ -418,11 +418,11 @@ if ( length(set2)>=minSizeLim && print.empty==FALSE )  {
       fisherRes$sSizes <- sSizes
       fisherRes$resTab <- fisherRes$resTab[sel,,drop=FALSE]
       #fisherRes <- fisherRes.bak
-      g <- fisherNetworkPlot(fisherRes,edgeWidth=c(2,20),
+      g <- tryCatch(fisherNetworkPlot(fisherRes,edgeWidth=c(2,20),
                              adjusted=T,significance=opt$gs_fdr,
                              label="names",
                              cexLegend=1.1,main=opt$title,
-                             long.names=long.names[sel])
+                             long.names=long.names[sel]),error=function(x) NULL)
       plot.file <- paste(opt$out,"_class_non_dir_both.png",sep="")
       pinfo("Generating plot ",plot.file)
       system(paste("rm -f ",plot.file,sep=""))
