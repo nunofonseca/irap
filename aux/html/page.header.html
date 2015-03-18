@@ -10,16 +10,25 @@
 <body>
 <p class='character'><script language="javascript"> 
 function toggle(showHideDiv, switchTextDiv) {
-	var ele = document.getElementById(showHideDiv);
-	var text = document.getElementById(switchTextDiv);
-	if(ele.style.display == "block") {
-    		ele.style.display = "none";
-		text.innerHTML = "+";
-  	}
-	else {
-		ele.style.display = "block";
-		text.innerHTML = "-";
-	}
+    var ele = document.getElementById(showHideDiv);
+    var text = document.getElementById(switchTextDiv);
+    if (ele.style.display == "block") {
+	ele.style.display = "none";
+	text.innerHTML = "+";
+    }
+    else {
+	loadImages();
+	ele.style.display = "block";
+	text.innerHTML = "-";
+    }
+    
+    function loadImages() {
+	
+	$(ele).find('[data-src]').not('[src]').each(function () {
+	    var $img = $(this);
+	    $img.attr("src", $img.attr("data-src"));
+	});
+    }
 } 
 </script>
 <div id="content">
