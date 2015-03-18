@@ -9,6 +9,7 @@
 <!-- top nav bar will be included in the next line, after body...TODO: fix this-->
 <body>
 <p class='character'><script language="javascript"> 
+
 function toggle(showHideDiv, switchTextDiv) {
     var ele = document.getElementById(showHideDiv);
     var text = document.getElementById(switchTextDiv);
@@ -23,11 +24,11 @@ function toggle(showHideDiv, switchTextDiv) {
     }
     
     function loadImages() {
-	
-	$(ele).find('[data-src]').not('[src]').each(function () {
-	    var $img = $(this);
-	    $img.attr("src", $img.attr("data-src"));
-	});
+	var i, img, imgsNotYetLoaded = ele.querySelectorAll('img:not([src])');
+	for (i = 0; i < imgsNotYetLoaded.length; i++) {
+	    img = imgsNotYetLoaded[i];
+	    img.setAttribute("src", img.getAttribute("data-src"));
+	}
     }
 } 
 </script>
