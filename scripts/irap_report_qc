@@ -307,8 +307,8 @@ quality.details.matrix <- function(bp.data,conf) {
     width <- 450
     visible.text <- "+"
     hidden.text <- paste("<table class='plots' style='text-align: center'><tr><td>Raw data</td><td>Filtered</td></tr>",
-                   "<tr><td><img  width='",width,"' data-src='",files.unfilt["seq.quality"],"' alt='Quality plot'></td><td><img  width='",width,"' src='",files.filt["seq.quality"],"' alt='Quality plot'></td></tr>",
-                   "<tr><td><img width='",width,"' data-src='",files.unfilt["base.quality"],"' alt='Per base quality plot'></td><td><img width='",width,"' src='",files.filt["base.quality"],"' alt='Per base quality plot'></td></tr>",
+                   "<tr><td><img  width='",width,"' data-src='",files.unfilt["seq.quality"],"' alt='Quality plot'></td><td><img  width='",width,"' data-src='",files.filt["seq.quality"],"' alt='Quality plot'></td></tr>",
+                   "<tr><td><img width='",width,"' data-src='",files.unfilt["base.quality"],"' alt='Per base quality plot'></td><td><img width='",width,"' data-src='",files.filt["base.quality"],"' alt='Per base quality plot'></td></tr>",
                    "</table>",sep="")
     
     html  <- HTML.toogle.div(visible.text,hidden.text)
