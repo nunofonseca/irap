@@ -17,12 +17,12 @@ Contents
 ============
 
 1.1 Get IRAP from the repository
-   git clone https://code.google.com/p/irap/ irap_clone
+   git clone http://nunofonseca.github.io/irap irap_clone
 
 1.2 Install IRAP and all dependencies (3rd party software) to a directory (e.g. irap_install)
    ./irap_clone/scripts/irap_install.sh -a irap_install -s irap_clone
 
- Dependencies: zlib-devel python-devel bzip2-devel python readline-devel libgfortran gcc-gfortran libX11-devel libXt-devel numpy gd-devel libxml2 libxml2-devel libpng libpng-devel python java
+ Dependencies: check wiki for full list (https://github.com/nunofonseca/irap/wiki)
 
 1.3 Setup the shell environment using the irap_setup.sh file: e.g., assuming that you installed IRAP in irap_install you could setup the environment using
    source irap_install/irap_setup.sh
@@ -35,7 +35,7 @@ or, assuming that you use Bash as your shell, add the contents of the irap_setup
 2.1 Go to the irap directory obtained from the repository (see point 1 above in Install)
 2.2 Get the updates
     git pull
-2.3 Update the installation
+2.3 Quick update the installation
     ./scripts/irap_install.sh -u -s .
 
 ==============
@@ -133,13 +133,5 @@ the developers of the program.
 The authors of IRAP always appreciate receiving suggestions for
 improvements, and reports of bugs in the pipeline or in the
 documentation. Please submit them through
-http://code.google.com/p/irap/
-
-====================
-* 6. How to get help
-====================
-
-There is some documentation in the docs/ folder that should be
-  helpful. Please post any questions about IRAP in SEQanswers
-  (http://seqanswers.com/).
+http://nunofonseca.github.io/irap/
 
