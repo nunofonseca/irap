@@ -147,8 +147,11 @@ df.p.s <- colSums(df.p,na.rm=T)
 df.p <- round(sweep(df.p,MARGIN=2,100*1/df.p.s,`*`),2)
 #print(colSums(df.p,na.rm=T))
 if (ncol(df.p)>4) {
-  SD <- apply(df.p[,-c(1,2,3)],1,FUN=sd)
-  SD2 <- apply(df2[,-c(1,2,3)],1,FUN=sd)
+  c<-c("Median","Mean","SD")
+  i2<-colnames(df2)%in%c
+  i<-colnames(df.p)%in%c
+  SD <- apply(df.p[,!i,drop=FALSE],1,FUN=sd)
+  SD2 <- apply(df2[,!i2,drop=FALSE],1,FUN=sd)
 } else {
   SD <- rep(0,nrow(df.p))
   SD2 <- rep(0,nrow(df2))
