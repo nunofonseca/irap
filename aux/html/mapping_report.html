@@ -6,9 +6,9 @@ library(xtable)
 aggr.cols<-c("Median","Mean","SD")
 bar.width<-25
 # how many libraries should we have to consider a dataset as 'big'?
-big.dataset <- 10
+big.dataset <- 15
 # only used for 'big' dataset
-max.outliers <- 15
+max.outliers <- 10
 mapping.vals <- c("Alignments","Reads mapped","Reads unmapped","Uniquely mapped","Reads spliced")
 outlier.vals <- c("Reads unmapped","Uniquely mapped","Reads spliced")
 
@@ -278,6 +278,7 @@ plot.mapping.feat <- function(df,is.small.dataset=FALSE,
     ylab=""
   }
   pdebug("small.dataset 3")
+  pdebug(ncol(df))
   if ( ! is.small.dataset && ncol(df)>big.dataset) {
     pdebug("Big dataset mode")
     out <- NULL
@@ -286,14 +287,14 @@ plot.mapping.feat <- function(df,is.small.dataset=FALSE,
     pdebug(rownames(df))
     bp<-boxplot(x=t(out.sel.df),add=F,out=F,names=rownames(out.sel.df),ylim=ylim)
     # find the outliers
-    pdebug("bp computed")
+    pdebug("!!!!!!!!bp computed")
     min.vals <- bp$stats[5,]
     max.vals <- bp$stats[1,]
     names(min.vals) <- rownames(out.sel.df)
     names(max.vals) <- rownames(out.sel.df)
     out <- c()
     for ( n in names(min.vals)[names(min.vals) %in% rownames(out.sel.df)] ) {
-      tmp.out <- colnames(df)[as.matrix(df[n,])<min.vals[n] | as.matrix(df[n,])>max.vals[n]]
+      tmp.out <- colnames(df)[as.matrix(df[n,,drop=F])<min.vals[n] | as.matrix(df[n,,drop=F])>max.vals[n]]
       if ( !is.null(tmp.out)) {
         out <- append(out,tmp.out)
       }
@@ -310,10 +311,12 @@ plot.mapping.feat <- function(df,is.small.dataset=FALSE,
       widths <- round(c(nrow(df)/w*10,max(length(out),nrow(df))/w*10),0)
       widths <- widths/sum(widths)
       layout(matrix(c(1,2),ncol=2),widths = widths)
-      pdebug("widths=",widths)
+      pdebug("widths=",widths," out=",length(out),"  w=",w)
     }
+
     bp<-boxplot(x=t(df),col=cols,las=2,names=rownames(df),ylim=ylim,add=F,outline=F,outpch=NA)
 #                outpch=16)    
+	     pdebug(">>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<")
     title(ylab=ylab,mgp=c(5,1,0),main=paste(ncol(df)," libraries",sep=""))
                                         # outliers (detailed)
     if (!is.null(out) && length(out)>1 ) {
@@ -516,7 +519,12 @@ file <- paste(out.prefix,"_aln_bio",sep="")
 cols2plot <- colnames(mapping.feat)[!colnames(mapping.feat) %in% c("Median","Mean","SD")]
 # sort
 feat.order <- names(sort(mapping.feat[,"Mean"],decreasing=T))
+if (is.null(feat.order) ) {
+     feat.order<-rownames(mapping.feat)
+}
 n <- length(feat.order)
+pdebug("order:",feat.order)
+
 #feat.order=NULL
 pdebug("Mapping profile plot 1 - start plot")
 html <- gen.plot2report(filename=file,
@@ -544,7 +552,7 @@ mapping.feat.per<-NULL
 if ( !is.null(mapping.feat) && sum(mapping.feat)>0 ) {
 mapping.feat.sum <- colSums(mapping.feat,na.rm=T)
 mapping.feat.per <- round(sweep(mapping.feat,MARGIN=2,100*1/mapping.feat.sum,`*`),2)
-mapping.feat.per.f <- mapping.feat.per[,!colnames(mapping.feat.per) %in% aggr.cols]
+mapping.feat.per.f <- mapping.feat.per[,!colnames(mapping.feat.per) %in% aggr.cols,drop=FALSE]
 if (ncol(mapping.feat.per.f)>1) {
   SD <- apply(mapping.feat.per.f,1,FUN=sd)
 } else {
@@ -560,6 +568,9 @@ file <- paste(out.prefix,"_paln_bio",sep="")
 cols2plot <- colnames(mapping.feat.per)[!colnames(mapping.feat.per) %in% c("Median","Mean","SD")]
 # sort
 feat.order <- names(sort(mapping.feat.per[,"Mean"],decreasing=T))
+if (is.null(feat.order) ) {
+     feat.order<-rownames(mapping.feat)
+}
 n <- length(feat.order)
 #feat.order=NULL
 html <- gen.plot2report(filename=file,
@@ -646,7 +657,7 @@ if ( !is.null(mapping.genes) && sum(mapping.genes)>0 ) {
 pdebug("Figure 4.1")
 mapping.genes.sum <- colSums(mapping.genes,na.rm=T)
 mapping.genes.per <- round(sweep(mapping.genes,MARGIN=2,100*1/mapping.genes.sum,`*`),2)
-mapping.genes.per.f <- mapping.genes.per[,!colnames(mapping.genes.per) %in% aggr.cols]
+mapping.genes.per.f <- mapping.genes.per[,!colnames(mapping.genes.per) %in% aggr.cols,drop=FALSE]
 if (ncol(mapping.genes.per.f)>1) {
   SD <- apply(mapping.genes.per.f,1,FUN=sd)
 } else {
@@ -713,7 +724,7 @@ irap.output.html(html, "Percentage of alignments overlapping exons and introns. 
 <%
 #save.image("debug.Rdata")
 if ( ! is.null(mapping.genes) ) {
-v <- data.frame(round(mapping.genes[,!colnames(mapping.genes) %in% c("Median","Mean","SD")],0))
+v <- data.frame(round(mapping.genes[,!colnames(mapping.genes) %in% c("Median","Mean","SD"),drop=FALSE],0))
 colnames(v) <- colnames(mapping.genes)[!colnames(mapping.genes) %in% c("Median","Mean","SD")]
 v
 xt <- xtable(v,
