@@ -325,6 +325,11 @@ rsem_VERSION=1.2.9
 rsem_FILE=rsem-${rsem_VERSION}.tar.gz
 rsem_URL=http://deweylab.biostat.wisc.edu/rsem/src/$rsem_FILE
 
+FUSIONMAP_VERSION=2015-01-09
+FUSIONMAP_FILE=FusionMap_${FUSIONMAP_VERSION}.zip
+FUSIONMAP_URL=http://omicsoft.com/fusionmap/Software/$FUSIONMAP_FILE
+
+
 SCRIPTURE_VERSION=beta2
 SCRIPTURE_FILE=scripture-${SCRIPTURE_VERSION}.jar 
 SCRIPTURE_URL=ftp://ftp.broadinstitute.org/pub/papers/lincRNA/$SCRIPTURE_FILE
@@ -363,6 +368,7 @@ NEW_JBROWSE_EXTRA_UTILSURL=http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64
 MONO_VERSION=2.10.8
 MONO_FILE=mono-${MONO_VERSION}.tar.bz2    
 MONO_URL=http://download.mono-project.com/sources/mono/$MONO_FILE
+
 
 MAKE_VERSION=4.1
 MAKE_FILE=make-${MAKE_VERSION}.tar.gz
@@ -1699,6 +1705,27 @@ function NURD_install {
     popd
     pinfo "NURD installation complete."    
 }
+
+
+######################################
+function fusionmap_install {
+# requires mono == osa
+
+    pinfo "Installation of FusionMap..."
+    download_software FUSIONMAP
+    unzip $FUSIONMAP_FILE
+    pushd FusionMap_$FUSIONMAP_VERSION
+    cp bin/* $IRAP_DIR/bin
+    popd
+    pinfo "FusionMap installation complete."    
+}
+#FusionMap: detecting fusion genes from next-generation sequencing data at base-pair resolution Huanying Ge; Kejun Liu; Todd Juan; Fang Fang; Matthew Newman; Wolfgang Hoeck Bioinformatics (2011) 27 (14): 1922-1928. doi: 10.1093/bioinformatics/btr310
+
+#      soap_fusion_VERSION=1.1
+#      download ftp://public.genomics.org.cn/BGI/soap/Soapfusion/SOAPfusion_all_in_one_package.zip
+#     unzip SOAPfusion_all_in_one_package.zip
+#     pinfo "$MAPPER installation complete."    
+#}
 
 # python packages
 function python_install {
