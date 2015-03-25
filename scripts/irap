@@ -152,6 +152,8 @@ lib2bam_folder=$(name)/$(mapper)/$($(1)_dir)
 lib2snp_folder=$(name)/$(mapper)/$($(1)_dir)
 #
 lib2quant_folder=$(name)/$(mapper)/$(quant_method)/$($(1)_dir)
+#
+lib2fusion_folder=$(name)/$(mapper)/$(fusion_method)/$($(1)_dir)
 
 # check if a parameter is defined
 check_param_ok=$(if $(call is_defined,$(strip $(1))),$(info *	$(1)=$($(1))),$(error * Missing -$(1)-))
@@ -1156,6 +1158,7 @@ endef
 ################################################################################
 # TODO: STAGE0
 SETUP_DATA_FILES=
+STAGE3_OUT_FILES=
 
 STAGE1_OUT_FILES=$(foreach p,$(se),$(call lib2filt_folder,$(p))$(p).f.fastq) $(foreach p,$(pe),$(call lib2filt_folder,$(p))$(p)_1.f.fastq)
 
@@ -1186,6 +1189,8 @@ include $(irap_path)/../aux/mk/irap_de.mk
 # Gene set enrichment analysis
 include $(irap_path)/../aux/mk/irap_gse.mk
 
+
+
 # Atlas (atlas specific stuff)
 include $(irap_path)/../aux/mk/irap_atlas.mk
 
@@ -1193,6 +1198,8 @@ ifdef irap_devel
 $(call p_info,Loading code under development)
 # include under development features
 include $(irap_path)/../aux/mk/irap_snp_indel_calling.mk
+# Fusion
+include $(irap_path)/../aux/mk/irap_fusion.mk
 endif
 
 # Check if the options provided are valid
@@ -1345,7 +1352,7 @@ silent_targets+=
 stage0: setup
 stage1: setup quality_filtering_and_report
 stage2: setup mapping
-stage3: setup quantification
+stage3: setup $(STAGE3_OUT_FILES)
 stage3a: setup $(quant_method)_quant 
 stage3as: setup quantification_s
 #stage3b: setup stage3a
@@ -1746,7 +1753,7 @@ $(reference_abspath)_files: $(reference_abspath)
 ################################################################################
 $(quant_norm_method)_nquant_files=$(name)/$(mapper)/$(quant_method)/genes.nlib.$(quant_norm_method).tsv $(name)/$(mapper)/$(quant_method)/genes.rpkm.$(quant_norm_method).tsv $(call exons_quant_norm,$(name)/$(mapper)/$(quant_method)/exons.nlib.$(quant_norm_method).tsv $(name)/$(mapper)/$(quant_method)/exons.rpkm.$(quant_norm_method).tsv) $(call transcripts_quant_norm,$(name)/$(mapper)/$(quant_method)/transcripts.nlib.$(quant_norm_method).tsv $(name)/$(mapper)/$(quant_method)/transcripts.rpkm.$(quant_norm_method).tsv)
 
-STAGE3_OUT_FILES=$($(quant_method)_quant_files) $($(quant_norm_method)_nquant_files)
+STAGE3_OUT_FILES+=$($(quant_method)_quant_files) $($(quant_norm_method)_nquant_files)
 
 STAGE3_TSV_FILES=$(call exons_quant_files)\
 	       $(call transcripts_quant_files)\
