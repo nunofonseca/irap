@@ -107,9 +107,9 @@ $(name)/data/fusionmap/fusionmap.gm: $(gtf_file_abspath)
 # index and gm need to be absolute paths?
 define run_fusionmap=
 	mkdir -p $(dir $(4))
-	irap_gen_fusionmap_conf.sh $(abspath $(2)) $(max_threads) $(3) $(dir $(4))/$(1)/$(notdir $(1)) > $(dir $(4))/$(notdir $(1)).conf && \
+	irap_gen_fusionmap_conf.sh $(abspath $(2)) $(max_threads) $(3) $(dir $(4))/$(notdir $(1)) > $(dir $(4))/$(notdir $(1)).conf && \
 	mono $(IRAP_DIR)/bin/FusionMap.exe --semap $(abspath $(FUSIONMAP_BASEDIR))  fusionmap_index fusionmap_refgene  $(dir $(4))/$(notdir $(1)).conf && \
-	cp $(dir $(4))/$(1)/$(notdir $(1)) $(4)
+	cp $(dir $(4))/$(notdir $(1)).FusionReport.txt $(4)
 endef
 
 #
@@ -117,7 +117,7 @@ endef
 $(name)/$(mapper)/fusionmap/%.fusion.tsv: $(name)/$(mapper)/%.se.hits.bam $(name)/data/fusionmap/fusionmap.index $(name)/data/fusionmap/fusionmap.gm
 	$(call run_fusionmap,$*,$<,se,$@.tmp) && mv $@.tmp $@
 $(name)/$(mapper)/fusionmap/%.fusion.tsv: $(name)/$(mapper)/%.pe.hits.bam $(name)/data/fusionmap/fusionmap.index $(name)/data/fusionmap/fusionmap.gm
-	$(call run_fusionmap,$*,$<,pe,$@)  && mv $@.tmp $@
+	$(call run_fusionmap,$*,$<,pe,$@.tmp)  && mv $@.tmp $@
 
 # Add to stage3 output files
 STAGE3_OUT_FILES+=$(foreach p,$(pe),$(call lib2fusion_folder,$(p))$(p).fusion.tsv) $(foreach s,$(se),$(call lib2fusion_folder,$(s))$(s).fusion.tsv)
