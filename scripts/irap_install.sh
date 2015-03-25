@@ -1039,11 +1039,13 @@ function perl_packages_install {
     export SAMTOOLS="$PWD/samtools-${SAMTOOLS_VERSION}";    
     #export SAMTOOLS=$IRAP_DIR/lib/ 
 #    cpan -fi CJFIELDS/BioPerl-1.6.1.tar.gz   <<EOF
-    cpan -fi CJFIELDS/BioPerl-1.6.923.tar.gz   <<EOF
-n
-n
-n
-EOF
+#    cpan -fi CJFIELDS/BioPerl-1.6.923.tar.gz   <<EOF
+#n
+#n
+#n
+#EOF
+    cpanm -fi CJFIELDS/BioPerl-1.6.923.tar.gz 
+
     popd
     pinfo "Installing perl packages...done."
 }
