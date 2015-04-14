@@ -2044,7 +2044,7 @@ full_clean: clean_data_files
 	rm -fr $(name)/
 
 clean_data_files:
-	rm -rf $(SETUP_DATA_FILES) $(index_files)
+	rm -rf $(SETUP_DATA_FILES) $(index_files) $(reference_abspath).fa
 
 # TODO: archive (delete everything except the "main" output files for each stage
 #
