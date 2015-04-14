@@ -9,6 +9,11 @@ mem=4000000000
 threads=1
 irap_options=
 do_stage0=no
+
+# This script will not run with sudo
+# http://unix.stackexchange.com/questions/38538/bash-dev-stderr-permission-denied
+STDERR=/dev/stderr
+
 #
 function print_usage {
 cat <<EOF
@@ -31,7 +36,7 @@ function pinfo {
 }
 
 function perror { 
-    echo "[ERROR: $*]" > /dev/stderr
+    echo "[ERROR: $*]" > $STDERR
 }
 
 
@@ -147,7 +152,7 @@ DATA_DIR=`get_data_dir`
 pinfo "Data dir.=$DATA_DIR"
 folder=`get_folder $f1`
 
-TARGET_DIR=$DATA_DIR/raw_data/single_file/$folder
+TARGET_DIR=$DATA_DIR/raw_data/single_lib/$folder
 
 mkdir -p $TARGET_DIR
 
@@ -184,7 +189,7 @@ touch $time_log_file
 pinfo "Validating FASTQ files..."
 pinfo "FASTQ files: $f1 $f2"
 # Move to the raw data top-level folder
-pushd $DATA_DIR/raw_data/single_file/ >/dev/null
+pushd $DATA_DIR/raw_data/single_lib/ >/dev/null
 run_AND_timeIt "fastqInfo" $time_log_file time fastq_info.sh  $folder/$f1_bn $rp_f2  > $folder/$f1_bn.info.tmp && mv $folder/$f1_bn.info.tmp $folder/$f1_bn.info
 if [ $? != 0 ] ; then
     perror "FASTQ validation failed"
@@ -213,7 +218,7 @@ if [ $? !=  0 ]; then
     fi
 fi
 pinfo "Aligning data..."
-run_AND_timeIt "iRAP" $time_log_file  irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE $irap_options max_mem=$mem max_threads=$threads raw_folder=single_file
+run_AND_timeIt "iRAP" $time_log_file  irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE $irap_options max_mem=$mem max_threads=$threads raw_folder=single_lib
 if [ $? != 0 ]; then
     perror "iRAP failed"
     exit 1
