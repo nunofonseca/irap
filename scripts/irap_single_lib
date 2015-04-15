@@ -91,8 +91,7 @@ function run_AND_timeIt {
 while getopts "1:2:c:s:m:t:i:h0"  Option
 do
     case $Option in
-
-	0 ) do_stage0=yes;;
+	0 ) do_stage0="yes";;
         1 ) f1=$OPTARG;;
         2 ) f2=$OPTARG;;# send all output to a log file
         c ) conf=$OPTARG;;# send all output to a log file
@@ -134,7 +133,11 @@ fi
 
 set -e 
 
+if [ "$do_stage0-"=="yes-" ]; then
+    pinfo "Running stage0 only"
+fi
 
+# FullPath to $f1
 fp_f1=`readlink -f $f1`
 f1_bn=`basename $f1`
 if [ "$f2-" == "-" ]; then
@@ -142,6 +145,18 @@ if [ "$f2-" == "-" ]; then
 else
     fp_f2=`readlink -f $f2`
     f2_bn=`basename $f2`
+fi
+
+is_atlas_run=`grep -c "^atlas_run=y" $conf`
+name=
+if [ "$is_atlas_run-" == "1-" ]; then
+    species=`grep "^species=" $conf | head -n 1| cut -f 2 -d=`
+    if [ "$species-" == "-" ]; then
+	perror "species undefined"
+	exit 1
+    fi
+    name="name=$species"
+    irap_options="$irap_options $name"
 fi
 
 set -e
@@ -175,17 +190,34 @@ pinfo "FASTQ files in place"
 popd > /dev/null 
 
 ################################################
-tdir=$PWD/out/`dirname $f1`
+odir=$PWD/out/`dirname $f1`
 fileprefix=`get_fileprefix $f1`
-pinfo "Final files will be placed in $tdir"
-mkdir -p $tdir
+pinfo "Final files will be placed in $odir"
+mkdir -p $odir
 ################################################
 # TSV with the time and memory used
-time_log_file=$tdir/`get_fileprefix $f1`.time
+time_log_file=$odir/`get_fileprefix $f1`.time
 pinfo "Time log file in $time_log_file"
 touch $time_log_file
+
+
+########
+# Check if stage0 is ok
+set +e 
+irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE  $irap_options max_mem=$mem max_threads=$threads stage0 -n -q
+if [ $? !=  0 ]; then
+    if [ "$do_stage0-"=="yes-" ]; then
+	pinfo "Running iRAP stage0"
+	irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE  $irap_options max_mem=$mem max_threads=$threads stage0
+    else
+	perror "Stage0 incomplete - use -0 to run stage0"
+	exit 1
+    fi
+fi
+
 ################################################
 # run fastq_info on the file
+set -e
 pinfo "Validating FASTQ files..."
 pinfo "FASTQ files: $f1 $f2"
 # Move to the raw data top-level folder
@@ -206,17 +238,9 @@ sed -i -E "s/^#(se|pe)=/\1=/" $folder/$f1_bn.info
 echo "${libname}_rgid=" >> $folder/$f1_bn.info		
 popd 
 INFO_FILE=$TARGET_DIR/$f1_bn.info
-########
-# Check if stage0 is ok
-irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE  $irap_options max_mem=$mem max_threads=$threads stage0 -n -q
-if [ $? !=  0 ]; then
-    if [ $do_stage0=="yes" ]; then
-	perror "Stage0 incomplete - use -0 to run stage0"
-	exit 1
-    else
-	pinfo "Warning: running iRAP stage0"
-    fi
-fi
+
+set +e
+########################################################
 pinfo "Aligning data..."
 run_AND_timeIt "iRAP" $time_log_file  irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE $irap_options max_mem=$mem max_threads=$threads raw_folder=single_lib
 if [ $? != 0 ]; then
@@ -226,6 +250,7 @@ fi
 pinfo "Aligning data...complete."
 
 
+set -e
 
 # QC report
 # test1/report/riq/1f/f1/f1.csv
@@ -238,12 +263,12 @@ if [ ! -e "$BAM" ]; then
     exit 1
 fi
 
-mv $BAM $tdir/$f1_bn.bam
+mv $BAM $odir/$f1_bn.bam
 
 # Quantification
 TSVs=`irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE $irap_options print_stage3_files|tail -n 1`
-mv $TSVs $tdir
+mv $TSVs $odir
 # 
 # test1/tophat1/htseq2/genes.rpkm.deseq.tsv.tmp
-pinfo "Files in $tdir"
+pinfo "Files in $odir"
 exit 0
