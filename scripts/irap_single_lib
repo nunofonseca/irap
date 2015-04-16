@@ -39,6 +39,10 @@ function perror {
     echo "[ERROR: $*]" > $STDERR
 }
 
+function pwarning { 
+    echo "[WARNING: $*]" > $STDERR
+}
+
 
 function get_fileprefix {
     filename=`basename $1`
@@ -46,6 +50,17 @@ function get_fileprefix {
     echo $filepref
 }
 
+
+# check paths - paths to the libraries should be relative although it will work
+# with full paths
+function check_path {
+
+    path=$1
+    var_name=$2
+    if [ `echo "$1"|cut -b 1` == "/" ]; then
+	pwarning "Relative path expected but a full path was  provided ($var_name)."
+    fi
+}
 
 # two levels - 
 # L1: ~1.7K folders
@@ -108,6 +123,7 @@ if [ "$f1-" == "-" ]; then
     exit 1
 fi
 
+
 if [ "$conf-" == "-" ]; then
     print_error "ERROR: -c parameter not provided" 
     print_usage
@@ -131,12 +147,15 @@ if [ ! -e $conf ] ; then
     exit 1
 fi
 
+
+
 set -e 
 
 if [ "$do_stage0-"=="yes-" ]; then
     pinfo "Running stage0 only"
 fi
 
+check_path $f1 "-1"
 # FullPath to $f1
 fp_f1=`readlink -f $f1`
 f1_bn=`basename $f1`
@@ -145,6 +164,7 @@ if [ "$f2-" == "-" ]; then
 else
     fp_f2=`readlink -f $f2`
     f2_bn=`basename $f2`
+    check_path $f2 "-2"
 fi
 
 is_atlas_run=`grep -c "^atlas_run=y" $conf`
@@ -176,7 +196,7 @@ mkdir -p $TARGET_DIR
 pushd $TARGET_DIR > /dev/null 
 pinfo "Unpacking fastq files to $TARGET_DIR"
 if [ -e `basename $f1` ]; then
-    pinfo "WARNING: symlink in $TARGET_DIR already exists..."
+    pwarning "symlink in $TARGET_DIR already exists..."
     rm `basename $f1`    
 fi
 ln -s $fp_f1 .
