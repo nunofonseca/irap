@@ -96,7 +96,7 @@ function run_AND_timeIt {
     logfile=$2
     shift 2
     datetime=`date "+%F %R"`
-    #echo "CMD: $*" > /dev/stderr
+    echo "CMD: $*" > /dev/stderr
     # label\tTime elapsed\tTime leapsed(Seconds)\taximum resident set size\t
     /usr/bin/time -o $logfile -a --format "$label\t%E\t%e\t%M\t$datetime" $*
     #echo "EXIT:$?" > /dev/stderr
@@ -116,6 +116,8 @@ do
         h ) print_usage; exit;;
     esac
 done
+
+set +e
 
 if [ "$f1-" == "-" ]; then
     perror "ERROR: -1 parameter not provided" 
@@ -152,7 +154,7 @@ if [ "$do_stage0-" == "yes-" ]; then
     pinfo "Running stage0 only"
 fi
 
-set +e
+
 check_path $f1 "-1"
 # FullPath to $f1
 fp_f1=`readlink -f $f1`
@@ -252,29 +254,49 @@ libname=`echo $libs|cut -f 2 -d=`
 echo ${libname}_strand=$strand >> $folder/$f1_bn.info
 pinfo "Lib. details: $DATA_DIR/$folder/$f1_bn.info"
 sed -i -E "s/^#(se|pe)=/\1=/" $folder/$f1_bn.info		
-# look for the analysis id in the metadata file
+# RGId=
 echo "${libname}_rgid=" >> $folder/$f1_bn.info		
+echo "${libname}_shl=@CO\tiRAP:$VERSION\n@CO\tid:$libname" >> $folder/$f1_bn.info		
 popd 
 INFO_FILE=$TARGET_DIR/$f1_bn.info
 
 set +e
 ########################################################
+pinfo "QC and filtering..."
+run_AND_timeIt "iRAP-QC" $time_log_file  irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE $irap_options max_mem=$mem max_threads=$threads raw_folder=single_lib stage1
+if [ $? != 0 ]; then
+    perror "iRAP failed"
+    exit 1
+fi
+pinfo "QC and filtering...complete."
+
 pinfo "Aligning data..."
-run_AND_timeIt "iRAP" $time_log_file  irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE $irap_options max_mem=$mem max_threads=$threads raw_folder=single_lib
+run_AND_timeIt "iRAP-Mapping" $time_log_file  irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE $irap_options max_mem=$mem max_threads=$threads raw_folder=single_lib stage2
 if [ $? != 0 ]; then
     perror "iRAP failed"
     exit 1
 fi
 pinfo "Aligning data...complete."
 
+pinfo "Quantification..."
+run_AND_timeIt "iRAP-Quant" $time_log_file  irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE $irap_options max_mem=$mem max_threads=$threads raw_folder=single_lib stage3
+if [ $? != 0 ]; then
+    perror "iRAP failed"
+    exit 1
+fi
+pinfo "Quantification...complete."
+
+pinfo "Mapping QC..."
+run_AND_timeIt "iRAP-Mapping-QC" $time_log_file  irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE $irap_options max_mem=$mem max_threads=$threads raw_folder=single_lib mapping_report
+if [ $? != 0 ]; then
+    perror "iRAP failed"
+    exit 1
+fi
+pinfo "Mapping QC...complete."
 
 set -e
 
-# QC report
-# test1/report/riq/1f/f1/f1.csv
-
 # BAM
-# test1/tophat1/1f/f1/lf1.se.hits.byname.bam
 BAM=`irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE $irap_options print_stage2_files|tail -n 1`
 if [ ! -e "$BAM" ]; then
     perror "Ooops: $BAM not found"
@@ -282,6 +304,7 @@ if [ ! -e "$BAM" ]; then
 else
     mv $BAM $odir/$f1_bn.bam
     # add the headers to the BAM
+    samtools view -H $odir/$f1_bn.bam > $odir/.header
     
     # create the CRAM file
     pinfo "CRAMMING..."
@@ -294,9 +317,8 @@ else
     pinfo "$odir/$f1_bn.cram created"
 fi
 
-
-# Quantification
-TSVs=`irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE $irap_options print_stage3_files|tail -n 1`
+# 
+TSVs=`irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE $irap_options print_stage3_files  |tail -n 1`
 mv $TSVs $odir
 # copy the info file
 cp $INFO_FILE $odir
