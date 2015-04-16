@@ -1307,6 +1307,9 @@ endif
 # samtools 1.1 does not support the second argument :(
 #	samtools index $< $@.tmp && mv $@.tmp $@
 
+%.cram: %.bam
+	samtools view -C -T $(reference_abspath) $< > $@.tmp && mv $@.tmp $@
+
 #
 # bigWig from bed 
 # bed file needs to be sorted and converted to bedGraph
