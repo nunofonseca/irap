@@ -105,7 +105,6 @@ function run_AND_timeIt {
 # 
 while getopts "1:2:c:s:m:t:i:h0"  Option
 do
-    echo ">>>>>>>>>>>>>>>$Option-$di_stage0"
     case $Option in
 	0 ) do_stage0="yes";;
         1 ) f1=$OPTARG;;
@@ -152,7 +151,6 @@ fi
 
 set -e 
 
-echo ">>>>>>>>>>>>>>>$Option-$do_stage0"
 if [ "$do_stage0-" == "yes-" ]; then
     pinfo "Running stage0 only"
 fi
