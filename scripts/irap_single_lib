@@ -320,6 +320,10 @@ fi
 # 
 TSVs=`irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE $irap_options print_stage3_files  |tail -n 1`
 mv $TSVs $odir
+# report files
+TSVs=`irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE $irap_options print_mapping_report_req  |tail -n 1`
+mv $TSVs $odir
+
 # copy the info file
 cp $INFO_FILE $odir
 # 
