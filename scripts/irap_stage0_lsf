@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# =========================================================
+# Copyright 2012-2015,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#    $Id: 0.1.1 Nuno Fonseca Thu Dec 20 21:19:56 2012$
+# =========================================================
+#Input: a config file and irap parameters
+set -e 
+###################################
+# load shared code
+LSF_CMD=irap_lsf
+source $IRAP_DIR/aux/sh/irap_fun.sh
+source $IRAP_DIR/aux/sh/lsf_shared_code.sh
+
+wf1=`irap_init_job|tail -n 1`
+wf2=`stage0_jobs $wf1|tail -n 1`
+final_job $wf2 $wf1
+
+exit
+
+
+
+
+
+
