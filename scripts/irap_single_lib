@@ -288,6 +288,8 @@ mv $BAM $odir/$f1_bn.bam
 # Quantification
 TSVs=`irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE $irap_options print_stage3_files|tail -n 1`
 mv $TSVs $odir
+# copy the info file
+cp $INFO_FILE $odir
 # 
 # test1/tophat1/htseq2/genes.rpkm.deseq.tsv.tmp
 pinfo "Files in $odir"
