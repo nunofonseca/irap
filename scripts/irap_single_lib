@@ -118,14 +118,14 @@ do
 done
 
 if [ "$f1-" == "-" ]; then
-    print_error "ERROR: -1 parameter not provided" 
+    perror "ERROR: -1 parameter not provided" 
     print_usage
     exit 1
 fi
 
 
 if [ "$conf-" == "-" ]; then
-    print_error "ERROR: -c parameter not provided" 
+    perror "ERROR: -c parameter not provided" 
     print_usage
     exit 1
 fi
@@ -281,9 +281,21 @@ BAM=`irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE $irap_options 
 if [ ! -e "$BAM" ]; then
     perror "Ooops: $BAM not found"
     exit 1
+else
+    mv $BAM $odir/$f1_bn.bam
+    # add the headers to the BAM
+    
+    # create the CRAM file
+    pinfo "CRAMMING..."
+    run_AND_timeIt "iRAP-CRAM" $time_log_file  irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE $irap_options max_mem=$mem max_threads=$threads raw_folder=single_lib $odir/$f1_bn.cram
+    if [ $? != 0 ]; then
+	perror "Generation of CRAM file failed"
+	exit 1
+    fi
+    pinfo "CRAMMING...done."
+    pinfo "$odir/$f1_bn.cram created"
 fi
 
-mv $BAM $odir/$f1_bn.bam
 
 # Quantification
 TSVs=`irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE $irap_options print_stage3_files|tail -n 1`
