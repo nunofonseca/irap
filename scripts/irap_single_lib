@@ -148,13 +148,11 @@ if [ ! -e $conf ] ; then
 fi
 
 
-
-set -e 
-
 if [ "$do_stage0-" == "yes-" ]; then
     pinfo "Running stage0 only"
 fi
 
+set +e
 check_path $f1 "-1"
 # FullPath to $f1
 fp_f1=`readlink -f $f1`
@@ -210,7 +208,7 @@ pinfo "FASTQ files in place"
 popd > /dev/null 
 
 ################################################
-odir=$PWD/out/`dirname $f1`
+odir=$PWD/out/`dirname $f1|cut -f 2- -d /`
 fileprefix=`get_fileprefix $f1`
 pinfo "Final files will be placed in $odir"
 mkdir -p $odir
@@ -226,7 +224,7 @@ touch $time_log_file
 set +e 
 irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE  $irap_options max_mem=$mem max_threads=$threads stage0 -n -q
 if [ $? !=  0 ]; then
-    if [ "$do_stage0-"=="yes-" ]; then
+    if [ "$do_stage0-" == "yes-" ]; then
 	pinfo "Running iRAP stage0"
 	irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE  $irap_options max_mem=$mem max_threads=$threads stage0
     else
