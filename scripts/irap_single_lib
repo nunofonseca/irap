@@ -165,9 +165,9 @@ else
     check_path $f2 "-2"
 fi
 
-is_atlas_run=`grep -c "^atlas_run=y" $conf`
+is_atlas_run=`grep -c "^atlas_run=" $conf`
 name=
-if [ "$is_atlas_run-" == "1-" ]; then
+if [ "$is_atlas_run-" != "0-" ]; then
     species=`grep "^species=" $conf | head -n 1| cut -f 2 -d=`
     if [ "$species-" == "-" ]; then
 	perror "species undefined"
@@ -226,7 +226,7 @@ irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE  $irap_options max_
 if [ $? !=  0 ]; then
     if [ "$do_stage0-" == "yes-" ]; then
 	pinfo "Running iRAP stage0"
-	irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE  $irap_options max_mem=$mem max_threads=$threads stage0
+	run_AND_timeIt "stage0" $time_log_file irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE  $irap_options max_mem=$mem max_threads=$threads stage0
     else
 	perror "Stage0 incomplete - use -0 to run stage0"
 	exit 1
@@ -240,7 +240,7 @@ pinfo "Validating FASTQ files..."
 pinfo "FASTQ files: $f1 $f2"
 # Move to the raw data top-level folder
 pushd $DATA_DIR/raw_data/single_lib/ >/dev/null
-run_AND_timeIt "fastqInfo" $time_log_file time fastq_info.sh  $folder/$f1_bn $rp_f2  > $folder/$f1_bn.info.tmp && mv $folder/$f1_bn.info.tmp $folder/$f1_bn.info
+run_AND_timeIt "fastqInfo" $time_log_file fastq_info.sh  $folder/$f1_bn $rp_f2  > $folder/$f1_bn.info.tmp && mv $folder/$f1_bn.info.tmp $folder/$f1_bn.info
 if [ $? != 0 ] ; then
     perror "FASTQ validation failed"
     exit 1
