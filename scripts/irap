@@ -1347,25 +1347,6 @@ endef
 # rename does not work on some distros :(
 #	rename $*.mapping.tmp $*.mapping $*.mapping.*
 
-################################################################################
-phony_targets+= stage0 stage1 stage2 stage3 stage3a stage3as stage3b stage4 stage5
-silent_targets+= 
-
-# alias - make it easier for the user
-stage0: setup
-stage1: setup quality_filtering_and_report
-stage2: setup mapping
-stage3: setup $(STAGE3_OUT_FILES)
-stage3a: setup $(quant_method)_quant 
-stage3as: setup quantification_s
-#stage3b: setup stage3a
-# deprecated
-stage3b: setup $(shell rm -f $(name)/$(mapper)/$(quant_method)/rawcounts.$(quant_method).tsv) stage3a
-stage4: setup DE
-stage5: setup GSE
-
-# deprecated: to be removed in the future
-assemble: quantification
 
 ################################################################################
 # stage 0 - setup/initialization
@@ -2052,6 +2033,26 @@ clean_data_files:
 # TODO: archive (delete everything except the "main" output files for each stage
 #
 #############################################################
+################################################################################
+phony_targets+= stage0 stage1 stage2 stage3 stage3a stage3as stage3b stage4 stage5
+silent_targets+= 
+
+# alias - make it easier for the user
+stage0: setup
+stage1: setup quality_filtering_and_report
+stage2: setup mapping
+stage3: setup $(STAGE3_OUT_FILES)
+stage3a: setup $(quant_method)_quant 
+stage3as: setup quantification_s
+#stage3b: setup stage3a
+# deprecated
+stage3b: setup $(shell rm -f $(name)/$(mapper)/$(quant_method)/rawcounts.$(quant_method).tsv) stage3a
+stage4: setup DE
+stage5: setup GSE
+
+# deprecated: to be removed in the future
+assemble: quantification
+
 
 # *************
 # Transcriptome (WIP)
