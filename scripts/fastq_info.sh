@@ -1,14 +1,16 @@
 #!/bin/bash
 
+STDERR=/dev/stderr
+
 if [ "$*-" == "-"  ]; then
-    echo "fastq_info.sh .fastq [.fastq]" > /dev/stderr
+    echo "fastq_info.sh .fastq [.fastq]" > $STDERR
     exit 1
 fi
 
-A="`fastq_info $* 2>/dev/stdout | tee /dev/stderr |tail -n 5`"  
+A="`fastq_info $* 2>/dev/stdout | tee $STDERR |tail -n 5`"  
 ret=$?
 if [ $ret != 0 ]; then
-    echo "ERROR" > /dev/stderr
+    echo "ERROR" > $STDERR
     exit $ret
 fi
 if [ `echo "$A"|grep -c -i "Error" ` != 0 ]; then
