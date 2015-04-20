@@ -315,6 +315,10 @@ else
     fi
     pinfo "CRAMMING...done."
     pinfo "$odir/$f1_bn.cram created"
+    # generate the md5sum
+    md5sum $odir/$f1_bn.cram > $odir/$f1_bn.tmp.md5 && mv $odir/$f1_bn.tmp.md5 $odir/$f1_bn.cram.md5
+    pinfo "$odir/$f1_bn.cram.md5 created"
+    
 fi
 
 # 
@@ -323,6 +327,7 @@ mv $TSVs $odir
 # report files
 TSVs=`irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE $irap_options print_mapping_report_req  |tail -n 1`
 mv $TSVs $odir
+
 
 # copy the info file
 cp $INFO_FILE $odir
