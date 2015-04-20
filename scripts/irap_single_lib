@@ -250,6 +250,7 @@ fi
 pinfo "Validation...done."
 libs=`grep -E "^#(se|pe)=" $folder/$f1_bn.info|sed "s/#//"`
 libname=`echo $libs|cut -f 2 -d=`
+libname_noprefix=`echo $libname |sed "s/^l//"`
 # Add strand information
 echo ${libname}_strand=$strand >> $folder/$f1_bn.info
 pinfo "Lib. details: $DATA_DIR/$folder/$f1_bn.info"
@@ -314,21 +315,25 @@ else
 	exit 1
     fi
     pinfo "CRAMMING...done."
-    pinfo "$odir/$f1_bn.cram created"
+    CRAM_FILE=`dirname $odir/$f1_bn`/$libname_noprefix.cram    
+    mv $odir/$f1_bn.cram $CRAM_FILE
+    pinfo "CRAM_FILE created"
     # generate the md5sum
-    md5sum $odir/$f1_bn.cram > $odir/$f1_bn.tmp.md5 && mv $odir/$f1_bn.tmp.md5 $odir/$f1_bn.cram.md5
-    pinfo "$odir/$f1_bn.cram.md5 created"
+    md5sum $CRAM_FILE > $CRAM_FILE.tmp.md5 && mv $CRAM_FILE.tmp.md5 $CRAM_FILE.md5
+    pinfo "$CRAM_FILE.md5 created"
     rm -f $odir/$f1_bn.bam
     pinfo "BAM file deleted"
 fi
 
 # 
-TSVs=`irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE $irap_options print_stage3_files  |tail -n 1`
+TSVs=`irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE $irap_options print_stage3_s_targets  |tail -n 1`
 mv $TSVs $odir
 # report files
 TSVs=`irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE $irap_options print_mapping_report_req  |tail -n 1`
 mv $TSVs $odir
+# rename the files (remove the l prefix added by fastq_info)
 
+rename $libname $libname_noprefix `dirname $odir/$f1_bn`/$libname*
 
 # copy the info file
 cp $INFO_FILE $odir
