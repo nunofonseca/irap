@@ -76,5 +76,12 @@ de_method?=deseq2
 deseq2_params=--independent-filtering
 quant_method?=htseq2
 mapper?=tophat2
+
+ifdef big_genome
+$(info * Big genome, overriding mapper: $(mapper) -> star)
+mapper:=star
+# set the options to reduce the number of memory needed at the expense of mapping speed
+star_index_options=--genomeChrBinNbits 15  --genomeSAsparseD 2 --limitGenomeGenerateRAM 128000000000
+endif
 endif
 

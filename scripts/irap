@@ -1648,6 +1648,9 @@ $(quant_method)_quant: mapping $($(quant_method)_quant_files)
 quantification_s: setup mapping $(call genes_quant_files) $(call transcripts_quant_files)  $(call exons_quant_files) 
 #endif
 
+print_stage3_s_targets: $(call genes_quant_files) $(call transcripts_quant_files)  $(call exons_quant_files)
+	echo $^
+
 endif
 phony_targets+= quantification $(quant_method)_quant quantification_s
 

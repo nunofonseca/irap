@@ -689,7 +689,7 @@ bfast_map_options= -A $(bfast_A)
 # TODO: if splicing use 
 
 star_map_params=  --genomeLoad NoSharedMemory --runThreadN $(max_threads) --outSAMunmapped Within --outFilterMultimapNmax $(max_hits) --outSAMattributes NH HI NM MD AS XS  --outSAMstrandField intronMotif   $(star_map_options) 
-star_index_params= --runThreadN $(max_threads) 
+star_index_params= --runThreadN $(max_threads) $(star_index_options)
 
 ifeq ($(mapper_splicing),no)
  star_map_params+= --sjdbOverhang  0
@@ -711,15 +711,24 @@ define star_index_dirname=
 $(1).star
 endef
 
-# STAR requires one directory with a file per chr
-# no tabs and spaces allowed in chr's names
+# STAR 
+# no tabs and spaces allowed in chr's./sequences names
 # (1) ref, index file
 define run_star_index=
-	irap_fasta_split.pl $(1) $(call star_index_dirname,$(1)) && \
-	sed -i 's/ .*//' $(call star_index_dirname,$(1))/*.fa && \
-	irap_map.sh star star --runMode genomeGenerate $(star_index_params) --genomeDir $(call star_index_dirname,$(1)) --genomeFastaFiles $(call star_index_dirname,$(1))/*.fa  --sjdbGTFfile $(gtf_file_abspath) && \
+	mkdir -p $(call star_index_dirname,$(1)) && \
+	sed  's/ .*//' $(1) > $(call star_index_dirname,$(1))/genome.fa && \
+	irap_map.sh star star --runMode genomeGenerate $(star_index_params) --genomeDir $(call star_index_dirname,$(1)) --genomeFastaFiles $(call star_index_dirname,$(1))/genome.fa  --sjdbGTFfile $(gtf_file_abspath) && \
 	touch $(call star_index_filename,$(1))
 endef
+# 	rm $(call star_index_dirname,$(1))/genome.fa && \
+
+
+# define run_star_index=
+# 	irap_fasta_split.pl $(1) $(call star_index_dirname,$(1)) && \
+# 	sed -i 's/ .*//' $(call star_index_dirname,$(1))/*.fa && \
+# 	irap_map.sh star star --runMode genomeGenerate $(star_index_params) --genomeDir $(call star_index_dirname,$(1)) --genomeFastaFiles $(call star_index_dirname,$(1))/*.fa  --sjdbGTFfile $(gtf_file_abspath) && \
+# 	touch $(call star_index_filename,$(1))
+# endef
 
 
 
