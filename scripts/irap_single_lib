@@ -318,7 +318,8 @@ else
     # generate the md5sum
     md5sum $odir/$f1_bn.cram > $odir/$f1_bn.tmp.md5 && mv $odir/$f1_bn.tmp.md5 $odir/$f1_bn.cram.md5
     pinfo "$odir/$f1_bn.cram.md5 created"
-    
+    rm -f $odir/$f1_bn.bam
+    pinfo "BAM file deleted"
 fi
 
 # 
