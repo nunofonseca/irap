@@ -257,7 +257,7 @@ pinfo "Lib. details: $DATA_DIR/$folder/$f1_bn.info"
 sed -i -E "s/^#(se|pe)=/\1=/" $folder/$f1_bn.info		
 # RGId=
 echo "${libname}_rgid=" >> $folder/$f1_bn.info		
-echo "${libname}_shl=@CO\tiRAP:$VERSION\n@CO\tid:$libname" >> $folder/$f1_bn.info		
+echo "${libname}_shl=@CO\tiRAP:$VERSION\n@CO\tid:$libname_noprefix" >> $folder/$f1_bn.info		
 popd 
 INFO_FILE=$TARGET_DIR/$f1_bn.info
 
