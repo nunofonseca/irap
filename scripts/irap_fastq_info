@@ -83,17 +83,21 @@ $(info * $(pname) $(version))
 $(info *)
 
 #***********************
-# Name of the experiment
+# 
+ifndef files
 ifndef file_list	
 ifdef file.list
-file_list=$(file.list)
+ file_list=$(file.list)
 else
- $(call p_error, missing argument file_list!)
+ $(call p_error, missing argument file_list or files!)
 endif
 endif
-
 # avoid passing the list of files as an argument (size limitations)
-files=$(shell cat $(file.list))
+# useful sometimes...
+ files=$(shell cat $(file.list))
+else
+ $(info files=$(files))
+endif
 
 # filter _2 files
 filter_2_files_with_pair=$(sort $(foreach f,$(1), $(call not_pair2,$(f),$(filter-out $(f),$(1)))))
