@@ -96,19 +96,28 @@ endif
 files=$(shell cat $(file.list))
 
 # filter _2 files
-filter_2_files_with_pair=$(sort $(foreach f,$(1),$(call no_pair,$(f),$(1))))
+filter_2_files_with_pair=$(sort $(foreach f,$(1), $(call not_pair2,$(f),$(filter-out $(f),$(1)))))
 
 # $1 _2 file
 # files
-no_pair=$(filter $(subst _2.fastq,_1.fastq,$(1)),$(2))
+not_pair2=$(if $(call pair2_1,$(1),$(2)),,$(if $(call pair2_2,$(1),$(2)),,$(if $(call pair2_3,$(1),$(2)),,$(1))))
+
+
+# check if the given filename corresponds to the second file of a PE library
+pair2_1=$(filter $(subst _2.fastq,_1.fastq,$(1)),$(2))
+pair2_2=$(filter $(subst _R2_001.fastq,_R1_001.fastq,$(1)),$(2))
+pair2_3=$(filter $(subst _read2_,_read1_,$(1)),$(2))
+
 
 # check if the files exists
 $(foreach f,$(files),$(call file_exists,$f))
 
 files2=$(call filter_2_files_with_pair,$(files))
+
+# target
 files.info=$(foreach f,$(files2),$f.info)
 
-$(info $(files2))
+$(info files=$(files2))
 
 define pe.libs=
 	$(sort $(foreach f,$(1),$(shell grep "pe=" $f|cut -f 2 -d=)))
@@ -118,12 +127,31 @@ define se.libs=
 	$(sort $(foreach f,$(1),$(shell grep "se=" $f|cut -f 2 -d=)))
 endef
 
-# TODO: add support to bam files
 
 all: $(files.info)
 	@for f in $(files.info); do cat $$f; done
 	@echo pe=$(strip $(call pe.libs,$(files.info)))
 	@echo se=$(strip $(call se.libs,$(files.info)))
+
+# add some extra file name formats...
+%_R1_001.fastq.info: %_R1_001.fastq  %_R2_001.fastq
+	fastq_info.sh $^  > $@.tmp && mv $@.tmp $@
+
+# dynamically generate the rules...thank you to who named the files this way! 
+define make_read1_rule=
+$(1).info: $(1) $(subst _read1_,_read2_,$(1))
+	fastq_info.sh $$^  > $$@.tmp && mv $$@.tmp $$@
+endef
+
+read1_files=$(foreach f,$(files2),$(shell echo  $(f)|grep _read1_))
+$(foreach f,$(read1_files),$(eval $(call make_read1_rule,$(f))))
+
+###################################################
+%.fastq.info: %.fastq
+	fastq_info.sh $^  > $@.tmp && mv $@.tmp $@
+
+%.fastq.gz.info: %.fastq.gz
+	fastq_info.sh $^  > $@.tmp && mv $@.tmp $@
 
 %_1.fastq.gz.info: %_1.fastq.gz %_2.fastq.gz
 	fastq_info.sh $^  > $@.tmp && mv $@.tmp $@
@@ -131,12 +159,6 @@ all: $(files.info)
 %_1.fastq.info: %_1.fastq %_2.fastq
 	fastq_info.sh $^  > $@.tmp && mv $@.tmp $@
 
-
-%.fastq.gz.info: %.fastq.gz
-	fastq_info.sh $^  > $@.tmp && mv $@.tmp $@
-
-%.fastq.info: %.fastq
-	fastq_info.sh $^  > $@.tmp && mv $@.tmp $@
 
 
 ###################################################
