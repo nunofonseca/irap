@@ -104,13 +104,14 @@ filter_2_files_with_pair=$(sort $(foreach f,$(1), $(call not_pair2,$(f),$(filter
 
 # $1 _2 file
 # files
-not_pair2=$(if $(call pair2_1,$(1),$(2)),,$(if $(call pair2_2,$(1),$(2)),,$(if $(call pair2_3,$(1),$(2)),,$(1))))
+not_pair2=$(if $(call pair2_1,$(1),$(2)),,$(if $(call pair2_2,$(1),$(2)),,$(if $(call pair2_3,$(1),$(2)),,$(if $(call pair2_4,$(1),$(2)),,$(1)))))
 
 
 # check if the given filename corresponds to the second file of a PE library
 pair2_1=$(filter $(subst _2.fastq,_1.fastq,$(1)),$(2))
 pair2_2=$(filter $(subst _R2_001.fastq,_R1_001.fastq,$(1)),$(2))
 pair2_3=$(filter $(subst _read2_,_read1_,$(1)),$(2))
+pair2_4=$(filter $(subst _2_sequence,_1_sequence,$(1)),$(2))
 
 
 # check if the files exists
@@ -147,8 +148,16 @@ $(1).info: $(1) $(subst _read1_,_read2_,$(1))
 	fastq_info.sh $$^  > $$@.tmp && mv $$@.tmp $$@
 endef
 
+define make_read1_rule2=
+$(1).info: $(1) $(subst _1_sequence,_2_sequence,$(1))
+	fastq_info.sh $$^  > $$@.tmp && mv $$@.tmp $$@
+endef
+
 read1_files=$(foreach f,$(files2),$(shell echo  $(f)|grep _read1_))
 $(foreach f,$(read1_files),$(eval $(call make_read1_rule,$(f))))
+
+read1_files2=$(foreach f,$(files2),$(shell echo  $(f)|grep _sequence))
+$(foreach f,$(read1_files2),$(eval $(call make_read1_rule2,$(f))))
 
 ###################################################
 %.fastq.info: %.fastq
