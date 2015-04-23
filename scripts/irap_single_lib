@@ -138,7 +138,7 @@ if [ ! -e $f1 ] ; then
     exit 1
 fi
 
-if [ "$f2-" != "-" ] && [ ! -e $f2] ; then
+if [ "$f2-" != "-" ] && [ ! -e $f2 ] ; then
     perror "File $f1 not found"    
     exit 1
 fi
