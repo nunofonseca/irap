@@ -127,7 +127,10 @@ if ( length(bCols) == 1 ) {
 }
 res <- cbind(res,baseMeanA)
 res <- cbind(res,baseMeanB)
-res <- res[,c("id","baseMean","baseMeanA","baseMeanB","log2FoldChange","lfcSE","stat","pvalue","padj")]
+# report code expects foldChange column
+foldChange <- 2^res$log2FoldChange
+res <- cbind(res,foldChange)
+res <- res[,c("id","baseMean","baseMeanA","baseMeanB","foldChange","log2FoldChange","lfcSE","stat","pval","padj")]
 
 pinfo("Note: the log2FoldChange column contains 'shrunken' log2 foldchange. See DESeq2 documentation for more information.")
 # This has little effect on genes with high number of counts.
