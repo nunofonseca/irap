@@ -1437,7 +1437,7 @@ $(name)/data/lengths.Rdata: $(gtf_file_abspath).lengths.Rdata
 # Setup directory structure
 phony_targets+= setup_dirs
 
-setup_dirs: $(tmp_dir) $(name)/report/riq/ $(name)/$(mapper)/ $(name)/data/  $(name)/$(mapper)/$(quant_method)/  $(name)/$(mapper)/$(quant_method)/$(de_method)/
+setup_dirs: $(tmp_dir) $(name)/report/riq/ $(if $(mapper),$(name)/$(mapper)/) $(name)/data/  $(if $(quant_method),$(name)/$(mapper)/$(quant_method)/)  $(if $(de_method),$(name)/$(mapper)/$(quant_method)/$(de_method)/)
 	$(call p_info,[DONE] Directory structure created)
 
 $(tmp_dir):
