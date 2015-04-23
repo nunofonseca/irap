@@ -14,7 +14,7 @@ else
 fi
 
 if [ -x $IRAP_DIR/scripts/R3 ]; then
-    irap_R3_package_version.R DESeq piano  >> $DEST_FILE
+    irap_R3_package_version.R DESeq DESeq2 piano  >> $DEST_FILE
 else 
     echo "R3 not found" > /dev/stderr
 fi
