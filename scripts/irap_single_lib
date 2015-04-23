@@ -199,10 +199,14 @@ if [ -e `basename $f1` ]; then
     pwarning "symlink in $TARGET_DIR already exists..."
     rm `basename $f1`    
 fi
-ln -s $fp_f1 .
+if [ ! -e `basename $fp_f1` ]; then
+    ln -s $fp_f1 .
+fi
 rp_f2=
 if [ "$f2-" != "-" ]; then
-    ln -s $fp_f2 .
+    if [ ! -e `basename $fp_f2` ]; then
+	ln -s $fp_f2 .
+    fi
     rp_f2=$folder/$f2_bn
 fi
 
