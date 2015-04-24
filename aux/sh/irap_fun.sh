@@ -203,7 +203,7 @@ function stage0_jobs {
     let i=1
     p_info "* Stage 0..." 
     for f in $stage0_targets; do    
-	submit_job "${jobname_prefix}0[$i]"  -w "ended($waitfor)" $cmd conf=$conf setup_dirs $IRAP_PARAMS $f
+	submit_job "${jobname_prefix}0[$i]"  -w "ended($waitfor)" $cmd conf=$conf  $IRAP_PARAMS $f
 	let i=$i+1
     done
     p_info "* Stage 0...$i jobs" 
