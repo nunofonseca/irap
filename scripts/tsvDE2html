@@ -239,7 +239,7 @@ if ( !is.null(annot.table)) {
   }
 }
 
-if ( length(fields$groups) > 0 {
+if ( length(fields$groups) > 0 ) {
 # exclude genes with no expression
   no.expr <- (table[,fields$groups[1]]<=0 & table[,fields$groups[2]]<=0)
   table <- table[!no.expr,]
