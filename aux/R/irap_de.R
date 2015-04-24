@@ -139,6 +139,7 @@ handle.tech.replicates <- function(data,opt) {
   }
   all <- unlist(opt$tech.replicates.l)
   processed <- c()
+  nc<-ncol(data)
   for (n in colnames(data)) {
     if ( n %in% all & ! n %in% processed ) {
       x<-all[all==n]
@@ -166,6 +167,10 @@ handle.tech.replicates <- function(data,opt) {
       processed <- append(processed,n)
     }
   }
+  nc2<-ncol(data)
+  if ( nc != nc2) {
+    pinfo("Technical replicates: matrix was reduced from ",nc," to ",nc2," columns") 
+  }
   data
 }
 # filter the gene count matrix
@@ -187,10 +192,10 @@ filter.read.counts.table <- function(data,opt) {
   cols.names <- cols.names[!is.na(match(cols.names,cols.used))]
   data.f <- data.f[,cols.names]
   if (opt$min_count>0) {
-    pinfo("Filtering out genes with low counts (",opt$min_count,")...")
+    pinfo("Filtering out genes with low counts (<=",opt$min_count,")...")
     rows.sel <- apply(data,1,max)>opt$min_count ;# filter out the rows with the maximum number of reads under the given threshold
     data.f <- data[rows.sel,]
-    pinfo("Filtering out genes with low counts (",opt$min_count,")...done.")
+    pinfo("Filtering out genes with low counts (<=",opt$min_count,")...done.")
   }
   if(opt$only.annot.genes) {
     pinfo("Filtering out genes not in annotation file...")
