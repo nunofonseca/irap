@@ -50,7 +50,7 @@ data.f <- handle.tech.replicates(data.f,opt)
 opt$conds <- map.conds2cols(opt$label2group,colnames(data.f))
 
 #########################
-library(DESeq)
+suppressPackageStartupMessages(library(DESeq))
 #Note: TODO counts of technical replicates  have to be summed up into a single column
 cds <- newCountDataSet(data.f,opt$conds)
 

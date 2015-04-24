@@ -59,7 +59,7 @@ i2 <- which(colData$Contrast!=opt$labels.v[1])
 colData <- rbind(colData[i1,,drop=FALSE],colData[i2,,drop=FALSE])
 
 #########################
-library(DESeq2)
+suppressPackageStartupMessages(library(DESeq2))
 #Note:counts of technical replicates  have to be summed up into a single column
 
 #cds <- newCountDataSet(data.f,opt$conds)
@@ -130,7 +130,9 @@ res <- cbind(res,baseMeanB)
 # report code expects foldChange column
 foldChange <- 2^res$log2FoldChange
 res <- cbind(res,foldChange)
-res <- res[,c("id","baseMean","baseMeanA","baseMeanB","foldChange","log2FoldChange","lfcSE","stat","pval","padj")]
+#print(colnames(res))
+res <- res[,c("id","baseMean","baseMeanA","baseMeanB","foldChange","log2FoldChange","lfcSE","stat","pvalue","padj")]
+colnames(res)[9] <- "pval"
 
 pinfo("Note: the log2FoldChange column contains 'shrunken' log2 foldchange. See DESeq2 documentation for more information.")
 # This has little effect on genes with high number of counts.
