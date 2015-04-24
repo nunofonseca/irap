@@ -263,7 +263,7 @@ BEDTOOLS_VERSION=2.17.0
 BEDTOOLS_FILE=BEDTools.v$BEDTOOLS_VERSION.tar.gz
 BEDTOOLS_URL=http://bedtools.googlecode.com/files/$BEDTOOLS_FILE
    
-stringtie_VERSION=1.0.0
+stringtie_VERSION=1.0.3
 stringtie_FILE=stringtie-${stringtie_VERSION}.Linux_x86_64.tar.gz
 stringtie_URL=http://ccb.jhu.edu/software/stringtie/dl/$stringtie_FILE
 
