@@ -86,15 +86,17 @@ stringtie_params+=
 # params
 # 1- bam file
 # 2- library name 
+# 3- quant parameter -e for quantification only
+# 4- out: gtf_filename
 # Use irap_mapper.sh for now to set up the environment
 # output:
 # $(2).t_data.ctab - fpkm per transcript|gene
 # $(2).gtf - fpkm per transcript/exon
-# use -l CUFF to reuse the cufflinks code
+# use -l CUFF to reuse the cufflinks code for novel transcripts
 define run_stringtie=
-	irap_wrapper.sh stringtie stringtie -p $(max_threads) -l CUFF -o $(call lib2quant_folder,$(2))$(2).tmp.gtf -B $(call lib2quant_folder,$(2))$(2).tmp -C $(call lib2quant_folder,$(2))$(2).cov.tmp.gtf  -G $(gtf_file_abspath)  $(stringtie_params) $(1) && rename .tmp. . $(call lib2quant_folder,$(2))$(2)*.tmp*
+	mkdir -p $(call lib2quant_folder,$(2))$(2) && irap_wrapper.sh stringtie stringtie  -p $(max_threads) $(3)  -o $(call lib2quant_folder,$(2))$(2)/$(2).tmp.gtf -B   -G $(gtf_file_abspath)   $(stringtie_params) $(1)  && rename .tmp. . $(call lib2quant_folder,$(2))$(2)/$(2)*.tmp* && mv $(call lib2quant_folder,$(2))$(2)/$(2).gtf $(4)
 endef
-
+#-C $(call lib2quant_folder,$(2))$(2)/$(2).cov.tmp.gtf
 
 ###########################################################
 #
@@ -353,6 +355,7 @@ $(name)/$(mapper)/htseq1/genes.raw.htseq1.tsv: $(foreach p,$(pe),$(call lib2quan
 	( $(call pass_args_stdin,irap_merge_tsv.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
 
 
+
 # counts per transcript
 $(name)/$(mapper)/htseq1/transcripts.raw.htseq1.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).tsv)	
 	( $(call pass_args_stdin,irap_merge_tsv.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
@@ -548,16 +551,18 @@ endif
 #################################################
 # Stringtie
 define make-stringtie-quant-rule=
-$(call lib2quant_folder,$(1))$(3).stringtie.gtf: $(call lib2bam_folder,$(1))$(3).hits.bam
-	mkdir -p $(call lib2quant_folder,$(1))
-	$(call run_stringtie,$(call lib2bam_folder,$(1))$(3).hits.bam,$(1),$(call lib2quant_folder,$(1))$(3).stringtie.isoforms.fpkm_tracking,$(call lib2quant_folder,$(1))$(3).stringtie.genes.fpkm_tracking)
+$(call lib2quant_folder,$(1))$(3).$(quant_method).gtf: $(call lib2bam_folder,$(1))$(3).hits.bam
+	$(call run_stringtie,$(call lib2bam_folder,$(1))$(3).hits.bam,$(1),$(if $(filter $(quant_method),stringtie_nd),-e,-l CUFF),$$@,$(call lib2quant_folder,$(1))$(3).stringtie.genes.fpkm_tracking)
 
+$(call lib2quant_folder,$(1))$(3).transcripts.fpkm.$(quant_method).tsv: $(call lib2quant_folder,$(1))$(3).$(quant_method).gtf
+	cut -f 6,12 $$(@D)/$(1)/t_data.ctab > $$@.tmp && mv $$@.tmp $$@
 
-$(call lib2quant_folder,$(1))$(3).transcripts.raw.$(quant_method).tsv: $(call lib2quant_folder,$(1))$(3).stringtie.gtf
+$(call lib2quant_folder,$(1))$(3).transcripts.raw.$(quant_method).tsv: $(call lib2quant_folder,$(1))$(3).transcripts.fpkm.$(quant_method).tsv
 	$$(call p_info,Warning! Stringtie produces FPKMS and does not provide counts. Generating pseudo counts $$@.)
+	$$(call cufflinks2counts_t,$(3),$$(@D),$$^,$(quant_method))
 #	$$(call stringtie2counts_t,$(3),$$(@D),$$^,$(quant_method))
 
-$(call lib2quant_folder,$(1))$(3).genes.raw.$(quant_method).tsv: $(call lib2quant_folder,$(1))$(3).stringtie.gtf
+$(call lib2quant_folder,$(1))$(3).genes.raw.$(quant_method).tsv: $(call lib2quant_folder,$(1))$(3).transcripts.raw.$(quant_method).tsv
 	$$(call p_info,Warning! Stringtie produces FPKMS and does not provide counts. Generating pseudo counts $$@.)
 #	$$(call stringtie2counts_g,$(3),$$(@D),$$^,$(quant_method))
 
