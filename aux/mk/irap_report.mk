@@ -345,7 +345,7 @@ silent_targets+=quant_report quant_report_files
 # endef
 
 define set_QUANT_HTML_FILES=
-$(eval override QUANT_HTML_FILES=$(foreach f,$(foreach q,$(SUPPORTED_QUANT_METHODS),$(foreach m,$(mapper),$(foreach f,gene exon transcript,$(foreach metric,raw nlib rpkm,$(call quant_target,$(m),$(q),$(metric),$(f)) )))),$(if $(call is_empty_file,$(f)),,$(f)) ) $(QUANT_HTML_FILES))
+$(eval override QUANT_HTML_FILES=$(foreach f,$(foreach q,$(SUPPORTED_QUANT_METHODS),$(foreach m,$(mapper),$(foreach f,gene exon transcript,$(foreach metric,raw nlib rpkm,$(call quant_target,$(m),$(q),$(metric),$(f)) )))),$(if $(call is_empty_file,$(f)),,$(f)) )) $(QUANT_HTML_FILES)
 endef
 
 
