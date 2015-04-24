@@ -70,7 +70,7 @@ endef
 #************
 
 define run_edger=
-irap_DE_edgeR --tsv $(1) --min $(de_min_count) --contrasts "$(call get_contrast_def,$(2))" --labels "$(call get_contrast_labels,$(2))" --out $(3) $(call get_de_annot) $(call get_de_annot_genes_only)
+irap_DE_edgeR --tsv $(1) --min $(de_min_count) --contrasts "$(call get_contrast_def,$(2))" --labels "$(call get_contrast_labels,$(2))" --out $(3) $(call get_de_annot) $(call get_de_annot_genes_only) $(if $(technical.replicates),--tech-rep "$(technical.replicates)")
 endef
 
 #************
@@ -78,7 +78,7 @@ endef
 #************
 
 define run_voom=
-irap_DE_voom --tsv $(1) --min $(de_min_count) --contrasts "$(call get_contrast_def,$(2))" --labels "$(call get_contrast_labels,$(2))" --out $(3) $(call get_de_annot) $(call get_de_annot_genes_only)
+irap_DE_voom --tsv $(1) --min $(de_min_count) --contrasts "$(call get_contrast_def,$(2))" --labels "$(call get_contrast_labels,$(2))" --out $(3) $(call get_de_annot) $(call get_de_annot_genes_only) $(if $(technical.replicates),--tech-rep "$(technical.replicates)")
 endef
 
 ################################################################################
