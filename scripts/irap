@@ -1441,7 +1441,7 @@ setup_dirs: $(tmp_dir) $(name)/report/riq/ $(if $(mapper),$(name)/$(mapper)/) $(
 	$(call p_info,[DONE] Directory structure created)
 
 $(tmp_dir):
-	@mkdir -p $@
+	mkdir -p $@
 
 # really required?
 #$(data_dir)/data:
@@ -1449,19 +1449,19 @@ $(tmp_dir):
 
 
 $(name)/data/:
-	@mkdir -p $@
+	mkdir -p $@
 
 $(name)/report/riq/:
-	@mkdir -p $@
+	mkdir -p $@
 
 $(name)/$(mapper)/:
-	@mkdir -p $@
+	mkdir -p $@
 
 $(name)/$(mapper)/$(quant_method)/:
-	@mkdir -p $@
+	mkdir -p $@
 
 $(name)/$(mapper)/$(quant_method)/$(de_method)/:
-	@mkdir -p $@
+	mkdir -p $@
 
 
 ################################################################################
