@@ -61,7 +61,11 @@ endef
 
 # mapper quant raw|nlib|rpkm gene|exon|trans
 define quant_target=
-$(if $(call quiet_ls1,$(name)/$(1)/$(2)/$(4)s.$(3).*.tsv), $(name)/report/quant/$(1)_x_$(2)/$(4).$(3).html, )
+$(if $(call file_not_empty,$(call quiet_ls1,$(name)/$(1)/$(2)/$(4)s.$(3).*.tsv)), $(name)/report/quant/$(1)_x_$(2)/$(4).$(3).html, )
+endef
+
+define file_not_empty=
+$(if $(call is_empty_file,$(1)),,$(1))
 endef
 
 define mapping_dirs=
@@ -341,7 +345,7 @@ silent_targets+=quant_report quant_report_files
 # endef
 
 define set_QUANT_HTML_FILES=
-$(eval override QUANT_HTML_FILES=$(foreach q,$(SUPPORTED_QUANT_METHODS),$(foreach m,$(mapper),$(foreach f,gene exon transcript,$(foreach metric,raw nlib rpkm,$(call quant_target,$(m),$(q),$(metric),$(f)) ))))) $(QUANT_HTML_FILES)
+$(eval override QUANT_HTML_FILES=$(foreach f,$(foreach q,$(SUPPORTED_QUANT_METHODS),$(foreach m,$(mapper),$(foreach f,gene exon transcript,$(foreach metric,raw nlib rpkm,$(call quant_target,$(m),$(q),$(metric),$(f)) )))),$(if $(call is_empty_file,$(f)),,$(f)) ) $(QUANT_HTML_FILES))
 endef
 
 
