@@ -285,7 +285,7 @@ define cufflinks2counts=
 	irap_cufflinksFPKMs2counts -c $(3) --label "$(1)" -r $($(subst .pe,,$(subst .se,,$(1)))_rs) -o $(2)/$(1).genes.raw.$(4).tsv -i $(2)/$(1).transcripts.raw.$(4).tsv
 endef
 
-# call we avoid two functions?
+# call to avoid two functions?
 define cufflinks2counts_g=
 	irap_cufflinksFPKMs2counts -c $(3) --label "$(1)" -r $($(subst .pe,,$(subst .se,,$(1)))_rs) -o $(2)/$(1).genes.raw.$(4).tsv -i /dev/null
 endef
@@ -550,21 +550,32 @@ endif
 
 #################################################
 # Stringtie
-define make-stringtie-quant-rule=
-$(call lib2quant_folder,$(1))$(3).$(quant_method).gtf: $(call lib2bam_folder,$(1))$(3).hits.bam
-	$(call run_stringtie,$(call lib2bam_folder,$(1))$(3).hits.bam,$(1),$(if $(filter $(quant_method),stringtie_nd),-e,-l CUFF),$$@,$(call lib2quant_folder,$(1))$(3).stringtie.genes.fpkm_tracking)
 
-$(call lib2quant_folder,$(1))$(3).transcripts.fpkm.$(quant_method).tsv: $(call lib2quant_folder,$(1))$(3).$(quant_method).gtf
+# 
+define stringtie2counts_g=
+	irap_stringtie2counts -c $(3) --label "$(1)" -r $($(subst .pe,,$(subst .se,,$(1)))_rs) -p $(if $(call is_pe_lib,$($(subst .pe,,$(subst .se,,$(1))))),y,n) -o $(2)/$(1).genes.raw.$(4).tsv -i /dev/null
+endef
+
+define stringtie2counts_t=
+	irap_stringtie2counts -c $(3) --label "$(1)" -r $($(subst .pe,,$(subst .se,,$(1)))_rs) -p $(if $(call is_pe_lib,$(subst .pe,,$(subst .se,,$(1)))),y,n) -o /dev/null -i $(2)/$(1).transcripts.raw.$(4).tsv
+endef
+
+
+#$(call lib2quant_folder,$(1))$(1)/t_data.ctab
+define make-stringtie-quant-rule=
+$(call lib2quant_folder,$(1))$(3).$(quant_method).gtf : $(call lib2bam_folder,$(1))$(3).hits.bam
+	$(call run_stringtie,$(call lib2bam_folder,$(1))$(3).hits.bam,$(1),$(if $(filter $(quant_method),stringtie_nd),-e,-l CUFF),$(call lib2quant_folder,$(1))$(3).$(quant_method).gtf,$(call lib2quant_folder,$(1))$(3).$(quant_method).genes.fpkm_tracking)
+
+$(call lib2quant_folder,$(1))$(3).transcripts.fpkm.$(quant_method).tsv: $(call lib2quant_folder,$(1))$(3).$(quant_method).gtf $(call lib2quant_folder,$(1))$(3)/t_data.ctab 
 	cut -f 6,12 $$(@D)/$(1)/t_data.ctab > $$@.tmp && mv $$@.tmp $$@
 
-$(call lib2quant_folder,$(1))$(3).transcripts.raw.$(quant_method).tsv: $(call lib2quant_folder,$(1))$(3).transcripts.fpkm.$(quant_method).tsv
+$(call lib2quant_folder,$(1))$(3).transcripts.raw.$(quant_method).tsv:  $(call lib2quant_folder,$(1))$(3).$(quant_method).gtf
 	$$(call p_info,Warning! Stringtie produces FPKMS and does not provide counts. Generating pseudo counts $$@.)
-	$$(call cufflinks2counts_t,$(3),$$(@D),$$^,$(quant_method))
-#	$$(call stringtie2counts_t,$(3),$$(@D),$$^,$(quant_method))
+	$$(call stringtie2counts_t,$(3),$$(@D),$(call lib2quant_folder,$(1))$(1)/t_data.ctab,$(quant_method),$(1))
 
-$(call lib2quant_folder,$(1))$(3).genes.raw.$(quant_method).tsv: $(call lib2quant_folder,$(1))$(3).transcripts.raw.$(quant_method).tsv
+$(call lib2quant_folder,$(1))$(3).genes.raw.$(quant_method).tsv: $(call lib2quant_folder,$(1))$(3).$(quant_method).gtf
 	$$(call p_info,Warning! Stringtie produces FPKMS and does not provide counts. Generating pseudo counts $$@.)
-#	$$(call stringtie2counts_g,$(3),$$(@D),$$^,$(quant_method))
+	$$(call stringtie2counts_g,$(3),$$(@D),$(call lib2quant_folder,$(1))$(1)/t_data.ctab,$(quant_method),$(1))
 
 endef
 
@@ -574,7 +585,7 @@ $(foreach l,$(se),$(eval $(call make-stringtie-quant-rule,$(l),$(quant_method),$
 $(foreach l,$(pe),$(eval $(call make-stringtie-quant-rule,$(l),$(quant_method),$(l).pe,gene)))
 
 # stringtie* specific rules
-$(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).tsv)
+$(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).transcripts.raw.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).transcripts.raw.$(quant_method).tsv)
 	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) )  > $@.tmp && mv $@.tmp $@
 
 $(name)/$(mapper)/$(quant_method)/%xons.raw.$(quant_method).tsv: 
@@ -592,5 +603,12 @@ $(name)/$(mapper)/$(quant_method)/$(name).merged.gtf:  $(foreach p,$(pe),$(call 
 $(name)/$(mapper)/$(quant_method)/$(name).assemblies.txt: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.cuff.gtf) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.cuff.gtf)
 	rm -f $@
 	touch $@.tmp && for f in $^; do echo $$f >> $@.tmp ; done && mv $@.tmp $@
+
+
+$(name)/$(mapper)/stringtie/transcripts.rpkm.stringtie.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.rpkm.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.transcripts.rpkm.$(quant_method).tsv) 
+	tsv.aggrbygene $^ RPKM $@.tmp && mv  $@.tmp $@
+
+$(name)/$(mapper)/stringtie/genes.rpkm.stringtie.tsv: $(name)/$(mapper)/stringtie/transcripts.rpkm.stringtie.tsv
+	tsv.aggrbygene $^ RPKM $@.tmp && mv  $@.tmp $@
 
 endif
