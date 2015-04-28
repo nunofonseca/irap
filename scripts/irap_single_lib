@@ -284,15 +284,18 @@ fi
 pinfo "Aligning data...complete."
 
 pinfo "Quantification..."
-run_AND_timeIt "iRAP-Quant" $time_log_file  irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE $irap_options max_mem=$mem max_threads=$threads raw_folder=single_lib stage3
+run_AND_timeIt "iRAP-Quant" $time_log_file  irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE $irap_options max_mem=$mem max_threads=$threads raw_folder=single_lib stage3as
 if [ $? != 0 ]; then
     perror "iRAP failed"
     exit 1
 fi
 pinfo "Quantification...complete."
 
+
 pinfo "Mapping QC..."
-run_AND_timeIt "iRAP-Mapping-QC" $time_log_file  irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE $irap_options max_mem=$mem max_threads=$threads raw_folder=single_lib mapping_report
+# report files
+REPORT_TSVs=`irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE $irap_options print_mapping_report_req  |tail -n 1`
+run_AND_timeIt "iRAP-Mapping-QC" $time_log_file  irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE $irap_options max_mem=$mem max_threads=$threads raw_folder=single_lib $REPORT_TSVs
 if [ $? != 0 ]; then
     perror "iRAP failed"
     exit 1
@@ -333,8 +336,8 @@ fi
 TSVs=`irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE $irap_options print_stage3_s_targets  |tail -n 1`
 mv $TSVs $odir
 # report files
-TSVs=`irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE $irap_options print_mapping_report_req  |tail -n 1`
-mv $TSVs $odir
+#REPORT_TSVs=`irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE $irap_options print_mapping_report_req  |tail -n 1`
+mv $REPORT_TSVs $odir
 # rename the files (remove the l prefix added by fastq_info)
 
 rename $libname $libname_noprefix `dirname $odir/$f1_bn`/$libname*
