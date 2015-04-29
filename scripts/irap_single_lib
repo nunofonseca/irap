@@ -350,7 +350,9 @@ fi
 TSVs=`irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE $irap_options print_stage3_s_targets  |tail -n 1`
 
 pinfo "Moving the following files to $odir: $TSVs $REPORT_TSVs"
-mv $TSVs $odir
+cp $TSVs $odir
+#mv $TSVs $odir
+
 # report files
 #REPORT_TSVs=`irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE $irap_options print_mapping_report_req  |tail -n 1`
 mv $REPORT_TSVs $odir
