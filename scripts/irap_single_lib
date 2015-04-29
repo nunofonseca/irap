@@ -256,6 +256,7 @@ if ( [ ! -e $folder/$f1_bn.info] || [ $run_faster == n ] ); then
     exit 1
  fi
  pinfo "Validation...done."
+ popd
  libs=`grep -E "^#(se|pe)=" $folder/$f1_bn.info|sed "s/#//"`
  libname=`echo $libs|cut -f 2 -d=`
  libname_noprefix=`echo $libname |sed "s/^l//"`
@@ -269,12 +270,12 @@ if ( [ ! -e $folder/$f1_bn.info] || [ $run_faster == n ] ); then
 
 else 
  pinfo "Validation skipped"
+ popd
  libs=`grep -E "^#(se|pe)=" $folder/$f1_bn.info|sed "s/#//"`
  libname=`echo $libs|cut -f 2 -d=`
  libname_noprefix=`echo $libname |sed "s/^l//"`
 fi
 
-popd 
 INFO_FILE=$TARGET_DIR/$f1_bn.info
 
 set +e
