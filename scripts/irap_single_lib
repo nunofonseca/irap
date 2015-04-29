@@ -249,7 +249,7 @@ pinfo "Validating FASTQ files..."
 pinfo "FASTQ files: $f1 $f2"
 # Move to the raw data top-level folder
 pushd $DATA_DIR/raw_data/single_lib/ >/dev/null
-if [ ! -e $folder/$f1_bn.info] || [ $run_faster==n ]; then
+if ( [ ! -e $folder/$f1_bn.info] || [ $run_faster == n ] ); then
  run_AND_timeIt "fastqInfo" $time_log_file fastq_info.sh  $folder/$f1_bn $rp_f2  > $folder/$f1_bn.info.tmp && mv $folder/$f1_bn.info.tmp $folder/$f1_bn.info
  if [ $? != 0 ] ; then
     perror "FASTQ validation failed"
