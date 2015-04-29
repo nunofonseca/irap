@@ -9,7 +9,7 @@ mem=4000000000
 threads=1
 irap_options=
 do_stage0=no
-
+run_faster=n
 # This script will not run with sudo
 # http://unix.stackexchange.com/questions/38538/bash-dev-stderr-permission-denied
 STDERR=/dev/stderr
@@ -103,7 +103,7 @@ function run_AND_timeIt {
 }
 ################################################
 # 
-while getopts "1:2:c:s:m:t:i:h0"  Option
+while getopts "1:2:c:s:m:t:i:h0f"  Option
 do
     case $Option in
 	0 ) do_stage0="yes";;
@@ -112,6 +112,7 @@ do
         c ) conf=$OPTARG;;# send all output to a log file
 	s ) strand=$OPTARG;;# send all output to a log file
 	m ) mem=$OPTARG;;
+	f ) run_faster=y;;
 	i ) irap_options=$OPTARG;;
         h ) print_usage; exit;;
     esac
@@ -217,7 +218,9 @@ popd > /dev/null
 odir=$PWD/out/`dirname $f1|cut -f 2- -d /`
 fileprefix=`get_fileprefix $f1`
 pinfo "Final files will be placed in $odir"
-mkdir -p $odir
+if [ ! -e  $odir ]; then
+    mkdir -p $odir
+fi
 ################################################
 # TSV with the time and memory used
 time_log_file=$odir/`get_fileprefix $f1`.time
@@ -246,22 +249,31 @@ pinfo "Validating FASTQ files..."
 pinfo "FASTQ files: $f1 $f2"
 # Move to the raw data top-level folder
 pushd $DATA_DIR/raw_data/single_lib/ >/dev/null
-run_AND_timeIt "fastqInfo" $time_log_file fastq_info.sh  $folder/$f1_bn $rp_f2  > $folder/$f1_bn.info.tmp && mv $folder/$f1_bn.info.tmp $folder/$f1_bn.info
-if [ $? != 0 ] ; then
+if [ ! -e $folder/$f1_bn.info] || [ $run_faster==n ]; then
+ run_AND_timeIt "fastqInfo" $time_log_file fastq_info.sh  $folder/$f1_bn $rp_f2  > $folder/$f1_bn.info.tmp && mv $folder/$f1_bn.info.tmp $folder/$f1_bn.info
+ if [ $? != 0 ] ; then
     perror "FASTQ validation failed"
     exit 1
+ fi
+ pinfo "Validation...done."
+ libs=`grep -E "^#(se|pe)=" $folder/$f1_bn.info|sed "s/#//"`
+ libname=`echo $libs|cut -f 2 -d=`
+ libname_noprefix=`echo $libname |sed "s/^l//"`
+ # Add strand information
+ echo ${libname}_strand=$strand >> $folder/$f1_bn.info
+ pinfo "Lib. details: $DATA_DIR/$folder/$f1_bn.info"
+ sed -i -E "s/^#(se|pe)=/\1=/" $folder/$f1_bn.info		
+ # RGId=
+ echo "${libname}_rgid=" >> $folder/$f1_bn.info		
+ echo "${libname}_shl=@CO\tiRAP:$VERSION\n@CO\tid:$libname_noprefix\n@CO\tAnalysis performed by http://www.ebi.ac.uk/about/people/robert-petryszak team at EMBL-EBI" >> $folder/$f1_bn.info		
+
+else 
+ pinfo "Validation skipped"
+ libs=`grep -E "^#(se|pe)=" $folder/$f1_bn.info|sed "s/#//"`
+ libname=`echo $libs|cut -f 2 -d=`
+ libname_noprefix=`echo $libname |sed "s/^l//"`
 fi
-pinfo "Validation...done."
-libs=`grep -E "^#(se|pe)=" $folder/$f1_bn.info|sed "s/#//"`
-libname=`echo $libs|cut -f 2 -d=`
-libname_noprefix=`echo $libname |sed "s/^l//"`
-# Add strand information
-echo ${libname}_strand=$strand >> $folder/$f1_bn.info
-pinfo "Lib. details: $DATA_DIR/$folder/$f1_bn.info"
-sed -i -E "s/^#(se|pe)=/\1=/" $folder/$f1_bn.info		
-# RGId=
-echo "${libname}_rgid=" >> $folder/$f1_bn.info		
-echo "${libname}_shl=@CO\tiRAP:$VERSION\n@CO\tid:$libname_noprefix\n@CO\tAnalysis performed by http://www.ebi.ac.uk/about/people/robert-petryszak team at EMBL-EBI" >> $folder/$f1_bn.info		
+
 popd 
 INFO_FILE=$TARGET_DIR/$f1_bn.info
 
@@ -310,7 +322,9 @@ if [ ! -e "$BAM" ]; then
     perror "Ooops: $BAM not found"
     exit 1
 else
-    mv $BAM $odir/$f1_bn.bam
+    # cp while in devel 
+    #mv $BAM $odir/$f1_bn.bam
+    cp $BAM $odir/$f1_bn.bam
     # add the headers to the BAM
     samtools view -H $odir/$f1_bn.bam > $odir/.header
     
@@ -349,4 +363,5 @@ cp $INFO_FILE $odir
 # 
 # test1/tophat1/htseq2/genes.rpkm.deseq.tsv.tmp
 pinfo "Files in $odir"
+pinfo "All done."
 exit 0
