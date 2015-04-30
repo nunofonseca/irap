@@ -263,7 +263,6 @@ if [ $do_validation -eq 1 ]; then
 	exit 1
     fi
     pinfo "Validation...done."
-    popd
     libs=`grep -E "^#(se|pe)=" $folder/$f1_bn.info|sed "s/#//"`
     libname=`echo $libs|cut -f 2 -d=`
     libname_noprefix=`echo $libname |sed "s/^l//"`
@@ -276,12 +275,11 @@ if [ $do_validation -eq 1 ]; then
     echo "${libname}_shl=@CO\tiRAP:$VERSION\n@CO\tid:$libname_noprefix\n@CO\tAnalysis performed by http://www.ebi.ac.uk/about/people/robert-petryszak team at EMBL-EBI" >> $folder/$f1_bn.info		
 else 
     pinfo "Validation skipped"
-    popd
     libs=`grep -E "^#(se|pe)=" $folder/$f1_bn.info|sed "s/#//"`
     libname=`echo $libs|cut -f 2 -d=`
     libname_noprefix=`echo $libname |sed "s/^l//"`
 fi
-
+popd
 INFO_FILE=$TARGET_DIR/$f1_bn.info
 
 set +e
