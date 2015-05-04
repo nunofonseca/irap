@@ -42,7 +42,7 @@ fusion_search=n
 else
 fusion_search=y
 endif
-
+FUSION_TARGETS=
 
 ifeq ($(fusion_search),y)
 
@@ -119,8 +119,19 @@ $(name)/$(mapper)/fusionmap/%.fusion.tsv: $(name)/$(mapper)/%.se.hits.bam $(name
 $(name)/$(mapper)/fusionmap/%.fusion.tsv: $(name)/$(mapper)/%.pe.hits.bam $(name)/data/fusionmap/fusionmap.index $(name)/data/fusionmap/fusionmap.gm
 	$(call run_fusionmap,$*,$<,pe,$@.tmp)  && mv $@.tmp $@
 
+############################
 # Add to stage3 output files
-STAGE3_OUT_FILES+=$(foreach p,$(pe),$(call lib2fusion_folder,$(p))$(p).fusion.tsv) $(foreach s,$(se),$(call lib2fusion_folder,$(s))$(s).fusion.tsv)
+FUSION_LIB_TARGETS=$(foreach p,$(pe),$(call lib2fusion_folder,$(p))$(p).fusion.tsv) $(foreach s,$(se),$(call lib2fusion_folder,$(s))$(s).fusion.tsv)
+
+STAGE3_S_TARGETS+=$(FUSION_LIB_TARGETS)
+
+STAGE3_OUT_FILES+=$(name)/$(mapper)/fusionmap/fusionmap_readcounts.tsv
+
+# counts file
+$(name)/$(mapper)/fusionmap/fusionmap_readcounts.tsv:  $(FUSION_LIB_TARGETS)
+	$(call pass_args_stdin,irap_Fusion_fm2tsv,$@.tmp, --tsv "$^" -o $@.tmp) && mv $@.tmp $@
+
+
 
 endif
 
@@ -133,3 +144,4 @@ else
 
 endif
 
+do_fusion: $(FUSION_TARGETS)
