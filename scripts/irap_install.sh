@@ -325,7 +325,7 @@ rsem_VERSION=1.2.9
 rsem_FILE=rsem-${rsem_VERSION}.tar.gz
 rsem_URL=http://deweylab.biostat.wisc.edu/rsem/src/$rsem_FILE
 
-FUSIONMAP_VERSION=2015-01-09
+FUSIONMAP_VERSION=2015-03-31
 FUSIONMAP_FILE=FusionMap_${FUSIONMAP_VERSION}.zip
 FUSIONMAP_URL=http://omicsoft.com/fusionmap/Software/$FUSIONMAP_FILE
 
@@ -412,6 +412,7 @@ export IRAP_DIR=$IRAP_DIR
 export PATH=\$IRAP_DIR/bin/bowtie1/bin:\$IRAP_DIR/bin:\$IRAP_DIR/scripts:\$PATH
 export LD_LIBRARY_PATH=\$IRAP_DIR/lib:\$LD_LIBRARY_PATH:/usr/local/lib
 export CFLAGS="-I\$IRAP_DIR/include -I\$IRAP_DIR/include/bam -I\$IRAP_DIR/include/boost  \$CFLAGS"
+export R_LIBS_USER=$IRAP_DIR/Rlibs
 export CXXFLAGS="-I\$IRAP_DIR/include -I\$IRAP_DIR/include/bam -I\$IRAP_DIR/include/boost -L\$IRAP_DIR/lib \$CXXFLAGS"
 export PERL5LIB=\$IRAP_DIR/perl/lib/perl5:\$IRAP_DIR/lib/perl5:\$IRAP_DIR/lib/perl5/x86_64-linux:\$IRAP_DIR/lib/perl5/$PERL_VERSION
 export PYTHONUSERBASE=\$IRAP_DIR/python
@@ -426,6 +427,7 @@ export THREADS=8
 #export JOB_MAX_MEM 32000
 #export IRAP_LSF_PARAMS=
 EOF
+    mkdir -p $IRAP_DIR/Rlibs
 }
 
 
@@ -1058,6 +1060,7 @@ function R_packages_install {
     pinfo "Installing R packages..."
     R --no-save <<EOF
 repo<-"$CRAN_REPO"
+
 install.packages("multicore",repos=repo)
 install.packages("parallel",repos=repo)
 install.packages("intervals",repos=repo)
