@@ -233,9 +233,13 @@ endef
 #	
 define run_tophat2_index=
 	if [ ! -h $(reference_prefix).fa ] ; then  ln -s `basename $(reference_prefix)` $(reference_prefix).fa; fi && \
-        $(call run_bowtie2_index,$(1),$(1)) && \
-	mkdir -p $(call tophat2_trans_index_filename,$(1),$(1)) &&  \
-	irap_map.sh tophat2 tophat -G $(gtf_file_abspath) --transcriptome-index $(call tophat2_trans_index_filename,$(1),$(1))/ $(tophat_reference_prefix)
+        $(call run_bowtie2_index,$(1),$(1)) 
+endef
+
+define run_tophat2_index_annot=
+	mkdir -p $(call tophat2_trans_index_filename,$(1),$(1)).tmp && rm -rf $(call tophat2_trans_index_filename,$(1),$(1)).tmp/*  &&  \
+	irap_map.sh tophat2 tophat -G $(gtf_file_abspath) --transcriptome-index $(call tophat2_trans_index_filename,$(1),$(1)).tmp $(tophat_reference_prefix) &&
+	mv $(call tophat2_trans_index_filename,$(1),$(1)).tmp $(call tophat2_trans_index_filename,$(1),$(1))
 endef
 
 # same arguments used for *_index
@@ -245,7 +249,12 @@ endef
 define tophat2_index_filename=
 	$(call bowtie2_index_filename,$(1),$(1))
 endef
+
 define tophat2_trans_index_filename=
+	$(subst .fa,,$(1))_$(subst .gtf,,$(notdir $(gtf_file_abspath)))_th2_trans
+endef
+
+define tophat2_trans_index_filename_old=
 	$(subst .fa,,$(1))_th2_trans
 endef
 
@@ -277,7 +286,7 @@ endef
 # bam_tophat2_pe_fix fix unmapped reads flags
 define run_tophat2_map=
         $(call tophat_setup_dirs,$(1))
-	irap_map.sh tophat2 tophat2  -p $(max_threads) $(call tophat_seglength_option,$($(1)_rs),$(1)) $(call tophat_qual_option,$($(1)_qual)) $(call tophat_strand_params,$(1)) $(tophat2_map_params) $(call tophat_ins_sd_params,$(1)) -G $(gtf_file_abspath) --tmp-dir $(call lib2bam_folder,$(1))$(1)/tmp -o $(call lib2bam_folder,$(1))$(1) --transcriptome-index $(call tophat2_trans_index_filename,$(file_indexed),$(file_indexed))/  $(if $($(1)_rgid),--rg-id "$($(1)_rgid)" --rg-sample "$($(1)_rgid)")   $(tophat_reference_prefix) $(2) && \
+	irap_map.sh tophat2 tophat2  -p $(max_threads) $(call tophat_seglength_option,$($(1)_rs),$(1)) $(call tophat_qual_option,$($(1)_qual)) $(call tophat_strand_params,$(1)) $(tophat2_map_params) $(call tophat_ins_sd_params,$(1)) -G $(gtf_file_abspath) --tmp-dir $(call lib2bam_folder,$(1))$(1)/tmp -o $(call lib2bam_folder,$(1))$(1) --transcriptome-index $(call tophat2_trans_index_filename,$(word 1,$(files_indexed)),$(word 1,$(files_indexed)))/  $(if $($(1)_rgid),--rg-id "$($(1)_rgid)" --rg-sample "$($(1)_rgid)")   $(tophat_reference_prefix) $(2) && \
 	$(if $($(1)_rgid), $(call addRG2BAM,$(call lib2bam_folder,$(1))$(1)/unmapped.bam,$($(1)_rgid)) && ) \
 	samtools merge -c  - $(call lib2bam_folder,$(1))$(1)/accepted_hits.bam $(call lib2bam_folder,$(1))$(1)/unmapped.bam | \
 	bam_tophat2_fix - - | \
@@ -734,7 +743,7 @@ endef
 
 #  --sjdbFileChrStartEnd  $(juncs_file_abspath)
 define run_star_map=
-	 irap_map.sh star star $(star_map_params) --genomeDir $(call star_index_dirname,$(file_indexed)) \
+	 irap_map.sh star star $(star_map_params) --genomeDir $(call star_index_dirname,$(word 1,$(files_indexed))) \
 	--readFilesIn $(2) --outFileNamePrefix $(3) --outSAMtype BAM Unsorted $(if $($(1)_rgid),--outSAMattrRGline "ID:$($(1)_rgid)",) \
 	$(if $(filter-out n,$(transcript_quant)), --quantMode TranscriptomeSAM, )  &&\
 	bam_fix_se_flag $(3)Aligned.out.bam - | \
@@ -789,6 +798,7 @@ define run_osa_index=
 	touch $(call osa_index_filename,$(1))
 endef
 
+
 # TODO: if splicing use 
 ifeq ($(mapper_splicing),no)
  osa_map_params+= --sjdbOverhang  0
@@ -818,14 +828,14 @@ endef
 # - output name: remove the _1/2 and .fastq from the input filename
 define run_osa_map=
 	$(call osa_conf_file,$(1),$(2),`dirname $(3)`/$(1)_tmp) > $(3).conf && \
-	 irap_map.sh osa osa.exe -alignrna `dirname $(file_indexed)` $(call osa_ref_lib_name,$(file_indexed)) \
-	 $(call osa_index_dirname,$(file_indexed))/ReferenceLibrary/$(call osa_ref_lib_name,$(file_indexed))_GeneModels/$(call osa_gene_model_name) $(3).conf && \
+	 irap_map.sh osa osa.exe -alignrna `dirname $(word 1,$(files_indexed))` $(call osa_ref_lib_name,$(word 1,$(files_indexed))) \
+	 $(call osa_index_dirname,$(word 1,$(files_indexed)))/ReferenceLibrary/$(call osa_ref_lib_name,$(word 1,$(files_indexed)))_GeneModels/$(call osa_gene_model_name) $(3).conf && \
 	samtools sort -m $(SAMTOOLS_SORT_MEM) -T $(3).tmp -o $(3).tmp.bam `dirname $(3)`/$(if $(findstring $(1),$(pe)),$(1)_f.bam,$(1).f.bam)  &&\
 	$(call bam_rehead,$(3).tmp.bam,$(1)) && \
 	mv $(3).tmp.bam $(3) && rm -f `dirname $(3)`/$(1)_f.bam  && rm -f $(3).conf
 endef
 
-#	 irap_map.sh osa osa.exe -alignrna `dirname $(file_indexed)` $(call osa_ref_lib_name,$(file_indexed))  `dirname $(file_indexed)`/$(call osa_ref_lib_name,$(file_indexed))_GeneModels/$(call osa_gene_model_name) $(3).conf && \ $(call osa_index_dirname,$(1)) $(gtf_file_abspath) $(call osa_ref_lib_name,$(1)) $(call osa_gene_model_name) &&\
+#	 irap_map.sh osa osa.exe -alignrna `dirname $(word 1,$(files_indexed))` $(call osa_ref_lib_name,$(word 1,$(files_indexed)))  `dirname $(word 1,$(files_indexed))`/$(call osa_ref_lib_name,$(word 1,$(files_indexed)))_GeneModels/$(call osa_gene_model_name) $(3).conf && \ $(call osa_index_dirname,$(1)) $(gtf_file_abspath) $(call osa_ref_lib_name,$(1)) $(call osa_gene_model_name) &&\
 
 ######################################################
 # Mapsplice
@@ -875,7 +885,7 @@ endef
 #-c The directory containing the sequence files of reference genome. All sequence files are required to:
 # BAM file does not contain the NH flag and the mate information is not ok (htseq fails)
 define run_mapsplice_map=
-	 irap_map.sh mapsplice python $(IRAP_DIR)/bin/mapsplice/mapsplice.py  $(mapsplice_map_params) --threads	 $(max_threads) --bam -o  $(call lib2bam_folder,$(1))$(1) -c $(call mapsplice_index_prefix,$(file_indexed)) -x $(call mapsplice_index_prefix,$(file_indexed)) $(call mapsplice_file_params,$(1),$(2)) &&\
+	 irap_map.sh mapsplice python $(IRAP_DIR)/bin/mapsplice/mapsplice.py  $(mapsplice_map_params) --threads	 $(max_threads) --bam -o  $(call lib2bam_folder,$(1))$(1) -c $(call mapsplice_index_prefix,$(word 1,$(files_indexed))) -x $(call mapsplice_index_prefix,$(word 1,$(files_indexed))) $(call mapsplice_file_params,$(1),$(2)) &&\
 	samtools fixmate  $(call lib2bam_folder,$(1))$(1)/alignments.bam $(3).fix.bam && \
 	$(call bam_fix_nh,$(3).fix.bam,-) | \
 	samtools sort -m $(SAMTOOLS_SORT_MEM) -T $(3).tmp -o $(3).tmp.bam -  && \
