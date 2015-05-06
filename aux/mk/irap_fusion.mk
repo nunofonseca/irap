@@ -129,7 +129,7 @@ STAGE3_OUT_FILES+=$(name)/$(mapper)/fusionmap/fusionmap_readcounts.tsv
 
 # counts file
 $(name)/$(mapper)/fusionmap/fusionmap_readcounts.tsv:  $(FUSION_LIB_TARGETS)
-	$(call pass_args_stdin,irap_Fusion_fm2tsv,$@.tmp, --tsv "$^" -o $@.tmp) && mv $@.tmp $@
+	$(call pass_args_stdin,irap_Fusion_fm2tsv,$@.tmp, --tsv "$(call spaces2comms,$^)" -o $@.tmp) && mv $@.tmp $@
 
 
 
