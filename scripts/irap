@@ -751,9 +751,24 @@ endif
 $(info *	exon_quant=$(exon_quant))
 $(info *	transcript_quant=$(transcript_quant))
 
+#####################
+# Exon quantification
 ifeq ($(exon_quant),y) 
-$(info Exon quantification requires that all exons in the gtf file have an exon_id attribute)
+# dexseq can only be used with methods that do not support exon quant
+ifeq ($(exon_quant_method),dexseq) 
+ifneq (,$(filter $(quant_method),cufflinks1 cufflinks2 cufflinks2_nd cufflinks1_nd nurd))
+$(error Sorry... currently DEXSeq cannot be used together with $(quant_method))
 endif
+else 
+exon_quant_method=$(quant_method)
+#$(info Exon quantification requires that all exons in the gtf file have an exon_id attribute)
+endif
+SUPPORTED_EXON_QUANT_METHODS=stringtie dexseq htseq1 htseq2
+
+
+$(info *	exon_quant_method=$(exon_quant_method))
+endif
+
 ifndef gtf_file_wexonid
 gtf_file_wexonid=$(gtf_file_abspath)
 #$(gtf_file_wexonid)=$(gtf_file_abspath).exon_id.gtf
@@ -1429,7 +1444,7 @@ $(name)/data/gene.annot.tsv.Rdata: $(refgeneannot_file).Rdata
 #endif
 
 $(name)/data/empty.gene.annot.tsv: 
-	echo '"ID","Name","locus","source","lname","GO","GOterm","KEGG"' | tr "," "\t" > $@
+	echo '"ID","Name","locus","source","lname","GO","GOterm","KEGG","biotype"' | tr "," "\t" > $@
 
 # collect genes, transcripts and exons lengths
 # generate only once
