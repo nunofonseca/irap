@@ -45,7 +45,7 @@ usage <- "irap_Fusion_fm2tsv --tsv file [options]"
 filenames <- c() ;#filenames that must exist (if defined)
 option_list <- list(
   make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
-  make_option(c("-i", "--tsv"), type="character", dest="tsv_files", default=NULL,help="TSV file names with the FusionMap output (separated by commas)"),
+  make_option(c("-i", "--tsv"), type="character", dest="tsv_files", default=NULL,help="TSV file names with the FusionMap output."),
   make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name prefix.")
 )
 
@@ -63,21 +63,30 @@ tsv.files <- strsplit(opt$tsv_file,"[, ]")[[1]]
 pdebug("Processing ",length(tsv.files)," FusionMap files")
 
 read.fusionmap<-function(file) {
+  pinfo("Reading ",file)
   t<-read.table(file,sep="\t",header=T,check.names=F)
   return(t)
 }
 
 fusionmap.reads<-function(fusionmap.data) {
- reads<-rowSums(fusionmap.data[,grep("SeedCount|RescuedCount",colnames(fusionmap.data))])
- id<-apply(X=fusionmap.data[,c("FusionGene","SplicePattern","Strand")],MARGIN=1,paste,collapse=":")
- m<-data.frame(list(Fusion=id,Reads=reads))
- colnames(m)<-c("Fusion",gsub(".UniqueCuttingPositionCount","",colnames(fusionmap.data)[2]))
- # check if the ids are unique
- if ( length(unique(id))!=length(id) ) {
-   print("ERROR: non unique Fusion id")
-   q(status=1)
- }
- return(m)
+  reads<-rowSums(fusionmap.data[,grep("SeedCount|RescuedCount",colnames(fusionmap.data))])
+  id<-apply(X=fusionmap.data[,c("FusionGene","SplicePattern","Strand")],MARGIN=1,paste,collapse=":")
+  m<-data.frame(list(Fusion=id,Reads=reads))
+  # check if the ids are unique
+  if ( length(unique(id))!=length(id) ) {
+    pwarning("Fusion genes with multiple breakpoints:")
+    dup.ids <- id[duplicated(id)]
+    pdebug("Duplicated ids:",dup.ids)
+    if ( pdebug.enabled ) {
+      print(m[id %in% dup.ids,])
+    }
+    m <- aggregate(as.numeric(m[,2]),by=list(Fusion=m[,1]),FUN=sum)
+    if ( pdebug.enabled ) {
+      pdebug(m[m[,1] %in% dup.ids,])
+    }
+  }
+  colnames(m)<-c("Fusion",gsub(".UniqueCuttingPositionCount","",colnames(fusionmap.data)[2]))
+  return(m)
 }
 
 # check if the files exist
@@ -93,9 +102,14 @@ if (sum(!fe)!=0) {
 m<-fusionmap.reads(read.fusionmap(tsv.files[1]))
 cur.file.idx <- 2
 while ( cur.file.idx <= length(tsv.files) ) {
-  pdebug("Processing ",tsv.files[cur.file.idx])
+  pinfo("Processing ",tsv.files[cur.file.idx])
   m2 <- fusionmap.reads(read.fusionmap(tsv.files[cur.file.idx]))
+  pdebug("Merging...")
+  #pdebug(intersect(m2$Fusion,m$Fusion))
+  pdebug(paste(colnames(m2),collapse=","))
+  #pdebug(colnames(m))
   m <- merge(m,m2,by.x="Fusion",by.y="Fusion",all=TRUE,sort=F)
+  
   cur.file.idx <- cur.file.idx+1
 }
 
