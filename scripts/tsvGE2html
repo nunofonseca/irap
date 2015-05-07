@@ -344,11 +344,16 @@ table.html <- table
 pdebug.save.state("tsvGE2html0","p1")
 gen.page(o.html.file)
 
+if ( ! "biotype" %in% colnames(table) && "biotype" %in% colnames(table)) {
+  table$biotype=table$source
+  pinfo("biotype column not found...using source column (back compatibility)")
+}
+
 # ok
 for (filt.name  in get.source.filter.names() ) {
   uncut.table <- uncut.table.orig
   if ( filt.name!="All" && filt.name!="all") {
-    if (! "source" %in% colnames(table)) {
+    if (! "biotype" %in% colnames(table)) {
       table <- table.orig[NULL,]
       uncut.table <- table.tsv[NULL,]                               
     } else {

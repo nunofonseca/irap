@@ -105,7 +105,7 @@ if ( nrow(gtf.table)!=length(gene.ids)) {
   gtf.table <- gtf.table[!duplicated(gtf.table$gene_id),,drop=FALSE]
 }
 
-biotypes <- gtf.table[,"source"]
+biotypes <- gtf.table[,biotype.column(gtf.table)]
 pdebug.save.state("irap_gtf2annot","p1")
 pdebug("biotypes collected")
 # start-end
@@ -123,7 +123,8 @@ gc(verbose=FALSE)
 #pdebug.save.state("irap_gtf2annot","p2")
 r.table <- data.frame(list(ID=gene.ids,
                       locus=paste(chr,":",start,"..",end,sep=""),
-                      source=biotypes))
+                      source=gtf.table[,"source"],
+                      biotype=biotypes))
 #print(head(r.table))
 #print(head(gene.ids))
 rownames(r.table) <- gene.ids
@@ -203,7 +204,7 @@ if( sum(is.na(dbs))==1 && !is.vector(dbs) ) {
 #
 pdebug.save.state("irap_gtf2annot","p3")
 
-cols <- c("ID","Name","locus","source","lname","GO","GOterm","KEGG")
+cols <- c("ID","Name","locus","source","lname","GO","GOterm","KEGG","biotype")
 if(opt$out_file=="") {
   ret <- write.tsv(file=stdout(),x=r.table[,cols])
 } else {
