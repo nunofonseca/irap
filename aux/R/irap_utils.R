@@ -128,13 +128,20 @@ load.gtf <- function(gtf.file,feature=NULL,selected.attr=NULL) {
   }
   gtf$attributes <- as.character(gtf$attributes)
   gtf.attributes.names<-c("gene_id","transcript_id","exon_number","gene_name","gene_biotype","transcript_name","protein_id","exon_id")
-  if ( !is.null(selected.attr) ) {
-    gtf.attributes.names<- gtf.attributes.names[gtf.attributes.names %in% selected.attr]
-  }
+  selected.attr.i <- append(selected.attr,"gene_biotype")
+  #if ( !is.null(selected.attr) ) {
+  gtf.attributes.names<- gtf.attributes.names[gtf.attributes.names %in% selected.attr.i]
+  #}
   num.attr <- length(gtf.attributes.names)
   attr2vec <- function(s,gtf.attributes.names) {
-    a<-strsplit(mytrim(s),split=";([ ]?)+")  
-    a2 <- unlist(strsplit(a[[1]]," ",fixed=T))
+    a<-strsplit(mytrim(s),split=";([ ]?)+")
+    var.value <- function(s) {
+      rm <- regexec(pattern="^([^ ]+) (.+)$",s)
+      a2 <- regmatches(s,rm)
+      return(a2[[1]][-1])
+    }
+    a2 <- unlist(lapply(a[[1]],var.value))
+    #a2 <- unlist(strsplit(a[[1]]," ",fixed=T))
     m <- matrix(a2,nrow=2,byrow=F)
     x <- m[2,,drop=FALSE]
     names(x) <- m[1,]
@@ -149,6 +156,9 @@ load.gtf <- function(gtf.file,feature=NULL,selected.attr=NULL) {
   vals<-matrix(unlist(attr),ncol=length(gtf.attributes.names),byrow=T)
   colnames(vals) <- gtf.attributes.names
   gtf <- cbind(gtf,vals)
+  # try to determine the biotype column (use source by default...)
+  biotypes <- gtf[,biotype.column(gtf)]
+  gtf$biotype <- biotypes
   #print(head(gtf))
   return(gtf[,! colnames(gtf) %in% c("attributes")])
 }
@@ -1945,17 +1955,33 @@ source.filt.query <- list("all"=TRUE,
                           "retained intron"=c("retained_intron"),
                           "lincRNA"=c("lincRNA")
                           )
+source.column <- NULL
 #                          "rRNA"=c("rRNA"),
+biotype.column <- function(table) {
+  if ( "source" %in% colnames(table) ) {
+    sources <- unique(as.character(table$source))
+    if ( "havana" %in% sources ) {
+      return("gene_biotype")
+    } else {
+      return("source")
+    }
+  }
+  return("source")
+}
 
 # Initialization
 init.source.filter <- function(table,id.col="ID") {
-  if ( "source" %in% colnames(table) ) {
+  # define the source column
+  source.column <- "biotype"
+  pinfo("biotype column=",source.column)
+  pinfo(colnames(table))
+  if ( source.column %in% colnames(table) ) {
     source.filt.groups.def <- list()
     source.filt.groups <- list()
     # slower
-    sources <- unique(as.character(table$source))
+    sources <- unique(as.character(table[,source.column]))
     
-    pinfo("#Sources:",length(sources))
+    pinfo("#Sources/biotypes:",length(sources))
     pinfo(sources)
     # all
     source.filt.groups.def$"all" <- sources
@@ -1970,7 +1996,7 @@ init.source.filter <- function(table,id.col="ID") {
         re <- paste("(",paste(qr,collapse="|"),")",sep="")
         filt <- NULL
         if (length(qr)!=0) 
-          filt <- sapply(table$source,grepl,pattern=re)
+          filt <- sapply(table[,source.column],grepl,pattern=re)
         source.filt.groups[[f]] <- as.character(table[filt,id.col])
         pinfo("Filter ",f,": found ",length(source.filt.groups[[f]]))
       }
@@ -2448,16 +2474,62 @@ importArgsfromStdin <- function() {
     line <- readLines(f,n=1)
     ##write(line, stderr())
     # process line
-    # for now just split into words
-    # TODO: take into account '' or ""
-    args <- mytrim(strsplit(mytrim(line),split="[ ]+")[[1]])
-    # remove "
-    args <- sub("^\"","",sub("\"$","",args))
+    args <- commandline.args2vector(line)
     close(f)
   }
   return(args)
 }
 
+commandline.args2vector <- function(line) {
+  args <- mytrim(strsplit(mytrim(line),split="[ ]+")[[1]])
+  args <- sub("^\"","",sub("\"$","",args))
+  # where do the args names are (-)
+  i <- rev(grep("^-",args))
+  new.args <- c()
+  #print(i)
+  if ( length(i)==0 ) {
+    return(args)
+  }
+  for ( idx in seq(1,length(i))) {
+    if ( idx==1 && i[1]==length(args) ) {
+      # last option does not have a value
+      new.args <- args[i[1]]
+    } else {
+      if (idx==1) {
+        last <- length(args)
+      } else {
+        last <- i[idx-1]-1
+      }
+      cur.l <- i[idx]+1
+      #print(cur.l)
+      #print(last)
+      sel.i <- seq(cur.l,last)
+      if (cur.l>last ) {
+        # no value
+        new.args <- append(args[cur.l-1],new.args)
+      } else {
+        sel <- paste(args[sel.i],sep=" ",collapse=" ")
+        new.args <- append(append(args[cur.l-1],sel),new.args)
+      }
+      #print(new.args)
+    }
+    #print(new.args)        
+    #print("------------------------------")
+  }
+  #new.args
+  return(new.args)
+}
+
+commandline.args2vector.tests <- function() {
+  sum(length(commandline.args2vector(""))==0)==1
+  sum((commandline.args2vector("-1")==c("-1")))==1
+  sum((commandline.args2vector("-1 a")==c("-1","a")))==2
+  sum((commandline.args2vector("-1 a b")==c("-1","a b")))==2
+  sum((commandline.args2vector("-1 a b -2")==c("-1","a b","-2")))==3
+  sum((commandline.args2vector("-1 a b -2 -3")==c("-1","a b","-2","-3")))==4
+  sum(commandline.args2vector("-0 -1 a b -2")==c("-0","-1","a b","-2"))==4
+  sum(commandline.args2vector("a b")==c("a","b"))==2
+}
 ## quantile_norm(quantile_norm(df),quantile_norm(df)$means)
 quantile_norm_vect <- function(v,qn_values) {
   lv <- length(v)
