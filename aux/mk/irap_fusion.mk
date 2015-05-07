@@ -123,13 +123,14 @@ $(name)/$(mapper)/fusionmap/%.fusion.tsv: $(name)/$(mapper)/%.pe.hits.bam $(name
 # Add to stage3 output files
 FUSION_LIB_TARGETS=$(foreach p,$(pe),$(call lib2fusion_folder,$(p))$(p).fusion.tsv) $(foreach s,$(se),$(call lib2fusion_folder,$(s))$(s).fusion.tsv)
 
+
 STAGE3_S_TARGETS+=$(FUSION_LIB_TARGETS)
 
 STAGE3_OUT_FILES+=$(name)/$(mapper)/fusionmap/fusionmap_readcounts.tsv
 
 # counts file
 $(name)/$(mapper)/fusionmap/fusionmap_readcounts.tsv:  $(FUSION_LIB_TARGETS)
-	$(call pass_args_stdin,irap_Fusion_fm2tsv,$@.tmp, --tsv "$(call spaces2comms,$^)" -o $@.tmp) && mv $@.tmp $@
+	$(call pass_args_stdin,irap_Fusion_fm2tsv,$@.tmp, --tsv "$^" -o $@.tmp) && mv $@.tmp $@
 
 
 
