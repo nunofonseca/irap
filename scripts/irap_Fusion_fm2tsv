@@ -68,9 +68,9 @@ read.fusionmap<-function(file) {
   return(t)
 }
 
-fusionmap.reads<-function(fusionmap.data) {
+fusionmap.reads<-function(fusionmap.data,fusiongene.key=c("FusionGene")) {
   reads<-rowSums(fusionmap.data[,grep("SeedCount|RescuedCount",colnames(fusionmap.data))])
-  id<-apply(X=fusionmap.data[,c("FusionGene","SplicePattern","Strand")],MARGIN=1,paste,collapse=":")
+  id<-apply(X=fusionmap.data[,fusiongene.key],MARGIN=1,paste,collapse=":")
   m<-data.frame(list(Fusion=id,Reads=reads))
   # check if the ids are unique
   if ( length(unique(id))!=length(id) ) {
@@ -99,11 +99,13 @@ if (sum(!fe)!=0) {
 }
 
 # load the files
-m<-fusionmap.reads(read.fusionmap(tsv.files[1]))
+#fusiongene.key <- c("FusionGene","SplicePattern","Strand")
+fusiongene.key <- c("FusionGene")
+m<-fusionmap.reads(read.fusionmap(tsv.files[1]),fusiongene.key)
 cur.file.idx <- 2
 while ( cur.file.idx <= length(tsv.files) ) {
   pinfo("Processing ",tsv.files[cur.file.idx])
-  m2 <- fusionmap.reads(read.fusionmap(tsv.files[cur.file.idx]))
+  m2 <- fusionmap.reads(read.fusionmap(tsv.files[cur.file.idx]),fusiongene.key)
   pdebug("Merging...")
   #pdebug(intersect(m2$Fusion,m$Fusion))
   pdebug(paste(colnames(m2),collapse=","))
