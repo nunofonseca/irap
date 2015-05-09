@@ -102,9 +102,7 @@ nquant_files+=$(foreach m,$(quant_norm_method),$(name)/$(mapper)/$(quant_method)
 endif
 
 
-STAGE3_OUT_FILES+= $(nquant_files)
-
-STAGE3_TSV_FILES+= $(nquant_files)
+STAGE4_OUT_FILES+= $(nquant_files)
 
 phony_targets+= norm_quant
 norm_quant: $(quant_method)_quant $(nquant_files)
