@@ -1182,6 +1182,8 @@ endef
 # TODO: STAGE0
 SETUP_DATA_FILES=
 STAGE3_OUT_FILES=
+STAGE4_OUT_FILES=
+STAGE5_OUT_FILES=
 STAGE3_S_TARGETS=
 
 STAGE1_OUT_FILES=$(foreach p,$(se),$(call lib2filt_folder,$(p))$(p).f.fastq) $(foreach p,$(pe),$(call lib2filt_folder,$(p))$(p)_1.f.fastq)
@@ -1765,53 +1767,30 @@ STAGE3_TSV_FILES+=$(call exons_quant_files)\
 
 ##################
 #
+
 print_stage3_files:
 	echo $(STAGE3_OUT_FILES)
 
 
 
 ################################################################################
-# Differential Analysis
+# Stage 4
 ################################################################################
-# TODO: consider DE at isoform level, exon level
-ifeq (none,$(de_method))
-STAGE4_OUT_FILES=
-else
-STAGE4_OUT_FILES=$(foreach cont,$(contrasts),$(name)/$(mapper)/$(quant_method)/$(de_method)/$(cont).genes_de.tsv)
-endif
-phony_targets+= DE de_files
 
+phony_targets+= print_stage4_files
 
-DE: stage3 $(STAGE4_OUT_FILES)
-	$(call p_info,[DONE] Differential analysis)
-
-de_files:
+print_stage4_files:
 	echo $(STAGE4_OUT_FILES)
+
+phony_targets+= print_stage5_files
+print_stage5_files:
+	echo $(STAGE5_OUT_FILES)
 
 #############################################################
 # GSE
 ###########################################
 # IRAP targets
 # todo: mv this to the irap_gse file
-ifeq (none,$(gse_tool))
-
-GSE_OUT_FILES=
-
-GSE:
-
-else
-
-GSE_OUT_FILES=$(subst _de.tsv,.gse.$(gse_tool).$(gse_method).go.tsv,$(STAGE4_OUT_FILES)) $(subst _de.tsv,.gse.$(gse_tool).$(gse_method).kegg.tsv,$(STAGE4_OUT_FILES))
-
-GSE: DE $(GSE_OUT_FILES)
-	$(call p_info,[DONE] GSE analysis)
-
-endif
-
-GSE_files:
-	echo $(GSE_OUT_FILES)
-
-phony_targets+= GSE GSE_files
 
 #############################################################
 ## Cleanup
@@ -1842,8 +1821,8 @@ stage3as: setup quantification_s
 #stage3b: setup stage3a
 # deprecated
 stage3b: setup $(shell rm -f $(name)/$(mapper)/$(quant_method)/rawcounts.$(quant_method).tsv) stage3a
-stage4: setup DE
-stage5: setup GSE
+stage4: setup $(STAGE4_OUT_FILES)
+stage5: setup $(STAGE5_OUT_FILES)
 
 # deprecated: to be removed in the future
 assemble: quantification
