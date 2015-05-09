@@ -343,6 +343,32 @@ $(name)/$(mapper)/$(quant_method)/$(name).assemblies.txt: $(foreach p,$(pe),$(ca
 	rm -f $@
 	touch $@.tmp && for f in $^; do echo $$f >> $@.tmp ; done && mv $@.tmp $@
 
+############
+# cufflinks
+ifeq ($(patsubst cufflinks%,,$(quant_norm_tool)),)
+
+$(name)/$(mapper)/$(quant_method)/%.genes.rpkm.$(quant_method).$(quant_norm_tool).tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.genes.fpkm_tracking
+	cut -f 1,10 $<  | tail -n +2  |grep -v CUFF > $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/$(quant_method)/%.exons.rpkm.$(quant_method).$(quant_norm_tool).tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.gtf
+	grep -w exon $<  | grep -v CUFF | sed -e 's/.*gene_id .\([^\"]*\).; transcript_id .\([^\"]*\).; exon_number .\([^\"]*\).; FPKM .\([^\"]*\)..*/\1.\2.\3\t\4/' > $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/$(quant_method)/%.transcripts.rpkm.$(quant_method).$(quant_norm_tool).tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.isoforms.fpkm_tracking
+	cut -f 1,10 $<  | tail -n +2  |grep -v CUFF  > $@.tmp && mv $@.tmp $@
+
+
+$(name)/$(mapper)/$(quant_method)/genes.rpkm.cufflinks%.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.genes.rpkm.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.genes.rpkm.$(quant_method).tsv) 
+	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) ) > $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/$(quant_method)/transcripts.rpkm.cufflinks%.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.rpkm.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.transcripts.rpkm.$(quant_method).tsv) 
+	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) ) > $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/$(quant_method)/exons.rpkm.$(exon_quant_method).cufflinks%.tsv:
+	$(call p_info, Warning! Cufflinks does not produce quantification at exon level. Generating empty file $@.)
+	@$(call empty_file,$@)
+
+endif
+
 endif
 
 #*****************
@@ -354,15 +380,11 @@ endif
 $(name)/$(mapper)/htseq1/genes.raw.htseq1.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).tsv)
 	( $(call pass_args_stdin,irap_merge_tsv.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
 
-
-
-# counts per transcript
-$(name)/$(mapper)/htseq1/transcripts.raw.htseq1.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).tsv)	
+# * HTSeq2
+# counts per gene
+$(name)/$(mapper)/htseq2/genes.raw.htseq2.tsv: $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.genes.raw.htseq2.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).tsv)
 	( $(call pass_args_stdin,irap_merge_tsv.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
 
-# counts per exon
-$(name)/$(mapper)/htseq1/exons.raw.htseq1.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.exons.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.exons.raw.$(quant_method).tsv)
-	( $(call pass_args_stdin,irap_merge_tsv.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
 
 ## htseq bam file needs to be sorted by name
 # $1 - lib
@@ -378,31 +400,37 @@ endef
 
 # generate the rules for htseq
 ifeq ($(patsubst htseq%,,$(quant_method)),)
+
+# gene level quantification
 $(foreach l,$(se),$(eval $(call make-htseq-quant-rule,$(l),$(quant_method),$(l).se,gene,$(gtf_file_abspath))))	
 $(foreach l,$(pe),$(eval $(call make-htseq-quant-rule,$(l),$(quant_method),$(l).pe,gene,$(gtf_file_abspath))))
+
 ifeq ($(exon_quant),y)
-$(foreach l,$(se),$(eval $(call make-htseq-quant-rule,$(l),$(quant_method),$(l).se,exon,$(gtf_file_wexonid))))	
-$(foreach l,$(pe),$(eval $(call make-htseq-quant-rule,$(l),$(quant_method),$(l).pe,exon,$(gtf_file_wexonid))))
+# exon level quantification
+ifeq ($(patsubst htseq%,,$(exon_quant_method)),)
+$(foreach l,$(se),$(eval $(call make-htseq-quant-rule,$(l),$(exon_quant_method),$(l).se,exon,$(gtf_file_wexonid))))	
+$(foreach l,$(pe),$(eval $(call make-htseq-quant-rule,$(l),$(exon_quant_method),$(l).pe,exon,$(gtf_file_wexonid))))
+
+# counts per exon
+$(name)/$(mapper)/$(quant_method)/exons.raw.$(exon_quant_method).tsv: $(foreach p, $(pe),$(call lib2quant_folder,$(p))$(p).pe.exons.raw.$(exon_quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.exons.raw.$(exon_quant_method).tsv)
+	( $(call pass_args_stdin,irap_merge_tsv.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
+
 endif
+
+endif
+
+# transcript level quantification
 ifeq ($(transcript_quant),y)
 $(foreach l,$(se),$(eval $(call make-htseq-quant-rule,$(l),$(quant_method),$(l).se,transcript,$(gtf_file_abspath))))	
 $(foreach l,$(pe),$(eval $(call make-htseq-quant-rule,$(l),$(quant_method),$(l).pe,transcript,$(gtf_file_abspath))))
-endif
-#$(foreach l,$(se) $(pe),$(info $(call make-htseq-quant-rule,$(l),htseq1,$(l).pe,gene)))
-endif
 
-# * HTSeq2
-
-# counts per gene
-$(name)/$(mapper)/htseq2/genes.raw.htseq2.tsv: $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.genes.raw.htseq2.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).tsv)
-	( $(call pass_args_stdin,irap_merge_tsv.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
 # counts per transcript
-$(name)/$(mapper)/htseq2/transcripts.raw.htseq2.tsv: $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).tsv)
+$(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv: $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).tsv)
 	( $(call pass_args_stdin,irap_merge_tsv.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
 
-# counts per exon
-$(name)/$(mapper)/htseq2/exons.raw.htseq2.tsv: $(foreach p, $(pe),$(call lib2quant_folder,$(p))$(p).pe.exons.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.exons.raw.$(quant_method).tsv)
-	( $(call pass_args_stdin,irap_merge_tsv.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
+endif
+
+endif
 
 
 #*****************
@@ -465,30 +493,43 @@ endef
 ifeq (flux_cap,$(quant_method))
 $(foreach l,$(se),$(eval $(call make-fluxcap-quant-rule,$(l),SINGLE,$(l).se)))	
 $(foreach l,$(pe),$(eval $(call make-fluxcap-quant-rule,$(l),PAIRED,$(l).pe)))
-endif
+
 
 # Process flux output
 %.genes.raw.flux_cap.tsv: %.flux_cap.tsv 
 	tsv.aggrbygene $< counts $@.tmp && mv $@.tmp $@ 
 
-%.genes.rpkm.flux_cap.tsv: %.flux_cap.tsv
+%.genes.rpkm.flux_cap.flux_cap.tsv: %.flux_cap.tsv
 	tsv.aggrbygene $< RPKM $@.tmp && mv  $@.tmp $@
 
 %.transcripts.raw.flux_cap.tsv: %.flux_cap.tsv
 	cut -f 1,4 $< |tail -n +2 > $@.tmp && mv  $@.tmp $@
 
-%.transcripts.rpkm.flux_cap.tsv: %.flux_cap.tsv
+%.transcripts.rpkm.flux_cap.flux_cap.tsv: %.flux_cap.tsv
 	cut -f 1,6 $< | tail -n +2  > $@.tmp && mv  $@.tmp $@
 
 %.exons.raw.flux_cap.tsv: 
 	$(call p_info, Warning! Flux_capacitor does not produce quantification at exon level. Generating empty file $@.)
 	@$(call empty_file,$@)
 
-%.exons.rpkm.flux_cap.tsv: 
+%.exons.rpkm.flux_cap.flux_cap.tsv: 
 	$(call p_info, Warning! Flux_capacitor does not produce quantification at exon level. Generating empty file $@.)
 	@$(call empty_file,$@)
 
 
+$(name)/$(mapper)/$(quant_method)/genes.rpkm.flux_cap.flux_cap.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.genes.rpkm.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.genes.rpkm.$(quant_method).tsv) 
+	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) )  > $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/$(quant_method)/transcripts.rpkm.flux%.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.rpkm.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.transcripts.rpkm.$(quant_method).tsv) 
+	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) )  > $@.tmp && mv $@.tmp $@
+
+ifeq ($(exon_quant),y)
+$(name)/$(mapper)/$(quant_method)/exons.rpkm.flux_cap.flux_cap.tsv: 
+	$(call p_info, Warning! Flux-capacitor does not produce quantification at exon level. Generating empty file $@.)
+	@$(call empty_file,$@)
+endif
+
+endif
 #*****************
 # NURD
 #*****************
@@ -519,7 +560,7 @@ $(call lib2quant_folder,$(1))$(2).nurd.tsv $(call lib2quant_folder,$(1))$(2).raw
 $(call lib2quant_folder,$(1))$(2).genes.raw.nurd.tsv: $(call lib2quant_folder,$(1))$(2).nurd.tsv 
 	cut -f 1,3 $$< > $$@.tmp && mv $$@.tmp $$@
 
-$(call lib2quant_folder,$(1))$(2).genes.rpkm.nurd.tsv: $(call lib2quant_folder,$(1))$(2).nurd.tsv
+$(call lib2quant_folder,$(1))$(2).genes.rpkm.nurd.nurd.tsv: $(call lib2quant_folder,$(1))$(2).nurd.tsv
 	cut -f 1,6 $$< > $$@.tmp && mv $$@.tmp $$@
 
 
@@ -527,7 +568,7 @@ $(call lib2quant_folder,$(1))$(2).genes.rpkm.nurd.tsv: $(call lib2quant_folder,$
 $(call lib2quant_folder,$(1))$(2).transcripts.raw.nurd.tsv: $(call lib2quant_folder,$(1))$(2).raw.nurd.tsv
 	irap_nurd2tsv --tsv $$< --out $$@.tmp && mv $$@.tmp $$@
 
-$(call lib2quant_folder,$(1))$(2).transcripts.rpkm.nurd.tsv: $(call lib2quant_folder,$(1))$(2).nurd.tsv
+$(call lib2quant_folder,$(1))$(2).transcripts.rpkm.nurd.nurd.tsv: $(call lib2quant_folder,$(1))$(2).nurd.tsv
 	irap_nurd2tsv --tsv $$< --out $$@.tmp && mv $$@.tmp $$@
 
 endef
@@ -543,8 +584,32 @@ endif
 	$(call p_info, Warning! NURD does not produce quantification at exon level. Generating empty file $@.)
 	@$(call empty_file,$@)
 
-%.exons.rpkm.nurd.tsv: 
+%.exons.rpkm.nurd.nurd.tsv: 
 	$(call p_info, Warning! NURD does not produce quantification at exon level. Generating empty file $@.)
+	@$(call empty_file,$@)
+
+
+# nurd
+$(name)/$(mapper)/nurd/genes.rpkm.nurd.nurd..tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.genes.rpkm.$(quant_method).nurd.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.rpkm.$(quant_method).nurd.tsv)
+	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) ) > $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/nurd/transcripts.rpkm.nurd.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.rpkm.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.transcripts.rpkm.$(quant_method).tsv) 
+	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) ) > $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/nurd/exons.rpkm.$(exon_quant_method).nurd.tsv: 
+	$(call p_info, Warning! NURD does not produce quantification at exon level. Generating empty file $@.)
+	@$(call empty_file,$@)
+
+$(name)/$(mapper)/nurd/exons.raw.$(exon_quant_method).tsv: 
+	$(call p_info, Warning! NURD does not produce quantification at exon level. Generating empty file $@.)
+	@$(call empty_file,$@)
+
+
+$(name)/$(mapper)/$(quant_method)/%.nlib.nurd.tsv:
+	$(call p_info, Warning! Unable to generate  nlib file $@ with $(quant_method).)
+	@$(call empty_file,$@)
+$(name)/$(mapper)/$(quant_method)/%.nlib.nurd.tsv:
+	$(call p_info, Warning! Unable to generate nlib file $@ with $(quant_method).)
 	@$(call empty_file,$@)
 
 
@@ -611,4 +676,66 @@ $(name)/$(mapper)/stringtie/transcripts.rpkm.stringtie.tsv: $(foreach p,$(pe),$(
 $(name)/$(mapper)/stringtie/genes.rpkm.stringtie.tsv: $(name)/$(mapper)/stringtie/transcripts.rpkm.stringtie.tsv
 	tsv.aggrbygene $^ RPKM $@.tmp && mv  $@.tmp $@
 
+$(name)/$(mapper)/$(quant_method)/%nlib.stringtie.stringtie.tsv:
+	$(call p_info, Warning! Unable to generate  nlib file $@ with $(quant_method).)
+	@$(call empty_file,$@)
+
 endif
+
+##############################################################
+# Exon quantification - DexSeq
+ifndef dexseq_params
+dexseq_params=
+endif
+
+# 'no', the exons that can not be assigned to a single gene are ignored otherwise the genes are merged
+ifndef dexseq_index_params
+dexseq_prepare_annotation_params=--aggregate no
+endif
+
+################################
+# if PE then add option -p yes
+# sam/bam (-f bam) file needs to be sorted by read name or chr (-r name)
+# strand specific (== htseq)
+# 1 - bam
+# 2 - output
+# 3 - lib
+# 4 - gtf
+define run_dexseq=
+	samtools view -F 4 $(1) | python $(IRAP_DIR)/Rlibs/DEXSeq/python_scripts/dexseq_count.py  $(dexseq_params) $(if $(call is_pe_lib,$(3)),-p yes) $(call htseq_strand_params,$(3)) $(4) - $(2).tmp && \
+	tail -n -4 $(2).tmp > $(2).stats &&\
+	head -n 4 $(2).tmp > $(2).tmp2 &&\
+	mv $(2).tmp2 $(2) && rm -f $(2).tmp
+endef
+
+
+%.gtf.DEXSeq.gff: %.gtf
+	python $(IRAP_DIR)/Rlibs/DEXSeq/python_scripts/dexseq_prepare_annotation.py $(dexseq_prepare_annotation_params)  $< $@.tmp && mv $@.tmp $@
+
+ifeq ($(exon_quant_method),dexseq) 
+
+# add the generation of the flatten annotation to stage0 iff dexseq is selected
+SETUP_DATA_FILES+= $(gtf_file_abspath).DEXSeq.gff
+
+## htseq bam file needs to be sorted by name
+# $1 - lib
+# $2 - bam file prefix (includes .se|.pe)
+# $3 - gtf file
+define make-dexseq-quant-rule=
+$(call lib2quant_folder,$(1))$(2).exons.raw.dexseq.tsv: $(call lib2bam_folder,$(1))$(2).hits.byname.bam $(3)
+	mkdir -p $$(@D) && $$(call run_dexseq,$$<,$$@,$(1),$(3))
+endef
+
+$(name)/$(mapper)/$(quant_method)/exons.raw.dexseq.tsv: $(foreach p, $(pe),$(call lib2quant_folder,$(p))$(p).pe.exons.raw.$(exon_quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.exons.raw.$(exon_quant_method).tsv)
+	( $(call pass_args_stdin,irap_merge_tsv.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
+
+
+$(foreach l,$(se),$(eval $(call make-dexseq-quant-rule,$(l),$(l).se,	$(gtf_file_abspath).DEXSeq.gff)))	
+$(foreach l,$(pe),$(eval $(call make-dexseq-quant-rule,$(l),$(l).pe,$(gtf_file_abspath).DEXSeq.gff)))
+
+endif
+
+
+
+
+
