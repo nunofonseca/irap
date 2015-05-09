@@ -70,7 +70,14 @@ read.fusionmap<-function(file) {
 
 fusionmap.reads<-function(fusionmap.data,fusiongene.key=c("FusionGene")) {
   reads<-rowSums(fusionmap.data[,grep("SeedCount|RescuedCount",colnames(fusionmap.data))])
-  id<-apply(X=fusionmap.data[,fusiongene.key],MARGIN=1,paste,collapse=":")
+  if (length(fusiongene.key)==0) {
+    stop("FusionGene id not defined")
+  }
+  if (length(fusiongene.key)>1) {
+    id<-apply(X=fusionmap.data[,fusiongene.key],MARGIN=1,paste,collapse=":")
+  } else {
+    id<-fusionmap.data[,fusiongene.key]
+  }
   m<-data.frame(list(Fusion=id,Reads=reads))
   # check if the ids are unique
   if ( length(unique(id))!=length(id) ) {
