@@ -24,7 +24,29 @@
 #************
 # GSE
 #************
+GSE_OUT_FILES=
 
+ifneq (none,$(gse_tool))
+GSE_OUT_FILES+=$(subst _de.tsv,.gse.$(gse_tool).$(gse_method).go.tsv,$(STAGE4_OUT_FILES)) $(subst _de.tsv,.gse.$(gse_tool).$(gse_method).kegg.tsv,$(STAGE4_OUT_FILES))
+
+GSE: DE $(GSE_OUT_FILES)
+	$(call p_info,[DONE] GSE analysis)
+
+else
+
+GSE: 
+
+endif
+
+STAGE5_OUT_FILES+=$(GSE_OUT_FILES)
+
+GSE_files:
+	echo $(GSE_OUT_FILES)
+
+phony_targets+= GSE GSE_files
+
+
+#######################################
 # Currently only one tool is supported
 def_gse_method=fisher
 def_gse_pvalue=0.05
