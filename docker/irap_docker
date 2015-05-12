@@ -1,4 +1,4 @@
-#!/bin/env bash
+#!/usr/bin/env bash
 # wrapper to run iRAP in a docker container
 # all data should be accessible from the current working directory
 if [ "$IRAP_DOCKER_IMAGE-" == "-" ]; then
