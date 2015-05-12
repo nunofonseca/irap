@@ -89,8 +89,9 @@ exp.info.vars[["DGE"]] <- c("de_method","de_pvalue_cutoff")
 # _aln_options
 # _map_options
 exp.info.vars[["Mapping"]] <- c("mapper","max_hits")
-exp.info.vars[["Quantification"]] <- c("quant_method","exon_quant","transcript_quant")
+exp.info.vars[["Quantification"]] <- c("quant_method","exon_quant","transcript_quant","exon_quant_method")
 exp.info.vars[["GSE"]] <- c("gse_tool","gse_method","gse_pvalue","gse_minsize")
+exp.info.vars[["Fusion"]] <- c("")
 
 # libraries excluded + info labels
 library(brew)
