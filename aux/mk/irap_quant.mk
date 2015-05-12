@@ -727,8 +727,8 @@ $(name)/$(mapper)/$(quant_method)/exons.raw.dexseq.tsv: $(foreach p, $(pe),$(cal
 	( $(call pass_args_stdin,irap_merge_tsv.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
 
 
-$(foreach l,$(se),$(eval $(call make-dexseq-quant-rule,$(l),$(l).se,	$(gtf_file_abspath).DEXSeq.gff)))	
-$(foreach l,$(pe),$(eval $(call make-dexseq-quant-rule,$(l),$(l).pe,$(gtf_file_abspath).DEXSeq.gff)))
+$(foreach l,$(se),$(eval $(call make-dexseq-quant-rule,$(l),$(l).se, $(gtf_file_abspath).DEXSeq.gff)))	
+$(foreach l,$(pe),$(eval $(call make-dexseq-quant-rule,$(l),$(l).pe, $(gtf_file_abspath).DEXSeq.gff)))
 
 endif
 
