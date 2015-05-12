@@ -749,6 +749,8 @@ $(info *	quant_method=$(quant_method))
 
 ifndef exon_quant
 exon_quant=$(def_exon_quant)
+else
+exon_quant:=$(strip $(exon_quant))
 endif
 
 ifndef transcript_quant
@@ -762,11 +764,16 @@ endif
 
 
 $(info *	exon_quant=$(exon_quant))
+ifeq ($(exon_quant),y)
+$(info *	exon_quant_method=$(exon_quant_method))
+endif
 $(info *	transcript_quant=$(transcript_quant))
 
 #####################
 # Exon quantification
-ifeq ($(exon_quant),y) 
+SUPPORTED_EXON_QUANT_METHODS=stringtie dexseq htseq1 htseq2
+
+ifeq ($(strip $(exon_quant)),y) 
 # dexseq can only be used with methods that do not support exon quant
 ifeq ($(exon_quant_method),dexseq) 
 ifneq (,$(filter $(quant_method),cufflinks1 cufflinks2 cufflinks2_nd cufflinks1_nd nurd stringtie stringtie_nd))
@@ -776,10 +783,8 @@ else
 exon_quant_method=$(quant_method)
 #$(info Exon quantification requires that all exons in the gtf file have an exon_id attribute)
 endif
-SUPPORTED_EXON_QUANT_METHODS=stringtie dexseq htseq1 htseq2
 
-
-$(info *	exon_quant_method=$(exon_quant_method))
+#$(info *	exon_quant_method=$(exon_quant_method))
 endif
 
 ifndef gtf_file_wexonid
