@@ -238,7 +238,8 @@ endef
 
 define run_tophat2_index_annot=
 	mkdir -p $(call tophat2_trans_index_filename,$(1),$(1)).tmp && rm -rf $(call tophat2_trans_index_filename,$(1),$(1)).tmp/*  &&  \
-	irap_map.sh tophat2 tophat -G $(gtf_file_abspath) --transcriptome-index $(call tophat2_trans_index_filename,$(1),$(1)).tmp $(tophat_reference_prefix) &&
+	irap_map.sh tophat2 tophat -G $(gtf_file_abspath) --transcriptome-index $(call tophat2_trans_index_filename,$(1),$(1)).tmp $(tophat_reference_prefix) && \
+	rm -rf $(call tophat2_trans_index_filename,$(1),$(1)) && \
 	mv $(call tophat2_trans_index_filename,$(1),$(1)).tmp $(call tophat2_trans_index_filename,$(1),$(1))
 endef
 
