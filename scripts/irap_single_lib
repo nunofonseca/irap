@@ -360,7 +360,7 @@ cp $TSVs $odir
 
 # report files
 #REPORT_TSVs=`irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE $irap_options print_mapping_report_req  |tail -n 1`
-mv $REPORT_TSVs $odir
+cp $REPORT_TSVs $odir
 # rename the files (remove the l prefix added by fastq_info)
 
 rename $libname $libname_noprefix `dirname $odir/$f1_bn`/$libname*
