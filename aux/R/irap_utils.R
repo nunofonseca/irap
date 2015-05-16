@@ -128,10 +128,13 @@ load.gtf <- function(gtf.file,feature=NULL,selected.attr=NULL) {
   }
   gtf$attributes <- as.character(gtf$attributes)
   gtf.attributes.names<-c("gene_id","transcript_id","exon_number","gene_name","gene_biotype","transcript_name","protein_id","exon_id")
-  selected.attr.i <- append(selected.attr,"gene_biotype")
-  #if ( !is.null(selected.attr) ) {
-  gtf.attributes.names<- gtf.attributes.names[gtf.attributes.names %in% selected.attr.i]
-  #}
+
+
+  if ( !is.null(selected.attr) ) {
+      selected.attr.i <- append(selected.attr,"gene_biotype")
+      gtf.attributes.names<- gtf.attributes.names[gtf.attributes.names %in% selected.attr.i]
+  }
+
   num.attr <- length(gtf.attributes.names)
   attr2vec <- function(s,gtf.attributes.names) {
     a<-strsplit(mytrim(s),split=";([ ]?)+")
