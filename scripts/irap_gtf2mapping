@@ -91,7 +91,7 @@ pdebug.save.state("irap_gtf2mapping","p0")
 # check if we have all columns
 cols.missing <- cols.needed[!cols.needed %in% colnames(gtf.table)]
 if (length(cols.missing)>0) {
-  pinfo("Found in GTF: ",paste(colnames(gtf.table),sep=","))w
+  pinfo("Found in GTF: ",paste(colnames(gtf.table),sep=","))
   perror("Information missing from GTF file:",cols.missing)
   q(status=1)
 }
