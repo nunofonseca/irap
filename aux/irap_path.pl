@@ -258,7 +258,7 @@ m('osa',_,'',no).
 m('mapsplice',_,'',no).
 
 all_mappers(X):-all(M,m(M,_,_,_),X).
-all_quant([htseq1,htseq2,basic,flux_cap,cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,nurd,stringtie,stringtie_nd]).
+all_quant([htseq1,htseq2,basic,flux_cap,cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,nurd,stringtie,stringtie_nd,rsem]).
 all_quant_norm([flux_cap,cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,none,deseq,stringtie,stringtie_nd]).
 all_de([deseq,edger,voom,cuffdiff1,cuffdiff2,cuffdiff1_nd,cuffdiff2_nd,deseq2,none]).
 
@@ -274,12 +274,11 @@ qr('stringtie_nd',m(M),'BAM flags...',stranded):-m(M,_,_,_S),not member(M,[soaps
 qr('flux_cap',m(M),'',no):-m(M,_,_,_S).
 qr('scripture',m(M),'',no):-m(M,_,_,_S).
 qr('nurd',m(M),'',no):-m(M,_,_,_S).
+qr('rsem',m(star),'',no).
 %qr('ireckon',m(M),''):-m(M,_,_).
 %qr('bitseq',m(M),''):-m(M,_,_).
-%qr('rsem',m(M),''):-m(M,_,_).
 %qr('isoem',m(M),''):-m(M,_,_).
 %qr('sailfish',m(M),''):-m(M,_,_).
-
 qr(none,m(M),'',_):-m(M,_,_,_S).
 
 qn(cufflinks1,qr(cufflinks1),_,stranded).
