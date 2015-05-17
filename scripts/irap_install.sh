@@ -321,7 +321,7 @@ Sailfish_FILE=Sailfish-${Sailfish_VERSION}-Linux_x86-64.tar.gz
 Sailfish_URL=http://github.com/kingsfordgroup/sailfish/releases/download/v$Sailfish_VERSION/$Sailfish_FILE
 
 #
-rsem_VERSION=1.2.9
+rsem_VERSION=1.2.21
 rsem_FILE=rsem-${rsem_VERSION}.tar.gz
 rsem_URL=http://deweylab.biostat.wisc.edu/rsem/src/$rsem_FILE
 
