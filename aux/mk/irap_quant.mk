@@ -623,26 +623,30 @@ define stringtie2counts_t=
 endef
 
 
-#$(call lib2quant_folder,$(1))$(1)/t_data.ctab
 define make-stringtie-quant-rule=
-$(call lib2quant_folder,$(1))$(3).$(quant_method).gtf : $(call lib2bam_folder,$(1))$(3).hits.bam
-	$(call run_stringtie,$(call lib2bam_folder,$(1))$(3).hits.bam,$(1),$(if $(filter $(quant_method),stringtie_nd),-e,-l CUFF),$(call lib2quant_folder,$(1))$(3).$(quant_method).gtf,$(call lib2quant_folder,$(1))$(3).$(quant_method).genes.fpkm_tracking)
 
-$(call lib2quant_folder,$(1))$(3).transcripts.fpkm.$(quant_method).tsv: $(call lib2quant_folder,$(1))$(3).$(quant_method).gtf $(call lib2quant_folder,$(1))$(3)/t_data.ctab 
-	cut -f 6,12 $$(@D)/$(1)/t_data.ctab > $$@.tmp && mv $$@.tmp $$@
+$(call lib2quant_folder,$(1))$(3).$(quant_method).gtf: $(call lib2bam_folder,$(1))$(3).hits.bam
+	$(call run_stringtie,$(call lib2bam_folder,$(1))$(3).hits.bam,$(1),$(if $(filter $(quant_method),stringtie_nd),-e,-l CUFF),$(call lib2quant_folder,$(1))$(3).$(quant_method).gtf)
 
-$(call lib2quant_folder,$(1))$(3).transcripts.raw.$(quant_method).tsv:  $(call lib2quant_folder,$(1))$(3).$(quant_method).gtf
+$(call lib2quant_folder,$(1))$(1).transcripts.rpkm.$(quant_method).$(quant_norm_tool).tsv: $(call lib2quant_folder,$(1))$(3).$(quant_method).gtf $(call lib2quant_folder,$(1))$(1)/t_data.ctab 
+	cut -f 6,12 $$(@D)/$(1)/t_data.ctab | tail -n +	2 > $$@.tmp && mv $$@.tmp $$@
+
+$(call lib2quant_folder,$(1))$(1).genes.rpkm.$(quant_method).$(quant_norm_tool).tsv: $(call lib2quant_folder,$(1))$(3).$(quant_method).gtf $(call lib2quant_folder,$(1))$(1)/t_data.ctab 
+	tsv.aggrbygene.stringtie $(call lib2quant_folder,$(1))$(1)/t_data.ctab  RPKM $$@.tmp && mv  $$@.tmp $$@
+
+$(call lib2quant_folder,$(1))$(1).transcripts.raw.$(quant_method).tsv:  $(call lib2quant_folder,$(1))$(3).$(quant_method).gtf
 	$$(call p_info,Warning! Stringtie produces FPKMS and does not provide counts. Generating pseudo counts $$@.)
-	$$(call stringtie2counts_t,$(3),$$(@D),$(call lib2quant_folder,$(1))$(1)/t_data.ctab,$(quant_method),$(1))
+	$$(call stringtie2counts_t,$(1),$$(@D),$(call lib2quant_folder,$(1))$(1)/t_data.ctab,$(quant_method),$(1))
 
-$(call lib2quant_folder,$(1))$(3).genes.raw.$(quant_method).tsv: $(call lib2quant_folder,$(1))$(3).$(quant_method).gtf
+$(call lib2quant_folder,$(1))$(1).genes.raw.$(quant_method).tsv: $(call lib2quant_folder,$(1))$(3).$(quant_method).gtf
 	$$(call p_info,Warning! Stringtie produces FPKMS and does not provide counts. Generating pseudo counts $$@.)
-	$$(call stringtie2counts_g,$(3),$$(@D),$(call lib2quant_folder,$(1))$(1)/t_data.ctab,$(quant_method),$(1))
+	$$(call stringtie2counts_g,$(1),$$(@D),$(call lib2quant_folder,$(1))$(1)/t_data.ctab,$(quant_method),$(1))
 
 endef
 
 # generate the rules for stringtie
 ifeq ($(patsubst stringtie%,,$(quant_method)),)
+
 $(foreach l,$(se),$(eval $(call make-stringtie-quant-rule,$(l),$(quant_method),$(l).se,gene)))	
 $(foreach l,$(pe),$(eval $(call make-stringtie-quant-rule,$(l),$(quant_method),$(l).pe,gene)))
 
@@ -650,33 +654,35 @@ $(foreach l,$(pe),$(eval $(call make-stringtie-quant-rule,$(l),$(quant_method),$
 $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).transcripts.raw.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).transcripts.raw.$(quant_method).tsv)
 	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) )  > $@.tmp && mv $@.tmp $@
 
+$(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).genes.raw.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).genes.raw.$(quant_method).tsv)
+	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) )  > $@.tmp && mv $@.tmp $@
+
 $(name)/$(mapper)/$(quant_method)/%xons.raw.$(quant_method).tsv: 
 	$(call p_info,Warning! Stringtie produces FPKMS and does not provide counts. Generating empty file $@.)
 	@$(call empty_file,$@)
-
-$(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).tsv) 
-	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) ) > $@.tmp && mv $@.tmp $@
 
 # Run Cuffmerge on all your assemblies to create a single merged transcriptome annotation
 $(name)/$(mapper)/$(quant_method)/$(name).merged.gtf:  $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.cuff.gtf) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.cuff.gtf) $(name)/$(mapper)/$(quant_method)/$(name).assemblies.txt
 	$(call run_cuffmerge,$(quant_method),$@)
 
-# cuffmerge' assemblies.txt - lists the assembly file for each sample. 
+# 
 $(name)/$(mapper)/$(quant_method)/$(name).assemblies.txt: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.cuff.gtf) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.cuff.gtf)
 	rm -f $@
 	touch $@.tmp && for f in $^; do echo $$f >> $@.tmp ; done && mv $@.tmp $@
 
+$(name)/$(mapper)/$(quant_method)/transcripts.rpkm.$(quant_method).$(quant_norm_tool).tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).transcripts.rpkm.$(quant_method).$(quant_norm_tool).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).transcripts.rpkm.$(quant_method).$(quant_norm_tool).tsv) 
+	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) )  > $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/stringtie/transcripts.rpkm.stringtie.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.rpkm.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.transcripts.rpkm.$(quant_method).tsv) 
-	tsv.aggrbygene $^ RPKM $@.tmp && mv  $@.tmp $@
-
-$(name)/$(mapper)/stringtie/genes.rpkm.stringtie.tsv: $(name)/$(mapper)/stringtie/transcripts.rpkm.stringtie.tsv
-	tsv.aggrbygene $^ RPKM $@.tmp && mv  $@.tmp $@
+$(name)/$(mapper)/$(quant_method)/genes.rpkm.$(quant_method).$(quant_norm_tool).tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).genes.rpkm.$(quant_method).$(quant_norm_tool).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).genes.rpkm.$(quant_method).$(quant_norm_tool).tsv) 
+	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) )  > $@.tmp && mv $@.tmp $@
 
 $(name)/$(mapper)/$(quant_method)/%nlib.stringtie.stringtie.tsv:
 	$(call p_info, Warning! Unable to generate  nlib file $@ with $(quant_method).)
 	@$(call empty_file,$@)
 
+$(name)/$(mapper)/$(quant_method)/exons.rpkm.$(quant_method).$(quant_norm_tool).tsv: 
+	$(call p_info, Warning! Exon quantification file $@ with $(quant_method) will be empty.)
+	@$(call empty_file,$@)
 endif
 
 ##############################################################
@@ -732,7 +738,94 @@ $(foreach l,$(pe),$(eval $(call make-dexseq-quant-rule,$(l),$(l).pe, $(gtf_file_
 
 endif
 
+#######################################################
+# RSEM
+
+ifeq ($(quant_method),rsem)
+
+# For now RSEM only works with the STAR alignments
+ifneq ($(mapper),star)
+$(error RSEM needs to be ran with STAR)
+endif
+
+star_map_params+=
+# --quantMode TranscriptomeSAM will be enabled in the star code because transcript quantification is enabled
+
+
+ifndef rsem_params
+rsem_params=
+endif
+
+rsem_params=--bam --estimate-rspd  --calc-ci --no-bam-output --seed 12321 -p $(max_threads) --ci-memory $(max_mem)
+
+
+rsem_reference_name=$(subst .gtf,rsem,$(gtf_file_abspath))/rsemref
+rsem_reference_target=$(rsem_reference_name)/rsem.irap
+
+# Add the reference preparation to STAGE0
+SETUP_DATA_FILES+=$(rsem_reference_target)
+
+$(rsem_reference_target): $(reference_abspath)  $(gtf_file_abspath)
+	mkdir -p $(@D) &&	irap_wrapper.sh rsem rsem-prepare-reference  --gtf $(gtf_file_abspath) $(reference_abspath)  $(rsem_reference_name) && touch $@
+
+# 1 bam
+# 2 output prefix
+# 3 PE/SE info
+#  --sam/--bam [--paired-end] input reference_name sample_name
+# TODO: stranded data: --forward-prob 0
+define run_rsem=
+	irap_wrapper.sh rsem rsem-calculate-expression $(rsem_params)   $(3) $(1) $(rsem_reference_name) $(2)
+endef
+
+#sample_name.genes.results
+#sample.name.isoforms.results
+# 1 lib
+# 2 quant method
+# 3 bam prefix
+# 4 paired-end/se options
+define make-rsem-quant-rule=
+$(call lib2quant_folder,$(1))$(1).genes.results: $(call lib2bam_folder,$(1))$(2).hits.bam.trans.bam 
+	(mkdir -p $$(@D) && $$(call run_rsem,$$<,$$(@D)/$(1),$(3),$(1))) || (rm -rf $$@ && exit 1)
+
+%.genes.raw.rsem.tsv: %.genes.results
+	cut -f 1,5 $$< |tail -n +2 > $$@.tmp && mv $$@.tmp $$@
+
+%.genes.rpkm.rsem.rsem.tsv: %.genes.results
+	cut -f 1,7 $$< |tail -n +2 > $$@.tmp && mv $$@.tmp $$@
+
+$(call lib2quant_folder,$(1))$(1).genes.tpm.rsem.rsem.tsv: $(call lib2quant_folder,$(1))$(1).genes.results
+	cut -f 1,6 $$< |tail -n +2 > $$@.tmp && mv $$@.tmp $$@
+
+%.transcripts.raw.rsem.tsv: %.isoforms.results
+	cut -f 1,5 $$< |tail -n +2 > $$@.tmp && mv $$@.tmp $$@
+
+%.transcripts.rpkm.rsem.rsem.tsv: %.isoforms.results
+	cut -f 1,7 $$< |tail -n +2 > $$@.tmp && mv $$@.tmp $$@
+
+%.transcripts.tpm.rsem.rsem.tsv: %.isoforms.results
+	cut -f 1,6 $$< |tail -n +2 > $$@.tmp && mv $$@.tmp $$@
+
+endef
+
+
+# quantification
+$(foreach l,$(se),$(eval $(call make-rsem-quant-rule,$(l),$(l).se,)))
+$(foreach l,$(pe),$(eval $(call make-rsem-quant-rule,$(l),$(l).pe,--paired-end)))
 
 
 
+$(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).transcripts.raw.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).transcripts.raw.$(quant_method).tsv) 
+	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) )  > $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/$(quant_method)/transcripts.rpkm.$(quant_method).$(quant_method).tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).transcripts.rpkm.$(quant_method).$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).transcripts.rpkm.$(quant_method).$(quant_method).tsv) 
+	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) )  > $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).genes.raw.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).genes.raw.$(quant_method).tsv) 
+	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) )  > $@.tmp && mv $@.tmp $@
+
+
+$(name)/$(mapper)/$(quant_method)/genes.rpkm.$(quant_method).$(quant_method).tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).genes.rpkm.$(quant_method).$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).genes.rpkm.$(quant_method).$(quant_method).tsv) 
+	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) )  > $@.tmp && mv $@.tmp $@
+
+endif
 
