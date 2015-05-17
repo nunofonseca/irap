@@ -1396,7 +1396,7 @@ function quant_install {
     flux_capacitor_install
     scripture_install
     NURD_install
-    #stringtie_install
+    stringtie_install
     #rsem_install
     #IsoEM_install
     #Sailfish_install
