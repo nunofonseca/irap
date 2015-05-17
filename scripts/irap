@@ -721,6 +721,8 @@ quant_norm_method=$(def_quant_norm_method)
 # endif
 endif
 
+
+
 ifndef quant_norm_tool
 quant_norm_tool=$(def_quant_norm_tool)
 endif
@@ -733,10 +735,10 @@ ifndef quant_method
 endif
 
 #SUPPORTED_QUANT_METHODS=basic htseq1 htseq2 cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd scripture flux_cap
-SUPPORTED_QUANT_METHODS=basic htseq1 htseq2 cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd scripture flux_cap nurd stringtie stringtie_nd
+SUPPORTED_QUANT_METHODS=basic htseq1 htseq2 cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd scripture flux_cap nurd stringtie stringtie_nd rsem
 
 # methods that produce transcript level quantification by default
-TRANS_QUANT_METHODS=flux_cap cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd nurd stringtie stringtie_nd
+TRANS_QUANT_METHODS=flux_cap cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd nurd stringtie stringtie_nd rsem
 
 #rsem isoem sailfish bitseq
 ifeq (,$(filter $(quant_method),$(SUPPORTED_QUANT_METHODS) none))
@@ -759,7 +761,7 @@ endif
 
 ifneq (,$(filter $(quant_method),$(TRANS_QUANT_METHODS)))
 $(info Enabling transcript_quant since  $(quant_method) supports it by default)
-override transcript_quant=y
+override transcript_quant:=y
 endif
 
 
@@ -769,6 +771,7 @@ $(info *	exon_quant_method=$(exon_quant_method))
 endif
 $(info *	transcript_quant=$(transcript_quant))
 
+
 #####################
 # Exon quantification
 SUPPORTED_EXON_QUANT_METHODS=stringtie dexseq htseq1 htseq2
@@ -776,14 +779,16 @@ SUPPORTED_EXON_QUANT_METHODS=stringtie dexseq htseq1 htseq2
 ifeq ($(strip $(exon_quant)),y) 
 # dexseq can only be used with methods that do not support exon quant
 ifeq ($(exon_quant_method),dexseq) 
-ifneq (,$(filter $(quant_method),cufflinks1 cufflinks2 cufflinks2_nd cufflinks1_nd nurd stringtie stringtie_nd))
+ifneq (,$(filter $(quant_method),cufflinks1 cufflinks2 cufflinks2_nd cufflinks1_nd nurd stringtie stringtie_nd rsem))
 $(error Sorry... currently DEXSeq cannot be used together with $(quant_method))
 endif
 else 
-exon_quant_method=$(quant_method)
+ifneq (,$(filter $(exon_quant_method),cufflinks1 cufflinks2 cufflinks2_nd cufflinks1_nd nurd rsem))
+$(error $(exon_quant_method) does not provide exon level quantification)
+endif
 #$(info Exon quantification requires that all exons in the gtf file have an exon_id attribute)
 endif
-
+exon_quant_method=$(quant_method)
 #$(info *	exon_quant_method=$(exon_quant_method))
 endif
 
@@ -796,37 +801,11 @@ endif
 # method to normalize the counts
 ##################################
 
-# ifneq ($(quant_norm_tool),none)
-#   ifneq (,$(filter flux_cap,$(quant_method)))
-#    $(call info,*	overriding quant_tool!)
-#    override quant_norm_tool=$(quant_method)
-#   else
-#    ifneq (,$(findstring cufflinks,$(quant_method)))
-#     $(call info,*	overriding quant_norm_tool!)
-#     override quant_norm_tool=$(quant_method)
-#    else
-#     ifneq (,$(findstring nurd,$(quant_method)))
-#      $(call info,*	overriding quant_norm_tool!)
-#      override quant_norm_tool=$(quant_method)
-#     else
-#      ifneq (,$(findstring stringtie,$(quant_method)))
-#       $(call info,*	overriding quant_norm_tool!)
-#       override quant_norm_tool=$(quant_method)
-#      else
-#       quant_norm_tool=$(def_quant_norm_tool)
-#      endif
-#     endif
-#    endif
-#   endif
-# endif
-
 
 SUPPORTED_NORM_TOOLS=cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd flux_cap  nurd stringtie irap
 ifeq (,$(filter $(quant_norm_tool),none $(SUPPORTED_NORM_TOOLS)))
 $(call p_error,quant_norm_tool '$(quant_norm_tool)' invalid)
 endif
-
-$(info *	quant_norm_tool=$(quant_norm_tool))
 
 # Normalization methods
 SUPPORTED_NORM_METHODS=rpkm deseq_nlib
@@ -835,6 +814,23 @@ ifeq (,$(filter $(quant_norm_method),none $(SUPPORTED_NORM_METHODS)))
 $(call p_error,quant_norm_method '$(quant_norm_method)' invalid)
 endif
 
+
+
+ifneq (,$(filter $(quant_method),cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd nurd stringtie stringtie_nd flux_cap))
+ifndef quant_norm_tool
+quant_norm_tool=$(quant_method)
+override quant_norm_method=rpkm
+$(info * Enabling generation of table of RPKMs since $(quant_method) produces F/RPKMs by default)
+endif
+ifeq ($(quant_norm_tool),none)
+quant_norm_tool=$(quant_method)
+override quant_norm_method=rpkm
+$(info * Enabling generation of table of RPKMs since $(quant_method) produces F/RPKMs by default)
+endif
+endif
+
+
+$(info *	quant_norm_tool=$(quant_norm_tool))
 $(info *	quant_norm_method=$(quant_norm_method))
 #******************************
 # Use unspliced mapping: yes/no 
@@ -1004,7 +1000,6 @@ $(1) $(3)
 endef
 
 endif
-
 
 ################################################################################
 # Make stuff
