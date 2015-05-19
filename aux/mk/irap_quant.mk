@@ -534,6 +534,7 @@ endif
 # NURD
 #*****************
 
+ifeq (nurd,$(quant_method))
 $(name)/$(mapper)/nurd/genes.raw.nurd.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).tsv)
 	( $(call pass_args_stdin,irap_merge_tsv.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
 
@@ -554,26 +555,25 @@ define make-nurd-quant-rule=
 $(call lib2quant_folder,$(1))$(2).nurd.tsv $(call lib2quant_folder,$(1))$(2).raw.nurd.tsv : $(call lib2bam_folder,$(1))$(2).hits.bam $(gtf_file_abspath) 
 	$$(call run_nurd,$$<,$$(gtf_file_abspath),$(call lib2quant_folder,$(1))$(2))
 # Process nurd output
-$(call lib2quant_folder,$(1))$(2).genes.raw.nurd.tsv: $(call lib2quant_folder,$(1))$(2).nurd.tsv 
+$(call lib2quant_folder,$(1))$(1).genes.raw.nurd.tsv: $(call lib2quant_folder,$(1))$(2).nurd.tsv 
 	cut -f 1,3 $$< > $$@.tmp && mv $$@.tmp $$@
 
-$(call lib2quant_folder,$(1))$(2).genes.rpkm.nurd.nurd.tsv: $(call lib2quant_folder,$(1))$(2).nurd.tsv
+$(call lib2quant_folder,$(1))$(1).genes.rpkm.nurd.nurd.tsv: $(call lib2quant_folder,$(1))$(2).nurd.tsv
 	cut -f 1,6 $$< > $$@.tmp && mv $$@.tmp $$@
 
 
 # transcripts/isoforms
-$(call lib2quant_folder,$(1))$(2).transcripts.raw.nurd.tsv: $(call lib2quant_folder,$(1))$(2).raw.nurd.tsv
+$(call lib2quant_folder,$(1))$(1).transcripts.raw.nurd.tsv: $(call lib2quant_folder,$(1))$(2).raw.nurd.tsv
 	irap_nurd2tsv --tsv $$< --out $$@.tmp && mv $$@.tmp $$@
 
-$(call lib2quant_folder,$(1))$(2).transcripts.rpkm.nurd.nurd.tsv: $(call lib2quant_folder,$(1))$(2).nurd.tsv
+$(call lib2quant_folder,$(1))$(1).transcripts.rpkm.nurd.nurd.tsv: $(call lib2quant_folder,$(1))$(2).nurd.tsv
 	irap_nurd2tsv --tsv $$< --out $$@.tmp && mv $$@.tmp $$@
 
 endef
 
-ifeq (nurd,$(quant_method))
+
 $(foreach l,$(se),$(eval $(call make-nurd-quant-rule,$(l),$(l).se)))	
 $(foreach l,$(pe),$(eval $(call make-nurd-quant-rule,$(l),$(l).pe)))
-endif
 
 
 # exons
@@ -587,10 +587,10 @@ endif
 
 
 # nurd
-$(name)/$(mapper)/nurd/genes.rpkm.nurd.nurd..tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.genes.rpkm.$(quant_method).nurd.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.rpkm.$(quant_method).nurd.tsv)
+$(name)/$(mapper)/nurd/genes.rpkm.nurd.nurd.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).genes.rpkm.$(quant_method).nurd.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).genes.rpkm.$(quant_method).nurd.tsv)
 	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) ) > $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/nurd/transcripts.rpkm.nurd.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.rpkm.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.transcripts.rpkm.$(quant_method).tsv) 
+$(name)/$(mapper)/nurd/transcripts.rpkm.nurd.nurd.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).transcripts.rpkm.$(quant_method).nurd.tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).transcripts.rpkm.$(quant_method).nurd.tsv) 
 	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) ) > $@.tmp && mv $@.tmp $@
 
 $(name)/$(mapper)/nurd/exons.rpkm.$(exon_quant_method).nurd.tsv: 
@@ -609,6 +609,7 @@ $(name)/$(mapper)/$(quant_method)/%.nlib.nurd.tsv:
 	$(call p_info, Warning! Unable to generate nlib file $@ with $(quant_method).)
 	@$(call empty_file,$@)
 
+endif
 
 #################################################
 # Stringtie
