@@ -79,6 +79,7 @@ valid_norm_selection(cufflinks1_nd,cufflinks1_nd,rpkm).
 valid_norm_selection(stringtie,stringtie,rpkm).
 valid_norm_selection(stringtie_nd,stringtie_nd,rpkm).
 valid_norm_selection(nurd,nurd,rpkm).
+valid_norm_selection(flux_cap,flux_cap,rpkm).
 
 stranded_ok(yes,stranded).
 stranded_ok(yes,X):- not ground(X),!.
@@ -259,7 +260,7 @@ m('mapsplice',_,'',no).
 
 all_mappers(X):-all(M,m(M,_,_,_),X).
 all_quant([htseq1,htseq2,basic,flux_cap,cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,nurd,stringtie,stringtie_nd,rsem]).
-all_quant_norm([flux_cap,cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,none,deseq,stringtie,stringtie_nd]).
+all_quant_norm([flux_cap,cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,none,deseq,stringtie,stringtie_nd,irap]).
 all_de([deseq,edger,voom,cuffdiff1,cuffdiff2,cuffdiff1_nd,cuffdiff2_nd,deseq2,none]).
 
 qr('htseq1',m(M),'Only requires the NH flag defined',stranded):-m(M,_,_,_S).
@@ -289,8 +290,8 @@ qn(nurd,qr(nurd),_,no).
 qn(stringtie,qr(stringtie),_,no).
 qn(stringtie_nd,qr(stringtie_nd),_,no).
 qn(flux_cap,qr(flux_cap),_,no).
-qn(deseq,qr(QR),_,_):-member(QR,[flux_cap,basic,htseq1,htseq2]).
-qn(deseq2,qr(QR),_,_):-member(QR,[flux_cap,basic,htseq1,htseq2]).
+qn(deseq,qr(QR),_,_):-member(QR,[stringtie,flux_cap,basic,htseq1,htseq2]).
+qn(deseq2,qr(QR),_,_):-member(QR,[stringtie,flux_cap,basic,htseq1,htseq2]).
 qn(none,qr(_),_,_).
 
 
