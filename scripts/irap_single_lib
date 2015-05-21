@@ -112,6 +112,7 @@ do
         c ) conf=$OPTARG;;# send all output to a log file
 	s ) strand=$OPTARG;;# send all output to a log file
 	m ) mem=$OPTARG;;
+	t ) threads=$OPTARG;;
 	f ) run_faster=y;;
 	i ) irap_options=$OPTARG;;
         h ) print_usage; exit;;
