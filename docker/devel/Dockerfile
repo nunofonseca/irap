@@ -1,1 +1,1 @@
-../iRAP-devel
+../iRAP-devel.docker
