@@ -8,7 +8,7 @@ RUN sed -i "s/failovermethod=priority/failovermethod=roundrobin/" /etc/yum.repos
 
 # 
 WORKDIR /opt
-RUN git clone http://github.com/nunofonseca/irap.git  irap_clone  
+RUN git clone http://github.com/nunofonseca/irap.git  irap_clone  && true
 WORKDIR /opt/irap_clone
 RUN ./scripts/irap_install.sh -a /irap_install -s . && rm -rf /irap_install/tmp
 RUN echo source /irap_install/irap_setup.sh >> ~/.bash_profile && echo source /irap_install/irap_setup.sh >> ~/.bashrc
