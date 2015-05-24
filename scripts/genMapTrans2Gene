@@ -1,0 +1,93 @@
+#!/usr/bin/env Rscript3
+# =========================================================
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#    $Id: 0.1.1$
+# =========================================================
+suppressPackageStartupMessages(library("optparse"))
+pdebug.enabled <- FALSE
+
+library(parallel)
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+pdebug.enabled <- TRUE
+
+usage <- "genMapTrans2Gene --gtf file [-o outfile] "
+option_list <- list(
+  make_option(c("-o", "--out"),type="character",dest="out_file",default="",help="Output file [default %default]"),
+  make_option(c("-c", "--cores"), type="character",default="1",dest="num_cores",help="Number of cores to use ([default %default])"),
+  make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
+  make_option(c("-i", "--gtf"), type="character", dest="gtf_file", default=NULL,help="GTF file")
+)
+
+filenames <- c("gtf_file") ;#filenames that must exist (if defined)
+                                        # check multiple options values
+multiple.options = list()
+mandatory <- c("gtf_file","out_file")
+opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
+
+tryCatch(num.cores <- as.integer(as.numeric(opt$num_cores)),warning=
+         function(w) {
+           perror("Invalid number of cores ",opt$num_cores)
+           q(status=3)    
+       }
+)
+if (num.cores<1) {
+  perror("Invalid number of cores ",opt$num_cores)
+  q(status=3)    
+}
+
+irap.assert(num.cores>0)
+
+if ( num.cores>detectCores()) {
+  num.cores <- detectCores()
+  pwarning("The number of cores to use exceeds the cores available. Reducing the limit to ",detectCores())
+}
+
+pdebug.enabled <- opt$debug
+# Disabling multicores due to an error with  RSQLite driver (mm)
+#num.cores <- 1
+#pwarning("Multi-threading is temporarily disabled due to an error with RSQLite driver that occurs when processing some GTF files.")
+options(cores=num.cores)
+options(mc.cores=num.cores)
+
+#
+gtf.file<- opt$gtf_file
+out.file <- opt$out_file
+
+# read gtf file
+pinfo("Loading ",gtf.file)
+gtf.mat <- load.gtf(gtf.file,selected.attr=c("gene_id","transcript_id"))
+pinfo("GTF file loaded")
+# remove duplicate entries (due to exons)
+gtf.mat.u <- gtf.mat[!duplicated(gtf.mat$transcript_id),c("gene_id","transcript_id")]
+nrow(gtf.mat.u)
+write.table(gtf.mat.u,file=out.file,row.names=F,sep="\t",quote=FALSE,col.names=T)
+  
+q(status=0)
+
+
+
+
+
