@@ -320,6 +320,11 @@ Sailfish_VERSION=0.6.2
 Sailfish_FILE=Sailfish-${Sailfish_VERSION}-Linux_x86-64.tar.gz
 Sailfish_URL=http://github.com/kingsfordgroup/sailfish/releases/download/v$Sailfish_VERSION/$Sailfish_FILE
 
+# kallisto
+kallisto_VERSION=0.42.1
+kallisto_FILE=kallisto_linux-v$kallisto_VERSION.tar.gz
+kallisto_URL=https://github.com/pachterlab/kallisto/releases/download/v$kallisto_VERSION/$kallisto_FILE
+
 #
 rsem_VERSION=1.2.21
 rsem_FILE=rsem-${rsem_VERSION}.tar.gz
@@ -1341,6 +1346,8 @@ function Sailfish_install {
     popd
     pinfo "Sailfish installation complete."    
 }
+
+
 ######################################################
 # rsem
 function rsem_install {
@@ -1353,6 +1360,20 @@ function rsem_install {
     cp rsem* extract-* convert-* $IRAP_DIR/bin/rsem/bin
     popd
     pinfo "rsem installation complete."    
+}
+
+
+######################################################
+# kallisto
+function kallisto_install {
+    pinfo "Installing kallisto..."
+    download_software kallisto
+    tar xzvf $kallisto_FILE
+    pushd kallisto_linux-v$kallisto_VERSION
+    mkdir -p $IRAP_DIR/bin/kallisto/bin
+    cp kallisto $IRAP_DIR/bin/kallisto/bin
+    popd
+    pinfo "kallisto installation complete."    
 }
 
 ######################################################
@@ -1397,7 +1418,9 @@ function quant_install {
     scripture_install
     NURD_install
     stringtie_install
-    #rsem_install
+    rsem_install
+    kallisto_install
+    fusionmap_install
     #IsoEM_install
     #Sailfish_install
     #mmseq_install
