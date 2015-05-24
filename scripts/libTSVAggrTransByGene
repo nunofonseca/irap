@@ -1,0 +1,86 @@
+#!/usr/bin/env Rscript3
+# =========================================================
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#    $Id: 0.1.1$
+# =========================================================
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+pdebug.enabled <- TRUE
+
+
+args <- commandArgs(trailingOnly=TRUE)
+
+tsv.file <- args[1]
+g2t.file<- args[2]
+out.file <- args[3]
+
+# TODO validate arguments
+if ( is.na(out.file)) {
+  cat("ERROR!\n usage: tsvAggrTransByGene TSVfile mapGene2Trans outfile\n")
+  q(status=1) 		
+} 
+#tsv.file <- "test3_ens78/none/kallisto//PE1.transcripts.raw.kallisto.tsv"
+#gtf.file <- "/home/nf/Research/Projects/WIP/EREAP/irap_tests/data/reference/homo_sapiens/chr19_ens78.gtf"
+#g2t.file<-"test3_ens78/data/mapTrans2Gene.tsv"
+
+# read matrix (TSV)
+tsv.mat<-read.table(tsv.file,sep="\t",header=F)
+colnames(tsv.mat) <- c("transcript_id","val")
+pinfo("expression loaded")
+# read gtf file
+pinfo("Loading mapping")
+g2t.map <- read.table(g2t.file,sep="\t",header=T)
+
+# remove duplicate entries (due to exons)
+g2t <- g2t.map[!duplicated(g2t.map$transcript_id),c("gene_id","transcript_id")]
+#head(g2t)
+# merge the two matrices
+new.mat<-merge(tsv.mat,g2t,by.x=colnames(tsv.mat)[1],by.y="transcript_id",all.x=TRUE,sort=F)
+new.mat <- new.mat[new.mat$transcript_id %in% as.character(g2t$transcript_id),]  
+gene.not.found <- unique(new.mat[is.na(new.mat$gene_id),"transcript_id"])
+if ( length(gene.not.found) > 0) {
+  perror("Gene not found for ",length(gene.not.found)," transcripts")
+  print(head(as.character(gene.not.found)))
+  q(status=1)
+}
+#print(head(new.mat))
+nrow(new.mat)
+# aggregate!
+cols2aggr <- colnames(new.mat)[! colnames(new.mat) %in% c(colnames(new.mat)[1],"gene_id","transcript_id")]
+a<-aggregate(new.mat[,cols2aggr], by=list(gene_id=new.mat$gene_id), "sum")
+
+# save file
+df <- data.frame(a)
+df <- df[,append("gene_id","x")]
+#head(df)
+
+#colnames(df) <- append("GENE",cols2aggr)
+write.table(df[,c("gene_id","x")],file=out.file,row.names=F,sep="\t",quote=FALSE,col.names=F)
+  
+q(status=0)
+
+
+
+
+
