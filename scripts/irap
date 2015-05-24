@@ -472,7 +472,8 @@ ifndef cdna_file
  endif
 endif
 cdna_dir:=$(abspath $(data_dir)/reference/$(species))
-cdna_file_abspath=$(abspath $(cdna_dir)/$(subst .gz,,$(cdna_file)))
+cdna_file_abspath=$(abspath $(cdna_dir)/$(cdna_file))
+cdna_file_fasta_abspath=$(abspath $(cdna_dir)/$(subst .gz,,$(cdna_file)))
 
 #$(info *       CDNA = $(cdna_file))
 # TODO: only report an error if the file is really needed
@@ -689,8 +690,8 @@ $(info *	mapper=$(mapper))
 
 # gems
 SUPPORTED_MAPPERS=tophat1 tophat2 smalt gsnap soapsplice bwa1 bwa2 bowtie1 bowtie2 gem star osa mapsplice
-ifeq (,$(filter $(mapper),$(SUPPORTED_MAPPERS)))
-$(call p_info,[ERROR] Mapping)
+ifeq (,$(filter $(mapper),none $(SUPPORTED_MAPPERS)))
+$(call p_info,[ERROR] Invalid mapper)
 $(error $(mapper) not implemented)
 endif
 
@@ -735,10 +736,10 @@ ifndef quant_method
 endif
 
 #SUPPORTED_QUANT_METHODS=basic htseq1 htseq2 cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd scripture flux_cap
-SUPPORTED_QUANT_METHODS=basic htseq1 htseq2 cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd scripture flux_cap nurd stringtie stringtie_nd rsem
+SUPPORTED_QUANT_METHODS=basic htseq1 htseq2 cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd scripture flux_cap nurd stringtie stringtie_nd rsem kallisto
 
 # methods that produce transcript level quantification by default
-TRANS_QUANT_METHODS=flux_cap cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd nurd stringtie stringtie_nd rsem
+TRANS_QUANT_METHODS=flux_cap cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd nurd stringtie stringtie_nd rsem kallisto
 
 #rsem isoem sailfish bitseq
 ifeq (,$(filter $(quant_method),$(SUPPORTED_QUANT_METHODS) none))
@@ -777,13 +778,17 @@ $(info *	transcript_quant=$(transcript_quant))
 SUPPORTED_EXON_QUANT_METHODS=stringtie dexseq htseq1 htseq2
 
 ifeq ($(strip $(exon_quant)),y) 
+ifneq (,$(filter $(quant_method),cufflinks1 cufflinks2 cufflinks2_nd cufflinks1_nd nurd stringtie stringtie_nd rsem kallisto))
+$(error Sorry... currently $(quant_method) cannot be used together with exon_quantification)
+endif
+
 # dexseq can only be used with methods that do not support exon quant
 ifeq ($(exon_quant_method),dexseq) 
-ifneq (,$(filter $(quant_method),cufflinks1 cufflinks2 cufflinks2_nd cufflinks1_nd nurd stringtie stringtie_nd rsem))
+ifneq (,$(filter $(quant_method),cufflinks1 cufflinks2 cufflinks2_nd cufflinks1_nd nurd stringtie stringtie_nd rsem kallisto))
 $(error Sorry... currently DEXSeq cannot be used together with $(quant_method))
 endif
 else 
-ifneq (,$(filter $(exon_quant_method),cufflinks1 cufflinks2 cufflinks2_nd cufflinks1_nd nurd rsem))
+ifneq (,$(filter $(exon_quant_method),cufflinks1 cufflinks2 cufflinks2_nd cufflinks1_nd nurd rsem kallisto))
 $(error $(exon_quant_method) does not provide exon level quantification)
 endif
 #$(info Exon quantification requires that all exons in the gtf file have an exon_id attribute)
@@ -1182,17 +1187,29 @@ endef
 # TODO: STAGE0
 SETUP_DATA_FILES=
 STAGE3_OUT_FILES=
+STAGE2_OUT_FILES=
 STAGE4_OUT_FILES=
 STAGE5_OUT_FILES=
 STAGE3_S_TARGETS=
 
 STAGE1_OUT_FILES=$(foreach p,$(se),$(call lib2filt_folder,$(p))$(p).f.fastq) $(foreach p,$(pe),$(call lib2filt_folder,$(p))$(p)_1.f.fastq)
 
+
+ifneq ($(mapper),none)
+
 STAGE2_OUT_FILES=$(foreach p,$(pe), $(call lib2bam_folder,$(p))$(p).pe.hits.bam) $(foreach s,$(se), $(call lib2bam_folder,$(s))$(s).se.hits.bam)
 
 STAGE2BYNAME_OUT_FILES=$(foreach p,$(pe), $(call lib2bam_folder,$(p))$(p).pe.hits.byname.bam) $(foreach s,$(se), $(call lib2bam_folder,$(s))$(s).se.hits.byname.bam)
 
+else
+
+STAGE2_OUT_FILES=
+STAGE2BYNAME_OUT_FILES=
+
+endif
+
 bam_files=$(STAGE2_OUT_FILES)
+
 
 ################################################################################
 # Default target
@@ -1220,12 +1237,13 @@ include $(irap_path)/../aux/mk/irap_gse.mk
 # Atlas (atlas specific stuff)
 include $(irap_path)/../aux/mk/irap_atlas.mk
 
+# Fusion
+include $(irap_path)/../aux/mk/irap_fusion.mk
+
 ifdef irap_devel
 $(call p_info,Loading code under development)
 # include under development features
 include $(irap_path)/../aux/mk/irap_snp_indel_calling.mk
-# Fusion
-include $(irap_path)/../aux/mk/irap_fusion.mk
 endif
 
 # Check if the options provided are valid
@@ -1236,8 +1254,11 @@ endif
 $(info *========================================================)
 
 #################################################################################
-
+ifneq ($(mapper),none)
 index_files=$(call $(mapper)_index_filenames,$(word 1,$(files_indexed)),$(word 1,$(files_indexed)))
+else
+index_files=
+endif
 
 #*********************
 # print all variables
@@ -1395,6 +1416,7 @@ setup_files: $(SETUP_DATA_FILES)
 print_stage0_files: setup_dirs
 	echo $(SETUP_DATA_FILES)
 
+ifneq ($(mapper),none)
 # index the reference
 $(word 1,$(index_files)): $(files_indexed)
 	$(call p_info,INDEXING)
@@ -1404,6 +1426,7 @@ ifneq ($(word 2,$(index_files)),)
 $(word 2,$(index_files)): $(files_indexed)
 	$(call p_info,INDEXING 2)
 	$(call run_$(mapper)_index_annot,$(word 1,$(files_indexed)))
+endif
 endif
 
 # Create the file with gene classification by GeneId
@@ -1518,6 +1541,8 @@ qc: quality_filtering_and_report
 quality_filtering_and_report: setup	$(STAGE1_OUT_FILES)
 	$(call p_info,[DONE] Quality filtering)
 
+phony_targets+= do_qc
+do_qc: $(STAGE1_OUT_FILES)
 
 ifeq ($(qc),none)
 $(info QC disabled)
@@ -1566,7 +1591,11 @@ print_stage2_files:
 #####################
 phony_targets+= $(mapper)_mapping mapping stage2_tracks
 
+ifeq ($(mapper),none)
+$(mapper)_mapping: 
+else
 $(mapper)_mapping: $(index_files) $(STAGE2_OUT_FILES)
+endif
 
 stage2_tracks_targets=$(call rep_browse,$(subst .bam,.bam.tracks,$(STAGE2_OUT_FILES)))	
 
@@ -1602,12 +1631,14 @@ $(call lib2bam_folder,$(1))$(1).pe.hits.bam: $(call mapper_ifiles,$(mapper),$(1)
 endef
 
 # create the output directories
+ifneq ($(mapper),none)
 $(foreach l,$(se) $(pe),$(eval $(shell mkdir -p $(call lib2bam_folder,$(l)))))
 
 # rules for SE libraries
 $(foreach l,$(se),$(eval $(call make-se-bam-rule,$(l))))
 # rules for PE libraries
 $(foreach l,$(pe),$(eval $(call make-pe-bam-rule,$(l))))
+endif
 
 # interleaved fastq file
 $(name)/data/%_int.f.fastq: $(name)/data/%_1.f.fastq $(name)/data/%_2.f.fastq
@@ -1703,7 +1734,7 @@ define run_scripture=
 		scripture  $(scripture_params) -alignment $(1) -out $(4)/$$chr.segments -sizeFile $(2) -chr $$chr  -chrSequence $(3)/$$chr.fa $(5); \
 	    scripture  -task score -in  $(4)/$$chr.segments -alignment $(1) -sizeFile $(2) -out $(4)/$$chr.score.tsv $(5);\
 	done; 
-	cat $(4)/*.score.tsv > $(7).tmp  && bedtools intersect -wb -b $(6) -a $(7).tmp | cut -f 15,29- a.tsv | sed -e "s/^\([0-9]*\).0.\(.*\)/\2\t\1/" > $(7).tmp2 &&\
+	cat $(4)/*.score.tsv > $(7).tmp  && bedtools intersect -wb -b $(6) -a $(7).tmp | cut -f 15,29- | sed -e "s/^\([0-9]*\).0.\(.*\)/\2\t\1/" > $(7).tmp2 &&\
 	irap_naive_count.pl $(7).tmp2 $(7).exons $(7).genes && \
 	mv $(7).exons $(7).exons.tsv && \
 	mv $(7).genes $(7).genes.tsv  && \
@@ -1756,6 +1787,8 @@ $(name)/$(mapper)/$(quant_method)/chr_size.tsv: $(reference_abspath).fai
 $(reference_abspath)_files: $(reference_abspath)
 	irap_fasta_split.pl $< $@
 
+$(name)/$(mapper)/scripture/genes.raw.scripture.tsv: $(name)/$(mapper)/scripture/rawcounts.scripture.tsv
+	cp $< $@
 
 ################################################################################
 # STAGE 3
