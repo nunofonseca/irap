@@ -24,7 +24,6 @@
 
 ###############################################################
 suppressPackageStartupMessages(library("optparse"))
-suppressPackageStartupMessages(library(DESeq))
 library(R2HTML)
 library(brew)
 
