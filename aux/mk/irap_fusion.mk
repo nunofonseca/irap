@@ -116,21 +116,28 @@ endef
 # Use the BAMs
 $(name)/$(mapper)/fusionmap/%.fusion.tsv: $(name)/$(mapper)/%.se.hits.bam $(name)/data/fusionmap/fusionmap.index $(name)/data/fusionmap/fusionmap.gm
 	$(call run_fusionmap,$*,$<,se,$@.tmp) && mv $@.tmp $@
+
 $(name)/$(mapper)/fusionmap/%.fusion.tsv: $(name)/$(mapper)/%.pe.hits.bam $(name)/data/fusionmap/fusionmap.index $(name)/data/fusionmap/fusionmap.gm
 	$(call run_fusionmap,$*,$<,pe,$@.tmp)  && mv $@.tmp $@
 
+$(name)/$(mapper)/fusionmap/%.fusion.sum.tsv: $(name)/$(mapper)/fusionmap/%.fusion.tsv
+	irap_Fusion_fm2descr --tsv "$^" -o $@.tmp && mv $@.tmp $@
+
 ############################
 # Add to stage3 output files
-FUSION_LIB_TARGETS=$(foreach p,$(pe),$(call lib2fusion_folder,$(p))$(p).fusion.tsv) $(foreach s,$(se),$(call lib2fusion_folder,$(s))$(s).fusion.tsv)
+FUSION_LIB_TARGETS=$(foreach p,$(pe),$(call lib2fusion_folder,$(p))$(p).fusion.sum.tsv) $(foreach s,$(se),$(call lib2fusion_folder,$(s))$(s).fusion.sum.tsv)
 
 
 STAGE3_S_TARGETS+=$(FUSION_LIB_TARGETS)
 
-STAGE3_OUT_FILES+=$(name)/$(mapper)/fusionmap/fusionmap_readcounts.tsv
+STAGE3_OUT_FILES+=$(name)/$(mapper)/fusionmap/fusionmap_readcounts.tsv $(name)/$(mapper)/fusionmap/fusionmap_fusions.tsv
 
 # counts file
 $(name)/$(mapper)/fusionmap/fusionmap_readcounts.tsv:  $(FUSION_LIB_TARGETS)
 	$(call pass_args_stdin,irap_Fusion_fm2tsv,$@.tmp, --tsv "$^" -o $@.tmp) && mv $@.tmp $@
+
+$(name)/$(mapper)/fusionmap/fusionmap_fusions.tsv:  $(FUSION_LIB_TARGETS)
+	$(call pass_args_stdin,irap_Fusion_fm2descr,$@.tmp, --tsv "$^" -o $@.tmp) && mv $@.tmp $@
 
 
 

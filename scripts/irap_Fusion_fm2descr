@@ -1,0 +1,161 @@
+#!/usr/bin/env Rscript3
+#; -*- mode: R;-*-
+# =========================================================
+# Copyright 2012-2015,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#    $Id: irap.txt Nuno Fonseca Fri Mar 15 01:39:46 2013$
+# =========================================================
+
+###############################################################
+suppressPackageStartupMessages(library("optparse"))
+library(R2HTML)
+library(brew)
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+
+# specify our desired options in a list
+#
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+source(paste(IRAP.DIR,"aux/R","irap_misc.R",sep="/"))
+pdebug.enabled <- FALSE
+
+#######################
+usage <- "irap_Fusion_fm2descr --tsv file [options]"
+filenames <- c() ;#filenames that must exist (if defined)
+option_list <- list(
+  make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
+  make_option(c("--merge_rows"),action="store_true",dest="merge_rows",default=FALSE,help="Merge rows"),  
+  make_option(c("-i", "--tsv"), type="character", dest="tsv_files", default=NULL,help="TSV file names with the FusionMap output."),
+  make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name prefix.")
+)
+
+# check multiple options values
+multiple.options <- NULL
+
+mandatory <- c("tsv_files","out")
+args <- importArgsfromStdin()
+
+opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory,args=args)
+
+pdebug.enabled <- opt$debug
+
+tsv.files <- strsplit(opt$tsv_file,"[, ]")[[1]]
+pdebug("Processing ",length(tsv.files)," FusionMap files")
+
+read.fusionmap<-function(file) {
+  pinfo("Reading ",file)
+  t<-read.table(file,sep="\t",header=T,check.names=F,stringsAsFactors = F)
+  colnames(t) <- gsub(".*.RescuedCount","RescuedCount",gsub(".*.SeedCount","SeedCount",colnames(t)))
+  t$"Number of Supporting Reads" <- rowSums(t[,c("RescuedCount","SeedCount")])
+  return(t)
+}
+#tsv.files <- c("test_files/fusion/all.tsv","test_files/fusion/bd43b518_d480_11e4_9cef_8ad127de0353.fusion.tsv","test_files/fusion/l121002_UNC11-SN627_0254_AC0WP5ACXX_GTGAAA_L004.fusion.tsv")
+#Fusiongenename Strand Chromosome1 Breakpoint1 Chromosome2 Breakpoint2 Frameshift Fusionjunctionsequence Splicingpattern Numberofsupportingreads
+fixed.values <- c("FusionGene","Chromosome1","Chromosome2","KnownGene1","KnownGene2","SplicePattern")
+merge.values <- c("Strand","Position1","Position2","FusionJunctionSequence","SplicePatternClass","FrameShift","FrameShiftClass","Distance","OnExonBoundary","Filter","SeedCount","RescuedCount","Number of Supporting Reads")
+
+# First columns include the mandatory and optional values in PCAWG fusion file format
+cols2save <- c("FusionGene","Strand","Chromosome1","Position1","Chromosome2","Position2","FrameShift","FusionJunctionSequence","SplicePattern","Number of Supporting Reads","OnExonBoundary","Filter","KnownGene1","KnownGene2")
+
+
+merge.vals <- function(vals) {
+  return(paste(unique(unlist(strsplit(as.character(vals),split=":"))),sep=":",collapse=":"))
+}
+
+sum.merged.vals <- function(val) {
+
+  return(sum(as.numeric(strsplit(val,split=":")[[1]])))
+}
+# check if the files exist
+fe <- sapply(tsv.files,file.exists)
+if (sum(!fe)!=0) {
+  not.found <- names(fe[!fe])
+  perror("File(s) not found...")
+  perror(not.found)
+  q(status=1)
+}
+
+# load the files
+m <- read.fusionmap(tsv.files[1])[,append(fixed.values,merge.values)]
+m <- aggregate(m,by=list(m$FusionGene),FUN=merge.vals)
+m[,"Number of Supporting Reads"] <- unlist(lapply(m[,"Number of Supporting Reads"],FUN=sum.merged.vals))
+#m[m$FusionGene=="IGKV1D-8->AC096579.13,IGKJ2",]
+#print(head(m))
+rownames(m) <- m[,"FusionGene"]
+cur.file.idx <- 2
+while ( cur.file.idx <= length(tsv.files) ) {
+  pinfo("Processing ",tsv.files[cur.file.idx])
+  m2 <- read.fusionmap(tsv.files[cur.file.idx])[,append(fixed.values,merge.values)]
+  m2 <- aggregate(m2,by=list(m$FusionGene),FUN=merge.vals)
+  m2[,"Number of Supporting Reads"] <- unlist(lapply(m2[,"Number of Supporting Reads"],FUN=sum.merged.vals))
+  rownames(m2) <- m2[,"FusionGene"]
+  # overlap
+  fusions1 <- m[,"FusionGene"]
+  fusions2 <- m2[,"FusionGene"]
+  inter <- intersect(fusions1,fusions2)
+  new.fusions <- fusions2[!fusions2 %in% inter]
+  old.fusions <- fusions1[!fusions1 %in% append(new.fusions,inter)]
+  pinfo("Overlap fusions:",length(inter))
+  pinfo("New fusions:",length(new.fusions))
+  pinfo("Not in new file:",length(old.fusions))
+
+  #head(merged.cols2)
+  matrices.merge.col <- function(col,m1,m2) {
+    x <- cbind(as.character(m1[,col]),as.character(m2[,col]))
+    #print(col)
+    #print(head(x))
+    return(apply(x,MARGIN=1,FUN=merge.vals))
+  }
+  # merge the info of shared fusions
+  print(colnames(m2))
+  print(rownames(m2))
+  merged.cols2 <- m2[inter,merge.values]
+  merged.cols1 <- m[inter,merge.values]
+  print(head(merged.cols2))
+  merged <-data.frame(lapply(merge.values,matrices.merge.col,merged.cols1,merged.cols2),stringsAsFactors=F)
+  colnames(merged) <- merge.values
+  pinfo("Building new matrix...")
+  m.new <- cbind(m[inter,fixed.values],merged)
+  # add the new fusions
+  m.new <- rbind(m.new,m2[new.fusions,append(fixed.values,merge.values)])
+  # add the old fusions
+  m.new <- rbind(m.new,m[old.fusions,])
+  m <- m.new
+  rownames(m) <- m[,"FusionGene"]
+  cur.file.idx <- cur.file.idx+1
+}
+pinfo("Merge complete")
+#
+write.tsv(m[,cols2save],file=opt$out)
+pinfo("Saved to file ",opt$out)
+warnings()
+q(status=0)
+
+
+
+
+
+
+
+
+
