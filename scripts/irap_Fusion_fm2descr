@@ -97,8 +97,12 @@ if (sum(!fe)!=0) {
 
 # load the files
 m <- read.fusionmap(tsv.files[1])[,append(fixed.values,merge.values)]
-m <- aggregate(m,by=list(m$FusionGene),FUN=merge.vals)
-m[,"Number of Supporting Reads"] <- unlist(lapply(m[,"Number of Supporting Reads"],FUN=sum.merged.vals))
+if ( nrow(m) > 0 ) {
+  m <- aggregate(m,by=list(m$FusionGene),FUN=merge.vals)
+  m[,"Number of Supporting Reads"] <- unlist(lapply(m[,"Number of Supporting Reads"],FUN=sum.merged.vals))
+} else {
+  m[,"Number of Supporting Reads"] <- 0
+}
 #m[m$FusionGene=="IGKV1D-8->AC096579.13,IGKJ2",]
 #print(head(m))
 rownames(m) <- m[,"FusionGene"]
@@ -106,42 +110,44 @@ cur.file.idx <- 2
 while ( cur.file.idx <= length(tsv.files) ) {
   pinfo("Processing ",tsv.files[cur.file.idx])
   m2 <- read.fusionmap(tsv.files[cur.file.idx])[,append(fixed.values,merge.values)]
-  m2 <- aggregate(m2,by=list(m$FusionGene),FUN=merge.vals)
-  m2[,"Number of Supporting Reads"] <- unlist(lapply(m2[,"Number of Supporting Reads"],FUN=sum.merged.vals))
-  rownames(m2) <- m2[,"FusionGene"]
+  if ( nrow(m2) > 0 ) {
+    m2 <- aggregate(m2,by=list(m$FusionGene),FUN=merge.vals)
+    m2[,"Number of Supporting Reads"] <- unlist(lapply(m2[,"Number of Supporting Reads"],FUN=sum.merged.vals))
+    rownames(m2) <- m2[,"FusionGene"]
   # overlap
-  fusions1 <- m[,"FusionGene"]
-  fusions2 <- m2[,"FusionGene"]
-  inter <- intersect(fusions1,fusions2)
-  new.fusions <- fusions2[!fusions2 %in% inter]
-  old.fusions <- fusions1[!fusions1 %in% append(new.fusions,inter)]
-  pinfo("Overlap fusions:",length(inter))
-  pinfo("New fusions:",length(new.fusions))
-  pinfo("Not in new file:",length(old.fusions))
+    fusions1 <- m[,"FusionGene"]
+    fusions2 <- m2[,"FusionGene"]
+    inter <- intersect(fusions1,fusions2)
+    new.fusions <- fusions2[!fusions2 %in% inter]
+    old.fusions <- fusions1[!fusions1 %in% append(new.fusions,inter)]
+    pinfo("Overlap fusions:",length(inter))
+    pinfo("New fusions:",length(new.fusions))
+    pinfo("Not in new file:",length(old.fusions))
 
   #head(merged.cols2)
-  matrices.merge.col <- function(col,m1,m2) {
-    x <- cbind(as.character(m1[,col]),as.character(m2[,col]))
-    #print(col)
-    #print(head(x))
-    return(apply(x,MARGIN=1,FUN=merge.vals))
-  }
+    matrices.merge.col <- function(col,m1,m2) {
+      x <- cbind(as.character(m1[,col]),as.character(m2[,col]))
+                                        #print(col)
+                                        #print(head(x))
+      return(apply(x,MARGIN=1,FUN=merge.vals))
+    }
   # merge the info of shared fusions
-  print(colnames(m2))
-  print(rownames(m2))
-  merged.cols2 <- m2[inter,merge.values]
-  merged.cols1 <- m[inter,merge.values]
-  print(head(merged.cols2))
-  merged <-data.frame(lapply(merge.values,matrices.merge.col,merged.cols1,merged.cols2),stringsAsFactors=F)
-  colnames(merged) <- merge.values
-  pinfo("Building new matrix...")
-  m.new <- cbind(m[inter,fixed.values],merged)
-  # add the new fusions
-  m.new <- rbind(m.new,m2[new.fusions,append(fixed.values,merge.values)])
-  # add the old fusions
-  m.new <- rbind(m.new,m[old.fusions,])
-  m <- m.new
-  rownames(m) <- m[,"FusionGene"]
+    print(colnames(m2))
+    print(rownames(m2))
+    merged.cols2 <- m2[inter,merge.values]
+    merged.cols1 <- m[inter,merge.values]
+    print(head(merged.cols2))
+    merged <-data.frame(lapply(merge.values,matrices.merge.col,merged.cols1,merged.cols2),stringsAsFactors=F)
+    colnames(merged) <- merge.values
+    pinfo("Building new matrix...")
+    m.new <- cbind(m[inter,fixed.values],merged)
+                                        # add the new fusions
+    m.new <- rbind(m.new,m2[new.fusions,append(fixed.values,merge.values)])
+                                        # add the old fusions
+    m.new <- rbind(m.new,m[old.fusions,])
+    m <- m.new
+    rownames(m) <- m[,"FusionGene"]
+  }
   cur.file.idx <- cur.file.idx+1
 }
 pinfo("Merge complete")
