@@ -101,7 +101,7 @@ if ( nrow(m) > 0 ) {
   m <- aggregate(m,by=list(m$FusionGene),FUN=merge.vals)
   m[,"Number of Supporting Reads"] <- unlist(lapply(m[,"Number of Supporting Reads"],FUN=sum.merged.vals))
 } else {
-  m[,"Number of Supporting Reads"] <- NULL
+  m <- cbind(m,"Number of Supporting Reads"=numeric(0))
 }
 #m[m$FusionGene=="IGKV1D-8->AC096579.13,IGKJ2",]
 #print(head(m))
