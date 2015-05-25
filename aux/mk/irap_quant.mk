@@ -363,10 +363,11 @@ $(name)/$(mapper)/$(quant_method)/genes.rpkm.cufflinks%.$(quant_method).tsv: $(f
 $(name)/$(mapper)/$(quant_method)/transcripts.rpkm.cufflinks%.$(quant_method).tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.rpkm.$(quant_method).$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.transcripts.rpkm.$(quant_method).$(quant_method).tsv) 
 	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) ) > $@.tmp && mv $@.tmp $@
 
+ifeq ($(exon_quant),y)
 $(name)/$(mapper)/$(quant_method)/exons.rpkm.$(exon_quant_method).cufflinks%.tsv:
 	$(call p_info, Warning! Cufflinks does not produce quantification at exon level. Generating empty file $@.)
 	@$(call empty_file,$@)
-
+endif
 endif
 
 endif
@@ -599,6 +600,7 @@ $(name)/$(mapper)/nurd/genes.rpkm.nurd.nurd.tsv: $(foreach p,$(pe),$(call lib2qu
 $(name)/$(mapper)/nurd/transcripts.rpkm.nurd.nurd.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).transcripts.rpkm.$(quant_method).nurd.tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).transcripts.rpkm.$(quant_method).nurd.tsv) 
 	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) ) > $@.tmp && mv $@.tmp $@
 
+ifeq ($(exon_quant),y)
 $(name)/$(mapper)/nurd/exons.rpkm.$(exon_quant_method).nurd.tsv: 
 	$(call p_info, Warning! NURD does not produce quantification at exon level. Generating empty file $@.)
 	@$(call empty_file,$@)
@@ -606,7 +608,7 @@ $(name)/$(mapper)/nurd/exons.rpkm.$(exon_quant_method).nurd.tsv:
 $(name)/$(mapper)/nurd/exons.raw.$(exon_quant_method).tsv: 
 	$(call p_info, Warning! NURD does not produce quantification at exon level. Generating empty file $@.)
 	@$(call empty_file,$@)
-
+endif
 
 $(name)/$(mapper)/$(quant_method)/%.nlib.nurd.tsv:
 	$(call p_info, Warning! Unable to generate  nlib file $@ with $(quant_method).)
@@ -726,6 +728,7 @@ endef
 %.gtf.DEXSeq.gff: %.gtf
 	python $(IRAP_DIR)/Rlibs/DEXSeq/python_scripts/dexseq_prepare_annotation.py $(dexseq_prepare_annotation_params)  $< $@.tmp && mv $@.tmp $@
 
+ifeq ($(exon_quant),y)
 ifeq ($(exon_quant_method),dexseq) 
 
 # add the generation of the flatten annotation to stage0 iff dexseq is selected
@@ -748,7 +751,7 @@ $(foreach l,$(se),$(eval $(call make-dexseq-quant-rule,$(l),$(l).se, $(gtf_file_
 $(foreach l,$(pe),$(eval $(call make-dexseq-quant-rule,$(l),$(l).pe, $(gtf_file_abspath).DEXSeq.gff)))
 
 endif
-
+endif
 #######################################################
 # RSEM
 

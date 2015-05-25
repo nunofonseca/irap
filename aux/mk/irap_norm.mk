@@ -62,9 +62,10 @@ $(name)/$(mapper)/$(quant_method)/genes.deseq_nlib.$(quant_method).irap.tsv: $(n
 $(name)/$(mapper)/$(quant_method)/transcripts.deseq_nlib.$(quant_method).irap.tsv: $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv
 	irap_deseq_norm $<  > $@.tmp && mv $@.tmp $@
 
+ifeq ($(exon_quant),y)
 $(name)/$(mapper)/$(quant_method)/exons.deseq_nlib.$(exon_quant_method).irap.tsv: $(name)/$(mapper)/$(quant_method)/exons.raw.$(exon_quant_method).tsv
 	irap_deseq_norm $<  > $@.tmp && mv $@.tmp $@
-
+endif
 ##################################
 # tpm
 #$(name)/$(mapper)/$(quant_method)/exons.tpm.$(exon_quant_method).irap.tsv:
