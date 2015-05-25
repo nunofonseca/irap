@@ -71,8 +71,8 @@ read.fusionmap<-function(file) {
 }
 #tsv.files <- c("test_files/fusion/all.tsv","test_files/fusion/bd43b518_d480_11e4_9cef_8ad127de0353.fusion.tsv","test_files/fusion/l121002_UNC11-SN627_0254_AC0WP5ACXX_GTGAAA_L004.fusion.tsv")
 #Fusiongenename Strand Chromosome1 Breakpoint1 Chromosome2 Breakpoint2 Frameshift Fusionjunctionsequence Splicingpattern Numberofsupportingreads
-fixed.values <- c("FusionGene","Chromosome1","Chromosome2","KnownGene1","KnownGene2","SplicePattern")
-merge.values <- c("Strand","Position1","Position2","FusionJunctionSequence","SplicePatternClass","FrameShift","FrameShiftClass","Distance","OnExonBoundary","Filter","SeedCount","RescuedCount","Number of Supporting Reads")
+fixed.values <- c("FusionGene","Chromosome1","Chromosome2","KnownGene1","KnownGene2")
+merge.values <- c("Strand","Position1","Position2","FusionJunctionSequence","SplicePattern","SplicePatternClass","FrameShift","FrameShiftClass","Distance","OnExonBoundary","Filter","SeedCount","RescuedCount","Number of Supporting Reads")
 
 # First columns include the mandatory and optional values in PCAWG fusion file format
 cols2save <- c("FusionGene","Strand","Chromosome1","Position1","Chromosome2","Position2","FrameShift","FusionJunctionSequence","SplicePattern","Number of Supporting Reads","OnExonBoundary","Filter","KnownGene1","KnownGene2")
@@ -95,26 +95,29 @@ if (sum(!fe)!=0) {
   q(status=1)
 }
 
+collapse.fusions <- function(m) {
+  if ( nrow(m) > 0 ) {
+    m <- aggregate(m,by=list(m$FusionGene),FUN=merge.vals)
+    m[,"Number of Supporting Reads"] <- unlist(lapply(m[,"Number of Supporting Reads"],FUN=sum.merged.vals))
+  } else {
+    m <- cbind(m,"Number of Supporting Reads"=numeric(0))
+  }
+  rownames(m) <- m[,"FusionGene"]
+  return(m)
+}
 # load the files
 m <- read.fusionmap(tsv.files[1])[,append(fixed.values,merge.values)]
-if ( nrow(m) > 0 ) {
-  m <- aggregate(m,by=list(m$FusionGene),FUN=merge.vals)
-  m[,"Number of Supporting Reads"] <- unlist(lapply(m[,"Number of Supporting Reads"],FUN=sum.merged.vals))
-} else {
-  m <- cbind(m,"Number of Supporting Reads"=numeric(0))
-}
+
 #m[m$FusionGene=="IGKV1D-8->AC096579.13,IGKJ2",]
 #print(head(m))
-rownames(m) <- m[,"FusionGene"]
+m <- collapse.fusions(m)
 cur.file.idx <- 2
 while ( cur.file.idx <= length(tsv.files) ) {
   pinfo("Processing ",tsv.files[cur.file.idx])
   m2 <- read.fusionmap(tsv.files[cur.file.idx])[,append(fixed.values,merge.values)]
   if ( nrow(m2) > 0 ) {
-    m2 <- aggregate(m2,by=list(m2$FusionGene),FUN=merge.vals)
-    m2[,"Number of Supporting Reads"] <- unlist(lapply(m2[,"Number of Supporting Reads"],FUN=sum.merged.vals))
-    rownames(m2) <- m2[,"FusionGene"]
-  # overlap
+    m2 <- collapse.fusions(m2)
+    # overlap
     fusions1 <- m[,"FusionGene"]
     fusions2 <- m2[,"FusionGene"]
     inter <- intersect(fusions1,fusions2)
@@ -132,14 +135,14 @@ while ( cur.file.idx <= length(tsv.files) ) {
       return(apply(x,MARGIN=1,FUN=merge.vals))
     }
   # merge the info of shared fusions
-    print(colnames(m2))
-    print(rownames(m2))
+    #print(colnames(m2))
+    #print(rownames(m2))
     merged.cols2 <- m2[inter,merge.values]
     merged.cols1 <- m[inter,merge.values]
-    print(head(merged.cols2))
     merged <-data.frame(lapply(merge.values,matrices.merge.col,merged.cols1,merged.cols2),stringsAsFactors=F)
     colnames(merged) <- merge.values
     pinfo("Building new matrix...")
+    m <- m[,append(fixed.values,merge.values)]
     m.new <- cbind(m[inter,fixed.values],merged)
                                         # add the new fusions
     m.new <- rbind(m.new,m2[new.fusions,append(fixed.values,merge.values)])
