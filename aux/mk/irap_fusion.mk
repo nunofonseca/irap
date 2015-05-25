@@ -133,6 +133,7 @@ STAGE3_S_TARGETS+=$(FUSION_LIB_TARGETS)
 ifdef sop
 ifeq ($(sop),pawg3_th2_mapping)
 STAGE3_S_TARGETS+=$(foreach p,$(pe),$(call lib2fusion_folder,$(p))$(p).fusion.sum.tsv) $(foreach s,$(se),$(call lib2fusion_folder,$(s))$(s).fusion.sum.tsv)
+FUSION_TARGETS+=$(foreach p,$(pe),$(call lib2fusion_folder,$(p))$(p).fusion.sum.tsv) $(foreach s,$(se),$(call lib2fusion_folder,$(s))$(s).fusion.sum.tsv)
 endif
 endif
 
