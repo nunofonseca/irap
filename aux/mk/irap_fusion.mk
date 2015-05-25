@@ -131,6 +131,7 @@ FUSION_LIB_TARGETS=$(foreach p,$(pe),$(call lib2fusion_folder,$(p))$(p).fusion.s
 STAGE3_S_TARGETS+=$(FUSION_LIB_TARGETS)
 
 STAGE3_OUT_FILES+=$(name)/$(mapper)/fusionmap/fusionmap_readcounts.tsv $(name)/$(mapper)/fusionmap/fusionmap_fusions.tsv
+FUSION_TARGETS+=$(FUSION_LIB_TARGETS)
 
 # counts file
 $(name)/$(mapper)/fusionmap/fusionmap_readcounts.tsv:  $(FUSION_LIB_TARGETS)
