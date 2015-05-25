@@ -111,7 +111,7 @@ while ( cur.file.idx <= length(tsv.files) ) {
   pinfo("Processing ",tsv.files[cur.file.idx])
   m2 <- read.fusionmap(tsv.files[cur.file.idx])[,append(fixed.values,merge.values)]
   if ( nrow(m2) > 0 ) {
-    m2 <- aggregate(m2,by=list(m$FusionGene),FUN=merge.vals)
+    m2 <- aggregate(m2,by=list(m2$FusionGene),FUN=merge.vals)
     m2[,"Number of Supporting Reads"] <- unlist(lapply(m2[,"Number of Supporting Reads"],FUN=sum.merged.vals))
     rownames(m2) <- m2[,"FusionGene"]
   # overlap
