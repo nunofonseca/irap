@@ -33,10 +33,21 @@ ifndef report_qc_only
 report_qc_only=n
 endif
 
+
+# 1- pat
+define quiet_ls=
+$(shell ls -1 $(1) 2>/dev/null)
+endef
+# 1 - pat
+# return only the the first file (most recent file)
+define quiet_ls1=
+$(shell ls -1 -t $(1) 2>/dev/null| head -n 1)
+endef
+
 ##################
 # the report will be generated for which combinations of tools?
 ifdef report_find_files
-report_mappers:=$(SUPPORTED_MAPPERS)
+report_mappers:=$(mapper)
 report_quant:=$(SUPPORTED_QUANT_METHODS)
 report_equant:=$(SUPPORTED_EXON_QUANT_METHODS)
 report_de:=$(SUPPORTED_DE_METHODS)
@@ -44,7 +55,9 @@ report_norm_methods:=$(SUPPORTED_NORM_METHODS)
 report_norm_tools:=$(SUPPORTED_NORM_TOOLS)
 else
 # by default generate a report only for the options selected in the conf. file
+ifneq ($(mapper),none)
 report_mappers?=$(mapper)
+endif
 ifneq ($(quant_method),none)
 report_quant?=$(quant_method)
 endif
@@ -54,17 +67,17 @@ else
 report_equant?=
 endif
 report_de?=$(de_method)
-ifneq ($(quant_norm_tool),none)
+#ifneq ($(quant_norm_tool),none)
 report_norm_methods?=$(quant_norm_method)
 report_norm_tools?=$(quant_norm_tool)
-endif
+#endif
 endif
 
 #$(foreach v,report_mappers report_quant report_equant report_de, $(info $(v)=$($(v))))
 #################################################################
 # useful functions
 define set_MAPPING_DIRS=
-$(eval override MAPPING_DIRS:=$(foreach m,$(report_mappers), $(name)/$(m)))
+$(eval override MAPPING_DIRS:=$(foreach m,$(report_mappers), $(call quiet_ls, -d $(name)/$(m))))
 endef
 #$(eval override MAPPING_DIRS:=$(shell ls --color=never -d -1 $(name)/{$(shell echo $(SUPPORTED_MAPPERS) | sed 's/ /,/g')}  2>/dev/null ))
 
@@ -95,7 +108,7 @@ endef
 
 # exon
 define equant_target=
-$(if $(call file_not_empty,$(call quiet_ls1,$(name)/$(1)/$(2)/exons.$(3).$(4).tsv)), $(name)/report/quant/$(1)_x_$(4)/exons.$(3).$(4).html, )
+$(if $(call file_not_empty,$(call quiet_ls1,$(name)/$(1)/$(2)/exons.$(3).$(4).tsv)), $(name)/report/quant/$(1)_x_$(2)/exons.$(3).$(4).html, )
 endef
 
 # mapper gene_quant nm level nt
@@ -105,7 +118,7 @@ endef
 
 # mapper quant_method norm_method norm_tool exon_quant_method
 define enquant_target=
-$(if $(call file_not_empty,$(call quiet_ls1,$(name)/$(1)/$(2)/exons.$(3).$(5).$(4).tsv)), $(name)/report/quant/$(1)_x_$(5)/exons.$(3).$(5).$(4).html, ) 
+$(if $(call file_not_empty,$(call quiet_ls1,$(name)/$(1)/$(2)/exons.$(3).$(5).$(4).tsv)), $(name)/report/quant/$(1)_x_$(2)/exons.$(3).$(5).$(4).html, ) 
 endef
 
 
@@ -194,16 +207,6 @@ define  gen_htseq_report=
 	$(if $(3),irap_htseq_report.R $(2) $(3) $(de_min_count) && touch $(1),)
 endef
 
-# 1- pat
-define quiet_ls=
-$(shell ls -1 $(1) 2>/dev/null)
-endef
-
-# 1 - pat
-# return only the the first file (most recent file)
-define quiet_ls1=
-$(shell ls -1 -t $(1) 2>/dev/null| head -n 1)
-endef
 
 ifndef IRAP_REPORT_MAIN_OPTIONS
 IRAP_REPORT_MAIN_OPTIONS=
@@ -300,7 +303,7 @@ mapping_report: report_setup $(call mapping_report_targets)
 
 
 # files required for producing the mapping report
-MAPPING_REPORT_PRE_STATS=$(foreach m,$(report_mappers), $(foreach p,$(pe),$(name)/$(m)/$($(p)_dir)$(p).pe.hits.bam.stats $(name)/$(m)/$($(p)_dir)$(p).pe.hits.bam.stats.csv $(name)/$(m)/$($(p)_dir)$(p).pe.hits.bam.gene.stats) $(foreach s,$(se),$(name)/$(m)/$($(s)_dir)$(s).se.hits.bam.stats.csv $(name)/$(m)/$($(s)_dir)$(s).se.hits.bam.gene.stats $(name)/$(m)/$($(s)_dir)$(s).se.hits.bam.stats))
+MAPPING_REPORT_PRE_STATS=$(foreach m,$(call mapping_dirs),  $(foreach p,$(pe),$(name)/$(m)/$($(p)_dir)$(p).pe.hits.bam.stats $(name)/$(m)/$($(p)_dir)$(p).pe.hits.bam.stats.csv $(name)/$(m)/$($(p)_dir)$(p).pe.hits.bam.gene.stats) $(foreach s,$(se),$(name)/$(m)/$($(s)_dir)$(s).se.hits.bam.stats.csv $(name)/$(m)/$($(s)_dir)$(s).se.hits.bam.gene.stats $(name)/$(m)/$($(s)_dir)$(s).se.hits.bam.stats))
 
 # merge into a single file the statistics collected from the BAMs 
 $(name)/%/stats_raw.tsv $(name)/%/stats_perc.tsv:  $(foreach p,$(pe),$(name)/%/$($(p)_dir)$(p).pe.hits.bam.stats.csv) $(foreach s,$(se),$(name)/%/$($(s)_dir)$(s).se.hits.bam.stats.csv)
@@ -314,15 +317,16 @@ $(name)/%/genestats_raw.tsv $(name)/%/genestats_perc.tsv:  $(foreach p,$(pe),$(n
 	$(call pass_args_stdin,merge_featstats,$(name)/$*/genestats_raw.tsv, --stats "$(call remove_spaces,$(foreach p,$(pe),;$(name)/$*/$($(p)_dir)$(p).pe.hits.bam.gene.stats))$(call remove_spaces,$(foreach p,$(se),;$(name)/$*/$($(p)_dir)$(p).se.hits.bam.gene.stats))"  --labels "$(call remove_spaces,$(foreach p,$(pe) $(se),;$(p)))"  --out $(name)/$*/$*.gtmp) && mv $(name)/$*/$*.gtmp_featstats_raw.tsv $(name)/$*/genestats_raw.tsv && mv $(name)/$*/$*.gtmp_featstats_perc.tsv $(name)/$*/genestats_perc.tsv
 
 # 
-print_mapping_report_req: $(name)/report/mapping/%.html_req
+print_mapping_report_req: $(foreach m,$(mapping_dirs),$(name)/report/mapping/$(m).html_req)
 $(name)/report/mapping/%.html_req:
 	echo $(MAPPING_REPORT_PRE_STATS)
 
 $(name)/report/mapping/%.html_doreq: $(MAPPING_REPORT_PRE_STATS)
 	@echo "done"
 
-
-
+# files required to produce the mapping report
+mapping_report_req: $(MAPPING_REPORT_PRE_STATS)
+	@echo "done"
 
 # Mapping report for a specific mapper
 $(name)/report/mapping/%.html: $(name)/%/  $(conf) $(call must_exist,$(name)/report/mapping/)  $(name)/%/stats_raw.tsv $(name)/%/stats_perc.tsv  $(name)/%/featstats_raw.tsv $(name)/%/featstats_perc.tsv  $(name)/%/genestats_raw.tsv 
@@ -415,7 +419,7 @@ quant_report_files:
 # Quant. at gene level
 
 define ge_html2level=
-$(subst gene,CDS,$(patsubst %s,%,$(word 1,$(subst ., ,$(notdir $*)))))
+$(subst transcript,CDS,$(patsubst %s,%,$(word 1,$(subst ., ,$(notdir $*)))))
 endef
 
 define ge_html2metric=
@@ -424,7 +428,7 @@ endef
 
 # 
 $(name)/report/quant/%.html: 
-	$(call GE_tsv2html,$(call ge_html2metric,$*),$(call quiet_ls1,$(name)/$(subst _x_,/,$*).tsv),$(@D),$(notdir $*).t,$(subst _x_, x ,$*),$(call ge_html2level,$*)) && \
+	$(call GE_tsv2html,$(call ge_html2metric,$*),$(call quiet_ls1,$(name)/$(subst _x_,/,$*).tsv),$(@D),$(notdir $*).t,$(subst _x_, x ,$(subst /,,$(dir $*))),$(call ge_html2level,$*)) && \
 	cp $(subst .html,,$@).t.html $@
 
 
