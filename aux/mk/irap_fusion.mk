@@ -130,8 +130,10 @@ FUSION_LIB_TARGETS=$(foreach p,$(pe),$(call lib2fusion_folder,$(p))$(p).fusion.t
 
 STAGE3_S_TARGETS+=$(FUSION_LIB_TARGETS) 
 
-if ($(sop),pawg3_th2_mapping)
+ifdef sop
+ifeq ($(sop),pawg3_th2_mapping)
 STAGE3_S_TARGETS+=$(foreach p,$(pe),$(call lib2fusion_folder,$(p))$(p).fusion.sum.tsv) $(foreach s,$(se),$(call lib2fusion_folder,$(s))$(s).fusion.sum.tsv)
+endif
 endif
 
 STAGE3_OUT_FILES+=$(name)/$(mapper)/fusionmap/fusionmap_readcounts.tsv $(name)/$(mapper)/fusionmap/fusionmap_fusions.tsv
