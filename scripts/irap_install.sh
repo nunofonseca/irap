@@ -947,7 +947,7 @@ function bedtools_install {
 # Perl packages
 # TODO: move from cpan to cpanm
 function perl_cpan_install {
-    if [ -e ~/.cpan.irap.done ]; then
+    if [ -e ~/$IRAP_DIR/.cpan.irap.done ]; then
 	pinfo "Skipping cpan init...already done"
     else
     pinfo "Initializing CPAN..."
@@ -1001,7 +1001,7 @@ EOF
     # set permissions 
     chmod +w $IRAP_DIR/bin/*
     pinfo "Configuring CPAN...done."
-    touch ~/.cpan.irap.done
+    touch $IRAP_DIR/.cpan.irap.done
   fi
 }
 
