@@ -413,6 +413,7 @@ export PATH=\$IRAP_DIR/bin/bowtie1/bin:\$IRAP_DIR/bin:\$IRAP_DIR/scripts:\$PATH
 export LD_LIBRARY_PATH=\$IRAP_DIR/lib:\$LD_LIBRARY_PATH:/usr/local/lib
 export CFLAGS="-I\$IRAP_DIR/include -I\$IRAP_DIR/include/bam -I\$IRAP_DIR/include/boost  \$CFLAGS"
 export R_LIBS_USER=$IRAP_DIR/Rlibs
+export R3_LIBS_USER=$IRAP_DIR/Rlibs3
 export CXXFLAGS="-I\$IRAP_DIR/include -I\$IRAP_DIR/include/bam -I\$IRAP_DIR/include/boost -L\$IRAP_DIR/lib \$CXXFLAGS"
 export PERL5LIB=\$IRAP_DIR/perl/lib/perl5:\$IRAP_DIR/lib/perl5:\$IRAP_DIR/lib/perl5/x86_64-linux:\$IRAP_DIR/lib/perl5/$PERL_VERSION
 export PYTHONUSERBASE=\$IRAP_DIR/python
@@ -428,6 +429,7 @@ export THREADS=8
 #export IRAP_LSF_PARAMS=
 EOF
     mkdir -p $IRAP_DIR/Rlibs
+    mkdir -p $IRAP_DIR/Rlibs3
 }
 
 
@@ -814,12 +816,14 @@ function R3_install {
     cat <<EOF > $IRAP_DIR/scripts/R3
 #!/bin/bash
 export PATH=\$IRAP_DIR/R3/bin:\$PATH
+export R_LIBS_USER=\$R3_LIBS_USER
 \$IRAP_DIR/R3/bin/R "\$@"
 EOF
     chmod +x $IRAP_DIR/scripts/R3
     cat <<EOF > $IRAP_DIR/scripts/Rscript3
 #!/bin/bash
 export PATH=\$IRAP_DIR/R3/bin:\$PATH
+export R_LIBS_USER=\$R3_LIBS_USER
 \$IRAP_DIR/R3/bin/Rscript "\$@"
 EOF
     chmod +x $IRAP_DIR/scripts/Rscript3
