@@ -23,7 +23,7 @@
 install=all
 IRAP_DIR1=
 SRC_DIR=
-IRAP_VERSION=0.6.3d1
+IRAP_VERSION=0.6.2p1
 
 #
 USE_CACHE=y
@@ -320,13 +320,8 @@ Sailfish_VERSION=0.6.2
 Sailfish_FILE=Sailfish-${Sailfish_VERSION}-Linux_x86-64.tar.gz
 Sailfish_URL=http://github.com/kingsfordgroup/sailfish/releases/download/v$Sailfish_VERSION/$Sailfish_FILE
 
-# kallisto
-kallisto_VERSION=0.42.1
-kallisto_FILE=kallisto_linux-v$kallisto_VERSION.tar.gz
-kallisto_URL=https://github.com/pachterlab/kallisto/releases/download/v$kallisto_VERSION/$kallisto_FILE
-
 #
-rsem_VERSION=1.2.21
+rsem_VERSION=1.2.9
 rsem_FILE=rsem-${rsem_VERSION}.tar.gz
 rsem_URL=http://deweylab.biostat.wisc.edu/rsem/src/$rsem_FILE
 
@@ -418,6 +413,7 @@ export PATH=\$IRAP_DIR/bin/bowtie1/bin:\$IRAP_DIR/bin:\$IRAP_DIR/scripts:\$PATH
 export LD_LIBRARY_PATH=\$IRAP_DIR/lib:\$LD_LIBRARY_PATH:/usr/local/lib
 export CFLAGS="-I\$IRAP_DIR/include -I\$IRAP_DIR/include/bam -I\$IRAP_DIR/include/boost  \$CFLAGS"
 export R_LIBS_USER=$IRAP_DIR/Rlibs
+export R3_LIBS_USER=$IRAP_DIR/Rlibs3
 export CXXFLAGS="-I\$IRAP_DIR/include -I\$IRAP_DIR/include/bam -I\$IRAP_DIR/include/boost -L\$IRAP_DIR/lib \$CXXFLAGS"
 export PERL5LIB=\$IRAP_DIR/perl/lib/perl5:\$IRAP_DIR/lib/perl5:\$IRAP_DIR/lib/perl5/x86_64-linux:\$IRAP_DIR/lib/perl5/$PERL_VERSION
 export PYTHONUSERBASE=\$IRAP_DIR/python
@@ -433,6 +429,7 @@ export THREADS=8
 #export IRAP_LSF_PARAMS=
 EOF
     mkdir -p $IRAP_DIR/Rlibs
+    mkdir -p $IRAP_DIR/Rlibs3
 }
 
 
@@ -819,12 +816,14 @@ function R3_install {
     cat <<EOF > $IRAP_DIR/scripts/R3
 #!/bin/bash
 export PATH=\$IRAP_DIR/R3/bin:\$PATH
+export R_LIBS_USER=\$R3_LIBS_USER
 \$IRAP_DIR/R3/bin/R "\$@"
 EOF
     chmod +x $IRAP_DIR/scripts/R3
     cat <<EOF > $IRAP_DIR/scripts/Rscript3
 #!/bin/bash
 export PATH=\$IRAP_DIR/R3/bin:\$PATH
+export R_LIBS_USER=\$R3_LIBS_USER
 \$IRAP_DIR/R3/bin/Rscript "\$@"
 EOF
     chmod +x $IRAP_DIR/scripts/Rscript3
@@ -1346,8 +1345,6 @@ function Sailfish_install {
     popd
     pinfo "Sailfish installation complete."    
 }
-
-
 ######################################################
 # rsem
 function rsem_install {
@@ -1360,20 +1357,6 @@ function rsem_install {
     cp rsem* extract-* convert-* $IRAP_DIR/bin/rsem/bin
     popd
     pinfo "rsem installation complete."    
-}
-
-
-######################################################
-# kallisto
-function kallisto_install {
-    pinfo "Installing kallisto..."
-    download_software kallisto
-    tar xzvf $kallisto_FILE
-    pushd kallisto_linux-v$kallisto_VERSION
-    mkdir -p $IRAP_DIR/bin/kallisto/bin
-    cp kallisto $IRAP_DIR/bin/kallisto/bin
-    popd
-    pinfo "kallisto installation complete."    
 }
 
 ######################################################
@@ -1417,10 +1400,8 @@ function quant_install {
     flux_capacitor_install
     scripture_install
     NURD_install
-    stringtie_install
-    rsem_install
-    kallisto_install
-    fusionmap_install
+    #stringtie_install
+    #rsem_install
     #IsoEM_install
     #Sailfish_install
     #mmseq_install
