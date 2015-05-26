@@ -303,7 +303,7 @@ mapping_report: report_setup $(call mapping_report_targets)
 
 
 # files required for producing the mapping report
-MAPPING_REPORT_PRE_STATS=$(foreach m,$(call mapping_dirs),  $(foreach p,$(pe),$(name)/$(m)/$($(p)_dir)$(p).pe.hits.bam.stats $(name)/$(m)/$($(p)_dir)$(p).pe.hits.bam.stats.csv $(name)/$(m)/$($(p)_dir)$(p).pe.hits.bam.gene.stats) $(foreach s,$(se),$(name)/$(m)/$($(s)_dir)$(s).se.hits.bam.stats.csv $(name)/$(m)/$($(s)_dir)$(s).se.hits.bam.gene.stats $(name)/$(m)/$($(s)_dir)$(s).se.hits.bam.stats))
+MAPPING_REPORT_PRE_STATS=$(foreach m,$(call mapping_dirs),  $(foreach p,$(pe),$(m)/$($(p)_dir)$(p).pe.hits.bam.stats $(m)/$($(p)_dir)$(p).pe.hits.bam.stats.csv $(m)/$($(p)_dir)$(p).pe.hits.bam.gene.stats) $(foreach s,$(se),$(m)/$($(s)_dir)$(s).se.hits.bam.stats.csv $(m)/$($(s)_dir)$(s).se.hits.bam.gene.stats $(m)/$($(s)_dir)$(s).se.hits.bam.stats))
 
 # merge into a single file the statistics collected from the BAMs 
 $(name)/%/stats_raw.tsv $(name)/%/stats_perc.tsv:  $(foreach p,$(pe),$(name)/%/$($(p)_dir)$(p).pe.hits.bam.stats.csv) $(foreach s,$(se),$(name)/%/$($(s)_dir)$(s).se.hits.bam.stats.csv)
