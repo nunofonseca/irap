@@ -271,17 +271,18 @@ if [ $do_validation -eq 1 ]; then
     libname_noprefix=`echo $libname |sed "s/^l//"`
     # Add strand information
     echo ${libname}_strand=$strand >> $folder/$f1_bn.info
-    pinfo "Lib. details: $DATA_DIR/$folder/$f1_bn.info"
     sed -i -E "s/^#(se|pe)=/\1=/" $folder/$f1_bn.info		
     # RGId=
     echo "${libname}_rgid=" >> $folder/$f1_bn.info		
     echo "${libname}_shl=@CO\tiRAP:$VERSION\n@CO\tid:$libname_noprefix\n@CO\tAnalysis performed by http://www.ebi.ac.uk/about/people/robert-petryszak team at EMBL-EBI" >> $folder/$f1_bn.info		
 else 
     pinfo "Validation skipped"
-    libs=`grep -E "^#(se|pe)=" $folder/$f1_bn.info|sed "s/#//"`
+    libs=`grep -E "^(se|pe)=" $folder/$f1_bn.info|sed "s/#//"`
     libname=`echo $libs|cut -f 2 -d=`
     libname_noprefix=`echo $libname |sed "s/^l//"`
 fi
+pinfo "Lib. details: $DATA_DIR/$folder/$f1_bn.info"
+    
 popd
 INFO_FILE=$TARGET_DIR/$f1_bn.info
 
