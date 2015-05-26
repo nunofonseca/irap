@@ -66,6 +66,7 @@ exec make --warn-undefined-variables -Rf "$0"  ${1+"$@"}
 .SECONDARY: 
 .ONESHELL:
 
+SHELL=bash
 ##################
 # Setup some paths
 # path to script
