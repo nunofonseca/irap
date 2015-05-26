@@ -36,12 +36,12 @@ endif
 
 # 1- pat
 define quiet_ls=
-$(shell ls -1 $(1) 2>/dev/null)
+$(shell ls --color=never -1 $(1) 2>/dev/null)
 endef
 # 1 - pat
 # return only the the first file (most recent file)
 define quiet_ls1=
-$(shell ls -1 -t $(1) 2>/dev/null| head -n 1)
+$(shell ls --color=never -1 -t $(1) 2>/dev/null| head -n 1)
 endef
 
 ##################
@@ -82,11 +82,11 @@ endef
 #$(eval override MAPPING_DIRS:=$(shell ls --color=never -d -1 $(name)/{$(shell echo $(SUPPORTED_MAPPERS) | sed 's/ /,/g')}  2>/dev/null ))
 
 define set_QUANT_DIRS=
-$(eval override QUANT_DIRS:=$(shell ls -d -1 $(shell echo $(foreach d,$(call mapping_dirs),$(foreach q,$(report_quant), $d/$q))) 2>/dev/null ))
+$(eval override QUANT_DIRS:=$(shell ls --color=never -d -1 $(shell echo $(foreach d,$(call mapping_dirs),$(foreach q,$(report_quant), $d/$q))) 2>/dev/null ))
 endef
 
 define set_DE_DIRS=
-$(eval override DE_DIRS:=$(shell ls -d -1 $(shell echo $(foreach d,$(call quant_dirs),$(d)/{$(shell echo $(report_de)| sed 's/ /,/g')})) 2>/dev/null))
+$(eval override DE_DIRS:=$(shell ls --color=never -d -1 $(shell echo $(foreach d,$(call quant_dirs),$(d)/{$(shell echo $(report_de)| sed 's/ /,/g')})) 2>/dev/null))
 endef
 
 # 1 - exp name
