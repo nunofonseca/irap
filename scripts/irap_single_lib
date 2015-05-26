@@ -96,7 +96,7 @@ function run_AND_timeIt {
     logfile=$2
     shift 2
     datetime=`date "+%F %R"`
-    echo `pwd`
+    #echo `pwd`
     echo "CMD: $*" > /dev/stderr
     # label\tTime elapsed\tTime leapsed(Seconds)\taximum resident set size\t
     /usr/bin/time -o $logfile -a --format "$label\t%E\t%e\t%M\t$datetime\t$*" bash -c "$* 2> /dev/stdout "
