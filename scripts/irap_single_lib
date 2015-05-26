@@ -96,9 +96,11 @@ function run_AND_timeIt {
     logfile=$2
     shift 2
     datetime=`date "+%F %R"`
+    echo `pwd`
     echo "CMD: $*" > /dev/stderr
     # label\tTime elapsed\tTime leapsed(Seconds)\taximum resident set size\t
-    /usr/bin/time -o $logfile -a --format "$label\t%E\t%e\t%M\t$datetime" $*
+    /usr/bin/time -o $logfile -a --format "$label\t%E\t%e\t%M\t$datetime\t$*" bash -c "$* 2> /dev/stdout "
+    #/usr/bin/time -o $logfile -a --format "$label\t%E\t%e\t%M\t$datetime" $*
     #echo "EXIT:$?" > /dev/stderr
 }
 ################################################
@@ -258,7 +260,7 @@ if [ $run_faster == y ] ; then
 fi
 
 if [ $do_validation -eq 1 ]; then
-    run_AND_timeIt "fastqInfo" $time_log_file fastq_info.sh  $folder/$f1_bn $rp_f2  > $folder/$f1_bn.info.tmp && mv $folder/$f1_bn.info.tmp $folder/$f1_bn.info
+    run_AND_timeIt "fastqInfo" $time_log_file "fastq_info.sh  $folder/$f1_bn $rp_f2  > $folder/$f1_bn.info.tmp && mv $folder/$f1_bn.info.tmp $folder/$f1_bn.info"
     if [ $? != 0 ] ; then
 	perror "FASTQ validation failed"
 	exit 1
