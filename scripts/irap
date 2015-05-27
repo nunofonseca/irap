@@ -1840,11 +1840,11 @@ clean_data_files:
 # delete all files related to the libraries
 lib_full_clean: clean_quality_filtering_and_report_cleanup 
 	rm -f $(STAGE1_OUT_FILES)
-	$(foreach l,$(se) $(pe), $(if $($(l)_dir), rm -rf $(name)/data/$($(l)_dir))
+	$(foreach l,$(se) $(pe), $(if $($(l)_dir), rm -rf $(name)/data/$($(l)_dir)))
 	rm -f $(STAGE2_OUT_FILES)
-	$(foreach l,$(se) $(pe), $(if $($(l)_dir), rm -rf $(name)/$(mapper)/$($(l)_dir))
+	$(foreach l,$(se) $(pe), $(if $($(l)_dir), rm -rf $(name)/$(mapper)/$($(l)_dir)))
 	rm -f $(STAGE3_OUT_FILES)
-	$(foreach l,$(se) $(pe), $(if $($(l)_dir), rm -rf $(name)/$(mapper)/$(quant_method)/$($(l)_dir))
+	$(foreach l,$(se) $(pe), $(if $($(l)_dir), rm -rf $(name)/$(mapper)/$(quant_method)/$($(l)_dir)))
 
 # TODO: archive (delete everything except the "main" output files for each stage
 #
