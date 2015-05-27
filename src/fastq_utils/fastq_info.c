@@ -560,6 +560,11 @@ static char* qualRange2enc(int min_qual,int max_qual) {
   } else {
     enc=3; // 33 is the default value (* means that the default value was used
   }
+  // raw reads should not have a value greater than min_qual+60
+  // higher scores are possible in assemblies or read maps (http://en.wikipedia.org/wiki/FASTQ_format)
+  if ( max_qual > min_qual+60  ) {
+    return(NULL);
+  }
   return encodings[enc];
 }
 
@@ -701,6 +706,11 @@ int main(int argc, char **argv ) {
     fprintf(out,"Number of reads: %lu\n",num_reads1);
   }
   fprintf(out,"Quality encoding range: %lu %lu\n",min_qual,max_qual);
+  char *enc=qualRange2enc(min_qual,max_qual);
+  if ( enc == NULL ) {
+    fprintf(stderr,"Unable to determine quality encoding - unknown range [$lu,%lu]\n",min_qual,max_qual);
+    exit(1);    
+  }
   fprintf(out,"Quality encoding: %s\n",qualRange2enc(min_qual,max_qual));
   fprintf(out,"Read length: %lu %lu\n",min_rl,max_rl);
   fprintf(out,"OK\n");  
