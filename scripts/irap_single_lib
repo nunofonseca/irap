@@ -337,7 +337,7 @@ pinfo "Mapping QC...complete."
 set -e
 BAM=`irap $irap_single_lib_options $irap_options print_stage2_files|tail -n 1`
 if [ ! -e "$BAM" ]; then
-    perror "Ooops: $BAM not found! This is not good :("
+    perror "Ooops: $BAM not found! This is not good."
     exit 1
 fi
 
