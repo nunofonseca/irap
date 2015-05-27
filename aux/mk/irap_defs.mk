@@ -62,7 +62,7 @@ endif
 
 endif
 
-##################
+###########################################################
 # Expression Atlas
 ifdef atlas_run
 # $(lib)_dir default dir should be $(exp_name)_$(species)
@@ -76,6 +76,9 @@ de_method?=deseq2
 deseq2_params=--independent-filtering
 quant_method?=htseq2
 mapper?=tophat2
+exon_quant?=y
+exon_quant_method?=dexseq
+
 
 ifdef big_genome
 $(info * Big genome, overriding mapper: $(mapper) -> star)
