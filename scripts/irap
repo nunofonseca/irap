@@ -1276,12 +1276,10 @@ $(call p_info,[DONE] Initialization)
 ###################
 read_qual_filter_common_params=tmp_dir=$(tmp_dir)  threads=$(max_threads)  qual_filtering=$(qual_filtering)  min_qual=$(min_read_quality) trim=$(trim_reads) cont_index=$(cont_index) 
 
+# 1 - libname
+# 2 - extra options
 define do_quality_filtering_and_report=
-	irap_fastq_qc $(read_qual_filter_common_params) data_dir=$(data_dir)/raw_data/$(raw_folder)/$($(1)_dir) read_size=$($(1)_rs)   qual=$($(1)_qual) f="$($(1))" out_prefix=$(1) is_pe=$(call is_pe_lib,$(1)) out_dir=$(name)/data/$($(1)_dir) report_dir=$(name)/report/riq/$($(1)_dir)
-endef
-
-define do_quality_filtering_and_report_cleanup=
-	irap_fastq_qc $(read_qual_filter_common_params) data_dir=$(data_dir)/raw_data/$(raw_folder)/$($(1)_dir) read_size=$($(1)_rs)  qual=$($(1)_qual) f="$($(1))" out_prefix=$(1) is_pe=$(call is_pe_lib,$(1)) out_dir=$(name)/data/$($(1)_dir) report_dir=$(name)/report/riq/$($(1)_dir) clean
+	irap_fastq_qc $(read_qual_filter_common_params) data_dir=$(data_dir)/raw_data/$(raw_folder)/$($(1)_dir) read_size=$($(1)_rs)   qual=$($(1)_qual) f="$($(1))" out_prefix=$(1) is_pe=$(call is_pe_lib,$(1)) out_dir=$(name)/data/$($(1)_dir) report_dir=$(name)/report/riq/$($(1)_dir) $(2)
 endef
 
 define not_empty=
@@ -1567,7 +1565,7 @@ else
 
 # Cleanup
 clean_quality_filtering_and_report_cleanup:
-	$(foreach p,$(se) $(pe),$(call do_quality_filtering_and_report_cleanup,$(p));)
+	$(foreach p,$(se) $(pe),$(call do_quality_filtering_and_report,$(call fix_libname,$(p)),clean);)
 endif
 
 ################################################################################
@@ -1837,6 +1835,16 @@ full_clean: clean_data_files
 
 clean_data_files:
 	rm -rf $(SETUP_DATA_FILES) $(index_files) $(reference_abspath).fa
+
+
+# delete all files related to the libraries
+lib_full_clean: clean_quality_filtering_and_report_cleanup 
+	rm -f $(STAGE1_OUT_FILES)
+	$(foreach l,$(se) $(pe), $(if $($(l)_dir), rm -rf $(name)/data/$($(l)_dir))
+	rm -f $(STAGE2_OUT_FILES)
+	$(foreach l,$(se) $(pe), $(if $($(l)_dir), rm -rf $(name)/$(mapper)/$($(l)_dir))
+	rm -f $(STAGE3_OUT_FILES)
+	$(foreach l,$(se) $(pe), $(if $($(l)_dir), rm -rf $(name)/$(mapper)/$(quant_method)/$($(l)_dir))
 
 # TODO: archive (delete everything except the "main" output files for each stage
 #
