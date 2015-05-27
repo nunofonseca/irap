@@ -708,7 +708,7 @@ int main(int argc, char **argv ) {
   fprintf(out,"Quality encoding range: %lu %lu\n",min_qual,max_qual);
   char *enc=qualRange2enc(min_qual,max_qual);
   if ( enc == NULL ) {
-    fprintf(stderr,"Unable to determine quality encoding - unknown range [$lu,%lu]\n",min_qual,max_qual);
+    fprintf(stderr,"Unable to determine quality encoding - unknown range [%lu,%lu]\n",min_qual,max_qual);
     exit(1);    
   }
   fprintf(out,"Quality encoding: %s\n",qualRange2enc(min_qual,max_qual));
