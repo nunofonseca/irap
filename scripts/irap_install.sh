@@ -221,7 +221,8 @@ RUBY_FILE=ruby-${RUBY_VERSION}.tar.gz
 RUBY_URL=http://ftp.ruby-lang.org/pub/ruby/1.9/$RUBY_FILE
 
 # 5.20.1
-PERL_VERSION=5.18.4
+#PERL_VERSION=5.18.4
+PERL_VERSION=5.20.2
 PERL_FILE=perl-$PERL_VERSION.tar.gz
 PERL_URL=http://www.cpan.org/src/5.0/$PERL_FILE
 
@@ -947,7 +948,7 @@ function bedtools_install {
 # Perl packages
 # TODO: move from cpan to cpanm
 function perl_cpan_install {
-    if [ -e ~/$IRAP_DIR/.cpan.irap.done ]; then
+    if [ -e $IRAP_DIR/.cpan.irap.done ]; then
 	pinfo "Skipping cpan init...already done"
     else
     pinfo "Initializing CPAN..."
@@ -988,16 +989,17 @@ EOF
 # 
     # upgrade cpan
     #cpan autobundle    
-    cpan -f -i App::cpanminus
-    cpanm -f -i YAML   < /dev/null
+    set +e
+    cpan  -f -i App::cpanminus
+    cpanm -n -f -i YAML   < /dev/null
     #cpanm -f -i Test::More@0.99 < /dev/null
-    cpanm -i -f ExtUtils::MakeMaker  < /dev/null 
+    cpanm -n -i -f ExtUtils::MakeMaker  < /dev/null 
     # perhaps install the latest perl?
-    cpan -u
+    cpan -f -u 
     # don't test
     #cpanm -n -i  Bundle::CPAN
-    cpanm -i  CPAN < /dev/null
-
+    cpanm -f -n -i  CPAN < /dev/null
+    set -e
     # set permissions 
     chmod +w $IRAP_DIR/bin/*
     pinfo "Configuring CPAN...done."
@@ -1031,8 +1033,8 @@ function perl_packages_install {
 
     set -e
     for p in $PACKAGES; do
-       pinfo "Package $p"
-       cpanm   $p < /dev/null
+       pinfo "************ Package $p"
+       cpanm  -f -n $p < /dev/null
     done
     set -e
     # the tests fail...
@@ -1606,7 +1608,7 @@ function new_jbrowse_install {
 
     pinfo "Uncompressing and installing jbrowse...extra PERL packages"
     perl_packages_install
-    cpan -i ExtUtils::MakeMaker
+    cpan -i ExtUtils::MakeMaker 
     cpan -i Module::CoreList
     cpan -f -i GD
     #
