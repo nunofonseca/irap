@@ -39,11 +39,11 @@ function pinfo {
 }
 
 function perror { 
-    echo "[ERROR: $*]" > $STDERR
+    echo "[ERROR: $*]" >> $STDERR
 }
 
 function pwarning { 
-    echo "[WARNING: $*]" > $STDERR
+    echo "[WARNING: $*]" >> $STDERR
 }
 
 
@@ -101,11 +101,17 @@ function run_AND_timeIt {
     datetime=`date "+%F %R"`
     #echo `pwd`
     echo "CMD: $*" 
+# `W'
+#     Number of times the process was swapped out of main memory
+#`I'
+#     Number of file system inputs by the process.
+#`O'
+#     Number of file system outputs by the process.
     # label\tTime elapsed\tTime leapsed(Seconds)\taximum resident set size\texit status\tcommand
-    /usr/bin/time -o $logfile -a --format "$label\t%E\t%e\t%M\t$datetime\t%x\t$*" bash -c "$* 2>> /dev/stdout "
+    /usr/bin/time -o $logfile -a --format "$label\t%E\t%e\t%M\t$datetime\t$*\t%x\tÎ\t%O\t%W" bash -c "$*"
     # add the exit status as the last column
     #/usr/bin/time -o $logfile -a --format "$label\t%E\t%e\t%M\t$datetime" $*
-    echo "EXIT:$?"
+    #echo "EXIT:$?"
 }
 #################################################################
 # 
