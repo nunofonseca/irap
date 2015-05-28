@@ -100,11 +100,12 @@ function run_AND_timeIt {
     shift 2
     datetime=`date "+%F %R"`
     #echo `pwd`
-    echo "CMD: $*" > /dev/stderr
-    # label\tTime elapsed\tTime leapsed(Seconds)\taximum resident set size\t
-    /usr/bin/time -o $logfile -a --format "$label\t%E\t%e\t%M\t$datetime\t$*" bash -c "$* 2> /dev/stdout "
+    echo "CMD: $*" 
+    # label\tTime elapsed\tTime leapsed(Seconds)\taximum resident set size\texit status\tcommand
+    /usr/bin/time -o $logfile -a --format "$label\t%E\t%e\t%M\t$datetime\t%x\t$*" bash -c "$* 2>> /dev/stdout "
+    # add the exit status as the last column
     #/usr/bin/time -o $logfile -a --format "$label\t%E\t%e\t%M\t$datetime" $*
-    #echo "EXIT:$?" > /dev/stderr
+    echo "EXIT:$?"
 }
 #################################################################
 # 
@@ -384,7 +385,7 @@ rename $libname $libname_noprefix `dirname $odir/$f1_bn`/$libname*
 
 # copy the info file
 cp $INFO_FILE $odir
-pinfo "Files in $odir"
+
 
 #################################################################
 # Cleanup
@@ -396,5 +397,6 @@ else
     run_AND_timeIt "iRAP-tidyup" $time_log_file  irap $irap_single_lib_options $irap_options clean
 fi
 
+pinfo "Files in $odir"
 pinfo "All done."
 exit 0
