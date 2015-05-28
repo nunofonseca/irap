@@ -107,7 +107,7 @@ int has_gz_extension(const char *s) {
   int reti;
   reti = regcomp(&regex,".gz$",0);  
   if ( reti ) { 
-    fprintf(stderr, "Internal error: Could not compile regex\n"); 
+    fprintf(stderr, "\nInternal error: Could not compile regex\n"); 
     exit(2); 
   }
   /* Execute regular expression */
@@ -120,7 +120,7 @@ int has_gz_extension(const char *s) {
 inline void close_fixed_fastq(gzFile fd) {
   if (fd==NULL) { return; }
   if (gzclose(fd)!=Z_OK) {
-    fprintf(stderr,"Error: unable to close file descriptor\n");
+    fprintf(stderr,"\nError: unable to close file descriptor\n");
     exit(1);
   }
 }
@@ -134,7 +134,7 @@ inline gzFile open_fixed_fastq(const char* filename) {
     strcat(&new_filename[0],"_fix.fastq.gz");
     fd1=gzopen(new_filename,"w");
     if (fd1==NULL) {
-      fprintf(stderr,"Error: Unable to open %s\n",filename);
+      fprintf(stderr,"\nError: Unable to open %s\n",filename);
       exit(1);
     }
     gzbuffer(fd1,128000);
@@ -147,7 +147,7 @@ inline gzFile open_fastq(const char* filename) {
   
   fd1=gzopen(filename,"r");
   if (fd1==NULL) {
-    fprintf(stderr,"Error: Unable to open %s\n",filename);
+    fprintf(stderr,"\nError: Unable to open %s\n",filename);
     exit(1);
   }
   gzbuffer(fd1,128000);
@@ -226,7 +226,7 @@ INDEX_ENTRY* new_indexentry(hashtable ht,char*hdr,int len,long start_pos) {
   ulong key=hashit(e->hdr);
   //collisions[key%HASHSIZE]++;
   if(insere(ht,key,e)<0) {
-    fprintf(stderr,"Error adding %s to index\n",hdr);
+    fprintf(stderr,"\nError adding %s to index\n",hdr);
     return(NULL);
   }
   index_mem+=sizeof(INDEX_ENTRY)+len+1+sizeof(hashnode);
@@ -309,12 +309,12 @@ void index_file(char *filename,hashtable sn_index,long start_offset,long length)
   gzFile fd1=open_fastq(filename);  
   gzFile fdf=open_fixed_fastq(filename);  
   if (fd1==NULL) {
-    fprintf(stderr,"Error: Unable to open %s\n",filename);
+    fprintf(stderr,"\nError: Unable to open %s\n",filename);
     exit(1);
   }
   // move to the right position
   if(length>0) {
-    fprintf(stderr, "Internal error: Not implemented\n");
+    fprintf(stderr, "\nInternal error: Not implemented\n");
     exit(2);
   }
   long cline=1;
@@ -333,7 +333,7 @@ void index_file(char *filename,hashtable sn_index,long start_offset,long length)
     char *qual=READ_LINE_QUAL(fd1);
     char* readname=get_readname(hdr,&len,cline,filename);
     if (seq==NULL || hdr2==NULL || qual==NULL ) {
-      fprintf(stderr,"Error in file %s, line %lu: file truncated?\n",filename,cline);
+      fprintf(stderr,"\nError in file %s, line %lu: file truncated?\n",filename,cline);
       exit(1);
     }
     if (validate_entry(hdr,hdr2,seq,qual,cline,filename)!=0) {
@@ -341,11 +341,11 @@ void index_file(char *filename,hashtable sn_index,long start_offset,long length)
     }
     // check for duplicates
     if ( lookup_header(sn_index,readname)!=NULL ) {
-      fprintf(stderr,"Error in file %s, line %lu: duplicated sequence %s\n",filename,cline,readname);
+      fprintf(stderr,"\nError in file %s, line %lu: duplicated sequence %s\n",filename,cline,readname);
       exit(1);
     }
     if ( new_indexentry(sn_index,readname,len,start_pos)==NULL) {
-      fprintf(stderr,"Error in file %s, line %lu: malloc failed?",filename,cline);
+      fprintf(stderr,"\nError in file %s, line %lu: malloc failed?",filename,cline);
       exit(1);
     }
     replace_dots(start_pos,seq,hdr,hdr2,qual,fdf);    
@@ -363,11 +363,11 @@ inline int validate_entry(char *hdr,char *hdr2,char *seq,char *qual,unsigned lon
   
   // Sequence identifier
   if ( hdr[0]!='@' ) {
-    fprintf(stderr,"Error in file %s, line %lu: sequence identifier should start with an @ - %s\n",filename,linenum,hdr);
+    fprintf(stderr,"\nError in file %s, line %lu: sequence identifier should start with an @ - %s\n",filename,linenum,hdr);
     return 1;
   }  
   if ( hdr[1]=='\0' || hdr[1]=='\n' || hdr[1]=='\r') {
-    fprintf(stderr,"Error in file %s, line %lu: sequence identifier should be longer than 1\n",filename,linenum);
+    fprintf(stderr,"\nError in file %s, line %lu: sequence identifier should be longer than 1\n",filename,linenum);
     return 1;
   }
   // sequence
@@ -379,7 +379,7 @@ inline int validate_entry(char *hdr,char *hdr2,char *seq,char *qual,unsigned lon
 	 seq[slen]!='a' && seq[slen]!='c' && seq[slen]!='g' && seq[slen]!='t' &&
 	 seq[slen]!='0' && seq[slen]!='1' && seq[slen]!='2' && seq[slen]!='3' &&
 	 seq[slen]!='n' && seq[slen]!='N' && seq[slen]!='.' ) {
-      fprintf(stderr,"Error in file %s, line %lu: invalid character '%c' (hex. code:'%x'), expected ACGTacgt0123nN.\n",filename,linenum+1,seq[slen],seq[slen]);
+      fprintf(stderr,"\nError in file %s, line %lu: invalid character '%c' (hex. code:'%x'), expected ACGTacgt0123nN.\n",filename,linenum+1,seq[slen],seq[slen]);
       return 1;
     }
     slen++;
@@ -393,7 +393,7 @@ inline int validate_entry(char *hdr,char *hdr2,char *seq,char *qual,unsigned lon
   }
   // check len
   if (slen < MIN_READ_LENGTH ) {
-    fprintf(stderr,"Error in file %s, line %lu: read length too small - %u\n",filename,linenum+1,slen);
+    fprintf(stderr,"\nError in file %s, line %lu: read length too small - %u\n",filename,linenum+1,slen);
     return 1;
   }
   // hdr2=+
@@ -403,7 +403,7 @@ inline int validate_entry(char *hdr,char *hdr2,char *seq,char *qual,unsigned lon
   //  return 1;
   //}  
   if (hdr2[0]!='+') {
-    fprintf(stderr,"Error in file %s, line %lu:  header2 wrong. The line should contain only '+' followed by a newline or read name (header1).\n",filename,linenum+2);
+    fprintf(stderr,"\nError in file %s, line %lu:  header2 wrong. The line should contain only '+' followed by a newline or read name (header1).\n",filename,linenum+2);
     return 1;
   }
   // length of hdr2 should be 1 or be the same has the hdr1
@@ -412,7 +412,7 @@ inline int validate_entry(char *hdr,char *hdr2,char *seq,char *qual,unsigned lon
   hdr=&hdr[1];
   if (hdr2[0]!='\0' && hdr2[0]!='\r' ) {
     if ( !compare_headers(&hdr[1],&hdr2[1]) ) {
-      fprintf(stderr,"Error in file %s, line %lu:  header2 differs from header1\nheader 1 \"%s\"\nheader 2 \"%s\"\n",filename,linenum,hdr,hdr2);
+      fprintf(stderr,"\nError in file %s, line %lu:  header2 differs from header1\nheader 1 \"%s\"\nheader 2 \"%s\"\n",filename,linenum,hdr,hdr2);
       return 1;
     }
   }
@@ -431,14 +431,14 @@ inline int validate_entry(char *hdr,char *hdr2,char *seq,char *qual,unsigned lon
 	 seq[slen]!='a' && seq[slen]!='c' && seq[slen]!='g' && seq[slen]!='t' &&
 	 seq[slen]!='0' && seq[slen]!='1' && seq[slen]!='2' && seq[slen]!='3' &&
 	 seq[slen]!='n' && seq[slen]!='N' && seq[slen]!='.' ) {
-      fprintf(stderr,"Error in file %s, line %lu: invalid character '%c' (hex. code:'%x'), expected ACGTacgt0123nN.\n",filename,linenum+1,seq[slen],seq[slen]);
+      fprintf(stderr,"\nError in file %s, line %lu: invalid character '%c' (hex. code:'%x'), expected ACGTacgt0123nN.\n",filename,linenum+1,seq[slen],seq[slen]);
       return 1;
     }
     slen++;
   }
 
   if ( qlen!=slen ) {
-    fprintf(stderr,"Error in file %s, line %lu: sequence and quality don't have the same length %u!=%u\n",filename,linenum+3,slen,qlen);
+    fprintf(stderr,"\nError in file %s, line %lu: sequence and quality don't have the same length %u!=%u\n",filename,linenum+3,slen,qlen);
     return 1;
   }
   return 0;
@@ -517,7 +517,7 @@ int validate_interleaved(char *f) {
     
     if ( seq1==NULL || hdr1_2==NULL || qual1==NULL ||
 	 hdr2==NULL || seq2==NULL || hdr2_2==NULL || qual2==NULL ) {
-      fprintf(stderr,"Error in file %s, line %lu: file truncated?\n",f,cline);
+      fprintf(stderr,"\nError in file %s, line %lu: file truncated?\n",f,cline);
       return(1);
     }
     if (validate_entry(hdr1,hdr1_2,seq1,qual1,cline,f)!=0) {
@@ -529,7 +529,7 @@ int validate_interleaved(char *f) {
     char* readname1=get_readname(hdr1,&len,cline,f);
     char* readname2=get_readname(hdr2,&len,cline+4,f);
     if ( strcmp(readname1,readname2) ) {
-      fprintf(stderr,"Error in file %s, line %lu: unpaired read - %s\n",f,cline,readname1);
+      fprintf(stderr,"\nError in file %s, line %lu: unpaired read - %s\n",f,cline,readname1);
       return(1);
     } 
     PRINT_READS_PROCESSED(cline/4);
@@ -659,7 +659,7 @@ int main(int argc, char **argv ) {
 	char *qual=READ_LINE_QUAL(fd2);
 	char* readname=get_readname(hdr,&len,cline,argv[2+nopt]);
 	if (seq==NULL || hdr2==NULL || qual==NULL ) {
-	  fprintf(stderr,"Error in file %s, line %lu: file truncated?\n",argv[2+nopt],cline);
+	  fprintf(stderr,"\nError in file %s, line %lu: file truncated?\n",argv[2+nopt],cline);
 	  exit(1);
 	}
 	if (validate_entry(hdr,hdr2,seq,qual,cline,argv[2+nopt])!=0) {
@@ -668,13 +668,13 @@ int main(int argc, char **argv ) {
 	//fprintf(stderr,"Reads processed: %ld\n",sn_index->n_entries);
 	// check for duplicates
 	if ( (e=lookup_header(sn_index,readname))==NULL ) {
-	  fprintf(stderr,"Error in file %s, line %lu: unpaired read - %s\n",argv[2+nopt],cline,readname);
+	  fprintf(stderr,"\nError in file %s, line %lu: unpaired read - %s\n",argv[2+nopt],cline,readname);
 	  exit(1);
 	} else {
 	  ulong key=hashit(readname);
 	  // remove entry from sn_index
 	  if (delete(sn_index,key,e)!=e) {
-	    fprintf(stderr,"Error in file %s, line %lu: unable to delete entry from sn_index - %s\n",argv[2+nopt],cline,readname);
+	    fprintf(stderr,"\nError in file %s, line %lu: unable to delete entry from sn_index - %s\n",argv[2+nopt],cline,readname);
 	    exit(1);
 	  }
 	  free_indexentry(e);
@@ -688,7 +688,7 @@ int main(int argc, char **argv ) {
       printf("\n");
       close_fixed_fastq(fdf);
       if (sn_index->n_entries>0 ) {
-	fprintf(stderr,"Error in file %s: found %lu unpaired reads\n",argv[1+nopt],sn_index->n_entries);
+	fprintf(stderr,"\nError in file %s: found %lu unpaired reads\n",argv[1+nopt],sn_index->n_entries);
 	exit(1);
       }
     }
@@ -708,7 +708,7 @@ int main(int argc, char **argv ) {
   fprintf(out,"Quality encoding range: %lu %lu\n",min_qual,max_qual);
   char *enc=qualRange2enc(min_qual,max_qual);
   if ( enc == NULL ) {
-    fprintf(stderr,"ERROR: Unable to determine quality encoding - unknown range [%lu,%lu]\n",min_qual,max_qual);
+    fprintf(stderr,"\nERROR: Unable to determine quality encoding - unknown range [%lu,%lu]\n",min_qual,max_qual);
     exit(1);    
   }
   fprintf(out,"Quality encoding: %s\n",qualRange2enc(min_qual,max_qual));
