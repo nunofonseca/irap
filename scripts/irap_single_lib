@@ -107,8 +107,9 @@ function run_AND_timeIt {
 #     Number of file system inputs by the process.
 #`O'
 #     Number of file system outputs by the process.
-    # label\tTime elapsed\tTime leapsed(Seconds)\taximum resident set size\texit status\tcommand
-    /usr/bin/time -o $logfile -a --format "$label\t%E\t%e\t%M\t$datetime\t$*\t%x\tÎ\t%O\t%W" bash -c "$*"
+    # label\tTime elapsed\tTime leapsed(Seconds)\taximum resident set size\tcommand\t exit status
+    # label |Time elapsed |Time elapsed(Seconds)| maximum resident memory |date|command\t | exit status | ....
+    /usr/bin/time -o $logfile -a --format "$label\t%E\t%e\t%M\t$datetime\t$*\t%x\t%I\t%O\t%W" bash -c "$*"
     # add the exit status as the last column
     #/usr/bin/time -o $logfile -a --format "$label\t%E\t%e\t%M\t$datetime" $*
     #echo "EXIT:$?"
