@@ -291,58 +291,95 @@ function stage123_jobs {
 # run stage3 - Normalization/merging
 function stage3_jobs {    
     waitfor=$1
-    WAIT_FOR_IDS=  CUR_STAGE=stage3 
+    WAIT_FOR_IDS=  
+    CUR_STAGE=stage3 
 
     p_info "Stage3"
     submit_job "${jobname_prefix}q"  -w "ended($waitfor)"  "$cmd conf=$conf  $IRAP_PARAMS stage3"
     echo "${jobname_prefix}q"
 }
 
-function DE_jobs {
-    #####
-    # DE
+function stage4_jobs {
     waitfor=$1
-    CUR_STAGE=DE
-    de_ofiles=`irap conf=$conf de_files $IRAP_PARAMS|tail -n 1`
-    let s2=1
-    for f in $de_ofiles; do
-	let s2=s2+1
-	p_info "DE: $f"
-	submit_job "${jobname_prefix}de[$s2]"  `check_dependency $waitfor`  "irap conf=$conf  $IRAP_PARAMS $f"
-    done
-    if [ "$de_ofiles-" = "-" ]; then
-	DEP=$waitfor
+    targets=`irap conf=$conf $IRAP_PARAMS print_stage4_files|tail -n 1`
+    if [ "$targets-" == "-" ]; then
+	DEPS=$1
     else
-	DEP=${jobname_prefix}de
+	DEPS="${jobname_prefix}4*" 
+	let i=1
+	p_info "* Stage 4..." 
+	for f in $targets; do    
+	    submit_job "${jobname_prefix}4[$i]"  -w "ended($waitfor)" $cmd conf=$conf  $IRAP_PARAMS $f
+	    let i=$i+1
+	done
+	p_info "* Stage 4...$i jobs" 
     fi
-    echo $DEP
+    echo $DEPS
 }
 
-function GSA_jobs {
+function stage5_jobs {
     waitfor=$1
-    ######
-    # GSA
-    CUR_STAGE=GSA
-    DEP=$waitfor
-    de_ofiles=`irap conf=$conf de_files $IRAP_PARAMS|tail -n 1`
-    if [ "$de_ofiles-" != "-" ]; then
-        #####
-        # GSA
-	gse_ofiles=`irap conf=$conf $IRAP_PARAMS GSE_files|tail -n 1`
-	let s2=1
-	for f in $gse_ofiles; do
-	    let s2=s2+1
-	    p_info "GSE: $f"
-	    submit_job "${jobname_prefix}gse[$s2]" `check_dependency $waitfor`  "irap conf=$conf  $IRAP_PARAMS $f"
+    targets=`irap conf=$conf $IRAP_PARAMS print_stage5_files|tail -n 1`
+    if [ "$targets-" == "-" ]; then
+	DEPS=$1
+    else
+	DEPS="${jobname_prefix}5*" 
+	let i=1
+	p_info "* Stage 5..." 
+	for f in $targets; do    
+	    submit_job "${jobname_prefix}5[$i]"  -w "ended($waitfor)" $cmd conf=$conf  $IRAP_PARAMS $f
+	    let i=$i+1
 	done
-	if [ "$gse_ofiles-" != "-" ]; then
-	    DEP=${jobname_prefix}gse
-	else
-	    DEP=$waitfor
-	fi    
+	p_info "* Stage 5...$i jobs" 
     fi
-    echo $DEP
+    echo $DEPS
 }
+
+# function DE_jobs {
+#     #####
+#     # DE
+#     waitfor=$1
+#     CUR_STAGE=DE
+#     de_ofiles=`irap conf=$conf de_files $IRAP_PARAMS|tail -n 1`
+#     let s2=1
+#     for f in $de_ofiles; do
+# 	let s2=s2+1
+# 	p_info "DE: $f"
+# 	submit_job "${jobname_prefix}de[$s2]"  `check_dependency $waitfor`  "irap conf=$conf  $IRAP_PARAMS $f"
+#     done
+#     if [ "$de_ofiles-" = "-" ]; then
+# 	DEP=$waitfor
+#     else
+# 	DEP=${jobname_prefix}de
+#     fi
+#     echo $DEP
+# }
+
+# function GSA_jobs {
+#     waitfor=$1
+#     ######
+#     # GSA
+#     CUR_STAGE=GSA
+#     DEP=$waitfor
+#     de_ofiles=`irap conf=$conf de_files $IRAP_PARAMS|tail -n 1`
+#     if [ "$de_ofiles-" != "-" ]; then
+#         #####
+#         # GSA
+# 	gse_ofiles=`irap conf=$conf $IRAP_PARAMS GSE_files|tail -n 1`
+# 	let s2=1
+# 	for f in $gse_ofiles; do
+# 	    let s2=s2+1
+# 	    p_info "GSE: $f"
+# 	    submit_job "${jobname_prefix}gse[$s2]" `check_dependency $waitfor`  "irap conf=$conf  $IRAP_PARAMS $f"
+# 	done
+# 	if [ "$gse_ofiles-" != "-" ]; then
+# 	    DEP=${jobname_prefix}gse
+# 	else
+# 	    DEP=$waitfor
+# 	fi    
+#     fi
+#     echo $DEP
+# }
 
 function final_job {
     CUR_STAGE=
