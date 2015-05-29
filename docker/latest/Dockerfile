@@ -17,6 +17,8 @@ RUN echo '#!/bin/env bash' > /usr/bin/irap
 RUN echo 'source /irap_install/irap_setup.sh' >> /usr/bin/irap
 RUN echo '/irap_install/scripts/irap "$@"' >> /usr/bin/irap
 RUN chmod u+x /usr/bin/irap
-
+WORKDIR /
+RUN rm -rf /opt/irap_clone  /root/.cpan*
+RUN yum clean all
 #ENTRYPOINT ["irap"]
 

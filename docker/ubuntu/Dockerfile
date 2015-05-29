@@ -1,9 +1,9 @@
 FROM ubuntu:14.04
 MAINTAINER Nuno Fonseca email: nuno.fonseca at gmail.com
-
+# Initially created by Natalja Kurbatova
 # Update the image with the latest packages (recommended)
 # and install missing packages
-# docker build --no-cache -t iRAP:0.6.2
+# docker build --no-cache -t iRAP:latest
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \ 
 	build-essential \
@@ -71,6 +71,8 @@ RUN echo '#!/bin/env bash' > /usr/bin/irap
 RUN echo 'source /irap_install/irap_setup.sh' >> /usr/bin/irap
 RUN echo '/irap_install/scripts/irap "$@"' >> /usr/bin/irap
 RUN chmod u+x /usr/bin/irap
-
+WORKDIR /
+RUN rm -rf /opt/irap_clone  /root/.cpan*
+RUN yum clean all
 #ENTRYPOINT ["irap"]
 
