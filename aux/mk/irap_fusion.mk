@@ -121,7 +121,7 @@ $(name)/$(mapper)/fusionmap/%.fusion.tsv: $(name)/$(mapper)/%.pe.hits.bam $(name
 	$(call run_fusionmap,$*,$<,pe,$@.tmp)  && mv $@.tmp $@
 
 $(name)/$(mapper)/fusionmap/%.fusion.sum.tsv: $(name)/$(mapper)/fusionmap/%.fusion.tsv
-	irap_Fusion_fm2descr --tsv "$^" --gtf $(gtf_file_abspath) -o $@.tmp && mv $@.tmp $@
+	irap_Fusion_fm2descr --tsv "$^" --gtf $(gtf_file_abspath) -c $(max_threads)  -o $@.tmp && mv $@.tmp $@
 
 ############################
 # Add to stage3 output files
@@ -145,7 +145,7 @@ $(name)/$(mapper)/fusionmap/fusionmap_readcounts.tsv:  $(FUSION_LIB_TARGETS)
 	$(call pass_args_stdin,irap_Fusion_fm2tsv,$@.tmp, --tsv "$^" -o $@.tmp) && mv $@.tmp $@
 
 $(name)/$(mapper)/fusionmap/fusionmap_fusions.tsv:  $(FUSION_LIB_TARGETS)
-	$(call pass_args_stdin,irap_Fusion_fm2descr,$@.tmp, --tsv "$^"  --gtf $(gtf_file_abspath) -o $@.tmp) && mv $@.tmp $@
+	$(call pass_args_stdin,irap_Fusion_fm2descr,$@.tmp, --tsv "$^"  -c $(max_threads) --gtf $(gtf_file_abspath) -o $@.tmp) && mv $@.tmp $@
 
 
 endif

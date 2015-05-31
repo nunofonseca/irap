@@ -45,7 +45,8 @@ filenames <- c() ;#filenames that must exist (if defined)
 option_list <- list(
   make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
   make_option(c("--merge_rows"),action="store_true",dest="merge_rows",default=FALSE,help="Merge rows"),
-    make_option(c("-g", "--gtf"), type="character", dest="gtf_file", default=NULL, help="GTF file name"),
+  make_option(c("-g", "--gtf"), type="character", dest="gtf_file", default=NULL, help="GTF file name"),
+  make_option(c("-c", "--cores"), type="character",default="2",dest="num_cores",help="Number of cores to use ([default %default])"),
   make_option(c("-i", "--tsv"), type="character", dest="tsv_files", default=NULL,help="TSV file names with the FusionMap output."),
   make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name prefix.")
 )
@@ -57,6 +58,31 @@ mandatory <- c("tsv_files","out")
 args <- importArgsfromStdin()
 
 opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory,args=args)
+
+tryCatch(num.cores <- as.integer(as.numeric(opt$num_cores)),warning=
+         function(w) {
+           perror("Invalid number of cores ",opt$num_cores)
+           q(status=3)    
+       }
+)
+if (num.cores<1) {
+  perror("Invalid number of cores ",opt$num_cores)
+  q(status=3)    
+}
+
+irap.assert(num.cores>0)
+
+if ( num.cores>detectCores()) {
+  num.cores <- detectCores()
+  pwarning("The number of cores to use exceeds the cores available. Reducing the limit to ",detectCores())
+}
+
+pdebug.enabled <- opt$debug
+# Disabling multicores due to an error with  RSQLite driver (mm)
+#num.cores <- 1
+#pwarning("Multi-threading is temporarily disabled due to an error with RSQLite driver that occurs when processing some GTF files.")
+options(cores=num.cores)
+options(mc.cores=num.cores)
 
 pdebug.enabled <- opt$debug
 
