@@ -62,17 +62,15 @@ RUN apt-get clean
 
 # 
 WORKDIR /opt
-RUN git clone http://github.com/nunofonseca/irap.git  irap_clone  
-WORKDIR /opt/irap_clone
-RUN ./scripts/irap_install.sh -a /irap_install -s . && rm -rf /irap_install/tmp
+RUN git clone http://github.com/nunofonseca/irap.git  irap_clone  && cd /opt/irap_clone && git checkout devel && ./scripts/irap_install.sh -a /irap_install -s . && cd / && rm -rf /irap_install/tmp /opt/irap_clone  /root/.cpan*
+
+WORKDIR /
 RUN echo source /irap_install/irap_setup.sh >> ~/.bash_profile && echo source /irap_install/irap_setup.sh >> ~/.bashrc
 
-RUN echo '#!/bin/env bash' > /usr/bin/irap
+RUN echo '#!/usr/bin/env bash' > /usr/bin/irap
 RUN echo 'source /irap_install/irap_setup.sh' >> /usr/bin/irap
 RUN echo '/irap_install/scripts/irap "$@"' >> /usr/bin/irap
 RUN chmod u+x /usr/bin/irap
-WORKDIR /
-RUN rm -rf /opt/irap_clone  /root/.cpan*
-RUN yum clean all
+
 #ENTRYPOINT ["irap"]
 
