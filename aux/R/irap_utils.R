@@ -124,7 +124,7 @@ load.gtf <- function(gtf.file,feature=NULL,selected.attr=NULL) {
   #feature <- "CDS"
   #selected.attr <- c("gene_id","transcript_id")
   if (!is.null(feature)) {
-    gtf<- gtf[gtf$feature==feature,,drop=FALSE]
+    gtf<- gtf[gtf$feature %in% feature,,drop=FALSE]
   }
   gtf$attributes <- as.character(gtf$attributes)
   gtf.attributes.names<-c("gene_id","transcript_id","exon_number","gene_name","gene_biotype","transcript_name","protein_id","exon_id")
@@ -498,7 +498,7 @@ counts2RPKMs <- function(count.matrix,annot.table=NULL) {
 }
 
 # RPKMs
-countstable2rpkms <- function(table,lens,exitonerror=TRUE) {
+countstable2rpkms <- function(table,lens,mass.labels=NULL,exitonerror=TRUE) {
   # check if there missing features
   missing.feat <- (!rownames(table) %in% names(lens))
 
@@ -507,14 +507,14 @@ countstable2rpkms <- function(table,lens,exitonerror=TRUE) {
     if (exitonerror) { q(status=1) }
     return(NULL)
   }
-  v.compute.rpkm <-  function(l,lens) {
+  v.compute.rpkm <-  function(l,lens,mass.labels=names(l)) {
     #(l*1e6)/(sum(l)*lens[names(l)]/1000)
-    10^9*l/(sum(l)*lens[names(l)])
+    10^9*l/(sum(l[mass.labels])*lens[names(l)])
   }
   if ( is.vector(table) ) {
-    return(round(v.compute.rpkm(table,lens),2))
+    return(round(v.compute.rpkm(table,lens,mass.labels),2))
   } else {
-    return(round(apply(table,2,v.compute.rpkm,lens),2))
+    return(round(apply(table,2,v.compute.rpkm,lens,mass.labels),2))
   }
 }
 

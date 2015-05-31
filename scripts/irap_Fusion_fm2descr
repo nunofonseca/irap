@@ -143,7 +143,7 @@ collapse.fusions <- function(m) {
 # load gtf if provided to get the mapping between genes and transcripts
 transcript2geneid <- NULL
 if (!is.null(opt$gtf_file) ) {
-  transcript2geneid <- load.gtf(opt$gtf_file,selected.attr=c("gene_id","transcript_id"))[,c("gene_id","transcript_id")]
+  transcript2geneid <- load.gtf(opt$gtf_file,feature=c("gene","transcript"),selected.attr=c("gene_id","transcript_id"))[,c("gene_id","transcript_id")]
   pinfo("GTF file loaded: ",opt$gtf," ",nrow(transcript2geneid)," entries")
   # remove NAs
   transcript2geneid <- transcript2geneid[!is.na(transcript2geneid$transcript_id),]
