@@ -24,8 +24,8 @@
 
 ###############################################################
 suppressPackageStartupMessages(library("optparse"))
-library(R2HTML)
-library(brew)
+
+
 
 IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
 if ( IRAP.DIR == "" ) {
@@ -59,6 +59,7 @@ args <- importArgsfromStdin()
 
 opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory,args=args)
 
+library(parallel)
 tryCatch(num.cores <- as.integer(as.numeric(opt$num_cores)),warning=
          function(w) {
            perror("Invalid number of cores ",opt$num_cores)
