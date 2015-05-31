@@ -45,7 +45,7 @@ option_list <- list(
   )
 
 # check multiple options values & file existence
-filenames <- c("cufffile")
+filenames <- NULL
 multiple.options = list()
 mandatory <- c("label","rl","genefile","isoformfile","ispe")
 opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
@@ -64,11 +64,11 @@ tsv.data<-read.tsv(opt$ctab)
 cnames <- c("t_name","gene_id","length","cov")
 # Check if the necessary columns are available
 if ( sum(cnames  %in% colnames(tsv.data))!=length(cnames) ) {
-  perror("Error in ",optcufffile,", expected the columns", paste(cnames,sep=","))
+  perror("Error in ",opt$ctab,", expected the columns", paste(cnames,sep=","))
   q(status=1)
 }
 s<-tsv.data[,cnames]
-# cleanup some problematic entries generated sometimes by cufflinks
+# cleanup 
 s$pseudo.counts <- round(s[,"cov"]*s[,"length"]/RL,digits=0)
 
 # save pseudo counts per transcript
