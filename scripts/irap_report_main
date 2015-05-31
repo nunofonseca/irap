@@ -170,7 +170,12 @@ gen.toplevel.menu <- function(menufile) {
   metrics <- list(
     "Counts"=c('raw'),
     "RPKM"=c('rpkm'),
-    "Counts/lib size"=c('nlib')
+    "Counts/lib size"=c('deseq_nlib')
+    )
+  metrics2ext <- list(
+    "Counts"=c(""),
+    "RPKM"=c(".irap",".stringtie",".nurd",".cufflinks1",".cufflinks2",".rsem"),
+    "Counts/lib size"=c('.irap')
     )
   
   # Quantification
@@ -180,25 +185,24 @@ gen.toplevel.menu <- function(menufile) {
     cat(paste('<li><a name="">',name,' </a><ul>',sep=''))
     # check what was quantified (gene, exon or transcript)
     for (level in levels) {
-      # check what metrics were used (rpkms, counts, nlib, )
+      # check what metrics/normalization methods were used (rpkms, counts, nlib, )
       cat(paste('<li><a name="">',level,' level </a>',sep=''))
       cat("<ul>");
-      for (m in names(metrics)) {
+      for (m in names(metrics)) {        
         ext <- metrics[[m]][1]
-        # back compatibility       
-        file <- paste("quant/",name,"/",name,".",level,".",ext,".html",sep="")
-        path2file <- paste(strsplit(quant,"/")[[1]][1],"/","report/",file,sep="")
-        if (!file.exists(path2file)) {
-          file <- paste("quant/",name,"/",level,".",ext,".html",sep="")
+        for ( ext2 in metrics2ext[[m]]) {
+          tool <- gsub("^.","",ext2)
+          file <- paste("quant/",name,"/",level,"s.",ext,".",method,ext2,".html",sep="")
           path2file <- paste(strsplit(quant,"/")[[1]][1],"/","report/",file,sep="")
+          
+          if (file.exists(path2file)) {
+            cat(paste("<li><a href='TTOPLEVEL",file,"'>",m," ",tool,"</a></li>",sep=""))
+          } else {
+            if ( tool=="") {
+              cat(paste("<li><a name=''>",m," X</a></li>",sep=""))
+            }
+          }
         }
-        #print(file=stderr(),file)
-        if (file.exists(path2file)) {
-          cat(paste("<li><a href='TTOPLEVEL",file,"'>",m,"</a></li>",sep=""))
-        } else {
-          cat(paste("<li><a name=''>",m," X</a></li>",sep=""))
-        }
-
       }
       cat("</ul>");
       cat("</li>");      
@@ -290,6 +294,7 @@ if (!opt$reuse_menu) {
  gen.toplevel.menu(paste(opt$rep_dir,"menu.html",sep="/"))
   pinfo("Generating menu.html...done.")
 }
+
 #save.image()
 cmd <- paste("cd ",opt$rep_dir,"; fix_html.sh", sep="")
 system(cmd)
