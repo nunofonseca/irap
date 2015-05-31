@@ -44,7 +44,7 @@
 
 #define READ_LINE(fd) fgets(&read_buffer[0],MAX_READ_LENGTH,fd)
 
-#define PRINT_READS_PROCESSED(c) { if (c%500000==0) { printf("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b%ld",c);fflush(stdout); }}
+#define PRINT_READS_PROCESSED(c) { if (c%500000==0) { printf("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b%lu",c);fflush(stdout); }}
 
 struct index_entry {
   
@@ -70,12 +70,12 @@ the actual function is hash(i) = hash(i - 1) * 65599 + str[i]; what is included 
 [there is even a faster, duff-device version] the magic constant 65599 was picked out of thin air while experimenting with
 different constants, and turns out to be a prime. this is one of the algorithms used in berkeley db (see sleepycat) and elsewhere.
 */
-static unsigned long hashit(unsigned char *str) {
+static unsigned long hashit(char *str) {
 
   unsigned long hash = 0;
   int c;
   
-  while (c = *str++)
+  while ((c = *str++))
     hash = c + (hash << 6) + (hash << 16) - hash;
   
   return hash;
@@ -164,7 +164,7 @@ void index_file(char *filename,hashtable index,long start_offset,long length) {
     // get seq
     //printf("cline=%ld\nLEN=%ld  hdr=%s\n",cline,len,hdr);
     if ( new_indexentry(index,readname,len,start_pos)==NULL) {
-      fprintf(stderr,"line %ul: malloc failed?",cline);
+      fprintf(stderr,"line %lu: malloc failed?",cline);
       exit(1);
     }
     char *seq=READ_LINE(fd1);
@@ -172,7 +172,7 @@ void index_file(char *filename,hashtable index,long start_offset,long length) {
     char *qual=READ_LINE(fd1);
     
     if (seq==NULL || hdr2==NULL || qual==NULL ) {
-      fprintf(stderr,"line %ul: file truncated",cline);
+      fprintf(stderr,"line %lu: file truncated",cline);
       exit(1);
     }
     
@@ -254,7 +254,6 @@ int main(int argc, char **argv ) {
   if (is_casava_18) fprintf(stderr,"CASAVA=1.8\n");
   fprintf(stderr,"HASHSIZE=%u\n",HASHSIZE);
   // ************************************************************
-  off_t cur_offset=1;
   unsigned long cline=1;
   //memset(&collisions[0],0,HASHSIZE+1);
   hashtable index=new_hashtable(HASHSIZE);

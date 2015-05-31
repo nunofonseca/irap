@@ -1,5 +1,5 @@
 # avoid having boost in  -I : it may result on including the wrong regexp.h
-CFLAGS=-O3 -L$(IRAP_DIR)/lib
+CFLAGS=-O3 -L$(IRAP_DIR)/lib -Wunused-result -Wall
 #-g
 
 ifdef DEBUG

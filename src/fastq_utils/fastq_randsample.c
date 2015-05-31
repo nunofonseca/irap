@@ -33,7 +33,7 @@
 #include <time.h>
 
 
-#define PRINT_READS_PROCESSED(c) { if (c%1000000==0) { fprintf(stderr,"\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b%ld",cline/4);fflush(stderr); }}
+#define PRINT_READS_PROCESSED(c) { if (c%1000000==0) { fprintf(stderr,"\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b%lu",cline/4);fflush(stderr); }}
 
 #define GET_RAND(max)  (max>RAND_MAX?rand()*1000000+rand():rand())
 
@@ -195,7 +195,7 @@ inline long num_reads(char *fastq_file) {
     hdr=READ_LINE(fd1);
     if ( hdr==NULL) break;
     if ( hdr[0]!='@' ) {
-      fprintf(stderr,"line %ul: error in header %s",cline,hdr);
+      fprintf(stderr,"line %lu: error in header %s",cline,hdr);
       return 1;
     }
     READ_LINE(fd1);
@@ -296,7 +296,7 @@ int main(int argc, char **argv ) {
   }
   // *****************************************
   // print settings
-  fprintf(stderr," [INFO %s] Sample_size=%ld\n",timestamp(),timestamp(),globalArgs.sample_size);
+  fprintf(stderr," [INFO %s] Sample_size=%lu\n",timestamp(),globalArgs.sample_size);
   fprintf(stderr," [INFO %s] Seed=%d\n",timestamp(),globalArgs.seed);  
   fprintf(stderr," [INFO %s] FASTQ file=%s\n",timestamp(),globalArgs.fastq_filename1);
 
@@ -338,7 +338,7 @@ int main(int argc, char **argv ) {
 
   fprintf(stderr," [INFO %s] Starting random selection of %ld reads...\n",timestamp(),globalArgs.sample_size);
   double p=globalArgs.sample_size*1.0/n_reads; // probability of selecting a read  
-  fprintf(stderr," [INFO %s] p=%f \n",p);
+  fprintf(stderr," [INFO %s] p=%f \n",timestamp(),p);
   BMAP *bit=new_bmap(n_reads);
   unsigned long selected=globalArgs.sample_size,
     ctr=1;
@@ -354,7 +354,7 @@ int main(int argc, char **argv ) {
       ctr=1;
       p*=1.01; 
       fprintf(stderr,"|");
-      fprintf(stderr,"%f%",1-selected*1.0/globalArgs.sample_size);
+      fprintf(stderr,"%f%%",1-selected*1.0/globalArgs.sample_size);
     }
   }
 
@@ -411,7 +411,7 @@ int main(int argc, char **argv ) {
 	char *hdr=READ_LINE(fd2);
 	if ( hdr==NULL) break;
 	if ( hdr[0]!='@' ) {
-	  fprintf(stderr,"line %ul: error in header %s",cline2,hdr);
+	  fprintf(stderr,"line %lu: error in header %s",cline2,hdr);
 	  return 1;
 	}
 	char *r=READ_LINE(fd2); // read
@@ -434,7 +434,7 @@ int main(int argc, char **argv ) {
       char *hdr=READ_LINE(fd1);
       if ( hdr==NULL) break;
       if ( hdr[0]!='@' ) {
-	fprintf(stderr,"line %ul: error in header %s",cline,hdr);
+	fprintf(stderr,"line %lu: error in header %s",cline,hdr);
 	return 1;
       }
       char *r=READ_LINE(fd1); // read
