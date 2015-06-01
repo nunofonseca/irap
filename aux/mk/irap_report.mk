@@ -231,8 +231,12 @@ phony_targets+=report_setup clean_report
 
 report_setup: $(call must_exist,$(name)/report) $(call must_exist,$(name)/report/mapping/) $(call must_exist,$(name)/report/de/) $(call must_exist,$(name)/report/quant/) $(call rep_browse,report_browser_setup) $(call must_exist,$(name)/report/irap.css) $(call must_exist,$(name)/report/menu.css) $(feat_mapping_file)
 
+SETUP_DATA_FILES+=report_setup
+
 $(name)/report/:
 	mkdir -p $@
+$(name)/report: $(name)/report/
+
 
 $(name)/report/mapping/:
 	mkdir -p $@
