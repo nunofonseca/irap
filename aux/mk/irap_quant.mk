@@ -706,7 +706,7 @@ endif
 
 # 'no', the exons that can not be assigned to a single gene are ignored otherwise the genes are merged
 ifndef dexseq_index_params
-dexseq_prepare_annotation_params=--aggregate no
+dexseq_prepare_annotation_params=--aggregate=no
 endif
 
 ################################
