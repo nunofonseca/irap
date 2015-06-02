@@ -7,7 +7,8 @@ conf=
 strand=both
 mem=4000000000
 threads=1
-irap_options="quant_norm_method=rpkm quant_norm_tool=irap exon_quant=n"
+#irap_options="quant_norm_method=rpkm quant_norm_tool=irap exon_quant=n"
+irap_options=
 do_stage0=no
 do_clean=n
 run_faster=n
