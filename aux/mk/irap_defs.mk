@@ -77,8 +77,8 @@ deseq2_params=--independent-filtering
 quant_method?=htseq2
 mapper?=tophat2
 exon_quant?=y
-exon_quant_method?=dexseq
-quant_norm_method?=rpkm
+exon_quant_method=dexseq
+quant_norm_method=rpkm
 quant_norm_tool?=irap
 
 ifdef big_genome

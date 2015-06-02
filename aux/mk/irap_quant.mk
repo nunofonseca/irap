@@ -728,11 +728,11 @@ endef
 %.gtf.DEXSeq.gff: %.gtf
 	python $(IRAP_DIR)/Rlibs/DEXSeq/python_scripts/dexseq_prepare_annotation.py $(dexseq_prepare_annotation_params)  $< $@.tmp && mv $@.tmp $@
 
-ifeq ($(exon_quant),y)
-ifeq ($(exon_quant_method),dexseq) 
+ifeq ($(strip $(exon_quant)),y)
+ifeq ($(strip $(exon_quant_method)),dexseq) 
 
 # add the generation of the flatten annotation to stage0 iff dexseq is selected
-SETUP_DATA_FILES+= $(gtf_file_abspath).DEXSeq.gff
+SETUP_DATA_FILES+=$(gtf_file_abspath).DEXSeq.gff
 
 ## htseq bam file needs to be sorted by name
 # $1 - lib
@@ -921,5 +921,6 @@ $(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv: $(foreach p,$(p
 
 
 endif
+
 
 

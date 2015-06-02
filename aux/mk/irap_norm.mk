@@ -33,7 +33,7 @@
 
 # add feature length to stage0 
 ifeq ($(quant_norm_method),rpkm)
-SETUP_DATA_FILES+= $(feat_length)
+SETUP_DATA_FILES+=$(feat_length)
 endif
 
 ######

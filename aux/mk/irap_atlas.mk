@@ -23,7 +23,7 @@
 
 ifdef atlas_run
 $(info * Atlas mode enabled)
-SETUP_DATA_FILES=$(feat_mapping_file)
+SETUP_DATA_FILES+=$(feat_mapping_file)
 endif
 # Reduce the resolution of some images
 ATLAS_IMAGES2CONVERT=$(shell ls --color=never -1 $(name)/report/read_filtering_plot.png $(if $(call GEN_REPORT_QC_ONLY),,$(name)/report/mapping/$(mapper)*.png) 2>/dev/null | grep -v orig.png | grep -v scaled.png )

@@ -361,11 +361,11 @@ touch $time_log_file
 ########
 # Check if stage0 is ok
 set +e 
-irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE  $irap_options max_mem=$mem max_threads=$threads stage0 -n -q
+irap conf=$conf data_dir=$DATA_DIR  $irap_options max_mem=$mem max_threads=$threads stage0 -n -q
 if [ $? !=  0 ]; then
     if [ "$do_stage0-" == "yes-" ]; then
 	pinfo "Running iRAP stage0"
-	run_AND_timeIt "stage0" $time_log_file irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE  $irap_options max_mem=$mem max_threads=$threads stage0
+	run_AND_timeIt "stage0" $time_log_file irap conf=$conf data_dir=$DATA_DIR    $irap_options max_mem=$mem max_threads=$threads stage0
     else
 	perror "ERROR:Stage0: incomplete - use -0 to run stage0"
 	exit 1
