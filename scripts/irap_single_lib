@@ -7,7 +7,7 @@ conf=
 strand=both
 mem=4000000000
 threads=1
-#irap_options="quant_norm_method=rpkm quant_norm_tool=irap exon_quant=n"
+irap_options="atlas_run=y"
 irap_options=
 do_stage0=no
 do_clean=n
@@ -115,16 +115,19 @@ function run_AND_timeIt {
 #     Number of file system outputs by the process.
     # label\tTime elapsed\tTime leapsed(Seconds)\taximum resident set size\tcommand\t exit status
     # label |Time elapsed |Time elapsed(Seconds)| maximum resident memory |date|command\t | exit status | ....
-    /usr/bin/time -o $logfile -a --format "$label\t%E\t%e\t%M\t$datetime\t$*\t%x\t%I\t%O\t%W" bash -c "$*" 2> $serr | tee -a $sout     
+    /usr/bin/time -o $logfile -a --format "$label\t%E\t%e\t%M\t$datetime\t$*\t%x\t%I\t%O\t%W" bash -c "$*" 2> $serr > $sout
     EXIT_STATUS=$?
     # output stderr
+    cat $sout >/dev/stdout
     cat $serr > /dev/stderr
+
     if [ $EXIT_STATUS -ne 0 ]; then
 	classify_error $label $serr $sout
 	exit $EXIT_STATUS
     else
 	rm -f $sout $serr
     fi
+    #pinfo $EXIT_STATUS
     return $EXIT_STATUS
 }
 
@@ -202,6 +205,12 @@ function iRAP-Mapping_errors {
 }
 
 function iRAP-Mapping-QC_errors {
+    outf=$1
+    errf=$2
+    echo "iRAP Mapping QC: unclassified error"
+}
+
+function iRAP-Quant_errors {
     outf=$1
     errf=$2
     echo "iRAP Mapping QC: unclassified error"
@@ -358,7 +367,7 @@ if [ $? !=  0 ]; then
 	pinfo "Running iRAP stage0"
 	run_AND_timeIt "stage0" $time_log_file irap conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE  $irap_options max_mem=$mem max_threads=$threads stage0
     else
-	perror "Stage0 incomplete - use -0 to run stage0"
+	perror "ERROR:Stage0: incomplete - use -0 to run stage0"
 	exit 1
     fi
 fi
@@ -411,26 +420,14 @@ irap_single_lib_options="conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE
 ##################################################################
 pinfo "QC and filtering..."
 run_AND_timeIt "iRAP-QC" $time_log_file  irap $irap_single_lib_options $irap_options stage1
-if [ $? -ne 0 ]; then
-    perror "iRAP failed"
-    exit 1
-fi
 pinfo "QC and filtering...complete."
 
 pinfo "Aligning data..."
 run_AND_timeIt "iRAP-Mapping" $time_log_file  irap $irap_single_lib_options $irap_options stage2
-if [ $? != 0 ]; then
-    perror "iRAP failed"
-    exit 1
-fi
 pinfo "Aligning data...complete."
 
 pinfo "Quantification..."
 run_AND_timeIt "iRAP-Quant" $time_log_file  irap $irap_single_lib_options $irap_options stage3as
-if [ $? != 0 ]; then
-    perror "iRAP failed"
-    exit 1
-fi
 pinfo "Quantification...complete."
 
 #################################################################
