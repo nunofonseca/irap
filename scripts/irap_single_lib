@@ -7,7 +7,7 @@ conf=
 strand=both
 mem=4000000000
 threads=1
-irap_options=
+irap_options="quant_norm_method=rpkm quant_norm_tool=irap exon_quant=n"
 do_stage0=no
 do_clean=n
 run_faster=n
@@ -99,8 +99,13 @@ function run_AND_timeIt {
     logfile=$2
     shift 2
     datetime=`date "+%F %R"`
+    d=`dirname $logfile`
+    mkdir -p $d/logs
+    sout=$d/logs/$label.out
+    serr=$d/logs/$label.err
     #echo `pwd`
     echo "CMD: $*" 
+    # Redirect stderr and stdout to a file
 # `W'
 #     Number of times the process was swapped out of main memory
 #`I'
@@ -109,11 +114,110 @@ function run_AND_timeIt {
 #     Number of file system outputs by the process.
     # label\tTime elapsed\tTime leapsed(Seconds)\taximum resident set size\tcommand\t exit status
     # label |Time elapsed |Time elapsed(Seconds)| maximum resident memory |date|command\t | exit status | ....
-    /usr/bin/time -o $logfile -a --format "$label\t%E\t%e\t%M\t$datetime\t$*\t%x\t%I\t%O\t%W" bash -c "$*"
-    # add the exit status as the last column
-    #/usr/bin/time -o $logfile -a --format "$label\t%E\t%e\t%M\t$datetime" $*
-    #echo "EXIT:$?"
+    /usr/bin/time -o $logfile -a --format "$label\t%E\t%e\t%M\t$datetime\t$*\t%x\t%I\t%O\t%W" bash -c "$*" 2> $serr | tee -a $sout     
+    EXIT_STATUS=$?
+    # output stderr
+    cat $serr > /dev/stderr
+    if [ $EXIT_STATUS -ne 0 ]; then
+	classify_error $label $serr $sout
+	exit $EXIT_STATUS
+    else
+	rm -f $sout $serr
+    fi
+    return $EXIT_STATUS
 }
+
+########################################################
+# Try to classify errors on each stage
+function classify_error {
+    perror "LOG files: $2 $3"
+    perror `${1}_errors $2 $3`
+}
+
+function stage0_errors {
+    outf=$1
+    errf=$2
+    echo "iRAP Stage0: unclassified error"
+}
+
+function fastqInfo_errors {
+    outf=$1
+    errf=$2
+    
+    e=`grep "(ERROR:|error:|^Error)" $errf`
+    # Error in the file
+    if [ $? -eq 0 ]; then
+	echo $e | grep "(duplicated|header|truncated|identifier|character|length|unapired|encoding)"
+	if [ $? -eq 0 ]; then
+	    echo FastqInfo: `echo $e|cut -f 2- -d: `
+	else
+	    echo FastqInfo: unclassified error - $e
+	fi
+    else 
+	echo FastqInfo: unclassified error - $e
+    fi
+}
+
+function iRAP-QC_errors {
+    outf=$1
+    errf=$2
+    
+    E=`grep "mv: cannot stat.*filter1.stats"  $errf `
+    if [ $? -eq 0 ]; then
+	echo "QC: 1 too short reads or below quality threshold"
+    else
+	E=`grep "mv: cannot stat.*filter2.stats"  $errf `
+	if [ $? -eq 0 ]; then
+	    echo "QC: 2 contamination"
+	else
+	    E=`grep "mv: cannot stat.*filter3.stats"  $errf `
+	    if [ $? -eq 0 ]; then
+		echo "QC: 3 reads with uncalled bases discarded"
+	    else
+		E=`grep "mv: cannot stat.*filter4.stats"  $errf `
+		if [ $? -eq 0 ]; then
+		    echo "QC: 4 reads without mates"
+		else
+		    E=`grep "Aborted.* bowtie" $errf`
+		    if [ $? -eq 0 ]; then
+			echo "QC: IO error?"
+		    else
+			echo "QC: unclassified error"
+		    fi
+		fi
+	    fi
+	fi
+    fi
+}
+
+function iRAP-Mapping_errors {
+    outf=$1
+    errf=$2
+    grep "Error occured when reading beginning of SAM/BAM file." $errf
+    if [ $? -eq 0 ]; then
+	echo "iRAP Mapping: no aligned reads in BAM"
+    fi
+    echo "iRAP Mapping: unclassified error"
+}
+
+function iRAP-Mapping-QC_errors {
+    outf=$1
+    errf=$2
+    echo "iRAP Mapping QC: unclassified error"
+}
+
+function iRAP-CRAM_errors {
+    outf=$1
+    errf=$2
+    echo "iRAP CRAM: unclassified error"
+}
+
+function iRAP-tidyup_errors {
+    outf=$1
+    errf=$2
+    echo "iRAP Tidyup: unclassified error"
+}
+
 #################################################################
 # 
 while getopts "1:2:c:s:m:t:i:h0fC"  Option
@@ -306,7 +410,7 @@ irap_single_lib_options="conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE
 ##################################################################
 pinfo "QC and filtering..."
 run_AND_timeIt "iRAP-QC" $time_log_file  irap $irap_single_lib_options $irap_options stage1
-if [ $? != 0 ]; then
+if [ $? -ne 0 ]; then
     perror "iRAP failed"
     exit 1
 fi
