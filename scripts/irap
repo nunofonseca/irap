@@ -794,7 +794,7 @@ $(error $(exon_quant_method) does not provide exon level quantification)
 endif
 #$(info Exon quantification requires that all exons in the gtf file have an exon_id attribute)
 endif
-exon_quant_method=$(quant_method)
+#exon_quant_method=$(quant_method)
 #$(info *	exon_quant_method=$(exon_quant_method))
 endif
 
@@ -1656,9 +1656,11 @@ endef
 define exons_quant_file=
 $(if $(filter y,$(exon_quant)),$(name)/$(mapper)/$(quant_method)/exons.raw.$(exon_quant_method).tsv,)
 endef
+
 define exons_quant_files=
 $(if $(filter y,$(exon_quant)),$(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.exons.raw.$(exon_quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.exons.raw.$(exon_quant_method).tsv),)
 endef
+
 
 define exons_quant_norm=
 $(if $(filter y,$(exon_quant)),$(1),)
