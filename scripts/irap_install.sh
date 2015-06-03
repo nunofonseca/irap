@@ -241,7 +241,7 @@ R_FILE=R-${R_VERSION}.tar.gz
 R_URL=http://cran.r-project.org/src/base/R-2/$R_FILE
 
 # 
-R3_VERSION=3.0.2
+R3_VERSION=3.1.3
 R3_FILE=R-${R3_VERSION}.tar.gz 
 R3_URL=http://cran.r-project.org/src/base/R-3/$R3_FILE
 
@@ -1164,8 +1164,9 @@ packages2install<-c("intervals","gclus",'R2HTML',"agricolae",
 for (p in packages2install ) {
    install.packages(p,repo=repo)
 }
-
-
+q()
+EOF
+   R3 --no-save <<EOF
 # bioconductor packages
 source("http://bioconductor.org/biocLite.R")
 packages2install<-c("Rsamtools",'edgeR',
