@@ -812,6 +812,7 @@ function R3_install {
     download_software R3
     tar xzvf $R3_FILE
     pushd R-${R3_VERSION}
+    export R_LIBS_USER=$IRAP_DIR/Rlibs3
     ./configure --prefix=$IRAP_DIR/R3
     make clean
     make -j $J
