@@ -148,10 +148,10 @@ function fastqInfo_errors {
     outf=$1
     errf=$2
     
-    e=`grep "(ERROR:|error:|^Error)" $errf`
+    e=`grep -E "(ERROR:|error:|^Error)" $errf`
     # Error in the file
     if [ $? -eq 0 ]; then
-	echo $e | grep "(duplicated|header|truncated|identifier|character|length|unapired|encoding)"
+	echo "$e" | grep -E "(duplicated|header|truncated|identifier|character|length|unapired|encoding)"
 	if [ $? -eq 0 ]; then
 	    echo FastqInfo: `echo $e|cut -f 2- -d: `
 	else
