@@ -134,8 +134,9 @@ function run_AND_timeIt {
 ########################################################
 # Try to classify errors on each stage
 function classify_error {
-    perror "LOG files: $2"
-    perror `${1}_errors $2 $3`
+    perror "LOG files: $2"    
+    emsg=`${1}_errors $2`
+    perror "$emsg"
 }
 
 function stage0_errors {
@@ -146,17 +147,17 @@ function stage0_errors {
 function fastqInfo_errors {
     errf=$1
     
-    e=`grep -E "(ERROR:|error:|^Error)" $errf`
+    e=`grep -E "(ERROR:|error:|Error)" $errf|tail -n 1`
     # Error in the file
     if [ $? -eq 0 ]; then
-	echo "$e" | grep -E "(duplicated|header|truncated|identifier|character|length|unpaired|encoding)"
+	msg=`echo "$e" | grep -E "(duplicated|header|truncated|identifier|character|length|unpaired|encoding)"|tail  -n 1|cut -f 2- -d: `
 	if [ $? -eq 0 ]; then
-	    echo FastqInfo: `echo "$e"|cut -f 2- -d: `
+	    echo "FastqInfo: $msg"
 	else
-	    echo FastqInfo: unclassified error - $e
+	    echo "FastqInfo: unclassified error - $e"
 	fi
     else 
-	echo FastqInfo: unclassified error - $e
+	echo "FastqInfo: unclassified error - $e"
     fi
 }
 
