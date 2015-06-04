@@ -385,7 +385,7 @@ if [ $run_faster == y ] ; then
 	do_validation=0
     fi
 fi
-
+set +e
 if [ $do_validation -eq 1 ]; then
     run_AND_timeIt "fastqInfo" $time_log_file "fastq_info.sh  $folder/$f1_bn $rp_f2  > $folder/$f1_bn.info.tmp && mv $folder/$f1_bn.info.tmp $folder/$f1_bn.info"
     if [ $? != 0 ] ; then
