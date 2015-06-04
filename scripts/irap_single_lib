@@ -122,7 +122,7 @@ function run_AND_timeIt {
     cat $serr > /dev/stderr
 
     if [ $EXIT_STATUS -ne 0 ]; then
-	classify_error $label $serr $sout
+	classify_error $label $serr
 	exit $EXIT_STATUS
     else
 	rm -f $sout $serr
@@ -134,26 +134,24 @@ function run_AND_timeIt {
 ########################################################
 # Try to classify errors on each stage
 function classify_error {
-    perror "LOG files: $2 $3"
+    perror "LOG files: $2"
     perror `${1}_errors $2 $3`
 }
 
 function stage0_errors {
-    outf=$1
-    errf=$2
+    errf=$1
     echo "iRAP Stage0: unclassified error"
 }
 
 function fastqInfo_errors {
-    outf=$1
-    errf=$2
+    errf=$1
     
     e=`grep -E "(ERROR:|error:|^Error)" $errf`
     # Error in the file
     if [ $? -eq 0 ]; then
-	echo "$e" | grep -E "(duplicated|header|truncated|identifier|character|length|unapired|encoding)"
+	echo "$e" | grep -E "(duplicated|header|truncated|identifier|character|length|unpaired|encoding)"
 	if [ $? -eq 0 ]; then
-	    echo FastqInfo: `echo $e|cut -f 2- -d: `
+	    echo FastqInfo: `echo "$e"|cut -f 2- -d: `
 	else
 	    echo FastqInfo: unclassified error - $e
 	fi
@@ -163,8 +161,7 @@ function fastqInfo_errors {
 }
 
 function iRAP-QC_errors {
-    outf=$1
-    errf=$2
+    errf=$1
     
     E=`grep "mv: cannot stat.*filter1.stats"  $errf `
     if [ $? -eq 0 ]; then
@@ -195,8 +192,7 @@ function iRAP-QC_errors {
 }
 
 function iRAP-Mapping_errors {
-    outf=$1
-    errf=$2
+    errf=$1
     grep "Error occured when reading beginning of SAM/BAM file." $errf
     if [ $? -eq 0 ]; then
 	echo "iRAP Mapping: no aligned reads in BAM"
@@ -205,26 +201,22 @@ function iRAP-Mapping_errors {
 }
 
 function iRAP-Mapping-QC_errors {
-    outf=$1
-    errf=$2
+    errf=$1
     echo "iRAP Mapping QC: unclassified error"
 }
 
 function iRAP-Quant_errors {
-    outf=$1
-    errf=$2
+    errf=$1
     echo "iRAP Mapping QC: unclassified error"
 }
 
 function iRAP-CRAM_errors {
-    outf=$1
-    errf=$2
+    errf=$1
     echo "iRAP CRAM: unclassified error"
 }
 
 function iRAP-tidyup_errors {
-    outf=$1
-    errf=$2
+    errf=$1
     echo "iRAP Tidyup: unclassified error"
 }
 
