@@ -797,9 +797,9 @@ function R_install {
     download_software R
     tar xzvf $R_FILE
     pushd R-${R_VERSION}
-    ./configure --prefix=$IRAP_DIR
+    CFLAGS=  CXXFLAGS= ./configure --prefix=$IRAP_DIR
     make clean
-    make -j $J
+    CFLAGS=  CXXFLAGS=  make -j $J
     make -j $J check
     make install
     popd
@@ -813,8 +813,9 @@ function R3_install {
     tar xzvf $R3_FILE
     pushd R-${R3_VERSION}
     export R_LIBS_USER=$IRAP_DIR/Rlibs3
-    ./configure --prefix=$IRAP_DIR/R3
+    CFLAGS=  CXXFLAGS= ./configure --prefix=$IRAP_DIR/R3
     make clean
+    CFLAGS=  CXXFLAGS=  make -j $J
     make -j $J
     make -j $J check
     make install
