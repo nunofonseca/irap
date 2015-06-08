@@ -732,7 +732,8 @@ ifeq ($(strip $(exon_quant)),y)
 ifeq ($(strip $(exon_quant_method)),dexseq) 
 
 # add the generation of the flatten annotation to stage0 iff dexseq is selected
-SETUP_DATA_FILES+=$(gtf_file_abspath).DEXSeq.gff
+SETUP_DATA_FILES+=$(name)/data/dexseq.lengths.Rdata
+#$(gtf_file_abspath).DEXSeq.gff
 
 ## htseq bam file needs to be sorted by name
 # $1 - lib
