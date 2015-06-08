@@ -58,9 +58,14 @@ $(name)/$(mapper)/$(quant_method)/%.genes.rpkm.$(quant_method).irap.tsv: $(name)
 $(name)/$(mapper)/$(quant_method)/%.transcripts.rpkm.$(quant_method).irap.tsv: $(name)/$(mapper)/$(quant_method)/%.transcripts.raw.$(quant_method).tsv
 	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature transcript --metric rpkm --out $@.tmp && mv $@.tmp $@	
 
+
+ifeq ($(strip $(exon_quant_method)),dexseq) 
+$(name)/$(mapper)/$(quant_method)/%.exon.rpkm.$(quant_method).irap.tsv: $(name)/$(mapper)/$(quant_method)/%.exon.raw.$(quant_method).tsv
+	irap_raw2metric --tsv $<  --lengths $(gtf_file_abspath).DEXSeq.gff.lengths.Rdata --feature exon --metric rpkm --out $@.tmp && mv $@.tmp $@	
+else
 $(name)/$(mapper)/$(quant_method)/%.exon.rpkm.$(quant_method).irap.tsv: $(name)/$(mapper)/$(quant_method)/%.exon.raw.$(quant_method).tsv
 	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature exon --metric rpkm --out $@.tmp && mv $@.tmp $@	
-
+endif
 
 ifdef atlas_run
 STAGE3_S_TARGETS+=$(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.genes.rpkm.$(quant_method).irap.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.rpkm.$(quant_method).irap.tsv)
