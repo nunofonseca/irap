@@ -86,7 +86,7 @@ if ( sum(!colsOfInterest %in% colnames(gff)) > 0 ) {
 len <- abs(gff$start-gff$end)+1
 ids <- paste(gff$gene_id,":",gff$exonic_part_number,sep="")
 
-exon.length <- data.frame(list(id=ids,len=len))
+exon.length <- data.frame(list(exon_id=ids,elength=len))
 
 # save as Rdata files
 out.file <- paste(opt$out,".Rdata",sep="")

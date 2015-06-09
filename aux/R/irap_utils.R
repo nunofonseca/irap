@@ -127,7 +127,7 @@ load.gtf <- function(gtf.file,feature=NULL,selected.attr=NULL) {
     gtf<- gtf[gtf$feature %in% feature,,drop=FALSE]
   }
   gtf$attributes <- as.character(gtf$attributes)
-  gtf.attributes.names<-c("gene_id","transcript_id","exon_number","gene_name","gene_biotype","transcript_name","protein_id","exon_id")
+  gtf.attributes.names<-c("gene_id","transcript_id","exon_number","gene_name","gene_biotype","transcript_name","protein_id","exon_id","exonic_part_number")
 
 
   if ( !is.null(selected.attr) ) {
@@ -433,7 +433,7 @@ get.exon.length.from.gtf <- function(gtf,filter.biotype=NULL) {
 }
 
 
-load.gff3 <- function(file,type="gene",attrs=TRUE) {
+load.gff3 <- function(file,type="gene",attrs=TRUE,selected.attrs=NULL) {
   # load the gff3 file
   gff3<-try(read.table(file,sep="\t",header=F,quote="\"",comment.char ="",
                        nrows=5000000))
@@ -456,7 +456,11 @@ load.gff3 <- function(file,type="gene",attrs=TRUE) {
 
   if(attrs ) {
     # add the attributes
-    tags<-c("ID","Name","Alias","Parent","Target","Gap","Derives","Note","DBxref","Ontology_term","Is_circular")
+    if (is.null(selected.attrs)) {
+      tags<-c("ID","Name","Alias","Parent","Target","Gap","Derives","Note","DBxref","Ontology_term","Is_circular")
+    } else {
+      tags <- selected.attrs
+    }
     pdebug("tags")
     if (nrow(gff3)>0 ) {
       for (tag in tags ) {

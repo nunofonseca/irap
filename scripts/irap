@@ -976,6 +976,10 @@ ifndef feat_length
 feat_length=$(name)/data/lengths.Rdata
 endif
 
+ifndef exon_length
+exon_length=$(name)/data/lengths.Rdata
+endif
+
 
 ###############################################################################
 # When the number of libraries is greater than BIG_LIM then pass the arguments

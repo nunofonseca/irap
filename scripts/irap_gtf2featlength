@@ -1,4 +1,5 @@
 #!/usr/bin/env Rscript3
+#; -*- mode: R;-*-
 # =========================================================
 # Copyright 2012-2015,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
 #

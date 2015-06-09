@@ -68,6 +68,9 @@ pdebug.enabled <- opt$debug
 #
 pdebug.save.state("irap_raw2metric","p0")
 
+gene.length <- NULL
+trans.length <- NULL
+exon.length <- NULL
 # load TSV
 # TODO: trap and report errors
 table <- quant.load(opt$tsv_file)
@@ -80,11 +83,11 @@ if ( is.vector(table) ) {
 
 # load lengths
 load(opt$lengths_file)
-if (! exists("gene.length")) {
+if ( opt$feature=="gene" && ! exists("gene.length")) {
   perror("Unable to get the length of genes from ",opt$lengths_file)
   q(status=1)
 }
-if (! exists("exon.length")) {
+if ( opt$feature=="exon" && ! exists("exon.length")) {
   perror("Unable to get the length of exons from ",opt$lengths_file)
   q(status=1)
 }
