@@ -1,0 +1,107 @@
+#!/usr/bin/env  Rscript3
+#; -*- mode: R;-*-
+# =========================================================
+# Copyright 2012-2015,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#    $Id: 0.1.1$
+# =========================================================
+
+###############################################################
+suppressPackageStartupMessages(library("optparse"))
+suppressPackageStartupMessages(library("parallel" ))
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+
+# specify our desired options in a list
+#
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+pdebug.enabled <- TRUE
+
+#######################
+usage <- "irap_gff2exonlength --gff file --out outprefix [--cores number_cores]"
+filenames <- c("gff_file") ;#filenames that must exist (if defined)
+option_list <- list(
+    make_option(c("-c", "--cores"), type="character",default="2",dest="num_cores",help="Number of cores to use ([default %default])"),
+  make_option(c("-g", "--gff"), type="character", dest="gff_file", default=NULL,help="GFF file"),
+  make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name prefix. A RData file will be created containing several a matrix with two columns with two columns: 1st col contains the exon id and the 2nd column the respective length.")
+)
+
+mandatory <- c("gff_file","out")
+filenames <- c("gff_file")
+opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,mandatory=mandatory)
+
+tryCatch(num.cores <- as.integer(as.numeric(opt$num_cores)),warning=
+         function(w) {
+           perror("Invalid number of cores ",opt$num_cores)
+           q(status=3)    
+       }
+)
+if (num.cores<1) {
+  perror("Invalid number of cores ",opt$num_cores)
+  q(status=3)    
+}
+
+irap.assert(num.cores>0)
+
+if ( num.cores>detectCores()) {
+  num.cores <- detectCores()
+  pwarning("The number of cores to use exceeds the cores available. Reducing the limit to ",detectCores())
+}
+
+#pdebug.enabled <- opt$debug
+options(cores=num.cores)
+options(mc.cores=num.cores)
+options(warn=1)
+# Load gtf file
+colsOfInterest <- c("start","end","feature","gene_id","exonic_part_number")
+pinfo("Loading gff file ",opt$gff_file)
+#gff <- load.gff3(opt$gff_file,type="exonic_part",selected.attrs=colsOfInterest)
+gff <- load.gtf(opt$gff_file,feature="exonic_part",selected.attr=colsOfInterest)
+print(head(gff))
+pinfo("Loading gtf file ",opt$gff_file," complete.")
+pinfo(colnames(gff))
+if ( sum(!colsOfInterest %in% colnames(gff)) > 0 ) {
+  perror("Missing data in GFF file:",colsOfInterest[!colsOfInterest %in% colnames(gf)])
+  q(status=1)
+}
+len <- abs(gff$start-gff$end)+1
+ids <- paste(gff$gene_id,":",gff$exonic_part_number,sep="")
+
+exon.length <- data.frame(list(id=ids,len=len))
+
+# save as Rdata files
+out.file <- paste(opt$out,".Rdata",sep="")
+save(exon.length,file=out.file)
+pinfo("#Exons: ",nrow(exon.length))
+
+q(status=0)
+
+
+
+
+
+
+
+
+
+
+
