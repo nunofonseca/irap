@@ -1485,6 +1485,12 @@ $(gtf_file_abspath).lengths.Rdata: $(gtf_file_abspath)
 $(name)/data/lengths.Rdata: $(gtf_file_abspath).lengths.Rdata
 	cp $< $@.tmp && mv $@.tmp $@
 
+$(gtf_file_abspath).DEXSeq.gff.lengths.Rdata: $(gtf_file_abspath).DEXSeq.gff
+	irap_DexSeqExonLen --gff $< -o $@.tmp --cores $(max_threads) && mv $@.tmp.Rdata $@
+
+$(name)/data/dexseq.lengths.Rdata: $(gtf_file_abspath).DEXSeq.gff.lengths.Rdata
+	cp $< $@.tmp && mv $@.tmp $@
+
 # $(trans_file): 
 # 	$(call p_error,Missing trans_file = $(trans_file))
 
