@@ -216,7 +216,7 @@ endif
 #************************
 #Version and license info
 pname=IRAP
-version=0.6.3d3
+version=0.6.3d4
 contact=Developed by Nuno Fonseca (authorname (at) acm.org)
 license=This pipeline is distributed  under the terms of the GNU General Public License 3
 
@@ -757,6 +757,10 @@ else
 exon_quant:=$(strip $(exon_quant))
 endif
 
+ifndef exon_quant_method
+exon_quant_method=dexseq
+endif
+
 ifndef transcript_quant
 transcript_quant=$(def_transcript_quant)
 endif
@@ -777,6 +781,8 @@ $(info *	transcript_quant=$(transcript_quant))
 #####################
 # Exon quantification
 SUPPORTED_EXON_QUANT_METHODS=stringtie dexseq htseq1 htseq2
+
+
 
 ifeq ($(strip $(exon_quant)),y) 
 ifneq (,$(filter $(quant_method),cufflinks1 cufflinks2 cufflinks2_nd cufflinks1_nd nurd stringtie stringtie_nd rsem kallisto))
