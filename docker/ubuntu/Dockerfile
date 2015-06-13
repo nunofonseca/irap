@@ -6,7 +6,8 @@ MAINTAINER Nuno Fonseca email: nuno.fonseca at gmail.com
 # docker build --no-cache -t iRAP:latest
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \ 
-	build-essential \
+	build-essential \     
+	texlive \
 	zlibc \
 	zlib1g \
 	zlib1g-dev \
@@ -30,6 +31,7 @@ RUN apt-get update && apt-get install -y \
 	libxml2 \
 	libpng12-0 \
 	curl \
+	texinfo \
 	libcurl4-openssl-dev \
 	libexpat1 \
 	libexpat1-dev \ 
