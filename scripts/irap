@@ -1584,6 +1584,9 @@ clean_quality_filtering_and_report_cleanup:
 	$(foreach p,$(se) $(pe),$(call do_quality_filtering_and_report,$(call fix_libname,$(p)),clean);)
 endif
 
+print_qc_dirs_files:
+	echo	$(foreach l,$(se) $(pe),$(name)/report/riq/$($(l)_dir) )
+
 ################################################################################
 # Mapping
 ################################################################################
