@@ -488,6 +488,12 @@ rename $libname $libname_noprefix `dirname $odir/$f1_bn`/$libname*
 # copy the info file
 cp $INFO_FILE $odir
 
+# QC
+echo irap $irap_single_lib_options  $irap_options print_qc_dirs_files 
+TSVs=`irap $irap_single_lib_options  $irap_options print_qc_dirs_files  |tail -n 1`
+pinfo "Moving the following files to $odir: $TSVs "
+mkdir -p $odir/qc
+cp -ar $TSVs $odir/qc
 
 #################################################################
 # Cleanup
