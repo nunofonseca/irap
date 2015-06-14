@@ -46,7 +46,7 @@ function usage {
     echo " -v : collect software versions.";
     echo " Advanced options:";
     echo " -f : check/fix file permissions"
-    echo " -d : only download all software and libraries (except R and Perl packages).";
+    echo " -d : download all software and libraries (except R and Perl packages) but do not install.";
     echo " -x software: install/update software.";
 }
 
