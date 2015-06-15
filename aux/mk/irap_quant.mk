@@ -720,7 +720,7 @@ endif
 define run_dexseq=
 	samtools view -F 4 $(1) | python $(IRAP_DIR)/Rlibs/DEXSeq/python_scripts/dexseq_count.py  $(dexseq_params) $(if $(call is_pe_lib,$(3)),-p yes) $(call htseq_strand_params,$(3)) $(4) - $(2).tmp && \
 	tail -n -4 $(2).tmp > $(2).stats &&\
-	head -n 4 $(2).tmp > $(2).tmp2 &&\
+	head -n -4 $(2).tmp > $(2).tmp2 &&\
 	mv $(2).tmp2 $(2) && rm -f $(2).tmp
 endef
 
