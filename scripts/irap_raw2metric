@@ -67,7 +67,7 @@ pdebug.enabled <- opt$debug
 
 #
 pdebug.save.state("irap_raw2metric","p0")
-
+lengths <- list()
 gene.length <- NULL
 trans.length <- NULL
 exon.length <- NULL
