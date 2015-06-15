@@ -280,6 +280,11 @@ show_citations:
 
 citations_file: $(name)/report/software.tsv
 
+%versions.tsv: $(conf)
+	echo "Analysis	Software	Version	Citation" > $@.tmp && \
+	( $(foreach p,$(sort $(progs_used)),$(call prog_info,$(p))) ) >> $@.tmp &&\
+	mv $@.tmp $@
+
 # it is only dependent on the configuration file
 # software.tsv is a tab separated value file
 $(name)/report/software.tsv: $(conf)
