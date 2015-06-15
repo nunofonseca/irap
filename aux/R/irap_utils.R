@@ -513,7 +513,8 @@ countstable2rpkms <- function(table,lens,mass.labels=NULL,exitonerror=TRUE) {
   }
   v.compute.rpkm <-  function(l,lens,mass.labels=names(l)) {
     #(l*1e6)/(sum(l)*lens[names(l)]/1000)
-    10^9*l/(sum(l[mass.labels])*lens[names(l)])
+    #pinfo(10^9,"*",l,"/(",sum(l),"*",lens[names(l)],")")
+    return(10^9*l/(sum(l)*lens[names(l)]))
   }
   if ( is.vector(table) ) {
     return(round(v.compute.rpkm(table,lens,mass.labels),2))
