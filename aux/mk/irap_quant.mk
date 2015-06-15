@@ -708,7 +708,7 @@ endif
 ifndef dexseq_index_params
 dexseq_prepare_annotation_params=
 endif
-
+#dexseq_prepare_annotation_params=-r yes
 ################################
 # if PE then add option -p yes
 # sam/bam (-f bam) file needs to be sorted by read name or chr (-r name)
@@ -718,7 +718,7 @@ endif
 # 3 - lib
 # 4 - gtf
 define run_dexseq=
-	samtools view -F 4 $(1) | python $(IRAP_DIR)/Rlibs/DEXSeq/python_scripts/dexseq_count.py  $(dexseq_params) $(if $(call is_pe_lib,$(3)),-p yes) $(call htseq_strand_params,$(3)) $(4) - $(2).tmp && \
+	samtools view -F 4 $(1) | python $(IRAP_DIR)/Rlibs3/DEXSeq/python_scripts/dexseq_count.py  $(dexseq_params) $(if $(call is_pe_lib,$(3)),-p yes) $(call htseq_strand_params,$(3)) $(4) - $(2).tmp && \
 	tail -n -4 $(2).tmp > $(2).stats &&\
 	head -n -4 $(2).tmp > $(2).tmp2 &&\
 	mv $(2).tmp2 $(2) && rm -f $(2).tmp
@@ -726,7 +726,7 @@ endef
 
 
 %.gtf.DEXSeq.gff: %.gtf
-	python $(IRAP_DIR)/Rlibs/DEXSeq/python_scripts/dexseq_prepare_annotation.py $(dexseq_prepare_annotation_params)  $< $@.tmp && mv $@.tmp $@
+	python $(IRAP_DIR)/Rlibs3/DEXSeq/python_scripts/dexseq_prepare_annotation.py $(dexseq_prepare_annotation_params)  $< $@.tmp && mv $@.tmp $@
 
 ifeq ($(strip $(exon_quant)),y)
 ifeq ($(strip $(exon_quant_method)),dexseq) 
