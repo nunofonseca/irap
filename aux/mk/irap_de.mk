@@ -24,7 +24,22 @@
 #************
 # DE
 #************
+de_targets=
 
+ifneq (none,$(de_method))
+de_targets+=$(foreach cont,$(contrasts),$(name)/$(mapper)/$(quant_method)/$(de_method)/$(cont).genes_de.tsv)
+STAGE4_OUT_FILES+=$(de_targets)
+endif
+
+phony_targets+= de_files
+
+de_files:
+	echo $(de_targets)
+
+DE: stage3 $(de_targets)
+	$(call p_info,[DONE] Differential analysis)
+
+########################################
 # used by de_seq, edger, voom
 ifndef de_min_count
 de_min_count=0
@@ -45,9 +60,8 @@ endef
 # 1=counts file
 # 2=contrast
 # 3=de tsv file
-# TODO: include support for technical replicates
 define run_deseq=
-irap_DE_deseq --tsv $(1) --min $(de_min_count) --contrasts "$(call get_contrast_def,$(2))" --labels "$(call get_contrast_labels,$(2))" --out $(3) $(call get_de_annot) $(call get_de_annot_genes_only)
+irap_DE_deseq --tsv $(1) --min $(de_min_count) --contrasts "$(call get_contrast_def,$(2))" --labels "$(call get_contrast_labels,$(2))" --out $(3) $(call get_de_annot) $(call get_de_annot_genes_only) $(if $(technical.replicates),--tech-rep "$(technical.replicates)")
 endef
 
 #************
@@ -63,7 +77,7 @@ endif
 #
 
 define run_deseq2=
-irap_DE_deseq2 --tsv $(1) --min $(de_min_count) --contrasts "$(call get_contrast_def,$(2))" --labels "$(call get_contrast_labels,$(2))" $(deseq2_params) --out $(3) $(call get_de_annot) $(call get_de_annot_genes_only)
+irap_DE_deseq2 --tsv $(1) --min $(de_min_count) --contrasts "$(call get_contrast_def,$(2))" --labels "$(call get_contrast_labels,$(2))" $(deseq2_params) --out $(3) $(call get_de_annot) $(call get_de_annot_genes_only) $(if $(technical.replicates),--tech-rep "$(technical.replicates)")
 endef
 
 #************
@@ -71,7 +85,7 @@ endef
 #************
 
 define run_edger=
-irap_DE_edgeR --tsv $(1) --min $(de_min_count) --contrasts "$(call get_contrast_def,$(2))" --labels "$(call get_contrast_labels,$(2))" --out $(3) $(call get_de_annot) $(call get_de_annot_genes_only)
+irap_DE_edgeR --tsv $(1) --min $(de_min_count) --contrasts "$(call get_contrast_def,$(2))" --labels "$(call get_contrast_labels,$(2))" --out $(3) $(call get_de_annot) $(call get_de_annot_genes_only) $(if $(technical.replicates),--tech-rep "$(technical.replicates)")
 endef
 
 #************
@@ -79,7 +93,7 @@ endef
 #************
 
 define run_voom=
-irap_DE_voom --tsv $(1) --min $(de_min_count) --contrasts "$(call get_contrast_def,$(2))" --labels "$(call get_contrast_labels,$(2))" --out $(3) $(call get_de_annot) $(call get_de_annot_genes_only)
+irap_DE_voom --tsv $(1) --min $(de_min_count) --contrasts "$(call get_contrast_def,$(2))" --labels "$(call get_contrast_labels,$(2))" --out $(3) $(call get_de_annot) $(call get_de_annot_genes_only) $(if $(technical.replicates),--tech-rep "$(technical.replicates)")
 endef
 
 ################################################################################

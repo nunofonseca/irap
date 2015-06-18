@@ -66,6 +66,7 @@ exec make --warn-undefined-variables -Rf "$0"  ${1+"$@"}
 .SECONDARY: 
 .ONESHELL:
 
+SHELL=bash
 ##################
 # Setup some paths
 # path to script
@@ -181,6 +182,13 @@ $(eval override $(1):=$(notdir $(basename $(2)))_1.fastq $(notdir $(basename $(2
 endef
 
 
+# which program to use to merge the tsv files
+# 1 = quant_method
+# TODO: reduce memory footprint of irap_merge_tsv_NA.sh 
+define merge_tsv=
+$(if $(findstring cufflinks,$(1)),irap_merge_tsv_NA.sh,irap_merge_tsv.sh)
+endef
+
 ################################################################################
 # Variables
 ################################################################################
@@ -208,7 +216,7 @@ endif
 #************************
 #Version and license info
 pname=IRAP
-version=0.6.2d14
+version=0.6.3d5
 contact=Developed by Nuno Fonseca (authorname (at) acm.org)
 license=This pipeline is distributed  under the terms of the GNU General Public License 3
 
@@ -249,8 +257,11 @@ def_mapper_comparison=no
 # default method to count reads mapped to features (genes, exons, ...)
 def_quant_method=htseq2
 
-# default method to normalize the counts
-def_quant_norm_method=deseq
+# default method to normalize the expression values
+def_quant_norm_method=none
+
+# default tool to compute the normalized expression values
+def_quant_norm_tool=none
 
 # produce quantification per exon? default is gene level or transcript level depending on the method used
 def_exon_quant=n
@@ -462,7 +473,8 @@ ifndef cdna_file
  endif
 endif
 cdna_dir:=$(abspath $(data_dir)/reference/$(species))
-cdna_file_abspath=$(abspath $(cdna_dir)/$(subst .gz,,$(cdna_file)))
+cdna_file_abspath=$(abspath $(cdna_dir)/$(cdna_file))
+cdna_file_fasta_abspath=$(abspath $(cdna_dir)/$(subst .gz,,$(cdna_file)))
 
 #$(info *       CDNA = $(cdna_file))
 # TODO: only report an error if the file is really needed
@@ -679,8 +691,8 @@ $(info *	mapper=$(mapper))
 
 # gems
 SUPPORTED_MAPPERS=tophat1 tophat2 smalt gsnap soapsplice bwa1 bwa2 bowtie1 bowtie2 gem star osa mapsplice
-ifeq (,$(filter $(mapper),$(SUPPORTED_MAPPERS)))
-$(call p_info,[ERROR] Mapping)
+ifeq (,$(filter $(mapper),none $(SUPPORTED_MAPPERS)))
+$(call p_info,[ERROR] Invalid mapper)
 $(error $(mapper) not implemented)
 endif
 
@@ -698,19 +710,24 @@ ifdef assembler
 ifndef quant_method
 quant_method=$(assembler)
 endif
-ifndef quant_norm_method
-quant_norm_method=$(assembler)
+ifndef quant_norm_tool
+quant_norm_tool=$(assembler)
 endif
 endif
 
 ifndef quant_norm_method
-ifndef quant_method
+# ifndef quant_method
 quant_norm_method=$(def_quant_norm_method)
-else
-quant_norm_method=none
-endif
+# else
+# quant_norm_method=none
+# endif
 endif
 
+
+
+ifndef quant_norm_tool
+quant_norm_tool=$(def_quant_norm_tool)
+endif
 
 ###########################
 # Method to count reads mapped to features (genes, exons, ...)
@@ -720,10 +737,10 @@ ifndef quant_method
 endif
 
 #SUPPORTED_QUANT_METHODS=basic htseq1 htseq2 cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd scripture flux_cap
-SUPPORTED_QUANT_METHODS=basic htseq1 htseq2 cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd scripture flux_cap nurd stringtie
+SUPPORTED_QUANT_METHODS=basic htseq1 htseq2 cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd scripture flux_cap nurd stringtie stringtie_nd rsem kallisto
 
 # methods that produce transcript level quantification by default
-TRANS_QUANT_METHODS=flux_cap cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd nurd stringtie 
+TRANS_QUANT_METHODS=flux_cap cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd nurd stringtie stringtie_nd rsem kallisto
 
 #rsem isoem sailfish bitseq
 ifeq (,$(filter $(quant_method),$(SUPPORTED_QUANT_METHODS) none))
@@ -736,6 +753,12 @@ $(info *	quant_method=$(quant_method))
 
 ifndef exon_quant
 exon_quant=$(def_exon_quant)
+else
+exon_quant:=$(strip $(exon_quant))
+endif
+
+ifndef exon_quant_method
+exon_quant_method=dexseq
 endif
 
 ifndef transcript_quant
@@ -744,16 +767,43 @@ endif
 
 ifneq (,$(filter $(quant_method),$(TRANS_QUANT_METHODS)))
 $(info Enabling transcript_quant since  $(quant_method) supports it by default)
-override transcript_quant=y
+override transcript_quant:=y
 endif
 
 
 $(info *	exon_quant=$(exon_quant))
+ifeq ($(exon_quant),y)
+$(info *	exon_quant_method=$(exon_quant_method))
+endif
 $(info *	transcript_quant=$(transcript_quant))
 
-ifeq ($(exon_quant),y) 
-$(info Exon quantification requires that all exons in the gtf file have an exon_id attribute)
+
+#####################
+# Exon quantification
+SUPPORTED_EXON_QUANT_METHODS=stringtie dexseq htseq1 htseq2
+
+
+
+ifeq ($(strip $(exon_quant)),y) 
+ifneq (,$(filter $(quant_method),cufflinks1 cufflinks2 cufflinks2_nd cufflinks1_nd nurd stringtie stringtie_nd rsem kallisto))
+$(error Sorry... currently $(quant_method) cannot be used together with exon_quantification)
 endif
+
+# dexseq can only be used with methods that do not support exon quant
+ifeq ($(exon_quant_method),dexseq) 
+ifneq (,$(filter $(quant_method),cufflinks1 cufflinks2 cufflinks2_nd cufflinks1_nd nurd stringtie stringtie_nd rsem kallisto))
+$(error Sorry... currently DEXSeq cannot be used together with $(quant_method))
+endif
+else 
+ifneq (,$(filter $(exon_quant_method),cufflinks1 cufflinks2 cufflinks2_nd cufflinks1_nd nurd rsem kallisto))
+$(error $(exon_quant_method) does not provide exon level quantification)
+endif
+#$(info Exon quantification requires that all exons in the gtf file have an exon_id attribute)
+endif
+#exon_quant_method=$(quant_method)
+#$(info *	exon_quant_method=$(exon_quant_method))
+endif
+
 ifndef gtf_file_wexonid
 gtf_file_wexonid=$(gtf_file_abspath)
 #$(gtf_file_wexonid)=$(gtf_file_abspath).exon_id.gtf
@@ -762,53 +812,38 @@ endif
 ##################################
 # method to normalize the counts
 ##################################
-ifndef quant_norm_method
-  ifneq (,$(filter flux_cap,$(quant_method)))
-   $(call info,*	overriding quant_norm_method!)
-   override quant_norm_method=$(quant_method)
-  else
-   ifneq (,$(findstring cufflinks,$(quant_method)))
-    $(call info,*	overriding quant_norm_method!)
-    override quant_norm_method=$(quant_method)
-   else
-    ifneq (,$(findstring nurd,$(quant_method)))
-     $(call info,*	overriding quant_norm_method!)
-     override quant_norm_method=$(quant_method)
-    else
-     ifneq (,$(findstring stringtie,$(quant_method)))
-      $(call info,*	overriding quant_norm_method!)
-      override quant_norm_method=$(quant_method)
-     else
-      quant_norm_method=$(def_quant_norm_method)
-     endif
-    endif
-   endif
-  endif
-endif
-SUPPORTED_COUNT_NMETHODS=cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd deseq flux_cap  nurd stringtie
-ifeq (,$(filter $(quant_norm_method),none $(SUPPORTED_COUNT_NMETHODS)))
-$(call p_info,[ERROR] quant_norm_method)
-$(error $(quant_norm_method) not supported)
+
+
+SUPPORTED_NORM_TOOLS=cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd flux_cap  nurd stringtie irap
+ifeq (,$(filter $(quant_norm_tool),none $(SUPPORTED_NORM_TOOLS)))
+$(call p_error,quant_norm_tool '$(quant_norm_tool)' invalid)
 endif
 
-## override normalization option based on the quantification method
-ifneq (,$(findstring cufflinks,$(quant_method)))
-$(call info,*	overriding quant_norm_method!)
-override quant_norm_method=$(quant_method)
+# Normalization methods
+SUPPORTED_NORM_METHODS=rpkm deseq_nlib
+# tpm rpkm_qn
+ifeq (,$(filter $(quant_norm_method),none $(SUPPORTED_NORM_METHODS)))
+$(call p_error,quant_norm_method '$(quant_norm_method)' invalid)
 endif
 
-ifneq (,$(filter flux_cap,$(quant_method)))
-$(call info,*	overriding quant_norm_method!)
-override quant_norm_method=$(quant_method)
+
+
+ifneq (,$(filter $(quant_method),cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd nurd stringtie stringtie_nd flux_cap))
+ifndef quant_norm_tool
+quant_norm_tool=$(quant_method)
+override quant_norm_method=rpkm
+$(info * Enabling generation of table of RPKMs since $(quant_method) produces F/RPKMs by default)
+endif
+ifeq ($(quant_norm_tool),none)
+quant_norm_tool=$(quant_method)
+override quant_norm_method=rpkm
+$(info * Enabling generation of table of RPKMs since $(quant_method) produces F/RPKMs by default)
+endif
 endif
 
-ifneq (,$(filter nurd,$(quant_method)))
-$(call info,*	overriding quant_norm_method!)
-override quant_norm_method=nurd
-endif
 
+$(info *	quant_norm_tool=$(quant_norm_tool))
 $(info *	quant_norm_method=$(quant_norm_method))
-
 #******************************
 # Use unspliced mapping: yes/no 
 #******************************
@@ -885,9 +920,10 @@ endif
 
 
 ifeq ($(mapper_splicing),no)
- file_indexed=$(trans_file)
+ files_indexed=$(trans_file)
 else
- file_indexed=$(reference_prefix)
+# word 1 = reference 
+ files_indexed=$(reference_prefix) $(gtf_file_abspath)
 endif
 
 ifeq (y,$(de_annot_genes_only))
@@ -946,6 +982,10 @@ ifndef feat_length
 feat_length=$(name)/data/lengths.Rdata
 endif
 
+ifndef exon_length
+exon_length=$(name)/data/lengths.Rdata
+endif
+
 
 ###############################################################################
 # When the number of libraries is greater than BIG_LIM then pass the arguments
@@ -976,7 +1016,6 @@ $(1) $(3)
 endef
 
 endif
-
 
 ################################################################################
 # Make stuff
@@ -1159,14 +1198,29 @@ endef
 # TODO: STAGE0
 SETUP_DATA_FILES=
 STAGE3_OUT_FILES=
+STAGE2_OUT_FILES=
+STAGE4_OUT_FILES=
+STAGE5_OUT_FILES=
+STAGE3_S_TARGETS=
 
 STAGE1_OUT_FILES=$(foreach p,$(se),$(call lib2filt_folder,$(p))$(p).f.fastq) $(foreach p,$(pe),$(call lib2filt_folder,$(p))$(p)_1.f.fastq)
+
+
+ifneq ($(mapper),none)
 
 STAGE2_OUT_FILES=$(foreach p,$(pe), $(call lib2bam_folder,$(p))$(p).pe.hits.bam) $(foreach s,$(se), $(call lib2bam_folder,$(s))$(s).se.hits.bam)
 
 STAGE2BYNAME_OUT_FILES=$(foreach p,$(pe), $(call lib2bam_folder,$(p))$(p).pe.hits.byname.bam) $(foreach s,$(se), $(call lib2bam_folder,$(s))$(s).se.hits.byname.bam)
 
+else
+
+STAGE2_OUT_FILES=
+STAGE2BYNAME_OUT_FILES=
+
+endif
+
 bam_files=$(STAGE2_OUT_FILES)
+
 
 ################################################################################
 # Default target
@@ -1184,40 +1238,44 @@ include $(irap_path)/../aux/mk/irap_report.mk
 include $(irap_path)/../aux/mk/irap_citations.mk
 # Quantification
 include $(irap_path)/../aux/mk/irap_quant.mk
+# Normalization
+include $(irap_path)/../aux/mk/irap_norm.mk
 # DE
 include $(irap_path)/../aux/mk/irap_de.mk
 # Gene set enrichment analysis
 include $(irap_path)/../aux/mk/irap_gse.mk
 
-
-
 # Atlas (atlas specific stuff)
 include $(irap_path)/../aux/mk/irap_atlas.mk
+
+# Fusion
+include $(irap_path)/../aux/mk/irap_fusion.mk
 
 ifdef irap_devel
 $(call p_info,Loading code under development)
 # include under development features
 include $(irap_path)/../aux/mk/irap_snp_indel_calling.mk
-# Fusion
-include $(irap_path)/../aux/mk/irap_fusion.mk
 endif
 
 # Check if the options provided are valid
-ifeq (invalid,$(shell irap_paths $(mapper) $(quant_method) $(quant_norm_method) $(de_method) $(gse_tool) $(has_stranded_data)))
-  $(error invalid combination mapper:$(mapper) -> quant_method:$(quant_method) -> quant_norm_method:$(quant_norm_method) -> de_method:$(de_method) for the given data)
+ifeq (invalid,$(shell irap_paths $(mapper) $(quant_method) $(quant_norm_tool) $(quant_norm_method) $(de_method) $(gse_tool) $(has_stranded_data)))
+  $(error invalid combination mapper:$(mapper) -> quant_method:$(quant_method) -> quant_norm method:$(quant_norm_method) quant_norm_tool:$(quant_norm_tool) -> de_method:$(de_method) for the given data)
 endif
 
 $(info *========================================================)
 
 #################################################################################
-
-index_files=$(call $(mapper)_index_filenames,$(file_indexed),$(file_indexed))
+ifneq ($(mapper),none)
+index_files=$(call $(mapper)_index_filenames,$(word 1,$(files_indexed)),$(word 1,$(files_indexed)))
+else
+index_files=
+endif
 
 #*********************
 # print all variables
 ifdef debug
 $(info DEBUG)
-VARS2PRINT=reference_prefix gtf_file_abspath index_files file_indexed feat_mapping_file
+VARS2PRINT=reference_prefix gtf_file_abspath index_files files_indexed feat_mapping_file
 $(foreach v,$(VARS2PRINT),$(info $v=$($v)))
 endif
 $(call p_info,[DONE] Initialization)
@@ -1228,12 +1286,10 @@ $(call p_info,[DONE] Initialization)
 ###################
 read_qual_filter_common_params=tmp_dir=$(tmp_dir)  threads=$(max_threads)  qual_filtering=$(qual_filtering)  min_qual=$(min_read_quality) trim=$(trim_reads) cont_index=$(cont_index) 
 
+# 1 - libname
+# 2 - extra options
 define do_quality_filtering_and_report=
-	irap_fastq_qc $(read_qual_filter_common_params) data_dir=$(data_dir)/raw_data/$(raw_folder)/$($(1)_dir) read_size=$($(1)_rs)   qual=$($(1)_qual) f="$($(1))" out_prefix=$(1) is_pe=$(call is_pe_lib,$(1)) out_dir=$(name)/data/$($(1)_dir) report_dir=$(name)/report/riq/$($(1)_dir)
-endef
-
-define do_quality_filtering_and_report_cleanup=
-	irap_fastq_qc $(read_qual_filter_common_params) data_dir=$(data_dir)/raw_data/$(raw_folder)/$($(1)_dir) read_size=$($(1)_rs)  qual=$($(1)_qual) f="$($(1))" out_prefix=$(1) is_pe=$(call is_pe_lib,$(1)) out_dir=$(name)/data/$($(1)_dir) report_dir=$(name)/report/riq/$($(1)_dir) clean
+	irap_fastq_qc $(read_qual_filter_common_params) data_dir=$(data_dir)/raw_data/$(raw_folder)/$($(1)_dir) read_size=$($(1)_rs)   qual=$($(1)_qual) f="$($(1))" out_prefix=$(1) is_pe=$(call is_pe_lib,$(1)) out_dir=$(name)/data/$($(1)_dir) report_dir=$(name)/report/riq/$($(1)_dir) $(2)
 endef
 
 define not_empty=
@@ -1357,7 +1413,7 @@ phony_targets+= setup setup_files
 ################################################################################
 # Setup initial files
 # file with the length of the features (gene, isoform, exon)
-SETUP_DATA_FILES+=$(name)/data/gene_class.txt $(word 1,$(index_files)) $(gtf_file_abspath).checked  $(gtf_file_abspath).exon_id.gtf $(juncs_file_abspath) $(name)/data/chr_sizes.txt    $(feat_length) $(annot_tsv) $(name)/data/introns.bed 
+SETUP_DATA_FILES+= $(name)/data/gene_class.txt $(index_files) $(gtf_file_abspath).checked  $(gtf_file_abspath).exon_id.gtf $(juncs_file_abspath) $(name)/data/chr_sizes.txt  $(annot_tsv) $(name)/data/introns.bed 
 
 
 # No need to include these files since they are generated by some rule
@@ -1369,9 +1425,18 @@ setup_files: $(SETUP_DATA_FILES)
 print_stage0_files: setup_dirs
 	echo $(SETUP_DATA_FILES)
 
-$(index_files): $(file_indexed)
+ifneq ($(mapper),none)
+# index the reference
+$(word 1,$(index_files)): $(files_indexed)
 	$(call p_info,INDEXING)
-	$(call run_$(mapper)_index,$(file_indexed))
+	$(call run_$(mapper)_index,$(word 1,$(files_indexed)))
+ifneq ($(word 2,$(index_files)),)
+# index the annotation/transcriptome
+$(word 2,$(index_files)): $(files_indexed)
+	$(call p_info,INDEXING 2)
+	$(call run_$(mapper)_index_annot,$(word 1,$(files_indexed)))
+endif
+endif
 
 # Create the file with gene classification by GeneId
 $(refgeneclass_file): $(gtf_file_abspath)
@@ -1420,7 +1485,7 @@ $(name)/data/gene.annot.tsv.Rdata: $(refgeneannot_file).Rdata
 #endif
 
 $(name)/data/empty.gene.annot.tsv: 
-	echo '"ID","Name","locus","source","lname","GO","GOterm","KEGG"' | tr "," "\t" > $@
+	echo '"ID","Name","locus","source","lname","GO","GOterm","KEGG","biotype"' | tr "," "\t" > $@
 
 # collect genes, transcripts and exons lengths
 # generate only once
@@ -1430,6 +1495,12 @@ $(gtf_file_abspath).lengths.Rdata: $(gtf_file_abspath)
 $(name)/data/lengths.Rdata: $(gtf_file_abspath).lengths.Rdata
 	cp $< $@.tmp && mv $@.tmp $@
 
+$(gtf_file_abspath).DEXSeq.gff.lengths.Rdata: $(gtf_file_abspath).DEXSeq.gff
+	irap_DexSeqExonLen --gff $< -o $@.tmp --cores $(max_threads) && mv $@.tmp.Rdata $@
+
+$(name)/data/dexseq.lengths.Rdata: $(gtf_file_abspath).DEXSeq.gff.lengths.Rdata
+	cp $< $@.tmp && mv $@.tmp $@
+
 # $(trans_file): 
 # 	$(call p_error,Missing trans_file = $(trans_file))
 
@@ -1437,11 +1508,11 @@ $(name)/data/lengths.Rdata: $(gtf_file_abspath).lengths.Rdata
 # Setup directory structure
 phony_targets+= setup_dirs
 
-setup_dirs: $(tmp_dir) $(name)/report/riq/ $(name)/$(mapper)/ $(name)/data/  $(name)/$(mapper)/$(quant_method)/  $(name)/$(mapper)/$(quant_method)/$(de_method)/
+setup_dirs: $(tmp_dir) $(name)/report/riq/ $(if $(mapper),$(name)/$(mapper)/) $(name)/data/  $(if $(quant_method),$(name)/$(mapper)/$(quant_method)/)  $(if $(de_method),$(name)/$(mapper)/$(quant_method)/$(de_method)/)
 	$(call p_info,[DONE] Directory structure created)
 
 $(tmp_dir):
-	@mkdir -p $@
+	mkdir -p $@
 
 # really required?
 #$(data_dir)/data:
@@ -1449,19 +1520,19 @@ $(tmp_dir):
 
 
 $(name)/data/:
-	@mkdir -p $@
+	mkdir -p $@
 
 $(name)/report/riq/:
-	@mkdir -p $@
+	mkdir -p $@
 
 $(name)/$(mapper)/:
-	@mkdir -p $@
+	mkdir -p $@
 
 $(name)/$(mapper)/$(quant_method)/:
-	@mkdir -p $@
+	mkdir -p $@
 
 $(name)/$(mapper)/$(quant_method)/$(de_method)/:
-	@mkdir -p $@
+	mkdir -p $@
 
 
 ################################################################################
@@ -1485,6 +1556,8 @@ qc: quality_filtering_and_report
 quality_filtering_and_report: setup	$(STAGE1_OUT_FILES)
 	$(call p_info,[DONE] Quality filtering)
 
+phony_targets+= do_qc
+do_qc: $(STAGE1_OUT_FILES)
 
 ifeq ($(qc),none)
 $(info QC disabled)
@@ -1502,14 +1575,17 @@ else
 #$(name)/data/%.f.fastq: 
 %.f.fastq: 
 	$(call p_info,Filtering $(call fix_libname,$(notdir $*)))
-	$(call do_quality_filtering_and_report,$(call fix_libname,$(notdir $*)))
+	$(call do_quality_filtering_and_report,$(call fix_libname,$(notdir $*)),) || (rm -f $@ && exit 1)
 #	$(call not_empty,$@)
 
 
 # Cleanup
 clean_quality_filtering_and_report_cleanup:
-	$(foreach p,$(se) $(pe),$(call do_quality_filtering_and_report_cleanup,$(p));)
+	$(foreach p,$(se) $(pe),$(call do_quality_filtering_and_report,$(call fix_libname,$(p)),clean);)
 endif
+
+print_qc_dirs_files:
+	echo	$(foreach l,$(se) $(pe),$(name)/report/riq/$($(l)_dir) )
 
 ################################################################################
 # Mapping
@@ -1533,7 +1609,11 @@ print_stage2_files:
 #####################
 phony_targets+= $(mapper)_mapping mapping stage2_tracks
 
+ifeq ($(mapper),none)
+$(mapper)_mapping: 
+else
 $(mapper)_mapping: $(index_files) $(STAGE2_OUT_FILES)
+endif
 
 stage2_tracks_targets=$(call rep_browse,$(subst .bam,.bam.tracks,$(STAGE2_OUT_FILES)))	
 
@@ -1569,12 +1649,14 @@ $(call lib2bam_folder,$(1))$(1).pe.hits.bam: $(call mapper_ifiles,$(mapper),$(1)
 endef
 
 # create the output directories
+ifneq ($(mapper),none)
 $(foreach l,$(se) $(pe),$(eval $(shell mkdir -p $(call lib2bam_folder,$(l)))))
 
 # rules for SE libraries
 $(foreach l,$(se),$(eval $(call make-se-bam-rule,$(l))))
 # rules for PE libraries
 $(foreach l,$(pe),$(eval $(call make-pe-bam-rule,$(l))))
+endif
 
 # interleaved fastq file
 $(name)/data/%_int.f.fastq: $(name)/data/%_1.f.fastq $(name)/data/%_2.f.fastq
@@ -1591,11 +1673,13 @@ $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method
 endef
 
 define exons_quant_file=
-$(if $(filter y,$(exon_quant)),$(name)/$(mapper)/$(quant_method)/exons.raw.$(quant_method).tsv,)
+$(if $(filter y,$(exon_quant)),$(name)/$(mapper)/$(quant_method)/exons.raw.$(exon_quant_method).tsv,)
 endef
+
 define exons_quant_files=
-$(if $(filter y,$(exon_quant)),$(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.exons.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.exons.raw.$(quant_method).tsv),)
+$(if $(filter y,$(exon_quant)),$(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.exons.raw.$(exon_quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.exons.raw.$(exon_quant_method).tsv),)
 endef
+
 
 define exons_quant_norm=
 $(if $(filter y,$(exon_quant)),$(1),)
@@ -1615,18 +1699,9 @@ $(if $(filter y,$(transcript_quant)),$(1),)
 endef
 
 
-define nquant_files=
-$(name)/$(mapper)/$(quant_method)/genes.rpkm.$(quant_norm_method).tsv $(call exons_quant_file,$(name)/$(mapper)/$(quant_method)/exons.rpkm.$(quant_norm_method).tsv) $(call transcripts_quant_file,$(name)/$(mapper)/$(quant_method)/transcripts.rpkm.$(quant_norm_method).tsv)
-endef
 
 # Note
 # The quantification may be produced at the level of genes, exons  or transcripts/isoforms
-# The quantification can be simply counts (raw), f/rpkm (rpkm), or normalized by library size (nlib)
-# The names of the TSV files produced have the format: <quant.level>.<type of quantification>.quant_method.tsv
-# Ex. genes.raw.htseq1.tsv
-#     exons.raw.htseq1.tsv
-#     genes.nlib.htseq1.tsv
-
 ifeq ($(quant_method),none) 
 quantification:
 	$(call p_info,[DISABLED] Assembly and quantification)
@@ -1636,24 +1711,22 @@ quantification_s:
 else
 $(quant_method)_quant_files=$(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv $(call transcripts_quant_file)  $(call exons_quant_file) 
 
+STAGE3_S_TARGETS+=$(call genes_quant_files) $(call transcripts_quant_files)  $(call exons_quant_files)
+
 # Raw  + Normalized 
-quantification: $(quant_norm_method)_nquant $(quant_method)_quant 
+quantification: norm_quant $(quant_method)_quant 
 	$(call p_info,[DONE] Assembly and quantification)
 
 $(quant_method)_quant: mapping $($(quant_method)_quant_files)
 # do not create the final matrix file (used by lsf wrapper)
-#ifeq ($(shell echo -n $(quant_method)|sed -E "s/[12].*//"),cufflinks)
-#quantification_s: setup mapping $(call nquant_files)
-#else
-quantification_s: setup mapping $(call genes_quant_files) $(call transcripts_quant_files)  $(call exons_quant_files) 
-#endif
+quantification_s: $(STAGE3_S_TARGETS)
 
-print_stage3_s_targets: $(call genes_quant_files) $(call transcripts_quant_files)  $(call exons_quant_files)
+print_stage3_s_targets: $(STAGE3_S_TARGETS)
 	echo $^
 
 endif
 phony_targets+= quantification $(quant_method)_quant quantification_s
-
+STAGE3_OUT_FILES+=$($(quant_method)_quant_files) 
 
 
 #*****************
@@ -1681,7 +1754,7 @@ define run_scripture=
 		scripture  $(scripture_params) -alignment $(1) -out $(4)/$$chr.segments -sizeFile $(2) -chr $$chr  -chrSequence $(3)/$$chr.fa $(5); \
 	    scripture  -task score -in  $(4)/$$chr.segments -alignment $(1) -sizeFile $(2) -out $(4)/$$chr.score.tsv $(5);\
 	done; 
-	cat $(4)/*.score.tsv > $(7).tmp  && bedtools intersect -wb -b $(6) -a $(7).tmp | cut -f 15,29- a.tsv | sed -e "s/^\([0-9]*\).0.\(.*\)/\2\t\1/" > $(7).tmp2 &&\
+	cat $(4)/*.score.tsv > $(7).tmp  && bedtools intersect -wb -b $(6) -a $(7).tmp | cut -f 15,29- | sed -e "s/^\([0-9]*\).0.\(.*\)/\2\t\1/" > $(7).tmp2 &&\
 	irap_naive_count.pl $(7).tmp2 $(7).exons $(7).genes && \
 	mv $(7).exons $(7).exons.tsv && \
 	mv $(7).genes $(7).genes.tsv  && \
@@ -1734,292 +1807,43 @@ $(name)/$(mapper)/$(quant_method)/chr_size.tsv: $(reference_abspath).fai
 $(reference_abspath)_files: $(reference_abspath)
 	irap_fasta_split.pl $< $@
 
+$(name)/$(mapper)/scripture/genes.raw.scripture.tsv: $(name)/$(mapper)/scripture/rawcounts.scripture.tsv
+	cp $< $@
 
 ################################################################################
-# Normalization
+# STAGE 3
 ################################################################################
-$(quant_norm_method)_nquant_files=$(name)/$(mapper)/$(quant_method)/genes.nlib.$(quant_norm_method).tsv $(name)/$(mapper)/$(quant_method)/genes.rpkm.$(quant_norm_method).tsv $(call exons_quant_norm,$(name)/$(mapper)/$(quant_method)/exons.nlib.$(quant_norm_method).tsv $(name)/$(mapper)/$(quant_method)/exons.rpkm.$(quant_norm_method).tsv) $(call transcripts_quant_norm,$(name)/$(mapper)/$(quant_method)/transcripts.nlib.$(quant_norm_method).tsv $(name)/$(mapper)/$(quant_method)/transcripts.rpkm.$(quant_norm_method).tsv)
 
-STAGE3_OUT_FILES+=$($(quant_method)_quant_files) $($(quant_norm_method)_nquant_files)
-
-STAGE3_TSV_FILES=$(call exons_quant_files)\
+STAGE3_TSV_FILES+=$(call exons_quant_files)\
 	       $(call transcripts_quant_files)\
-	       $(call genes_quant_files)\
-	       $(call nquant_files)
+	       $(call genes_quant_files)
 
 ##################
 #
 
-# which program to use to merge the tsv files
-# 1 = quant_method
-# TODO: reduce memory footprint of irap_merge_tsv_NA.sh 
-define merge_tsv=
-$(if $(findstring cufflinks,$(1)),irap_merge_tsv_NA.sh,irap_merge_tsv.sh)
-endef
-
-phony_targets+= $(quant_norm_method)_nquant
-
 print_stage3_files:
 	echo $(STAGE3_OUT_FILES)
 
-$(quant_norm_method)_nquant: $(quant_method)_quant $($(quant_norm_method)_nquant_files)
-
-# RPKM
-# none method: irap computes the RPKMs based on the raw counts
-$(name)/$(mapper)/$(quant_method)/genes.rpkm.none.tsv: $(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv $(feat_length)
-	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature gene --metric rpkm --out $@.tmp && mv $@.tmp $@	
-
-$(name)/$(mapper)/$(quant_method)/exons.rpkm.none.tsv: $(name)/$(mapper)/$(quant_method)/exons.raw.$(quant_method).tsv $(feat_length)
-	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature exon --metric rpkm --out $@.tmp && mv $@.tmp $@	
-
-$(name)/$(mapper)/$(quant_method)/transcripts.rpkm.none.tsv: $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv $(feat_length)
-	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature transcript --metric rpkm --out $@.tmp && mv $@.tmp $@	
-
-# special rules
-# cufflinks*
-$(name)/$(mapper)/$(quant_method)/genes.rpkm.cufflinks%.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.genes.rpkm.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.genes.rpkm.$(quant_method).tsv) 
-	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) ) > $@.tmp && mv $@.tmp $@
-
-$(name)/$(mapper)/$(quant_method)/transcripts.rpkm.cufflinks%.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.rpkm.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.transcripts.rpkm.$(quant_method).tsv) 
-	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) ) > $@.tmp && mv $@.tmp $@
-
-$(name)/$(mapper)/$(quant_method)/exons.rpkm.cufflinks%.tsv:
-	$(call p_info, Warning! Cufflinks does not produce quantification at exon level. Generating empty file $@.)
-	@$(call empty_file,$@)
-
-# flux-capacitor
-$(name)/$(mapper)/$(quant_method)/genes.rpkm.flux%.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.genes.rpkm.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.genes.rpkm.$(quant_method).tsv) 
-	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) )  > $@.tmp && mv $@.tmp $@
-
-$(name)/$(mapper)/$(quant_method)/transcripts.rpkm.flux%.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.rpkm.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.transcripts.rpkm.$(quant_method).tsv) 
-	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) )  > $@.tmp && mv $@.tmp $@
-
-$(name)/$(mapper)/$(quant_method)/exons.rpkm.flux%.tsv: 
-	$(call p_info, Warning! Flux-capacitor does not produce quantification at exon level. Generating empty file $@.)
-	@$(call empty_file,$@)
-
-# nurd
-$(name)/$(mapper)/nurd/genes.rpkm.nurd.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.genes.rpkm.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.rpkm.$(quant_method).tsv)
-	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) ) > $@.tmp && mv $@.tmp $@
-
-$(name)/$(mapper)/nurd/transcripts.rpkm.nurd.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.rpkm.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.transcripts.rpkm.$(quant_method).tsv) 
-	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) ) > $@.tmp && mv $@.tmp $@
-
-$(name)/$(mapper)/$(quant_method)/exons.rpkm.nurd.tsv: 
-	$(call p_info, Warning! NURD does not produce quantification at exon level. Generating empty file $@.)
-	@$(call empty_file,$@)
-
-
-$(name)/$(mapper)/$(quant_method)/%.nlib.nurd.tsv:
-	$(call p_info, Warning! Unable to generate  nlib file $@ with $(quant_method).)
-	@$(call empty_file,$@)
-$(name)/$(mapper)/$(quant_method)/%.nlib.nurd.tsv:
-	$(call p_info, Warning! Unable to generate nlib file $@ with $(quant_method).)
-	@$(call empty_file,$@)
-
-#################################################################
-# Disabled: just copy the file with the raw quantification values
-$(name)/$(mapper)/$(quant_method)/%.nlib.none.tsv: $(name)/$(mapper)/$(quant_method)/%.raw.$(quant_method).tsv 
-	$(call p_info,Quantification normalization disabled. Please set the quant_norm_method parameter if you do not want this behavior.)
-	cp $< $@
-
-#############
-# HTSeq
-#############
-
-# htseq1 rpkm per gene
-$(name)/$(mapper)/htseq1/genes.rpkm.htseq1.tsv: $(name)/$(mapper)/htseq1/genes.raw.htseq1.tsv $(feat_length)
-	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature gene --metric rpkm --out $@.tmp && mv $@.tmp $@
-
-
-# htseq1 rpkm per transcript
-$(name)/$(mapper)/htseq1/transcripts.rpkm.htseq1.tsv: $(name)/$(mapper)/htseq1/transcripts.raw.htseq1.tsv $(feat_length)
-	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature transcript --metric rpkm --out $@.tmp && mv $@.tmp $@
-
-# htseq1 rpkm per exon
-$(name)/$(mapper)/htseq1/exons.rpkm.htseq1.tsv: $(name)/$(mapper)/htseq1/exons.raw.htseq1.tsv $(feat_length)
-	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature exon --metric rpkm --out $@.tmp && mv $@.tmp $@
-
-
-# htseq2 rpkm per gene
-$(name)/$(mapper)/htseq2/genes.rpkm.htseq2.tsv: $(name)/$(mapper)/htseq2/genes.raw.htseq2.tsv $(feat_length)
-	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature gene --metric rpkm --out $@.tmp && mv $@.tmp $@
-
-
-# htseq2 rpkm per transcript
-$(name)/$(mapper)/htseq2/transcripts.rpkm.htseq2.tsv: $(name)/$(mapper)/htseq2/transcripts.raw.htseq2.tsv $(feat_length)
-	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature transcript --metric rpkm --out $@.tmp && mv $@.tmp $@
-
-# htseq2 rpkm per exons
-$(name)/$(mapper)/htseq2/exons.rpkm.htseq2.tsv: $(name)/$(mapper)/htseq2/exons.raw.htseq2.tsv $(feat_length)
-	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature exon --metric rpkm --out $@.tmp && mv $@.tmp $@
-
-
-# rpkm+norm
-ifneq ($(quant_norm_method),none)
-ifneq (,$(filter $(quant_method),htseq1 htseq2))
-$(name)/$(mapper)/$(quant_method)/genes.rpkm.$(quant_norm_method).tsv: $(name)/$(mapper)/$(quant_method)/genes.nlib.$(quant_norm_method).tsv $(feat_length)
-	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature gene --metric rpkm --out $@.tmp && mv $@.tmp $@
-
-$(name)/$(mapper)/$(quant_method)/exons.rpkm.$(quant_norm_method).tsv: $(name)/$(mapper)/$(quant_method)/exons.nlib.$(quant_norm_method).tsv $(feat_length)
-	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature exon --metric rpkm --out $@.tmp && mv $@.tmp $@
-
-$(name)/$(mapper)/$(quant_method)/transcripts.rpkm.$(quant_norm_method).tsv: $(name)/$(mapper)/$(quant_method)/transcripts.nlib.$(quant_norm_method).tsv $(feat_length)
-	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature transcript --metric rpkm --out $@.tmp && mv $@.tmp $@
-endif
-endif
-
-#############
-# Cufflinks1
-#############
-$(name)/$(mapper)/$(quant_method)/%.genes.rpkm.cufflinks1.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.genes.fpkm_tracking
-	cut -f 1,10 $<  | tail -n +2  | grep -v CUFF  > $@.tmp && mv $@.tmp $@
-
-$(name)/$(mapper)/cufflinks1_nd/%.genes.rpkm.cufflinks1_nd.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.genes.fpkm_tracking
-	cut -f 1,10 $< | tail -n +2 > $@.tmp && mv $@.tmp $@
-
-$(name)/$(mapper)/$(quant_method)/%.exons.rpkm.cufflinks1.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.gtf
-	grep -w exon $< | grep -v CUFF | sed -e 's/.*gene_id .\([^\"]*\).; transcript_id .\([^\"]*\).; exon_number .\([^\"]*\).; FPKM .\([^\"]*\)..*/\1.\2.\3\t\4/' > $@.tmp && mv $@.tmp $@
-
-$(name)/$(mapper)/$(quant_method)/%.exons.rpkm.cufflinks1_nd.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.gtf
-	grep -w exon $<  | grep -v CUFF | sed -e 's/.*gene_id .\([^\"]*\).; transcript_id .\([^\"]*\).; exon_number .\([^\"]*\).; FPKM .\([^\"]*\)..*/\1.\2.\3\t\4/' > $@.tmp && mv $@.tmp $@
-
-#
-$(name)/$(mapper)/$(quant_method)/%.transcripts.rpkm.cufflinks1.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.isoforms.fpkm_tracking
-	cut -f 1,10 $<  | tail -n +2  | grep -v CUFF > $@.tmp && mv $@.tmp $@
-# 'new' genes can't appear in the tsv file otherwise the different files can't be merged
-
-$(name)/$(mapper)/$(quant_method)/%.transcripts.rpkm.cufflinks1_nd.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.isoforms.fpkm_tracking
-	cut -f 1,10 $<  | tail -n +2 > $@.tmp && mv $@.tmp $@
-
-$(name)/$(mapper)/$(quant_method)/%.nlib.cufflinks1.tsv:
-	$(call p_info, Warning! Unable to generate  nlib file $@ with $(quant_method).)
-	@$(call empty_file,$@)
-$(name)/$(mapper)/$(quant_method)/%.nlib.cufflinks1_nd.tsv:
-	$(call p_info, Warning! Unable to generate nlib file $@ with $(quant_method).)
-	@$(call empty_file,$@)
-
-############
-# Cufflinks2
-############
-$(name)/$(mapper)/$(quant_method)/%.genes.rpkm.cufflinks2.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.genes.fpkm_tracking
-	cut -f 1,10 $<  | tail -n +2  |grep -v CUFF > $@.tmp && mv $@.tmp $@
-
-$(name)/$(mapper)/cufflinks2/%.exons.rpkm.cufflinks2.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.gtf
-	grep -w exon $<  | grep -v CUFF | sed -e 's/.*gene_id .\([^\"]*\).; transcript_id .\([^\"]*\).; exon_number .\([^\"]*\).; FPKM .\([^\"]*\)..*/\1.\2.\3\t\4/' > $@.tmp && mv $@.tmp $@
-
-$(name)/$(mapper)/$(quant_method)/%.transcripts.rpkm.cufflinks2.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.isoforms.fpkm_tracking
-	cut -f 1,10 $<  | tail -n +2  |grep -v CUFF  > $@.tmp && mv $@.tmp $@
-
-$(name)/$(mapper)/$(quant_method)/%.genes.rpkm.cufflinks2_nd.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.genes.fpkm_tracking
-	cut -f 1,10 $<  | tail -n +2  |grep -v CUFF > $@.tmp && mv $@.tmp $@
-
-$(name)/$(mapper)/$(quant_method)/%.exons.rpkm.cufflinks2_nd.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.gtf
-	grep -w exon $<  | grep -v CUFF | sed -e 's/.*gene_id .\([^\"]*\).; transcript_id .\([^\"]*\).; exon_number .\([^\"]*\).; FPKM .\([^\"]*\)..*/\1.\2.\3\t\4/' > $@.tmp && mv $@.tmp $@
-
-$(name)/$(mapper)/$(quant_method)/%.transcripts.rpkm.cufflinks2_nd.tsv: $(name)/$(mapper)/$(quant_method)/%.cuff.isoforms.fpkm_tracking
-	cut -f 1,10 $<  | tail -n +2  |grep -v CUFF  > $@.tmp && mv $@.tmp $@
-
-
-$(name)/$(mapper)/$(quant_method)/%.nlib.cufflinks2.tsv:
-	$(call p_info, Warning! Unable to  generate nlib file $@ with $(quant_method).)
-	@$(call empty_file,$@)
-
-$(name)/$(mapper)/$(quant_method)/%.nlib.cufflinks2_nd.tsv:
-	$(call p_info, Warning! Unable to generate  nlib file $@ with $(quant_method).)
-	@$(call empty_file,$@)
-
-##################################
-# DEseq - normalize by sample size
-# nlib
-# deseq_min_reads:=5
-# Note: counts of technical replicates  have to be summed up into a single column
-$(name)/$(mapper)/$(quant_method)/genes.nlib.deseq.tsv: $(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv
-	irap_deseq_norm $<  > $@.tmp && mv $@.tmp $@
-
-$(name)/$(mapper)/$(quant_method)/transcripts.nlib.deseq.tsv: $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv
-	irap_deseq_norm $<  > $@.tmp && mv $@.tmp $@
-
-$(name)/$(mapper)/$(quant_method)/exons.nlib.deseq.tsv: $(name)/$(mapper)/$(quant_method)/exons.raw.$(quant_method).tsv
-	irap_deseq_norm $<  > $@.tmp && mv $@.tmp $@
-
-
-##################################
-# EDGER
-$(name)/$(mapper)/$(quant_method)/exons.nlib.edger.tsv:
-	$(call p_error, Under implementation)
-$(name)/$(mapper)/$(quant_method)/genes.nlib.edger.tsv:
-	$(call p_error, Under implementation)
-$(name)/$(mapper)/$(quant_method)/transcripts.nlib.edger.tsv:
-	$(call p_error, Under implementation)
-
-##################################
-# VOOM
-$(name)/$(mapper)/$(quant_method)/exons.nlib.voom.tsv:
-	$(call p_error, Under implementation)
-$(name)/$(mapper)/$(quant_method)/genes.nlib.voom.tsv:
-	$(call p_error, Under implementation)
-$(name)/$(mapper)/$(quant_method)/transcripts.nlib.voom.tsv:
-	$(call p_error, Under implementation)
-
-################
-# flux-capacitor
-# norm. already done in quant step...fix file names if necessary
-# cufflinks1, cufflinks2, deseq and edger flux
-
-$(name)/$(mapper)/$(quant_method)/genes.nlib.flux_cap.tsv: $(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv
-	irap_deseq_norm $<  > $@.tmp && mv $@.tmp $@
-
-$(name)/$(mapper)/$(quant_method)/transcripts.nlib.flux_cap.tsv: $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv
-	irap_deseq_norm $<  > $@.tmp && mv $@.tmp $@
-
-$(name)/$(mapper)/$(quant_method)/exons.nlib.flux_cap.tsv: 
-#	irap_deseq_norm $<  > $@.tmp && mv $@.tmp $@
-	@$(call empty_file,$@)
 
 
 ################################################################################
-# Differential Analysis
+# Stage 4
 ################################################################################
-# TODO: consider DE at isoform level, exon level
-ifeq (none,$(de_method))
-STAGE4_OUT_FILES=
-else
-STAGE4_OUT_FILES=$(foreach cont,$(contrasts),$(name)/$(mapper)/$(quant_method)/$(de_method)/$(cont).genes_de.tsv)
-endif
-phony_targets+= DE de_files
 
+phony_targets+= print_stage4_files
 
-DE: stage3 $(STAGE4_OUT_FILES)
-	$(call p_info,[DONE] Differential analysis)
-
-de_files:
+print_stage4_files:
 	echo $(STAGE4_OUT_FILES)
+
+phony_targets+= print_stage5_files
+print_stage5_files:
+	echo $(STAGE5_OUT_FILES)
 
 #############################################################
 # GSE
 ###########################################
 # IRAP targets
 # todo: mv this to the irap_gse file
-ifeq (none,$(gse_tool))
-
-GSE_OUT_FILES=
-
-GSE:
-
-else
-
-GSE_OUT_FILES=$(subst _de.tsv,.gse.$(gse_tool).$(gse_method).go.tsv,$(STAGE4_OUT_FILES)) $(subst _de.tsv,.gse.$(gse_tool).$(gse_method).kegg.tsv,$(STAGE4_OUT_FILES))
-
-GSE: DE $(GSE_OUT_FILES)
-	$(call p_info,[DONE] GSE analysis)
-
-endif
-
-GSE_files:
-	echo $(GSE_OUT_FILES)
-
-phony_targets+= GSE GSE_files
 
 #############################################################
 ## Cleanup
@@ -2032,6 +1856,16 @@ full_clean: clean_data_files
 
 clean_data_files:
 	rm -rf $(SETUP_DATA_FILES) $(index_files) $(reference_abspath).fa
+
+
+# delete all files related to the libraries
+lib_full_clean: clean_quality_filtering_and_report_cleanup 
+	rm -f $(STAGE1_OUT_FILES)
+	$(foreach l,$(se) $(pe), $(if $($(l)_dir), rm -rf $(name)/data/$($(l)_dir)))
+	rm -f $(STAGE2_OUT_FILES)
+	$(foreach l,$(se) $(pe), $(if $($(l)_dir), rm -rf $(name)/$(mapper)/$($(l)_dir)))
+	rm -f $(STAGE3_OUT_FILES)
+	$(foreach l,$(se) $(pe), $(if $($(l)_dir), rm -rf $(name)/$(mapper)/$(quant_method)/$($(l)_dir)))
 
 # TODO: archive (delete everything except the "main" output files for each stage
 #
@@ -2050,8 +1884,8 @@ stage3as: setup quantification_s
 #stage3b: setup stage3a
 # deprecated
 stage3b: setup $(shell rm -f $(name)/$(mapper)/$(quant_method)/rawcounts.$(quant_method).tsv) stage3a
-stage4: setup DE
-stage5: setup GSE
+stage4: setup $(STAGE4_OUT_FILES)
+stage5: setup $(STAGE5_OUT_FILES)
 
 # deprecated: to be removed in the future
 assemble: quantification
@@ -2149,8 +1983,10 @@ cleanup_4_0_reference:
 
 # 0.4.2d and above
 tophat2_update_index: 
-	$(call run_tophat2_index,$(file_indexed))
+	$(call run_tophat2_index,$(word 1,$(files_indexed)))
 
+tophat2_reuse_index:
+	ln -s $(call tophat2_trans_index_filename_old,$(reference_abspath)) $(call tophat2_trans_index_filename,$(reference_abspath))
 # cp the gff3 file to the new location
 # 0.4.3d and above
 gff3_update: $(data_dir)/reference/$(species)/$(notdir $(gff3_file_abspath))

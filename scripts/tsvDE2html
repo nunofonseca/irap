@@ -167,8 +167,12 @@ if ( opt$flavour == "deseq" || opt$flavour == "deseq2" ) {
   fields$groups <- c("baseMeanA","baseMeanB")
   fields$ANNOT.ID <- "id"
   fields$ID.in.ANNOT <- "ID"
+  #
+  fields$cols2sel <- fields$cols2sel %in% colnames(table)
+  fields$cols2tsv <- fields$cols2sel
+  #basemean A and B may not be included
+  fields$groups <- fields$groups %in% colnames(table)
   
-  # needs annotation to get the location
 }
 if ( opt$flavour == "edger" ) {
   # features
@@ -235,12 +239,13 @@ if ( !is.null(annot.table)) {
   }
 }
 
+if ( length(fields$groups) > 0 ) {
 # exclude genes with no expression
-no.expr <- (table[,fields$groups[1]]<=0 & table[,fields$groups[2]]<=0)
-table <- table[!no.expr,]
-pinfo("Excluded ",sum(no.expr)," genes with no expression")
-pinfo("Using ",nrow(table)," genes.")
-
+  no.expr <- (table[,fields$groups[1]]<=0 & table[,fields$groups[2]]<=0)
+  table <- table[!no.expr,]
+  pinfo("Excluded ",sum(no.expr)," genes with no expression")
+  pinfo("Using ",nrow(table)," genes.")
+}
 #####################
 # applying the cutoff
 pdebug("Applying pvalue cut-off")
@@ -425,6 +430,11 @@ colnames(table.html)
 title <- opt$title
 sources.menu <- ""
 #head(uncut.table)
+if ( ! "biotype" %in% colnames(uncut.table) && "biotype" %in% colnames(uncut.table)) {
+  uncut.table$biotype=uncut.table$source
+  pinfo("biotype column not found...using source column (back compatibility)")
+}
+
 init.source.filter(uncut.table,id.col=fields$URL.FIELD.ID)
 sources.menu <- get.source.filter.menu(opt$out)
 
@@ -470,6 +480,7 @@ gen.page <- function (o.html.file) {
 pdebug.save.state("tsvDE2html2","p3")
 
 
+
 filt.name <- "All"
 o.html.file <-paste(opt$out,".html",sep="")
 file.prefix <- opt$out
@@ -481,7 +492,7 @@ gen.page(o.html.file)
 for (filt.name  in get.source.filter.names() ) {
   uncut.table <- uncut.table.orig
   if ( filt.name!="All" && filt.name!="all") {
-    if (! "source" %in% colnames(table)) {
+    if (! "biotype" %in% colnames(uncut.table)) {
       table.html <- table[NULL,fields$cols2sel]
       table.tsv <- otable.tsv.orig[NULL,fields$cols2tsv]
       uncut.table <- table.tsv

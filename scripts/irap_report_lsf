@@ -37,5 +37,6 @@ for f in qc_report init_page_report mapping_report quant_report DE_report gsa_re
 done
 
 wf2=`finish_report|tail -n 1`
+IRAP_PARAMS="$IRAP_PARAMS report"
 final_job $wf2 $wf1
 exit

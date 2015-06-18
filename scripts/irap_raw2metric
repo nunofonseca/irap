@@ -1,4 +1,5 @@
 #!/usr/bin/env Rscript3
+#; -*- mode: R;-*-
 # =========================================================
 # Copyright 2012-2015,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
 #
@@ -42,7 +43,10 @@ option_list <- list(
   make_option(c("-f", "--feature"), type="character", dest="feature", default="gene",help="Feature (gene,transcript,exon-)"),
   make_option(c("-m", "--metric"), type="character", dest="metric", default="rpkm", help="Metric (rpkm) [default %default]"),
   make_option(c("-i", "--tsv"), type="character", dest="tsv_file", help="TSV file name with the matrix with the counts per gene/transcript."),
-  make_option(c("-l", "--lengths"), type="character",dest="lengths_file", help="Name of the rdata file with the length of the features."),
+  make_option(c("-g", "--gtf"), type="character", dest="gtf_file", default=NULL, help="GTF file name"),
+  make_option(c("-l", "--lengths"), type="character",dest="lengths_file",default="",help=" [default %default]."),
+  make_option(c("-e", "--exclude"), type="character",dest="toexclude",default="",help="biotypes to exclude (separated by comma) [default %default]."),
+  make_option(c("p","--rpkm_pc"),action="store_true",dest="mass_pconly",default=FALSE,help="Consider protein coding only for the total number of reads (rpkm) [default %default]"),
   make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
   make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name prefix. An HTML and TSV.gz file will be created.")
 )
@@ -63,7 +67,10 @@ pdebug.enabled <- opt$debug
 
 #
 pdebug.save.state("irap_raw2metric","p0")
-
+lengths <- list()
+gene.length <- NULL
+trans.length <- NULL
+exon.length <- NULL
 # load TSV
 # TODO: trap and report errors
 table <- quant.load(opt$tsv_file)
@@ -76,15 +83,28 @@ if ( is.vector(table) ) {
 
 # load lengths
 load(opt$lengths_file)
-if (! exists("gene.length")) {
+if ( opt$feature=="gene" && ! exists("gene.length")) {
   perror("Unable to get the length of genes from ",opt$lengths_file)
   q(status=1)
 }
-if (! exists("exon.length")) {
+if ( opt$feature=="exon" && ! exists("exon.length")) {
   perror("Unable to get the length of exons from ",opt$lengths_file)
   q(status=1)
 }
 pdebug("data loaded")
+
+# load gtf if provided
+gtf.table <- NULL
+mass.labels <- NULL
+feature.label <- paste(opt$feature,"_id",sep="")
+if (!is.null(opt$gtf_file) ) {
+  gtf.table <- load.gtf(opt$gtf_file,selected.attr=c(feature.label,"biotype"))
+  pinfo("GTF file loaded: ",opt$gtf," ",nrow(gtf.table)," entries")
+
+  if ( opt$mass_pconly) {
+    mass.labels <- gtf.table[gtf.table$biotype=="protein_coding",feature.label]
+  }
+}
 
 if (opt$feature=="exon" ) {
   #eids <- paste(exon.length$gene_id,exon.length$transcript_id,exon.length$exon_number,sep=".")
@@ -103,7 +123,7 @@ lengths <- list(gene=gene.length,transcript=trans.length,exon=exon.length)
 pdebug.save.state("irap_raw2metric","p1")
 if ( opt$metric == "rpkm" ) {
   #(read count  * 1,000,000) / (total number of reads * kilobase of gene/transcript/exon)
-  rpkm <- countstable2rpkms(table,lengths[[opt$feature]])
+  rpkm <- countstable2rpkms(table,lengths[[opt$feature]],mass.labels)
   if ( is.vector(rpkm) ) {
     rpkm <- data.frame(cbind(names(rpkm),rpkm),check.names=F)
     colnames(rpkm) <- append(capitalize(opt$feature),libnames)

@@ -23,7 +23,7 @@
 install=all
 IRAP_DIR1=
 SRC_DIR=
-IRAP_VERSION=0.6.2d14
+IRAP_VERSION=0.6.3d5
 
 #
 USE_CACHE=y
@@ -46,7 +46,7 @@ function usage {
     echo " -v : collect software versions.";
     echo " Advanced options:";
     echo " -f : check/fix file permissions"
-    echo " -d : only download all software and libraries (except R and Perl packages).";
+    echo " -d : download all software and libraries (except R and Perl packages) but do not install.";
     echo " -x software: install/update software.";
 }
 
@@ -221,7 +221,8 @@ RUBY_FILE=ruby-${RUBY_VERSION}.tar.gz
 RUBY_URL=http://ftp.ruby-lang.org/pub/ruby/1.9/$RUBY_FILE
 
 # 5.20.1
-PERL_VERSION=5.18.4
+#PERL_VERSION=5.18.4
+PERL_VERSION=5.20.2
 PERL_FILE=perl-$PERL_VERSION.tar.gz
 PERL_URL=http://www.cpan.org/src/5.0/$PERL_FILE
 
@@ -240,7 +241,7 @@ R_FILE=R-${R_VERSION}.tar.gz
 R_URL=http://cran.r-project.org/src/base/R-2/$R_FILE
 
 # 
-R3_VERSION=3.0.2
+R3_VERSION=3.1.3
 R3_FILE=R-${R3_VERSION}.tar.gz 
 R3_URL=http://cran.r-project.org/src/base/R-3/$R3_FILE
 
@@ -263,7 +264,7 @@ BEDTOOLS_VERSION=2.17.0
 BEDTOOLS_FILE=BEDTools.v$BEDTOOLS_VERSION.tar.gz
 BEDTOOLS_URL=http://bedtools.googlecode.com/files/$BEDTOOLS_FILE
    
-stringtie_VERSION=1.0.0
+stringtie_VERSION=1.0.3
 stringtie_FILE=stringtie-${stringtie_VERSION}.Linux_x86_64.tar.gz
 stringtie_URL=http://ccb.jhu.edu/software/stringtie/dl/$stringtie_FILE
 
@@ -320,12 +321,17 @@ Sailfish_VERSION=0.6.2
 Sailfish_FILE=Sailfish-${Sailfish_VERSION}-Linux_x86-64.tar.gz
 Sailfish_URL=http://github.com/kingsfordgroup/sailfish/releases/download/v$Sailfish_VERSION/$Sailfish_FILE
 
+# kallisto
+kallisto_VERSION=0.42.1
+kallisto_FILE=kallisto_linux-v$kallisto_VERSION.tar.gz
+kallisto_URL=https://github.com/pachterlab/kallisto/releases/download/v$kallisto_VERSION/$kallisto_FILE
+
 #
-rsem_VERSION=1.2.9
+rsem_VERSION=1.2.21
 rsem_FILE=rsem-${rsem_VERSION}.tar.gz
 rsem_URL=http://deweylab.biostat.wisc.edu/rsem/src/$rsem_FILE
 
-FUSIONMAP_VERSION=2015-01-09
+FUSIONMAP_VERSION=2015-03-31
 FUSIONMAP_FILE=FusionMap_${FUSIONMAP_VERSION}.zip
 FUSIONMAP_URL=http://omicsoft.com/fusionmap/Software/$FUSIONMAP_FILE
 
@@ -412,6 +418,8 @@ export IRAP_DIR=$IRAP_DIR
 export PATH=\$IRAP_DIR/bin/bowtie1/bin:\$IRAP_DIR/bin:\$IRAP_DIR/scripts:\$PATH
 export LD_LIBRARY_PATH=\$IRAP_DIR/lib:\$LD_LIBRARY_PATH:/usr/local/lib
 export CFLAGS="-I\$IRAP_DIR/include -I\$IRAP_DIR/include/bam -I\$IRAP_DIR/include/boost  \$CFLAGS"
+export R_LIBS_USER=$IRAP_DIR/Rlibs
+export R3_LIBS_USER=$IRAP_DIR/Rlibs3
 export CXXFLAGS="-I\$IRAP_DIR/include -I\$IRAP_DIR/include/bam -I\$IRAP_DIR/include/boost -L\$IRAP_DIR/lib \$CXXFLAGS"
 export PERL5LIB=\$IRAP_DIR/perl/lib/perl5:\$IRAP_DIR/lib/perl5:\$IRAP_DIR/lib/perl5/x86_64-linux:\$IRAP_DIR/lib/perl5/$PERL_VERSION
 export PYTHONUSERBASE=\$IRAP_DIR/python
@@ -426,6 +434,8 @@ export THREADS=8
 #export JOB_MAX_MEM 32000
 #export IRAP_LSF_PARAMS=
 EOF
+    mkdir -p $IRAP_DIR/Rlibs
+    mkdir -p $IRAP_DIR/Rlibs3
 }
 
 
@@ -787,9 +797,9 @@ function R_install {
     download_software R
     tar xzvf $R_FILE
     pushd R-${R_VERSION}
-    ./configure --prefix=$IRAP_DIR
+    CFLAGS=  CXXFLAGS= ./configure --prefix=$IRAP_DIR
     make clean
-    make -j $J
+    CFLAGS=  CXXFLAGS=  make -j $J
     make -j $J check
     make install
     popd
@@ -802,8 +812,10 @@ function R3_install {
     download_software R3
     tar xzvf $R3_FILE
     pushd R-${R3_VERSION}
-    ./configure --prefix=$IRAP_DIR/R3
+    export R_LIBS_USER=$IRAP_DIR/Rlibs3
+    CFLAGS=  CXXFLAGS= ./configure --prefix=$IRAP_DIR/R3
     make clean
+    CFLAGS=  CXXFLAGS=  make -j $J
     make -j $J
     make -j $J check
     make install
@@ -812,12 +824,14 @@ function R3_install {
     cat <<EOF > $IRAP_DIR/scripts/R3
 #!/bin/bash
 export PATH=\$IRAP_DIR/R3/bin:\$PATH
+export R_LIBS_USER=\$R3_LIBS_USER
 \$IRAP_DIR/R3/bin/R "\$@"
 EOF
     chmod +x $IRAP_DIR/scripts/R3
     cat <<EOF > $IRAP_DIR/scripts/Rscript3
 #!/bin/bash
 export PATH=\$IRAP_DIR/R3/bin:\$PATH
+export R_LIBS_USER=\$R3_LIBS_USER
 \$IRAP_DIR/R3/bin/Rscript "\$@"
 EOF
     chmod +x $IRAP_DIR/scripts/Rscript3
@@ -936,7 +950,7 @@ function bedtools_install {
 # Perl packages
 # TODO: move from cpan to cpanm
 function perl_cpan_install {
-    if [ -e ~/.cpan.irap.done ]; then
+    if [ -e $IRAP_DIR/.cpan.irap.done ]; then
 	pinfo "Skipping cpan init...already done"
     else
     pinfo "Initializing CPAN..."
@@ -977,20 +991,21 @@ EOF
 # 
     # upgrade cpan
     #cpan autobundle    
-    cpan -f -i App::cpanminus
-    cpanm -f -i YAML   < /dev/null
+    set +e
+    cpan  -f -i App::cpanminus
+    cpanm -n -f -i YAML   < /dev/null
     #cpanm -f -i Test::More@0.99 < /dev/null
-    cpanm -i -f ExtUtils::MakeMaker  < /dev/null 
+    cpanm -n -i -f ExtUtils::MakeMaker  < /dev/null 
     # perhaps install the latest perl?
-    cpan -u
+    cpan -f -u 
     # don't test
     #cpanm -n -i  Bundle::CPAN
-    cpanm -i  CPAN < /dev/null
-
+    cpanm -f -n -i  CPAN < /dev/null
+    set -e
     # set permissions 
     chmod +w $IRAP_DIR/bin/*
     pinfo "Configuring CPAN...done."
-    touch ~/.cpan.irap.done
+    touch $IRAP_DIR/.cpan.irap.done
   fi
 }
 
@@ -1020,8 +1035,8 @@ function perl_packages_install {
 
     set -e
     for p in $PACKAGES; do
-       pinfo "Package $p"
-       cpanm   $p < /dev/null
+       pinfo "************ Package $p"
+       cpanm  -f -n $p < /dev/null
     done
     set -e
     # the tests fail...
@@ -1058,6 +1073,7 @@ function R_packages_install {
     pinfo "Installing R packages..."
     R --no-save <<EOF
 repo<-"$CRAN_REPO"
+
 install.packages("multicore",repos=repo)
 install.packages("parallel",repos=repo)
 install.packages("intervals",repos=repo)
@@ -1150,8 +1166,9 @@ packages2install<-c("intervals","gclus",'R2HTML',"agricolae",
 for (p in packages2install ) {
    install.packages(p,repo=repo)
 }
-
-
+q()
+EOF
+   R3 --no-save <<EOF
 # bioconductor packages
 source("http://bioconductor.org/biocLite.R")
 packages2install<-c("Rsamtools",'edgeR',
@@ -1338,6 +1355,8 @@ function Sailfish_install {
     popd
     pinfo "Sailfish installation complete."    
 }
+
+
 ######################################################
 # rsem
 function rsem_install {
@@ -1350,6 +1369,20 @@ function rsem_install {
     cp rsem* extract-* convert-* $IRAP_DIR/bin/rsem/bin
     popd
     pinfo "rsem installation complete."    
+}
+
+
+######################################################
+# kallisto
+function kallisto_install {
+    pinfo "Installing kallisto..."
+    download_software kallisto
+    tar xzvf $kallisto_FILE
+    pushd kallisto_linux-v$kallisto_VERSION
+    mkdir -p $IRAP_DIR/bin/kallisto/bin
+    cp kallisto $IRAP_DIR/bin/kallisto/bin
+    popd
+    pinfo "kallisto installation complete."    
 }
 
 ######################################################
@@ -1393,8 +1426,10 @@ function quant_install {
     flux_capacitor_install
     scripture_install
     NURD_install
-    #stringtie_install
-    #rsem_install
+    stringtie_install
+    rsem_install
+    kallisto_install
+    fusionmap_install
     #IsoEM_install
     #Sailfish_install
     #mmseq_install
@@ -1576,7 +1611,7 @@ function new_jbrowse_install {
 
     pinfo "Uncompressing and installing jbrowse...extra PERL packages"
     perl_packages_install
-    cpan -i ExtUtils::MakeMaker
+    cpan -i ExtUtils::MakeMaker 
     cpan -i Module::CoreList
     cpan -f -i GD
     #

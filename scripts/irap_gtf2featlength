@@ -1,4 +1,5 @@
 #!/usr/bin/env Rscript3
+#; -*- mode: R;-*-
 # =========================================================
 # Copyright 2012-2015,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
 #
@@ -73,10 +74,13 @@ options(cores=num.cores)
 options(mc.cores=num.cores)
 options(warn=1)
 # Load gtf file
-pinfo("Loading gtf file ",opt$gtf_file)
-gtf <- load.gtf(opt$gtf_file)
-pinfo("Loading gtf file ",opt$gtf_file," complete.")
 colsOfInterest <- c("start","end","feature","gene_id","transcript_id","exon_number","exon_id")
+pinfo("Loading gtf file ",opt$gtf_file)
+gtf <- load.gtf(opt$gtf_file,selected.attr=colsOfInterest)
+pinfo("Loading gtf file ",opt$gtf_file," complete.")
+# add biotype column
+biotypes <- gtf[,biotype.column(gtf)]
+gtf$biotype <- biotypes
 pinfo(colnames(gtf))
 if ( sum(!colsOfInterest %in% colnames(gtf)) > 0 ) {
   perror("Missing data in GTF file:",colsOfInterest[!colsOfInterest %in% colnames(gtf)])
