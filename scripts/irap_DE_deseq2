@@ -67,7 +67,7 @@ suppressPackageStartupMessages(library(DESeq2))
 
 colData
 pinfo("Generating DESeq Dataset")
-ddsMat <- DESeqDataSetFromMatrix(countData = as.matrix(data.f),
+ddsMat <- DESeqDataSetFromMatrix(countData = as.matrix(data.f[,rownames(colData)]),
                                  colData = colData,
                                  design = formula(~ Contrast))
 
