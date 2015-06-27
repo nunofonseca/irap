@@ -206,7 +206,7 @@ function iRAP-Mapping_errors {
     if [ $? -eq 0 ]; then
 	echo "iRAP Mapping: no aligned reads in BAM"
     else
-	grep -F "bowtie2-align died with signal 11 (SEGV) (core dumped)" $errf
+	grep -E "bowtie2-align died with signal .* (core dumped)" $errf
 	if [ $? -eq 0 ]; then
 	    echo hostname=`hostname`
 	    echo "iRAP Mapping: bowtie2-align  crashed: `hostname`"
