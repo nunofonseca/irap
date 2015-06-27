@@ -224,7 +224,12 @@ function iRAP-Mapping-QC_errors {
 
 function iRAP-Quant_errors {
     errf=$1
-    echo "iRAP Mapping QC: unclassified error"
+    grep "Error occured when reading beginning of SAM/BAM file." $errf
+    if [ $? -eq 0 ]; then
+	echo "iRAP Quant: no aligned reads in BAM?"
+    else
+	echo "iRAP Quant: unclassified error"
+    fi
 }
 
 function iRAP-CRAM_errors {
