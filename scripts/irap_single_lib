@@ -205,8 +205,16 @@ function iRAP-Mapping_errors {
     grep "Error occured when reading beginning of SAM/BAM file." $errf
     if [ $? -eq 0 ]; then
 	echo "iRAP Mapping: no aligned reads in BAM"
+    else
+	grep -F "bowtie2-align died with signal 11 (SEGV) (core dumped)" $errf
+	if [ $? -eq 0 ]; then
+	    echo hostname=`hostname`
+	    echo "iRAP Mapping: bowtie2-align  crashed: `hostname`"
+	else
+	    echo "iRAP Mapping: unclassified error"
+	fi
+
     fi
-    echo "iRAP Mapping: unclassified error"
 }
 
 function iRAP-Mapping-QC_errors {
