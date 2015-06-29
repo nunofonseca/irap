@@ -99,7 +99,7 @@ function get_data_dir {
 function get_rs {
     # lookup in the conf file
     # 
-    d=`grep -E "^\s*._rs=" $conf | cut -f 2 -d\=`
+    d=`grep -E "^\s*.*_rs=" $1 | cut -f 2 -d\=`
     echo $d
 }
 
