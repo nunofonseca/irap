@@ -31,11 +31,16 @@ dir=`dirname $1`
 
 nreads=`echo $A| sed -E "s/.*Number of reads: ([0-9]+).?([0-9]*).*/\1 \2/" ` 
 qual_range=`echo $A| sed -E "s/.*Quality encoding range: ([0-9]+) ([0-9]+).*/\1 \2/" ` 
-qual=`echo $A| sed -E "s/.*Quality encoding: ([0-9]+).*/\1/" ` 
+qual=`echo $A| sed -E "s/.*Quality encoding: ([0-9]+|solexa).*/\1/" ` 
+
+
+if [ "$qual-"  == "solexa-" ]; then
+    echo "ERROR: Quality encoding not supported by iRAP -  $qual" > /dev/stderr
+    exit 1
+fi
+
 rs=`echo $A| sed -E "s/.*Read length: ([0-9]+).*/\1/" ` 
 rs_range=`echo $A| sed -E "s/.*Read length: ([0-9]+) ([0-9]+).*/\1 \2/" ` 
-
-
 # validate libname
 # if libname end with _{1,2} then change it
 libname=`echo $libname|sed -E "s/_([12])$/.\1/"`
