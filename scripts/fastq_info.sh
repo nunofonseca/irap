@@ -26,7 +26,7 @@ fi
 
 #
 #echo $A 
-libname=l`basename $1|sed -E "s/((_[12])?\.fastq[^ ]*)//" ` 
+libname=l`basename $1|sed -E "s/((_[12])?\.(fastq|fq)[^ ]*)//"`
 dir=`dirname $1` 
 
 nreads=`echo $A| sed -E "s/.*Number of reads: ([0-9]+).?([0-9]*).*/\1 \2/" ` 
