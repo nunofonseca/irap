@@ -783,7 +783,7 @@ $(1).osa
 endef
 
 define osa_gene_model_name=
-$(subst .gtf,,$(basename $(gtf_file)))
+$(subst _,.,$(subst .gtf,,$(basename $(gtf_file))))
 endef
 
 define osa_ref_lib_name=
@@ -793,7 +793,7 @@ endef
 # when an error occurs the exit status is 0!? :(
 #
 define run_osa_index=
-	irap_map.sh osa osa.exe --buildref `dirname $(1)` $(1) $(call osa_ref_lib_name,$(1)) &&\
+	irap_map.sh osa osa.exe --buildref $(call osa_index_dirname,$(1)) $(1) $(call osa_ref_lib_name,$(1)) &&\
 	irap_map.sh osa osa.exe --buildgm $(call osa_index_dirname,$(1)) $(gtf_file_abspath) $(call osa_ref_lib_name,$(1)) $(call osa_gene_model_name) &&\
 	ls $(shell dirname $(1))/ReferenceLibrary/$(call osa_ref_lib_name,$(1)).gindex1 &&\
 	touch $(call osa_index_filename,$(1))
