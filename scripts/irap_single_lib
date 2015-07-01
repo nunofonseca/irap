@@ -216,7 +216,12 @@ function iRAP-Mapping_errors {
 	    echo hostname=`hostname`
 	    echo "iRAP Mapping: bowtie2-align  crashed: `hostname`"
 	else
-	    echo "iRAP Mapping: unclassified error"
+	    grep -E "Error running.*tophat_reports" $errf
+	    if [ $? -eq 0 ]; then
+		echo "iRAP Mapping: internal tophat2 error"
+	    else
+		echo "iRAP Mapping: unclassified error"
+	    fi
 	fi
 
     fi
