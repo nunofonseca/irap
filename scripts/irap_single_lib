@@ -192,7 +192,12 @@ function iRAP-QC_errors {
 		    if [ $? -eq 0 ]; then
 			echo "QC: IO error?"
 		    else
-			echo "QC: unclassified error"
+			E=`grep "Premature End-Of-File" $errf`
+			if [ $? -eq 0 ]; then
+			    echo "QC: 1 no reads pass the quality threshold"
+			else
+			    echo "QC: unclassified error"
+			fi
 		    fi
 		fi
 	    fi
@@ -219,7 +224,9 @@ function iRAP-Mapping_errors {
 
 function iRAP-Mapping-QC_errors {
     errf=$1
+
     echo "iRAP Mapping QC: unclassified error"
+
 }
 
 function iRAP-Quant_errors {
