@@ -1,0 +1,141 @@
+#!/bin/sh
+#; -*- mode: Makefile;-*-
+#the next line restarts using\
+exec make --warn-undefined-variables -Rf "$0"  ${1+"$@"} 
+# =========================================================
+# Copyright 2015,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#    $Id: scripts/irap 0.1.1 Nuno Fonseca Fri Dec 21 01:07:37 2012$
+# =========================================================
+
+.SECONDARY: 
+.ONESHELL:
+
+SHELL=bash
+##################
+# Setup some paths
+# path to script
+path=.
+path?=$(shell if which irap_single_lib2report >/dev/null 2>/dev/null; then dirname $(MAKEFILE_LIST); else dirname `which irap_single_lib2report`; fi)
+
+ifdef path
+ PATH:=$(path):$(PATH)
+endif
+
+# Requires make 4.1 or above
+VERSION_OK=$(shell if [ `make --version|head -n 1 | cut -f3 -d\ ` \< 4.1 ]; then echo 0; else echo 1; fi )
+ifeq ($(VERSION_OK),0)
+ $(error make version needs to be 4.1 or above)
+endif
+
+################################################################################
+# Auxiliary functions
+################################################################################
+
+# Information messages
+define p_info=
+$(info $(shell date "+%H:%M:%S %d/%m/%Y * ") $(1))
+endef
+
+# Error messages
+define p_error=
+$(info $(shell date "+%H:%M:%S %d/%m/%Y") * ERROR: $(1)) && $(error Fatal error)
+endef
+
+# complain if a file does not exist and exit
+file_exists=$(if  $(realpath $(1)),,$(call p_error,$(1) not found))
+
+define pass_args_stdin=
+cat $(2) | $(1) -stdin 
+endef
+
+
+#Version and license info
+version=0.6.3d4
+
+#******************************
+# command line parameters
+
+ifeq ($(folders_file),) 
+$(call p_error,Missing folders_file parameter)
+endif
+
+ifeq ($(out),) 
+$(call p_error,Missing out parameter)
+endif
+
+ifeq ($(name),) 
+$(call p_error,Missing name parameter)
+endif
+
+# folders_file must exist
+$(call file_exists,$(folders_file))
+
+
+all: $(out) $(out)/genes.raw.tsv $(out)/genes.rpkm.tsv $(out)/exons.raw.tsv $(out)/exons.rpkm.tsv $(out)/bam.stats $(out)/bam.gene.stats
+	echo All done
+
+$(out)/.genes_raw_quants_file: $(folders_file) $(out) 
+	((cat $(folders_file) | while read n; do  for f in $$n; do find $$f -name "*genes.raw.*.tsv" -printf "%p "; done; done; ) > $@.tmp && echo \  >> $@.tmp && mv $@.tmp $@ ) 
+
+$(out)/.genes_rpkm_quants_file: $(folders_file) $(out) 
+	((cat $(folders_file) | while read n; do  for f in $$n; do find $$f -name "*genes.rpkm.*.tsv" -printf "%p "; done; done;  )  > $@.tmp && echo \  >> $@.tmp && mv $@.tmp $@ ) 
+
+$(out)/.exons_rpkm_quants_file: $(folders_file) $(out) 
+	((cat $(folders_file) | while read n; do for f in $$n; do find $$f -name "*exons.rpkm.*.tsv" -printf "%p "; done; done; )  > $@.tmp && echo \  >> $@.tmp && mv $@.tmp $@ ) 
+
+$(out)/.exons_raw_quants_file: $(folders_file) $(out) 
+	((cat $(folders_file) | while read n; do  for f in $$n; do find $$f -name "*exons.raw.*.tsv" -printf "%p "; done; done; ) > $@.tmp && echo \  >> $@.tmp && mv $@.tmp $@ ) 
+
+#$(out)/.bam_stats_files: $(folders_file) $(out) 
+#	((cat $(folders_file) | while read n; do  for f in $$n; do find $$f -name "*.bam.stats" -printf "%p "; done; done; ) > $@.tmp && echo \  >> $@.tmp && mv $@.tmp $@ ) 
+
+#$(out)/.bam_gene_stats_files: $(folders_file) $(out) 
+#	((cat $(folders_file) | while read n; do  for f in $$n; do find $$f -name "*.bam.gene.stats" -printf "%p "; done; done; ) > $@.tmp && echo \  >> $@.tmp && mv $@.tmp $@ ) 
+
+
+$(out):
+	mkdir -p $(out)
+
+# almost the same name as irap
+$(out)/genes.raw.tsv: $(out)/.genes_raw_quants_file
+	( $(call pass_args_stdin,irap_merge_tsv.sh,$^) ) > $@.tmp && mv $@.tmp $@
+
+$(out)/genes.rpkm.tsv: $(out)/.genes_rpkm_quants_file
+	( $(call pass_args_stdin,irap_merge_tsv.sh,$^) ) > $@.tmp && mv $@.tmp $@
+
+$(out)/exons.raw.tsv: $(out)/.exons_raw_quants_file
+	( $(call pass_args_stdin,irap_merge_tsv.sh,$^) ) > $@.tmp && mv $@.tmp $@
+
+$(out)/exons.rpkm.tsv: $(out)/.exons_rpkm_quants_file
+	( $(call pass_args_stdin,irap_merge_tsv.sh,$^) ) > $@.tmp && mv $@.tmp $@
+
+#$(out)/bam.stats: $(out)/.bam_stats_files
+#	( $(call pass_args_stdin,irap_merge_tsv.sh,$^) ) > $@.tmp && mv $@.tmp $@
+
+#$(out)/bam.gene.stats: $(out)/.bam_gene_stats_files
+#	( $(call pass_args_stdin,irap_merge_tsv.sh,$^) ) > $@.tmp && mv $@.tmp $@
+
+
+
+###################################################
+# FORCE the program to run even if files haven't changed
+FORCE:
+
+
