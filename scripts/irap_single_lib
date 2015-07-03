@@ -420,7 +420,9 @@ time_log_file=$odir/`get_fileprefix $f1`.time
 pinfo "Time log file in $time_log_file"
 touch $time_log_file
 
-
+cat <<EOF > $odir/cmd
+irap_single_lib $script_parameters
+EOF
 ########
 # Check if stage0 is ok
 set +e 
