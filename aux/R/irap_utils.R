@@ -1389,8 +1389,13 @@ load.annot <- function(file) {
 # returns NULL in case of failure
 quant.load <- function(f,clean.cuff=FALSE) {
   tsv.data <- NULL
-  tryCatch(tsv.data <- read.table(f,sep = "\t", header=T, quote = "\"",check.names=FALSE),error=function(x) NULL)
+  tryCatch(tsv.data <- read.table(f,sep = "\t", header=F, quote = "\"",check.names=FALSE),error=function(x) NULL)
   if ( !is.null(tsv.data) && ncol(tsv.data)>1 ) {
+    # add the header if there is one
+    if ( sum(grepl("(Gene|Exon|Transcript)",tsv.data[1,1],ignore.case=T))!=0 ) {
+      colnames(tsv.data) <- tsv.data[1,]
+      tsv.data <- tsv.data[-1,]
+    }
     rownames(tsv.data) <- as.character(tsv.data[,1])
     tsv.data <- tsv.data[,-1,drop=FALSE]
     if (clean.cuff) {
