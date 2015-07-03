@@ -470,6 +470,13 @@ else
     libs=`grep -E "^(se|pe)=" $folder/$f1_bn.info|sed "s/#//"`
     libname=`echo $libs|cut -f 2 -d=`
     libname_noprefix=`echo $libname |sed "s/^l//"`
+    # check if qual encoding is != from 33 and 64 - temporary fix
+    qual=`grep  "_qual=" $folder/$f1_bn.info|sed -E "s/^.*_qual=(.*)/\1/"`
+    if [ "$qual-" != "33-" ] && [ "$qual-" != "64" ]; then
+	rm -f $folder/$f1_bn.info
+	perror "Temporary workaround...please rerun to get the correct error."
+	exit 2
+    fi
 fi
 pinfo "Lib. details: $DATA_DIR/$folder/$f1_bn.info"
     
@@ -497,6 +504,7 @@ fi
 pinfo "QC and filtering..."
 run_AND_timeIt "iRAP-QC" $time_log_file  irap $irap_single_lib_options $irap_options stage1
 pinfo "QC and filtering...complete."
+
 
 pinfo "Aligning data..."
 run_AND_timeIt "iRAP-Mapping" $time_log_file  irap $irap_single_lib_options $irap_options stage2
