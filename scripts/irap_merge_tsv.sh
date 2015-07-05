@@ -49,7 +49,7 @@ lfiles_name_m=`mktemp`
 # merged file
 paste $f1.tmp $f1.tmp2 > $lfiles_name_m
 #echo $lfiles_name >&2
-echo -n "`basename $f1.tmp2` " > $lfiles_name
+echo -n "`basename $f1.tmp2`" > $lfiles_name
 for f in $*; do
     echo Comparing $f1 $f >&2    
     #cut -f 1 $f > b.tmp
@@ -63,7 +63,7 @@ for f in $*; do
     rm -f b.tmp
     grep -v CUFF $f| $filter_header | cut -f 2  | paste $lfiles_name_m - > $lfiles_name_m.tmp
     mv $lfiles_name_m.tmp $lfiles_name_m
-    echo -n "`basename $f.tmp2` " >> $lfiles_name
+    echo -n " `basename $f.tmp2`" >> $lfiles_name
 done
 echo  >> $lfiles_name
 # labels/header
