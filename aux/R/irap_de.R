@@ -1,4 +1,3 @@
-#!/bin/env Rscript
 # =========================================================
 #
 # This file is part of iRAP.
@@ -113,7 +112,7 @@ process.cmdline.args <- function(cmd) {
   pinfo(" min_count=",opt$min_count)
   pinfo(" Labels=",opt$labels.v)
   pinfo(" Contrasts=",opt$contrast.l)
-  pinfo(" Output prefix=",opt$opt$out)
+  pinfo(" Output prefix=",opt$out)
   ############################
   opt
 }
