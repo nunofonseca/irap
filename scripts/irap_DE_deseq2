@@ -143,7 +143,7 @@ res<-as.data.frame(res[order(res$padj),])
 
 ## annotate the gene list
 if ( !is.null(opt$annotation) && !is.na(opt$annotation)) {
-   res.annot <- res[order(res$pvalue),];
+   res.annot <- res[order(res$pval),];
    match.v  <- match(res.annot$id,opt$annot[,1]);
    res.annot <- cbind(res.annot,opt$annot[match.v,])
 } else {
