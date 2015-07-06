@@ -88,7 +88,8 @@ endif
 $(call file_exists,$(folders_file))
 
 
-all: $(out) $(out)/genes.raw.tsv $(out)/genes.rpkm.tsv $(out)/exons.raw.tsv $(out)/exons.rpkm.tsv $(out)/bam.stats $(out)/bam.gene.stats
+all: $(out) $(out)/genes.raw.tsv $(out)/genes.rpkm.tsv $(out)/exons.raw.tsv $(out)/exons.rpkm.tsv 
+#$(out)/bam.stats $(out)/bam.gene.stats
 	echo All done
 
 $(out)/.genes_raw_quants_file: $(folders_file) $(out) 
