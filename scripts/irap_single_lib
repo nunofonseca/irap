@@ -203,7 +203,6 @@ function fastqInfo_errors {
 
 function iRAP-QC_errors {
     errf=$1
-    
     E=`grep "mv: cannot stat.*filter1.stats"  $errf `
     if [ $? -eq 0 ]; then
 	print_classified_error "QC: 1 too short reads or below quality threshold"
@@ -228,7 +227,12 @@ function iRAP-QC_errors {
 			if [ $? -eq 0 ]; then
 			    print_classified_error "QC: 1 no reads pass the quality threshold"
 			else
-			    echo "QC: unclassified error"
+			    E=`grep "gzip: .*.gz: unexpected end of file" $errf`
+			    if [ $? -eq 0 ]; then
+				print_classified_error "gzip: unexpected end of file"			
+			    else
+				echo "QC: unclassified error"
+			    fi
 			fi
 		    fi
 		fi
