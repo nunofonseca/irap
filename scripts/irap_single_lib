@@ -239,16 +239,16 @@ function iRAP-QC_errors {
 
 function iRAP-Mapping_errors {
     errf=$1
-    grep "Error occured when reading beginning of SAM/BAM file." $errf
+    e=`grep "Error occured when reading beginning of SAM/BAM file." $errf`
     if [ $? -eq 0 ]; then
 	print_classified_error "iRAP Mapping: no aligned reads in BAM"
     else
-	grep -E "bowtie2-align died with signal .* (core dumped)" $errf
+	e=`grep -E "bowtie2-align died with signal .* (core dumped)" $errf`
 	if [ $? -eq 0 ]; then
 	    echo hostname=`hostname`
 	    print_classified_error "iRAP Mapping: bowtie2-align  crashed: `hostname`"
 	else
-	    grep -E "Error running.*tophat_reports" $errf
+	    e=`grep -E "Error running.*tophat_reports" $errf`
 	    if [ $? -eq 0 ]; then
 		print_classified_error "iRAP Mapping: internal tophat2 error"
 	    else
@@ -268,7 +268,7 @@ function iRAP-Mapping-QC_errors {
 
 function iRAP-Quant_errors {
     errf=$1
-    grep "Error occured when reading beginning of SAM/BAM file." $errf
+    e=`grep "Error occured when reading beginning of SAM/BAM file." $errf`
     if [ $? -eq 0 ]; then
 	print_classified_error "iRAP Quant: no aligned reads in BAM?"
     else
