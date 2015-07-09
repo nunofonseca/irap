@@ -8,6 +8,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \ 
 	build-essential \     
 	texlive \
+	xorg-x11-server-Xvfb \
 	zlibc \
 	zlib1g \
 	zlib1g-dev \
@@ -38,12 +39,13 @@ RUN apt-get update && apt-get install -y \
 	libpangocairo-1.0-0 \ 
 	libdb-dev \
 	openjdk-7-jre \
+	openjdk-7-jre-lib \
 	git \
 	bison \ 
 	poxml \
 	unzip \
 	wget \
-	graphviz
+	graphviz && apt-get clean
 #readline-devel 
 #libgfortran  
 #numpy 
@@ -57,9 +59,6 @@ RUN apt-get update && apt-get install -y \
 #gettext-devel   
 #db4-devel 
 #libdb-devel 
-
-#!	zlib1g-dev \
-RUN apt-get clean
 
 
 # 
