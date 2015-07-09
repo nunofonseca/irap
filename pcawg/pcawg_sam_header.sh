@@ -19,13 +19,16 @@ if [ ! -e "$meta_data_file" ]; then
    exit 1
 fi
 
+if [  "$file_prefix" == "icgc" ]; then                                            
+     file_prefix=$user_analysis_id                                                 
+fi   
 if [ ! -e $meta_data_file ]; then
     echo "ERROR: file $meta_data_file not found"  > /dev/stderr
     exit 1
 fi
 
 # 
-sample_metadata=`grep $file_prefix $meta_data_file|tr '\t' '|'`
+sample_metadata=`grep -F "$file_prefix" $meta_data_file|tr '\t' '|'`
 if [ "-$sample_metadata" = "-" ]; then
     echo "ERROR: Unable to find sample $file_prefix in $meta_data_file"  > /dev/stderr
     exit 1
@@ -41,11 +44,12 @@ sample_id_col=11
 submitter_sample_id_col=8
 lib_id_col=23
 read_group_label_col=24
-sample_uuid_col=25
-fastq_files_col=26
+#sample_uuid_col=25
+# removed 
+fastq_files_col=25
 
 #echo $sample_metadata
-for var in analysis_id fastq_files center_name platform platform_model sample_id submitter_sample_id sample_uuid lib_id read_group_label fastq_files; do
+for var in analysis_id fastq_files center_name platform platform_model sample_id submitter_sample_id  lib_id read_group_label fastq_files; do
     #echo $var
     col_var=${var}_col
     #echo ${!col_var}
@@ -53,7 +57,7 @@ for var in analysis_id fastq_files center_name platform platform_model sample_id
 done
 
 # print the variables
-for var in analysis_id fastq_files center_name platform platform_model sample_id submitter_sample_id lib_id read_group_label fastq_files sample_uuid; do
+for var in analysis_id fastq_files center_name platform platform_model sample_id submitter_sample_id lib_id read_group_label fastq_files ; do
     #echo $var=${!var}
     if [ "${!var}-" == "-" ]; then
 	echo "ERROR: Unable to get value for $var"  > /dev/stderr
@@ -66,6 +70,11 @@ if [ "$analysis_id" != "$user_analysis_id" ]; then
     exit 1
 fi
 
+                                                                                                                                                                                             
+# ICGC                                                                                                                                                               
+if [  "$file_prefix" = "$user_analysis_id" ]; then 
+    file_prefix=$fastq_files                                                      
+fi 
 
 #@PG already included
 cat << EOF

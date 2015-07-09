@@ -35,38 +35,51 @@ go:-
 handle_args([File]):-!,
 		     start_graph(File).
 
-handle_args([M,Q,N,D]):-!,
-    (valid_combination([M,Q,N,D,none,no])->
+handle_args([M,Q,NT,NM,D]):-!,
+    (valid_combination([M,Q,NT,NM,D,none,no])->
      format("valid~n",[])
     ;
      format("invalid~n",[])
     ).
-handle_args([M,Q,N,D,G]):-!,
-    (valid_combination([M,Q,N,D,G,no])->
+handle_args([M,Q,NT,NM,D,G]):-!,
+    (valid_combination([M,Q,NT,NM,D,G,no])->
      format("valid~n",[])
     ;
      format("invalid~n",[])
     ).
 
-handle_args([M,Q,N,D,G,StrandedData]):-!,
-    (valid_combination([M,Q,N,D,G,StrandedData])->
+handle_args([M,Q,NT,NM,D,G,StrandedData]):-!,
+    (valid_combination([M,Q,NT,NM,D,G,StrandedData])->
      format("valid~n",[])
     ;
      format("invalid~n",[])
     ).
 
 handle_args(_):-
-    format("ERROR! usage: irap_paths [ FILENAME | Mapper Quant Norm DE | Mapper Quant Norm DE GSE StrandedData@{yes,no}]~n",[]).
+    format("ERROR! usage: irap_paths [ FILENAME | Mapper Quant Norm DE | Mapper Quant NormTool NormMethod DE GSE StrandedData@{yes,no}]~n",[]).
 
 
-valid_combination([Map,QR,QN,DE,GSE,Stranded]):-
+valid_combination([Map,QR,QNT,QN,DE,GSE,Stranded]):-
     m(Map,_,_,S1),
     qr(QR,m(Map),_,S2),
-    qn(QN,qr(QR),_,S3),
+    valid_norm_selection(QR,QNT,QN),
     !,
-    (Stranded==yes->S1==stranded,stranded_ok(Stranded,S2),stranded_ok(Stranded,S3);true),
-    de(DE,(qr(QR),qn(QN)),_),
+    (Stranded==yes->S1==stranded,stranded_ok(Stranded,S2);true),
+    de(DE,qr(QR),_),
     gse(GSE,de(DE),_).
+
+% Quant method, Norm tool, Norm Method
+valid_norm_selection(_QR,none,_).
+valid_norm_selection(_QR,_,none).
+valid_norm_selection(_QR,irap,_).
+valid_norm_selection(cufflinks1,cufflinks1,rpkm).
+valid_norm_selection(cufflinks2,cufflinks2,rpkm).
+valid_norm_selection(cufflinks2_nd,cufflinks2_nd,rpkm).
+valid_norm_selection(cufflinks1_nd,cufflinks1_nd,rpkm).
+valid_norm_selection(stringtie,stringtie,rpkm).
+valid_norm_selection(stringtie_nd,stringtie_nd,rpkm).
+valid_norm_selection(nurd,nurd,rpkm).
+valid_norm_selection(flux_cap,flux_cap,rpkm).
 
 stranded_ok(yes,stranded).
 stranded_ok(yes,X):- not ground(X),!.
@@ -202,7 +215,7 @@ save_edges:-
     member(DE,DEs),
     not DE=='none',
     once(qr(QR,_,_,_)),
-    once(de(DE,(qr(QR),_),_)),
+    once(de(DE,qr(QR),_)),
     graph_format('~w -> ~w;~n',[QR,DE]),
     fail.
 
@@ -244,30 +257,31 @@ m('gem',_,'',no).
 m('star',_,'',no).
 m('osa',_,'',no).
 m('mapsplice',_,'',no).
+m('none',_,'',no).
 
 all_mappers(X):-all(M,m(M,_,_,_),X).
-all_quant([htseq1,htseq2,basic,flux_cap,cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,nurd,stringtie,stringtie_nd]).
-all_quant_norm([flux_cap,cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,none,deseq,stringtie,stringtie_nd]).
+all_quant([htseq1,htseq2,basic,flux_cap,cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,nurd,stringtie,stringtie_nd,rsem,kallisto]).
+all_quant_norm([flux_cap,cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,none,deseq,stringtie,stringtie_nd,rsem,irap]).
 all_de([deseq,edger,voom,cuffdiff1,cuffdiff2,cuffdiff1_nd,cuffdiff2_nd,deseq2,none]).
 
-qr('htseq1',m(M),'Only requires the NH flag defined',stranded):-m(M,_,_,_S).
-qr('htseq2',m(M),'Only requires the NH flag defined',stranded):-m(M,_,_,_S).
-qr('basic',m(M),'',S):-m(M,_,_,S).
-qr('cufflinks1',m(M),'BAM flags...',stranded):-m(M,_,_,_S),not member(M,[soapsplice]).
-qr('cufflinks1_nd',m(M),'BAM flags...',stranded):-m(M,_,_,_S),not member(M,[soapsplice]).
-qr('cufflinks2',m(M),'BAM flags...',stranded):-m(M,_,_,_S),not member(M,[soapsplice]).
-qr('cufflinks2_nd',m(M),'BAM flags...',stranded):-m(M,_,_,_S),not member(M,[soapsplice]).
-qr('stringtie',m(M),'BAM flags...',stranded):-m(M,_,_,_S),not member(M,[soapsplice]).
-qr('stringtie_nd',m(M),'BAM flags...',stranded):-m(M,_,_,_S),not member(M,[soapsplice]).
-qr('flux_cap',m(M),'',no):-m(M,_,_,_S).
-qr('scripture',m(M),'',no):-m(M,_,_,_S).
-qr('nurd',m(M),'',no):-m(M,_,_,_S).
+qr('htseq1',m(M),'Only requires the NH flag defined',stranded):-m(M,_,_,_S),not M==none.
+qr('htseq2',m(M),'Only requires the NH flag defined',stranded):-m(M,_,_,_S),not M==none.
+qr('basic',m(M),'',S):-m(M,_,_,S),not M==none.
+qr('cufflinks1',m(M),'BAM flags...',stranded):-m(M,_,_,_S),not member(M,[soapsplice,none]).
+qr('cufflinks1_nd',m(M),'BAM flags...',stranded):-m(M,_,_,_S),not member(M,[soapsplice,none]).
+qr('cufflinks2',m(M),'BAM flags...',stranded):-m(M,_,_,_S),not member(M,[soapsplice,none]).
+qr('cufflinks2_nd',m(M),'BAM flags...',stranded):-m(M,_,_,_S),not member(M,[soapsplice,none]).
+qr('stringtie',m(M),'BAM flags...',stranded):-m(M,_,_,_S),not member(M,[soapsplice,none]).
+qr('stringtie_nd',m(M),'BAM flags...',stranded):-m(M,_,_,_S),not member(M,[soapsplice,none]).
+qr('flux_cap',m(M),'',no):-m(M,_,_,_S),not M==none.
+qr('scripture',m(M),'',no):-m(M,_,_,_S),not M==none.
+qr('nurd',m(M),'',no):-m(M,_,_,_S),not M==none.
+qr('rsem',m(star),'',no).
+qr('kallisto',m(none),'',no).
 %qr('ireckon',m(M),''):-m(M,_,_).
 %qr('bitseq',m(M),''):-m(M,_,_).
-%qr('rsem',m(M),''):-m(M,_,_).
 %qr('isoem',m(M),''):-m(M,_,_).
 %qr('sailfish',m(M),''):-m(M,_,_).
-
 qr(none,m(M),'',_):-m(M,_,_,_S).
 
 qn(cufflinks1,qr(cufflinks1),_,stranded).
@@ -278,22 +292,21 @@ qn(nurd,qr(nurd),_,no).
 qn(stringtie,qr(stringtie),_,no).
 qn(stringtie_nd,qr(stringtie_nd),_,no).
 qn(flux_cap,qr(flux_cap),_,no).
-qn(deseq,qr(QR),_,_):-member(QR,[flux_cap,basic,htseq1,htseq2]).
-qn(deseq2,qr(QR),_,_):-member(QR,[flux_cap,basic,htseq1,htseq2]).
+qn(deseq,qr(QR),_,_):-member(QR,[stringtie,flux_cap,basic,htseq1,htseq2]).
+qn(deseq2,qr(QR),_,_):-member(QR,[stringtie,flux_cap,basic,htseq1,htseq2]).
 qn(none,qr(_),_,_).
 
 
-de(deseq,(qr(QR),qn(QN)),_):-all_quant(ALL_QN),member(QR,ALL_QN),all_quant_norm(ALL_QNorm),member(QN,ALL_QNorm).
-de(deseq2,(qr(QR),qn(QN)),_):-all_quant(ALL_QN),member(QR,ALL_QN),all_quant_norm(ALL_QNorm),member(QN,ALL_QNorm).
-de(edger,(qr(QR),qn(QN)),_):-all_quant(ALL_QN),member(QR,ALL_QN),all_quant_norm(ALL_QNorm),member(QN,ALL_QNorm).
-de(voom,(qr(QR),qn(QN)),_):-all_quant(ALL_QN),member(QR,ALL_QN),all_quant_norm(ALL_QNorm),member(QN,ALL_QNorm).
-%de(dexseq,(qr(QR),qn(QN)),_):-member(QR,[htseq1,htseq2,basic,flux_cap]),member(QN,[deseq,flux_cap,none]).
+de(deseq,qr(QR),_):-all_quant(ALL_QN),member(QR,ALL_QN).
+de(deseq2,qr(QR),_):-all_quant(ALL_QN),member(QR,ALL_QN).
+de(edger,qr(QR),_):-all_quant(ALL_QN),member(QR,ALL_QN).
+de(voom,qr(QR),_):-all_quant(ALL_QN),member(QR,ALL_QN).
 %de(bayseq,(qr(QR),qn(QN)),_):-member(QR,[htseq1,htseq2,basic,flux_cap]),member(QN,[deseq,flux_cap,none]).
-de(cuffdiff1,(qr(QR),qn(QR)),_):-member(QR,[cufflinks1,cufflinks2]).
-de(cuffdiff2,(qr(QR),qn(QR)),_):-member(QR,[cufflinks1,cufflinks2]).
-de(cuffdiff1_nd,(qr(QR),qn(QR)),_):-member(QR,[cufflinks1_nd,cufflinks2_nd]).
-de(cuffdiff2_nd,(qr(QR),qn(QR)),_):-member(QR,[cufflinks1_nd,cufflinks2_nd]).
-de(none,(qr(_),qn(_)),_).
+de(cuffdiff1,qr(QR),_):-member(QR,[cufflinks1,cufflinks2]).
+de(cuffdiff2,qr(QR),_):-member(QR,[cufflinks1,cufflinks2]).
+de(cuffdiff1_nd,qr(QR),_):-member(QR,[cufflinks1_nd,cufflinks2_nd]).
+de(cuffdiff2_nd,qr(QR),_):-member(QR,[cufflinks1_nd,cufflinks2_nd]).
+de(none,qr(_),_).
 %de(edger,(qr(QR),_),_):-member(QR,[htseq1,htseq2,basic,flux_cap]).
 
 

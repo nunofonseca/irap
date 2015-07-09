@@ -430,6 +430,11 @@ colnames(table.html)
 title <- opt$title
 sources.menu <- ""
 #head(uncut.table)
+if ( ! "biotype" %in% colnames(uncut.table) && "biotype" %in% colnames(uncut.table)) {
+  uncut.table$biotype=uncut.table$source
+  pinfo("biotype column not found...using source column (back compatibility)")
+}
+
 init.source.filter(uncut.table,id.col=fields$URL.FIELD.ID)
 sources.menu <- get.source.filter.menu(opt$out)
 
@@ -475,6 +480,7 @@ gen.page <- function (o.html.file) {
 pdebug.save.state("tsvDE2html2","p3")
 
 
+
 filt.name <- "All"
 o.html.file <-paste(opt$out,".html",sep="")
 file.prefix <- opt$out
@@ -486,7 +492,7 @@ gen.page(o.html.file)
 for (filt.name  in get.source.filter.names() ) {
   uncut.table <- uncut.table.orig
   if ( filt.name!="All" && filt.name!="all") {
-    if (! "source" %in% colnames(table)) {
+    if (! "biotype" %in% colnames(uncut.table)) {
       table.html <- table[NULL,fields$cols2sel]
       table.tsv <- otable.tsv.orig[NULL,fields$cols2tsv]
       uncut.table <- table.tsv

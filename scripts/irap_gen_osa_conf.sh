@@ -43,6 +43,6 @@ InsertOnSameStrand=False // Possible values: True, False. Default value=False
 <Output>
 OutputName=$outfile
 OutputPath=$outdir 
-
+TempPath=$outdir/tmp
 EOF
 exit 0

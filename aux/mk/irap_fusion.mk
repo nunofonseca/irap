@@ -116,21 +116,36 @@ endef
 # Use the BAMs
 $(name)/$(mapper)/fusionmap/%.fusion.tsv: $(name)/$(mapper)/%.se.hits.bam $(name)/data/fusionmap/fusionmap.index $(name)/data/fusionmap/fusionmap.gm
 	$(call run_fusionmap,$*,$<,se,$@.tmp) && mv $@.tmp $@
+
 $(name)/$(mapper)/fusionmap/%.fusion.tsv: $(name)/$(mapper)/%.pe.hits.bam $(name)/data/fusionmap/fusionmap.index $(name)/data/fusionmap/fusionmap.gm
 	$(call run_fusionmap,$*,$<,pe,$@.tmp)  && mv $@.tmp $@
+
+$(name)/$(mapper)/fusionmap/%.fusion.sum.tsv: $(name)/$(mapper)/fusionmap/%.fusion.tsv
+	irap_Fusion_fm2descr --tsv "$^" --gtf $(gtf_file_abspath) -c $(max_threads)  -o $@.tmp && mv $@.tmp $@
 
 ############################
 # Add to stage3 output files
 FUSION_LIB_TARGETS=$(foreach p,$(pe),$(call lib2fusion_folder,$(p))$(p).fusion.tsv) $(foreach s,$(se),$(call lib2fusion_folder,$(s))$(s).fusion.tsv)
 
-STAGE3_S_TARGETS+=$(FUSION_LIB_TARGETS)
 
-STAGE3_OUT_FILES+=$(name)/$(mapper)/fusionmap/fusionmap_readcounts.tsv
+STAGE3_S_TARGETS+=$(FUSION_LIB_TARGETS) 
+
+ifdef sop
+ifeq ($(sop),pawg3_th2_mapping)
+STAGE3_S_TARGETS+=$(foreach p,$(pe),$(call lib2fusion_folder,$(p))$(p).fusion.sum.tsv) $(foreach s,$(se),$(call lib2fusion_folder,$(s))$(s).fusion.sum.tsv)
+FUSION_TARGETS+=$(foreach p,$(pe),$(call lib2fusion_folder,$(p))$(p).fusion.sum.tsv) $(foreach s,$(se),$(call lib2fusion_folder,$(s))$(s).fusion.sum.tsv)
+endif
+endif
+
+STAGE3_OUT_FILES+=$(name)/$(mapper)/fusionmap/fusionmap_readcounts.tsv $(name)/$(mapper)/fusionmap/fusionmap_fusions.tsv
+FUSION_TARGETS+=$(FUSION_LIB_TARGETS)
 
 # counts file
 $(name)/$(mapper)/fusionmap/fusionmap_readcounts.tsv:  $(FUSION_LIB_TARGETS)
 	$(call pass_args_stdin,irap_Fusion_fm2tsv,$@.tmp, --tsv "$^" -o $@.tmp) && mv $@.tmp $@
 
+$(name)/$(mapper)/fusionmap/fusionmap_fusions.tsv:  $(FUSION_LIB_TARGETS)
+	$(call pass_args_stdin,irap_Fusion_fm2descr,$@.tmp, --tsv "$^"  -c $(max_threads) --gtf $(gtf_file_abspath) -o $@.tmp) && mv $@.tmp $@
 
 
 endif

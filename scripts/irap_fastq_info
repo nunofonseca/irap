@@ -68,7 +68,8 @@ endef
 file_exists=$(if  $(realpath $(1)),,$(call p_error,$(1) not found))
 
 
-version=0.6.2p1
+version=0.7.0
+
 pname=irap_fastq_info
 
 ################################################################################
@@ -104,7 +105,7 @@ filter_2_files_with_pair=$(sort $(foreach f,$(1), $(call not_pair2,$(f),$(filter
 
 # $1 _2 file
 # files
-not_pair2=$(if $(call pair2_1,$(1),$(2)),,$(if $(call pair2_2,$(1),$(2)),,$(if $(call pair2_3,$(1),$(2)),,$(if $(call pair2_4,$(1),$(2)),,$(1)))))
+not_pair2=$(if $(call pair2_1,$(1),$(2)),,$(if $(call pair2_2,$(1),$(2)),,$(if $(call pair2_3,$(1),$(2)),,$(if $(call pair2_4,$(1),$(2)),,$(if $(call pair2_5,$(1),$(2)),,$(if $(call pair2_6,$(1),$(2)),,$(1)))))))
 
 
 # check if the given filename corresponds to the second file of a PE library
@@ -112,6 +113,8 @@ pair2_1=$(filter $(subst _2.fastq,_1.fastq,$(1)),$(2))
 pair2_2=$(filter $(subst _R2_001.fastq,_R1_001.fastq,$(1)),$(2))
 pair2_3=$(filter $(subst _read2_,_read1_,$(1)),$(2))
 pair2_4=$(filter $(subst _2_sequence,_1_sequence,$(1)),$(2))
+pair2_5=$(filter $(subst .fastq2,.fastq1,$(1)),$(2))
+pair2_6=$(filter $(subst _2.fq,_1.fq,$(1)),$(2))
 
 
 # check if the files exists
@@ -170,6 +173,22 @@ $(foreach f,$(read1_files2),$(eval $(call make_read1_rule2,$(f))))
 	fastq_info.sh $^  > $@.tmp && mv $@.tmp $@
 
 %_1.fastq.info: %_1.fastq %_2.fastq
+	fastq_info.sh $^  > $@.tmp && mv $@.tmp $@
+
+%.fastq1.info: %.fastq1 %.fastq2
+	fastq_info.sh $^  > $@.tmp && mv $@.tmp $@
+
+
+%.fq.info: %.fq
+	fastq_info.sh $^  > $@.tmp && mv $@.tmp $@
+
+%_1.fq.info: %_1.fq %_2.fq
+	fastq_info.sh $^  > $@.tmp && mv $@.tmp $@
+
+%.fq.gz.info: %.fq.gz
+	fastq_info.sh $^  > $@.tmp && mv $@.tmp $@
+
+%_1.fq.gz.info: %_1.fq.gz %_2.fq.gz
 	fastq_info.sh $^  > $@.tmp && mv $@.tmp $@
 
 

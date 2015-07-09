@@ -1,4 +1,5 @@
 #!/usr/bin/env Rscript3
+#; -*- mode: R;-*-
 # =========================================================
 # Copyright 2012-2015,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
 #
@@ -43,13 +44,13 @@ option_list <- list(
   make_option(c("-o", "--out"),type="character",dest="out_file",default="",help="Output file [default %default]"),
   make_option(c("-c", "--cores"), type="character",default="1",dest="num_cores",help="Number of cores to use ([default %default])"),
   make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
-  make_option(c("-r","--rdata"),action="store_true",dest="gen_rdata",default=FALSE,help="Generate an rdata file"),
+  make_option(c("-r","--rdata"),action="store_true",dest="gen_rdata",default=FALSE,help="Generate a rdata file"),
   make_option(c("-i", "--gtf"), type="character", dest="gtf_file", default=NULL,help="GTF file")
 )
 
 
 filenames <- c("gtf_file") ;#filenames that must exist (if defined)
-# check multiple options values
+                                        # check multiple options values
 multiple.options = list()
 mandatory <- c("gtf_file","out_file")
 opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
@@ -72,8 +73,6 @@ if ( num.cores>detectCores()) {
   pwarning("The number of cores to use exceeds the cores available. Reducing the limit to ",detectCores())
 }
 
-
-
 pdebug.enabled <- opt$debug
 # Disabling multicores due to an error with  RSQLite driver (mm)
 #num.cores <- 1
@@ -81,20 +80,25 @@ pdebug.enabled <- opt$debug
 options(cores=num.cores)
 options(mc.cores=num.cores)
 
+cols.needed <- c("transcript_id","gene_id","seqid","start","end","strand","source","exon_number","biotype")
+
 gtf.table <- NULL
-gtf.table <- load.gtf(opt$gtf)
+gtf.table <- load.gtf(opt$gtf,selected.attr=cols.needed)
 
 pinfo("GTF file loaded: ",opt$gtf," ",nrow(gtf.table)," entries")
 #
 pdebug.save.state("irap_gtf2mapping","p0")
 
 # check if we have all columns
-cols.needed <- c("transcript_id","gene_id","seqid","start","end","strand","source","exon_number")
 cols.missing <- cols.needed[!cols.needed %in% colnames(gtf.table)]
 if (length(cols.missing)>0) {
+  pinfo("Found in GTF: ",paste(colnames(gtf.table),sep=","))
   perror("Information missing from GTF file:",cols.missing)
   q(status=1)
 }
+# biotype column
+biotypes <- gtf.table[,biotype.column(gtf.table)]
+gtf.table$biotype <- biotypes
 #
 # exon table
 # exon id=gene+trans+exon number
@@ -109,7 +113,7 @@ pinfo("#Exons:",nrow(exons.f))
 exons.f$source <- unlist(mclapply(exons.f$ID,get.source))
 exons.f$transcript_ids<- unlist(mclapply(exons.f$ID,get.transcripts))
 # filter and reorder the columns
-exons.f <- exons.f[,c("ID","gene_id","exon_number","seqid","start","end","strand","source","transcript_ids")]
+exons.f <- exons.f[,c("ID","gene_id","exon_number","seqid","start","end","strand","source","transcript_ids","biotype")]
 exons.f <- unique(exons.f)
 
 ##############
@@ -117,7 +121,7 @@ exons.f <- unique(exons.f)
 pinfo("#Transcripts:",nrow(exons.f))
 trans.f <- gtf.table[gtf.table$feature=="CDS",cols.needed]
 trans.f$ID <- trans.f$transcript_id
-trans.f <- trans.f[,c("ID","gene_id","seqid","start","end","strand","source")]
+trans.f <- trans.f[,c("ID","gene_id","seqid","start","end","strand","source","biotype")]
 
 #
 pdebug.save.state("irap_gtf2mapping","p3")

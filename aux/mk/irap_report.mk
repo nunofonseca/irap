@@ -33,18 +33,60 @@ ifndef report_qc_only
 report_qc_only=n
 endif
 
+
+# 1- pat
+define quiet_ls=
+$(shell ls --color=never -1 $(1) 2>/dev/null)
+endef
+# 1 - pat
+# return only the the first file (most recent file)
+define quiet_ls1=
+$(shell ls --color=never -1 -t $(1) 2>/dev/null| head -n 1)
+endef
+
+##################
+# the report will be generated for which combinations of tools?
+ifdef report_find_files
+report_mappers:=$(mapper)
+report_quant:=$(SUPPORTED_QUANT_METHODS)
+report_equant:=$(SUPPORTED_EXON_QUANT_METHODS)
+report_de:=$(SUPPORTED_DE_METHODS)
+report_norm_methods:=$(SUPPORTED_NORM_METHODS)
+report_norm_tools:=$(SUPPORTED_NORM_TOOLS)
+else
+# by default generate a report only for the options selected in the conf. file
+ifneq ($(mapper),none)
+report_mappers?=$(mapper)
+endif
+ifneq ($(quant_method),none)
+report_quant?=$(quant_method)
+endif
+ifeq ($(exon_quant),y)
+report_equant?=$(SUPPORTED_EXON_QUANT_METHODS)
+else
+report_equant?=
+endif
+report_de?=$(de_method)
+#ifneq ($(quant_norm_tool),none)
+report_norm_methods?=$(quant_norm_method)
+report_norm_tools?=$(quant_norm_tool)
+#endif
+endif
+
+#$(foreach v,report_mappers report_quant report_equant report_de, $(info $(v)=$($(v))))
+#################################################################
 # useful functions
 define set_MAPPING_DIRS=
-$(eval override MAPPING_DIRS:=$(name)/$(mapper))
+$(eval override MAPPING_DIRS:=$(foreach m,$(report_mappers), $(call quiet_ls, -d $(name)/$(m))))
 endef
 #$(eval override MAPPING_DIRS:=$(shell ls --color=never -d -1 $(name)/{$(shell echo $(SUPPORTED_MAPPERS) | sed 's/ /,/g')}  2>/dev/null ))
 
 define set_QUANT_DIRS=
-$(eval override QUANT_DIRS:=$(shell ls -d -1 $(shell echo $(foreach d,$(call mapping_dirs),$d/{$(shell echo $(SUPPORTED_QUANT_METHODS)| sed 's/ /,/g')})) 2>/dev/null ))
+$(eval override QUANT_DIRS:=$(shell ls --color=never -d -1 $(shell echo $(foreach d,$(call mapping_dirs),$(foreach q,$(report_quant), $d/$q))) 2>/dev/null ))
 endef
 
 define set_DE_DIRS=
-$(eval override DE_DIRS:=$(shell ls -d -1 $(shell echo $(foreach d,$(call quant_dirs),$(d)/{$(shell echo $(SUPPORTED_DE_METHODS)| sed 's/ /,/g')})) 2>/dev/null))
+$(eval override DE_DIRS:=$(shell ls --color=never -d -1 $(shell echo $(foreach d,$(call quant_dirs),$(d)/{$(shell echo $(report_de)| sed 's/ /,/g')})) 2>/dev/null))
 endef
 
 # 1 - exp name
@@ -59,10 +101,26 @@ define set_DE_HTML_FILES=
 $(eval override  DE_HTML_FILES=$(subst $(name)/,$(name)/report/,$(foreach d,$(call de_dirs,$(1)),$(foreach c,$(contrasts),$(subst .tsv,.html,$(call quiet_ls,$(d)/$(c)*_de.tsv))))))
 endef
 
-# mapper quant raw|nlib|rpkm gene|exon|trans
+# mapper quant raw|nlib|rpkm gene|trans
 define quant_target=
-$(if $(call file_not_empty,$(call quiet_ls1,$(name)/$(1)/$(2)/$(4)s.$(3).*.tsv)), $(name)/report/quant/$(1)_x_$(2)/$(4).$(3).html, )
+$(if $(call file_not_empty,$(call quiet_ls1,$(name)/$(1)/$(2)/$(4)s.$(3).$(2).tsv)), $(name)/report/quant/$(1)_x_$(2)/$(4)s.$(3).$(2).html, )
 endef
+
+# exon
+define equant_target=
+$(if $(call file_not_empty,$(call quiet_ls1,$(name)/$(1)/$(2)/exons.$(3).$(4).tsv)), $(name)/report/quant/$(1)_x_$(2)/exons.$(3).$(4).html, )
+endef
+
+# mapper gene_quant nm level nt
+define nquant_target=
+$(if $(call file_not_empty,$(call quiet_ls1,$(name)/$(1)/$(2)/$(4)s.$(3).$(2).$(5).tsv)), $(name)/report/quant/$(1)_x_$(2)/$(4)s.$(3).$(2).$(5).html, )
+endef
+
+# mapper quant_method norm_method norm_tool exon_quant_method
+define enquant_target=
+$(if $(call file_not_empty,$(call quiet_ls1,$(name)/$(1)/$(2)/exons.$(3).$(5).$(4).tsv)), $(name)/report/quant/$(1)_x_$(2)/exons.$(3).$(5).$(4).html, ) 
+endef
+
 
 define file_not_empty=
 $(if $(call is_empty_file,$(1)),,$(1))
@@ -149,16 +207,6 @@ define  gen_htseq_report=
 	$(if $(3),irap_htseq_report.R $(2) $(3) $(de_min_count) && touch $(1),)
 endef
 
-# 1- pat
-define quiet_ls=
-$(shell ls -1 $(1) 2>/dev/null)
-endef
-
-# 1 - pat
-# return only the the first file (most recent file)
-define quiet_ls1=
-$(shell ls -1 -t $(1) 2>/dev/null| head -n 1)
-endef
 
 ifndef IRAP_REPORT_MAIN_OPTIONS
 IRAP_REPORT_MAIN_OPTIONS=
@@ -183,8 +231,12 @@ phony_targets+=report_setup clean_report
 
 report_setup: $(call must_exist,$(name)/report) $(call must_exist,$(name)/report/mapping/) $(call must_exist,$(name)/report/de/) $(call must_exist,$(name)/report/quant/) $(call rep_browse,report_browser_setup) $(call must_exist,$(name)/report/irap.css) $(call must_exist,$(name)/report/menu.css) $(feat_mapping_file)
 
+SETUP_DATA_FILES+=report_setup
+
 $(name)/report/:
 	mkdir -p $@
+$(name)/report: $(name)/report/
+
 
 $(name)/report/mapping/:
 	mkdir -p $@
@@ -255,7 +307,7 @@ mapping_report: report_setup $(call mapping_report_targets)
 
 
 # files required for producing the mapping report
-MAPPING_REPORT_PRE_STATS=$(foreach p,$(pe),$(name)/$(mapper)/$($(p)_dir)$(p).pe.hits.bam.stats $(name)/$(mapper)/$($(p)_dir)$(p).pe.hits.bam.stats.csv $(name)/$(mapper)/$($(p)_dir)$(p).pe.hits.bam.gene.stats) $(foreach s,$(se),$(name)/$(mapper)/$($(s)_dir)$(s).se.hits.bam.stats.csv $(name)/$(mapper)/$($(s)_dir)$(s).se.hits.bam.gene.stats $(name)/$(mapper)/$($(s)_dir)$(s).se.hits.bam.stats) 
+MAPPING_REPORT_PRE_STATS=$(foreach m,$(call mapping_dirs),  $(foreach p,$(pe),$(m)/$($(p)_dir)$(p).pe.hits.bam.stats $(m)/$($(p)_dir)$(p).pe.hits.bam.stats.csv $(m)/$($(p)_dir)$(p).pe.hits.bam.gene.stats) $(foreach s,$(se),$(m)/$($(s)_dir)$(s).se.hits.bam.stats.csv $(m)/$($(s)_dir)$(s).se.hits.bam.gene.stats $(m)/$($(s)_dir)$(s).se.hits.bam.stats))
 
 # merge into a single file the statistics collected from the BAMs 
 $(name)/%/stats_raw.tsv $(name)/%/stats_perc.tsv:  $(foreach p,$(pe),$(name)/%/$($(p)_dir)$(p).pe.hits.bam.stats.csv) $(foreach s,$(se),$(name)/%/$($(s)_dir)$(s).se.hits.bam.stats.csv)
@@ -269,15 +321,16 @@ $(name)/%/genestats_raw.tsv $(name)/%/genestats_perc.tsv:  $(foreach p,$(pe),$(n
 	$(call pass_args_stdin,merge_featstats,$(name)/$*/genestats_raw.tsv, --stats "$(call remove_spaces,$(foreach p,$(pe),;$(name)/$*/$($(p)_dir)$(p).pe.hits.bam.gene.stats))$(call remove_spaces,$(foreach p,$(se),;$(name)/$*/$($(p)_dir)$(p).se.hits.bam.gene.stats))"  --labels "$(call remove_spaces,$(foreach p,$(pe) $(se),;$(p)))"  --out $(name)/$*/$*.gtmp) && mv $(name)/$*/$*.gtmp_featstats_raw.tsv $(name)/$*/genestats_raw.tsv && mv $(name)/$*/$*.gtmp_featstats_perc.tsv $(name)/$*/genestats_perc.tsv
 
 # 
-print_mapping_report_req: $(name)/report/mapping/%.html_req
+print_mapping_report_req: $(foreach m,$(mapping_dirs),$(name)/report/mapping/$(m).html_req)
 $(name)/report/mapping/%.html_req:
 	echo $(MAPPING_REPORT_PRE_STATS)
 
 $(name)/report/mapping/%.html_doreq: $(MAPPING_REPORT_PRE_STATS)
 	@echo "done"
 
-
-
+# files required to produce the mapping report
+mapping_report_req: $(MAPPING_REPORT_PRE_STATS)
+	@echo "done"
 
 # Mapping report for a specific mapper
 $(name)/report/mapping/%.html: $(name)/%/  $(conf) $(call must_exist,$(name)/report/mapping/)  $(name)/%/stats_raw.tsv $(name)/%/stats_perc.tsv  $(name)/%/featstats_raw.tsv $(name)/%/featstats_perc.tsv  $(name)/%/genestats_raw.tsv 
@@ -344,8 +397,9 @@ silent_targets+=quant_report quant_report_files
 # $(eval override QUANT_HTML_FILES=$(foreach q,$(SUPPORTED_QUANT_METHODS),$(foreach m,$(SUPPORTED_MAPPERS),$(foreach f,gene exon transcript,$(foreach metric,raw nlib rpkm,$(call quant_target,$(m),$(q),$(metric),$(f)) ))))) $(QUANT_HTML_FILES)
 # endef
 
+# based on raw quantification and normalized expression values
 define set_QUANT_HTML_FILES=
-$(eval override QUANT_HTML_FILES=$(foreach f,$(foreach q,$(SUPPORTED_QUANT_METHODS),$(foreach m,$(mapper),$(foreach f,gene exon transcript,$(foreach metric,raw nlib rpkm,$(call quant_target,$(m),$(q),$(metric),$(f)) )))),$(if $(call is_empty_file,$(f)),,$(f)) )) $(QUANT_HTML_FILES)
+$(eval override QUANT_HTML_FILES=$(foreach f,$(foreach q,$(report_quant),$(foreach m,$(report_mappers),$(foreach l,gene transcript, $(foreach metric,raw nlib,$(call quant_target,$(m),$(q),$(metric),$(l)))))),$(f)) $(foreach f,$(foreach eqm,$(report_equant),$(foreach q,$(report_quant),$(foreach m,$(mapper),$(call equant_target,$(m),$(q),raw,$(eqm))))),$(f)) $(foreach f,$(foreach nm,$(report_norm_methods),$(foreach q,$(report_quant),$(foreach m,$(report_mappers),$(foreach l,gene transcript, $(foreach nt,$(report_norm_tools),$(call nquant_target,$(m),$(q),$(nm),$(l),$(nt))))))), $(f))) $(foreach f,$(foreach eqm,$(report_equant),$(foreach nm,$(report_norm_methods),$(foreach q,$(report_quant),$(foreach m,$(report_mappers), $(foreach nt,$(report_norm_tools),$(call enquant_target,$(m),$(q),$(nm),$(nt),$(eqm))))))), $(f))
 endef
 
 
@@ -367,126 +421,20 @@ quant_report_files:
 
 #######################################
 # Quant. at gene level
-$(name)/report/quant/%/gene.raw.html: 
-	$(call GE_tsv2html,"raw",$(call quiet_ls1,$(name)/$(subst _x_,/,$*)/genes.raw.$(shell echo $*|sed "s/.*_x_//").tsv),$(@D),gene.raw.t,$(subst _x_, x ,$*),"gene") && \
+
+define ge_html2level=
+$(subst transcript,CDS,$(patsubst %s,%,$(word 1,$(subst ., ,$(notdir $*)))))
+endef
+
+define ge_html2metric=
+$(word 2,$(subst ., ,$(notdir $*)))
+endef
+
+# 
+$(name)/report/quant/%.html: 
+	$(call GE_tsv2html,$(call ge_html2metric,$*),$(call quiet_ls1,$(name)/$(subst _x_,/,$*).tsv),$(@D),$(notdir $*).t,$(subst _x_, x ,$(subst /,,$(dir $*))),$(call ge_html2level,$*)) && \
 	cp $(subst .html,,$@).t.html $@
 
-$(name)/report/quant/%/gene.rpkm.html: 
-	$(call GE_tsv2html,"rpkm",$(call quiet_ls1,$(name)/$(subst _x_,/,$*)/genes.rpkm.*.tsv),$(@D),gene.rpkm.t,$(subst _x_, x ,$*),"gene") && \
-	cp $(subst .html,,$@).t.html $@
-
-$(name)/report/quant/%/gene.nlib.html: 
-	$(call GE_tsv2html,"nlib",$(call quiet_ls1,$(name)/$(subst _x_,/,$*)/genes.nlib.*.tsv),$(@D),gene.nlib.t,$(subst _x_, x ,$*),"gene") && \
-	cp $(subst .html,,$@).t.html $@
-
-
-# Transcript
-$(name)/report/quant/%/transcript.raw.html: 
-	$(call GE_tsv2html,"raw",$(call quiet_ls1,$(name)/$(subst _x_,/,$*)/transcripts.raw.$(shell echo $*|sed "s/.*_x_//").tsv),$(@D),transcript.raw.t,$(subst _x_, x ,$*),"CDS") && \
-	cp $(subst .html,,$@).t.html $@
-
-$(name)/report/quant/%/transcript.rpkm.html: 
-	$(call GE_tsv2html,"rpkm",$(call quiet_ls1,$(name)/$(subst _x_,/,$*)/transcripts.rpkm.*.tsv),$(@D),transcript.rpkm.t,$(subst _x_, x ,$*),"CDS") && \
-	cp $(subst .html,,$@).t.html $@
-
-$(name)/report/quant/%/transcript.nlib.html: 
-	$(call GE_tsv2html,"nlib",$(call quiet_ls1,$(name)/$(subst _x_,/,$*)/transcripts.nlib.*.tsv),$(@D),transcript.nlib.t,$(subst _x_, x ,$*),"CDS") && \
-	cp $(subst .html,,$@).t.html $@
-
-# exon
-$(name)/report/quant/%/exon.raw.html: 
-	$(call GE_tsv2html,"raw",$(call quiet_ls1,$(name)/$(subst _x_,/,$*)/exons.raw.$(shell echo $*|sed "s/.*_x_//").tsv),$(@D),exon.raw.t,$(subst _x_, x ,$*),"exon") && \
-	cp $(subst .html,,$@).t.html $@
-
-$(name)/report/quant/%/exon.rpkm.html: 
-	$(call GE_tsv2html,"rpkm",$(call quiet_ls1,$(name)/$(subst _x_,/,$*)/exons.rpkm.*.tsv),$(@D),exon.rpkm.t,$(subst _x_, x ,$*),"exon") && \
-	cp $(subst .html,,$@).t.html $@
-
-$(name)/report/quant/%/exon.nlib.html: 
-	$(call GE_tsv2html,"nlib",$(call quiet_ls1,$(name)/$(subst _x_,/,$*)/exons.nlib.*.tsv),$(@D),exon.nlib.t,$(subst _x_, x ,$*),"exon") && \
-	cp $(subst .html,,$@).t.html $@
-
-##########################
-# one rule by quant option
-$(name)/report/quant/%_x_htseq1.html: $(name)/report/quant/%_x_htseq1/gene.raw.html $(name)/report/quant/%_x_htseq1/gene.rpkm.html $(name)/report/quant/%_x_htseq1/gene.nlib.html
-	touch $@
-
-$(name)/report/quant/%_x_htseq2.html: $(name)/report/quant/%_x_htseq2/gene.raw.html $(name)/report/quant/%_x_htseq2/gene.rpkm.html  $(name)/report/quant/%_x_htseq2/gene.nlib.html
-	touch $@
-
-
-$(name)/report/quant/%_x_flux_cap.html: $(name)/report/quant/%_x_flux_cap/gene.raw.html $(name)/report/quant/%_x_flux_cap/gene.rpkm.html $(name)/report/quant/%_x_flux_cap/gene.nlib.html
-	touch $@
-
-$(name)/report/quant/%_x_basic.html: $(name)/report/quant/%_x_basic/gene.raw.html $(name)/report/quant/%_x_basic/gene.rpkm.html $(name)/report/quant/%_x_basic/gene.nlib.html
-	touch $@
-
-$(name)/report/quant/%_x_cufflinks1_nd.html: $(name)/report/quant/%_x_cufflinks1_nd/gene.raw.html $(name)/report/quant/%_x_cufflinks1_nd/gene.rpkm.html $(name)/report/quant/%_x_cufflinks1_nd/gene.nlib.html
-	touch $@
-
-$(name)/report/quant/%_x_cufflinks1.html: $(name)/report/quant/%_x_cufflinks1/gene.raw.html $(name)/report/quant/%_x_cufflinks1/gene.rpkm.html $(name)/report/quant/%_x_cufflinks1/gene.nlib.html
-	touch $@
-
-$(name)/report/quant/%_x_cufflinks2.html: $(name)/report/quant/%_x_cufflinks2/gene.raw.html $(name)/report/quant/%_x_cufflinks2/gene.rpkm.html $(name)/report/quant/%_x_cufflinks2/gene.nlib.html
-	touch $@
-
-$(name)/report/quant/%_x_cufflinks2_nd.html: $(name)/report/quant/%_x_cufflinks2/gene.raw.html $(name)/report/quant/%_x_cufflinks2/gene.rpkm.html $(name)/report/quant/%_x_cufflinks2/gene.nlib.html
-	touch $@
-
-$(name)/report/quant/%_x_scripture.html: 
-	$(info TODO: complete $@)
-	touch $@
-
-$(name)/report/quant/%_x_nurd.html: $(name)/report/quant/%_x_nurd/gene.raw.html $(name)/report/quant/%_x_nurd/gene.rpkm.html $(name)/report/quant/%_x_nurd/gene.nlib.html
-	touch $@
-
-## quant report: transcripts
-$(name)/report/quant/%_x_htseq1.transcript.html: $(name)/report/quant/%_x_htseq1/transcript.raw.html $(name)/report/quant/%_x_htseq1/transcript.rpkm.html  $(name)/report/quant/%_x_htseq1/transcript.nlib.html
-	touch $@
-
-$(name)/report/quant/%_x_htseq2.transcript.html: $(name)/report/quant/%_x_htseq2/transcript.raw.html $(name)/report/quant/%_x_htseq2/transcript.rpkm.html  $(name)/report/quant/%_x_htseq2/transcript.nlib.html
-	touch $@
-
-$(name)/report/quant/%_x_flux_cap.transcript.html: $(name)/report/quant/%_x_flux_cap/transcript.raw.html $(name)/report/quant/%_x_flux_cap/transcript.rpkm.html  $(name)/report/quant/%_x_flux_cap/transcript.nlib.html
-	touch $@
-
-$(name)/report/quant/%_x_cufflinks1.transcript.html: $(name)/report/quant/%_x_cufflinks1/transcript.raw.html $(name)/report/quant/%_x_cufflinks1/transcript.rpkm.html  $(name)/report/quant/%_x_cufflinks1/transcript.nlib.html
-	touch $@
-
-$(name)/report/quant/%_x_cufflinks1_nd.transcript.html: $(name)/report/quant/%_x_cufflinks1_nd/transcript.raw.html $(name)/report/quant/%_x_cufflinks1_nd/transcript.rpkm.html  $(name)/report/quant/%_x_cufflinks1_nd/transcript.nlib.html
-	touch $@
-
-$(name)/report/quant/%_x_cufflinks2.transcript.html: $(name)/report/quant/%_x_cufflinks2/transcript.raw.html $(name)/report/quant/%_x_cufflinks2/transcript.rpkm.html  $(name)/report/quant/%_x_cufflinks2/transcript.nlib.html
-	touch $@
-
-$(name)/report/quant/%_x_cufflinks2_nd.transcript.html: $(name)/report/quant/%_x_cufflinks2_nd/transcript.raw.html $(name)/report/quant/%_x_cufflinks2_nd/transcript.rpkm.html  $(name)/report/quant/%_x_cufflinks2_nd/transcript.nlib.html
-	touch $@
-
-$(name)/report/quant/%_x_nurd.transcript.html: $(name)/report/quant/%_x_nurd/transcript.raw.html $(name)/report/quant/%_x_nurd/transcript.rpkm.html  $(name)/report/quant/%_x_nurd/transcript.nlib.html
-	touch $@
-
-## quant report: exons
-$(name)/report/quant/%_x_htseq1.exon.html: $(name)/report/quant/%_x_htseq1/exon.raw.html $(name)/report/quant/%_x_htseq1/exon.rpkm.html  $(name)/report/quant/%_x_htseq1/exon.nlib.html
-	touch $@
-$(name)/report/quant/%_x_htseq2.exon.html: $(name)/report/quant/%_x_htseq2/exon.raw.html $(name)/report/quant/%_x_htseq2/exon.rpkm.html  $(name)/report/quant/%_x_htseq2/exon.nlib.html
-	touch $@
-$(name)/report/quant/%_x_flux_cap.exon.html: $(name)/report/quant/%_x_flux_cap/exon.raw.html $(name)/report/quant/%_x_flux_cap/exon.rpkm.html  $(name)/report/quant/%_x_flux_cap/exon.nlib.html
-	touch $@
-
-$(name)/report/quant/%_x_cufflinks1.exon.html: $(name)/report/quant/%_x_cufflinks1/exon.raw.html $(name)/report/quant/%_x_cufflinks1/exon.rpkm.html  $(name)/report/quant/%_x_cufflinks1/exon.nlib.html
-	touch $@
-
-$(name)/report/quant/%_x_cufflinks1_nd.exon.html: $(name)/report/quant/%_x_cufflinks1_nd/exon.raw.html $(name)/report/quant/%_x_cufflinks1_nd/exon.rpkm.html  $(name)/report/quant/%_x_cufflinks1_nd/exon.nlib.html
-	touch $@
-
-$(name)/report/quant/%_x_cufflinks2.exon.html: $(name)/report/quant/%_x_cufflinks2/exon.raw.html $(name)/report/quant/%_x_cufflinks2/exon.rpkm.html  $(name)/report/quant/%_x_cufflinks2/exon.nlib.html
-	touch $@
-
-$(name)/report/quant/%_x_cufflinks2_nd.exon.html: $(name)/report/quant/%_x_cufflinks2_nd/exon.raw.html $(name)/report/quant/%_x_cufflinks2_nd/exon.rpkm.html  $(name)/report/quant/%_x_cufflinks2_nd/exon.nlib.html
-	touch $@
-
-$(name)/report/quant/%_x_nurd.exon.html: $(name)/report/quant/%_x_nurd/exon.raw.html $(name)/report/quant/%_x_nurd/exon.rpkm.html  $(name)/report/quant/%_x_nurd/exon.nlib.html
-	touch $@
 
 ############################
 # DE

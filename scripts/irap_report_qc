@@ -1,4 +1,5 @@
 #!/usr/bin/env Rscript3
+#; -*- mode: R;-*-
 # =========================================================
 #
 # This file is part of iRAP.
@@ -117,7 +118,9 @@ raw.summary.dataframe <- function(conf) {
   toplevel.dir <- conf.get.value(conf,"toplevel.dir")
   pe <- conf.get.value(conf,"pe")
   se <- conf.get.value(conf,"se")
-  toplevel.dir <- conf.get.value(conf,"toplevel.dir")
+  #toplevel.dir <- conf.get.value(conf,"toplevel.dir")
+  #pinfo("tl=",toplevel.dir)
+
   qc.enabled <- conf.is.qc.enabled(conf)
 
   get.lib.info <- function(df,libs,toplevel.dir,conf,is.pe=TRUE) {
@@ -356,8 +359,6 @@ path2qual.report <- function(dir.name,file.prefix) {
 pinfo("conf_file=",opt$conf.file)
 #
 conf <- load.configuration.file(opt$conf.file)
-# set the report directory (overwrite toplevel.dir)
-
 #
 pinfo("Configuration file ",opt$conf.file," loaded.")
 
@@ -369,6 +370,8 @@ pinfo("Quality filtering:",qual_filt)
 report.dir <- opt$rep_dir
 report.dir <- paste(sub("/$","",report.dir),"/",sep="")
 conf <- conf.set.value("report.dir",report.dir,conf)
+# set the report directory (overwrite toplevel.dir)
+conf <- conf.set.value("toplevel.dir",dirname(report.dir),conf)
 pdebug.save.state("irap_report_qc","p1")
 ############################
 # reads info

@@ -57,14 +57,14 @@ int main(int argc, char **argv ) {
   // ************************************************************
   unsigned long cline=1;
   unsigned long cur_read=0;
-  char tmp_buffer[MAX_READ_LENGTH];
+  //char tmp_buffer[MAX_READ_LENGTH];
   // read the entry using another fd
   cline=1;
   while(!feof(fd1)) {
     char *hdr=READ_LINE(fd1,1);
     if ( hdr==NULL) break;
     if ( hdr[0]!='@' ) {
-      fprintf(stderr,"line %ul: error in header %s",cline,hdr);
+      fprintf(stderr,"line %lu: error in header %s",cline,hdr);
       return 1;
     }
     //

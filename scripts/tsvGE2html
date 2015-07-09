@@ -68,7 +68,7 @@ option_list <- list(
 # check multiple options values
 multiple.options = list(
   feature=c('gene','exon','CDS'),
-  metric=c('rpkm','raw',"nlib")
+  metric=c('rpkm','raw',"deseq_nlib")
 )
 mandatory <- c("tsv_file","out",'metric')
 opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
@@ -78,7 +78,7 @@ opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filena
 opt$browser <- paste(gsub("/$","",opt$browser),"/",sep="")
 pdebug.enabled <- opt$debug
 
-html.template <- get.path2template(paste("tsvGE2html_",opt$metric,sep=""))
+html.template <- get.path2template(paste("tsvGE2html_",gsub(".*_","",opt$metric),sep=""))
 ############
 # process group names and definition
 # TODO: move to irap_utils.R
@@ -344,11 +344,16 @@ table.html <- table
 pdebug.save.state("tsvGE2html0","p1")
 gen.page(o.html.file)
 
+if ( ! "biotype" %in% colnames(table) && "biotype" %in% colnames(table)) {
+  table$biotype=table$source
+  pinfo("biotype column not found...using source column (back compatibility)")
+}
+
 # ok
 for (filt.name  in get.source.filter.names() ) {
   uncut.table <- uncut.table.orig
   if ( filt.name!="All" && filt.name!="all") {
-    if (! "source" %in% colnames(table)) {
+    if (! "biotype" %in% colnames(table)) {
       table <- table.orig[NULL,]
       uncut.table <- table.tsv[NULL,]                               
     } else {

@@ -40,7 +40,7 @@ sub process {
 	my @all_ends = ();
 	my @out = ();
 	my @tr_here;
-	my ($gid, $tid, $exn, $gname);
+	my ($gid, $tid, $exn, $gname,$gbiotype,$tbiotype);
 	my (@starts, @ends, $start, $end);
 	my (@transcript, @gene);
 	my ($exon_info_stringA, $exon_info_stringB);
@@ -48,6 +48,7 @@ sub process {
 
 	($gid) = $trs[0]->[0]->[8] =~ /gene_id \"?([^;\"]+)\"?/;
 	($gname) = $trs[0]->[0]->[8] =~ /gene_name \"?([^;\"]+)\"?/;
+	($gbiotype) = $trs[0]->[0]->[8] =~ /gene_biotype \"?([^;\"]+)\"?/;
 	$gname =~ tr/;/./;
 
 	foreach my $exons (@trs) {
@@ -57,6 +58,7 @@ sub process {
 		$end = $ends[0];
 
 		($tid) = $exons->[0]->[8] =~ /transcript_id \"?([^;\"]+)\"?/;
+		($tbiotype) = $exons->[0]->[8] =~ /transcript_biotype \"?([^;\"]+)\"?/;
 		$exon_info_stringA = "ID=$tid.";
 		$exon_info_stringB = ";Name=$gname;Parent=$tid\n";
 
@@ -66,11 +68,19 @@ sub process {
 		$transcript[4] = $end;
 		$transcript[8] =  "ID=$tid;Name=$gname;Parent=$gid\n";
 
+		if ( $transcript[1] =~ /(havana|ensembl)/ ) {
+		    $transcript[1]=$tbiotype
+		}
+
 		push @all_starts, $start;
 		push @all_ends, $end;
 		foreach (reverse @$exons) {
 			($exn) = $_->[8] =~ /exon_number "(\d+)"/;
 			$_->[8] = $exon_info_stringA . $exn. $exon_info_stringB;
+			if ( $_->[1] =~ /(havana|ensembl)/ ) {
+			    $_->[1]=$tbiotype
+			}
+			#print STDERR $_->[1]."\n";
 			push @out, join("\t", @$_);
 		}
 		push @out, join("\t", @transcript);
@@ -82,6 +92,10 @@ sub process {
 	$gene[3] = $all_starts[0];
 	$gene[4] = $all_ends[0];
 	$gene[8] = "ID=$gid;Name=$gname\n";
+	if ( $gene[1] =~ /(havana|ensembl)/ ) {
+	    #print STDERR ">>>>>".$gene[1]."---$tbiotype----$gbiotype\n";	    
+	    $gene[1] = $gbiotype;
+	}
 	push @out, join("\t", @gene);
 	print reverse @out;
 }

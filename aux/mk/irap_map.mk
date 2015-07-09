@@ -238,7 +238,8 @@ endef
 
 define run_tophat2_index_annot=
 	mkdir -p $(call tophat2_trans_index_filename,$(1),$(1)).tmp && rm -rf $(call tophat2_trans_index_filename,$(1),$(1)).tmp/*  &&  \
-	irap_map.sh tophat2 tophat -G $(gtf_file_abspath) --transcriptome-index $(call tophat2_trans_index_filename,$(1),$(1)).tmp $(tophat_reference_prefix) &&
+	irap_map.sh tophat2 tophat -G $(gtf_file_abspath) --transcriptome-index $(call tophat2_trans_index_filename,$(1),$(1)).tmp $(tophat_reference_prefix) && \
+	rm -rf $(call tophat2_trans_index_filename,$(1),$(1)) && \
 	mv $(call tophat2_trans_index_filename,$(1),$(1)).tmp $(call tophat2_trans_index_filename,$(1),$(1))
 endef
 
@@ -782,7 +783,7 @@ $(1).osa
 endef
 
 define osa_gene_model_name=
-$(subst .gtf,,$(basename $(gtf_file)))
+$(subst _,.,$(subst .gtf,,$(basename $(gtf_file))))
 endef
 
 define osa_ref_lib_name=
@@ -792,7 +793,7 @@ endef
 # when an error occurs the exit status is 0!? :(
 #
 define run_osa_index=
-	irap_map.sh osa osa.exe --buildref `dirname $(1)` $(1) $(call osa_ref_lib_name,$(1)) &&\
+	irap_map.sh osa osa.exe --buildref $(call osa_index_dirname,$(1)) $(1) $(call osa_ref_lib_name,$(1)) &&\
 	irap_map.sh osa osa.exe --buildgm $(call osa_index_dirname,$(1)) $(gtf_file_abspath) $(call osa_ref_lib_name,$(1)) $(call osa_gene_model_name) &&\
 	ls $(shell dirname $(1))/ReferenceLibrary/$(call osa_ref_lib_name,$(1)).gindex1 &&\
 	touch $(call osa_index_filename,$(1))

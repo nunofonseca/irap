@@ -1,11 +1,11 @@
 #!/bin/bash
-# $Id: 0.1.3 Nuno Fonseca Fri Dec 21 14:59:29 2012$
+
 FILES=$*
 
 NAMES=$FILES
 if [ "$*-" == "-stdin-" ]; then
     set -e
-    read -t 60 NAMES
+    read -e -t  60 NAMES
     set -- $NAMES
     set +e
 else
@@ -14,43 +14,62 @@ else
 	exit 1
     fi
 fi
-#echo $*
+#echo $* >&2
+#set -e
 f1=$1
 shift 1
+
 if [ ! -e $f1 ]; then
     echo "ERROR: file $f1 not found"
     exit 1
 fi
 
+#echo $f1 >&2
+FEATURE=`head -n 1 $f1| cut -f 1|grep -i -E "(Gene|Exon|Transcript)"`
+HEADER=yes
+if [ "$FEATURE-" == "-" ]; then
+    FEATURE="Gene"
+    HEADER=no
+fi
+#echo $FEATURE >&2
+if [ $HEADER == "no" ]; then
+    filter_header=cat
+else
+    filter_header="tail -n +2"
+fi
+
 # check if order is ok
 # exclude entries added by CUFFlinks 
-#cut -f 1 $f1 > $f1.tmp
-#cut -f 2 $f1 > $f1.tmp2
-grep -v CUFF $f1| cut -f 1 > $f1.tmp
-grep -v CUFF $f1| cut -f 2 > $f1.tmp2
-echo $NAMES >&2
+grep -v CUFF $f1| $filter_header | cut -f 1 > $f1.tmp
+grep -v CUFF $f1| $filter_header | cut -f 2 > $f1.tmp2
+
+#echo $NAMES >&2
+lfiles_name=`mktemp`
+lfiles_name_m=`mktemp`
+# merged file
+paste $f1.tmp $f1.tmp2 > $lfiles_name_m
+#echo $lfiles_name >&2
+echo -n "`basename $f1.tmp2`" > $lfiles_name
 for f in $*; do
-    echo Comparing $f1 $f >&2
-    grep -v CUFF $f|cut -f 1 > b.tmp
+    echo Comparing $f1 $f >&2    
     #cut -f 1 $f > b.tmp
-    DIFF=`diff -q $f1.tmp b.tmp`
+    DIFF=`grep -v CUFF $f| $filter_header | cut -f 1 | diff -q $f1.tmp -`
     if [ "$DIFF-" = "-" ]; then
-       echo "Gene order OK" >&2
+       echo "$FEATURE order OK" >&2
     else
        echo "ERROR." >&2
        exit 1
     fi
-    grep -v CUFF $f|cut -f 2  > $f.tmp2
-    #cut -f 2  $f > $f.tmp2
+    rm -f b.tmp
+    grep -v CUFF $f| $filter_header | cut -f 2  | paste $lfiles_name_m - > $lfiles_name_m.tmp
+    mv $lfiles_name_m.tmp $lfiles_name_m
+    echo -n " `basename $f.tmp2`" >> $lfiles_name
 done
-N=""
-for n in $NAMES; do
-    N="$N `basename $n`"
-done
-N=`echo $N|sed -e "s/\.[^\.]*\.tsv//g;s/\(.raw\|.rpkms\|.genes\|.nlib\|.exons\|.transcripts\)//g;s/\(\.pe\|\.se\)//g"`
-echo "Gene $N" |tr " " "\t"  
-FILES2=`echo $NAMES|sed  "s/.tsv/.tsv.tmp2/g"`
-#echo $FILES2
-paste $f1.tmp $FILES2
-rm $FILES2
+echo  >> $lfiles_name
+# labels/header
+sed  -e "s/\.[^\.]*\.tsv//g;s/\(.tmp2\|.raw\|.rpkms\|.rpkm\|.genes\|.nlib\|.exons\|.transcripts\)//g;s/\(\.pe\|\.se\)//g;s/ /\t/g;s/^/$FEATURE\t/;" $lfiles_name 
+
+
+cat $lfiles_name_m
+rm -f $FILES2 $f1.tmp* $lfiles_name $lfiles_name_m
 exit 0

@@ -29,7 +29,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define PRINT_READS_PROCESSED(c) { if (c%1000000==0) { fprintf(stderr,"\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b%ld",cline/4);fflush(stderr); }}
+#define PRINT_READS_PROCESSED(c) { if (c%1000000==0) { fprintf(stderr,"\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b%lu",cline/4);fflush(stderr); }}
 
 
 #define MAX_READ_LENGTH 1024000
@@ -56,7 +56,7 @@ int main(int argc, char **argv ) {
   unsigned long num_reads=0;
   // ************************************************************
   unsigned long cline=1;
-  unsigned long cur_read=0;
+  //unsigned long cur_read=0;
 
   // read the entry using another fd
   cline=1;
@@ -64,7 +64,7 @@ int main(int argc, char **argv ) {
     char *hdr=READ_LINE(fd1);
     if ( hdr==NULL) break;
     if ( hdr[0]!='@' ) {
-      fprintf(stderr,"line %ul: error in header %s",cline,hdr);
+      fprintf(stderr,"line %lu: error in header %s",cline,hdr);
       return 1;
     }
     READ_LINE(fd1);

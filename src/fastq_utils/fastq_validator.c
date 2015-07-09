@@ -35,7 +35,7 @@
 // 1MB
 // disable this option if disk access is fast (local disk)
 // enable it for network disks
-#define VERSION "0.6.2p1"
+#define VERSION "0.7.0"
 
 #define SEQDISKACCESS 1
 
@@ -95,12 +95,12 @@ the actual function is hash(i) = hash(i - 1) * 65599 + str[i]; what is included 
 [there is even a faster, duff-device version] the magic constant 65599 was picked out of thin air while experimenting with
 different constants, and turns out to be a prime. this is one of the algorithms used in berkeley db (see sleepycat) and elsewhere.
 */
-static ulong hashit(unsigned char *str) {
+static ulong hashit(char *str) {
 
   ulong hash = 0;
   int c;
   
-  while (c = *str++)
+  while ((c = *str++))
     hash = c + (hash << 6) + (hash << 16) - hash;
   
   return hash;
@@ -110,7 +110,7 @@ static ulong hashit(unsigned char *str) {
 static inline int compare_headers(const char *hdr1,const char *hdr2) {
 
   unsigned int slen=0;
-  char c;
+  //char c;
   while ( hdr1[slen]!='\0' && hdr2[slen]!='\0' ) {
     if ( hdr1[slen]!=hdr2[slen] ) {
       return 0;
@@ -166,6 +166,68 @@ void free_indexentry(INDEX_ENTRY *e) {
   free(e);
   // remove entry from hash table
   return;
+}
+
+// return 0 on sucess, 1 otherwise
+inline int validate_entry(char *hdr,char *hdr2,char *seq,char *qual,unsigned long linenum,const char* filename) {
+  
+  // Sequence identifier
+  if ( hdr[0]!='@' ) {
+    fprintf(stderr,"Error in file %s, line %lu: sequence identifier should start with an @ - %s\n",filename,linenum,hdr);
+    return 1;
+  }  
+  if ( hdr[1]=='\0' || hdr[1]=='\n' || hdr[1]=='\r') {
+    fprintf(stderr,"Error in file %s, line %lu: sequence identifier should be longer than 1\n",filename,linenum);
+    return 1;
+  }
+  // sequence
+  unsigned int slen=0;
+  while ( seq[slen]!='\0' && seq[slen]!='\n' && seq[slen]!='\r' ) {
+    // check content: ACGT acgt nN 0123....include the .?
+    if ( seq[slen]!='A' && seq[slen]!='C' && seq[slen]!='G' && seq[slen]!='T' &&
+	 seq[slen]!='a' && seq[slen]!='c' && seq[slen]!='g' && seq[slen]!='t' &&
+	 seq[slen]!='0' && seq[slen]!='1' && seq[slen]!='2' && seq[slen]!='3' &&
+	 seq[slen]!='n' && seq[slen]!='N' && seq[slen]!='.' ) {
+      fprintf(stderr,"Error in file %s, line %lu: invalid character '%c' (hex. code:'%x'), expected ACGTacgt0123nN.\n",filename,linenum+1,seq[slen],seq[slen]);
+      return 1;
+    }
+    slen++;
+  }
+  // check len
+  if (slen < MIN_READ_LENGTH ) {
+    fprintf(stderr,"Error in file %s, line %lu: read length too small - %u\n",filename,linenum+1,slen);
+    return 1;
+  }
+  // hdr2=+
+  // be tolerant
+  //if (hdr2[1]!='\0' && hdr2[1]!='\n' && hdr2[1]!='\r') {
+  //  fprintf(stderr,"Error in file %s, line %lu:  header2 wrong. The line should contain only '+' followed by a newline.\n",filename,linenum+2);
+  //  return 1;
+  //}  
+  if (hdr2[0]!='+') {
+    fprintf(stderr,"Error in file %s, line %lu:  header2 wrong. The line should contain only '+' followed by a newline or read name (header1).\n",filename,linenum+2);
+    return 1;
+  }
+  // length of hdr2 should be 1 or be the same has the hdr1
+  // ignore the + sign
+  hdr2=&hdr2[1];
+  hdr=&hdr[1];
+  if (hdr2[0]!='\0' && hdr2[0]!='\r' ) {
+    if ( !compare_headers(&hdr[1],&hdr2[1]) ) {
+      fprintf(stderr,"Error in file %s, line %lu:  header2 differs from header1\nheader 1 \"%s\"\nheader 2 \"%s\"\n",filename,linenum,hdr,hdr2);
+      return 1;
+    }
+  }
+  // qual length==slen
+  unsigned int qlen=0;
+  while ( qual[qlen]!='\0' && qual[qlen]!='\n' && qual[qlen]!='\r') {
+    qlen++;    
+  }  
+  if ( qlen!=slen ) {
+    fprintf(stderr,"Error in file %s, line %lu: sequence and quality don't have the same length %u!=%u\n",filename,linenum+3,slen,qlen);
+    return 1;
+  }
+  return 0;
 }
 
 char* get_readname(char *s,int *len_p,unsigned long cline,const char *filename) {
@@ -256,68 +318,6 @@ void index_file(char *filename,hashtable sn_index,long start_offset,long length)
   return;
 }
 
-// return 0 on sucess, 1 otherwise
-inline int validate_entry(char *hdr,char *hdr2,char *seq,char *qual,unsigned long linenum,const char* filename) {
-  
-  // Sequence identifier
-  if ( hdr[0]!='@' ) {
-    fprintf(stderr,"Error in file %s, line %lu: sequence identifier should start with an @ - %s\n",filename,linenum,hdr);
-    return 1;
-  }  
-  if ( hdr[1]=='\0' || hdr[1]=='\n' || hdr[1]=='\r') {
-    fprintf(stderr,"Error in file %s, line %lu: sequence identifier should be longer than 1\n",filename,linenum);
-    return 1;
-  }
-  // sequence
-  unsigned int slen=0;
-  char c;
-  while ( seq[slen]!='\0' && seq[slen]!='\n' && seq[slen]!='\r' ) {
-    // check content: ACGT acgt nN 0123....include the .?
-    if ( seq[slen]!='A' && seq[slen]!='C' && seq[slen]!='G' && seq[slen]!='T' &&
-	 seq[slen]!='a' && seq[slen]!='c' && seq[slen]!='g' && seq[slen]!='t' &&
-	 seq[slen]!='0' && seq[slen]!='1' && seq[slen]!='2' && seq[slen]!='3' &&
-	 seq[slen]!='n' && seq[slen]!='N' && seq[slen]!='.' ) {
-      fprintf(stderr,"Error in file %s, line %lu: invalid character '%c' (hex. code:'%x'), expected ACGTacgt0123nN.\n",filename,linenum+1,seq[slen],seq[slen]);
-      return 1;
-    }
-    slen++;
-  }
-  // check len
-  if (slen < MIN_READ_LENGTH ) {
-    fprintf(stderr,"Error in file %s, line %lu: read length too small - %u\n",filename,linenum+1,slen);
-    return 1;
-  }
-  // hdr2=+
-  // be tolerant
-  //if (hdr2[1]!='\0' && hdr2[1]!='\n' && hdr2[1]!='\r') {
-  //  fprintf(stderr,"Error in file %s, line %lu:  header2 wrong. The line should contain only '+' followed by a newline.\n",filename,linenum+2);
-  //  return 1;
-  //}  
-  if (hdr2[0]!='+') {
-    fprintf(stderr,"Error in file %s, line %lu:  header2 wrong. The line should contain only '+' followed by a newline or read name (header1).\n",filename,linenum+2);
-    return 1;
-  }
-  // length of hdr2 should be 1 or be the same has the hdr1
-  // ignore the + sign
-  hdr2=&hdr2[1];
-  hdr=&hdr[1];
-  if (hdr2[0]!='\0' && hdr2[0]!='\r' ) {
-    if ( !compare_headers(&hdr[1],&hdr2[1]) ) {
-      fprintf(stderr,"Error in file %s, line %lu:  header2 differs from header1\nheader 1 \"%s\"\nheader 2 \"%s\"\n",filename,linenum,hdr,hdr2);
-      return 1;
-    }
-  }
-  // qual length==slen
-  unsigned int qlen=0;
-  while ( qual[qlen]!='\0' && qual[qlen]!='\n' && qual[qlen]!='\r') {
-    qlen++;    
-  }  
-  if ( qlen!=slen ) {
-    fprintf(stderr,"Error in file %s, line %lu: sequence and quality don't have the same length %u!=%u\n",filename,linenum+3,slen,qlen);
-    return 1;
-  }
-  return 0;
-}
 
 
 inline FILE* open_fastq(char* filename) {
@@ -364,7 +364,7 @@ int validate_interleaved(char *f) {
   fprintf(stderr,"Paired-end interleaved\n");
   fd1=open_fastq(f);
   while(!feof(fd1)) {
-    long start_pos=ftell(fd1);
+    //long start_pos=ftell(fd1);
     // Read 1
     char *hdr1=READ_LINE_HDR(fd1);
     if ( hdr1==NULL) break;
@@ -405,7 +405,7 @@ int validate_interleaved(char *f) {
 }
 
 int main(int argc, char **argv ) {
-  long paired=0;
+  //long paired=0;
   is_paired_data=0;
   is_interleaved=0;
   printf("Version iRAP %s\n",VERSION);
@@ -436,13 +436,13 @@ int main(int argc, char **argv ) {
   is_casava_18=is_casava_1_8(argv[1]);
   if (is_casava_18) fprintf(stderr,"CASAVA=1.8\n");
   // ************************************************************
-  off_t cur_offset=1;
+  //off_t cur_offset=1;
   // interleaved
   if ( is_interleaved ) {
     exit(validate_interleaved(argv[1]));
   }
   unsigned long cline=1;
-  fprintf(stderr,"HASHSIZE=%lu\n",HASHSIZE);
+  fprintf(stderr,"HASHSIZE=%lu\n",(long unsigned int)HASHSIZE);
   //memset(&collisions[0],0,HASHSIZE+1);
   hashtable sn_index=new_hashtable(HASHSIZE);
   index_mem+=sizeof(hashtable);
@@ -463,7 +463,7 @@ int main(int argc, char **argv ) {
     cline=1;
     // TODO: improve code - mostly duplicated:(
     while(!feof(fd2)) {
-      long start_pos=ftell(fd2);
+      //long start_pos=ftell(fd2);
       char *hdr=READ_LINE_HDR(fd2);
       if ( hdr==NULL) break;
       int len;

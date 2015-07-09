@@ -1,6 +1,6 @@
 # avoid having boost in  -I : it may result on including the wrong regexp.h
-CFLAGS=-O3 -L$(IRAP_DIR)/lib
-#-g
+CFLAGS=-O3 -L$(IRAP_DIR)/lib -Wall
+#-g -Wunused-result 
 
 ifdef DEBUG
 CFLAGS+= -g -DDEBUG=1
@@ -116,6 +116,7 @@ test7:
 	./fastq_info tests/test_e14.fastq || \
 	./fastq_info tests/test_e15.fastq || \
 	./fastq_info tests/test_e16.fastq || \
+	./fastq_info tests/test_e17.fastq || \
 	time -p ./fastq_info tests/c18_1M_1.fastq tests/c18_1M_2.fastq || \
 	./fastq_info tests/casava.1.8i_err.Fastq || \
 	echo "OK! all errors detected"
