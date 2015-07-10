@@ -495,7 +495,7 @@ set +e
 # check the read size
 rs=`get_rs $INFO_FILE`
 if [ "-" == "$rs-" ] || [ $rs -lt $min_read_size ]; then
-    echo "FastqInfo: Read size smaller than $min_read_size"
+    perror "FastqInfo: Read size smaller than $min_read_size"
     exit 1
 fi
 irap_single_lib_options="conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE max_mem=$mem max_threads=$threads raw_folder=single_lib "
