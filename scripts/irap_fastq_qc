@@ -311,7 +311,7 @@ go: all
 # MISCELLANEOUS CODE
 #Unzip files if necessary
 %.fastq: %.fq
-	ln -s $< $(basename $@)
+	cd $(dir $@) && ln -s $(notdir $<) $(notdir $@)
 
 %.fastq: %.fq.gz
 	gunzip -f -c $< > $@.tmp && mv $@.tmp $@
