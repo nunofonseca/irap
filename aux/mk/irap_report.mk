@@ -289,7 +289,7 @@ $(name)/report/$(call notdir,$(conf)): $(conf)
 	cp $< $@.tmp && mv $@.tmp $@
 
 #############################
-phony_targets+=mapping_report quant_report
+phony_targets+=mapping_report quant_report mapping_report_req
 
 mapping_report_targets=$(foreach m,$(call mapping_dirs), $(name)/report/mapping/$(shell basename $(m)).html) 
 
@@ -330,7 +330,7 @@ $(name)/report/mapping/%.html_doreq: $(MAPPING_REPORT_PRE_STATS)
 
 # files required to produce the mapping report
 mapping_report_req: $(MAPPING_REPORT_PRE_STATS)
-	@echo "done"
+#	@echo "done"
 
 # Mapping report for a specific mapper
 $(name)/report/mapping/%.html: $(name)/%/  $(conf) $(call must_exist,$(name)/report/mapping/)  $(name)/%/stats_raw.tsv $(name)/%/stats_perc.tsv  $(name)/%/featstats_raw.tsv $(name)/%/featstats_perc.tsv  $(name)/%/genestats_raw.tsv 
