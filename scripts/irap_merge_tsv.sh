@@ -62,7 +62,7 @@ for f in $*; do
     if [ "$DIFF-" = "-" ]; then
        echo "$FEATURE order OK" >&2
     else
-       echo "ERROR." >&2
+       echo "ERROR: order of the rows is different - $f1 $f" >&2
        exit 1
     fi
     rm -f b.tmp
