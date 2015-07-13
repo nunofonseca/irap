@@ -38,6 +38,11 @@ else
     filter_header="tail -n +2"
 fi
 
+#
+if [ "-$USE_BASENAME" == "-" ]; then
+    USE_BASENAME=yes
+fi
+
 # check if order is ok
 # exclude entries added by CUFFlinks 
 grep -v CUFF $f1| $filter_header | cut -f 1 > $f1.tmp
@@ -63,7 +68,11 @@ for f in $*; do
     rm -f b.tmp
     grep -v CUFF $f| $filter_header | cut -f 2  | paste $lfiles_name_m - > $lfiles_name_m.tmp
     mv $lfiles_name_m.tmp $lfiles_name_m
-    echo -n " `basename $f.tmp2`" >> $lfiles_name
+    if [ $USE_BASENAME==yes ]; then
+	echo -n " `basename $f.tmp2`" >> $lfiles_name
+    else
+	echo -n " $f" >> $lfiles_name
+    fi
 done
 echo  >> $lfiles_name
 # labels/header
