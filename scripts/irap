@@ -1993,9 +1993,9 @@ gff3_update: $(data_dir)/reference/$(species)/$(notdir $(gff3_file_abspath))
 	cp -a $(data_dir)/reference/$(species)/$(notdir $(gff3_file)) $(name)/data/$(notdir $(gff3_file))
 	cp -a $(data_dir)/reference/$(species)/$(notdir $(juncs_file_abspath)) $(name)/data/$(notdir $(juncs_file_abspath))
 
-# Force deseq2 to rerun and the merged quant. matrices to be regenerated
+# Force deseq2 to rerun and the quant. matrices to be regenerated (first gene in the list was being discarded)
 upgrade_0.7.0:
-	rm -f $(STAGE3_OUT_FILES) $(STAGE4_OUT_FILES)
+	rm -f $(STAGE3_S_TARGETS) $(STAGE3_OUT_FILES) $(STAGE4_OUT_FILES)
 #	rerunning irap
 	$(call p_info Updating...)
 	irap 
