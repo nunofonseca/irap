@@ -326,7 +326,7 @@ $(name)/report/mapping/%.html_req:
 	echo $(MAPPING_REPORT_PRE_STATS)
 
 $(name)/report/mapping/%.html_doreq: $(MAPPING_REPORT_PRE_STATS)
-	@echo "done"
+#	@echo "done"
 
 # files required to produce the mapping report
 mapping_report_req: $(MAPPING_REPORT_PRE_STATS)
