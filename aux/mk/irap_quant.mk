@@ -851,7 +851,7 @@ ifeq ($(quant_method),kallisto)
 
 # 
 ifneq ($(mapper),none)
-$(error kallisto does not need the reads to be aligned)
+$(warning kallisto does not need the reads to be aligned)
 endif
 
 # transcripts
