@@ -63,7 +63,7 @@ RUN apt-get update && apt-get install -y \
 
 # 
 WORKDIR /opt
-RUN git clone http://github.com/nunofonseca/irap.git  irap_clone  && cd /opt/irap_clone && git checkout devel && ./scripts/irap_install.sh -a /irap_install -s . && cd / && rm -rf /irap_install/tmp /opt/irap_clone  /root/.cpan*
+RUN git clone http://github.com/nunofonseca/irap.git  irap_clone  && cd /opt/irap_clone && ./scripts/irap_install.sh -a /irap_install -s . && cd / && rm -rf /irap_install/tmp /opt/irap_clone  /root/.cpan*
 
 WORKDIR /
 RUN echo source /irap_install/irap_setup.sh >> ~/.bash_profile && echo source /irap_install/irap_setup.sh >> ~/.bashrc
