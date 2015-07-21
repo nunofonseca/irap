@@ -16,6 +16,8 @@ min_read_size=30
 classified_error=0
 script_parameters=$*
 tidy_up_only=n
+
+out_dir=out
 # files created by irap_single_lib (not by iRAP)
 sl_init_files=
 # irap configuration file and options to be used to clean up
@@ -292,7 +294,7 @@ function iRAP-tidyup_errors {
 
 #################################################################
 # 
-while getopts "1:2:c:s:m:t:i:h0fCT"  Option
+while getopts "1:2:c:s:m:t:i:o:h0fCT"  Option
 do
     case $Option in
 	0 ) do_stage0="yes";;
@@ -302,6 +304,7 @@ do
 	C ) do_clean=y;;
 	s ) strand=$OPTARG;;# send all output to a log file
 	m ) mem=$OPTARG;;
+	o ) out_dir=$OPTARG;;
 	t ) threads=$OPTARG;;
 	f ) run_faster=y;;
 	T ) tidy_up_only=y;do_clean=y;;
@@ -380,9 +383,12 @@ DATA_DIR=`get_data_dir`
 pinfo "Data dir.=$DATA_DIR"
 folder=`get_folder $f1`
 
+
 TARGET_DIR=$DATA_DIR/raw_data/single_lib/$folder
 
 mkdir -p $TARGET_DIR
+# target should be unique
+sl_init_files="$sl_init_files $TARGET_DIR"
 
 ##################################################################
 # put the fastq files in the "expected" folder
@@ -411,7 +417,7 @@ pinfo "FASTQ files in place"
 popd > /dev/null 
 
 #################################################################
-odir=$PWD/out/`dirname $f1|cut -f 2- -d /`
+odir=$PWD/$out_dir/`dirname $f1|cut -f 2- -d /`
 fileprefix=`get_fileprefix $f1`
 pinfo "Final files will be placed in $odir"
 if [ ! -e  $odir ]; then
@@ -439,6 +445,11 @@ if [ $? !=  0 ]; then
 	perror "ERROR:Stage0: incomplete - use -0 to run stage0"
 	exit 1
     fi
+fi
+
+if [ "$do_stage0-" == "yes-" ]; then
+    pinfo "Stage0 complete."
+    exit 0
 fi
 
 #################################################################
