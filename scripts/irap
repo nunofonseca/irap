@@ -1997,8 +1997,13 @@ gff3_update: $(data_dir)/reference/$(species)/$(notdir $(gff3_file_abspath))
 upgrade_0.7.0:
 	rm -f $(STAGE3_S_TARGETS) $(STAGE3_OUT_FILES) $(STAGE4_OUT_FILES)
 #	rerunning irap
-	$(call p_info Updating...)
+	$(call p_info,Updating...)
 	irap 
+
+force_stage2:
+	rm -f $(STAGE2_OUT_FILES)
+	$(call p_info,Updating...)
+	irap stage2
 ###################################################
 # 
 #$(name)/report/all_options.txt:
