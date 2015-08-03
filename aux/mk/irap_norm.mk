@@ -35,6 +35,9 @@
 ifeq ($(quant_norm_method),rpkm)
 SETUP_DATA_FILES+=$(feat_length)
 endif
+ifeq ($(quant_norm_method),tpm)
+SETUP_DATA_FILES+=$(feat_length)
+endif
 
 ######
 # irap
@@ -70,6 +73,32 @@ STAGE3_S_TARGETS+=$(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.exons.
 endif
 endif
 
+#####################
+# 
+# TPM
+$(name)/$(mapper)/$(quant_method)/genes.tpm.$(quant_method).irap.tsv: $(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv $(feat_length)
+	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature gene --metric tpm --out $@.tmp && mv $@.tmp $@	
+
+ifeq ($(exon_quant),y)
+$(name)/$(mapper)/$(quant_method)/exons.tpm.$(exon_quant_method).irap.tsv: $(name)/$(mapper)/$(quant_method)/exons.raw.$(exon_quant_method).tsv $(feat_length)
+	irap_raw2metric --tsv $<  --lengths $(exon_length) --feature exon --metric tpm --out $@.tmp && mv $@.tmp $@	
+endif
+
+$(name)/$(mapper)/$(quant_method)/transcripts.tpm.irap.tsv: $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv $(feat_length)
+	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature transcript --metric tpm --out $@.tmp && mv $@.tmp $@	
+
+
+# per library
+$(name)/$(mapper)/$(quant_method)/%.genes.tpm.$(quant_method).irap.tsv: $(name)/$(mapper)/$(quant_method)/%.genes.raw.$(quant_method).tsv
+	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature gene --metric tpm --out $@.tmp && mv $@.tmp $@	
+
+$(name)/$(mapper)/$(quant_method)/%.transcripts.tpm.$(quant_method).irap.tsv: $(name)/$(mapper)/$(quant_method)/%.transcripts.raw.$(quant_method).tsv
+	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature transcript --metric tpm --out $@.tmp && mv $@.tmp $@	
+
+
+$(name)/$(mapper)/$(quant_method)/%.exons.tpm.$(exon_quant_method).irap.tsv: $(name)/$(mapper)/$(quant_method)/%.exons.raw.$(exon_quant_method).tsv
+	irap_raw2metric --tsv $<  --lengths $(exon_length) --feature exon --metric tpm --out $@.tmp && mv $@.tmp $@	
+
 #########
 # DEseq - normalize by library size
 # 
@@ -85,6 +114,7 @@ ifeq ($(exon_quant),y)
 $(name)/$(mapper)/$(quant_method)/exons.deseq_nlib.$(exon_quant_method).irap.tsv: $(name)/$(mapper)/$(quant_method)/exons.raw.$(exon_quant_method).tsv
 	irap_deseq_norm $<  > $@.tmp && mv $@.tmp $@
 endif
+
 ##################################
 # tpm
 #$(name)/$(mapper)/$(quant_method)/exons.tpm.$(exon_quant_method).irap.tsv:
