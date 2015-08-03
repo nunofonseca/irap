@@ -41,12 +41,12 @@ filenames <- c("tsv_file","lengths")
 
 option_list <- list(
   make_option(c("-f", "--feature"), type="character", dest="feature", default="gene",help="Feature (gene,transcript,exon-)"),
-  make_option(c("-m", "--metric"), type="character", dest="metric", default="rpkm", help="Metric (rpkm) [default %default]"),
+  make_option(c("-m", "--metric"), type="character", dest="metric", default="rpkm", help="Metric (rpkm,tpm) [default %default]"),
   make_option(c("-i", "--tsv"), type="character", dest="tsv_file", help="TSV file name with the matrix with the counts per gene/transcript."),
   make_option(c("-g", "--gtf"), type="character", dest="gtf_file", default=NULL, help="GTF file name"),
   make_option(c("-l", "--lengths"), type="character",dest="lengths_file",default="",help=" [default %default]."),
   make_option(c("-e", "--exclude"), type="character",dest="toexclude",default="",help="biotypes to exclude (separated by comma) [default %default]."),
-  make_option(c("p","--rpkm_pc"),action="store_true",dest="mass_pconly",default=FALSE,help="Consider protein coding only for the total number of reads (rpkm) [default %default]"),
+  #make_option(c("p","--rpkm_pc"),action="store_true",dest="mass_pconly",default=FALSE,help="Consider protein coding only for the total number of reads (rpkm) [default %default]"),
   make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
   make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name prefix. An HTML and TSV.gz file will be created.")
 )
@@ -134,6 +134,22 @@ if ( opt$metric == "rpkm" ) {
 
   # save
   write.tsv(rpkm,file=opt$out)
+  pinfo("Saved ",opt$out)
+  q(status=0)
+}
+
+if ( opt$metric == "tpm" ) {
+  tpm <- countstable2tpm(table,lengths[[opt$feature]])
+  if ( is.vector(tpm) ) {
+    tpm <- data.frame(cbind(names(tpm),tpm),check.names=F)
+    colnames(tpm) <- append(capitalize(opt$feature),libnames)
+  } else {
+    tpm <- data.frame(cbind(rownames(tpm),tpm),check.names=F)
+    colnames(tpm) <- append(capitalize(opt$feature),colnames(tpm)[-1])
+  }
+
+  # save
+  write.tsv(tpm,file=opt$out)
   pinfo("Saved ",opt$out)
   q(status=0)
 }
