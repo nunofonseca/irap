@@ -820,8 +820,8 @@ $(call p_error,quant_norm_tool '$(quant_norm_tool)' invalid)
 endif
 
 # Normalization methods
-SUPPORTED_NORM_METHODS=rpkm deseq_nlib
-# tpm rpkm_qn
+SUPPORTED_NORM_METHODS=rpkm deseq_nlib tpm
+# rpkm_qn
 ifeq (,$(filter $(quant_norm_method),none $(SUPPORTED_NORM_METHODS)))
 $(call p_error,quant_norm_method '$(quant_norm_method)' invalid)
 endif
