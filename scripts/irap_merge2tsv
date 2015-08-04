@@ -39,6 +39,7 @@ option_list <- list(
   make_option(c("-o","--out"),type="character",default=NULL,help="Output tsv file"),
   make_option(c("--in"),type="character",dest="tsv_files",default=NULL,help="tsv files"),
   make_option(c("--rowname_col"),type="character",dest="rowname_col",default="",help="name of the column with the rownames"),
+  make_option(c("--sep"),type="character",dest="col_sep",default="\t",help="column separator"),
   make_option(c("--has_no_header"),action="store_true",dest="has_no_header",default=FALSE,help="TSV files already have headers?"),
   make_option(c("--rows_not_sorted"),action="store_true",dest="rows_not_sorted",default=FALSE,help="Are the rows sorted."),
   make_option(c("--add_header"),action="store_true",dest="add_header",default=FALSE,help="add the filename has header."),
@@ -77,7 +78,9 @@ for ( f in files ) {
     q(status=1)
   }
   # header?
-  x <- tryCatch(read.tsv(f,!opt$has_no_header),error=function(x) return(NULL))
+  x <- tryCatch(read.table(f,header=!opt$has_no_header,sep=opt$col_sep,
+                           quote="\"",comment.char="",
+                           check.names=FALSE),error=function(x) return(NULL))
   if ( is.null(x) ) {
     perror("Error loading ",f)
     q(status=1)
