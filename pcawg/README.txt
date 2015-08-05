@@ -13,7 +13,7 @@ Setup
     b)
      cd docker; cat iRAP-pcawg.docker| sudo docker build --rm --tag fedora/irap:devel -
 
-2.  The scripts will look for the docker image to use (the image ID
+2.  The script will look for the docker image to use (the image ID
     can be found by running the command 'docker images') in the
     environment variable IRAP_DOCKER_IMAGE.
 
