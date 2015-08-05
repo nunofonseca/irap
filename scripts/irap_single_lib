@@ -13,7 +13,6 @@ do_stage0=no
 do_clean=n
 run_faster=n
 min_read_size=30
-classified_error=0
 script_parameters=$*
 tidy_up_only=n
 do_info_only=n
@@ -26,6 +25,8 @@ irap_clean_conf=
 # This script will not run with sudo
 # http://unix.stackexchange.com/questions/38538/bash-dev-stderr-permission-denied
 STDERR=/dev/stderr
+
+declare -g -i classified_error=0
 
 #################################################################
 #
@@ -159,7 +160,9 @@ function clean_up_all {
 
     if [ "$do_clean" == "y" ]; then
 	pinfo "Full clean up..."
-	run_AND_timeIt "iRAP-tidyup" $time_log_file  irap $irap_clean_conf lib_full_clean
+	set +e
+	irap $irap_clean_conf lib_full_clean > /dev/null
+	set -e
 	clean_up_init_files
 	pinfo "Full clean up...done."
     fi
@@ -169,17 +172,23 @@ function clean_up_all {
 # Try to classify errors on each stage
 function classify_error {
     perror "LOG files: $2"    
-    emsg=`${1}_errors $2`
-    if [ $classified_error == "1" ]; then
-	pinfo "Classified error...cleaning up before exiting."
-	clean_up_all
-    fi    
-    perror "$emsg"
+    ${1}_errors $2
+    #echo "!!!!!!!!!!!!!!$classified_error<<<<<<<<<<<<<<<<<<<<" > /dev/stderr
+    print_classified_error
 }
 
 function print_classified_error {
+
+    if [ "$classified_error" == "1" ]; then
+	pinfo "Classified error...cleaning up before exiting."
+	clean_up_all
+    fi   
+    perror $errmsg
+}
+
+function set_classified_error {
     classified_error=1
-    echo $*
+    readonly errmsg="$*"
 }
 
 function stage0_errors {
@@ -195,9 +204,9 @@ function fastqInfo_errors {
     if [ $? -eq 0 ]; then
 	msg=`echo "$e" | grep -E "(duplicated|header|truncated|identifier|character|length|unpaired|encoding)"|tail  -n 1|cut -f 2- -d: `
 	if [ $? -eq 0 ]; then
-	    print_classified_error "FastqInfo: $msg"
+	    set_classified_error "FastqInfo: $msg"
 	else
-	    print_classified_error "FastqInfo: unclassified error - $e"
+	    set_classified_error "FastqInfo: unclassified error - $e"
 	fi
     else 
 	echo "FastqInfo: unclassified error - $e"
@@ -208,31 +217,31 @@ function iRAP-QC_errors {
     errf=$1
     E=`grep "mv: cannot stat.*filter1.stats"  $errf `
     if [ $? -eq 0 ]; then
-	print_classified_error "QC: 1 too short reads or below quality threshold"
+	set_classified_error "QC: 1 too short reads or below quality threshold"
     else
 	E=`grep "mv: cannot stat.*filter2.stats"  $errf `
 	if [ $? -eq 0 ]; then
-	    print_classified_error "QC: 2 contamination"
+	    set_classified_error "QC: 2 contamination"
 	else
 	    E=`grep "mv: cannot stat.*filter3.stats"  $errf `
 	    if [ $? -eq 0 ]; then
-		print_classified_error "QC: 3 reads with uncalled bases discarded"
+		set_classified_error "QC: 3 reads with uncalled bases discarded"
 	    else
 		E=`grep "mv: cannot stat.*filter4.stats"  $errf `
 		if [ $? -eq 0 ]; then
-		    print_classified_error "QC: 4 reads without mates"
+		    set_classified_error "QC: 4 reads without mates"
 		else
 		    E=`grep "Aborted.* bowtie" $errf`
 		    if [ $? -eq 0 ]; then
-			print_classified_error "QC: IO error?"
+			set_classified_error "QC: IO error?"
 		    else
 			E=`grep "Premature End-Of-File" $errf`
 			if [ $? -eq 0 ]; then
-			    print_classified_error "QC: 1 no reads pass the quality threshold"
+			    set_classified_error "QC: 1 no reads pass the quality threshold"
 			else
 			    E=`grep "gzip: .*.gz: unexpected end of file" $errf`
 			    if [ $? -eq 0 ]; then
-				print_classified_error "gzip: unexpected end of file"			
+				set_classified_error "gzip: unexpected end of file"			
 			    else
 				echo "QC: unclassified error"
 			    fi
@@ -248,16 +257,16 @@ function iRAP-Mapping_errors {
     errf=$1
     e=`grep "Error occured when reading beginning of SAM/BAM file." $errf`
     if [ $? -eq 0 ]; then
-	print_classified_error "iRAP Mapping: no aligned reads in BAM"
+	set_classified_error "iRAP Mapping: no aligned reads in BAM"
     else
 	e=`grep -E "bowtie2-align died with signal .* (core dumped)" $errf`
 	if [ $? -eq 0 ]; then
 	    echo hostname=`hostname`
-	    print_classified_error "iRAP Mapping: bowtie2-align  crashed: `hostname`"
+	    set_classified_error "iRAP Mapping: bowtie2-align  crashed: `hostname`"
 	else
 	    e=`grep -E "Error running.*tophat_reports" $errf`
 	    if [ $? -eq 0 ]; then
-		print_classified_error "iRAP Mapping: internal tophat2 error"
+		set_classified_error "iRAP Mapping: internal tophat2 error"
 	    else
 		echo "iRAP Mapping: unclassified error"
 	    fi
@@ -277,7 +286,7 @@ function iRAP-Quant_errors {
     errf=$1
     e=`grep "Error occured when reading beginning of SAM/BAM file." $errf`
     if [ $? -eq 0 ]; then
-	print_classified_error "iRAP Quant: no aligned reads in BAM?"
+	set_classified_error "iRAP Quant: no aligned reads in BAM?"
     else
 	echo "iRAP Quant: unclassified error"
     fi
@@ -368,7 +377,12 @@ if [ "$tidy_up_only" == "y" ]; then
 	name=`grep "^species=" $conf|cut -f 2 -d=`
     fi
     echo toplevel_dir=$name
-    find $name/{star,tophat2} -type d -name "`basename $folder`" -print -exec rm -f {} \; ;
+    if [ -e $name/tophat2 ] ; then
+	find $name/tophat2 -type d -name "`basename $folder`" -print -exec rm -f {} \; ;
+    fi
+    if [ -e $name/star ] ; then
+	find $name/star -type d -name "`basename $folder`" -print -exec rm -f {} \; ;
+    fi
     exit 0
 fi
 
@@ -491,7 +505,10 @@ set +e
 if [ $do_validation -eq 1 ]; then
     run_AND_timeIt "fastqInfo" $time_log_file "fastq_info.sh  $folder/$f1_bn $rp_f2  > $folder/$f1_bn.info.tmp && mv $folder/$f1_bn.info.tmp $folder/$f1_bn.info"
     if [ $? != 0 ] ; then
-	perror "FASTQ validation failed"
+	popd
+	set_classified_error "FASTQ validation failed"
+	clean_up_all
+	print_classified_error
 	exit 1
     fi
     pinfo "Validation...done."
@@ -532,7 +549,9 @@ set +e
 # check the read size
 rs=`get_rs $INFO_FILE`
 if [ "-" == "$rs-" ] || [ $rs -lt $min_read_size ]; then
-    perror "FastqInfo: Read size smaller than $min_read_size"
+    set_classified_error "FastqInfo: Read size smaller than $min_read_size"
+    clean_up_all
+    print_classified_error
     exit 1
 fi
 irap_single_lib_options="conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE max_mem=$mem max_threads=$threads raw_folder=single_lib "
@@ -558,7 +577,7 @@ pinfo "Mapping QC..."
 REPORT_TSVs=`irap $irap_single_lib_options  $irap_options print_mapping_report_req  |tail -n 1`
 run_AND_timeIt "iRAP-Mapping-QC" $time_log_file  irap $irap_single_lib_options $irap_options  $REPORT_TSVs
 if [ $? != 0 ]; then
-    perror "iRAP failed"
+    perror "iRAP Mapping QC failed"
     exit 1
 fi
 pinfo "Mapping QC...complete."
