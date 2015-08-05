@@ -1,0 +1,10 @@
+
+Pre-built docker images with iRAP based on Ubuntu and Fedora are
+available in the docker hub
+(https://hub.docker.com/u/nunofonseca/). The docker files used to
+create the images are available in the current
+(sub)folder(s). Information about how to install and use docker is
+available at http://docs.docker.com/.
+
+An example of a script to run iRAP in a docker container is provided
+ in the file irap_docker.
