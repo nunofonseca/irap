@@ -26,7 +26,7 @@ irap_clean_conf=
 # http://unix.stackexchange.com/questions/38538/bash-dev-stderr-permission-denied
 STDERR=/dev/stderr
 
-declare -g -i classified_error=0
+declare -i classified_error=0
 
 #################################################################
 #
@@ -41,8 +41,11 @@ necessary for the analysis.
 
 -m MEM - value in bytes
 
--C full clean up
+-C full clean up when it exits
 
+-T clean up only
+
+-I only run fastq_info
 EOF
 }
 
@@ -161,7 +164,7 @@ function clean_up_all {
     if [ "$do_clean" == "y" ]; then
 	pinfo "Full clean up..."
 	set +e
-	irap $irap_clean_conf lib_full_clean > /dev/null
+	irap $irap_clean_conf lib_full_clean &> /dev/null
 	set -e
 	clean_up_init_files
 	pinfo "Full clean up...done."
