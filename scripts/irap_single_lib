@@ -1,6 +1,6 @@
 #!/bin/bash
-VERSION=0.1d
-#irap_single_lib -1 fastq_file [-2 fastq_file2] -c conf  [-s strand (first,second,both)] -m MEM -t threads -i irap_options [-0] [-h]
+VERSION=0.2d
+#irap_single_lib -1 fastq_file [-2 fastq_file2] -c conf  [-s strand (first,second,both)]  -m MEM -t threads -i irap_options [-0] [-h]
 f1=
 f2=
 conf=
@@ -16,6 +16,7 @@ min_read_size=30
 script_parameters=$*
 tidy_up_only=n
 do_info_only=n
+spikein_fasta=
 
 out_dir=out
 # files created by irap_single_lib (not by iRAP)
