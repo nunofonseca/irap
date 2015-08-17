@@ -180,8 +180,8 @@ $(foreach f,$(read1_files2),$(eval $(call make_read1_rule2,$(f))))
 	fastq_info.sh $^  > $@.tmp && mv $@.tmp $@
 
 %.1.fastq.gz.info: %.1.fastq.gz %.2.fastq.gz
-        fastq_info.sh $^  > $@.tmp && mv $@.tmp $@
- 
+	fastq_info.sh $^  > $@.tmp && mv $@.tmp $@
+
 %.fastq1.info: %.fastq1 %.fastq2
 	fastq_info.sh $^  > $@.tmp && mv $@.tmp $@
 
