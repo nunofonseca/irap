@@ -58,7 +58,7 @@ multiple.options = list(
   )
 mandatory <- c("tsv_file","out","lengths_file")
 
-pinfo("saved")
+#pinfo("saved")
 opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
 
 # ensure that the path include / in the end
