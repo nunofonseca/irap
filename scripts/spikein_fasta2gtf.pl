@@ -18,9 +18,9 @@ my $seq_in  = Bio::SeqIO->new( -format => 'fasta',
 while (my $inseq = $seq_in->next_seq) {
     my $len=length($inseq->seq);
     my $id=$inseq->id;
-    #print "$id\tprotein_coding\texon\t1\t$len\t.\t+\t.\tgene_id \"$id\"; transcript_id \"t$id\"; exon_number \"1\"; gene_biotype \"spikein\" \n";
-    print "$id\tspikein\texon\t1\t$len\t.\t+\t.\tgene_id \"$id\"; transcript_id \"t$id\"; exon_number \"1\"; gene_biotype \"spikein\" \n";
-    print "$id\tCDS\texon\t1\t$len\t.\t+\t.\tgene_id \"$id\"; transcript_id \"t$id\"; exon_number \"1\"; gene_biotype \"spikein\"; transcript_name \"t$id\"; \n";
+    #print "$id\tprotein_coding\texon\t1\t$len\t.\t+\t.\tgene_id \"$id\"; transcript_id \"t$id\"; exon_number \"1\"; gene_bio_type \"spikein\" \n";
+    print "$id\tspikein\texon\t1\t$len\t.\t+\t.\tgene_id \"$id\"; transcript_id \"t$id\"; exon_number \"1\"; gene_name \"$id\"; gene_bio_type \"protein_coding\";\n";
+    print "$id\tCDS\texon\t1\t$len\t.\t+\t.\tgene_id \"$id\"; transcript_id \"t$id\"; exon_number \"1\"; gene_bio_type \"protein_coding\"; transcript_name \"t$id\";\n";
 }
 
 exit(0);
