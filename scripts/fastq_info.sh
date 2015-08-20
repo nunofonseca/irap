@@ -39,8 +39,9 @@ if [ "$qual-"  == "solexa-" ]; then
     exit 1
 fi
 
-rs=`echo $A| sed -E "s/.*Read length: ([0-9]+).*/\1/" ` 
-rs_range=`echo $A| sed -E "s/.*Read length: ([0-9]+) ([0-9]+).*/\1 \2/" ` 
+# use the median read size
+rs=`echo $A| sed -E "s/.*Read length: ([0-9]+) ([0-9]+) ([0-9]+).*/\3/" ` 
+rs_range=`echo $A| sed -E "s/.*Read length: ([0-9]+) ([0-9]+) ([0-9]+).*/\1 \2 \3/" ` 
 # validate libname
 # if libname end with _{1,2} then change it
 libname=`echo $libname|sed -E "s/_([12])$/.\1/"`

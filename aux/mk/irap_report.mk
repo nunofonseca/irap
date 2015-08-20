@@ -269,6 +269,22 @@ $(name)/report/qc.html: $(conf) $(call must_exist,$(name)/data/)
 	irap_report_qc $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(name)/report || ( rm -f $@ && exit 1)
 endif
 
+# fastqc is always executed
+# merge into a single file the statistics collected from the BAMs 
+%.fastq_report.tsv: %.fastqc.zip
+	unzip -p $< $*_fastqc/summary.txt | awk  -F"\t"  '{print $2"\t"$1}' > $@.tmp && \
+	unzip -p $< $*_fastqc/fastqc_data.txt  | grep "Total Sequences" >> $@.tmp && \
+	mv $@.tmp $@
+
+
+%.fastq_report.tsv: %_fastqc/summary.txt
+	awk  -F"\t"  '{print $2"\t"$1}' $<  > $@.tmp && \
+	grep "Total Sequences" $< >> $@.tmp && \
+	mv $@.tmp $@
+
+$(name)/report/fastqc_report.tsv:  $(foreach p,$(pe),$(name)/report/riq/raw_data/$($(p)_dir)$(p).fastq_report.tsv)
+	$(call pass_args_stdin,irap_mergetsv,$@.tmp, --files="$<") && mv $@.tmp $@
+
 #############################
 # TODO: info.html
 phony_targets+=info_report
@@ -347,28 +363,28 @@ $(name)/report/mapping/%.html: $(name)/%/  $(conf) $(call must_exist,$(name)/rep
 %.bam.stats.csv: %.bam 
 	irapBAM2stats bam=$<
 
-%.bam.gene.stats: %.bam $(name)/data/exons.bed $(name)/data/introns.bed
+%.bam.gene.stats: %.bam $(name)/data/$(reference_basename).exons.bed $(name)/data/$(reference_basename).introns.bed
 	echo -n "Exons	" > $@.tmp &&\
-	bedtools intersect -abam $<  -b $(name)/data/exons.bed |samtools view -c - >> $@.tmp && echo >> $@ &&\
+	bedtools intersect -abam $<  -b $(name)/data/$(reference_basename).exons.bed |samtools view -c - >> $@.tmp && echo >> $@ &&\
 	echo -n "Introns	" >> $@.tmp &&\
-	bedtools intersect -abam $<  -b $(name)/data/introns.bed |samtools view -c - >> $@.tmp && echo >> $@ && \
+	bedtools intersect -abam $<  -b $(name)/data/$(reference_basename).introns.bed |samtools view -c - >> $@.tmp && echo >> $@ && \
 	expr `wc -l $@.tmp | cut -f 1 -d\ ` == 2 && \
 	mv $@.tmp $@
 
 # bed files required to get some extra stats
 # exons.bed
-$(name)/data/exons.bed: $(gff3_file_abspath) 
+$(name)/data/$(reference_basename).exons.bed: $(gff3_file_abspath) 
 	cat $< | awk 'BEGIN{OFS="\t";} $$3=="exon" {print $$1,$$4,$$5}' | bedtools sort -i /dev/stdin | bedtools merge -i /dev/stdin > $@.tmp && \
 	mv $@.tmp $@
 
 # genes.bed
-$(name)/data/genes.bed: $(gff3_file_abspath)
+$(name)/data/$(reference_basename).genes.bed: $(gff3_file_abspath)
 	cat $< | awk 'BEGIN{OFS="\t";} $$3=="gene" {print $$1,$$4,$$5}' |  bedtools sort -i /dev/stdin | bedtools merge -i /dev/stdin > $@.tmp && \
 	mv $@.tmp $@
 
 # introns
-$(name)/data/introns.bed: $(name)/data/genes.bed $(name)/data/exons.bed
-	bedtools subtract -a $< -b $(name)/data/exons.bed > $@.tmp && if [ `wc -l $@.tmp |cut -f 1 -d\ ` == 0 ]; then echo -e 'dummy_entry\t1\t1' > $@.tmp; fi && mv $@.tmp $@
+$(name)/data/$(reference_basename).introns.bed: $(name)/data/$(reference_basename).genes.bed $(name)/data/$(reference_basename).exons.bed
+	bedtools subtract -a $< -b $(name)/data/$(reference_basename).exons.bed > $@.tmp && if [ `wc -l $@.tmp |cut -f 1 -d\ ` == 0 ]; then echo -e 'dummy_entry\t1\t1' > $@.tmp; fi && mv $@.tmp $@
 
 
 # M

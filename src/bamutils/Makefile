@@ -16,6 +16,9 @@ bam_pe_insert: bam_pe_insert.c
 bam_tophat2_fix: bam_tophat2_fix.c
 	gcc  $<   -L $(LIBDIRS) -lbam -lm -lz -o $@  -I $(IDIRS) 
 
+bamStrand: bamStrand.c
+	gcc  $<   -L $(LIBDIRS) -lbam -lm -lz -o $@  -I $(IDIRS) 
+
 
 # -lrt
 bamRindex: bamRindex.c

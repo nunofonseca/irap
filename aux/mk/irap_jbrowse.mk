@@ -319,7 +319,7 @@ DESEQ_FIELD_adjpvalue=8
 # 4 - gene|transcripts|exon
 define deseq_bed=
 	tail -n +2 $(1) | cut -f 1,$(DESEQ_FIELD_$(3)) > $(1).tmp &&\
-	tsv2bed.R $(1).tmp  $(4) $(gff3_file_abspath).csv $(name)/data/chr_sizes.txt | sed "s/Inf/0/" |\
+	tsv2bed.R $(1).tmp  $(4) $(gff3_file_abspath).csv $(name)/data/$(reference_basename).chr_sizes.txt | sed "s/Inf/0/" |\
 	sort -k1,1 -k2,2n | \
 	bedtools merge -scores mean -i - > $(2).tmp &&\
 	rm -f $(1).tmp &&\
