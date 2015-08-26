@@ -446,7 +446,7 @@ if [ -e `basename $f1` ]; then
     rm `basename $f1`    
 fi
 if [ ! -e `basename $fp_f1` ]; then
-    ln -s $fp_f1 .
+    ln -s $fp_f1 `basename $f1`
 fi
 rp_f1=$folder/$f1_bn
 sl_init_files="$sl_init_files $rp_f1"
@@ -454,7 +454,7 @@ sl_init_files="$sl_init_files $rp_f1"
 rp_f2=
 if [ "$f2-" != "-" ]; then
     if [ ! -e `basename $fp_f2` ]; then
-	ln -s $fp_f2 .
+	ln -s $fp_f2 `basename $f2`
     fi
     rp_f2=$folder/$f2_bn
     sl_init_files="$sl_init_files $rp_f2"
