@@ -17,6 +17,7 @@ script_parameters=$*
 tidy_up_only=n
 do_info_only=n
 spikein_fasta=
+tsfile=
 
 out_dir=out
 # files created by irap_single_lib (not by iRAP)
@@ -34,7 +35,7 @@ declare -i classified_error=0
 function print_usage {
 cat <<EOF
 iRAP wrapper to process a single library
-Usage: irap_single_lib -1 fastq_file [-2 fastq_file2] -c irap.configuration  [-s strand (first,second,both)] [-m MEM] [-t threads] [-i irap_options] [-0] [-h] [-C]
+Usage: irap_single_lib -1 fastq_file [-2 fastq_file2] -c irap.configuration  [-s strand (first,second,both)] [-p spikein_fasta] [-m MEM] [-t threads] [-i irap_options] [-0] [-h] [-C]
 
 -0  - should be executed once for each
 species/genome/annotation to generate the indexes and other files
@@ -308,15 +309,16 @@ function iRAP-tidyup_errors {
 
 #################################################################
 # 
-while getopts "1:2:c:s:m:t:i:o:h0fCTI"  Option
+while getopts "1:2:c:s:m:p:t:i:o:h0fCTI"  Option
 do
     case $Option in
 	0 ) do_stage0="yes";;
         1 ) f1=$OPTARG;;
-        2 ) f2=$OPTARG;;# send all output to a log file
-        c ) conf=$OPTARG;;# send all output to a log file
+        2 ) f2=$OPTARG;;
+        c ) conf=$OPTARG;;
 	C ) do_clean=y;;
-	s ) strand=$OPTARG;;# send all output to a log file
+	s ) strand=$OPTARG;;
+	p ) spikein_fasta=$OPTARG;;
 	m ) mem=$OPTARG;;
 	o ) out_dir=$OPTARG;;
 	t ) threads=$OPTARG;;
@@ -463,7 +465,26 @@ fi
 pinfo "FASTQ files in place"
 popd > /dev/null 
 
-
+#################################################################
+# 
+set +e
+if [ "-" != "$spikein_fasta-" ]; then
+    pinfo "processing -p option"
+    if [ -e "$spikein_fasta" ]; then
+	tsfile="$DATA_DIR/raw_data/single_lib/`basename $spikein_fasta`"
+	if [ -e $tsfile ]; then
+	    pwarning "File $tsfile already exists...file not overwritten"
+	else
+	    cp -v $spikein_fasta $tsfile
+	    pinfo "Copied $spikein_fasta to $tsfile"
+	fi
+	irap_options="$irap_options spikein_fasta=`basename $tsfile`"
+    else
+	perror "ERROR:: File '$spikein_fasta' not found"
+	exit 1
+    fi
+fi
+set -e
 #################################################################
 # TSV with the time and memory used
 time_log_file=$odir/`get_fileprefix $f1`.time
