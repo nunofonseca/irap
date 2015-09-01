@@ -81,9 +81,13 @@ $(eval override MAPPING_DIRS:=$(foreach m,$(report_mappers), $(call quiet_ls, -d
 endef
 #$(eval override MAPPING_DIRS:=$(shell ls --color=never -d -1 $(name)/{$(shell echo $(SUPPORTED_MAPPERS) | sed 's/ /,/g')}  2>/dev/null ))
 
+ifeq ($(quant_method),none)
+QUANT_DIRS:=
+else
 define set_QUANT_DIRS=
 $(eval override QUANT_DIRS:=$(shell ls --color=never -d -1 $(shell echo $(foreach d,$(call mapping_dirs),$(foreach q,$(report_quant), $d/$q))) 2>/dev/null ))
 endef
+endif
 
 define set_DE_DIRS=
 $(eval override DE_DIRS:=$(shell ls --color=never -d -1 $(shell echo $(foreach d,$(call quant_dirs),$(d)/{$(shell echo $(report_de)| sed 's/ /,/g')})) 2>/dev/null))
@@ -414,10 +418,15 @@ silent_targets+=quant_report quant_report_files
 # endef
 
 # based on raw quantification and normalized expression values
+ifeq ($(quant_method),none)
+define set_QUANT_HTML_FILES=
+$(eval override QUANT_HTML_FILES=)
+endef
+else
 define set_QUANT_HTML_FILES=
 $(eval override QUANT_HTML_FILES=$(foreach f,$(foreach q,$(report_quant),$(foreach m,$(report_mappers),$(foreach l,gene transcript, $(foreach metric,raw nlib,$(call quant_target,$(m),$(q),$(metric),$(l)))))),$(f)) $(foreach f,$(foreach eqm,$(report_equant),$(foreach q,$(report_quant),$(foreach m,$(mapper),$(call equant_target,$(m),$(q),raw,$(eqm))))),$(f)) $(foreach f,$(foreach nm,$(report_norm_methods),$(foreach q,$(report_quant),$(foreach m,$(report_mappers),$(foreach l,gene transcript, $(foreach nt,$(report_norm_tools),$(call nquant_target,$(m),$(q),$(nm),$(l),$(nt))))))), $(f))) $(foreach f,$(foreach eqm,$(report_equant),$(foreach nm,$(report_norm_methods),$(foreach q,$(report_quant),$(foreach m,$(report_mappers), $(foreach nt,$(report_norm_tools),$(call enquant_target,$(m),$(q),$(nm),$(nt),$(eqm))))))), $(f))
 endef
-
+endif
 
 # disable for Atlas
 ifdef atlas_run
