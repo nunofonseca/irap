@@ -81,9 +81,13 @@ $(eval override MAPPING_DIRS:=$(foreach m,$(report_mappers), $(call quiet_ls, -d
 endef
 #$(eval override MAPPING_DIRS:=$(shell ls --color=never -d -1 $(name)/{$(shell echo $(SUPPORTED_MAPPERS) | sed 's/ /,/g')}  2>/dev/null ))
 
+ifeq ($(quant_method),none)
+QUANT_DIRS:=
+else
 define set_QUANT_DIRS=
 $(eval override QUANT_DIRS:=$(shell ls --color=never -d -1 $(shell echo $(foreach d,$(call mapping_dirs),$(foreach q,$(report_quant), $d/$q))) 2>/dev/null ))
 endef
+endif
 
 define set_DE_DIRS=
 $(eval override DE_DIRS:=$(shell ls --color=never -d -1 $(shell echo $(foreach d,$(call quant_dirs),$(d)/{$(shell echo $(report_de)| sed 's/ /,/g')})) 2>/dev/null))
@@ -269,6 +273,22 @@ $(name)/report/qc.html: $(conf) $(call must_exist,$(name)/data/)
 	irap_report_qc $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(name)/report || ( rm -f $@ && exit 1)
 endif
 
+# fastqc is always executed
+# merge into a single file the statistics collected from the BAMs 
+%.fastq_report.tsv: %.fastqc.zip
+	unzip -p $< $*_fastqc/summary.txt | awk  -F"\t"  '{print $2"\t"$1}' > $@.tmp && \
+	unzip -p $< $*_fastqc/fastqc_data.txt  | grep "Total Sequences" >> $@.tmp && \
+	mv $@.tmp $@
+
+
+%.fastq_report.tsv: %_fastqc/summary.txt
+	awk  -F"\t"  '{print $2"\t"$1}' $<  > $@.tmp && \
+	grep "Total Sequences" $< >> $@.tmp && \
+	mv $@.tmp $@
+
+$(name)/report/fastqc_report.tsv:  $(foreach p,$(pe),$(name)/report/riq/raw_data/$($(p)_dir)$(p).fastq_report.tsv)
+	$(call pass_args_stdin,irap_mergetsv,$@.tmp, --files="$<") && mv $@.tmp $@
+
 #############################
 # TODO: info.html
 phony_targets+=info_report
@@ -347,28 +367,28 @@ $(name)/report/mapping/%.html: $(name)/%/  $(conf) $(call must_exist,$(name)/rep
 %.bam.stats.csv: %.bam 
 	irapBAM2stats bam=$<
 
-%.bam.gene.stats: %.bam $(name)/data/exons.bed $(name)/data/introns.bed
+%.bam.gene.stats: %.bam $(name)/data/$(reference_basename).exons.bed $(name)/data/$(reference_basename).introns.bed
 	echo -n "Exons	" > $@.tmp &&\
-	bedtools intersect -abam $<  -b $(name)/data/exons.bed |samtools view -c - >> $@.tmp && echo >> $@ &&\
+	bedtools intersect -abam $<  -b $(name)/data/$(reference_basename).exons.bed |samtools view -c - >> $@.tmp && echo >> $@ &&\
 	echo -n "Introns	" >> $@.tmp &&\
-	bedtools intersect -abam $<  -b $(name)/data/introns.bed |samtools view -c - >> $@.tmp && echo >> $@ && \
+	bedtools intersect -abam $<  -b $(name)/data/$(reference_basename).introns.bed |samtools view -c - >> $@.tmp && echo >> $@ && \
 	expr `wc -l $@.tmp | cut -f 1 -d\ ` == 2 && \
 	mv $@.tmp $@
 
 # bed files required to get some extra stats
 # exons.bed
-$(name)/data/exons.bed: $(gff3_file_abspath) 
+$(name)/data/$(reference_basename).exons.bed: $(gff3_file_abspath) 
 	cat $< | awk 'BEGIN{OFS="\t";} $$3=="exon" {print $$1,$$4,$$5}' | bedtools sort -i /dev/stdin | bedtools merge -i /dev/stdin > $@.tmp && \
 	mv $@.tmp $@
 
 # genes.bed
-$(name)/data/genes.bed: $(gff3_file_abspath)
+$(name)/data/$(reference_basename).genes.bed: $(gff3_file_abspath)
 	cat $< | awk 'BEGIN{OFS="\t";} $$3=="gene" {print $$1,$$4,$$5}' |  bedtools sort -i /dev/stdin | bedtools merge -i /dev/stdin > $@.tmp && \
 	mv $@.tmp $@
 
 # introns
-$(name)/data/introns.bed: $(name)/data/genes.bed $(name)/data/exons.bed
-	bedtools subtract -a $< -b $(name)/data/exons.bed > $@.tmp && if [ `wc -l $@.tmp |cut -f 1 -d\ ` == 0 ]; then echo -e 'dummy_entry\t1\t1' > $@.tmp; fi && mv $@.tmp $@
+$(name)/data/$(reference_basename).introns.bed: $(name)/data/$(reference_basename).genes.bed $(name)/data/$(reference_basename).exons.bed
+	bedtools subtract -a $< -b $(name)/data/$(reference_basename).exons.bed > $@.tmp && if [ `wc -l $@.tmp |cut -f 1 -d\ ` == 0 ]; then echo -e 'dummy_entry\t1\t1' > $@.tmp; fi && mv $@.tmp $@
 
 
 # M
@@ -398,10 +418,15 @@ silent_targets+=quant_report quant_report_files
 # endef
 
 # based on raw quantification and normalized expression values
+ifeq ($(quant_method),none)
+define set_QUANT_HTML_FILES=
+$(eval override QUANT_HTML_FILES=)
+endef
+else
 define set_QUANT_HTML_FILES=
 $(eval override QUANT_HTML_FILES=$(foreach f,$(foreach q,$(report_quant),$(foreach m,$(report_mappers),$(foreach l,gene transcript, $(foreach metric,raw nlib,$(call quant_target,$(m),$(q),$(metric),$(l)))))),$(f)) $(foreach f,$(foreach eqm,$(report_equant),$(foreach q,$(report_quant),$(foreach m,$(mapper),$(call equant_target,$(m),$(q),raw,$(eqm))))),$(f)) $(foreach f,$(foreach nm,$(report_norm_methods),$(foreach q,$(report_quant),$(foreach m,$(report_mappers),$(foreach l,gene transcript, $(foreach nt,$(report_norm_tools),$(call nquant_target,$(m),$(q),$(nm),$(l),$(nt))))))), $(f))) $(foreach f,$(foreach eqm,$(report_equant),$(foreach nm,$(report_norm_methods),$(foreach q,$(report_quant),$(foreach m,$(report_mappers), $(foreach nt,$(report_norm_tools),$(call enquant_target,$(m),$(q),$(nm),$(nt),$(eqm))))))), $(f))
 endef
-
+endif
 
 # disable for Atlas
 ifdef atlas_run

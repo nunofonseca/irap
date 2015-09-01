@@ -168,11 +168,10 @@ if ( opt$flavour == "deseq" || opt$flavour == "deseq2" ) {
   fields$ANNOT.ID <- "id"
   fields$ID.in.ANNOT <- "ID"
   #
-  fields$cols2sel <- fields$cols2sel %in% colnames(table)
+  fields$cols2sel <- fields$cols2sel[fields$cols2sel %in% colnames(table)]
   fields$cols2tsv <- fields$cols2sel
   #basemean A and B may not be included
-  fields$groups <- fields$groups %in% colnames(table)
-  
+  fields$groups <- fields$groups[fields$groups %in% colnames(table)]  
 }
 if ( opt$flavour == "edger" ) {
   # features
@@ -242,7 +241,7 @@ if ( !is.null(annot.table)) {
 if ( length(fields$groups) > 0 ) {
 # exclude genes with no expression
   no.expr <- (table[,fields$groups[1]]<=0 & table[,fields$groups[2]]<=0)
-  table <- table[!no.expr,]
+  table <- table[!no.expr,,drop=FALSE]
   pinfo("Excluded ",sum(no.expr)," genes with no expression")
   pinfo("Using ",nrow(table)," genes.")
 }

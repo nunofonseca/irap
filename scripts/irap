@@ -216,7 +216,7 @@ endif
 #************************
 #Version and license info
 pname=IRAP
-version=0.7.0p1
+version=0.7.0d4
 contact=Developed by Nuno Fonseca (authorname (at) acm.org)
 license=This pipeline is distributed  under the terms of the GNU General Public License 3
 
@@ -382,6 +382,7 @@ endif
 reference_dir:=$(abspath $(data_dir)/reference/$(species))
 reference_abspath:=$(abspath $(reference_dir)/$(subst .gz,,$(reference)))
 reference_prefix:=$(reference_abspath)
+reference_basename=$(notdir $(reference_abspath))
 # remove .gz if the file is gziped...the creation of the uncompress file is automatic
 
 $(info *	reference=$(reference))
@@ -413,18 +414,30 @@ override spikein_fasta_abspath:=$(data_dir)/raw_data/$(raw_folder)/$(subst .gz,,
 # new reference file cannot be shared across experiments
 reference_dir:=$(name)/data
 user_reference_abspath:=$(reference_abspath)
-# ref: ref_prefix.spike.fa
-override reference_abspath:=$(name)/data/$(patsubst %.fa,%.spike.fa,$(patsubst %.fasta,%.spike.fasta,$(subst .gz,,$(reference))))
+# newref: ref_prefix.spikein_prefix.fasta
+spikein_fasta_prefix=$(patsubst %.fa,,$(patsubst %.fa,%,$(patsubst %.gz,%,$(notdir $(spikein_fasta)))))
+new_spike_ref_prefix:=$(dir $(reference_abspath))/$(patsubst %.fasta,%.$(spikein_fasta_prefix),$(patsubst %.fa,%.fasta,$(subst .gz,,$(reference))))
+override reference_abspath:=$(new_spike_ref_prefix).fa
 reference_prefix=$(reference_abspath)
+
+reference_basename=$(notdir $(reference_abspath))
 #
 gtf_file_dir:=$(name)/data
 user_gtf_abspath:=$(gtf_file_abspath)
-gtf_file_abspath:=$(name)/data/$(patsubst %.gtf,%.spike.gtf,$(subst .gz,,$(gtf_file)))
-spikein_gtf_file:=$(gtf_file_dir)/spike.gtf
+gtf_file_abspath:=$(name)/data/$(subst .fasta,,$(spikein_fasta_prefix)).$(subst .gz,,$(notdir $(user_gtf_abspath)))
+#$(patsubst %.gtf,%.spike.gtf,$(subst .gz,,$(gtf_file)))
+spikein_gtf_file:=$(patsubst %.fasta,%.gtf,$(spikein_fasta_abspath))
+#$(gtf_file_dir)/spike.gtf
 override gtf_file:=$(notdir $(gtf_file_abspath))
 
+## concentration (TSV file)
+ifndef spikein_concentration
+spikein_concentration=
+$(info * Warning:  spikein concentration not provided)
+endif
+
 #
-$(warning Currently spikein data is not explored when performing differential expression analysis)
+$(info * Currently spikein data is not explored when performing differential expression analysis)
 endif
 
 
@@ -528,6 +541,8 @@ ifdef pe
  #  read size
  #  read group id
  #  shl (sam header lines)
+ # spike_fasta - single lib only
+ # spike_concentration - single lib only
  # for each lib
  rs_list=
  set_rs_list=$(eval rs_list+= $($(1)))
@@ -820,8 +835,8 @@ $(call p_error,quant_norm_tool '$(quant_norm_tool)' invalid)
 endif
 
 # Normalization methods
-SUPPORTED_NORM_METHODS=rpkm deseq_nlib
-# tpm rpkm_qn
+SUPPORTED_NORM_METHODS=rpkm deseq_nlib tpm
+# rpkm_qn
 ifeq (,$(filter $(quant_norm_method),none $(SUPPORTED_NORM_METHODS)))
 $(call p_error,quant_norm_method '$(quant_norm_method)' invalid)
 endif
@@ -979,11 +994,11 @@ endif
 
 
 ifndef feat_length
-feat_length=$(name)/data/lengths.Rdata
+feat_length=$(name)/data/$(reference_basename).lengths.Rdata
 endif
 
 ifndef exon_length
-exon_length=$(name)/data/lengths.Rdata
+exon_length=$(name)/data/$(reference_basename).lengths.Rdata
 endif
 
 
@@ -1345,8 +1360,8 @@ endif
 %.gtf.bed: %.gtf
 	gtf2bed.pl $< > $@
 
-%.bam.bedGraph: %.bam $(name)/data/chr_sizes.txt
-	bedtools  genomecov -ibam $< -bg -g $(name)/data/chr_sizes.txt > $@.tmp && mv $@.tmp $@
+%.bam.bedGraph: %.bam $(name)/data/$(reference_basename).chr_sizes.txt
+	bedtools  genomecov -ibam $< -bg -g $(name)/data/$(reference_basename).chr_sizes.txt > $@.tmp && mv $@.tmp $@
 
 # gtf file with exon_id attribute
 %.gtf.exon_id.gtf: %.gtf %.gtf.checked
@@ -1369,13 +1384,13 @@ endif
 #
 # bigWig from bed 
 # bed file needs to be sorted and converted to bedGraph
-%.bw: %.bed $(name)/data/chr_sizes.txt
+%.bw: %.bed $(name)/data/$(reference_basename).chr_sizes.txt
 	tail -n +2 $< | cut -f 1,2,3,5 | sort -k1,1 -k2,2n  > $<.sorted.bed && \
-	bedGraphToBigWig $<.sorted.bed $(name)/data/chr_sizes.txt $@.tmp && mv $@.tmp $@
+	bedGraphToBigWig $<.sorted.bed $(name)/data/$(reference_basename).chr_sizes.txt $@.tmp && mv $@.tmp $@
 
 # bigwig from bedgraph
-%.bw: %.bedGraph $(name)/data/chr_sizes.txt
-	bedGraphToBigWig $< $(name)/data/chr_sizes.txt $@.tmp && mv $@.tmp $@
+%.bw: %.bedGraph $(name)/data/$(reference_basename).chr_sizes.txt
+	bedGraphToBigWig $< $(name)/data/$(reference_basename).chr_sizes.txt $@.tmp && mv $@.tmp $@
 
 define quant_levelFromFilename=
 $(if $(findstring exons,$(1)),exon,$(if $(findstring genes,$(1)),gene,mRNA))
@@ -1383,8 +1398,8 @@ endef
 
 # TSV (with feature value) is converted to bedGraph (http://genome.ucsc.edu/goldenPath/help/bedgraph.html)
 # bedGraph generated is sorted
-%.bedGraph: %.tsv $(gff3_file_abspath).csv $(name)/data/chr_sizes.txt
-	tsv2bed.R $<  $(call quant_levelFromFilename,$*) $(gff3_file_abspath).csv $(name)/data/chr_sizes.txt | \
+%.bedGraph: %.tsv $(gff3_file_abspath).csv $(name)/data/$(reference_basename).chr_sizes.txt
+	tsv2bed.R $<  $(call quant_levelFromFilename,$*) $(gff3_file_abspath).csv $(name)/data/$(reference_basename).chr_sizes.txt | \
 	sort -k1,1 -k2,2n | \
 	bedtools merge -scores mean -i - > $@.tmp &&\
 	mv $@.tmp $@
@@ -1413,7 +1428,7 @@ phony_targets+= setup setup_files
 ################################################################################
 # Setup initial files
 # file with the length of the features (gene, isoform, exon)
-SETUP_DATA_FILES+= $(name)/data/gene_class.txt $(index_files) $(gtf_file_abspath).checked  $(gtf_file_abspath).exon_id.gtf $(juncs_file_abspath) $(name)/data/chr_sizes.txt  $(annot_tsv) $(name)/data/introns.bed 
+SETUP_DATA_FILES+= $(name)/data/$(reference_basename).gene_class.txt $(index_files) $(gtf_file_abspath).checked  $(gtf_file_abspath).exon_id.gtf $(juncs_file_abspath) $(name)/data/$(reference_basename).chr_sizes.txt  $(annot_tsv) $(name)/data/$(reference_basename).introns.bed 
 
 
 # No need to include these files since they are generated by some rule
@@ -1460,11 +1475,11 @@ $(gff3_file_abspath).csv: $(gff3_file_abspath)
 	gff32csv.R $<   >   $@.tmp && mv $@.tmp $@
 
 
-$(name)/data/gene_class.txt: $(refgeneclass_file)
+$(name)/data/$(reference_basename).gene_class.txt: $(refgeneclass_file)
 	cp $< $@.tmp && mv $@.tmp $@
 
 # file with chr\tchr_size
-$(name)/data/chr_sizes.txt: $(reference_abspath)
+$(name)/data/$(reference_basename).chr_sizes.txt: $(reference_abspath)
 	irap_chr_sizes.pl $< > $@.tmp && mv $@.tmp $@
 
 $(reference_abspath).fai: $(reference_abspath)
@@ -1477,10 +1492,10 @@ $(reference_abspath).fai: $(reference_abspath)
 $(refgeneannot_file) $(refgeneannot_file).Rdata: $(gtf_file_abspath)
 	irap_gtf2annot --gtf $< -s $(species) --cores $(max_threads) --rdata -o $@.tmp && mv $@.tmp $@ && mv $@.tmp.Rdata $@.Rdata
 
-$(name)/data/gene.annot.tsv: $(refgeneannot_file) 
+$(name)/data/$(reference_basename).gene.annot.tsv: $(refgeneannot_file) 
 	cp $< $@.tmp && mv $@.tmp $@
 
-$(name)/data/gene.annot.tsv.Rdata: $(refgeneannot_file).Rdata
+$(name)/data/$(reference_basename).gene.annot.tsv.Rdata: $(refgeneannot_file).Rdata
 	cp $< $@.tmp && mv $@.tmp $@
 #endif
 
@@ -1492,13 +1507,13 @@ $(name)/data/empty.gene.annot.tsv:
 $(gtf_file_abspath).lengths.Rdata: $(gtf_file_abspath)
 	irap_gtf2featlength --gtf $< -o $@.tmp --cores $(max_threads) && mv $@.tmp.Rdata $@
 
-$(name)/data/lengths.Rdata: $(gtf_file_abspath).lengths.Rdata
+$(name)/data/$(reference_basename).lengths.Rdata: $(gtf_file_abspath).lengths.Rdata
 	cp $< $@.tmp && mv $@.tmp $@
 
 $(gtf_file_abspath).DEXSeq.gff.lengths.Rdata: $(gtf_file_abspath).DEXSeq.gff
 	irap_DexSeqExonLen --gff $< -o $@.tmp --cores $(max_threads) && mv $@.tmp.Rdata $@
 
-$(name)/data/dexseq.lengths.Rdata: $(gtf_file_abspath).DEXSeq.gff.lengths.Rdata
+$(name)/data/$(reference_basename).dexseq.lengths.Rdata: $(gtf_file_abspath).DEXSeq.gff.lengths.Rdata
 	cp $< $@.tmp && mv $@.tmp $@
 
 # $(trans_file): 
@@ -1769,14 +1784,14 @@ scripture_quant: mapping $(name)/$(mapper)/scripture/rawcounts.scripture.tsv
 # as recommend by scripture manual
 scripture_assembly: $(name)/$(mapper)/scripture/rawcounts.all.scripture.tsv
 
-scripture_setup: $(name)/$(mapper)/$(quant_method)/chr_size.tsv $(reference_abspath)_files
+scripture_setup: $(name)/$(mapper)/$(quant_method)/$(reference_basename).chr_size.tsv $(reference_abspath)_files
 
 # only generate the bam files for each lib
 scripture_assembly_lsf1: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.$(quant_method).tsv) $(foreach s,$(se), $(name)/$(mapper)/$(quant_method)/$(s).se.$(quant_method).tsv)
 
-$(name)/$(mapper)/scripture/rawcounts.all.scripture.tsv:  $(gtf_file_abspath) $(name)/$(mapper)/$(quant_method)/alignments.bam $(name)/$(mapper)/$(quant_method)/chr_size.tsv $(reference_abspath)_files    $(call scripture_pe_file,$(name)/$(mapper)/$(quant_method)/alignments.bam) 
+$(name)/$(mapper)/scripture/rawcounts.all.scripture.tsv:  $(gtf_file_abspath) $(name)/$(mapper)/$(quant_method)/alignments.bam $(name)/$(mapper)/$(quant_method)/$(reference_basename).chr_size.tsv $(reference_abspath)_files    $(call scripture_pe_file,$(name)/$(mapper)/$(quant_method)/alignments.bam) 
 	mkdir -p $(@D)/all
-	$(call run_scripture,$(@D)/alignments.bam,$(@D)/chr_size.tsv,$(reference_abspath)_files,$(@D)/all, $(call scripture_pe_params,$(call scripture_pe_file,$(@D)/alignments.bam)),$(gtf_file_abspath),$@.tmp) && mv $@.tmp.genes.tsv $@
+	$(call run_scripture,$(@D)/alignments.bam,$(@D)/$(reference_basename).chr_size.tsv,$(reference_abspath)_files,$(@D)/all, $(call scripture_pe_params,$(call scripture_pe_file,$(@D)/alignments.bam)),$(gtf_file_abspath),$@.tmp) && mv $@.tmp.genes.tsv $@
 
 
 #
@@ -1785,11 +1800,11 @@ $(name)/$(mapper)/scripture/rawcounts.scripture.tsv: $(foreach p,$(pe),$(name)/$
 	( $(call pass_args_stdin,irap_merge_tsv.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
 
 # SE & PE
-$(name)/$(mapper)/scripture/%.se.scripture.tsv: $(name)/$(mapper)/%.se.hits.bam $(gtf_file_abspath) $(name)/$(mapper)/$(quant_method)/chr_size.tsv $(reference_abspath)_files   $(name)/$(mapper)/%.se.hits.bam.bai
-	$(call run_scripture,$<,$(@D)/chr_size.tsv,$(reference_abspath)_files,$(@D)/$*,,$(gtf_file_abspath),$@.tmp) && mv $@.tmp.genes.tsv $@
+$(name)/$(mapper)/scripture/%.se.scripture.tsv: $(name)/$(mapper)/%.se.hits.bam $(gtf_file_abspath) $(name)/$(mapper)/$(quant_method)/$(reference_basename).chr_size.tsv $(reference_abspath)_files   $(name)/$(mapper)/%.se.hits.bam.bai
+	$(call run_scripture,$<,$(@D)/$(reference_basename).chr_size.tsv,$(reference_abspath)_files,$(@D)/$*,,$(gtf_file_abspath),$@.tmp) && mv $@.tmp.genes.tsv $@
 
-$(name)/$(mapper)/scripture/%.pe.scripture.tsv: $(name)/$(mapper)/%.pe.hits.bam $(gtf_file_abspath) $(name)/$(mapper)/$(quant_method)/chr_size.tsv $(reference_abspath)_files   $(name)/$(mapper)/%.pe.hits.bam.bai
-	$(call run_scripture,$<,$(@D)/chr_size.tsv,$(reference_abspath)_files,$(@D)/$*, -pairedEnd $<,$(gtf_file_abspath),$@.tmp) && mv $@.tmp.genes.tsv $@
+$(name)/$(mapper)/scripture/%.pe.scripture.tsv: $(name)/$(mapper)/%.pe.hits.bam $(gtf_file_abspath) $(name)/$(mapper)/$(quant_method)/$(reference_basename).chr_size.tsv $(reference_abspath)_files   $(name)/$(mapper)/%.pe.hits.bam.bai
+	$(call run_scripture,$<,$(@D)/$(reference_basename).chr_size.tsv,$(reference_abspath)_files,$(@D)/$*, -pairedEnd $<,$(gtf_file_abspath),$@.tmp) && mv $@.tmp.genes.tsv $@
 
 
 $(name)/$(mapper)/$(quant_method)/alignments.bam: $(foreach p,$(pe),$(name)/$(mapper)/$(p).pe.hits.byname.bam) $(foreach s,$(se),$(name)/$(mapper)/$(s).se.hits.byname.bam)
@@ -1801,7 +1816,7 @@ $(name)/$(mapper)/$(quant_method)/alignments.bam.paired.bam: $(foreach p,$(pe),$
 
 #
 #A 2-column tab separated file containing the chromosome name and size for the organism.
-$(name)/$(mapper)/$(quant_method)/chr_size.tsv: $(reference_abspath).fai
+$(name)/$(mapper)/$(quant_method)/$(reference_basename).chr_size.tsv: $(reference_abspath).fai
 	cut -f 1,2 $< > $@.tmp && mv $@.tmp $@
 
 $(reference_abspath)_files: $(reference_abspath)
@@ -1997,8 +2012,24 @@ gff3_update: $(data_dir)/reference/$(species)/$(notdir $(gff3_file_abspath))
 upgrade_0.7.0:
 	rm -f $(STAGE3_S_TARGETS) $(STAGE3_OUT_FILES) $(STAGE4_OUT_FILES)
 #	rerunning irap
-	$(call p_info Updating...)
+	$(call p_info,Updating...)
 	irap 
+
+#
+upgrade_to_0.7.1: $(name)/data/chr_sizes.txt $(name)/data/lengths.Rdata $(name)/data/gene_class.txt $(name)/data/dexseq.lengths.Rdata $(name)/data/genes.bed $(name)/data/exons.bed $(name)/data/introns.bed
+	cp -a $(name)/data/chr_sizes.txt $(name)/data/$(reference_basename).chr_sizes.txt
+	cp -a $(name)/data/gene.annot.tsv $(name)/data/$(reference_basename).gene.annot.tsv
+	cp -a $(name)/data/lengths.Rdata   $(name)/data/$(reference_basename).lengths.Rdata
+	cp -a $(name)/data/gene_class.txt  $(name)/data/$(reference_basename).gene_class.txt
+	cp -a $(name)/data/dexseq.lengths.Rdata $(name)/data/$(reference_basename).dexseq.lengths.Rdata
+	cp -a $(name)/data/genes.bed $(name)/data/$(reference_basename).genes.bed
+	cp -a $(name)/data/exons.bed $(name)/data/$(reference_basename).exons.bed
+	cp -a $(name)/data/introns.bed $(name)/data/$(reference_basename).introns.bed
+
+force_stage2:
+	rm -f $(STAGE2_OUT_FILES)
+	$(call p_info,Updating...)
+	irap stage2
 ###################################################
 # 
 #$(name)/report/all_options.txt:

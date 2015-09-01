@@ -16,6 +16,9 @@ bam_pe_insert: bam_pe_insert.c
 bam_tophat2_fix: bam_tophat2_fix.c
 	gcc  $<   -L $(LIBDIRS) -lbam -lm -lz -o $@  -I $(IDIRS) 
 
+bamStrand: bamStrand.c
+	gcc  $<   -L $(LIBDIRS) -lbam -lm -lz -o $@  -I $(IDIRS) 
+
 
 # -lrt
 bamRindex: bamRindex.c
@@ -49,3 +52,4 @@ run_bam_fix_tests: tests/bam_fix_NH_test1.bam tests/bam_fix_NH_test2.bam tests/b
 # TODO: improve this
 run_bamRindex_tests: tests/bam_fix_NH_test1.bam tests/bam_fix_NH_test2.bam tests/bam_fix_NH_test3.bam
 	for f in $^; do ./bamRindex $$f; done && echo "bamRindex OK"
+	for f in $^; do ./bamRindex $$f test; done && echo "bamRindex OK"

@@ -1,0 +1,150 @@
+#!/usr/bin/env Rscript3
+#; -*- mode: R;-*-
+# =========================================================
+# Copyright 2012-2015,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#    $Id: irap.txt Nuno Fonseca Wed Feb 6 00:51:29 2013$
+# =========================================================
+suppressPackageStartupMessages(library("optparse"))
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+# specify our desired options in a list
+#
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+pdebug.enabled <- FALSE
+
+#######################
+usage <- "irap_merge2tsv --out tsv_filename_prefix [options]"
+option_list <- list(
+  make_option(c("-o","--out"),type="character",default=NULL,help="Output tsv file"),
+  make_option(c("--in"),type="character",dest="tsv_files",default=NULL,help="tsv files"),
+  make_option(c("--rowname_col"),type="character",dest="rowname_col",default="",help="name of the column with the rownames"),
+  make_option(c("--sep"),type="character",dest="col_sep",default="\t",help="column separator"),
+  make_option(c("--has_no_header"),action="store_true",dest="has_no_header",default=FALSE,help="TSV files already have headers?"),
+  make_option(c("--rows_not_sorted"),action="store_true",dest="rows_not_sorted",default=FALSE,help="Are the rows sorted."),
+  make_option(c("--add_header"),action="store_true",dest="add_header",default=FALSE,help="add the filename has header."),
+  make_option(c("--basename_header"),action="store_true",dest="basename_header",default=FALSE,help="keep only the basename in the column name."),
+  make_option(c("--dirname_header"),action="store_true",dest="dirname_header",default=FALSE,help="keep only the dirname in the column name."),
+  make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode")
+)
+
+
+# 
+mandatory <- c("out","tsv_files")
+
+#
+args <- importArgsfromStdin()
+opt <- myParseArgs(usage = usage,option_list=option_list,mandatory=mandatory,args=args)
+
+pdebug.enabled <- opt$debug
+pdebug.save.state("irap_merge2tsv","p0")
+
+pinfo("Parameters parsed.")
+pdebug.save.state("irap_merge2tsv","p1")
+
+
+out.table <- NULL
+
+files <- unlist(strsplit(opt$tsv_files,"[ \t\n]+"))
+nfiles <- length(files)
+ctr <- 0
+#print(files)
+for ( f in files ) {
+  ctr <- ctr+1
+  done <- round(ctr/nfiles*100,2)
+  pinfo("Processing ",ctr," ",done,"%:",f,".")
+  if ( ! file.exists(f) ) {
+    perror("File not found ",f)
+    q(status=1)
+  }
+  # header?
+  x <- tryCatch(read.table(f,header=!opt$has_no_header,sep=opt$col_sep,
+                           quote="\"",comment.char="",
+                           check.names=FALSE),error=function(x) return(NULL))
+  if ( is.null(x) ) {
+    perror("Error loading ",f)
+    q(status=1)
+  }
+  if ( opt$add_header ) {
+    if ( ncol(x)!=2 ) {
+      perror("Error: expected 2 columns (got ",ncol(f),") in file ",f)
+      q(status=1)
+    }
+    label <- f
+    if ( opt$basename_header) {
+      label <- basename(label)
+    } else {
+      if ( opt$dirname_header) {
+        label <- dirname(label)
+      }
+    }
+    colnames(x)[2] <- label
+  }
+  if (sum(duplicated(x[,1]))!=0 ) {
+    perror("duplicated row names in ",f)
+    q(status=1)
+  }  
+  rownames(x) <- x[,1]
+  x <- x[,-1,drop=FALSE]
+  if (opt$rows_not_sorted) {
+    x <- x[order(rownames(x)),]
+  }
+  if ( is.null(out.table) ) {
+    out.table <- cbind(rownames(x),x)
+  } else {
+    # nrow ==
+    if ( nrow(out.table)!=nrow(x) ) {
+      perror("Different number of rows, unable to add ",f," with ",nrow(x), " rows")
+      q(status=1)
+    }
+    # rownames
+    if (opt$rows_not_sorted) {
+      if ( rownames(x)!=rownames(out.table)) {
+        perror("Rownames do not match ",f)
+        q(status=1)
+      }
+    }
+    out.table <- cbind(out.table,x)    
+  }
+}
+
+if ( opt$rowname_col!="" ) {
+  a <- colnames(out.table)
+  a[1] <- opt$rowname_col
+  colnames(out.table) <- a
+}
+if ( opt$add_header && opt$has_no_header ) {
+  opt$has_no_header=FALSE
+}
+r <- write.table(out.table,file=opt$out,col.names=!opt$has_no_header,sep="\t",row.names=F,quote=F)
+pinfo("Saved ",opt$out)
+
+x <- warnings()
+if (!is.null(x)) {
+  print(x)
+}
+
+q()
+irap_merge2tsv --in "`ls --color=never test_files/htseq/*.se.transcripts.raw.htseq2.tsv`" --out a --has_no_header --basename_header
+irap_merge2tsv --in "`ls --color=never test_files/htseq/*.se.transcripts.raw.htseq2.tsv`" --out a --has_no_header --dirname_header
+irap_merge2tsv --in "`ls --color=never test_files/htseq/*.se.transcripts.raw.htseq2.tsv`" --out a --has_no_header 

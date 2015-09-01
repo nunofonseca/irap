@@ -16,7 +16,7 @@ all: $(bam).stats.csv
 
 # index the bam
 %.bam.ridx: %.bam
-	bamRindex $<
+	bamRindex $< $@.tmp && mv $@.tmp.ridx $@
 
 # Perform the queries
 %.bam.stats.csv: %.bam.ridx

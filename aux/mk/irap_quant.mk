@@ -204,7 +204,7 @@ endef
 
 # strand option
 # irap
-# first  -> --library-type=fr-firststrand
+# first  -> --library-type=fr-firststrand 
 # second -> --library-type=fr-secondstrand 
 irap_strand2htseqoption=$(if $(findstring $(1),first),reverse,$(if $(findstring $(1),second),yes,no))
 
@@ -732,7 +732,7 @@ ifeq ($(strip $(exon_quant)),y)
 ifeq ($(strip $(exon_quant_method)),dexseq) 
 
 # add the generation of the flatten annotation to stage0 iff dexseq is selected
-exon_length=$(name)/data/dexseq.lengths.Rdata
+exon_length=$(name)/data/$(reference_basename).dexseq.lengths.Rdata
 SETUP_DATA_FILES+=$(exon_length)
 
 ## htseq bam file needs to be sorted by name
@@ -851,7 +851,7 @@ ifeq ($(quant_method),kallisto)
 
 # 
 ifneq ($(mapper),none)
-$(error kallisto does not need the reads to be aligned)
+$(warning kallisto does not need the reads to be aligned)
 endif
 
 # transcripts

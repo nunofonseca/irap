@@ -1,6 +1,6 @@
 #!/bin/bash
-VERSION=0.1d
-#irap_single_lib -1 fastq_file [-2 fastq_file2] -c conf  [-s strand (first,second,both)] -m MEM -t threads -i irap_options [-0] [-h]
+VERSION=0.2d
+#irap_single_lib -1 fastq_file [-2 fastq_file2] -c conf  [-s strand (first,second,both)]  -m MEM -t threads -i irap_options [-0] [-h]
 f1=
 f2=
 conf=
@@ -13,9 +13,13 @@ do_stage0=no
 do_clean=n
 run_faster=n
 min_read_size=30
-classified_error=0
 script_parameters=$*
 tidy_up_only=n
+do_info_only=n
+spikein_fasta=
+tsfile=
+
+out_dir=out
 # files created by irap_single_lib (not by iRAP)
 sl_init_files=
 # irap configuration file and options to be used to clean up
@@ -24,12 +28,14 @@ irap_clean_conf=
 # http://unix.stackexchange.com/questions/38538/bash-dev-stderr-permission-denied
 STDERR=/dev/stderr
 
+declare -i classified_error=0
+
 #################################################################
 #
 function print_usage {
 cat <<EOF
 iRAP wrapper to process a single library
-Usage: irap_single_lib -1 fastq_file [-2 fastq_file2] -c irap.configuration  [-s strand (first,second,both)] [-m MEM] [-t threads] [-i irap_options] [-0] [-h] [-C]
+Usage: irap_single_lib -1 fastq_file [-2 fastq_file2] -c irap.configuration  [-s strand (first,second,both)] [-p spikein_fasta] [-m MEM] [-t threads] [-i irap_options] [-0] [-h] [-C]
 
 -0  - should be executed once for each
 species/genome/annotation to generate the indexes and other files
@@ -37,8 +43,11 @@ necessary for the analysis.
 
 -m MEM - value in bytes
 
--C full clean up
+-C full clean up when it exits
 
+-T clean up only
+
+-I only run fastq_info
 EOF
 }
 
@@ -156,7 +165,9 @@ function clean_up_all {
 
     if [ "$do_clean" == "y" ]; then
 	pinfo "Full clean up..."
-	run_AND_timeIt "iRAP-tidyup" $time_log_file  irap $irap_clean_conf lib_full_clean
+	set +e
+	irap $irap_clean_conf lib_full_clean &> /dev/null
+	set -e
 	clean_up_init_files
 	pinfo "Full clean up...done."
     fi
@@ -166,22 +177,34 @@ function clean_up_all {
 # Try to classify errors on each stage
 function classify_error {
     perror "LOG files: $2"    
-    emsg=`${1}_errors $2`
-    if [ $classified_error == "1" ]; then
-	pinfo "Classified error...cleaning up before exiting."
-	clean_up_all
-    fi    
-    perror "$emsg"
+    ${1}_errors $2
+    #echo "!!!!!!!!!!!!!!$classified_error<<<<<<<<<<<<<<<<<<<<" > /dev/stderr
+    print_classified_error
 }
 
 function print_classified_error {
+
+    if [ "$classified_error" == "1" ]; then
+	pinfo "Classified error...cleaning up before exiting."
+	clean_up_all
+    fi   
+    perror $errmsg
+}
+
+function set_classified_error {
     classified_error=1
-    echo $*
+    readonly errmsg="$*"
 }
 
 function stage0_errors {
     errf=$1
-    echo "iRAP Stage0: unclassified error"
+    E=`grep -E "(disk I/O error|Stale|IOError:)" $errf`
+    if [ $? -eq 0 ]; then
+	set_classified_error "iRAP stage0: I/O error"
+    else
+	echo "iRAP Stage0: unclassified error"
+    fi
+
 }
 
 function fastqInfo_errors {
@@ -192,9 +215,9 @@ function fastqInfo_errors {
     if [ $? -eq 0 ]; then
 	msg=`echo "$e" | grep -E "(duplicated|header|truncated|identifier|character|length|unpaired|encoding)"|tail  -n 1|cut -f 2- -d: `
 	if [ $? -eq 0 ]; then
-	    print_classified_error "FastqInfo: $msg"
+	    set_classified_error "FastqInfo: $msg"
 	else
-	    print_classified_error "FastqInfo: unclassified error - $e"
+	    set_classified_error "FastqInfo: unclassified error - $e"
 	fi
     else 
 	echo "FastqInfo: unclassified error - $e"
@@ -205,33 +228,43 @@ function iRAP-QC_errors {
     errf=$1
     E=`grep "mv: cannot stat.*filter1.stats"  $errf `
     if [ $? -eq 0 ]; then
-	print_classified_error "QC: 1 too short reads or below quality threshold"
+	set_classified_error "QC: 1 too short reads or below quality threshold"
     else
 	E=`grep "mv: cannot stat.*filter2.stats"  $errf `
 	if [ $? -eq 0 ]; then
-	    print_classified_error "QC: 2 contamination"
+	    set_classified_error "QC: 2 contamination"
 	else
 	    E=`grep "mv: cannot stat.*filter3.stats"  $errf `
 	    if [ $? -eq 0 ]; then
-		print_classified_error "QC: 3 reads with uncalled bases discarded"
+		set_classified_error "QC: 3 reads with uncalled bases discarded"
 	    else
 		E=`grep "mv: cannot stat.*filter4.stats"  $errf `
 		if [ $? -eq 0 ]; then
-		    print_classified_error "QC: 4 reads without mates"
+		    set_classified_error "QC: 4 reads without mates"
 		else
 		    E=`grep "Aborted.* bowtie" $errf`
 		    if [ $? -eq 0 ]; then
-			print_classified_error "QC: IO error?"
+			set_classified_error "QC: IO error?"
 		    else
 			E=`grep "Premature End-Of-File" $errf`
 			if [ $? -eq 0 ]; then
-			    print_classified_error "QC: 1 no reads pass the quality threshold"
+			    set_classified_error "QC: 1 no reads pass the quality threshold"
 			else
 			    E=`grep "gzip: .*.gz: unexpected end of file" $errf`
 			    if [ $? -eq 0 ]; then
-				print_classified_error "gzip: unexpected end of file"			
+				set_classified_error "gzip: unexpected end of file"			
 			    else
-				echo "QC: unclassified error"
+				E=`grep -E "(disk I/O error|Stale|IOError:)" $errf`
+				if [ $? -eq 0 ]; then
+				    set_classified_error "QC: I/O error"
+				else
+				    E=`grep "gzip: .*.gz: unexpected end of file" $errf`
+				    if [ $? -eq 0 ]; then
+					set_classified_error "gzip: unexpected end of file"			
+				    else					
+					echo "QC: unclassified error"
+				    fi
+				fi
 			    fi
 			fi
 		    fi
@@ -245,18 +278,23 @@ function iRAP-Mapping_errors {
     errf=$1
     e=`grep "Error occured when reading beginning of SAM/BAM file." $errf`
     if [ $? -eq 0 ]; then
-	print_classified_error "iRAP Mapping: no aligned reads in BAM"
+	set_classified_error "iRAP Mapping: no aligned reads in BAM"
     else
 	e=`grep -E "bowtie2-align died with signal .* (core dumped)" $errf`
 	if [ $? -eq 0 ]; then
 	    echo hostname=`hostname`
-	    print_classified_error "iRAP Mapping: bowtie2-align  crashed: `hostname`"
+	    set_classified_error "iRAP Mapping: bowtie2-align  crashed: `hostname`"
 	else
 	    e=`grep -E "Error running.*tophat_reports" $errf`
 	    if [ $? -eq 0 ]; then
-		print_classified_error "iRAP Mapping: internal tophat2 error"
+		set_classified_error "iRAP Mapping: internal tophat2 error"
 	    else
-		echo "iRAP Mapping: unclassified error"
+		E=`grep -E "(disk I/O error|Stale|IOError:)" $errf`
+		if [ $? -eq 0 ]; then
+		    set_classified_error "iRAP Mapping: I/O error"
+		else
+		    echo "iRAP Mapping: unclassified error"
+		fi
 	    fi
 	fi
 
@@ -266,23 +304,37 @@ function iRAP-Mapping_errors {
 function iRAP-Mapping-QC_errors {
     errf=$1
 
-    echo "iRAP Mapping QC: unclassified error"
-
+    E=`grep -E "(disk I/O error|Stale|IOError:)" $errf`
+    if [ $? -eq 0 ]; then
+	set_classified_error "iRAP Mapping QC: I/O error"
+    else
+	echo "iRAP Mapping QC: unclassified error"
+    fi
 }
 
 function iRAP-Quant_errors {
     errf=$1
     e=`grep "Error occured when reading beginning of SAM/BAM file." $errf`
     if [ $? -eq 0 ]; then
-	print_classified_error "iRAP Quant: no aligned reads in BAM?"
+	set_classified_error "iRAP Quant: no aligned reads in BAM?"
     else
-	echo "iRAP Quant: unclassified error"
+	E=`grep -E "(disk I/O error|Stale|IOError:)" $errf`
+	if [ $? -eq 0 ]; then
+	    set_classified_error "iRAP Quant: I/O error"
+	else	    
+	    echo "iRAP Quant: unclassified error"
+	fi
     fi
 }
 
 function iRAP-CRAM_errors {
     errf=$1
-    echo "iRAP CRAM: unclassified error"
+    E=`grep -E "(disk I/O error|Stale|IOError:)" $errf`
+    if [ $? -eq 0 ]; then
+	set_classified_error "iRAP CRAM: I/O error"
+    else
+	echo "iRAP CRAM: unclassified error"
+    fi  
 }
 
 function iRAP-tidyup_errors {
@@ -292,19 +344,22 @@ function iRAP-tidyup_errors {
 
 #################################################################
 # 
-while getopts "1:2:c:s:m:t:i:h0fCT"  Option
+while getopts "1:2:c:s:m:p:t:i:o:h0fCTI"  Option
 do
     case $Option in
 	0 ) do_stage0="yes";;
         1 ) f1=$OPTARG;;
-        2 ) f2=$OPTARG;;# send all output to a log file
-        c ) conf=$OPTARG;;# send all output to a log file
+        2 ) f2=$OPTARG;;
+        c ) conf=$OPTARG;;
 	C ) do_clean=y;;
-	s ) strand=$OPTARG;;# send all output to a log file
+	s ) strand=$OPTARG;;
+	p ) spikein_fasta=$OPTARG;;
 	m ) mem=$OPTARG;;
+	o ) out_dir=$OPTARG;;
 	t ) threads=$OPTARG;;
 	f ) run_faster=y;;
 	T ) tidy_up_only=y;do_clean=y;;
+	I ) do_info_only=y;;
 	i ) irap_options=$OPTARG;;
         h ) print_usage; exit;;
     esac
@@ -325,6 +380,55 @@ if [ "$conf-" == "-" ]; then
     exit 1
 fi
 
+
+if [ ! -e $conf ] ; then
+    perror "File $conf not found"    
+    exit 1
+fi
+
+
+if [ "$do_stage0-" == "yes-" ]; then
+    pinfo "Running stage0 only"
+fi
+
+####################################
+DATA_DIR=`get_data_dir`
+pinfo "Data dir.=$DATA_DIR"
+folder=`get_folder $f1`
+TARGET_DIR=$DATA_DIR/raw_data/single_lib/$folder
+
+#################################################################
+odir=$PWD/$out_dir/`dirname $f1|cut -f 2- -d /`
+fileprefix=`get_fileprefix $f1`
+pinfo "Final files will be placed in $odir"
+if [ ! -e  $odir ]; then
+    mkdir -p $odir
+fi
+
+
+####################################
+# tidy up only
+if [ "$tidy_up_only" == "y" ]; then
+    # delete the files in the TARGET_DIR
+    echo rm -rf $DATA_DIR/raw_data/single_lib/$folder
+    rm -rf $DATA_DIR/raw_data/single_lib/$folder
+    # this should not be here...
+    name=`grep "^name=" $conf|cut -f 2 -d=`
+    if [ "$name-" ==  "-" ]; then
+	name=`grep "^species=" $conf|cut -f 2 -d=`
+    fi
+    echo toplevel_dir=$name
+    if [ -e $name/tophat2 ] ; then
+	find $name/tophat2 -type d -name "`basename $folder`" -print -exec rm -f {} \; ;
+    fi
+    if [ -e $name/star ] ; then
+	find $name/star -type d -name "`basename $folder`" -print -exec rm -f {} \; ;
+    fi
+    exit 0
+fi
+
+####################################
+# 
 # Check if the files exist
 if [ ! -e $f1 ] ; then
     perror "File $f1 not found"    
@@ -335,18 +439,6 @@ if [ "$f2-" != "-" ] && [ ! -e $f2 ] ; then
     perror "File $f1 not found"    
     exit 1
 fi
-
-
-if [ ! -e $conf ] ; then
-    perror "File $f1 not found"    
-    exit 1
-fi
-
-
-if [ "$do_stage0-" == "yes-" ]; then
-    pinfo "Running stage0 only"
-fi
-
 
 check_path $f1 "-1"
 # FullPath to $f1
@@ -376,13 +468,11 @@ set -e
 
 ##################################################################
 # place the tarball in the right folder
-DATA_DIR=`get_data_dir`
-pinfo "Data dir.=$DATA_DIR"
-folder=`get_folder $f1`
-
-TARGET_DIR=$DATA_DIR/raw_data/single_lib/$folder
 
 mkdir -p $TARGET_DIR
+# target should be unique
+sl_init_files="$sl_init_files $TARGET_DIR"
+
 
 ##################################################################
 # put the fastq files in the "expected" folder
@@ -392,16 +482,16 @@ if [ -e `basename $f1` ]; then
     pwarning "symlink in $TARGET_DIR already exists..."
     rm `basename $f1`    
 fi
-if [ ! -e `basename $fp_f1` ]; then
-    ln -s $fp_f1 .
+if [ ! -e `basename $f1` ]; then
+    ln -s $fp_f1 `basename $f1`
 fi
 rp_f1=$folder/$f1_bn
 sl_init_files="$sl_init_files $rp_f1"
 
 rp_f2=
 if [ "$f2-" != "-" ]; then
-    if [ ! -e `basename $fp_f2` ]; then
-	ln -s $fp_f2 .
+    if [ ! -e `basename $f2` ]; then
+	ln -s $fp_f2 `basename $f2`
     fi
     rp_f2=$folder/$f2_bn
     sl_init_files="$sl_init_files $rp_f2"
@@ -411,13 +501,25 @@ pinfo "FASTQ files in place"
 popd > /dev/null 
 
 #################################################################
-odir=$PWD/out/`dirname $f1|cut -f 2- -d /`
-fileprefix=`get_fileprefix $f1`
-pinfo "Final files will be placed in $odir"
-if [ ! -e  $odir ]; then
-    mkdir -p $odir
+# 
+set +e
+if [ "-" != "$spikein_fasta-" ]; then
+    pinfo "processing -p option"
+    if [ -e "$spikein_fasta" ]; then
+	tsfile="$DATA_DIR/raw_data/single_lib/`basename $spikein_fasta`"
+	if [ -e $tsfile ]; then
+	    pwarning "File $tsfile already exists...file not overwritten"
+	else
+	    cp -v $spikein_fasta $tsfile
+	    pinfo "Copied $spikein_fasta to $tsfile"
+	fi
+	irap_options="$irap_options spikein_fasta=`basename $tsfile`"
+    else
+	perror "ERROR:: File '$spikein_fasta' not found"
+	exit 1
+    fi
 fi
-
+set -e
 #################################################################
 # TSV with the time and memory used
 time_log_file=$odir/`get_fileprefix $f1`.time
@@ -441,6 +543,11 @@ if [ $? !=  0 ]; then
     fi
 fi
 
+if [ "$do_stage0-" == "yes-" ]; then
+    pinfo "Stage0 complete."
+    exit 0
+fi
+
 #################################################################
 # run fastq_info on the file
 set -e
@@ -458,7 +565,10 @@ set +e
 if [ $do_validation -eq 1 ]; then
     run_AND_timeIt "fastqInfo" $time_log_file "fastq_info.sh  $folder/$f1_bn $rp_f2  > $folder/$f1_bn.info.tmp && mv $folder/$f1_bn.info.tmp $folder/$f1_bn.info"
     if [ $? != 0 ] ; then
-	perror "FASTQ validation failed"
+	popd
+	set_classified_error "FASTQ validation failed"
+	clean_up_all
+	print_classified_error
 	exit 1
     fi
     pinfo "Validation...done."
@@ -485,7 +595,11 @@ else
     fi
 fi
 pinfo "Lib. details: $DATA_DIR/$folder/$f1_bn.info"
-    
+
+if [ $do_info_only == "y" ]; then
+    pinfo "All done"
+    exit 0
+fi    
 popd
 INFO_FILE=$TARGET_DIR/$f1_bn.info
 sl_init_files="$sl_init_files $INFO_FILE"
@@ -495,17 +609,14 @@ set +e
 # check the read size
 rs=`get_rs $INFO_FILE`
 if [ "-" == "$rs-" ] || [ $rs -lt $min_read_size ]; then
-    perror "FastqInfo: Read size smaller than $min_read_size"
+    set_classified_error "FastqInfo: Read size smaller than $min_read_size"
+    clean_up_all
+    print_classified_error
     exit 1
 fi
 irap_single_lib_options="conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE max_mem=$mem max_threads=$threads raw_folder=single_lib "
 irap_clean_conf="$irap_single_lib_options $irap_options"
 
-# tidy up only
-if [ "$tidy_up_only" == "y" ]; then
-    clean_up_all
-    exit 0
-fi
 ##################################################################
 pinfo "QC and filtering..."
 run_AND_timeIt "iRAP-QC" $time_log_file  irap $irap_single_lib_options $irap_options stage1
@@ -526,7 +637,7 @@ pinfo "Mapping QC..."
 REPORT_TSVs=`irap $irap_single_lib_options  $irap_options print_mapping_report_req  |tail -n 1`
 run_AND_timeIt "iRAP-Mapping-QC" $time_log_file  irap $irap_single_lib_options $irap_options  $REPORT_TSVs
 if [ $? != 0 ]; then
-    perror "iRAP failed"
+    perror "iRAP Mapping QC failed"
     exit 1
 fi
 pinfo "Mapping QC...complete."

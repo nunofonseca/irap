@@ -36,7 +36,7 @@
 // 1MB
 // disable this option if disk access is fast (local disk)
 // enable it for network disks
-#define VERSION "0.7.0p1"
+#define VERSION "0.7.0d4"
 
 
 #define SEQDISKACCESS 1
@@ -94,10 +94,40 @@ int is_paired_data=FALSE;
 int is_interleaved=FALSE;
 int fix_dot=FALSE;
 // collect data from the reads
-unsigned long min_rl=MAX_READ_LENGTH; // minimum read length
-unsigned long max_rl=0; // maximum read length
 unsigned long min_qual=126; // minimum quality
 unsigned long max_qual=0;   // maximum quality
+
+unsigned long rdlen_ctr[MAX_READ_LENGTH];
+unsigned long min_rl=MAX_READ_LENGTH; // minimum read length
+unsigned long max_rl=0;  // maximum read length
+unsigned long num_rds=0; // number of reads
+
+// approx. median read length
+inline unsigned int median_rl(void) {
+  unsigned long long ctr=0;
+  unsigned int crl=1;
+  if ( num_rds==1 ) return(min_rl);
+  while ( ctr < MAX_READ_LENGTH ) {    
+    ctr+=rdlen_ctr[crl];
+    //printf("%d-%lu\n",crl,rdlen_ctr[crl]);
+    if ( num_rds>1 && ctr>num_rds/2) break;
+    ++crl;
+  }
+  return(crl);
+}
+
+inline void new_read(unsigned int slen) {
+
+  if (slen<min_rl) {
+    min_rl=slen;
+  } 
+  if (slen>max_rl) {
+    max_rl=slen;
+  }
+  rdlen_ctr[slen]++;
+  ++num_rds;
+}
+
 
 
 inline int validate_entry(char *hdr,char *hdr2,char *seq,char *qual,unsigned long linenum,const char* filename);
@@ -435,13 +465,7 @@ inline int validate_entry(char *hdr,char *hdr2,char *seq,char *qual,unsigned lon
     }
     slen++;
   }  
-  // Length
-  if (slen<min_rl) {
-    min_rl=slen;
-  } 
-  if (slen>max_rl) {
-    max_rl=slen;
-  }
+  new_read(slen);
   // check len
   if (slen < MIN_READ_LENGTH ) {
     fprintf(stderr,"\nError in file %s, line %lu: read length too small - %u\n",filename,linenum+1,slen);
@@ -617,12 +641,9 @@ int main(int argc, char **argv ) {
     if ( !strncmp(argv[2+nopt],"pe",2) ) {
       is_interleaved=FALSE;
     } 
-    //else  {
-    //  fd2=open_fastq(argv[2+nopt]);
-    //  gzclose(fd2);
-    //
   }
 
+  memset(&rdlen_ctr[0],0,sizeof(long)*MAX_READ_LENGTH);
   // ************************************************************
   if ( is_interleaved ) {
     // interleaved    
@@ -715,7 +736,7 @@ int main(int argc, char **argv ) {
     exit(1);    
   }
   fprintf(out,"Quality encoding: %s\n",qualRange2enc(min_qual,max_qual));
-  fprintf(out,"Read length: %lu %lu\n",min_rl,max_rl);
+  fprintf(out,"Read length: %lu %lu %u\n",min_rl,max_rl,median_rl());
   fprintf(out,"OK\n");  
   exit(0);
 }

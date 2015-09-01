@@ -58,11 +58,19 @@ int main(int argc, char *argv[])
   char database[BUFFER_SIZE];
   clock_t startClock,startClock2;
 
-  if (argc != 2) {  
-    fprintf(stderr, "Usage: bamRindex <in.bam>\n");  
+  if ( argc != 2 && argc!=3 ) {  
+    fprintf(stderr, "Usage: bamRindex <in.bam> [out.index]\n");  
     return 1;  
   }  
-
+  
+  if ( argc == 2 ) {  
+    assert(strcpy(database,argv[1])!=NULL);
+  } else {
+    assert(strcpy(database,argv[2])!=NULL);
+  }
+  // always add the extension
+  assert(strcat(database,".ridx")!=NULL);
+  remove(database);
   // Open file and exit if error
   //in = strcmp(argv[1], "-")? bam_open(argv[1], "rb") : bam_dopen(fileno(stdin), "rb");
   //fprintf(stderr,"Options ok\n");
@@ -72,9 +80,7 @@ int main(int argc, char *argv[])
     return 1;  
   }  
   //fprintf(stderr,"BAM opened\n");
-  assert(strcpy(database,argv[1])!=NULL);
-  assert(strcat(database,".ridx")!=NULL);
-  remove(database);
+
   // ***********
   // Read header
   bam_header_t *header;
