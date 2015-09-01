@@ -198,7 +198,13 @@ function set_classified_error {
 
 function stage0_errors {
     errf=$1
-    echo "iRAP Stage0: unclassified error"
+    E=`grep -E "(disk I/O error|Stale|IOError:)" $errf`
+    if [ $? -eq 0 ]; then
+	set_classified_error "iRAP stage0: I/O error"
+    else
+	echo "iRAP Stage0: unclassified error"
+    fi
+
 }
 
 function fastqInfo_errors {
@@ -248,7 +254,17 @@ function iRAP-QC_errors {
 			    if [ $? -eq 0 ]; then
 				set_classified_error "gzip: unexpected end of file"			
 			    else
-				echo "QC: unclassified error"
+				E=`grep -E "(disk I/O error|Stale|IOError:)" $errf`
+				if [ $? -eq 0 ]; then
+				    set_classified_error "QC: I/O error"
+				else
+				    E=`grep "gzip: .*.gz: unexpected end of file" $errf`
+				    if [ $? -eq 0 ]; then
+					set_classified_error "gzip: unexpected end of file"			
+				    else					
+					echo "QC: unclassified error"
+				    fi
+				fi
 			    fi
 			fi
 		    fi
@@ -273,7 +289,12 @@ function iRAP-Mapping_errors {
 	    if [ $? -eq 0 ]; then
 		set_classified_error "iRAP Mapping: internal tophat2 error"
 	    else
-		echo "iRAP Mapping: unclassified error"
+		E=`grep -E "(disk I/O error|Stale|IOError:)" $errf`
+		if [ $? -eq 0 ]; then
+		    set_classified_error "iRAP Mapping: I/O error"
+		else
+		    echo "iRAP Mapping: unclassified error"
+		fi
 	    fi
 	fi
 
@@ -283,8 +304,12 @@ function iRAP-Mapping_errors {
 function iRAP-Mapping-QC_errors {
     errf=$1
 
-    echo "iRAP Mapping QC: unclassified error"
-
+    E=`grep -E "(disk I/O error|Stale|IOError:)" $errf`
+    if [ $? -eq 0 ]; then
+	set_classified_error "iRAP Mapping QC: I/O error"
+    else
+	echo "iRAP Mapping QC: unclassified error"
+    fi
 }
 
 function iRAP-Quant_errors {
@@ -293,13 +318,23 @@ function iRAP-Quant_errors {
     if [ $? -eq 0 ]; then
 	set_classified_error "iRAP Quant: no aligned reads in BAM?"
     else
-	echo "iRAP Quant: unclassified error"
+	E=`grep -E "(disk I/O error|Stale|IOError:)" $errf`
+	if [ $? -eq 0 ]; then
+	    set_classified_error "iRAP Quant: I/O error"
+	else	    
+	    echo "iRAP Quant: unclassified error"
+	fi
     fi
 }
 
 function iRAP-CRAM_errors {
     errf=$1
-    echo "iRAP CRAM: unclassified error"
+    E=`grep -E "(disk I/O error|Stale|IOError:)" $errf`
+    if [ $? -eq 0 ]; then
+	set_classified_error "iRAP CRAM: I/O error"
+    else
+	echo "iRAP CRAM: unclassified error"
+    fi  
 }
 
 function iRAP-tidyup_errors {
