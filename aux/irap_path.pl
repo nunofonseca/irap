@@ -81,6 +81,7 @@ valid_norm_selection(stringtie_nd,stringtie_nd,rpkm).
 valid_norm_selection(nurd,nurd,rpkm).
 valid_norm_selection(flux_cap,flux_cap,rpkm).
 
+
 stranded_ok(yes,stranded).
 stranded_ok(yes,X):- not ground(X),!.
 stranded_ok(no,_).
@@ -257,7 +258,7 @@ m('gem',_,'',no).
 m('star',_,'',no).
 m('osa',_,'',no).
 m('mapsplice',_,'',no).
-m('none',_,'',no).
+m('none',_,'',stranded).
 
 all_mappers(X):-all(M,m(M,_,_,_),X).
 all_quant([htseq1,htseq2,basic,flux_cap,cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,nurd,stringtie,stringtie_nd,rsem,kallisto]).
