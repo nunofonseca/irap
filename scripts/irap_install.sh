@@ -1099,21 +1099,22 @@ install.packages("gplots_2.11.0.tar.gz",type="source",repos=NULL)
 download.file("http://cran.r-project.org/src/contrib/Archive/RSQLite/RSQLite_0.11.4.tar.gz","RSQLite_0.11.4.tar.gz")
 install.packages("RSQLite_0.11.4.tar.gz",type="source",repos=NULL)
 
-
+# update needs to be off otherwise the RSQLite PACKAGE
+# will be updated
 source("http://bioconductor.org/biocLite.R")
 biocLite('GO.db',ask=FALSE, suppressUpdates=TRUE)
 biocLite("Rsamtools",ask=FALSE, suppressUpdates=TRUE)
 #biocLite('cummeRbund',ask=FALSE, suppressUpdates=FALSE)
-biocLite('edgeR',ask=FALSE, suppressUpdates=FALSE)
-biocLite('DESeq',ask=FALSE, suppressUpdates=TRUE)
-#biocLite('DESeq2',ask=FALSE, suppressUpdates=FALSE)
-biocLite('DEXSeq',ask=FALSE, suppressUpdates=FALSE)
-biocLite('baySeq',ask=FALSE, suppressUpdates=FALSE)
-biocLite('limma',ask=FALSE, suppressUpdates=FALSE)
-biocLite('marray',ask=FALSE, suppressUpdates=FALSE)
-biocLite('igraph',ask=FALSE, suppressUpdates=FALSE)
+biocLite('edgeR',ask=FALSE, suppressUpdates=c("^RSQLite*"))
+biocLite('DESeq',ask=FALSE, suppressUpdates=c("^RSQLite*"))
+#biocLite('DESeq2',ask=FALSE, suppressUpdates=TRUE)
+biocLite('DEXSeq',ask=FALSE, suppressUpdates=c("^RSQLite*"))
+biocLite('baySeq',ask=FALSE, suppressUpdates=c("^RSQLite*"))
+biocLite('limma',ask=FALSE, suppressUpdates=c("^RSQLite*"))
+biocLite('marray',ask=FALSE, suppressUpdates=c("^RSQLite*"))
+#biocLite('igraph',ask=FALSE, suppressUpdates=c("^RSQLite*"))
 
-biocLite("org.Hs.eg.db",ask=FALSE, suppressUpdates=FALSE)
+biocLite("org.Hs.eg.db",ask=FALSE, suppressUpdates=TRUE)
 
 #biocLite("topGO",ask=FALSE, suppressUpdates=TRUE)
 #biocLite("biomaRt",ask=FALSE, suppressUpdates=TRUE)
@@ -1142,7 +1143,8 @@ species2db<-matrix(c('org.Ag.eg.db','Anopheles',
 'org.Xl.eg.db','Xenopus'),byrow=T,ncol=2)
 colnames(species2db)<-c("db","species")
 for (p in species2db[,'db']) {
-biocLite(p,ask=FALSE,supressUpdates=TRUE)
+biocLite(p,ask=FALSE,suppressUpdates=c("^RSQLite*"))
+                     
 }
 
 q()
