@@ -879,7 +879,7 @@ function deps_install {
     samtools_install
     samtools1_install
     bedtools_install
-    picard_install
+    #picard_install
     pinfo "Installing dependencies...done."
 }
 
