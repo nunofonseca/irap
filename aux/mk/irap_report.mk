@@ -57,6 +57,8 @@ else
 # by default generate a report only for the options selected in the conf. file
 ifneq ($(mapper),none)
 report_mappers?=$(mapper)
+else
+report_mappers=
 endif
 ifneq ($(quant_method),none)
 report_quant?=$(quant_method)
@@ -76,10 +78,16 @@ endif
 #$(foreach v,report_mappers report_quant report_equant report_de, $(info $(v)=$($(v))))
 #################################################################
 # useful functions
+ifeq ($(mapper),none)
+define set_MAPPING_DIRS=
+$(eval override MAPPING_DIRS:=)
+endef
+else
 define set_MAPPING_DIRS=
 $(eval override MAPPING_DIRS:=$(foreach m,$(report_mappers), $(call quiet_ls, -d $(name)/$(m))))
 endef
 #$(eval override MAPPING_DIRS:=$(shell ls --color=never -d -1 $(name)/{$(shell echo $(SUPPORTED_MAPPERS) | sed 's/ /,/g')}  2>/dev/null ))
+endif 
 
 ifeq ($(quant_method),none)
 QUANT_DIRS:=
