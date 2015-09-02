@@ -583,8 +583,7 @@ colnames(species2db.m)<-c("db","species")
 #  o Consistent across analyses
 #  o Reliably accessible; obtain with biocLite
 #  o Careful secondary curation at Bioconductor
-#
-
+# Assumption: gene ids are ensembl ids
 species2dbs <- function(species.name) {
   suppressPackageStartupMessages(library("GO.db"))
 
@@ -634,9 +633,10 @@ species2dbs <- function(species.name) {
       species <- "EcK12"
       library("org.EcK12.eg.db")
       go.db <- org.EcK12.egGO
-      # how to get the entrez ids from the ensembl gene id?
       lgn.db <- org.EcK12.egGENENAME
       symbol.db <- org.EcK12.egSYMBOL
+      # how to get the entrez ids from the ensembl gene id?
+      # this will not until we can map the ensembl ids
       ensembl.db <- NA
       kegg.db <- org.EcK12.egPATH
     } else  if (
