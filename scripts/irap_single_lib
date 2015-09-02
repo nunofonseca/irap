@@ -480,7 +480,7 @@ pushd $TARGET_DIR > /dev/null
 pinfo "Unpacking fastq files to $TARGET_DIR"
 if [ -e `basename $f1` ]; then
     pwarning "symlink in $TARGET_DIR already exists..."
-    rm `basename $f1`    
+    rm -f `basename $f1`    
 fi
 if [ ! -e `basename $f1` ]; then
     ln -s $fp_f1 `basename $f1`
@@ -634,8 +634,13 @@ pinfo "Quantification...complete."
 #################################################################
 pinfo "Mapping QC..."
 # report files
-REPORT_TSVs=`irap $irap_single_lib_options  $irap_options print_mapping_report_req  |tail -n 1`
-run_AND_timeIt "iRAP-Mapping-QC" $time_log_file  irap $irap_single_lib_options $irap_options  $REPORT_TSVs
+REPORT_TSVs=`irap $irap_single_lib_options  $irap_options print_mapping_report_req  |tail -n 1 |grep -v "make:"`
+if [ "$REPORT_TSVs-" == "-" ]; then
+    pinfo "No mapping report"
+    run_AND_timeIt "iRAP-Mapping-QC" $time_log_file  echo nothing to do
+else
+    run_AND_timeIt "iRAP-Mapping-QC" $time_log_file  irap $irap_single_lib_options $irap_options  $REPORT_TSVs
+fi
 if [ $? != 0 ]; then
     perror "iRAP Mapping QC failed"
     exit 1
@@ -647,10 +652,15 @@ pinfo "Mapping QC...complete."
 # BAM->CRAM
 set -e
 BAM=`irap $irap_single_lib_options $irap_options print_stage2_files|tail -n 1`
-if [ ! -e "$BAM" ]; then
-    perror "Ooops: $BAM not found! This is not good."
-    exit 1
-fi
+if [ "$BAM-" == "-" ]; then
+    run_AND_timeIt "iRAP-CRAM" $time_log_file  echo no bam no cram
+else
+
+    if [ ! -e "$BAM" ]; then
+	perror "Ooops: $BAM not found! This is not good."
+	exit 1
+    fi
+
 
 CRAM_FILE=`dirname $odir/$f1_bn`/$libname_noprefix.cram    
 set +e
@@ -680,7 +690,7 @@ else
     rm -f $odir/$f1_bn.bam
     pinfo "Temporary BAM file deleted"
 fi
-
+fi
 # 
 TSVs=`irap $irap_single_lib_options  $irap_options print_stage3_s_targets  |tail -n 1`
 
@@ -689,7 +699,9 @@ cp -a $TSVs $odir
 #mv $TSVs $odir
 
 # report files
-cp -a $REPORT_TSVs $odir
+if [ "$REPORT_TSVs-" != "-"  ]; then 
+    cp -a $REPORT_TSVs $odir
+fi
 # rename the files (remove the l prefix added by fastq_info)
 rename $libname $libname_noprefix `dirname $odir/$f1_bn`/$libname*
 
