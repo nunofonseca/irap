@@ -350,6 +350,7 @@ $(name)/%/genestats_raw.tsv $(name)/%/genestats_perc.tsv:  $(foreach p,$(pe),$(n
 
 # 
 print_mapping_report_req: $(foreach m,$(mapping_dirs),$(name)/report/mapping/$(m).html_req)
+
 $(name)/report/mapping/%.html_req:
 	echo $(MAPPING_REPORT_PRE_STATS)
 
