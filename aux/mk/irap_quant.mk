@@ -795,11 +795,10 @@ endef
 #sample_name.genes.results
 #sample.name.isoforms.results
 # 1 lib
-# 2 quant method
-# 3 bam prefix
-# 4 paired-end/se options
+# 2 bam prefix
+# 3 paired-end/se options
 define make-rsem-quant-rule=
-$(call lib2quant_folder,$(1))$(1).genes.results: $(call lib2bam_folder,$(1))$(2).hits.bam.trans.bam 
+$(call lib2quant_folder,$(1))$(2).genes.results: $(call lib2bam_folder,$(1))$(2).hits.bam.trans.bam 
 	(mkdir -p $$(@D) && $$(call run_rsem,$$<,$$(@D)/$(1),$(3),$(1))) || (rm -rf $$@ && exit 1)
 
 %.genes.raw.rsem.tsv: %.genes.results
@@ -808,7 +807,7 @@ $(call lib2quant_folder,$(1))$(1).genes.results: $(call lib2bam_folder,$(1))$(2)
 %.genes.rpkm.rsem.rsem.tsv: %.genes.results
 	cut -f 1,7 $$< |tail -n +2 > $$@.tmp && mv $$@.tmp $$@
 
-$(call lib2quant_folder,$(1))$(1).genes.tpm.rsem.rsem.tsv: $(call lib2quant_folder,$(1))$(1).genes.results
+$(call lib2quant_folder,$(1))$(2).genes.tpm.rsem.rsem.tsv: $(call lib2quant_folder,$(1))$(2).genes.results
 	cut -f 1,6 $$< |tail -n +2 > $$@.tmp && mv $$@.tmp $$@
 
 %.transcripts.raw.rsem.tsv: %.isoforms.results
@@ -829,13 +828,13 @@ $(foreach l,$(pe),$(eval $(call make-rsem-quant-rule,$(l),$(l).pe,--paired-end))
 
 
 
-$(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).transcripts.raw.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).transcripts.raw.$(quant_method).tsv) 
+$(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).tsv) 
 	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) )  > $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/$(quant_method)/transcripts.rpkm.$(quant_method).$(quant_method).tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).transcripts.rpkm.$(quant_method).$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).transcripts.rpkm.$(quant_method).$(quant_method).tsv) 
+$(name)/$(mapper)/$(quant_method)/transcripts.rpkm.$(quant_method).$(quant_method).tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.rpkm.$(quant_method).$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.transcripts.rpkm.$(quant_method).$(quant_method).tsv) 
 	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) )  > $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).genes.raw.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).genes.raw.$(quant_method).tsv) 
+$(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).tsv) 
 	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) )  > $@.tmp && mv $@.tmp $@
 
 
@@ -904,7 +903,6 @@ $(call lib2quant_folder,$(1))$(2).transcripts.raw.kallisto.tsv: $(call lib2quant
 $(call lib2quant_folder,$(1))$(2).transcripts.tpm.kallisto.kallisto.tsv: $(call lib2quant_folder,$(1))$(1)/$(1).abundance.txt
 	cut -f 1,5 $$< |tail -n +2 > $$@.tmp && mv $$@.tmp $$@
 
-$(info $(call lib2quant_folder,$(1))$(2).genes.raw.kallisto.tsv: $(call lib2quant_folder,$(1))$(1).transcripts.raw.kallisto.tsv $(name)/data/mapTrans2Gene.tsv)
 
 $(call lib2quant_folder,$(1))$(2).genes.raw.kallisto.tsv: $(call lib2quant_folder,$(1))$(2).transcripts.raw.kallisto.tsv $(name)/data/mapTrans2Gene.tsv
 	libTSVAggrTransByGene $$< $(name)/data/mapTrans2Gene.tsv $$@.tmp && mv  $$@.tmp $$@
