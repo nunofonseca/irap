@@ -798,8 +798,21 @@ endef
 # 2 bam prefix
 # 3 paired-end/se options
 define make-rsem-quant-rule=
-$(call lib2quant_folder,$(1))$(2).genes.results: $(call lib2bam_folder,$(1))$(2).hits.bam.trans.bam 
-	(mkdir -p $$(@D) && $$(call run_rsem,$$<,$$(@D)/$(1),$(3),$(1))) || (rm -rf $$@ && exit 1)
+$(call lib2quant_folder,$(1))$(2).genes.results $(call lib2quant_folder,$(1))$(2).isoforms.results: $(call lib2bam_folder,$(1))$(2).hits.bam.trans.bam 
+	(mkdir -p $$(@D) && $$(call run_rsem,$$<,$$(@D)/$(2),$(3),$(1))) || (rm -rf $$@ && exit 1)
+
+$(call lib2quant_folder,$(1))$(2).genes.tpm.rsem.rsem.tsv: $(call lib2quant_folder,$(1))$(2).genes.results
+	cut -f 1,6 $$< |tail -n +2 > $$@.tmp && mv $$@.tmp $$@
+
+$(call lib2quant_folder,$(1))$(2).transcripts.raw.rsem.tsv: $(call lib2quant_folder,$(1))$(2).isoforms.results $(call lib2quant_folder,$(1))$(2).genes.results
+	cut -f 1,5 $$< |tail -n +2 > $$@.tmp && mv $$@.tmp $$@
+
+endef
+
+# quantification
+$(foreach l,$(se),$(eval $(call make-rsem-quant-rule,$(l),$(l).se,)))
+$(foreach l,$(pe),$(eval $(call make-rsem-quant-rule,$(l),$(l).pe,--paired-end)))
+
 
 %.genes.raw.rsem.tsv: %.genes.results
 	cut -f 1,5 $$< |tail -n +2 > $$@.tmp && mv $$@.tmp $$@
@@ -807,25 +820,12 @@ $(call lib2quant_folder,$(1))$(2).genes.results: $(call lib2bam_folder,$(1))$(2)
 %.genes.rpkm.rsem.rsem.tsv: %.genes.results
 	cut -f 1,7 $$< |tail -n +2 > $$@.tmp && mv $$@.tmp $$@
 
-$(call lib2quant_folder,$(1))$(2).genes.tpm.rsem.rsem.tsv: $(call lib2quant_folder,$(1))$(2).genes.results
-	cut -f 1,6 $$< |tail -n +2 > $$@.tmp && mv $$@.tmp $$@
 
-%.transcripts.raw.rsem.tsv: %.isoforms.results
-	cut -f 1,5 $$< |tail -n +2 > $$@.tmp && mv $$@.tmp $$@
-
-%.transcripts.rpkm.rsem.rsem.tsv: %.isoforms.results
+%.transcripts.rpkm.rsem.rsem.tsv: %.isoforms.results %.genes.results
 	cut -f 1,7 $$< |tail -n +2 > $$@.tmp && mv $$@.tmp $$@
 
-%.transcripts.tpm.rsem.rsem.tsv: %.isoforms.results
+%.transcripts.tpm.rsem.rsem.tsv: %.isoforms.results %.genes.results
 	cut -f 1,6 $$< |tail -n +2 > $$@.tmp && mv $$@.tmp $$@
-
-endef
-
-
-# quantification
-$(foreach l,$(se),$(eval $(call make-rsem-quant-rule,$(l),$(l).se,)))
-$(foreach l,$(pe),$(eval $(call make-rsem-quant-rule,$(l),$(l).pe,--paired-end)))
-
 
 
 $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).tsv) 
