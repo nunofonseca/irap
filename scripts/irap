@@ -1723,6 +1723,8 @@ quantification:
 $(quant_method)_quant_files=
 $(quant_method)_quant:
 quantification_s:
+print_stage3_s_targets:
+
 else
 $(quant_method)_quant_files=$(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv $(call transcripts_quant_file)  $(call exons_quant_file) 
 
