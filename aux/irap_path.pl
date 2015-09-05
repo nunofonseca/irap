@@ -64,7 +64,7 @@ valid_combination([Map,QR,QNT,QN,DE,GSE,Stranded]):-
     qr(QR,m(Map),_,S2),
     valid_norm_selection(QR,QNT,QN),
     !,
-    (Stranded==yes->S1==stranded,stranded_ok(Stranded,S2);true),
+    (Stranded==yes->(Map==none->true;S1==stranded,stranded_ok(Stranded,S2));true),
     de(DE,qr(QR),_),
     gse(GSE,de(DE),_).
 
@@ -258,7 +258,7 @@ m('gem',_,'',no).
 m('star',_,'',no).
 m('osa',_,'',no).
 m('mapsplice',_,'',no).
-m('none',_,'',stranded).
+m('none',_,'',_).
 
 all_mappers(X):-all(M,m(M,_,_,_),X).
 all_quant([htseq1,htseq2,basic,flux_cap,cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,nurd,stringtie,stringtie_nd,rsem,kallisto]).
