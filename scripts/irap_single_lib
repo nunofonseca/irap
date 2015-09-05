@@ -480,10 +480,12 @@ pushd $TARGET_DIR > /dev/null
 pinfo "Unpacking fastq files to $TARGET_DIR"
 if [ -e `basename $f1` ]; then
     pwarning "symlink in $TARGET_DIR already exists..."
-    rm -f `basename $f1`    
+    if [ "$run_faster-" != "y-" ]; then
+	rm -f `basename $f1`    
+    fi
 fi
 if [ ! -e `basename $f1` ]; then
-    ln -s $fp_f1 `basename $f1`
+    ln -b -s $fp_f1 `basename $f1`
 fi
 rp_f1=$folder/$f1_bn
 sl_init_files="$sl_init_files $rp_f1"
@@ -491,7 +493,7 @@ sl_init_files="$sl_init_files $rp_f1"
 rp_f2=
 if [ "$f2-" != "-" ]; then
     if [ ! -e `basename $f2` ]; then
-	ln -s $fp_f2 `basename $f2`
+	ln -b -s $fp_f2 `basename $f2`
     fi
     rp_f2=$folder/$f2_bn
     sl_init_files="$sl_init_files $rp_f2"
@@ -651,7 +653,7 @@ pinfo "Mapping QC...complete."
 #################################################################
 # BAM->CRAM
 set -e
-BAM=`irap $irap_single_lib_options $irap_options print_stage2_files|tail -n 1`
+BAM=`irap $irap_single_lib_options $irap_options print_stage2_files|tail -n 1|grep -v "make:"`
 if [ "$BAM-" == "-" ]; then
     run_AND_timeIt "iRAP-CRAM" $time_log_file  echo no bam no cram
 else
@@ -692,7 +694,7 @@ else
 fi
 fi
 # 
-TSVs=`irap $irap_single_lib_options  $irap_options print_stage3_s_targets  |tail -n 1`
+TSVs=`irap $irap_single_lib_options  $irap_options print_stage3_s_targets  |tail -n 1|grep -v "make:"`
 
 pinfo "Moving the following files to $odir: $TSVs $REPORT_TSVs"
 cp -a $TSVs $odir
