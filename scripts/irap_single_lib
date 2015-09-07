@@ -35,7 +35,7 @@ declare -i classified_error=0
 function print_usage {
 cat <<EOF
 iRAP wrapper to process a single library
-Usage: irap_single_lib -1 fastq_file [-2 fastq_file2] -c irap.configuration  [-s strand (first,second,both)] [-p spikein_fasta] [-m MEM] [-t threads] [-i irap_options] [-0] [-h] [-C]
+Usage: irap_single_lib -1 fastq_file [-2 fastq_file2] -c irap.configuration  [-s strand (first,second,both)] [-p spikein_fasta] [-m MEM] [-t threads] [-i irap_options] [-0] [-C] [-l min_read_length] [-h] 
 
 -0  - should be executed once for each
 species/genome/annotation to generate the indexes and other files
@@ -48,6 +48,8 @@ necessary for the analysis.
 -T clean up only
 
 -I only run fastq_info
+
+-l minimum read length
 EOF
 }
 
@@ -344,7 +346,7 @@ function iRAP-tidyup_errors {
 
 #################################################################
 # 
-while getopts "1:2:c:s:m:p:t:i:o:h0fCTI"  Option
+while getopts "1:2:c:s:m:p:t:i:o:l:h0fCTI"  Option
 do
     case $Option in
 	0 ) do_stage0="yes";;
@@ -361,7 +363,8 @@ do
 	T ) tidy_up_only=y;do_clean=y;;
 	I ) do_info_only=y;;
 	i ) irap_options=$OPTARG;;
-        h ) print_usage; exit;;
+	l ) min_read_size=$OPTARG;;
+        h ) print_usage; exit;;	
     esac
 done
 
@@ -390,6 +393,8 @@ fi
 if [ "$do_stage0-" == "yes-" ]; then
     pinfo "Running stage0 only"
 fi
+
+# TODO: validate minimum read length
 
 ####################################
 DATA_DIR=`get_data_dir`
