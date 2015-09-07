@@ -27,6 +27,7 @@ function usage {
     echo " -n name : name of the new database";
     echo " -f filename : fasta filename with the sequences to index";
     echo " -d dir : IRAP data directory (default: $IRAP_DIR/data/contamination)";
+    echo " -m mapper : mapper to use - bowtie and bowtie2 (default: bowtie)";
 }
 
 if [ "$IRAP_DIR-" = "-" ]; then
@@ -39,13 +40,15 @@ FASTAFILE=
 NAME=
 DIR=$IRAP_DIR/data/contamination
 OPTERR=0
+mapper=bowtie
 
-while getopts "f:n:d:h"  Option
+while getopts "f:m:n:d:h"  Option
 do
     case $Option in
-	f ) FASTAFILE=$OPTARG;;  # run irap up to the given stage
-        n ) NAME=$OPTARG;;# send all output to a log file
-        d ) DIR=$OPTARG;;# send all output to a log file
+	f ) FASTAFILE=$OPTARG;;  # fasta file
+        n ) NAME=$OPTARG;;# name
+        d ) DIR=$OPTARG;;# directory where the index files will be placed
+	m ) mapper=$OPTARG;;#  mapper
         h ) usage; exit 1;;
     esac
 done
@@ -73,5 +76,9 @@ if [ ! -e $DIR ]; then
     exit 1
 fi
 
-irap_map.sh bowtie1 bowtie-build -f $FASTAFILE $DIR/$NAME
+if [ "$mapper" == "bowtie" ]; then
+    irap_map.sh bowtie1 bowtie-build -f $FASTAFILE $DIR/$NAME
+else
+    irap_map.sh bowtie2 bowtie2-build -f $FASTAFILE $DIR/$NAME
+fi
 exit 0

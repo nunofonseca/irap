@@ -95,6 +95,9 @@ def_min_qual=10
 #Default contamination 
 def_contamination_mismatches=3
 
+# default mapper
+def_mapper=bowtie
+
 # 
 ifdef run_tests
 undefine run_tests
@@ -170,15 +173,26 @@ endif
 
 $(info * FILES=$(FILES) pe=$(PE))
 
+# mapper
+ifdef mapper
+ifneq ($(mapper),bowtie)
+ifneq ($(mapper),bowtie2)
+$(error Unsupported mapper $(mapper), valid options are: bowtie, bowtie2)
+endif
+endif
+else
+mapper=$(def_mapper)
+endif
+
 ##Check mandatory parameters
 #Size of reads
 ifndef read_size
-$(error * Missing read size. Compulsory paramaters are f1 (and f2 if paired), read_size, out_prefix)
+$(error * Missing read size. Compulsory parameters are f1 (and f2 if paired), read_size, out_prefix)
 endif
 
 #Prefix of the output file
 ifndef out_prefix
-$(error * Missing out_prefix. Compulsory paramaters are f1 (and f2 if paired), read_size, out_prefix)
+$(error * Missing out_prefix. Compulsory parameters are f1 (and f2 if paired), read_size, out_prefix)
 endif
 
 #Output directory
@@ -285,14 +299,16 @@ else
 f2_n=
 endif
 
-# check if bowtie is available
+# check if the mapper is available
 ifneq ($(cont_index),no)
-bowtie_path?=$(shell which bowtie 2>/dev/null)
-ifeq ($(bowtie_path),)
-$(error * bowtie not found)
+mapper_path?=$(shell PATH=$(IRAP_DIR)/bin/$(mapper)/bin:$(PATH) which $(mapper) 2>/dev/null)
+ifeq ($(mapper_path),)
+$(error * $(mapper) not found)
 endif
-$(info * bowtie=$(bowtie_path))
+$(info * mapper=$(mapper_path))
 endif
+
+
 
 ###################
 #Function called at each filtering step 
@@ -646,8 +662,16 @@ $(out_dir)/%.filter2.fastq: $(out_dir)/%.filter1.fastq
 
 #If test for contamination
 else
+ifeq ($(mapper),bowtie)
 $(out_dir)/%.filter2.fastq: $(out_dir)/%.filter1.fastq
-	bowtie -p $(threads) -v $(contamination_mismatches) -q --phred$(qual)-quals --un $@.tmp   $(cont_index)  $<  && mv $@.tmp $@
+	$(mapper_path) -p $(threads) -v $(contamination_mismatches) -q --phred$(qual)-quals --un $@.tmp   $(cont_index)  $<  && mv $@.tmp $@
+endif
+
+ifeq ($(mapper),bowtie2)
+$(out_dir)/%.filter2.fastq: $(out_dir)/%.filter1.fastq
+	$(mapper_path) -p $(threads)  --un $@.tmp  --fast-local  --phred$(qual) -x $(cont_index) -U $<   -S /dev/stdout | samtools view -b - > $@.cont.bam && mv $@.tmp $@
+endif
+
 endif
 
 
