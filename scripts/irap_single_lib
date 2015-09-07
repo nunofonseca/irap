@@ -621,6 +621,10 @@ if [ "-" == "$rs-" ] || [ $rs -lt $min_read_size ]; then
     print_classified_error
     exit 1
 fi
+if [ "-" == "$rs-" ] || [ $rs -gt 1024 ]; then
+   p_warning "Read length greater than 1024 - bowtie1 and other programs may fail"
+fi
+
 irap_single_lib_options="conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE max_mem=$mem max_threads=$threads raw_folder=single_lib "
 irap_clean_conf="$irap_single_lib_options $irap_options"
 
