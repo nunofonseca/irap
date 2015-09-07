@@ -85,7 +85,9 @@ valid_norm_selection(flux_cap,flux_cap,rpkm).
 stranded_ok(yes,stranded).
 stranded_ok(yes,X):- not ground(X),!.
 stranded_ok(no,_).
-
+stranded_ok(Stranded,_Supports):-
+    format('ERROR: Tools selected are incompatible with the strand protocol (~w)~n',[Stranded]),
+    fail.
 
 member(X,[X|_]).
 member(X,[_|R]):-
