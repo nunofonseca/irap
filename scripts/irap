@@ -244,6 +244,9 @@ def_trim_reads=y
 # Quality filtering - on/off/none (alias: qc)
 def_qual_filtering=on
 
+# Mapper to use in QC contamination check 
+def_cont_mapper=bowtie
+
 #Software for mapping (reads -> genome/transcriptome)
 def_mapper=tophat2
 def_mapper_splicing=yes
@@ -664,6 +667,10 @@ endif
 
 ifndef qual_filtering
  qual_filtering=$(def_qual_filtering)
+endif
+
+ifndef cont_mapper
+cont_mapper=$(def_cont_mapper)
 endif
 
 # alias
@@ -1299,7 +1306,7 @@ $(call p_info,[DONE] Initialization)
 ###################
 # Quality Filtering
 ###################
-read_qual_filter_common_params=tmp_dir=$(tmp_dir)  threads=$(max_threads)  qual_filtering=$(qual_filtering)  min_qual=$(min_read_quality) trim=$(trim_reads) cont_index=$(cont_index) 
+read_qual_filter_common_params=tmp_dir=$(tmp_dir)  threads=$(max_threads)  qual_filtering=$(qual_filtering)  min_qual=$(min_read_quality) trim=$(trim_reads) cont_index=$(cont_index) mapper=$(cont_mapper)
 
 # 1 - libname
 # 2 - extra options
