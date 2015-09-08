@@ -1,5 +1,5 @@
 #!/bin/bash
-VERSION=0.2d
+VERSION=0.3d
 #irap_single_lib -1 fastq_file [-2 fastq_file2] -c conf  [-s strand (first,second,both)]  -m MEM -t threads -i irap_options [-0] [-h]
 f1=
 f2=
@@ -28,8 +28,13 @@ irap_clean_conf=
 # http://unix.stackexchange.com/questions/38538/bash-dev-stderr-permission-denied
 STDERR=/dev/stderr
 
-declare -i classified_error=0
 
+if [ "$IRAP_DIR-" == "-" ]; then
+    echo "ERROR: IRAP_DIR variable not set."
+    exit 1
+fi
+
+source $IRAP_DIR/aux/sh/irap_shared.sh
 #################################################################
 #
 function print_usage {
@@ -53,110 +58,6 @@ necessary for the analysis.
 EOF
 }
 
-
-function pinfo { 
-    echo "[INFO: $*]"
-}
-
-function perror { 
-    echo "[ERROR: $*]" >> $STDERR
-}
-
-function pwarning { 
-    echo "[WARNING: $*]" >> $STDERR
-}
-
-
-function get_fileprefix {
-    filename=`basename $1`
-    filepref=`echo $filename|sed "s/.fastq.*//"`
-    echo $filepref
-}
-
-
-# check paths - paths to the libraries should be relative although it will work
-# with full paths
-function check_path {
-
-    path=$1
-    var_name=$2
-    if [ `echo "$1"|cut -b 1` == "/" ]; then
-	pwarning "Relative path expected but a full path was  provided ($var_name)."
-    fi
-}
-
-# two levels - 
-# L1: ~1.7K folders
-function get_folder {
-    filename=`basename $1`
-    filepref=`get_fileprefix $1`
-    md5=`echo $filename|md5sum`
-    fl=`echo $md5|cut -b 1,2`
-    echo $fl/$filepref
-}
-
-function get_data_dir {
-    # lookup in the conf file
-    # 
-    d=`echo $irap_options|grep "data_dir="`
-    if [ "$d-" != "-" ]; then
-	d=`echo $irap_options|sed -E "s/.*\s?data_dir=([^\s]+).*/\1/"`
-    else
-	d=`grep -E "^\s*data_dir=" $conf | cut -f 2 -d\=`
-	if [ "$d-" == "-" ]; then
-	    # check if it is already defined
-	    if [ "$data_dir-" == "-" ]; then
-		perror "Unable to find iRAP's data directory"
-		exit 1
-	    fi
-	fi
-    fi
-    echo $d
-}
-
-function get_rs {
-    # lookup in the conf file
-    # 
-    d=`grep -E "^\s*.*_rs=" $1 | cut -f 2 -d\=`
-    echo $d
-}
-
-function run_AND_timeIt {
-    label=$1
-    logfile=$2
-    shift 2
-    datetime=`date "+%F %R"`
-    d=`dirname $logfile`
-    mkdir -p $d/logs
-    sout=$d/logs/$label.out
-    serr=$d/logs/$label.err
-    #echo `pwd`
-    echo "CMD: $*" 
-    # Redirect stderr and stdout to a file
-# `W'
-#     Number of times the process was swapped out of main memory
-#`I'
-#     Number of file system inputs by the process.
-#`O'
-#     Number of file system outputs by the process.
-    # label\tTime elapsed\tTime leapsed(Seconds)\taximum resident set size\tcommand\t exit status
-    # label |Time elapsed |Time elapsed(Seconds)| maximum resident memory |date|command\t | exit status | ....
-    /usr/bin/time -o $logfile -a --format "$label\t%E\t%e\t%M\t$datetime\t$*\t%x\t%I\t%O\t%W" bash -c "$*" 2> $serr 
-    EXIT_STATUS=$?
-    # output stderr
-    #cat $sout >/dev/stdout
-    cat $serr > /dev/stderr
-
-    if [ $EXIT_STATUS -ne 0 ]; then
-	classify_error $label $serr
-	exit $EXIT_STATUS
-    else
-	rm -f $sout $serr
-    fi
-    #pinfo $EXIT_STATUS
-    return $EXIT_STATUS
-}
-
 ######################################################
 # 
 function clean_up_init_files  {
@@ -175,174 +76,6 @@ function clean_up_all {
     fi
 }
 
-########################################################
-# Try to classify errors on each stage
-function classify_error {
-    perror "LOG files: $2"    
-    ${1}_errors $2
-    #echo "!!!!!!!!!!!!!!$classified_error<<<<<<<<<<<<<<<<<<<<" > /dev/stderr
-    print_classified_error
-}
-
-function print_classified_error {
-
-    if [ "$classified_error" == "1" ]; then
-	pinfo "Classified error...cleaning up before exiting."
-	clean_up_all
-    fi   
-    perror $errmsg
-}
-
-function set_classified_error {
-    classified_error=1
-    readonly errmsg="$*"
-}
-
-function stage0_errors {
-    errf=$1
-    E=`grep -E "(disk I/O error|Stale|IOError:)" $errf`
-    if [ $? -eq 0 ]; then
-	set_classified_error "iRAP stage0: I/O error"
-    else
-	echo "iRAP Stage0: unclassified error"
-    fi
-
-}
-
-function fastqInfo_errors {
-    errf=$1
-    
-    e=`grep -E "(ERROR:|error:|Error)" $errf|tail -n 1`
-    # Error in the file
-    if [ $? -eq 0 ]; then
-	msg=`echo "$e" | grep -E "(duplicated|header|truncated|identifier|character|length|unpaired|encoding)"|tail  -n 1|cut -f 2- -d: `
-	if [ $? -eq 0 ]; then
-	    set_classified_error "FastqInfo: $msg"
-	else
-	    set_classified_error "FastqInfo: unclassified error - $e"
-	fi
-    else 
-	echo "FastqInfo: unclassified error - $e"
-    fi
-}
-
-function iRAP-QC_errors {
-    errf=$1
-    E=`grep "mv: cannot stat.*filter1.stats"  $errf `
-    if [ $? -eq 0 ]; then
-	set_classified_error "QC: 1 too short reads or below quality threshold"
-    else
-	E=`grep "mv: cannot stat.*filter2.stats"  $errf `
-	if [ $? -eq 0 ]; then
-	    set_classified_error "QC: 2 contamination"
-	else
-	    E=`grep "mv: cannot stat.*filter3.stats"  $errf `
-	    if [ $? -eq 0 ]; then
-		set_classified_error "QC: 3 reads with uncalled bases discarded"
-	    else
-		E=`grep "mv: cannot stat.*filter4.stats"  $errf `
-		if [ $? -eq 0 ]; then
-		    set_classified_error "QC: 4 reads without mates"
-		else
-		    E=`grep "Aborted.* bowtie" $errf`
-		    if [ $? -eq 0 ]; then
-			set_classified_error "QC: IO error?"
-		    else
-			E=`grep "Premature End-Of-File" $errf`
-			if [ $? -eq 0 ]; then
-			    set_classified_error "QC: 1 no reads pass the quality threshold"
-			else
-			    E=`grep "gzip: .*.gz: unexpected end of file" $errf`
-			    if [ $? -eq 0 ]; then
-				set_classified_error "gzip: unexpected end of file"			
-			    else
-				E=`grep -E "(disk I/O error|Stale|IOError:)" $errf`
-				if [ $? -eq 0 ]; then
-				    set_classified_error "QC: I/O error"
-				else
-				    E=`grep "gzip: .*.gz: unexpected end of file" $errf`
-				    if [ $? -eq 0 ]; then
-					set_classified_error "gzip: unexpected end of file"			
-				    else					
-					echo "QC: unclassified error"
-				    fi
-				fi
-			    fi
-			fi
-		    fi
-		fi
-	    fi
-	fi
-    fi
-}
-
-function iRAP-Mapping_errors {
-    errf=$1
-    e=`grep "Error occured when reading beginning of SAM/BAM file." $errf`
-    if [ $? -eq 0 ]; then
-	set_classified_error "iRAP Mapping: no aligned reads in BAM"
-    else
-	e=`grep -E "bowtie2-align died with signal .* (core dumped)" $errf`
-	if [ $? -eq 0 ]; then
-	    echo hostname=`hostname`
-	    set_classified_error "iRAP Mapping: bowtie2-align  crashed: `hostname`"
-	else
-	    e=`grep -E "Error running.*tophat_reports" $errf`
-	    if [ $? -eq 0 ]; then
-		set_classified_error "iRAP Mapping: internal tophat2 error"
-	    else
-		E=`grep -E "(disk I/O error|Stale|IOError:)" $errf`
-		if [ $? -eq 0 ]; then
-		    set_classified_error "iRAP Mapping: I/O error"
-		else
-		    echo "iRAP Mapping: unclassified error"
-		fi
-	    fi
-	fi
-
-    fi
-}
-
-function iRAP-Mapping-QC_errors {
-    errf=$1
-
-    E=`grep -E "(disk I/O error|Stale|IOError:)" $errf`
-    if [ $? -eq 0 ]; then
-	set_classified_error "iRAP Mapping QC: I/O error"
-    else
-	echo "iRAP Mapping QC: unclassified error"
-    fi
-}
-
-function iRAP-Quant_errors {
-    errf=$1
-    e=`grep "Error occured when reading beginning of SAM/BAM file." $errf`
-    if [ $? -eq 0 ]; then
-	set_classified_error "iRAP Quant: no aligned reads in BAM?"
-    else
-	E=`grep -E "(disk I/O error|Stale|IOError:)" $errf`
-	if [ $? -eq 0 ]; then
-	    set_classified_error "iRAP Quant: I/O error"
-	else	    
-	    echo "iRAP Quant: unclassified error"
-	fi
-    fi
-}
-
-function iRAP-CRAM_errors {
-    errf=$1
-    E=`grep -E "(disk I/O error|Stale|IOError:)" $errf`
-    if [ $? -eq 0 ]; then
-	set_classified_error "iRAP CRAM: I/O error"
-    else
-	echo "iRAP CRAM: unclassified error"
-    fi  
-}
-
-function iRAP-tidyup_errors {
-    errf=$1
-    echo "iRAP Tidyup: unclassified error"
-}
 
 #################################################################
 # 
@@ -397,14 +130,14 @@ fi
 # TODO: validate minimum read length
 
 ####################################
-DATA_DIR=`get_data_dir`
+DATA_DIR=`conf_get_data_dir $conf "$irap_options"`
 pinfo "Data dir.=$DATA_DIR"
-folder=`get_folder $f1`
+folder=`get_new_folder $f1`
 TARGET_DIR=$DATA_DIR/raw_data/single_lib/$folder
 
 #################################################################
 odir=$PWD/$out_dir/`dirname $f1|cut -f 2- -d /`
-fileprefix=`get_fileprefix $f1`
+fileprefix=`get_fastq_fileprefix $f1`
 pinfo "Final files will be placed in $odir"
 if [ ! -e  $odir ]; then
     mkdir -p $odir
@@ -417,10 +150,10 @@ if [ "$tidy_up_only" == "y" ]; then
     # delete the files in the TARGET_DIR
     echo rm -rf $DATA_DIR/raw_data/single_lib/$folder
     rm -rf $DATA_DIR/raw_data/single_lib/$folder
-    # this should not be here...
-    name=`grep "^name=" $conf|cut -f 2 -d=`
+    # 
+    name=`conf_get_name $conf "$irap_options"`
     if [ "$name-" ==  "-" ]; then
-	name=`grep "^species=" $conf|cut -f 2 -d=`
+	name=`conf_get_species $conf "$irap_options"`
     fi
     echo toplevel_dir=$name
     if [ -e $name/tophat2 ] ; then
@@ -445,7 +178,7 @@ if [ "$f2-" != "-" ] && [ ! -e $f2 ] ; then
     exit 1
 fi
 
-check_path $f1 "-1"
+is_relative_path $f1 "-1"
 # FullPath to $f1
 fp_f1=`readlink -f $f1`
 f1_bn=`basename $f1`
@@ -529,7 +262,7 @@ fi
 set -e
 #################################################################
 # TSV with the time and memory used
-time_log_file=$odir/`get_fileprefix $f1`.time
+time_log_file=$odir/`get_fastq_fileprefix $f1`.time
 pinfo "Time log file in $time_log_file"
 touch $time_log_file
 
@@ -614,7 +347,7 @@ sl_init_files="$sl_init_files $INFO_FILE"
 set +e
 
 # check the read size
-rs=`get_rs $INFO_FILE`
+rs=`conf_get_rs $INFO_FILE`
 if [ "-" == "$rs-" ] || [ $rs -lt $min_read_size ]; then
     set_classified_error "FastqInfo: Read size smaller than $min_read_size"
     clean_up_all
