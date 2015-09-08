@@ -666,7 +666,8 @@ function mappers_install {
    gsnap_install 
    osa_install
    star_install
-   mapsplice_install
+   pinfo "To install MapSplice run: irap_install.sh -s . -x mapsplice"
+   #mapsplice_install
 }
 
 ########################
