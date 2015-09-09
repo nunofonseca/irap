@@ -286,7 +286,12 @@ function iRAP-Mapping-QC_errors {
     if [ $? -eq 0 ]; then
 	set_classified_error "iRAP Mapping QC: I/O error"
     else
-	echo "iRAP Mapping QC: unclassified error"
+	E=`grep -E "database is locked" $errf`
+	if [ $? -eq 0 ]; then
+	    set_classified_error "iRAP Mapping QC: lock sqlite failed - database is locked"
+	else	
+	    echo "iRAP Mapping QC: unclassified error"
+	fi
     fi
 }
 
