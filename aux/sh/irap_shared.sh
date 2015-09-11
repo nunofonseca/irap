@@ -48,6 +48,18 @@ function conf_get_data_dir {
     echo $d
 }
 
+function conf_get_mapper {
+    conf=$1
+    cmdline_options=$2
+    echo `conf_get_var_value mapper $conf "$cmdline_options"`
+}
+
+function conf_get_quant_method {
+    conf=$1
+    cmdline_options=$2
+    echo `conf_get_var_value quant_method $conf "$cmdline_options"`
+}
+
 function conf_get_name {
     conf=$1
     cmdline_options=$2
