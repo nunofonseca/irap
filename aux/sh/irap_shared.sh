@@ -66,6 +66,18 @@ function conf_get_name {
     echo `conf_get_var_value name $conf "$cmdline_options"`
 }
 
+function conf_get_reference {
+    conf=$1
+    cmdline_options=$2
+    echo `conf_get_var_value reference $conf "$cmdline_options"`
+}
+
+function conf_get_gtf {
+    conf=$1
+    cmdline_options=$2
+    echo `conf_get_var_value gtf_file $conf "$cmdline_options"`
+}
+
 function conf_get_species {
     conf=$1
     cmdline_options=$2
