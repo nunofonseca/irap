@@ -25,7 +25,7 @@ if [ "$1" == "-f" ] || [ "$2" == "-f" ] || [ "$3" == "-f" ]; then
 fi
 
 #
-#echo $A 
+# note: some SE file names may end with _[12].fastq but it will not work with the following code
 libname=l`basename $1|sed -E "s/((_[12])?\.(fastq|fq)[^ ]*)//"`
 dir=`dirname $1` 
 
