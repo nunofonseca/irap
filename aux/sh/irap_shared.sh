@@ -1,5 +1,5 @@
 # Shell functions used in iRAP scripts
-
+STDERR=/dev/stderr
 ################################################################
 # IO
 function pinfo { 
@@ -193,9 +193,13 @@ function print_classified_error {
     perror $errmsg
 }
 
+function set_error {
+    readonly errmsg="$*"
+}
+
 function set_classified_error {
     classified_error=1
-    readonly errmsg="$*"
+    set_error $*
 }
 
 function stage0_errors {
@@ -204,7 +208,7 @@ function stage0_errors {
     if [ $? -eq 0 ]; then
 	set_classified_error "iRAP stage0: I/O error"
     else
-	echo "iRAP Stage0: unclassified error"
+	set_error "iRAP Stage0: unclassified error"
     fi
 
 }
@@ -222,7 +226,7 @@ function fastqInfo_errors {
 	    set_classified_error "FastqInfo: unclassified error - $e"
 	fi
     else 
-	echo "FastqInfo: unclassified error - $e"
+	set_error "FastqInfo: unclassified error - $e"
     fi
 }
 
@@ -236,35 +240,45 @@ function iRAP-QC_errors {
 	if [ $? -eq 0 ]; then
 	    set_classified_error "QC: 2 contamination"
 	else
-	    E=`grep "mv: cannot stat.*filter3.stats"  $errf `
+	    E=`grep -E "reads with at least one reported alignment: [0-9]* \(100.00%\)"  $errf `
 	    if [ $? -eq 0 ]; then
-		set_classified_error "QC: 3 reads with uncalled bases discarded"
+		set_classified_error "QC: 2 contamination"
 	    else
-		E=`grep "mv: cannot stat.*filter4.stats"  $errf `
+		E=`grep "mv: cannot stat.*filter3.stats"  $errf `
 		if [ $? -eq 0 ]; then
-		    set_classified_error "QC: 4 reads without mates"
+		    set_classified_error "QC: 3 reads with uncalled bases discarded"
 		else
-		    E=`grep "Aborted.* bowtie" $errf`
+		    E=`grep "mv: cannot stat.*filter4.stats"  $errf `
 		    if [ $? -eq 0 ]; then
-			set_classified_error "QC: IO error?"
+			set_classified_error "QC: 4 reads without mates"
 		    else
-			E=`grep "Premature End-Of-File" $errf`
+			E=`grep "Aborted.* bowtie" $errf`
 			if [ $? -eq 0 ]; then
-			    set_classified_error "QC: 1 no reads pass the quality threshold"
+			    set_classified_error "QC: IO error?"
 			else
-			    E=`grep "gzip: .*.gz: unexpected end of file" $errf`
+			    E=`grep "Premature End-Of-File" $errf`
 			    if [ $? -eq 0 ]; then
-				set_classified_error "gzip: unexpected end of file"			
+				set_classified_error "QC: 1 no reads pass the quality threshold"
 			    else
-				E=`grep -E "(disk I/O error|Stale|IOError:)" $errf`
+				E=`grep "gzip: .*.gz: unexpected end of file" $errf`
 				if [ $? -eq 0 ]; then
-				    set_classified_error "QC: I/O error"
+				    set_classified_error "gzip: unexpected end of file"			
 				else
-				    E=`grep "gzip: .*.gz: unexpected end of file" $errf`
+				    E=`grep -E "(disk I/O error|Stale|IOError:)" $errf`
 				    if [ $? -eq 0 ]; then
-					set_classified_error "gzip: unexpected end of file"			
-				    else					
-					echo "QC: unclassified error"
+					set_classified_error "QC: I/O error"
+				    else
+					E=`grep "gzip: .*.gz: unexpected end of file" $errf`
+					if [ $? -eq 0 ]; then
+					    set_classified_error "gzip: unexpected end of file"			
+					else
+					    E=`grep -E "0 paired reads! are the headers ok?" $errf`
+					    if [ $? -eq 0 ]; then
+						set_classified_error "QC: 5 reads without mates"			
+					    else					
+						set_error "QC: unclassified error"
+					    fi
+					fi
 				    fi
 				fi
 			    fi
@@ -295,7 +309,7 @@ function iRAP-Mapping_errors {
 		if [ $? -eq 0 ]; then
 		    set_classified_error "iRAP Mapping: I/O error"
 		else
-		    echo "iRAP Mapping: unclassified error"
+		    set_error "iRAP Mapping: unclassified error"
 		fi
 	    fi
 	fi
@@ -314,7 +328,7 @@ function iRAP-Mapping-QC_errors {
 	if [ $? -eq 0 ]; then
 	    set_classified_error "iRAP Mapping QC: sqlite - database is locked"
 	else	
-	    echo "iRAP Mapping QC: unclassified error"
+	    set_error "iRAP Mapping QC: unclassified error"
 	fi
     fi
 }
@@ -329,7 +343,7 @@ function iRAP-Quant_errors {
 	if [ $? -eq 0 ]; then
 	    set_classified_error "iRAP Quant: I/O error"
 	else	    
-	    echo "iRAP Quant: unclassified error"
+	    set_error "iRAP Quant: unclassified error"
 	fi
     fi
 }
@@ -340,11 +354,11 @@ function iRAP-CRAM_errors {
     if [ $? -eq 0 ]; then
 	set_classified_error "iRAP CRAM: I/O error"
     else
-	echo "iRAP CRAM: unclassified error"
+	set_error "iRAP CRAM: unclassified error"
     fi  
 }
 
 function iRAP-tidyup_errors {
     errf=$1
-    echo "iRAP Tidyup: unclassified error"
+    set_error "iRAP Tidyup: unclassified error"
 }
