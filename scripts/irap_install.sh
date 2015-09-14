@@ -24,7 +24,7 @@ install=all
 IRAP_DIR1=
 SRC_DIR=
 
-IRAP_VERSION=0.7.0d8
+IRAP_VERSION=0.7.0p6
 
 
 #
@@ -1839,6 +1839,7 @@ function picard_install {
     mv picard-tools-$PICARD_VERSION/* $BIN_DIR/picard-tools
     pinfo "Picard installed"    
 }
+
 ###############################
 UPDATE_FILE_PERMS=n
 OPTERR=0
