@@ -152,7 +152,7 @@ function run_AND_timeIt {
     echo "CMD: $*" 
     # Redirect stderr and stdout to a file
 # `W'
-#     Number of times the process was swapped out of main memory
+#     Number of times the process was swapped out of main memory (KB)
 #`I'
 #     Number of file system inputs by the process.
 #`O'
