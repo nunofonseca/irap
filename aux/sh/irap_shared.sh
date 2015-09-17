@@ -137,6 +137,27 @@ function get_new_folder {
 
 ##########################################################################
 # Command execution
+
+#
+#
+cmd_debug=0
+function enable_cmd_debug {
+    cmd_debug=1
+}
+function disable_cmd_debug {
+    cmd_debug=0
+}
+function run_cmd {
+
+    if [ $cmd_debug -eq 1 ]; then
+	echo $*
+    else 
+	$*
+    fi
+}
+
+##############################
+# run and time cmds
 declare -i classified_error=0
 
 function run_AND_timeIt {
