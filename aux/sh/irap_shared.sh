@@ -91,13 +91,16 @@ function conf_get_var_value {
     local conf=$2
     local irap_options=$3
     # lookup in the conf file
-    # 
-    d=`echo $irap_options|grep "$conf_var="`
-    if [ "$d-" != "-" ]; then
-	d=`echo $irap_options|sed -E "s/.*\s?$conf_var=([^\s]+).*/\1/"`
+    #
+    echo  "irap conf=$conf $irap_options -n" > /dev/stderr
+    d=`irap conf=$conf $irap_options -n 2>/dev/null|grep "*\s*$conf_var="|tail -n 1`
+    if [ "$d-" == "-" ]; then
+	echo "ERROR: unable to get $conf_var value"
+	exit 1
     else
-	d=`grep -E "^\s*$conf_var=" $conf | cut -f 2 -d\=`
+	d=`echo $d|cut -f 2 -d=`
     fi
+    echo "debug:$conf_var=$d" > /dev/stderr
     echo $d
 }
 
