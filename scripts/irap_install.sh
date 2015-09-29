@@ -257,6 +257,9 @@ SAMTOOLS1_VERSION=1.1
 SAMTOOLS1_FILE=samtools-$SAMTOOLS1_VERSION.tar.bz2
 SAMTOOLS1_URL=http://sourceforge.net/projects/samtools/files/samtools/$SAMTOOLS1_VERSION/$SAMTOOLS1_FILE
 
+VCFTOOLS_VERSION=0.1.14
+VCFTOOLS_FILE=vcftools-$VCFTOOLS_VERSION.tar.gz
+VCFTOOLS_URL=https://github.com/vcftools/vcftools/releases/download/v$VCFTOOLS_VERSION/$VCFTOOLS_FILE
 
 ZLIB_VERSION=1.2.8
 ZLIB_FILE=zlib-$ZLIB_VERSION.tar.gz
@@ -880,6 +883,7 @@ function deps_install {
     samtools_install
     samtools1_install
     bedtools_install
+    vcftools_install
     #picard_install
     pinfo "Installing dependencies...done."
 }
@@ -921,6 +925,17 @@ function samtools1_install {
     pinfo "Downloading, compiling, and installing SAMTools 1.x...done."
 }
 
+function vcftools_install {
+    pinfo "Downloading, compiling, and installing VCFTOOLS..."
+    download_software VCFTOOLS
+    tar xvzf $VCFTOOLS_FILE
+    pushd vcftools-${VCFTOOLS_VERSION}
+    ./configure prefix=$IRAP_DIR
+    make -j $J prefix=$IRAP_DIR
+    make prefix=$IRAP_DIR install
+    popd
+    pinfo "Downloading, compiling, and installing VCFTOOLS...done."       
+}
 ######################################################
 # zlib
 function zlib_install {
