@@ -81,6 +81,8 @@ ifeq ($(indel_snp_calling_method),samtools)
 
 indel_snp_calling_setup: $(snp_dir) $(reference_abspath).fai
 
+SETUP_DATA_FILES+=indel_snp_calling_setup
+
 $(snp_dir):
 	mkdir -p $@
 
