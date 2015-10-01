@@ -261,6 +261,12 @@ VCFTOOLS_VERSION=0.1.14
 VCFTOOLS_FILE=vcftools-$VCFTOOLS_VERSION.tar.gz
 VCFTOOLS_URL=https://github.com/vcftools/vcftools/releases/download/v$VCFTOOLS_VERSION/$VCFTOOLS_FILE
 
+
+BCFTOOLS_VERSION=1.2
+BCFTOOLS_FILE=bcftools-$BCFTOOLS_VERSION.tar.bz2
+BCFTOOLS_URL=https://github.com/samtools/bcftools/releases/download/$BCFTOOLS_VERSION/$BCFTOOLS_FILE
+
+
 ZLIB_VERSION=1.2.8
 ZLIB_FILE=zlib-$ZLIB_VERSION.tar.gz
 ZLIB_URL=http://zlib.net/$ZLIB_FILE
@@ -921,6 +927,15 @@ function samtools1_install {
     mkdir  -p $INC_DIR/bam/htslib-1.1
     cp htslib-1.1/*.h $INC_DIR/bam/htslib-1.1
     cp libbam.a $INC_DIR/bam
+    #
+    pwd
+    download_software BCFTOOLS
+    tar xjvf $BCFTOOLS_FILE
+    pushd bcftools-${BCFTOOLS_VERSION}
+    sed -i -E "s|^prefix\s*=.*|prefix=$IRAP_DIR|"  Makefile
+    make -j $J 
+    make install
+    popd
     popd
     pinfo "Downloading, compiling, and installing SAMTools 1.x...done."
 }
@@ -928,7 +943,7 @@ function samtools1_install {
 function vcftools_install {
     pinfo "Downloading, compiling, and installing VCFTOOLS..."
     download_software VCFTOOLS
-    tar xvzf $VCFTOOLS_FILE
+    tar xvjf $VCFTOOLS_FILE
     pushd vcftools-${VCFTOOLS_VERSION}
     ./configure prefix=$IRAP_DIR
     make -j $J prefix=$IRAP_DIR
@@ -936,6 +951,7 @@ function vcftools_install {
     popd
     pinfo "Downloading, compiling, and installing VCFTOOLS...done."       
 }
+
 ######################################################
 # zlib
 function zlib_install {
