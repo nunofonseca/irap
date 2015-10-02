@@ -47,6 +47,9 @@ if ( is.na(out.file)) {
 # read matrix (TSV)
 tsv.mat<-read.table(tsv.file,sep="\t",header=F)
 colnames(tsv.mat) <- c("transcript_id","val")
+tsv.mat$transcript_id<-gsub("\\|.*","",as.character(tsv.mat$transcript_id))
+print(head(tsv.mat))
+# in gencode the transcript id will also include other information 
 pinfo("expression loaded")
 # read gtf file
 pinfo("Loading mapping")
