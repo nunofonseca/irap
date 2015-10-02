@@ -45,11 +45,11 @@ def_indel_snp_calling_method=none
 
 # initialize
 mpileup_params?=
-bcf_params?=
+bcf_call_params?=
 vcf_params?=
 
-mpileup_params+= -gu
-bcf_params+=  -cgvb
+mpileup_params+= -v -u
+bcf_call_params+=  -c -O b
 vcf_params+= 
 
 # default values
@@ -83,7 +83,7 @@ indel_snp_calling_setup: $(snp_dir) $(reference_abspath).fai
 
 SETUP_DATA_FILES+=indel_snp_calling_setup
 
-bcftools_cmd=$(IRAP_DIR)/bin/samtools0.x/bin/bcftools
+bcftools_cmd=bcftools
 
 $(snp_dir):
 	mkdir -p $@
@@ -107,7 +107,7 @@ snp_indel_calling_stage: indel_snp_calling_setup $(VCF_FILES)
 
 define make-snp-rule=
 $(call lib2snp_folder,$(1))$(2).$(indel_snp_calling_method).bcf: $(call lib2bam_folder,$(1))$(2).hits.bam 
-	mkdir -p $$(@D) && samtools mpileup $$(mpileup_params) -f $$(reference_abspath) $$< | $(bcftools_cmd) view $$(bcf_params) - > $$@.bcf.tmp && mv $$@.bcf.tmp $$@
+	mkdir -p $$(@D) && samtools mpileup $$(mpileup_params) -f $$(reference_abspath) $$< | gzip -c | $(bcftools_cmd) call $$(bcf_call_params) /dev/stdin > $$@.bcf.tmp && mv $$@.bcf.tmp $$@
 endef
 
 $(foreach l,$(se),$(eval $(call make-snp-rule,$(l),$(l).se)))
