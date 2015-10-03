@@ -88,8 +88,8 @@ bcftools_cmd=bcftools
 $(snp_dir):
 	mkdir -p $@
 
-%.vcf: %.bcf
-	$(bcftools_cmd) view $< > $@.tmp && mv $@.tmp $@
+%.vcf.gz: %.bcf
+	$(bcftools_cmd) view $< | gzip -c > $@.tmp && mv $@.tmp $@
 endif
 
 phony_targets+= snp_indel_calling_stage
@@ -100,19 +100,18 @@ snp_indel_calling_stage:
 
 else
 BCF_FILES=$(subst /$(mapper)/,/$(mapper)/snp/,$(subst .hits.bam,.$(indel_snp_calling_method).bcf,$(STAGE2_OUT_FILES)))
-VCF_FILES=$(subst .bcf,.vcf,$(BCF_FILES))
+VCF_FILES=$(subst .bcf,.vcf.gz,$(BCF_FILES))
 
 snp_indel_calling_stage: indel_snp_calling_setup $(VCF_FILES)
 
 
 define make-snp-rule=
 $(call lib2snp_folder,$(1))$(2).$(indel_snp_calling_method).bcf: $(call lib2bam_folder,$(1))$(2).hits.bam 
-	mkdir -p $$(@D) && samtools mpileup $$(mpileup_params) -f $$(reference_abspath) $$< | gzip -c | $(bcftools_cmd) call $$(bcf_call_params) /dev/stdin > $$@.bcf.tmp && mv $$@.bcf.tmp $$@
+	mkdir -p $$(@D) && samtools mpileup $$(mpileup_params) -f $$(reference_abspath) $$<  gzip -c | $(bcftools_cmd) call $$(bcf_call_params) /dev/stdin | > $$@.bcf.tmp && mv $$@.bcf.tmp $$@
 endef
 
 $(foreach l,$(se),$(eval $(call make-snp-rule,$(l),$(l).se)))
 $(foreach l,$(pe),$(eval $(call make-snp-rule,$(l),$(l).pe)))
-$(foreach l,$(pe),$(info $(call make-snp-rule,$(l),$(l).pe)))
 
 endif
 
