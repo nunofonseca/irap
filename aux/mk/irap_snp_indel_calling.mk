@@ -107,7 +107,7 @@ snp_indel_calling_stage: indel_snp_calling_setup $(VCF_FILES)
 
 define make-snp-rule=
 $(call lib2snp_folder,$(1))$(2).$(indel_snp_calling_method).bcf: $(call lib2bam_folder,$(1))$(2).hits.bam 
-	mkdir -p $$(@D) && samtools mpileup $$(mpileup_params) -f $$(reference_abspath) $$<  gzip -c | $(bcftools_cmd) call $$(bcf_call_params) /dev/stdin | > $$@.bcf.tmp && mv $$@.bcf.tmp $$@
+	mkdir -p $$(@D) && samtools mpileup $$(mpileup_params) -f $$(reference_abspath) $$<  | gzip -c | $(bcftools_cmd) call $$(bcf_call_params) /dev/stdin | > $$@.bcf.tmp && mv $$@.bcf.tmp $$@
 endef
 
 $(foreach l,$(se),$(eval $(call make-snp-rule,$(l),$(l).se)))
