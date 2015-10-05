@@ -59,7 +59,37 @@ EOF
 }
 
 ######################################################
-# 
+#
+function irap_get_name {
+
+    local conf=$1
+    shift 1
+    local irap_options=$*
+    if [ ! -e "$conf" ] ; then
+	echo "ERROR: $conf not found"
+	exit 1
+    fi
+    local is_atlas_run=`grep -c "^atlas_run=" $conf`
+    local name=
+    if [ "$is_atlas_run-" != "0-" ]; then
+	local species=`grep "^species=" $conf | head -n 1| cut -f 2 -d=`
+	if [ "$species-" == "-" ]; then
+	    perror "species undefined"
+	    exit 1
+	fi
+	local letter=`echo $species|cut -b 1`
+	name="processing_data/$letter/$species"
+	mkdir -p $name
+    else
+	name=`conf_get_name $conf "$irap_options"`
+	if [ "$name-" ==  "-" ]; then
+	    echo "ERROR: name parameter undefined"
+	    exit 1
+	fi
+    fi
+    echo $name
+}
+
 function clean_up_init_files  {
     rm -rf $sl_init_files
 }
@@ -151,10 +181,7 @@ if [ "$tidy_up_only" == "y" ]; then
     echo rm -rf $DATA_DIR/raw_data/single_lib/$folder
     rm -rf $DATA_DIR/raw_data/single_lib/$folder
     # 
-    name=`conf_get_name $conf "$irap_options"`
-    if [ "$name-" ==  "-" ]; then
-	name=`conf_get_species $conf "$irap_options"`
-    fi
+    name=`irap_get_name $conf "$irap_options"`
     echo toplevel_dir=$name
     if [ -e $name/tophat2 ] ; then
 	find $name/tophat2 -type d -name "`basename $folder`" -print -exec rm -f {} \; ;
@@ -197,10 +224,11 @@ if [ "$is_atlas_run-" != "0-" ]; then
     if [ "$species-" == "-" ]; then
 	perror "species undefined"
 	exit 1
-    fi
-    name="name=$species"
+    fi    
+    name="name=`irap_get_name $conf $irap_options`"
     irap_options="$irap_options $name"
 fi
+
 
 set -e
 
