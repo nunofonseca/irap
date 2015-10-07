@@ -943,7 +943,7 @@ function samtools1_install {
 function vcftools_install {
     pinfo "Downloading, compiling, and installing VCFTOOLS..."
     download_software VCFTOOLS
-    tar xvjf $VCFTOOLS_FILE
+    tar xvzf $VCFTOOLS_FILE
     pushd vcftools-${VCFTOOLS_VERSION}
     ./configure prefix=$IRAP_DIR
     make -j $J prefix=$IRAP_DIR
