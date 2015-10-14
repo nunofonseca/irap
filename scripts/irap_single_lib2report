@@ -116,19 +116,19 @@ $(out):
 
 # almost the same name as irap
 $(out)/genes.raw.tsv: $(out)/.genes_raw_quants_file
-	echo -n --rowname_col 'Gene ID' --has_no_header --add_header --out $@.tmp --in \" > $@.tmp.cmd && cat $< | tr "\n " " " | head -n 1 >> $@.tmp.cmd && echo \" >> $@.tmp.cmd && cat $@.tmp.cmd | irap_merge2tsv --stdin && rm -f $@.tmp.cmd && mv $@.tmp $@
+	echo -n --rowname_col 'Gene ID' --has_no_header --add_header --out $@.tmp --in \" > $@.tmp.cmd && cat $< | tr "\n " " " | head -n 1 >> $@.tmp.cmd && echo \" >> $@.tmp.cmd && cat $@.tmp.cmd | irap_merge2tsv -stdin && rm -f $@.tmp.cmd && mv $@.tmp $@
 #	( $(call pass_args_stdin,irap_merge_tsv.sh,$^) ) > $@.tmp && mv $@.tmp $@
 
 $(out)/genes.rpkm.tsv: $(out)/.genes_rpkm_quants_file
-	echo -n --rowname_col 'Gene ID' --has_no_header --add_header --out $@.tmp --in \" > $@.tmp.cmd && cat $< | tr "\n" " " | head -n 1 >> $@.tmp.cmd && echo \" >> $@.tmp.cmd && cat $@.tmp.cmd | irap_merge2tsv --stdin && rm -f $@.tmp.cmd && mv $@.tmp $@
+	echo -n --rowname_col 'Gene ID' --has_no_header --add_header --out $@.tmp --in \" > $@.tmp.cmd && cat $< | tr "\n" " " | head -n 1 >> $@.tmp.cmd && echo \" >> $@.tmp.cmd && cat $@.tmp.cmd | irap_merge2tsv -stdin && rm -f $@.tmp.cmd && mv $@.tmp $@
 #	( $(call pass_args_stdin,irap_merge_tsv.sh,$^) ) > $@.tmp && mv $@.tmp $@
 
 $(out)/exons.raw.tsv: $(out)/.exons_raw_quants_file
-	echo -n --rowname_col 'Exon ID' --has_no_header --add_header --out $@.tmp --in \" > $@.tmp.cmd && cat $< | tr "\n" " " | head -n 1 >> $@.tmp.cmd && echo \" >> $@.tmp.cmd && cat $@.tmp.cmd | irap_merge2tsv --stdin && rm -f $@.tmp.cmd && mv $@.tmp $@
+	echo -n --rowname_col 'Exon ID' --has_no_header --add_header --out $@.tmp --in \" > $@.tmp.cmd && cat $< | tr "\n" " " | head -n 1 >> $@.tmp.cmd && echo \" >> $@.tmp.cmd && cat $@.tmp.cmd | irap_merge2tsv -stdin && rm -f $@.tmp.cmd && mv $@.tmp $@
 #	( $(call pass_args_stdin,irap_merge_tsv.sh,$^) ) > $@.tmp && mv $@.tmp $@
 
 $(out)/exons.rpkm.tsv: $(out)/.exons_rpkm_quants_file
-	echo -n --rowname_col 'Exon ID' --has_no_header --add_header --out $@.tmp --in \" > $@.tmp.cmd && cat $< | tr "\n" " " | head -n 1 >> $@.tmp.cmd && echo \" >> $@.tmp.cmd && cat $@.tmp.cmd | irap_merge2tsv --stdin && rm -f $@.tmp.cmd && mv $@.tmp $@
+	echo -n --rowname_col 'Exon ID' --has_no_header --add_header --out $@.tmp --in \" > $@.tmp.cmd && cat $< | tr "\n" " " | head -n 1 >> $@.tmp.cmd && echo \" >> $@.tmp.cmd && cat $@.tmp.cmd | irap_merge2tsv -stdin && rm -f $@.tmp.cmd && mv $@.tmp $@
 #	( $(call pass_args_stdin,irap_merge_tsv.sh,$^) ) > $@.tmp && mv $@.tmp $@
 
 #$(out)/bam.stats: $(out)/.bam_stats_files
