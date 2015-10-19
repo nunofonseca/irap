@@ -100,7 +100,7 @@ for ( f in files ) {
       }
     }
     if ( opt$exclude_irap_suffix ) {
-      label <- gsub(".(se|pe).(gene|exon|transcrip)*.tsv.*","",label)
+      label <- gsub(".(se|pe).(gene|exon|transcrip).*.tsv.*","",label)
     }
     colnames(x)[2] <- label
   }
