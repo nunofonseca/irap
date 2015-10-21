@@ -16,6 +16,7 @@ min_read_size=30
 script_parameters=$*
 tidy_up_only=n
 do_info_only=n
+check_stage0_only=n
 spikein_fasta=
 tsfile=
 
@@ -40,11 +41,13 @@ source $IRAP_DIR/aux/sh/irap_shared.sh
 function print_usage {
 cat <<EOF
 iRAP wrapper to process a single library
-Usage: irap_single_lib -1 fastq_file [-2 fastq_file2] -c irap.configuration  [-s strand (first,second,both)] [-p spikein_fasta] [-m MEM] [-t threads] [-i irap_options] [-0] [-C] [-l min_read_length] [-h] 
+Usage: irap_single_lib -1 fastq_file [-2 fastq_file2] -c irap.configuration  [-s strand (first,second,both)] [-p spikein_fasta] [-m MEM] [-t threads] [-i irap_options] [-0] [-V] [-C] [-l min_read_length] [-h] 
 
 -0  - should be executed once for each
 species/genome/annotation to generate the indexes and other files
 necessary for the analysis.
+
+-V  - check if -0 has been executed successfully  
 
 -m MEM - value in bytes
 
@@ -109,7 +112,7 @@ function clean_up_all {
 
 #################################################################
 # 
-while getopts "1:2:c:s:m:p:t:i:o:l:h0fCTI"  Option
+while getopts "1:2:c:s:m:p:t:i:o:l:h0fCTIV"  Option
 do
     case $Option in
 	0 ) do_stage0="yes";;
@@ -124,6 +127,7 @@ do
 	t ) threads=$OPTARG;;
 	f ) run_faster=y;;
 	T ) tidy_up_only=y;do_clean=y;;
+	V ) check_stage0_only=y;;
 	I ) do_info_only=y;;
 	i ) irap_options=$OPTARG;;
 	l ) min_read_size=$OPTARG;;
@@ -229,6 +233,10 @@ if [ "$is_atlas_run-" != "0-" ]; then
     irap_options="$irap_options $name"
 fi
 
+if [ "$check_stage0_only" == "y" ]; then
+    irap conf=$conf data_dir=$DATA_DIR  $irap_options max_mem=$mem max_threads=$threads stage0 -n -q
+    exit $?
+fi
 
 set -e
 
