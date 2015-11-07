@@ -34,7 +34,7 @@
 #define HASHSIZE 7000001
 // Same version as IRAP
 
-#define VERSION "0.7.0d15"
+#define VERSION "0.7.0p12"
 
 struct read {
   uint8_t ctr; // how many times a read appears in one alignment
