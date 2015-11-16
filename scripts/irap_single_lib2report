@@ -87,6 +87,13 @@ endif
 # folders_file must exist
 $(call file_exists,$(folders_file))
 
+nfiles=$(shell wc -l $(folders_file)|cut -f 1 -d\ 	)
+$(info INFO: found $(nfiles) files in $(folders_file))
+
+ifeq (0,$(nfiles))
+$(call p_error, Empty $(folders_file)?!)
+endif
+
 MERGE_EXTRA_OPTIONS?=
 
 all: $(out) $(out)/genes.raw.tsv $(out)/genes.rpkm.tsv $(out)/exons.raw.tsv $(out)/exons.rpkm.tsv 
