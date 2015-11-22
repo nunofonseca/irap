@@ -915,7 +915,7 @@ annot_tsv=$(def_annot_tsv)
 endif
 
 ifeq (auto,$(annot_tsv)) 
-annot_tsv=$(name)/data/gene.annot.tsv
+annot_tsv=$(name)/data/$(reference_basename).gene.annot.tsv
 endif
 
 
