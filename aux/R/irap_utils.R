@@ -1426,7 +1426,7 @@ qload.tsv <- function(f,header) {
     tryCatch(tsv.data <- read.table(f,sep = "\t", header=header, quote = "\"",check.names=FALSE),error=function(x) NULL)
   return(tsv.data)
 }
-help(compareVersion)
+
 
 # load a file with a quant. matrix
 # returns NULL in case of failure
