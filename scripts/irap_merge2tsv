@@ -61,9 +61,9 @@ pdebug.enabled <- opt$debug
 pdebug.save.state("irap_merge2tsv","p0")
 
 pinfo("Parameters parsed.")
-pdebug.save.state("irap_merge2tsv","p1")
 
 
+library(data.table)
 out.table <- NULL
 
 files <- unlist(strsplit(opt$tsv_files,"[ \t\n]+"))
@@ -78,10 +78,9 @@ for ( f in files ) {
     perror("File not found ",f)
     q(status=1)
   }
-  # header?
-  x <- tryCatch(read.table(f,header=!opt$has_no_header,sep=opt$col_sep,
-                           quote="\"",comment.char="",
-                           check.names=FALSE),error=function(x) return(NULL))
+  # header? check.names=FALSE
+  x <- tryCatch(fread(input=f,header=!opt$has_no_header,sep=opt$col_sep,
+                           data.table=FALSE,showProgress=TRUE),error=function(x) return(NULL))
   if ( is.null(x) ) {
     perror("Error loading ",f)
     q(status=1)
