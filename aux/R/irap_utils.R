@@ -1182,7 +1182,8 @@ write.tsv <- function(x,file,header=TRUE,rownames.label=NULL,fix=TRUE) {
 }
 
 read.tsv <- function(file,header=T) {
-  read.table(file,sep = "\t", header=header, quote = "\"",comment.char="",check.names=FALSE)
+#read.table(file,sep = "\t", header=header, quote = "\"",comment.char="",check.names=FALSE)
+  return(qload.tsv(file,header))
 }
 
 #
@@ -1410,15 +1411,29 @@ load.annot <- function(file) {
   }
   return(annot.table)
 }
+# keep backwards compatibility by using read.table when data.table is not 
+# available
+qload.tsv <- function(f,header) {
+  if (require("data.table")) {
+    library("data.table")
+    if ( sum(grep(".gz$",f)) ) {
+      f <- paste("zcat ",f,sep="")
+      }
+    tryCatch(tsv.data <- fread(input=f,sep = "\t", header="auto",check.names=FALSE,data.table=FALSE),error=function(x) NULL)
+  } else 
+    tryCatch(tsv.data <- read.table(f,sep = "\t", header=header, quote = "\"",check.names=FALSE),error=function(x) NULL)
+  return(tsv.data)
+}
 # load a file with a quant. matrix
 # returns NULL in case of failure
 quant.load <- function(f,clean.cuff=FALSE) {
   tsv.data <- NULL
-  tryCatch(tsv.data <- read.table(f,sep = "\t", header=F, quote = "\"",check.names=FALSE),error=function(x) NULL)
+
+  tsv.data <- qload.tsv(f,header=FALSE)
   if ( !is.null(tsv.data) && ncol(tsv.data)>1 ) {
-    if ( sum(grepl("(Gene|Exon|Transcript|ID)",tsv.data[1,1],ignore.case=T))!=0 || tsv.data[1,1]=="") {
+    if ( sum(grepl("(Gene|Exon|Transcript|ID|feature)",tsv.data[1,1],ignore.case=T))!=0 || tsv.data[1,1]=="") {
       # reload to include the header
-      tryCatch(tsv.data <- read.table(f,sep = "\t", header=T, quote = "\"",check.names=FALSE),error=function(x) NULL)
+      tsv.data <- qload.tsv(f,header=TRUE)
     }
     rownames(tsv.data) <- as.character(tsv.data[,1])
     tsv.data <- tsv.data[,-1,drop=FALSE]
