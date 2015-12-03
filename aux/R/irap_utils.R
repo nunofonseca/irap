@@ -1414,16 +1414,20 @@ load.annot <- function(file) {
 # keep backwards compatibility by using read.table when data.table is not 
 # available
 qload.tsv <- function(f,header) {
-  if (require("data.table")) {
+  tsv.data <- NULL
+  if (require("data.table",quietly=TRUE,character.only=TRUE) &&
+      compareVersion(as.character(packageVersion("data.table")),"1.9.6")>=0) {
     library("data.table")
     if ( sum(grep(".gz$",f)) ) {
       f <- paste("zcat ",f,sep="")
-      }
+    }
     tryCatch(tsv.data <- fread(input=f,sep = "\t", header="auto",check.names=FALSE,data.table=FALSE),error=function(x) NULL)
   } else 
     tryCatch(tsv.data <- read.table(f,sep = "\t", header=header, quote = "\"",check.names=FALSE),error=function(x) NULL)
   return(tsv.data)
 }
+help(compareVersion)
+
 # load a file with a quant. matrix
 # returns NULL in case of failure
 quant.load <- function(f,clean.cuff=FALSE) {
@@ -1435,15 +1439,15 @@ quant.load <- function(f,clean.cuff=FALSE) {
       # reload to include the header
       tsv.data <- qload.tsv(f,header=TRUE)
     }
-    rownames(tsv.data) <- as.character(tsv.data[,1])
-    tsv.data <- tsv.data[,-1,drop=FALSE]
-    if (clean.cuff) {
-      sel<-grep("^CUFF.*",rownames(tsv.data),perl=T,invert=TRUE)
-      tsv.data <- tsv.data[sel,,drop=FALSE]
-    }
-    return(tsv.data)
   }
-  NULL
+  if(is.null(tsv.data)) return(NULL);
+  rownames(tsv.data) <- as.character(tsv.data[,1])
+  tsv.data <- tsv.data[,-1,drop=FALSE]
+  if (clean.cuff) {
+    sel<-grep("^CUFF.*",rownames(tsv.data),perl=T,invert=TRUE)
+    tsv.data <- tsv.data[sel,,drop=FALSE]
+  }
+  return(tsv.data)
 }
 # 1=ok
 # 0 error
