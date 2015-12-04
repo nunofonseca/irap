@@ -165,7 +165,7 @@ files2check=$(out)/.transcripts_tpm_quants_file $(out)/.transcripts_rpkm_quants_
 
 $(foreach f,$(files2check),$(info $(call check_file,$f)))
 
-targets=$(foreach f,$(files2check), $(if $(realpath $(f)),$(subst _,.,$(subst _quants_file,.tsv,$(subst .,,$(f))))))
+targets=$(foreach f,$(files2check), $(if $(realpath $(f)),$(dir $f)$(subst _,.,$(subst _quants_file,.tsv,$(subst .,,$(notdir f))))))
 
 $(call p_info,Generating $(targets))
 
