@@ -90,8 +90,8 @@ endif
 # folders_file must exist
 $(call file_exists,$(folders_file))
 
-nfiles=$(shell wc -l $(folders_file)|cut -f 1 -d\ 	)
-$(info INFO:  $(nfiles) lines in $(folders_file))
+nfiles=$(shell cat $(folders_file)| tr "\n" " "|wc -w |cut -f 1 -d\ 	)
+$(info INFO:  $(nfiles) folders in $(folders_file))
 
 ifeq (0,$(nfiles))
 $(call p_error, Empty $(folders_file)?!)
