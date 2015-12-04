@@ -83,6 +83,7 @@ exon_quant?=y
 exon_quant_method=dexseq
 quant_norm_method=?rpkm
 quant_norm_tool?=irap
+transcript_quant?=n
 
 ifdef big_genome
 $(info * Big genome, overriding mapper: $(mapper) -> star)
