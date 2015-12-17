@@ -17,7 +17,7 @@ Contents
 ============
 
 1.1 Get IRAP from the repository
-   git clone http://nunofonseca.github.io/irap irap_clone
+   git clone http://github.com/nunofonseca/irap.git  irap_clone
 
 1.2 Install IRAP and all dependencies (3rd party software) to a directory (e.g. irap_install)
    ./irap_clone/scripts/irap_install.sh -a irap_install -s irap_clone
