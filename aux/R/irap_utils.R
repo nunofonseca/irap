@@ -114,22 +114,31 @@ formats.cols <- list(
   gff3=c("seqid","source","type","start","end","score","strand","phase","attributes","comments"),
   gtf=c("seqid","source","feature","start","end","score","strand","frame","attributes")
   )
+attributes.cols <- list(
+  gencode=c("gene_id","transcript_id","exon_number","gene_name","gene_type","gene_status","transcript type","level","transcript_name","havana_gene","exon_id"),
+  ensembl=c("gene_id","transcript_id","exon_number","gene_name","gene_biotype","transcript_name","protein_id","exon_id","exonic_part_number")
+  )
 # TODO: improve error handling
-load.gtf <- function(gtf.file,feature=NULL,selected.attr=NULL) {
+load.gtf <- function(gtf.file,feature=NULL,selected.attr=NULL,gtf.format="auto") {
   suppressPackageStartupMessages(library(parallel))
-  gtf<-read.table(gtf.file,sep="\t",header=F,quote="\"",comment.char = "#",
-                  nrows=5000000,
-                  colClasses=c('character','character','character','integer','integer','character','character','character','character'))
+  gtf<-qload.tsv(f=gtf.file,header=F,comment.char = "#")
   cnames <- formats.cols$gtf
   colnames(gtf)<-cnames[0:ncol(gtf)]
-  #feature <- "CDS"
-  #selected.attr <- c("gene_id","transcript_id")
+
   if (!is.null(feature)) {
     gtf<- gtf[gtf$feature %in% feature,,drop=FALSE]
   }
   gtf$attributes <- as.character(gtf$attributes)
-  gtf.attributes.names<-c("gene_id","transcript_id","exon_number","gene_name","gene_biotype","transcript_name","protein_id","exon_id","exonic_part_number")
-
+  # detect format
+  if ( gtf.format=="auto" ) {
+    if (sum(grepl("level",head(gtf$attributes,20))) >0) {
+      gtf.format <- "gencode"
+    } else {
+      gtf.format <- "ensembl"
+    }
+    cat("GTF attributes ",gtf.format,"\n")
+  }
+  gtf.attributes.names<-attributes.cols[[gtf.format]]
 
   if ( !is.null(selected.attr) ) {
       selected.attr.i <- append(selected.attr,"gene_biotype")
@@ -156,10 +165,13 @@ load.gtf <- function(gtf.file,feature=NULL,selected.attr=NULL) {
     return(r)
   }
   attr <- mclapply(gtf$attributes,attr2vec,gtf.attributes.names)
+  print(length(attr))
+  if ( length(attr)!=0 ) {
   #attr2vec(gtf$attributes[1])
-  vals<-matrix(unlist(attr),ncol=length(gtf.attributes.names),byrow=T)
-  colnames(vals) <- gtf.attributes.names
-  gtf <- cbind(gtf,vals)
+    vals<-matrix(unlist(attr),ncol=length(gtf.attributes.names),byrow=T)
+    colnames(vals) <- gtf.attributes.names
+    gtf <- cbind(gtf,vals)
+  }
   # try to determine the biotype column (use source by default...)
   biotypes <- gtf[,biotype.column(gtf)]
   gtf$biotype <- biotypes
@@ -167,35 +179,9 @@ load.gtf <- function(gtf.file,feature=NULL,selected.attr=NULL) {
   return(gtf[,! colnames(gtf) %in% c("attributes")])
 }
 
+# deprecated
 load.gencode.gtf <- function(gtf.file,feature=NULL,selected.attr=NULL) {
-
-  gtf<-read.table(gtf.file,sep="\t",header=F,quote="\"",comment.char = "#")
-  cnames <- formats.cols$gtf
-  colnames(gtf)<-cnames[0:ncol(gtf)]
-  #feature <- "CDS"
-  #selected.attr <- c("gene_id","transcript_id")
-  if (!is.null(feature)) {
-    gtf<- gtf[,gtf$feature==feature,drop=FALSE]
-  }
-  gtf$attributes <- as.character(gtf$attributes)
-  gtf.attributes.names<-c("gene_id","transcript_id","exon_number","gene_name","gene_type","gene_status","transcript type","level","transcript_name","havana_gene","exon_id")
-  if ( !is.null(selected.attr) ) {
-    gtf.attributes.names<- gtf.attributes.names[gtf.attributes.names %in% selected.attr]
-  }
-  attr2vec <- function(s) {
-    a<-strsplit(s,split=";[ ]?")  
-    a2 <- unlist(strsplit(a[[1]]," ",fixed=T))
-    m <- matrix(a2,nrow=2,byrow=F)
-    x <- m[2,]
-    names(x) <- m[1,]
-    return(x[gtf.attributes.names])
-  }
-  attr <- lapply(gtf$attributes,attr2vec)
-  attr2vec(gtf$attributes[1])
-  vals<-matrix(unlist(attr),ncol=length(gtf.attributes.names),byrow=T)
-  colnames(vals) <- gtf.attributes.names
-  gtf <- cbind(gtf,vals)
-  return(gtf[,! colnames(gtf) %in% c("attributes")])
+  return(load.gtf(gtf.file,feature=feature,selected.attr=selected.attr,gtf.format="encode"))
 }
 
 # Given a gtf file returns a vector with the length of the genes
@@ -1413,20 +1399,25 @@ load.annot <- function(file) {
 }
 # keep backwards compatibility by using read.table when data.table is not 
 # available
-qload.tsv <- function(f,header) {
+qload.tsv <- function(f,header,comment.char="") {
   tsv.data <- NULL
   if (require("data.table",quietly=TRUE,character.only=TRUE) &&
       compareVersion(as.character(packageVersion("data.table")),"1.9.6")>=0) {
     library("data.table")
     if ( sum(grep(".gz$",f)) ) {
       f <- paste("zcat ",f,sep="")
+    } else {
+      f <- paste("cat ",f,sep="")
+    }
+    # not optimal, but faster than read.table
+    if ( comment.char!="") {
+      f <- paste(f," | grep -v \"^",comment.char,"\"",sep="")
     }
     tryCatch(tsv.data <- fread(input=f,sep = "\t", header="auto",check.names=FALSE,data.table=FALSE),error=function(x) NULL)
   } else 
-    tryCatch(tsv.data <- read.table(f,sep = "\t", header=header, quote = "\"",check.names=FALSE),error=function(x) NULL)
+    tryCatch(tsv.data <- read.table(f,sep = "\t", header=header, comment.char=comment.char, quote = "\"",check.names=FALSE),error=function(x) NULL)
   return(tsv.data)
 }
-
 
 # load a file with a quant. matrix
 # returns NULL in case of failure
@@ -2016,10 +2007,13 @@ source.column <- NULL
 biotype.column <- function(table) {
   if ( "source" %in% colnames(table) ) {
     sources <- unique(as.character(table$source))
-    if ( "havana" %in% sources ) {
-      return("gene_biotype")
-    } else {
-      return("source")
+    if ( sum(grepl("havana",sources,ignore.case=TRUE))>0 ) {
+      if ( "gene_type" %in% colnames(table) ) {
+        return("gene_type")
+      } else {
+        # hmm, perhaps we should check that the column exists?
+        return("gene_biotype")
+      }
     }
   }
   return("source")
