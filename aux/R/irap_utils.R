@@ -162,6 +162,7 @@ load.gtf <- function(gtf.file,feature=NULL,selected.attr=NULL,gtf.format="auto")
     names(r) <- gtf.attributes.names
     attr.int <- names(x)[names(x)%in% gtf.attributes.names]
     r[attr.int] <- x[attr.int]
+    r <- gsub("^\"","",gsub("\"$","",r))
     return(r)
   }
   attr <- mclapply(gtf$attributes,attr2vec,gtf.attributes.names)
@@ -684,7 +685,8 @@ annot.expand.fields <- function(annot.table) {
   annot.table$start<-sapply(as.character(annot.table$locus),get.gene.start)
   return(annot.table)
 }
-# entrez gene identifier
+# gets the internal ids associated to ensgids
+# 
 annot.get.egi <- function(gids,dbs) {
   library("GO.db")
   id2egi<-ls(dbs$symbol.db)
