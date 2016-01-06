@@ -84,6 +84,21 @@ function conf_get_species {
     echo `conf_get_var_value species $conf "$cmdline_options"`
 }
 
+# 1 - conf file
+# 2 - cmdline options
+function conf_ok {
+    local conf=$1
+    local irap_options=$2
+    echo  "irap conf=$conf $irap_options -n" > /dev/stderr
+    set +e
+    irap conf=$conf $irap_options -n 2>/dev/null    
+    if [ $? == 2 ]; then
+	irap conf=$conf $irap_options -n
+	echo "ERROR: error in iRAP options." > /dev/stderr	
+	exit 2
+    fi
+    set -e
+}
 
 # conf_get_var_value var conf_file [irap_cmdline_options]
 function conf_get_var_value {
@@ -92,10 +107,10 @@ function conf_get_var_value {
     local irap_options=$3
     # lookup in the conf file
     #
-    echo  "irap conf=$conf $irap_options -n" > /dev/stderr
-    d=`irap conf=$conf $irap_options -n 2>/dev/null|grep "*\s*$conf_var="|tail -n 1`
+    echo  "irap conf=$conf $irap_options -n | grep $conf_var=" > /dev/stderr
+    d=`irap conf=$conf $irap_options pe= se= -n 2>/dev/null|grep -E "*\s*$conf_var\s*="|tail -n 1`
     if [ "$d-" == "-" ]; then
-	echo "ERROR: unable to get $conf_var value"
+	echo "ERROR: unable to get $conf_var value" > /dev/stderr	
 	exit 1
     else
 	d=`echo $d|cut -f 2 -d=`
