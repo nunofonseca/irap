@@ -201,7 +201,7 @@ makeTransparent<-function(someColor, alpha=100) {
 
 # wrapper to the consensus function found in the agricolae package
 # to plot coloured leafs 
-irap.consensus <- function (leafsColours=NA,...) 
+irap.consensus <- function (leafsColours=NA,horiz=FALSE,text.cex=0.8,...) 
 {
 
   colourTreeLabel <- function(n,cols) {
@@ -216,8 +216,8 @@ irap.consensus <- function (leafsColours=NA,...)
   con<-consensus(...)
   n <- dendrapply(as.dendrogram(con$dendrogram), colourTreeLabel, leafsColours)
   # replot
-  plot(n, cex=1, xlab="",yaxt='n', ann=FALSE)
-  text(label=con$table.dend$percentage, con$table.dend$xaxis,con$table.dend$height, cex = 0.8, col = "red")
+  plot(n, cex=1, xlab="",yaxt='n', ann=FALSE,horiz=horiz)
+  text(label=con$table.dend$percentage, con$table.dend$xaxis,con$table.dend$height, cex = text.cex, col = "red")
   con$n <- n
   return(con)
 }
