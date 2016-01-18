@@ -119,7 +119,7 @@ function check_dependencies {
     pinfo "$DEVEL_LIBRARIES_REQUIRED"
     # Binaries that should be available
     # make is required to...compile make
-    BINARIES="java python gcc g++ gfortran curl-config git which make bzip2 unzip"
+    BINARIES="java python gcc g++ gfortran curl-config git which make bzip2 unzip bash"
     pinfo "Checking dependencies..."
     for bin in $BINARIES; do
 	PATH2BIN=`which $bin 2> /dev/null`
@@ -142,12 +142,12 @@ function check_dependencies {
 BFAST_VERSION=0.7.0a
 BFAST_FILE=bfast-$BFAST_VERSION.tar.gz
 BFAST_URL=http://sourceforge.net/projects/bfast/files/bfast/0.7.0/$BFAST_FILE
-#
+# current 1.1.2 - minor changes, no need to upgrade
 bowtie1_VERSION=1.1.1
 bowtie1_FILE=bowtie-${bowtie1_VERSION}-linux-x86_64.zip
 bowtie1_URL=http://sourceforge.net/projects/bowtie-bio/files/bowtie/$bowtie1_VERSION/$bowtie1_FILE
-#
-bowtie2_VERSION=2.2.2
+# current - 2.2.2->2.2.6
+bowtie2_VERSION=2.2.6
 bowtie2_FILE=bowtie2-${bowtie2_VERSION}-linux-x86_64.zip
 bowtie2_URL=http://sourceforge.net/projects/bowtie-bio/files/bowtie2/$bowtie2_VERSION/$bowtie2_FILE
 
@@ -164,7 +164,7 @@ GEM_URL=http://sourceforge.net/projects/gemlibrary/files/gem-library/Binary%20pr
 #
 tophat1_VERSION=1.4.1
 tophat1_FILE=tophat-${tophat1_VERSION}.Linux_x86_64.tar.gz
-tophat1_URL=http://tophat.cbcb.umd.edu/downloads/$tophat1_FILE
+tophat1_URL=http://ccb.jhu.edu/software/tophat/downloads/$tophat1_FILE
 
 #
 #tophat2_VERSION=2.0.13
@@ -172,13 +172,14 @@ tophat1_URL=http://tophat.cbcb.umd.edu/downloads/$tophat1_FILE
 #tophat2_URL=http://tophat.cbcb.umd.edu/downloads/$tophat2_FILE
 #tophat2_URL=http://ccb.jhu.edu/software/tophat/downloads/$tophat2_FILE
 
-# version used in the pcawg SOP
-tophat2_VERSION=2.0.12
+# version used in the pcawg SOP - 2.0.12
+# current version: -> 2.0.12->2.1.0
+tophat2_VERSION=2.1.0
 tophat2_FILE=tophat-${tophat2_VERSION}.Linux_x86_64.tar.gz
 #tophat2_URL=http://tophat.cbcb.umd.edu/downloads/$tophat2_FILE
 tophat2_URL=http://ccb.jhu.edu/software/tophat/downloads/$tophat2_FILE
 
-#
+# 0.7.6 - now in sf
 SMALT_VERSION=0.7.4
 SMALT_FILE=smalt-$SMALT_VERSION.tgz
 SMALT_URL=ftp://ftp.sanger.ac.uk/pub4/resources/software/smalt/$SMALT_FILE
@@ -190,46 +191,47 @@ SOAPsplice_URL=http://soap.genomics.org.cn/down/$SOAPsplice_FILE
 SOAP2_VERSION=2.21
 SOAP2_FILE=soap${SOAP2_VERSION}release.tar.gz
 SOAP2_URL=http://soap.genomics.org.cn/down/$SOAP2_FILE
-# 
-STAR_VERSION=2.4.0i
-STAR_FILE=STAR_${STAR_VERSION}.tar.gz
+# 2.4.0i->2.5.0c
+STAR_VERSION=2.5.0c
+STAR_FILE=${STAR_VERSION}.tar.gz
 STAR_URL=https://github.com/alexdobin/STAR/archive/$STAR_FILE
-#STAR_FILE=STAR_${STAR_VERSION}e.Linux_x86_64.tgz
-#STAR_URL=ftp://ftp2.cshl.edu/gingeraslab/tracks/STARrelease/$STAR_VERSION/$STAR_FILE
 
-#
-GSNAP_VERSION=2013-11-27
-GSNAP_FILE=gmap-gsnap-${GSNAP_VERSION}.tar.gz
+# 
+#GSNAP_VERSION=2013-11-27->gmap-gsnap-2015-12-31.v3.tar.gz
+GSNAP_VERSION=2015-12-31
+GSNAP_FILE=gmap-gsnap-${GSNAP_VERSION}.v3.tar.gz
 GSNAP_URL=http://research-pub.gene.com/gmap/src/$GSNAP_FILE
-#
+
+# 2.2.0
 mapsplice_VERSION=2.1.8
 mapsplice_FILE=MapSplice-v$mapsplice_VERSION.zip
 mapsplice_URL=http://protocols.netlab.uky.edu/~zeng/$mapsplice_FILE
-#
-bwa_VERSION=0.7.4
+# 0.7.4->0.7.12
+bwa_VERSION=0.7.12
 bwa_FILE=bwa-${bwa_VERSION}.tar.bz2
 bwa_URL=http://sourceforge.net/projects/bio-bwa/files/$bwa_FILE
-# 
-osa_VERSION=4.0.2.1
+# 4.0.2.1->4.1.1.1
+osa_VERSION=4.1.1.1
 osa_FILE=OSAv$osa_VERSION.zip
-osa_URL=http://www.omicsoft.com/osa/software/$osa_FILE
-#
-EMBAM_VERSION=0.1.14
-EMBAM_FILE=emBAM_${EMBAM_VERSION}.tar.gz
-EMBAM_URL=http://embam.googlecode.com/files/$EMBAM_FILE
+osa_URL=http://omicsoft.com/osa/Software/$osa_FILE
+
+# deprecated
+#EMBAM_VERSION=0.1.14
+#EMBAM_FILE=emBAM_${EMBAM_VERSION}.tar.gz
+#EMBAM_URL=http://embam.googlecode.com/files/$EMBAM_FILE
 
 RUBY_VERSION=1.9.3-p484
 RUBY_FILE=ruby-${RUBY_VERSION}.tar.gz
 RUBY_URL=http://ftp.ruby-lang.org/pub/ruby/1.9/$RUBY_FILE
 
-# 5.20.1
-#PERL_VERSION=5.18.4
-PERL_VERSION=5.20.2
+# 
+#PERL_VERSION=5.20.2 -> 5.22.1
+PERL_VERSION=5.22.1
 PERL_FILE=perl-$PERL_VERSION.tar.gz
 PERL_URL=http://www.cpan.org/src/5.0/$PERL_FILE
 
-# previous: 1.52
-BOOST_VERSION=1.55.0
+# previous: 1.55
+BOOST_VERSION=1.60.0
 BOOST_FILE=boost_`echo $BOOST_VERSION|sed "s/\./_/g"`.tar.bz2
 BOOST_URL=http://sourceforge.net/projects/boost/files/boost/$BOOST_VERSION/$BOOST_FILE
 
@@ -243,7 +245,7 @@ R_FILE=R-${R_VERSION}.tar.gz
 R_URL=http://cran.r-project.org/src/base/R-2/$R_FILE
 
 # 
-R3_VERSION=3.1.3
+R3_VERSION=3.2.3
 R3_FILE=R-${R3_VERSION}.tar.gz 
 R3_URL=http://cran.r-project.org/src/base/R-3/$R3_FILE
 
@@ -252,8 +254,9 @@ SAMTOOLS_VERSION=0.1.18
 SAMTOOLS_FILE=samtools-$SAMTOOLS_VERSION.tar.bz2
 SAMTOOLS_URL=http://sourceforge.net/projects/samtools/files/samtools/$SAMTOOLS_VERSION/$SAMTOOLS_FILE
 
-# new samtools
-SAMTOOLS1_VERSION=1.1
+# new samtools: 1.3
+# prev: 1.1
+SAMTOOLS1_VERSION=1.3
 SAMTOOLS1_FILE=samtools-$SAMTOOLS1_VERSION.tar.bz2
 SAMTOOLS1_URL=http://sourceforge.net/projects/samtools/files/samtools/$SAMTOOLS1_VERSION/$SAMTOOLS1_FILE
 
@@ -262,7 +265,8 @@ VCFTOOLS_FILE=vcftools-$VCFTOOLS_VERSION.tar.gz
 VCFTOOLS_URL=https://github.com/vcftools/vcftools/releases/download/v$VCFTOOLS_VERSION/$VCFTOOLS_FILE
 
 
-BCFTOOLS_VERSION=1.2
+# 1.3
+BCFTOOLS_VERSION=1.3
 BCFTOOLS_FILE=bcftools-$BCFTOOLS_VERSION.tar.bz2
 BCFTOOLS_URL=https://github.com/samtools/bcftools/releases/download/$BCFTOOLS_VERSION/$BCFTOOLS_FILE
 
@@ -271,11 +275,13 @@ ZLIB_VERSION=1.2.8
 ZLIB_FILE=zlib-$ZLIB_VERSION.tar.gz
 ZLIB_URL=http://zlib.net/$ZLIB_FILE
 
-BEDTOOLS_VERSION=2.17.0
-BEDTOOLS_FILE=BEDTools.v$BEDTOOLS_VERSION.tar.gz
-BEDTOOLS_URL=http://bedtools.googlecode.com/files/$BEDTOOLS_FILE
-   
-stringtie_VERSION=1.0.3
+#
+BEDTOOLS_VERSION=2.25.0
+BEDTOOLS_FILE=bedtools-$BEDTOOLS_VERSION.tar.gz
+BEDTOOLS_URL=https://github.com/arq5x/bedtools2/releases/download/v$BEDTOOLS_VERSION/$BEDTOOLS_FILE
+
+# 1.0.3->1.2.0
+stringtie_VERSION=1.2.0
 stringtie_FILE=stringtie-${stringtie_VERSION}.Linux_x86_64.tar.gz
 stringtie_URL=http://ccb.jhu.edu/software/stringtie/dl/$stringtie_FILE
 
@@ -297,6 +303,7 @@ cufflinks2_URL=http://cufflinks.cbcb.umd.edu/downloads/$cufflinks2_FILE
 #SAVANT_FILE=Savant-${SAVANT_VERSION}-Linux-x86_64-Install 
 #SAVANT_URL=http://genomesavant.com/savant/dist/v`echo $SAVANT_VERSION|sed "s/./_/g"`/$SAVANT_FILE
 
+# new: 0.7.5 - now in github
 BitSeq_VERSION=0.7.0
 BitSeq_FILE=BitSeq-$BitSeq_VERSION.tar.gz
 BitSeq_URL=http://bitseq.googlecode.com/files/$BitSeq_FILE
@@ -310,6 +317,7 @@ htseq_VERSION=0.6.1p1
 htseq_FILE=HTSeq-${htseq_VERSION}.tar.gz
 htseq_URL=http://pypi.python.org/packages/source/H/HTSeq/$htseq_FILE
 
+# new: 1.6.1
 # latest (1.5.2) fails (same error since 1.2.4)
 # Parameter COVERAGE_STATS not found. Check the spelling!
 FLUX_CAPACITOR_VERSION=1.2.3
@@ -327,17 +335,17 @@ IsoEM_VERSION=1.1.1
 IsoEM_FILE=IsoEM-${IsoEM_VERSION}.zip
 IsoEM_URL=http://dna.engr.uconn.edu/software/IsoEM/$IsoEM_FILE
 
-#
-Sailfish_VERSION=0.6.2
+# 0.6.2-> 0.9.0
+Sailfish_VERSION=0.9.0
 Sailfish_FILE=Sailfish-${Sailfish_VERSION}-Linux_x86-64.tar.gz
 Sailfish_URL=http://github.com/kingsfordgroup/sailfish/releases/download/v$Sailfish_VERSION/$Sailfish_FILE
 
-# kallisto
-kallisto_VERSION=0.42.1
+# kallisto - 0.42.1 -> 0.42.4 (multithreads)
+kallisto_VERSION=0.42.4
 kallisto_FILE=kallisto_linux-v$kallisto_VERSION.tar.gz
 kallisto_URL=https://github.com/pachterlab/kallisto/releases/download/v$kallisto_VERSION/$kallisto_FILE
 
-#
+# 1.2.21->1.2.22
 rsem_VERSION=1.2.21
 rsem_FILE=rsem-${rsem_VERSION}.tar.gz
 rsem_URL=http://deweylab.biostat.wisc.edu/rsem/src/$rsem_FILE
@@ -359,31 +367,34 @@ IGV_TOOLS_VERSION=2.1.24
 IGV_TOOLS_FILE=igvtools_nogenomes_$IGV_TOOLS_VERSION.zip
 IGV_TOOLS_URL=http://www.broadinstitute.org/igv/projects/downloads/$IGV_TOOLS_FILE
 
-# new: FASTX_VERSION=0.0.13.2
+# new: FASTX_VERSION=0.0.13->0.0.13.2
 FASTX_VERSION=0.0.13
 FASTX_FILE=fastx_toolkit_${FASTX_VERSION}_binaries_Linux_2.6_amd64.tar.bz2
 FASTX_URL=http://hannonlab.cshl.edu/fastx_toolkit/$FASTX_FILE
 
-FASTQC_VERSION=0.10.1
+# 0.10.1->0.11.4
+FASTQC_VERSION=0.11.4
 FASTQC_FILE=fastqc_v${FASTQC_VERSION}.zip
 FASTQC_URL=http://www.bioinformatics.babraham.ac.uk/projects/fastqc/$FASTQC_FILE
 
+# 1.12.0
 JBROWSE_VERSION=1.7.5
 JBROWSE_FILE=download.php?id=35
 JBROWSE_URL=http://jbrowse.org/wordpress/wp-content/plugins/download-monitor/$JBROWSE_FILE
 JBROWSE_EXTRA_UTILS="hgGcPercent bedGraphToBigWig wigCorrelate bigWigInfo bigWigSummary faToNib faToTwoBit hgWiggle"
 JBROWSE_EXTRA_UTILSURL=http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/
 
-# 
-NEW_JBROWSE_VERSION=1.10.12
+# 1.12.0
+NEW_JBROWSE_VERSION=1.12.0
 NEW_JBROWSE_FILE=download.php?id=85
 NEW_JBROWSE_URL=http://jbrowse.org/wordpress/wp-content/plugins/download-monitor/$NEW_JBROWSE_FILE
 NEW_JBROWSE_EXTRA_UTILS="hgGcPercent bedGraphToBigWig wigCorrelate bigWigInfo bigWigSummary faToNib faToTwoBit hgWiggle"
 NEW_JBROWSE_EXTRA_UTILSURL=http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/
 
-# osa does not work with 2.10.9 up to 2.11
-MONO_VERSION=2.10.8
-MONO_FILE=mono-${MONO_VERSION}.tar.bz2    
+# 2.10.8 osa does not work with 2.10.9 up to 2.11
+# 2.10.8 ---> 4.2.2
+MONO_VERSION=4.2.2
+MONO_FILE=mono-${MONO_VERSION}.10.tar.bz2    
 MONO_URL=http://download.mono-project.com/sources/mono/$MONO_FILE
 
 
@@ -592,7 +603,7 @@ function star_install {
     download_software $MAPPER    
     #gunzip -c $STAR_FILE > $EXECF
     tar xzvf $STAR_FILE
-    pushd STAR-STAR_$STAR_VERSION
+    pushd STAR-$STAR_VERSION
     mkdir -p $BIN_DIR/star/bin
     rm -rf $BIN_DIR/star/bin/star/* $BIN_DIR/star/bin/STAR/*
     cp bin/Linux_x86_64_static/STAR $BIN_DIR/star/bin/star
@@ -610,7 +621,7 @@ function gsnap_install {
     # latest stable version
     download_software $MAPPER
     tar xzvf $GSNAP_FILE
-    pushd `echo $GSNAP_FILE|sed "s/.tar.gz//"|sed "s/-gsnap//"`
+    pushd `echo $GSNAP_FILE|sed "s/.tar.gz//"|sed "s/-gsnap//;s/.v3.*//"`
     ./configure --prefix=$BIN_DIR/$MAPPER --with-samtools=$IRAP_DIR
     make clean
     make -j $J
@@ -811,10 +822,12 @@ function R_install {
     pushd R-${R_VERSION}
     export R_LIBS=
     export R_LIBS_USER=$IRAP_DIR/Rlibs
-    CFLAGS=  CXXFLAGS= ./configure --prefix=$IRAP_DIR
+    # clean up - delete packages previously installed
+    rm -rf $IRAP_DIR/Rlibs/*
+    ./configure --prefix=$IRAP_DIR
     make clean
-    CFLAGS=  CXXFLAGS=  make -j $J
-    make -j $J check
+    make
+    make check
     make install
     popd
     pinfo "Installing R...done."
@@ -828,9 +841,8 @@ function R3_install {
     pushd R-${R3_VERSION}
     export R_LIBS=
     export R_LIBS_USER=$IRAP_DIR/Rlibs3
-    CFLAGS=  CXXFLAGS= ./configure --prefix=$IRAP_DIR/R3
+    ./configure --prefix=$IRAP_DIR/R3
     make clean
-    CFLAGS=  CXXFLAGS=  make -j $J
     make -j $J
     make -j $J check
     make install
@@ -870,9 +882,9 @@ function YAP_install {
 	cp yap.tgz $SRC_DIR/download/
     fi
     pushd mainline
-    ./configure --prefix=$IRAP_DIR --disable-myddas --disable-horus
-    make
-    make install
+    CFLAGS=  ./configure --prefix=$IRAP_DIR --disable-myddas --disable-horus
+    CFLAGS=  make
+    CFLAGS=  make install
     popd
     pinfo "Installing YAP...done."
 }
@@ -927,8 +939,8 @@ function samtools1_install {
     make prefix=$IRAP_DIR install
     mkdir -p $INC_DIR/bam
     cp *.h $INC_DIR/bam
-    mkdir  -p $INC_DIR/bam/htslib-1.1
-    cp htslib-1.1/*.h $INC_DIR/bam/htslib-1.1
+    mkdir  -p $INC_DIR/bam/htslib-1.3
+    cp htslib-1.3/*.h $INC_DIR/bam/htslib-1.3
     cp libbam.a $INC_DIR/bam
     #
     pwd
@@ -973,10 +985,10 @@ function zlib_install {
 # Bedtools
 function bedtools_install {
     pinfo "Installing BEDTOOLS..."
-    BEDTOOLS=BEDTools.v$BEDTOOLS_VERSION
+    BEDTOOLS=bedtools-$BEDTOOLS_VERSION
     download_software BEDTOOLS
     tar xzvf $BEDTOOLS_FILE
-    pushd bedtools-$BEDTOOLS_VERSION
+    pushd bedtools2
     make
     cp bin/* $IRAP_DIR/bin
     popd
@@ -1096,7 +1108,7 @@ function perl_packages_install {
 #n
 #n
 #EOF
-    cpanm -fi CJFIELDS/BioPerl-1.6.923.tar.gz 
+    cpanm -fi CJFIELDS/BioPerl-1.6.924.tar.gz 
 
     popd
     pinfo "Installing perl packages...done."
@@ -1108,53 +1120,41 @@ function perl_packages_install {
 function R_packages_install {
     export PATH=$IRAP_DIR/bin:$PATH
     pinfo "Installing R packages..."
+    #export R_LIBS=
     R --no-save <<EOF
 repo<-"$CRAN_REPO"
 
-install.packages("multicore",repos=repo)
-install.packages("parallel",repos=repo)
-install.packages("intervals",repos=repo)
-install.packages("gclus",repo=repo)
-install.packages('R2HTML',repo=repo)
-install.packages("agricolae",repo=repo)
-install.packages("optparse",repo=repo)
-install.packages("brew",repo=repo)
-install.packages("reshape",repo=repo)
-# gplots not available - manual install
-install.packages("gtools",repo=repo)
-install.packages("gdata",repo=repo)
-install.packages("caTools",repo=repo)
-install.packages("sfsmisc",repo=repo)
-install.packages("lattice",repo=repo)
-download.file("http://cran.r-project.org/src/contrib/Archive/gplots/gplots_2.11.0.tar.gz","gplots_2.11.0.tar.gz")
-install.packages("gplots_2.11.0.tar.gz",type="source",repos=NULL)
-#install.packages("gplots",repo=repo)
+source("http://bioconductor.org/biocLite.R")
 
 # RSQLite_1 does not compile
 download.file("http://cran.r-project.org/src/contrib/Archive/RSQLite/RSQLite_0.11.4.tar.gz","RSQLite_0.11.4.tar.gz")
 install.packages("RSQLite_0.11.4.tar.gz",type="source",repos=NULL)
+download.file("http://cran.r-project.org/src/contrib/Archive/gplots/gplots_2.11.0.tar.gz","gplots_2.11.0.tar.gz")
+install.packages("gplots_2.11.0.tar.gz",type="source",repos=NULL)
+download.file("http://cran.r-project.org/src/contrib/Archive/xtable/xtable_1.7-4.tar.gz","xtable_1.7-4.tar.gz")
+install.packages("xtable_1.7-4.tar.gz",type="source",repos=NULL)
+#install.packages("gplots",repo=repo)
 
-# update needs to be off otherwise the RSQLite PACKAGE
-# will be updated
-source("http://bioconductor.org/biocLite.R")
-biocLite('GO.db',ask=FALSE, suppressUpdates=TRUE)
-biocLite("Rsamtools",ask=FALSE, suppressUpdates=TRUE)
-#biocLite('cummeRbund',ask=FALSE, suppressUpdates=FALSE)
-biocLite('edgeR',ask=FALSE, suppressUpdates=c("^RSQLite*"))
-biocLite('DESeq',ask=FALSE, suppressUpdates=c("^RSQLite*"))
-#biocLite('DESeq2',ask=FALSE, suppressUpdates=TRUE)
-biocLite('DEXSeq',ask=FALSE, suppressUpdates=c("^RSQLite*"))
-biocLite('baySeq',ask=FALSE, suppressUpdates=c("^RSQLite*"))
-biocLite('limma',ask=FALSE, suppressUpdates=c("^RSQLite*"))
-biocLite('marray',ask=FALSE, suppressUpdates=c("^RSQLite*"))
-#biocLite('igraph',ask=FALSE, suppressUpdates=c("^RSQLite*"))
+# agricolae deps
+download.file("http://cran.r-project.org/src/contrib/Archive/sp/sp_1.0-11.tar.gz","sp_1.0-11.tar.gz")
+install.packages("sp_1.0-11.tar.gz",type="source",repos=NULL)
 
-biocLite("org.Hs.eg.db",ask=FALSE, suppressUpdates=TRUE)
+biocLite("maptools",ask=FALSE,suppressUpdates=TRUE)
+biocLite("deldir",ask=FALSE,suppressUpdates=TRUE)
+biocLite("coda",ask=FALSE,suppressUpdates=TRUE)
+download.file("http://cran.r-project.org/src/contrib/Archive/spdep/spdep_0.5-40.tar.gz","spdep_0.5-40.tar.gz")
+install.packages("spdep_0.5-40.tar.gz",type="source",repos=NULL)
 
-#biocLite("topGO",ask=FALSE, suppressUpdates=TRUE)
-#biocLite("biomaRt",ask=FALSE, suppressUpdates=TRUE)
 
-biocLite('goseq',ask=FALSE, suppressUpdates=TRUE)
+
+manually.installed.packages<-c("^gplots_.*","^xtable.*","^RSQLite.*","^spdep_.*","^sp_.*")
+
+# not available in 2.15.2: "plyr", "reshape","lattice"
+packages2install<-c("multicore","parallel","intervals","gclus","R2HTML","agricolae","optparse","brew","gtools","gdata","caTools","sfsmisc","GO.db","edgeR","DESeq","Rsamtools","DEXSeq","baySeq","limma","marray","org.Hs.eg.db","goseq")
+for ( p in packages2install ) {
+   cat("Installing ",p,":\n")
+   biocLite(p,ask=FALSE,  suppressUpdates=manually.installed.packages)
+}
 
 species2db<-matrix(c('org.Ag.eg.db','Anopheles',
 'org.At.tair.db','Arabidopsis',
@@ -1178,8 +1178,7 @@ species2db<-matrix(c('org.Ag.eg.db','Anopheles',
 'org.Xl.eg.db','Xenopus'),byrow=T,ncol=2)
 colnames(species2db)<-c("db","species")
 for (p in species2db[,'db']) {
-biocLite(p,ask=FALSE,suppressUpdates=c("^RSQLite*"))
-                     
+  biocLite(p,ask=FALSE,,  suppressUpdates=manually.installed.packages)                     
 }
 
 q()
@@ -1198,15 +1197,18 @@ function R3_packages_install {
     pinfo "Installing R-3.x packages..."
     R3 --no-save <<EOF
 repo<-"$CRAN_REPO"
+source("http://bioconductor.org/biocLite.R")
 packages2install<-c("intervals","gclus",'R2HTML',"agricolae",
              "optparse","brew","reshape","gtools","gdata","caTools",
              "sfsmisc","gplots","lattice","data.table")
 
 for (p in packages2install ) {
-   install.packages(p,repo=repo)
+   biocLite(p,ask=FALSE, suppressUpdates=FALSE)
 }
-q()
+q(status=0)
 EOF
+    #   install.packages(p,repo=repo)
+
    R3 --no-save <<EOF
 # bioconductor packages
 source("http://bioconductor.org/biocLite.R")
@@ -1949,10 +1951,19 @@ pinfo "Checking paths..."
 #IRAP_DIR=$(realpath -f "$IRAP_DIR")
 IRAP_DIR=$(readlink -f "$IRAP_DIR")
 SRC_DIR=$(readlink -f "$SRC_DIR")
+pinfo "Checking paths...done."
+#############################################
+# print a few variables to help troubleshooting
 pinfo "IRAP_DIR=$IRAP_DIR"
 pinfo "SRC_DIR=$SRC_DIR"
 pinfo "PATH=$PATH"
-pinfo "Checking paths...done."
+pinfo "CFLAGS=$CFLAGS"
+pinfo "CXXFLAGS=$CXXFLAGS"
+pinfo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+pinfo "R_LIBS=$R_LIBS"
+pinfo "R_LIBS_USER=$R_LIBS_USER"
+
+#############################################
 #
 BIN_DIR=$IRAP_DIR/bin
 TMP_DIR=$IRAP_DIR/tmp
