@@ -241,10 +241,21 @@ function set_classified_error {
     set_error $*
 }
 
+function io_error {
+    errf=$1
+    E=`grep -E "(disk I/O error|Stale|IOError:|write error|error 521|Cant't exec)" $errf`
+    if [ $? -eq 0 ]; then
+	echo 1
+    else
+	echo 0
+    fi    
+}
+
 function stage0_errors {
     errf=$1
-    E=`grep -E "(disk I/O error|Stale|IOError:)" $errf`
-    if [ $? -eq 0 ]; then
+    is_io_error=`io_error $errf`
+    #E=`grep -E "(disk I/O error|Stale|IOError:|write error|error 521)" $errf`
+    if [ $is_io_error -eq 1 ]; then
 	set_classified_error "iRAP stage0: I/O error"
     else
 	set_error "iRAP Stage0: unclassified error"
@@ -252,70 +263,82 @@ function stage0_errors {
 
 }
 
+
 function fastqInfo_errors {
     errf=$1
-    
-    e=`grep -E "(ERROR:|error:|Error)" $errf|tail -n 1`
-    # Error in the file
-    if [ $? -eq 0 ]; then
-	msg=`echo "$e" | grep -E "(duplicated|header|truncated|identifier|character|length|unpaired|encoding)"|tail  -n 1|cut -f 2- -d: `
+
+    is_io_error=`io_error $errf`
+    if [ $is_io_error -eq 1 ]; then
+	set_classified_error "FastqInfo: I/O error"
+    else
+	e=`grep -E "(ERROR:|error:|Error)" $errf|tail -n 1`
+	# Error in the file
 	if [ $? -eq 0 ]; then
-	    set_classified_error "FastqInfo: $msg"
-	else
-	    set_classified_error "FastqInfo: unclassified error - $e"
+	    msg=`echo "$e" | grep -E "(unable|duplicated|header|truncated|identifier|character|length|implemented|unpaired|encoding|invalid)"|tail  -n 1|cut -f 2- -d: `
+	    if [ $? -eq 0 ]; then
+		set_classified_error "FastqInfo: $msg"
+	    else
+		set_classified_error "FastqInfo: unclassified error - $e"
+	    fi
+	else 
+	    set_error "FastqInfo: unclassified error - $e"
 	fi
-    else 
-	set_error "FastqInfo: unclassified error - $e"
     fi
 }
 
 function iRAP-QC_errors {
     errf=$1
-    E=`grep "mv: cannot stat.*filter1.stats"  $errf `
-    if [ $? -eq 0 ]; then
-	set_classified_error "QC: 1 too short reads or below quality threshold"
+
+    is_io_error=`io_error $errf`
+    if [ $is_io_error -eq 1 ]; then
+	set_classified_error "QC: I/O error"
     else
-	E=`grep "mv: cannot stat.*filter2.stats"  $errf `
+	E=`grep "mv: cannot stat.*filter1.stats"  $errf `
 	if [ $? -eq 0 ]; then
-	    set_classified_error "QC: 2 contamination"
+	    set_classified_error "QC: 1 too short reads or below quality threshold"
 	else
-	    E=`grep -E "reads with at least one reported alignment: [0-9]* \(100.00%\)"  $errf `
+	    E=`grep "mv: cannot stat.*filter2.stats"  $errf `
 	    if [ $? -eq 0 ]; then
 		set_classified_error "QC: 2 contamination"
 	    else
-		E=`grep "mv: cannot stat.*filter3.stats"  $errf `
+		E=`grep -E "reads with at least one reported alignment: [0-9]* \(100.00%\)"  $errf `
 		if [ $? -eq 0 ]; then
-		    set_classified_error "QC: 3 reads with uncalled bases discarded"
+		    set_classified_error "QC: 2 contamination"
 		else
-		    E=`grep "mv: cannot stat.*filter4.stats"  $errf `
+		    E=`grep "mv: cannot stat.*filter3.stats"  $errf `
 		    if [ $? -eq 0 ]; then
-			set_classified_error "QC: 4 reads without mates"
+			set_classified_error "QC: 3 reads with uncalled bases discarded"
 		    else
-			E=`grep "Aborted.* bowtie" $errf`
+			E=`grep "mv: cannot stat.*filter4.stats"  $errf `
 			if [ $? -eq 0 ]; then
-			    set_classified_error "QC: IO error?"
+			    set_classified_error "QC: 4 reads without mates"
 			else
-			    E=`grep "Premature End-Of-File" $errf`
+			    E=`grep "Aborted.* bowtie" $errf`
 			    if [ $? -eq 0 ]; then
-				set_classified_error "QC: 1 no reads pass the quality threshold"
+				set_classified_error "QC: IO error?"
 			    else
-				E=`grep "gzip: .*.gz: unexpected end of file" $errf`
+				E=`grep "Premature End-Of-File" $errf`
 				if [ $? -eq 0 ]; then
-				    set_classified_error "gzip: unexpected end of file"			
+				    set_classified_error "QC: 1 no reads pass the quality threshold"
 				else
-				    E=`grep -E "(disk I/O error|Stale|IOError:)" $errf`
+				    E=`grep "gzip: .*.gz: unexpected end of file" $errf`
 				    if [ $? -eq 0 ]; then
-					set_classified_error "QC: I/O error"
+					set_classified_error "gzip: unexpected end of file"			
 				    else
-					E=`grep "gzip: .*.gz: unexpected end of file" $errf`
+					E=`grep -E "(disk I/O error|Stale|IOError:)" $errf`
 					if [ $? -eq 0 ]; then
-					    set_classified_error "gzip: unexpected end of file"			
+					    set_classified_error "QC: I/O error"
 					else
-					    E=`grep -E "0 paired reads! are the headers ok?" $errf`
+					    E=`grep "gzip: .*.gz: unexpected end of file" $errf`
 					    if [ $? -eq 0 ]; then
-						set_classified_error "QC: 5 reads without mates"			
-					    else					
-						set_error "QC: unclassified error"
+						set_classified_error "gzip: unexpected end of file"			
+					    else
+						E=`grep -E "0 paired reads! are the headers ok?" $errf`
+						if [ $? -eq 0 ]; then
+						    set_classified_error "QC: 5 reads without mates"			
+						else					
+						    set_error "QC: unclassified error"
+						fi
 					    fi
 					fi
 				    fi
@@ -331,38 +354,43 @@ function iRAP-QC_errors {
 
 function iRAP-Mapping_errors {
     errf=$1
-    e=`grep "Error occured when reading beginning of SAM/BAM file." $errf`
-    if [ $? -eq 0 ]; then
-	set_classified_error "iRAP Mapping: no aligned reads in BAM"
+    is_io_error=`io_error $errf`
+    if [ $is_io_error -eq 1 ]; then
+	set_classified_error "iRAP Mapping: I/O error"
     else
-	e=`grep -E "bowtie2-align died with signal .* (core dumped)" $errf`
+	e=`grep "Error occured when reading beginning of SAM/BAM file." $errf`
 	if [ $? -eq 0 ]; then
-	    echo hostname=`hostname`
-	    set_classified_error "iRAP Mapping: bowtie2-align  crashed: `hostname`"
+	    set_classified_error "iRAP Mapping: no aligned reads in BAM"
 	else
-	    e=`grep -E "Error running.*tophat_reports" $errf`
+	    e=`grep -E "bowtie2-align died with signal .* (core dumped)" $errf`
 	    if [ $? -eq 0 ]; then
-		set_classified_error "iRAP Mapping: internal tophat2 error"
+		echo hostname=`hostname`
+		set_classified_error "iRAP Mapping: bowtie2-align  crashed: `hostname`"
 	    else
-		E=`grep -E "(disk I/O error|Stale|IOError:)" $errf`
+		e=`grep -E "Error running.*tophat_reports" $errf`
 		if [ $? -eq 0 ]; then
-		    set_classified_error "iRAP Mapping: I/O error"
+		    set_classified_error "iRAP Mapping: internal tophat2 error"
 		else
-		    set_error "iRAP Mapping: unclassified error"
+		    E=`grep -E "(disk I/O error|Stale|IOError:)" $errf`
+		    if [ $? -eq 0 ]; then
+			set_classified_error "iRAP Mapping: I/O error"
+		    else
+			set_error "iRAP Mapping: unclassified error"
+		    fi
 		fi
 	    fi
+	    
 	fi
-
     fi
 }
 
 function iRAP-Mapping-QC_errors {
     errf=$1
-
-    E=`grep -E "(disk I/O error|Stale|IOError:)" $errf`
-    if [ $? -eq 0 ]; then
+    is_io_error=`io_error $errf`
+    if [ $is_io_error -eq 1 ]; then
 	set_classified_error "iRAP Mapping QC: I/O error"
     else
+	#E=`grep -E "(disk I/O error|Stale|IOError:)" $errf`
 	E=`grep -E "database is locked" $errf`
 	if [ $? -eq 0 ]; then
 	    set_classified_error "iRAP Mapping QC: sqlite - database is locked"
@@ -374,27 +402,37 @@ function iRAP-Mapping-QC_errors {
 
 function iRAP-Quant_errors {
     errf=$1
-    e=`grep "Error occured when reading beginning of SAM/BAM file." $errf`
-    if [ $? -eq 0 ]; then
-	set_classified_error "iRAP Quant: no aligned reads in BAM?"
+    is_io_error=`io_error $errf`
+    if [ $is_io_error -eq 1 ]; then
+	set_classified_error "iRAP Quant: I/O error"
     else
-	E=`grep -E "(disk I/O error|Stale|IOError:)" $errf`
+	e=`grep "Error occured when reading beginning of SAM/BAM file." $errf`
 	if [ $? -eq 0 ]; then
-	    set_classified_error "iRAP Quant: I/O error"
-	else	    
-	    set_error "iRAP Quant: unclassified error"
+	    set_classified_error "iRAP Quant: no aligned reads in BAM?"
+	else
+	    E=`grep -E "(disk I/O error|Stale|IOError:)" $errf`
+	    if [ $? -eq 0 ]; then
+		set_classified_error "iRAP Quant: I/O error"
+	    else	    
+		set_error "iRAP Quant: unclassified error"
+	    fi
 	fi
     fi
 }
 
 function iRAP-CRAM_errors {
     errf=$1
-    E=`grep -E "(disk I/O error|Stale|IOError:)" $errf`
-    if [ $? -eq 0 ]; then
+    is_io_error=`io_error $errf`
+    if [ $is_io_error -eq 1 ]; then
 	set_classified_error "iRAP CRAM: I/O error"
     else
-	set_error "iRAP CRAM: unclassified error"
-    fi  
+	E=`grep -E "(disk I/O error|Stale|IOError:)" $errf`
+	if [ $? -eq 0 ]; then
+	    set_classified_error "iRAP CRAM: I/O error"
+	else
+	    set_error "iRAP CRAM: unclassified error"
+	fi
+    fi
 }
 
 function iRAP-tidyup_errors {
