@@ -1146,7 +1146,7 @@ function R_packages_install {
 repo<-"$CRAN_REPO"
 
 source("http://bioconductor.org/biocLite.R")
-
+biocLite("DBI",ask=FALSE,suppressUpdates=TRUE)
 # RSQLite_1 does not compile
 download.file("http://cran.r-project.org/src/contrib/Archive/RSQLite/RSQLite_0.11.4.tar.gz","RSQLite_0.11.4.tar.gz")
 install.packages("RSQLite_0.11.4.tar.gz",type="source",repos=NULL)
@@ -1174,7 +1174,7 @@ manually.installed.packages<-c("^gplots_","^xtable","^RSQLite","^spdep_","^sp_")
 packages2install<-c("multicore","parallel","intervals","gclus","R2HTML","agricolae","optparse","brew","gtools","gdata","caTools","sfsmisc","GO.db","edgeR","DESeq","Rsamtools","DEXSeq","baySeq","limma","marray","org.Hs.eg.db","goseq","data.table")
 for ( p in packages2install ) {
    cat("Installing ",p,":\n")
-   biocLite(p,ask=FALSE,  suppressUpdates=manually.installed.packages)
+   biocLite(p,ask=FALSE,  suppressUpdates=TRUE)
 }
 
 species2db<-matrix(c('org.Ag.eg.db','Anopheles',
@@ -1199,7 +1199,7 @@ species2db<-matrix(c('org.Ag.eg.db','Anopheles',
 'org.Xl.eg.db','Xenopus'),byrow=T,ncol=2)
 colnames(species2db)<-c("db","species")
 for (p in species2db[,'db']) {
-  biocLite(p,ask=FALSE,  suppressUpdates=manually.installed.packages)                     
+  biocLite(p,ask=FALSE,  suppressUpdates=TRUE)                     
 }
 
 q()
