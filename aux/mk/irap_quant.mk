@@ -884,8 +884,9 @@ $(name)/data/mapTrans2Gene.tsv: $(gtf_file_abspath)
 # read lenth - 3
 # stranded data not supported
 define run_kallisto_quant=
- irap_wrapper.sh kallisto kallisto quant $(kallisto_quant_params) -i $(kallisto_index_name) $(if $(4),,--single) -o $(1) -l $(3) $(2)
+ irap_wrapper.sh kallisto kallisto quant $(kallisto_quant_params) -i $(kallisto_index_name) $(if $(4),,--single)  -t $(max_threads) -o $(1)  $(2)
 endef
+# -l $(3)
 
 # abundance.txt
 # 1 lib
