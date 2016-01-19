@@ -436,7 +436,8 @@ endef
 
 ########################################################################
 # BWA 1 
-bwa1_index_options= -a bwtsw
+bwa1_index_options=
+#-a bwtsw
 bwa1_aln_params:= -t $(max_threads) $(bwa1_aln_options)
 bwa1_map_params:= $(bwa1_map_options)
 
@@ -451,7 +452,7 @@ endef
 
 define bwa1_map_se=
 	irap_map.sh bwa bwa aln $(bwa1_aln_params)  $(call qual_bwa,$(1)) $(subst .amb,,$(index_files)) $(2) | \
-	irap_map.sh bwa bwa samse $(bwa1_map_params)  $(subst .amb,,$(index_files)) /dev/fd/1 $(2) > $(3).sam
+	irap_map.sh bwa bwa samse $(bwa1_map_params)  $(subst .amb,,$(index_files)) - $(2) > $(3).sam
 endef
 
 define bwa1_map_pe=
