@@ -888,20 +888,20 @@ define run_kallisto_quant=
 endef
 # -l $(3)
 
-# abundance.txt
+# abundance.tsv
 # 1 lib
 # 2 file prefix (lib.[pe,se])
 define make-kallisto-quant-rule=
 
 
-$(call lib2quant_folder,$(1))$(1)/$(1).abundance.txt: $(call libname2fastq,$(1)) $(kallisto_index)
-	(mkdir -p $$(@D) && $$(call run_kallisto_quant,$$(@D),$(call libname2fastq,$(1)),$($(1)_rs),$(call is_pe_lib,$(1))) && mv $$(@D)/abundance.txt $$@)
+$(call lib2quant_folder,$(1))$(1)/$(1).abundance.tsv: $(call libname2fastq,$(1)) $(kallisto_index)
+	(mkdir -p $$(@D) && $$(call run_kallisto_quant,$$(@D),$(call libname2fastq,$(1)),$($(1)_rs),$(call is_pe_lib,$(1))) && mv $$(@D)/abundance.tsv $$@)
 
 
-$(call lib2quant_folder,$(1))$(2).transcripts.raw.kallisto.tsv: $(call lib2quant_folder,$(1))$(1)/$(1).abundance.txt
+$(call lib2quant_folder,$(1))$(2).transcripts.raw.kallisto.tsv: $(call lib2quant_folder,$(1))$(1)/$(1).abundance.tsv
 	cut -f 1,4 $$< |tail -n +2 > $$@.tmp && mv $$@.tmp $$@
 
-$(call lib2quant_folder,$(1))$(2).transcripts.tpm.kallisto.kallisto.tsv: $(call lib2quant_folder,$(1))$(1)/$(1).abundance.txt
+$(call lib2quant_folder,$(1))$(2).transcripts.tpm.kallisto.kallisto.tsv: $(call lib2quant_folder,$(1))$(1)/$(1).abundance.tsv
 	cut -f 1,5 $$< |tail -n +2 > $$@.tmp && mv $$@.tmp $$@
 
 
