@@ -61,9 +61,12 @@ endef
 # complain if a file does not exist and exit
 file_exists=$(if  $(realpath $(1)),,$(call p_error,$(1) not found))
 
+silent_cat=$(if  $(realpath $(1)),$(shell cat $(1)),)
+
 define pass_args_stdin=
 cat $(2) | $(1) -stdin 
 endef
+
 
 
 #Version and license info
@@ -87,23 +90,91 @@ endif
 # folders_file must exist
 $(call file_exists,$(folders_file))
 
+nfiles=$(shell cat $(folders_file)| tr "\n" " "|wc -w |cut -f 1 -d\ 	)
+$(info INFO:  $(nfiles) folders in $(folders_file))
+
+ifeq (0,$(nfiles))
+$(call p_error, Empty $(folders_file)?!)
+endif
+
 MERGE_EXTRA_OPTIONS?=
 
-all: $(out) $(out)/genes.raw.tsv $(out)/genes.rpkm.tsv $(out)/exons.raw.tsv $(out)/exons.rpkm.tsv 
+$(shell mkdir -p $(out))
+##########################################################
+# list of files
+
+# 1-folders file
+# 2-file name pattern
+# 3-file with the files matching the file name pattern
+define matching_files=
+$(call shell,(cat $(1) | while read n; do  for f in $$n; do find $$f -name "$(2)" -printf "%p "; done; done; ) > $(3).tmp && mv $(3).tmp $(3))
+endef
+
+# 1-file
+# 2-expected number of files
+define matching_files_ok=
+$(call shell,expr `wc -w $(1) | cut -f 1 -d\ ` == $(2)|sed "s/^0$$//")
+endef
+
+define matching_files_empty=
+$(call shell,expr `wc -w $(1) | cut -f 1 -d\ ` == 0|sed "s/^0$$//")
+endef
+
+# - if 0 then we assume that the analysis was not done
+# - if $nfiles then we found all
+# - error otherwise
+# 1-file to check
+define check_file=
+$(if $(call matching_files_ok,$(1),$(nfiles)),$(1),$(if $(call matching_files_empty,$(1)),$(shell rm -f $(1)),$(call p_error,Incomplete file $(1) - expected $(nfiles) files)))
+endef
+
+########################################################################
+$(call p_info,Looking for gene level quantification files (raw counts))
+$(call matching_files,$(folders_file),"*genes.raw.*.tsv",$(out)/.genes_raw_quants_file)
+
+$(call p_info,Looking for gene level quantification files (rpkm))
+$(call matching_files,$(folders_file),"*genes.rpkm.*.tsv",$(out)/.genes_rpkm_quants_file)
+
+$(call p_info,Looking for gene level quantification files (tpm))
+$(call matching_files,$(folders_file),"*genes.tpm.*.tsv",$(out)/.genes_tpm_quants_file)
+
+#
+$(call p_info,Looking for exon level quantification files (raw counts))
+$(call matching_files,$(folders_file),"*exons.raw.*.tsv",$(out)/.exons_raw_quants_file)
+
+$(call p_info,Looking for exon level quantification files (rpkm))
+$(call matching_files,$(folders_file),"*exons.rpkm.*.tsv",$(out)/.exons_rpkm_quants_file)
+
+$(call p_info,Looking for exon level quantification files (tpm))
+$(call matching_files,$(folders_file),"*exons.tpm.*.tsv",$(out)/.exons_tpm_quants_file)
+
+#
+$(call p_info,Looking for transcript level quantification files (raw counts))
+$(call matching_files,$(folders_file),"*transcripts.raw.*.tsv",$(out)/.transcripts_raw_quants_file)
+
+$(call p_info,Looking for transcript level quantification files (rpkm))
+$(call matching_files,$(folders_file),"*transcripts.rpkm.*.tsv",$(out)/.transcripts_rpkm_quants_file)
+
+$(call p_info,Looking for transcript level quantification files (tpm))
+$(call matching_files,$(folders_file),"*transcripts.tpm.*.tsv",$(out)/.transcripts_tpm_quants_file)
+
+#############################################
+# checking the number of files found
+
+files2check=$(out)/.transcripts_tpm_quants_file $(out)/.transcripts_rpkm_quants_file $(out)/.transcripts_raw_quants_file $(out)/.exons_tpm_quants_file $(out)/.exons_rpkm_quants_file $(out)/.exons_raw_quants_file $(out)/.genes_tpm_quants_file $(out)/.genes_rpkm_quants_file $(out)/.genes_raw_quants_file
+
+$(foreach f,$(files2check),$(info $(call check_file,$f)))
+
+targets=$(foreach f,$(files2check), $(if $(realpath $(f)),$(dir $f)$(subst _,.,$(subst _quants_file,.tsv,$(subst .,,$(notdir $f))))))
+
+$(call p_info,Generating $(targets))
+
+#########################################################################
+# 
+all: $(out) $(targets)
 #$(out)/bam.stats $(out)/bam.gene.stats
 	echo All done
 
-$(out)/.genes_raw_quants_file: $(folders_file) $(out) 
-	((cat $(folders_file) | while read n; do  for f in $$n; do find $$f -name "*genes.raw.*.tsv" -printf "%p "; done; done; ) > $@.tmp && echo \  >> $@.tmp && mv $@.tmp $@ ) 
-
-$(out)/.genes_rpkm_quants_file: $(folders_file) $(out) 
-	((cat $(folders_file) | while read n; do  for f in $$n; do find $$f -name "*genes.rpkm.*.tsv" -printf "%p "; done; done;  )  > $@.tmp && echo \  >> $@.tmp && mv $@.tmp $@ ) 
-
-$(out)/.exons_rpkm_quants_file: $(folders_file) $(out) 
-	((cat $(folders_file) | while read n; do for f in $$n; do find $$f -name "*exons.rpkm.*.tsv" -printf "%p "; done; done; )  > $@.tmp && echo \  >> $@.tmp && mv $@.tmp $@ ) 
-
-$(out)/.exons_raw_quants_file: $(folders_file) $(out) 
-	((cat $(folders_file) | while read n; do  for f in $$n; do find $$f -name "*exons.raw.*.tsv" -printf "%p "; done; done; ) > $@.tmp && echo \  >> $@.tmp && mv $@.tmp $@ ) 
 
 #$(out)/.bam_stats_files: $(folders_file) $(out) 
 #	((cat $(folders_file) | while read n; do  for f in $$n; do find $$f -name "*.bam.stats" -printf "%p "; done; done; ) > $@.tmp && echo \  >> $@.tmp && mv $@.tmp $@ ) 
@@ -116,17 +187,33 @@ $(out):
 	mkdir -p $(out)
 
 # almost the same name as irap
-$(out)/genes.raw.tsv: $(out)/.genes_raw_quants_file
-	echo -n --rowname_col 'Gene ID' --has_no_header --add_header --out $@.tmp $(MERGE_EXTRA_OPTIONS) --in \" > $@.tmp.cmd && cat $< | tr "\n " " " | head -n 1 >> $@.tmp.cmd && echo \" >> $@.tmp.cmd && cat $@.tmp.cmd | irap_merge2tsv -stdin && rm -f $@.tmp.cmd && mv $@.tmp $@
+$(out)/genes.raw.tsv: $(call silent_cat,$(out)/.genes_raw_quants_file)
+	echo -n --rowname_col 'Gene ID' --has_no_header --add_header --out $@.tmp $(MERGE_EXTRA_OPTIONS) --in \" > $@.tmp.cmd && cat $(out)/.genes_raw_quants_file | tr "\n " " " | head -n 1 >> $@.tmp.cmd && echo \" >> $@.tmp.cmd && cat $@.tmp.cmd | irap_merge2tsv -stdin && rm -f $@.tmp.cmd && mv $@.tmp $@
 
-$(out)/genes.rpkm.tsv: $(out)/.genes_rpkm_quants_file
-	echo -n --rowname_col 'Gene ID'  --add_header --out $@.tmp $(MERGE_EXTRA_OPTIONS) --in \" > $@.tmp.cmd && cat $< | tr "\n" " " | head -n 1 >> $@.tmp.cmd && echo \" >> $@.tmp.cmd && cat $@.tmp.cmd | irap_merge2tsv -stdin && rm -f $@.tmp.cmd && mv $@.tmp $@
+$(out)/genes.rpkm.tsv: $(call silent_cat,$(out)/.genes_rpkm_quants_file)
+	echo -n --rowname_col 'Gene ID'  --add_header --out $@.tmp $(MERGE_EXTRA_OPTIONS) --in \" > $@.tmp.cmd && cat $(out)/.genes_rpkm_quants_file | tr "\n" " " | head -n 1 >> $@.tmp.cmd && echo \" >> $@.tmp.cmd && cat $@.tmp.cmd | irap_merge2tsv -stdin && rm -f $@.tmp.cmd && mv $@.tmp $@
 
-$(out)/exons.raw.tsv: $(out)/.exons_raw_quants_file
-	echo -n --rowname_col 'Exon ID' --has_no_header --add_header --out $@.tmp $(MERGE_EXTRA_OPTIONS) --in \"  > $@.tmp.cmd && cat $< | tr "\n" " " | head -n 1 >> $@.tmp.cmd && echo \" >> $@.tmp.cmd && cat $@.tmp.cmd | irap_merge2tsv -stdin && rm -f $@.tmp.cmd && mv $@.tmp $@
+$(out)/genes.tpm.tsv: $(call silent_cat,$(out)/.genes_tpm_quants_file)
+	echo -n --rowname_col 'Gene ID'  --add_header --out $@.tmp $(MERGE_EXTRA_OPTIONS) --in \" > $@.tmp.cmd && cat $(out)/.genes_tpm_quants_file | tr "\n" " " | head -n 1 >> $@.tmp.cmd && echo \" >> $@.tmp.cmd && cat $@.tmp.cmd | irap_merge2tsv -stdin && rm -f $@.tmp.cmd && mv $@.tmp $@
 
-$(out)/exons.rpkm.tsv: $(out)/.exons_rpkm_quants_file
-	echo -n --rowname_col 'Exon ID'  --add_header --out $@.tmp $(MERGE_EXTRA_OPTIONS) --in \" > $@.tmp.cmd && cat $< | tr "\n" " " | head -n 1 >> $@.tmp.cmd && echo \" >> $@.tmp.cmd && cat $@.tmp.cmd | irap_merge2tsv -stdin && rm -f $@.tmp.cmd && mv $@.tmp $@
+$(out)/exons.raw.tsv: $(call silent_cat,$(out)/.exons_raw_quants_file)
+	echo -n --rowname_col 'Exon ID' --has_no_header --add_header --out $@.tmp $(MERGE_EXTRA_OPTIONS) --in \"  > $@.tmp.cmd && cat $(out)/.exons_raw_quants_file | tr "\n" " " | head -n 1 >> $@.tmp.cmd && echo \" >> $@.tmp.cmd && cat $@.tmp.cmd | irap_merge2tsv -stdin && rm -f $@.tmp.cmd && mv $@.tmp $@
+
+$(out)/exons.rpkm.tsv: $(call silent_cat,$(out)/.exons_rpkm_quants_file)
+	echo -n --rowname_col 'Exon ID'  --add_header --out $@.tmp $(MERGE_EXTRA_OPTIONS) --in \" > $@.tmp.cmd && cat $(out)/.exons_rpkm_quants_file | tr "\n" " " | head -n 1 >> $@.tmp.cmd && echo \" >> $@.tmp.cmd && cat $@.tmp.cmd | irap_merge2tsv -stdin && rm -f $@.tmp.cmd && mv $@.tmp $@
+
+$(out)/exons.tpm.tsv: $(call silent_cat,$(out)/.exons_tpm_quants_file)
+	echo -n --rowname_col 'Exon ID'  --add_header --out $@.tmp $(MERGE_EXTRA_OPTIONS) --in \" > $@.tmp.cmd && cat $(out)/.exons_tpm_quants_file | tr "\n" " " | head -n 1 >> $@.tmp.cmd && echo \" >> $@.tmp.cmd && cat $@.tmp.cmd | irap_merge2tsv -stdin && rm -f $@.tmp.cmd && mv $@.tmp $@
+
+
+$(out)/transcripts.raw.tsv: $(call silent_cat,$(out)/.transcripts_raw_quants_file)
+	echo -n --rowname_col 'Transcript ID' --has_no_header --add_header --out $@.tmp $(MERGE_EXTRA_OPTIONS) --in \"  > $@.tmp.cmd && cat $(out)/.transcripts_raw_quants_file | tr "\n" " " | head -n 1 >> $@.tmp.cmd && echo \" >> $@.tmp.cmd && cat $@.tmp.cmd | irap_merge2tsv -stdin && rm -f $@.tmp.cmd && mv $@.tmp $@
+
+$(out)/transcripts.rpkm.tsv: $(call silent_cat,$(out)/.transcripts_rpkm_quants_file)
+	echo -n --rowname_col 'Transcript ID'  --add_header --out $@.tmp $(MERGE_EXTRA_OPTIONS) --in \" > $@.tmp.cmd && cat $(out)/.transcripts_rpkm_quants_file | tr "\n" " " | head -n 1 >> $@.tmp.cmd && echo \" >> $@.tmp.cmd && cat $@.tmp.cmd | irap_merge2tsv -stdin && rm -f $@.tmp.cmd && mv $@.tmp $@
+
+$(out)/transcripts.tpm.tsv: $(call silent_cat,$(out)/.transcripts_tpm_quants_file)
+	echo -n --rowname_col 'Transcript ID'  --add_header --out $@.tmp $(MERGE_EXTRA_OPTIONS) --in \" > $@.tmp.cmd && cat $(out)/.transcripts_tpm_quants_file | tr "\n" " " | head -n 1 >> $@.tmp.cmd && echo \" >> $@.tmp.cmd && cat $@.tmp.cmd | irap_merge2tsv -stdin && rm -f $@.tmp.cmd && mv $@.tmp $@
 
 
 #$(out)/bam.stats: $(out)/.bam_stats_files

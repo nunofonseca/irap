@@ -216,7 +216,7 @@ endif
 #************************
 #Version and license info
 pname=IRAP
-version=0.7.0p12
+version=0.7.0d15
 contact=Developed by Nuno Fonseca (authorname (at) acm.org)
 license=This pipeline is distributed  under the terms of the GNU General Public License 3
 
@@ -915,7 +915,7 @@ annot_tsv=$(def_annot_tsv)
 endif
 
 ifeq (auto,$(annot_tsv)) 
-annot_tsv=$(name)/data/gene.annot.tsv
+annot_tsv=$(name)/data/$(reference_basename).gene.annot.tsv
 endif
 
 

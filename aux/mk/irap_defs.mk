@@ -32,8 +32,10 @@ $(info * sop=$(sop) (overriding some options))
 ifeq ($(sop),pawg3_th2_mapping)
 $(info * SOP=PAWG3 mapping with TopHat2)
 override qc=off
+ifdef quant_method
 ifneq ($(quant_method),kallisto)
 override mapper=tophat2
+endif
 endif
 override species=homo_sapiens
 quant_method?=none
@@ -81,8 +83,9 @@ quant_method?=htseq2
 mapper?=tophat2
 exon_quant?=y
 exon_quant_method=dexseq
-quant_norm_method=rpkm
+quant_norm_method?=rpkm
 quant_norm_tool?=irap
+transcript_quant?=n
 
 ifdef big_genome
 $(info * Big genome, overriding mapper: $(mapper) -> star)

@@ -24,7 +24,7 @@ install=all
 IRAP_DIR1=
 SRC_DIR=
 
-IRAP_VERSION=0.7.0p12
+IRAP_VERSION=0.7.0d15
 
 
 #
@@ -45,6 +45,7 @@ function usage {
     echo " -p : update Perl packages.";
     echo " -q : update quantifiers.";
     echo " -b : update jbrowser.";
+    echo " -j : install jbrowser (with -a).";
     echo " -v : collect software versions.";
     echo " Advanced options:";
     echo " -f : check/fix file permissions"
@@ -119,7 +120,7 @@ function check_dependencies {
     pinfo "$DEVEL_LIBRARIES_REQUIRED"
     # Binaries that should be available
     # make is required to...compile make
-    BINARIES="java python gcc g++ gfortran curl-config git which make bzip2 unzip"
+    BINARIES="java python gcc g++ gfortran curl-config git which make bzip2 unzip bash"
     pinfo "Checking dependencies..."
     for bin in $BINARIES; do
 	PATH2BIN=`which $bin 2> /dev/null`
@@ -809,11 +810,16 @@ function R_install {
     download_software R
     tar xzvf $R_FILE
     pushd R-${R_VERSION}
-    CFLAGS=  CXXFLAGS= ./configure --prefix=$IRAP_DIR
-    make clean
-    CFLAGS=  CXXFLAGS=  make -j $J
-    make -j $J check
-    make install
+    export R_LIBS=
+    export R_LIBS_USER=$IRAP_DIR/Rlibs
+    CFLAGS_noboost=`echo $CFLAGS|sed -E "s|\-I[^ ]*boost||g"`    
+    # clean up - delete packages previously installed
+    rm -rf $IRAP_DIR/Rlibs/*
+    CFLAGS=$CFLAGS_noboost ./configure --prefix=$IRAP_DIR
+    CFLAGS=$CFLAGS_noboost make clean
+    CFLAGS=$CFLAGS_noboost make
+    CFLAGS=$CFLAGS_noboost make check
+    CFLAGS=$CFLAGS_noboost make install
     popd
     pinfo "Installing R...done."
 }
@@ -824,10 +830,11 @@ function R3_install {
     download_software R3
     tar xzvf $R3_FILE
     pushd R-${R3_VERSION}
+    export R_LIBS=
     export R_LIBS_USER=$IRAP_DIR/Rlibs3
-    CFLAGS=  CXXFLAGS= ./configure --prefix=$IRAP_DIR/R3
+    CFLAGS_noboost=`echo $CFLAGS|sed -E "s|\-I[^ ]*boost||g"`    
+    CFLAGS=$CFLAGS_noboost  ./configure --prefix=$IRAP_DIR/R3
     make clean
-    CFLAGS=  CXXFLAGS=  make -j $J
     make -j $J
     make -j $J check
     make install
@@ -867,9 +874,9 @@ function YAP_install {
 	cp yap.tgz $SRC_DIR/download/
     fi
     pushd mainline
-    ./configure --prefix=$IRAP_DIR --disable-myddas --disable-horus
-    make
-    make install
+    CFLAGS=  ./configure --prefix=$IRAP_DIR --disable-myddas --disable-horus
+    CFLAGS=  make
+    CFLAGS=  make install
     popd
     pinfo "Installing YAP...done."
 }
@@ -1055,6 +1062,7 @@ function perl_bundle_install {
     pinfo "Installing perl bundle...done."
 }
 
+# short list of packages need by iRAP code
 function perl_packages_install {
     mkdir -p $IRAP_DIR/perl
     #
@@ -1064,13 +1072,35 @@ function perl_packages_install {
     # TODO: do it only once
     perl_cpan_install
     pinfo "Installing perl packages..."
+    #  required by iRAP core: Bio::SeqIO
+    cpanm -f -n  Module::Build
+    cpanm -f -n  Bio::SeqIO
+    #cpan -fi CJFIELDS/BioPerl-1.6.1.tar.gz  
+    # for jbrowse see jbrowse install
+    #cpanm -fi CJFIELDS/BioPerl-1.6.924.tar.gz 
+    #popd
+    pinfo "Installing perl packages...done."
+}
+
+function perl_packages_jbrowse_install {
+    mkdir -p $IRAP_DIR/perl
+    #
+    # ensure that make is in path
+    export PATH=$IRAP_DIR/bin:$PATH
+    
+    # TODO: do it only once
+    perl_cpan_install
+
+    cpanm --force -n Module::Build
+    
+    pinfo "Installing perl packages for jbrowse..."
     #    Test::Requisites
     PACKAGES="Algorithm::Munkres     Array::Compare    Math::Random    Sort::Naturally    Sub::Install Sub::Uplevel     Params::Util    List::MoreUtils    Math::Round    DB_File    Test     Test::Fatal    Test::Run    Test::NoWarnings  Test::Exception  Error    XML::Parser    XML::Simple    XML::SAX    XML::SAX::Writer    XML::Writer JSON Hash::Merge  Devel::Size  PerlIO::locale Compress::Raw::Zlib Locale::Maketext::Lexicon Build Module::CoreList ExtUtils::MakeMaker"    
 
-    set -e
+    set +e
     for p in $PACKAGES; do
        pinfo "************ Package $p"
-       cpanm  -f -n $p < /dev/null
+       cpanm  --force -n $p < /dev/null
     done
     set -e
     # the tests fail...
@@ -1086,17 +1116,10 @@ function perl_packages_install {
     perl -i -pe 's/^CFLAGS=\s*/CFLAGS=-fPIC / unless /\b-fPIC\b/' samtools-${SAMTOOLS_VERSION}/Makefile;
     make -C samtools-${SAMTOOLS_VERSION} -j3 lib;
     export SAMTOOLS="$PWD/samtools-${SAMTOOLS_VERSION}";    
-    #export SAMTOOLS=$IRAP_DIR/lib/ 
-#    cpan -fi CJFIELDS/BioPerl-1.6.1.tar.gz   <<EOF
-#    cpan -fi CJFIELDS/BioPerl-1.6.923.tar.gz   <<EOF
-#n
-#n
-#n
-#EOF
-    cpanm -fi CJFIELDS/BioPerl-1.6.923.tar.gz 
+    #cpanm -fi CJFIELDS/BioPerl-1.6.924.tar.gz 
 
     popd
-    pinfo "Installing perl packages...done."
+    pinfo "Installing perl packages for jbrowse...done."
 }
 
 ##################################
@@ -1105,53 +1128,43 @@ function perl_packages_install {
 function R_packages_install {
     export PATH=$IRAP_DIR/bin:$PATH
     pinfo "Installing R packages..."
-    R --no-save <<EOF
+    #export R_LIBS=
+    CFLAGS_noboost=`echo $CFLAGS|sed -E "s|\-I[^ ]*boost||g"`
+
+    CFLAGS=$CFLAGS_noboost R --no-save <<EOF
 repo<-"$CRAN_REPO"
 
-install.packages("multicore",repos=repo)
-install.packages("parallel",repos=repo)
-install.packages("intervals",repos=repo)
-install.packages("gclus",repo=repo)
-install.packages('R2HTML',repo=repo)
-install.packages("agricolae",repo=repo)
-install.packages("optparse",repo=repo)
-install.packages("brew",repo=repo)
-install.packages("reshape",repo=repo)
-# gplots not available - manual install
-install.packages("gtools",repo=repo)
-install.packages("gdata",repo=repo)
-install.packages("caTools",repo=repo)
-install.packages("sfsmisc",repo=repo)
-install.packages("lattice",repo=repo)
-download.file("http://cran.r-project.org/src/contrib/Archive/gplots/gplots_2.11.0.tar.gz","gplots_2.11.0.tar.gz")
-install.packages("gplots_2.11.0.tar.gz",type="source",repos=NULL)
-#install.packages("gplots",repo=repo)
-
+source("http://bioconductor.org/biocLite.R")
+biocLite("DBI",ask=FALSE,suppressUpdates=TRUE)
 # RSQLite_1 does not compile
 download.file("http://cran.r-project.org/src/contrib/Archive/RSQLite/RSQLite_0.11.4.tar.gz","RSQLite_0.11.4.tar.gz")
 install.packages("RSQLite_0.11.4.tar.gz",type="source",repos=NULL)
+download.file("http://cran.r-project.org/src/contrib/Archive/gplots/gplots_2.11.0.tar.gz","gplots_2.11.0.tar.gz")
+install.packages("gplots_2.11.0.tar.gz",type="source",repos=NULL)
+download.file("http://cran.r-project.org/src/contrib/Archive/xtable/xtable_1.7-4.tar.gz","xtable_1.7-4.tar.gz")
+install.packages("xtable_1.7-4.tar.gz",type="source",repos=NULL)
+#install.packages("gplots",repo=repo)
 
-# update needs to be off otherwise the RSQLite PACKAGE
-# will be updated
-source("http://bioconductor.org/biocLite.R")
-biocLite('GO.db',ask=FALSE, suppressUpdates=TRUE)
-biocLite("Rsamtools",ask=FALSE, suppressUpdates=TRUE)
-#biocLite('cummeRbund',ask=FALSE, suppressUpdates=FALSE)
-biocLite('edgeR',ask=FALSE, suppressUpdates=c("^RSQLite*"))
-biocLite('DESeq',ask=FALSE, suppressUpdates=c("^RSQLite*"))
-#biocLite('DESeq2',ask=FALSE, suppressUpdates=TRUE)
-biocLite('DEXSeq',ask=FALSE, suppressUpdates=c("^RSQLite*"))
-biocLite('baySeq',ask=FALSE, suppressUpdates=c("^RSQLite*"))
-biocLite('limma',ask=FALSE, suppressUpdates=c("^RSQLite*"))
-biocLite('marray',ask=FALSE, suppressUpdates=c("^RSQLite*"))
-#biocLite('igraph',ask=FALSE, suppressUpdates=c("^RSQLite*"))
+# agricolae deps
+download.file("http://cran.r-project.org/src/contrib/Archive/sp/sp_1.0-11.tar.gz","sp_1.0-11.tar.gz")
+install.packages("sp_1.0-11.tar.gz",type="source",repos=NULL)
 
-biocLite("org.Hs.eg.db",ask=FALSE, suppressUpdates=TRUE)
+biocLite("maptools",ask=FALSE,suppressUpdates=TRUE)
+biocLite("deldir",ask=FALSE,suppressUpdates=TRUE)
+biocLite("coda",ask=FALSE,suppressUpdates=TRUE)
+download.file("http://cran.r-project.org/src/contrib/Archive/spdep/spdep_0.5-40.tar.gz","spdep_0.5-40.tar.gz")
+install.packages("spdep_0.5-40.tar.gz",type="source",repos=NULL)
 
-#biocLite("topGO",ask=FALSE, suppressUpdates=TRUE)
-#biocLite("biomaRt",ask=FALSE, suppressUpdates=TRUE)
 
-biocLite('goseq',ask=FALSE, suppressUpdates=TRUE)
+
+manually.installed.packages<-c("^gplots_","^xtable","^RSQLite","^spdep_","^sp_")
+
+# not available in 2.15.2: "plyr", "reshape","lattice"
+packages2install<-c("multicore","parallel","intervals","gclus","R2HTML","agricolae","optparse","brew","gtools","gdata","caTools","sfsmisc","GO.db","edgeR","DESeq","Rsamtools","DEXSeq","baySeq","limma","marray","org.Hs.eg.db","goseq","data.table")
+for ( p in packages2install ) {
+   cat("Installing ",p,":\n")
+   biocLite(p,ask=FALSE,  suppressUpdates=TRUE)
+}
 
 species2db<-matrix(c('org.Ag.eg.db','Anopheles',
 'org.At.tair.db','Arabidopsis',
@@ -1175,8 +1188,7 @@ species2db<-matrix(c('org.Ag.eg.db','Anopheles',
 'org.Xl.eg.db','Xenopus'),byrow=T,ncol=2)
 colnames(species2db)<-c("db","species")
 for (p in species2db[,'db']) {
-biocLite(p,ask=FALSE,suppressUpdates=c("^RSQLite*"))
-                     
+  biocLite(p,ask=FALSE,  suppressUpdates=TRUE)                     
 }
 
 q()
@@ -1193,18 +1205,24 @@ EOF
 function R3_packages_install {
     export PATH=$IRAP_DIR/bin:$PATH
     pinfo "Installing R-3.x packages..."
-    R3 --no-save <<EOF
+
+    CFLAGS_noboost=`echo $CFLAGS|sed -E "s|\-I[^ ]*boost||g"`
+
+    CFLAGS=$CFLAGS_noboost R3 --no-save <<EOF
 repo<-"$CRAN_REPO"
+source("http://bioconductor.org/biocLite.R")
 packages2install<-c("intervals","gclus",'R2HTML',"agricolae",
              "optparse","brew","reshape","gtools","gdata","caTools",
              "sfsmisc","gplots","lattice","data.table")
 
 for (p in packages2install ) {
-   install.packages(p,repo=repo)
+   biocLite(p,ask=FALSE, suppressUpdates=FALSE)
 }
-q()
+q(status=0)
 EOF
-   R3 --no-save <<EOF
+    #   install.packages(p,repo=repo)
+
+    CFLAGS=$CFLAGS_noboost R3 --no-save <<EOF
 # bioconductor packages
 source("http://bioconductor.org/biocLite.R")
 packages2install<-c("Rsamtools",'edgeR',
@@ -1572,7 +1590,7 @@ function jbrowse_install {
 
     pinfo "Uncompressing and installing jbrowse...extra PERL packages"
     # TODO: do it only once
-    # perl_packages_install
+    perl_packages_jbrowse_install
 
     #cpan -f -i Module::CoreList  < /dev/null
     #cpan -f -i ExtUtils::MakeMaker < /dev/null
@@ -1592,9 +1610,13 @@ function jbrowse_install {
     if [ -e ~/.cpan ]; then
      	mv ~/.cpan $IRAP_DIR/.cpan.bak2
     fi
+    # Files found in blib/arch: installing files in blib/lib into architecture dependent library tree
+    #Installing /home/nf/perl5/lib/perl5/x86_64-linux/auto/DBI/DBI.so
+
     #unset INSTALL_BASE
     cpanm -f local::lib < /dev/null    
     set +e
+    cpanm -v --notest -l $IRAP_DIR --installdeps . < /dev/null;
     cpanm -v --notest -l $IRAP_DIR --installdeps . < /dev/null;
     cpanm -f -v  --installdeps . < /dev/null;
     set -e
@@ -1622,7 +1644,7 @@ function jbrowse_install {
     #cp -rf blib $IRAP_DIR
     pinfo "Uncompressing and installing jbrowse...copying binaries and libs (done)"
     pinfo "Uncompressing and installing jbrowse... downloading and installing extra programs"
-    # get some required utilities
+    # get some required 2utilities
     for f in $JBROWSE_EXTRA_UTILS; do
 	pinfo "Uncompressing and installing jbrowse... downloading and installing extra programs ($f)"
 	download $JBROWSE_EXTRA_UTILS_URL/$f
@@ -1637,8 +1659,8 @@ function jbrowse_install {
 function new_jbrowse_install {
     pinfo "Installing new jbrowse..."
     download_software NEW_JBROWSE
-    mv $NEW_JBROWSE_FILE $IRAP_DIR/aux/jbrowse.zip
-    unzip $IRAP_DIR/aux/jbrowse.zip
+    mv $NEW_JBROWSE_FILE $IRAP_DIR/aux/latest_jbrowse.zip
+    unzip $IRAP_DIR/aux/latest_jbrowse.zip
     # 
     pinfo "Uncompressing and installing jbrowse..."
     pushd JBrowse-*
@@ -1646,10 +1668,7 @@ function new_jbrowse_install {
     sed -i "s|bin/cpanm|cpanm|" setup.sh
 
     pinfo "Uncompressing and installing jbrowse...extra PERL packages"
-    perl_packages_install
-    cpan -i ExtUtils::MakeMaker 
-    cpan -i Module::CoreList
-    cpan -f -i GD
+    perl_packages_jbrowse_install
     #
     download_software SAMTOOLS
     tar xvjf $SAMTOOLS_FILE
@@ -1873,8 +1892,9 @@ function picard_install {
 
 ###############################
 UPDATE_FILE_PERMS=n
+INSTALL_JBROWSE=n
 OPTERR=0
-while getopts "s:c:a:x:gmqpruhbdtfv"  Option
+while getopts "s:c:a:x:gmqpruhbdtfjv"  Option
 do
     case $Option in
 # update/reinstall
@@ -1892,6 +1912,7 @@ do
 	x ) install=software_install;IRAP_DIR1=$IRAP_DIR;SOFTWARE=$OPTARG;;
 	t ) install=testing;IRAP_DIR1=$IRAP_DIR;;
 	v ) install=collect_software_versions;IRAP_DIR1=$IRAP_DIR;;
+	j ) INSTALL_JBROWSE=y;;
         h ) usage; exit;;
     esac
 done
@@ -1946,10 +1967,19 @@ pinfo "Checking paths..."
 #IRAP_DIR=$(realpath -f "$IRAP_DIR")
 IRAP_DIR=$(readlink -f "$IRAP_DIR")
 SRC_DIR=$(readlink -f "$SRC_DIR")
+pinfo "Checking paths...done."
+#############################################
+# print a few variables to help troubleshooting
 pinfo "IRAP_DIR=$IRAP_DIR"
 pinfo "SRC_DIR=$SRC_DIR"
 pinfo "PATH=$PATH"
-pinfo "Checking paths...done."
+pinfo "CFLAGS=$CFLAGS"
+pinfo "CXXFLAGS=$CXXFLAGS"
+pinfo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+pinfo "R_LIBS=$R_LIBS"
+pinfo "R_LIBS_USER=$R_LIBS_USER"
+
+#############################################
 #
 BIN_DIR=$IRAP_DIR/bin
 TMP_DIR=$IRAP_DIR/tmp
@@ -2086,6 +2116,7 @@ fi
 
 #############
 # all
+rm -f $IRAP_DIR/.cpan.irap.done
 deps_install
 core_install
 pinfo "Loading environment $SETUP_FILE..."
@@ -2102,7 +2133,9 @@ quant_install
 fastq_qc_install
 perl_packages_install
 # report
-jbrowse_install
+if [ $INSTALL_JBROWSE == "y" ] ; then
+    jbrowse_install
+fi
 #
 collect_software_versions
 # data directory
