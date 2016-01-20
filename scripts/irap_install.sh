@@ -1216,9 +1216,10 @@ EOF
 function R3_packages_install {
     export PATH=$IRAP_DIR/bin:$PATH
     pinfo "Installing R-3.x packages..."
-    
-	
-    R3 --no-save <<EOF
+
+    CFLAGS_noboost=`echo $CFLAGS|sed -E "s|\-I[^ ]*boost||g"`
+
+    CFLAGS=$CFLAGS_noboost R3 --no-save <<EOF
 repo<-"$CRAN_REPO"
 source("http://bioconductor.org/biocLite.R")
 packages2install<-c("intervals","gclus",'R2HTML',"agricolae",
