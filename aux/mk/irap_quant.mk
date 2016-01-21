@@ -815,17 +815,17 @@ $(foreach l,$(pe),$(eval $(call make-rsem-quant-rule,$(l),$(l).pe,--paired-end))
 
 
 %.genes.raw.rsem.tsv: %.genes.results
-	cut -f 1,5 $$< |tail -n +2 > $$@.tmp && mv $$@.tmp $$@
+	cut -f 1,5 $< |tail -n +2 > $@.tmp && mv $@.tmp $@
 
 %.genes.rpkm.rsem.rsem.tsv: %.genes.results
-	cut -f 1,7 $$< |tail -n +2 > $$@.tmp && mv $$@.tmp $$@
+	cut -f 1,7 $< |tail -n +2 > $@.tmp && mv $@.tmp $@
 
 
 %.transcripts.rpkm.rsem.rsem.tsv: %.isoforms.results %.genes.results
-	cut -f 1,7 $$< |tail -n +2 > $$@.tmp && mv $$@.tmp $$@
+	cut -f 1,7 $< |tail -n +2 > $@.tmp && mv $@.tmp $@
 
 %.transcripts.tpm.rsem.rsem.tsv: %.isoforms.results %.genes.results
-	cut -f 1,6 $$< |tail -n +2 > $$@.tmp && mv $$@.tmp $$@
+	cut -f 1,6 $< |tail -n +2 > $@.tmp && mv $@.tmp $@
 
 
 $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).tsv) 
@@ -884,9 +884,9 @@ $(name)/data/mapTrans2Gene.tsv: $(gtf_file_abspath)
 # read lenth - 3
 # stranded data not supported
 define run_kallisto_quant=
- irap_wrapper.sh kallisto kallisto quant $(kallisto_quant_params) -i $(kallisto_index_name) $(if $(4),,--single)  -t $(max_threads) -o $(1)  $(2)
+ irap_wrapper.sh kallisto kallisto quant $(kallisto_quant_params) -i $(kallisto_index_name) $(if $(4),,--single) -l $(3) -s 1  -t $(max_threads) -o $(1)  $(2)
 endef
-# -l $(3)
+# 
 
 # abundance.tsv
 # 1 lib
