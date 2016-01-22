@@ -15,12 +15,12 @@ fi
 
 # ensure that the files are one per line
 # assumes no spaces in the path
-sed -E "s/\s+/\n/g" $1 | grep -v "^$" > $2.lst
+cat $1| tr " " "\n" | grep -v "^$" > $2.lst
 
 # get reference
 cram1=`head -n 1 $2.lst`
 echo "Getting reference from $cram1..."
-ref=`samtools view -H $cram1 |grep UR|sed "s/.*UR://g;s/ .*//"`
+ref=`samtools view -H $cram1 |grep UR|sed "s/.*UR://g;s/ .*//"|head -n 1`
 echo "Getting reference from $cram1...done."
 echo "ref=$ref"
 if [ "$ref-" == "-" ]; then
