@@ -15,7 +15,7 @@ fi
 
 # ensure that the files are one per line
 # assumes no spaces in the path
-sed -E "s/[ ]+/\n/g" $1 | grep -v "^$" > $2.lst
+sed -E "s/\s+/\n/g" $1 | grep -v "^$" > $2.lst
 
 # get reference
 cram1=`head -n 1 $2.lst`
@@ -28,7 +28,7 @@ if [ "$ref-" == "-" ]; then
     echo "ERROR:Unable to find a reference in the cram file?!" > /dev/stderr    
     exit 1
 fi
-if [ ! -e $ref ]; then
+if [ ! -e "$ref" ]; then
     echo "Reference file $ref not found" > /dev/stderr
     exit 1
 fi
