@@ -204,7 +204,7 @@ GSNAP_FILE=gmap-gsnap-${GSNAP_VERSION}.v3.tar.gz
 GSNAP_URL=http://research-pub.gene.com/gmap/src/$GSNAP_FILE
 
 # 2.2.0
-mapsplice_VERSION=2.1.8
+mapsplice_VERSION=2.2.8
 mapsplice_FILE=MapSplice-v$mapsplice_VERSION.zip
 mapsplice_URL=http://protocols.netlab.uky.edu/~zeng/$mapsplice_FILE
 # 0.7.4->0.7.12
@@ -331,15 +331,16 @@ NURD_VERSION=1.1.1
 NURD_FILE=NURD_v${NURD_VERSION}.tar.gz
 NURD_URL=http://bioinfo.au.tsinghua.edu.cn/software/NURD/share/$NURD_FILE
 
-
-IsoEM_VERSION=1.1.1
+#
+IsoEM_VERSION=1.1.4
 IsoEM_FILE=IsoEM-${IsoEM_VERSION}.zip
 IsoEM_URL=http://dna.engr.uconn.edu/software/IsoEM/$IsoEM_FILE
 
 # 0.6.2-> 0.9.0
 Sailfish_VERSION=0.9.0
-Sailfish_FILE=Sailfish-${Sailfish_VERSION}-Linux_x86-64.tar.gz
-Sailfish_URL=http://github.com/kingsfordgroup/sailfish/releases/download/v$Sailfish_VERSION/$Sailfish_FILE
+Sailfish_FILE=v${Sailfish_VERSION}.tar.gz
+Sailfish_URL=http://github.com/kingsfordgroup/sailfish/archive/$Sailfish_FILE
+
 
 # kallisto - 0.42.1 -> 0.42.4 (multithreads)
 kallisto_VERSION=0.42.4
@@ -347,7 +348,7 @@ kallisto_FILE=kallisto_linux-v$kallisto_VERSION.tar.gz
 kallisto_URL=https://github.com/pachterlab/kallisto/releases/download/v$kallisto_VERSION/$kallisto_FILE
 
 # 1.2.21->1.2.22
-rsem_VERSION=1.2.21
+rsem_VERSION=1.2.22
 rsem_FILE=rsem-${rsem_VERSION}.tar.gz
 rsem_URL=http://deweylab.biostat.wisc.edu/rsem/src/$rsem_FILE
 
@@ -665,6 +666,9 @@ function mapsplice_install {
     unzip $mapsplice_FILE
     pushd MapSplice-v$mapsplice_VERSION
     make clean
+    # do not recompile bowtie and samtools
+    sed -i -E "1s/all:(.*)bowtie/all:\1 /" Makefile
+    sed -i -E "1s/all:(.*)samtools/all:\1 /" Makefile
     make
     install_binary $MAPPER bin \*
     cp mapsplice.py $BIN_DIR/$MAPPER/
@@ -1390,7 +1394,7 @@ function flux_capacitor_install {
 }
 ######################################################
 # IsoEM
-function IsoEM_install {
+function isoem_install {
     pinfo "Installing IsoEM..."
     download_software IsoEM
     unzip $IsoEM_FILE
@@ -1406,11 +1410,13 @@ function IsoEM_install {
 ######################################################
 # Sailfish
 # requires boost
-function Sailfish_install {
+function sailfish_install {
     pinfo "Installing Sailfish..."
     download_software Sailfish
     tar xzvf $Sailfish_FILE
-    pushd `echo $Sailfish_FILE|sed "s/.tar.gz//"`
+    pushd sailfish-$Sailfish_VERSION
+    echo "Not working..."
+    exit 2
     rm -rf $IRAP_DIR/bin/Sailfish/lib/*
     rm -rf $IRAP_DIR/bin/Sailfish/bin/*
     mkdir -p $IRAP_DIR/bin/Sailfish/lib
@@ -1495,8 +1501,8 @@ function quant_install {
     rsem_install
     kallisto_install
     fusionmap_install
-    #IsoEM_install
-    #Sailfish_install
+    #isoem_install
+    #sailfish_install
     #mmseq_install
     #ireckon_install
 }
@@ -2117,8 +2123,8 @@ fi
 if [ "$install" == "testing" ]; then
     set -e
     check_for_irap_env
-    IsoEM_install
-    Sailfish_install
+    isoem_install
+    #sailfish_install
     #NURD_install
     rsem_install
     pinfo "Log saved to $logfile"
