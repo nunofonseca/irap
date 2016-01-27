@@ -39,6 +39,7 @@ function usage {
     echo " -s dir : toplevel irap clone directory";
     echo " -c dir : install/update IRAP core files only to directory 'dir'. If dir is not given the value of IRAP_DIR will be used (if available).";
     echo " -a dir : install/update all files (core and 3rd party software) to directory 'dir' (default)";
+    echo " -l dir : lightweight/minimal installation of iRAP (a minimum set of tools will be installed).";    
     echo " -u : update IRAP_core files (alias to -c $IRAP_DIR).";
     echo " -m : update mappers.";
     echo " -r : update R packages.";
@@ -47,6 +48,7 @@ function usage {
     echo " -b : update jbrowser.";
     echo " -j : install jbrowser (with -a).";
     echo " -v : collect software versions.";
+    echo " -G : install gcc 4.8 before installing Mono.";
     echo " Advanced options:";
     echo " -f : check/fix file permissions"
     echo " -d : download all software and libraries (except R and Perl packages) but do not install.";
@@ -212,7 +214,7 @@ bwa_VERSION=0.7.12
 bwa_FILE=bwa-${bwa_VERSION}.tar.bz2
 bwa_URL=http://sourceforge.net/projects/bio-bwa/files/$bwa_FILE
 # 4.0.2.1->4.1.1.1
-osa_VERSION=4.1.1.1
+osa_VERSION=4.0.2.1
 osa_FILE=OSAv$osa_VERSION.zip
 osa_URL=http://omicsoft.com/osa/Software/$osa_FILE
 
@@ -232,7 +234,7 @@ PERL_FILE=perl-$PERL_VERSION.tar.gz
 PERL_URL=http://www.cpan.org/src/5.0/$PERL_FILE
 
 # previous: 1.55
-BOOST_VERSION=1.60.0
+BOOST_VERSION=1.55.0
 BOOST_FILE=boost_`echo $BOOST_VERSION|sed "s/\./_/g"`.tar.bz2
 BOOST_URL=http://sourceforge.net/projects/boost/files/boost/$BOOST_VERSION/$BOOST_FILE
 
@@ -395,8 +397,11 @@ NEW_JBROWSE_EXTRA_UTILSURL=http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64
 
 # 2.10.8 osa does not work with 2.10.9 up to 2.11
 # 2.10.8 ---> 4.2.2
-MONO_VERSION=4.2.2
-MONO_FILE=mono-${MONO_VERSION}.10.tar.bz2    
+MONO_VERSION=2.10.8
+MONO_FILE=mono-${MONO_VERSION}.tar.bz2    
+#MONO_VERSION=4.2.2
+#MONO_FILE=mono-${MONO_VERSION}.tar.bz2    
+#MONO_FILE=mono-${MONO_VERSION}.30.tar.bz2    
 MONO_URL=http://download.mono-project.com/sources/mono/$MONO_FILE
 
 
@@ -442,6 +447,7 @@ export IRAP_DIR=$IRAP_DIR
 export PATH=\$IRAP_DIR/bin/bowtie1/bin:\$IRAP_DIR/bin:\$IRAP_DIR/scripts:\$PATH
 export LD_LIBRARY_PATH=\$IRAP_DIR/lib:\$LD_LIBRARY_PATH:/usr/local/lib
 export CFLAGS="-I\$IRAP_DIR/include -I\$IRAP_DIR/include/bam -I\$IRAP_DIR/include/boost  \$CFLAGS"
+export R_LIBS=
 export R_LIBS_USER=$IRAP_DIR/Rlibs
 export R3_LIBS_USER=$IRAP_DIR/Rlibs3
 export CXXFLAGS="-I\$IRAP_DIR/include -I\$IRAP_DIR/include/bam -I\$IRAP_DIR/include/boost -L\$IRAP_DIR/lib \$CXXFLAGS"
@@ -580,6 +586,7 @@ function gem_install {
     download_software $MAPPER
     tar xjvf $GEM_FILE
     # deps: requires ruby
+    ruby_install
     pushd `echo $GEM_FILE|sed "s/.tbz2//"`
     install_binary $MAPPER bin \*
 #    sed -i "s/^#!/.*ruby/#!$ENV_FP ruby/" $BIN_DIR/$MAPPER/bin/gem*
@@ -650,6 +657,11 @@ function bwa_install {
 function osa_install {
     MAPPER=osa
     pinfo "Starting $MAPPER binary installation..."
+    if [ $INSTALL_GCC != "n" ]; then
+	gcc4_install
+	export PATH=$IRAP_DIR/gcc/bin:$PATH
+	export LD_LIBRARY_PATH=$IRAP_DIR/gcc/lib64:$LD_LIBRARY_PATH
+    fi
     mono_install
     download_software $MAPPER
     unzip $osa_FILE
@@ -686,12 +698,12 @@ function mappers_install {
    smalt_install
    soap_splice_install
    soap2_install
-   gem_install
 #   gem2_install
    gsnap_install 
    osa_install
    star_install
    pinfo "To install MapSplice run: irap_install.sh -s . -x mapsplice"
+   pinfo "To install GEM run: irap_install.sh -s . -x gem"
    #mapsplice_install
 }
 
@@ -732,6 +744,26 @@ function make_install {
     pinfo "Installing make...done."
 }
 
+####################################################################
+# It may be necessary-mono 2.x does not compile successfully in gcc
+# 4.9 or higher
+function gcc4_install {
+
+    pinfo "Installing gcc 4.8.5..."
+    wget -c ftp://ftp.mirrorservice.org/sites/sourceware.org/pub/gcc/releases/gcc-4.8.5/gcc-4.8.5.tar.gz
+    tar xzvf gcc-4.8.5.tar.gz
+    pushd gcc-4.8.5
+    ./contrib/download_prerequisites
+    cd ..
+    mkdir objdir
+    cd objdir
+    $PWD/../gcc-4.8.5/configure --prefix=$IRAP_DIR/gcc --enable-languages=c,c++,fortran --disable-multilib
+    make
+    make install
+    popd
+    pinfo "Installing gcc 4.8.5...done."
+}
+ 
 ######################################################
 # 
 function mono_install {
@@ -897,12 +929,15 @@ function YAP_install {
 }
 
 function deps_install {
-    pinfo "Installing dependencies (make, perk, ruby, boost, gnuplot, R, samtools, ...)"
+
+    pinfo "Installing dependencies (make, perk, boost, gnuplot, R, samtools, ...)"
     make_install
     zlib_install
     perl_install
-    ruby_install
-    boost_install
+    #ruby_install
+    if [ "$1-" != "minimal-"  ]; then
+	boost_install
+    fi
     gnuplot_install
     R_install
     R3_install
@@ -1534,6 +1569,7 @@ function fastq_qc_install {
     popd
     pinfo "Installing fastqc...done."
 }
+
 ######################################
 function core_install {
 
@@ -1910,12 +1946,14 @@ function picard_install {
 ###############################
 UPDATE_FILE_PERMS=n
 INSTALL_JBROWSE=n
+INSTALL_GCC=n
 OPTERR=0
-while getopts "s:c:a:x:gmqpruhbdtfjv"  Option
+while getopts "s:c:l:a:x:gmqpruhbdtfjvG"  Option
 do
     case $Option in
 # update/reinstall
         a ) install=all;IRAP_DIR1=$OPTARG;;# send all output to a log file
+	l ) install=minimal;IRAP_DIR1=$OPTARG;;# send all output to a log file
 	b ) install=browser;IRAP_DIR1=$IRAP_DIR;;
 	c ) install=core;IRAP_DIR1=$OPTARG;;  # run irap up to the given stage
 	d ) USE_CACHE=n;install=download;IRAP_DIR1=$IRAP_DIR;; # download all the source packages
@@ -1930,6 +1968,7 @@ do
 	t ) install=testing;IRAP_DIR1=$IRAP_DIR;;
 	v ) install=collect_software_versions;IRAP_DIR1=$IRAP_DIR;;
 	j ) INSTALL_JBROWSE=y;;
+	G ) INSTALL_GCC=y;;
         h ) usage; exit;;
     esac
 done
@@ -2134,7 +2173,7 @@ fi
 #############
 # all
 rm -f $IRAP_DIR/.cpan.irap.done
-deps_install
+deps_install $install
 core_install
 pinfo "Loading environment $SETUP_FILE..."
 source $SETUP_FILE
@@ -2145,15 +2184,28 @@ pinfo "Loading environment $SETUP_FILE...done."
 #check_for_irap_env
 R_packages_install
 R3_packages_install
-mappers_install
-quant_install
+
 fastq_qc_install
 perl_packages_install
-# report
-if [ $INSTALL_JBROWSE == "y" ] ; then
-    jbrowse_install
+
+if [ "$install" == "minimal" ]; then
+   bowtie2_install
+   tophat2_install
+   star_install
+   htseq_install
+   cufflinks2_install
+   
+   pinfo "WARNING: You chose to install the minimal installation of iRAP. Only the following tools will be available: bowtie2, tophat2, star, cufflinks2 "
+
+else
+    mappers_install
+    quant_install
+    # report
+    if [ $INSTALL_JBROWSE == "y" ] ; then
+	jbrowse_install
+    fi
 fi
-#
+
 collect_software_versions
 # data directory
 data_install
