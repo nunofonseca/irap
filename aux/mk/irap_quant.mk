@@ -78,7 +78,8 @@ endef
 # Stringtie
 #*****************
 ifndef stringtie_params
-	stringtie_params=-s 190000000
+	stringtie_params=
+# deprecated: -s 190000000
 endif
 
 stringtie_params+= 
@@ -626,18 +627,18 @@ endif
 ifeq ($(patsubst stringtie%,,$(quant_method)),)
 # 
 define stringtie2counts_g=
-	irap_stringtie2counts -c $(3) --label "$(1)" -r $($(subst .pe,,$(subst .se,,$(1)))_rs) -p $(if $(call is_pe_lib,$($(subst .pe,,$(subst .se,,$(1))))),y,n) -o $(2)/$(1).genes.raw.$(4).tsv -i /dev/null
+	irap_stringtie2counts -c $(3) --label "$(1)" -r $($(subst .pe,,$(subst .se,,$(1)))_rs) -p $(if $(call is_pe_lib,$($(subst .pe,,$(subst .se,,$(1))))),y,n) -o $(5).tmp -i /dev/null && mv $(5).tmp $(5)
 endef
 
 define stringtie2counts_t=
-	irap_stringtie2counts -c $(3) --label "$(1)" -r $($(subst .pe,,$(subst .se,,$(1)))_rs) -p $(if $(call is_pe_lib,$(subst .pe,,$(subst .se,,$(1)))),y,n) -o /dev/null -i $(2)/$(1).transcripts.raw.$(4).tsv
+	irap_stringtie2counts -c $(3) --label "$(1)" -r $($(subst .pe,,$(subst .se,,$(1)))_rs) -p $(if $(call is_pe_lib,$(subst .pe,,$(subst .se,,$(1)))),y,n) -o $(5).tmp -i $(2)/$(1).transcripts.raw.$(4).tsv && mv $(5).tmp $(5)
 endef
 
 
 define make-stringtie-quant-rule=
 
 $(call lib2quant_folder,$(1))$(3).$(quant_method).gtf: $(call lib2bam_folder,$(1))$(3).hits.bam
-	$(call run_stringtie,$(call lib2bam_folder,$(1))$(3).hits.bam,$(1),$(if $(filter $(quant_method),stringtie_nd),-e,-l CUFF),$(call lib2quant_folder,$(1))$(3).$(quant_method).gtf)
+	$(call run_stringtie,$(call lib2bam_folder,$(1))$(3).hits.bam,$(1),$(if $(filter $(quant_method),stringtie_nd),-e,-l CUFF),$$@)
 
 $(call lib2quant_folder,$(1))$(3).transcripts.rpkm.$(quant_method).$(quant_norm_tool).tsv: $(call lib2quant_folder,$(1))$(3).$(quant_method).gtf $(call lib2quant_folder,$(1))$(1)/t_data.ctab 
 	cut -f 6,12 $$(@D)/$(1)/t_data.ctab | tail -n +2 > $$@.tmp && mv $$@.tmp $$@
@@ -647,11 +648,11 @@ $(call lib2quant_folder,$(1))$(3).genes.rpkm.$(quant_method).$(quant_norm_tool).
 
 $(call lib2quant_folder,$(1))$(3).transcripts.raw.$(quant_method).tsv:  $(call lib2quant_folder,$(1))$(3).$(quant_method).gtf
 	$$(call p_info,Warning! Stringtie produces FPKMS and does not provide counts. Generating pseudo counts $$@.)
-	$$(call stringtie2counts_t,$(1),$$(@D),$(call lib2quant_folder,$(1))$(1)/t_data.ctab,$(quant_method),$(1))
+	$$(call stringtie2counts_t,$(1),$$(@D),$(call lib2quant_folder,$(1))$(1)/t_data.ctab,$(quant_method),$$@)
 
 $(call lib2quant_folder,$(1))$(3).genes.raw.$(quant_method).tsv: $(call lib2quant_folder,$(1))$(3).$(quant_method).gtf
 	$$(call p_info,Warning! Stringtie produces FPKMS and does not provide counts. Generating pseudo counts $$@.)
-	$$(call stringtie2counts_g,$(1),$$(@D),$(call lib2quant_folder,$(1))$(1)/t_data.ctab,$(quant_method),$(1))
+	$$(call stringtie2counts_g,$(1),$$(@D),$(call lib2quant_folder,$(1))$(1)/t_data.ctab,$(quant_method),$$@)
 
 endef
 
