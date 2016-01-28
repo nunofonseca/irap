@@ -115,7 +115,7 @@ formats.cols <- list(
   gtf=c("seqid","source","feature","start","end","score","strand","frame","attributes")
   )
 attributes.cols <- list(
-  gencode=c("gene_id","transcript_id","exon_number","gene_name","gene_type","gene_status","transcript type","level","transcript_name","havana_gene","exon_id"),
+  gencode=c("gene_id","transcript_id","exon_number","gene_name","gene_type","gene_status","transcript type","level","transcript_name","havana_gene","exon_id","gene_biotype"),
   ensembl=c("gene_id","transcript_id","exon_number","gene_name","gene_biotype","transcript_name","protein_id","exon_id","exonic_part_number")
   )
 # TODO: improve error handling
@@ -175,6 +175,7 @@ load.gtf <- function(gtf.file,feature=NULL,selected.attr=NULL,gtf.format="auto")
   }
   # try to determine the biotype column (use source by default...)
   biotypes <- gtf[,biotype.column(gtf)]
+  pinfo("biotype col:",biotype.column(gtf))
   gtf$biotype <- biotypes
   #print(head(gtf))
   return(gtf[,! colnames(gtf) %in% c("attributes")])
@@ -2007,16 +2008,24 @@ source.filt.query <- list("all"=TRUE,
 source.column <- NULL
 #                          "rRNA"=c("rRNA"),
 biotype.column <- function(table) {
-  if ( "source" %in% colnames(table) ) {
+  if ( sum("source" %in% colnames(table))>0 ) {
     sources <- unique(as.character(table$source))
-    if ( sum(grepl("havana",sources,ignore.case=TRUE))>0 ) {
-      if ( "gene_type" %in% colnames(table) ) {
+    if ( sum(grepl("HAVANA",sources,ignore.case=FALSE))>0 ) {
+      pinfo("cols:",colnames(table))
+      print(head(table))
+      if ( sum("gene_type" %in% colnames(table))>0 ) {
         return("gene_type")
       } else {
-        # hmm, perhaps we should check that the column exists?
-        return("gene_biotype")
+        return("gene_biotype")        
       }
-    }
+    } else {
+      if ( sum(grepl("havana",sources,ignore.case=FALSE))>0 ) {
+                                        # recent ensembl files 
+        return("gene_biotype")
+      } else
+                                        # hmm, perhaps we should check that the column exists?
+        return("gene_type")
+      }
   }
   return("source")
 }

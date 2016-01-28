@@ -83,7 +83,8 @@ options(mc.cores=num.cores)
 cols.needed <- c("transcript_id","gene_id","seqid","start","end","strand","source","exon_number","biotype")
 
 gtf.table <- NULL
-gtf.table <- load.gtf(opt$gtf,selected.attr=cols.needed)
+gtf.table <- load.gtf(opt$gtf)
+#selected.attr=cols.needed)
 
 pinfo("GTF file loaded: ",opt$gtf," ",nrow(gtf.table)," entries")
 #
