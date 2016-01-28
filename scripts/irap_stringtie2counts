@@ -83,5 +83,4 @@ cols2aggr <- c("t_name","gene_id")
 a<-aggregate(s[,"pseudo.counts"], by=list(gene_id=s$gene_id), "sum")
 colnames(a) <- c("ID",opt$label)
 write.tsv(a,file=opt$genefile,header=F)
-
 q(status=0)
