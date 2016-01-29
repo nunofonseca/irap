@@ -48,7 +48,8 @@ function usage {
     echo " -b : update jbrowser.";
     echo " -j : install jbrowser (with -a).";
     echo " -v : collect software versions.";
-    echo " -G : install gcc 4.8 before installing Mono.";
+    echo " -G : install gcc 4.8 before installing Mono (GCC will be installed in \$IRAP_DIR/gcc).";
+    echo " -K : use ksh instead of bash (due to an issue trapping signals) while installing some components.";
     echo " Advanced options:";
     echo " -f : check/fix file permissions"
     echo " -d : download all software and libraries (except R and Perl packages) but do not install.";
@@ -862,7 +863,7 @@ function R_install {
     CFLAGS_noboost=`echo $CFLAGS|sed -E "s|\-I[^ ]*boost||g"`    
     # clean up - delete packages previously installed
     rm -rf $IRAP_DIR/Rlibs/*
-    CFLAGS=$CFLAGS_noboost ./configure --prefix=$IRAP_DIR
+    CFLAGS=$CFLAGS_noboost $SPECIAL_SH_TO_USE ./configure --prefix=$IRAP_DIR
     CFLAGS=$CFLAGS_noboost make clean
     CFLAGS=$CFLAGS_noboost make
     CFLAGS=$CFLAGS_noboost make check
@@ -1947,8 +1948,9 @@ function picard_install {
 UPDATE_FILE_PERMS=n
 INSTALL_JBROWSE=n
 INSTALL_GCC=n
+SPECIAL_SH_TO_USE=bash
 OPTERR=0
-while getopts "s:c:l:a:x:gmqpruhbdtfjvG"  Option
+while getopts "s:c:l:a:x:gmqpruhbdtfjvGK"  Option
 do
     case $Option in
 # update/reinstall
@@ -1969,6 +1971,7 @@ do
 	v ) install=collect_software_versions;IRAP_DIR1=$IRAP_DIR;;
 	j ) INSTALL_JBROWSE=y;;
 	G ) INSTALL_GCC=y;;
+	K ) SPECIAL_SH_TO_USE=ksh;;
         h ) usage; exit;;
     esac
 done
