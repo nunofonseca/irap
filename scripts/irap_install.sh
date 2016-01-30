@@ -1142,7 +1142,8 @@ function perl_packages_jbrowse_install {
     # TODO: do it only once
     perl_cpan_install
 
-    cpanm --force -n Module::Build
+
+    cpanm --force -n http://www.cpan.org/authors/id/L/LE/LEONT/Module-Build-0.40_11.tar.gz
     
     pinfo "Installing perl packages for jbrowse..."
     #    Test::Requisites
@@ -1634,6 +1635,7 @@ function core_install {
 function jbrowse_install {
     pinfo "Installing jbrowse..."
     download_software JBROWSE
+    rm -f  $IRAP_DIR/aux/jbrowse.zip
     mv $JBROWSE_FILE $IRAP_DIR/aux/jbrowse.zip
     unzip $IRAP_DIR/aux/jbrowse.zip
     # TODO: install deps
