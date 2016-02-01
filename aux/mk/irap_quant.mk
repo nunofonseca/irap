@@ -482,10 +482,10 @@ endif
 # $2 - SINGLE|PE
 # $3 - bam file prefix (includes .se|.pe)
 define make-fluxcap-quant-rule=
-$(call lib2quant_folder,$(1))$(3).flux_cap.tsv: $(call lib2bam_folder,$(1))$(3).hits.byname.bam $(gtf_file_abspath) $(call lib2bam_folder,$(1))$(3).hits.byname.bam $(call lib2bam_folder,$(1))$(3).hits.bam.bai 
+$(call lib2quant_folder,$(1))$(1).flux_cap.tsv: $(call lib2bam_folder,$(1))$(3).hits.byname.bam $(gtf_file_abspath) $(call lib2bam_folder,$(1))$(3).hits.byname.bam $(call lib2bam_folder,$(1))$(3).hits.bam.bai 
 	mkdir -p $$(@D) && $$(call run_flux_cap,$$<,$$(gtf_file_abspath),$(2),$$@)
 
-$(call lib2quant_folder,$(1))$(3).genes.rpkm.flux_cap.flux_cap.tsv: $(call lib2quant_folder,$(1))$(1).flux_cap.tsv
+$(call lib2quant_folder,$(1))$(1).genes.rpkm.flux_cap.flux_cap.tsv: $(call lib2quant_folder,$(1))$(1).flux_cap.tsv
 	tsv.aggrbygene $$< RPKM $$@.tmp && mv  $$@.tmp $$@
 endef
 
