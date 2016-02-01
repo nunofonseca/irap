@@ -131,7 +131,7 @@ load.gtf <- function(gtf.file,feature=NULL,selected.attr=NULL,gtf.format="auto")
   gtf$attributes <- as.character(gtf$attributes)
   # detect format
   if ( gtf.format=="auto" ) {
-    if (sum(grepl("level",head(gtf$attributes,20))) >0) {
+    if (sum(grepl("level",head(gtf$attributes,50))) >0) {
       gtf.format <- "gencode"
     } else {
       gtf.format <- "ensembl"
@@ -2012,20 +2012,17 @@ biotype.column <- function(table) {
     sources <- unique(as.character(table$source))
     if ( sum(grepl("HAVANA",sources,ignore.case=FALSE))>0 ) {
       pinfo("cols:",colnames(table))
-      print(head(table))
       if ( sum("gene_type" %in% colnames(table))>0 ) {
         return("gene_type")
-      } else {
-        return("gene_biotype")        
       }
+      # 
+      return("gene_biotype")        
     } else {
       if ( sum(grepl("havana",sources,ignore.case=FALSE))>0 ) {
-                                        # recent ensembl files 
+        # recent ensembl files 
         return("gene_biotype")
-      } else
-                                        # hmm, perhaps we should check that the column exists?
-        return("gene_type")
       }
+    }
   }
   return("source")
 }
