@@ -1085,14 +1085,14 @@ EOF
     #cpan autobundle    
     set +e
     cpan  -f -i App::cpanminus
-    cpanm -n -f -i YAML   < /dev/null
+    cpanm -l $IRAP_DIR -n -f -i YAML   < /dev/null
     #cpanm -f -i Test::More@0.99 < /dev/null
-    cpanm -n -i -f ExtUtils::MakeMaker  < /dev/null 
+    cpanm -l $IRAP_DIR  -n -i -f ExtUtils::MakeMaker  < /dev/null 
     # perhaps install the latest perl?
     cpan -f -u 
     # don't test
     #cpanm -n -i  Bundle::CPAN
-    cpanm -f -n -i  CPAN < /dev/null
+    cpanm $IRAP_DIR  -f -n -i  CPAN < /dev/null
     set -e
     # set permissions 
     chmod +w $IRAP_DIR/bin/*
@@ -1124,8 +1124,8 @@ function perl_packages_install {
     perl_cpan_install
     pinfo "Installing perl packages..."
     #  required by iRAP core: Bio::SeqIO
-    cpanm -f -n  Module::Build
-    cpanm -f -n  Bio::SeqIO
+    cpanm -l $IRAP_DIR  --force -n http://www.cpan.org/authors/id/L/LE/LEONT/Module-Build-0.40_11.tar.gz
+    cpanm -l $IRAP_DIR -f -n  Bio::SeqIO
     #cpan -fi CJFIELDS/BioPerl-1.6.1.tar.gz  
     # for jbrowse see jbrowse install
     #cpanm -fi CJFIELDS/BioPerl-1.6.924.tar.gz 
@@ -1141,9 +1141,6 @@ function perl_packages_jbrowse_install {
     
     # TODO: do it only once
     perl_cpan_install
-
-
-    cpanm --force -n http://www.cpan.org/authors/id/L/LE/LEONT/Module-Build-0.40_11.tar.gz
     
     pinfo "Installing perl packages for jbrowse..."
     #    Test::Requisites
@@ -1152,13 +1149,13 @@ function perl_packages_jbrowse_install {
     set +e
     for p in $PACKAGES; do
        pinfo "************ Package $p"
-       cpanm  --force -n $p < /dev/null
+       cpanm -l $IRAP_DIR --force -n $p < /dev/null
     done
     set -e
     # the tests fail...
-    cpanm -n  -i Heap::Simple::Perl
+    cpanm -l $IRAP_DIR -n  -i Heap::Simple::Perl
     # 
-    cpanm -n  -i L/LD/LDS/GD-2.50.tar.gz
+    cpanm -l $IRAP_DIR -n  -i L/LD/LDS/GD-2.50.tar.gz
     # SAMTOOLS needs to be recompiled :(
     mkdir -p $IRAP_DIR/tmp
     pushd $IRAP_DIR/tmp
@@ -1192,6 +1189,10 @@ biocLite("DBI",ask=FALSE,suppressUpdates=TRUE)
 download.file("http://cran.r-project.org/src/contrib/Archive/RSQLite/RSQLite_0.11.4.tar.gz","RSQLite_0.11.4.tar.gz")
 install.packages("RSQLite_0.11.4.tar.gz",type="source",repos=NULL)
 download.file("http://cran.r-project.org/src/contrib/Archive/gplots/gplots_2.11.0.tar.gz","gplots_2.11.0.tar.gz")
+
+biocLite("gtools",ask=FALSE,suppressUpdates=TRUE)
+biocLite("gdata",ask=FALSE,suppressUpdates=TRUE)
+biocLite("caTools",ask=FALSE,suppressUpdates=TRUE)
 install.packages("gplots_2.11.0.tar.gz",type="source",repos=NULL)
 download.file("http://cran.r-project.org/src/contrib/Archive/xtable/xtable_1.7-4.tar.gz","xtable_1.7-4.tar.gz")
 install.packages("xtable_1.7-4.tar.gz",type="source",repos=NULL)
@@ -1674,7 +1675,7 @@ function jbrowse_install {
     set +e
     cpanm -v --notest -l $IRAP_DIR --installdeps . < /dev/null;
     cpanm -v --notest -l $IRAP_DIR --installdeps . < /dev/null;
-    cpanm -f -v  --installdeps . < /dev/null;
+    cpanm -l -l $IRAP_DIR -f -v  --installdeps . < /dev/null;
     set -e
     rm -rf ~/.cpan
     mv $IRAP_DIR/.cpan.bak2 ~/.cpan 
