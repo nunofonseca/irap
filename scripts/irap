@@ -509,8 +509,11 @@ refgeneannot_file=$(subst .gtf,,$(subst .gz,,$(gtf_file_abspath))).gene_annot.ts
 #************
 # FASTQ files
 # SE reads
+all_se_files=""
+all_pe_files=""
 ifdef se
  $(info *	se=$(se))
+ all_se_files=$(foreach l,$(se),$($(l)))
  #$(foreach l,$(se),$(info $(l)=$($(l)))) 
  # check if fastq file is in a different directory
  $(foreach l,$(se),$(eval $(l)_dir=$(call check_libdir_ok,$(l))))
@@ -533,6 +536,7 @@ endif
 # 
 # A=""
 ifdef pe
+ all_pe_files=$(foreach l,$(pe),$($(l)))
  map=$(foreach a,$(2),$(abspath $(call $(1),$(a))))
  deref=$($1)
  fastq_files?=$(call map, deref, $(pe))
@@ -566,6 +570,13 @@ ifdef pe
  ifile_given=1
 endif
 
+all_fq_files=$(all_pe_files) $(all_se_files)
+nfqfiles=$(words $(all_fq_files))
+nfqfilesu=$(words $(sort $(all_fq_files)))
+
+ifneq ($(nfqfiles),$(nfqfilesu))
+$(call p_error,Some of the libraries provided in se and/or pe have the same filename)
+endif
 #$(call p_info,has_stranded_data=$(has_stranded_data))
 
 ifndef ifile_given
@@ -1078,6 +1089,12 @@ endef
 
 define libname2ofastq=
 $($(1))
+endef
+
+# 1 - lib
+# 2 - pe
+define get_fastq_prefix=
+$(if $(filter $(2),pe),$(subst _2,,$(subst _1,,$(basename $(word 1,$($(1)))))),$(basename $(word 1,$($(1)))))
 endef
 
 # fix the libname by excluding _1 and _2 from PE files
@@ -1660,15 +1677,26 @@ endef
 ##############################################
 # Create the rules on the fly for each library
 # $1 = libname
+
+
 define make-se-bam-rule=
+ifeq ($(mapper),star)
+$(call lib2bam_folder,$(1))$(1).se.hits.bam.trans.bam: $(call lib2bam_folder,$(1))$(1).se.hits.bam
+endif
 $(call lib2bam_folder,$(1))$(1).se.hits.bam: $(call lib2filt_folder,$(1))$(1).f.fastq $(index_files) $(gtf_file_abspath) $(reference_prefix) 
 	$(call run_$(mapper)_map,$(1),$$<,$$@)
 endef
 
+
+
 define make-pe-bam-rule=
+ifeq ($(mapper),star)
+$(call lib2bam_folder,$(1))$(1).pe.hits.bam.trans.bam: $(call lib2bam_folder,$(1))$(1).pe.hits.bam
+endif
 $(call lib2bam_folder,$(1))$(1).pe.hits.bam: $(call mapper_ifiles,$(mapper),$(1),$(call lib2filt_folder,$(1))$(1)_1.f.fastq $(call lib2filt_folder,$(1))$(1)_2.f.fastq)   $(index_files)
 	$(call run_$(mapper)_map,$(1),$(call mapper_ifiles,$(mapper),$(1),$(call lib2filt_folder,$(1))$(1)_1.f.fastq $(call lib2filt_folder,$(1))$(1)_2.f.fastq),$$@)
 endef
+
 
 # create the output directories
 ifneq ($(mapper),none)
