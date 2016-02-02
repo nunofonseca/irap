@@ -207,7 +207,7 @@ GSNAP_FILE=gmap-gsnap-${GSNAP_VERSION}.v3.tar.gz
 GSNAP_URL=http://research-pub.gene.com/gmap/src/$GSNAP_FILE
 
 # 2.2.0
-mapsplice_VERSION=2.2.8
+mapsplice_VERSION=2.2.0
 mapsplice_FILE=MapSplice-v$mapsplice_VERSION.zip
 mapsplice_URL=http://protocols.netlab.uky.edu/~zeng/$mapsplice_FILE
 # 0.7.4->0.7.12
@@ -389,7 +389,7 @@ JBROWSE_URL=http://jbrowse.org/wordpress/wp-content/plugins/download-monitor/$JB
 JBROWSE_EXTRA_UTILS="hgGcPercent bedGraphToBigWig wigCorrelate bigWigInfo bigWigSummary faToNib faToTwoBit hgWiggle"
 JBROWSE_EXTRA_UTILSURL=http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/
 
-# 1.12.0
+# 1.12.0 -- 85
 NEW_JBROWSE_VERSION=1.12.0
 NEW_JBROWSE_FILE=download.php?id=101
 NEW_JBROWSE_URL=http://jbrowse.org/wordpress/wp-content/plugins/download-monitor/$NEW_JBROWSE_FILE
