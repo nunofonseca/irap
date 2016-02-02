@@ -395,8 +395,23 @@ fastqc.sum <- t(fastqc.sum)
 # match the two matrices
 i <- intersect(rownames(fastqc.sum),rownames(df))
 if ( length(i) == 0 ) {
-  perror("No libs found in ",fastqc.sum.tsv)
-  q(status=1)
+  # qc=off
+  # try to use the file column without the .f suffix
+  # 
+  nl <- gsub(".f$","",as.character(df$File))
+  i <- intersect(rownames(fastqc.sum),nl)
+  if ( length(i) == 0 ) {
+    perror("No libs found in ",fastqc.sum.tsv)
+    q(status=1)
+  }
+  fastqc.sum <- fastqc.sum[i,,drop=FALSE]
+  nl <- rownames(df)
+  names(nl) <- gsub(".f$","",df$File)
+  # rename
+  rownames(fastqc.sum) <- nl[rownames(fastqc.sum)[rownames(fastqc.sum) %in% i]]
+  #print(head(fastqc.sum))
+  #print(rownames(fastqc.sum))
+  i <- intersect(rownames(fastqc.sum),rownames(df))
 }
 df <- cbind(df[i,,drop=FALSE],fastqc.sum[i,,drop=FALSE])
 
