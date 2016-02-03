@@ -98,7 +98,7 @@ endef
 endif
 
 define set_DE_DIRS=
-$(eval override DE_DIRS:=$(shell ls --color=never -d -1 $(shell echo $(foreach d,$(call quant_dirs),$(d)/{$(shell echo $(report_de)| sed 's/ /,/g')})) 2>/dev/null))
+$(eval override DE_DIRS:=$(shell ls --color=never -d -1 $(shell echo $(foreach dm,$(report_de),$(foreach d,$(call quant_dirs),$(d)/$(dm)))) 2>/dev/null))
 endef
 
 # 1 - exp name
