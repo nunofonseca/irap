@@ -136,7 +136,7 @@ cols.to.keep.back <- c("Name","Genes..tot.","Genes..up.","Genes..down.",
 
 cols.to.keep <- c("Name","Genes (tot)","Genes (up)","Genes (down)",
                            "p adj (dist.dir.up)","p adj (dist.dir.dn)",
-                           "p adj (non.dir.)")
+                           "p adj (non-dir.)")
 sort.col <- "Genes (tot)"
 pinfo("Number of columns:",ncol(gse.res))
 # fisher exact
@@ -179,14 +179,14 @@ if ( length(colnames(gse.res))==1 ) {
     }
     print(colnames(gse.res))
   }
-  gse.res.filt <- gse.res[,cols.to.keep]
+  gse.res.filt <- gse.res[,cols.to.keep,drop=FALSE]
   colnames(gse.res.filt) <- sub("Genes\\.\\.","Genes ",colnames(gse.res.filt))
   colnames(gse.res.filt) <- gsub("\\.\\."," ",colnames(gse.res.filt))
 
 }
 
 # sort
-gse.res.filt <- gse.res.filt[order(gse.res[,sort.col]),]
+gse.res.filt <- gse.res.filt[order(gse.res[,sort.col]),,drop=FALSE]
 
 library(brew)
 
@@ -208,15 +208,14 @@ if (rdata.loaded && !is.null(gse.res) ) {
     #names(kegg.ids) <- 
     names(Genes) <- as.numeric(names(Genes))
     Genes <- Genes[as.character(gse.res.filt$Name)]
-    gse.res[,"Name"] <- kegg.ids[gse.res$Name]
+    gse.res[,"Name"] <- kegg.ids[gse.res$Name] 
     gse.res.filt <- cbind(gse.res.filt,Genes)
-
   }
   gse.res.filt <- gse.res.filt[append(c(1,ncol(gse.res.filt)),seq(2,ncol(gse.res.filt)-1))]
   colnames(gse.res.filt)[1] <- f.col.name
 }
 
-if (!is.null(gse.res) ) {
+if (!is.null(gse.res.filt) ) {
   #if (opt$is.pathway.analysis) {
   # add column with link to kegg
   #  perror("COMPLETE THE CODE!!!")
@@ -232,7 +231,7 @@ if (!is.null(gse.res) ) {
     get.kegg.url <- function(id) {      
       sprintf("<A href='http://www.genome.jp/dbget-bin/www_bget?map%05d' target='_blank'>%05d</A>",id,id)
     }
-    gse.res.filt$Name <- sapply(gse.res.filt$Name,FUN=get.kegg.url)    
+    gse.res.filt$Name <- sapply(gse.res.filt$Pathway,FUN=get.kegg.url)    
   }
 
 }
