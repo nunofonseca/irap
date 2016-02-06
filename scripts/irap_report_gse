@@ -139,6 +139,7 @@ cols.to.keep <- c("Name","Genes (tot)","Genes (up)","Genes (down)",
                            "p adj (non-dir.)")
 sort.col <- "Genes (tot)"
 pinfo("Number of columns:",ncol(gse.res))
+
 # fisher exact
 if (ncol(gse.res)==9 ) {
   cols.to.keep <-  c("Name","Genes (tot)","Stat (non-dir.) p","p adj (non-dir.)",
@@ -186,7 +187,9 @@ if ( length(colnames(gse.res))==1 ) {
 }
 
 # sort
-gse.res.filt <- gse.res.filt[order(gse.res[,sort.col]),,drop=FALSE]
+if ( !is.null(gse.res.filt) ) {
+  gse.res.filt <- gse.res.filt[order(gse.res[,sort.col]),,drop=FALSE]
+}
 
 library(brew)
 
