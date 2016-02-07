@@ -2178,11 +2178,12 @@ fi
 
 #############
 # all
-rm -f $IRAP_DIR/.cpan.irap.done
 deps_install $install
 core_install
 pinfo "Loading environment $SETUP_FILE..."
 source $SETUP_FILE
+# force cpan installation/reconfiguration
+rm -f $IRAP_DIR/.cpan.irap.done
 pinfo "PATH=$PATH"
 pinfo "IRAP_DIR=$IRAP_DIR"
 env |  grep IRAP_DIR
