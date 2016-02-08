@@ -96,10 +96,10 @@ for ( f in files ) {
   rownames(x) <- x[,1]
   x <- x[,-1,drop=FALSE]
   if (opt$cols_not_sorted) {
-    x <- x[,order(colnames(x))]
+    x <- x[,order(colnames(x)),drop=FALSE]
   }
   if (opt$exclude_aggr_cols) {
-    x <- x[,!colnames(x) %in% c("Mean","Median","SD")]
+    x <- x[,!colnames(x) %in% c("Mean","Median","SD"),drop=FALSE]
   }
   if ( is.null(out.table) ) {
     out.table <- x
