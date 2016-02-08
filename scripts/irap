@@ -511,6 +511,12 @@ refgeneannot_file=$(subst .gtf,,$(subst .gz,,$(gtf_file_abspath))).gene_annot.ts
 # SE reads
 all_se_files=""
 all_pe_files=""
+
+# no need to check the se and pe parameters if
+# the target is stage0 only
+ifeq ($(MAKECMDGOALS),stage0)
+$(info "Stage0 enabled - skipping validation of se and pe")
+else
 ifdef se
  $(info *	se=$(se))
  all_se_files=$(foreach l,$(se),$($(l)))
@@ -582,7 +588,8 @@ endif
 ifndef ifile_given
 $(warning pe parameter or se parameter should be defined and non-empty)
 endif
-
+endif
+# endif  ($(MAKECMDGOALS),stage0)
 
 
 #***********
