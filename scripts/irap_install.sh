@@ -1274,75 +1274,7 @@ function R3_packages_install {
 
     CFLAGS_noboost=`echo $CFLAGS|sed -E "s|\-I[^ ]*boost||g"`
     # suppressUpdates should be TRUE otherwise it might try to update a package installed in the systems folder
-    CFLAGS=$CFLAGS_noboost R --no-save <<EOF
-repo<-"$CRAN_REPO"
-print(.libPaths())
-source("http://bioconductor.org/biocLite.R")
-# upgrade all installed packages before starting the installation
-#biocLite("BiocInstaller",ask=FALSE, suppressUpdates=TRUE)
-# not available in older version of bioconductor
-# 
-#try(biocUpdatePackages(pkgs = c("Biobase", "IRanges", "AnnotationDbi"),ask=FALSE,lib=.libPaths()[1],instlib=.libPaths()[1]))
-try(update.packages(repos=repo,instlib=.libPaths()[1],ask=FALSE))
-
-packages2install<-c("intervals","gclus",'R2HTML',"agricolae",
-             "optparse","brew","reshape","gtools","gdata","caTools",
-             "sfsmisc","gplots","lattice","data.table")
-for (p in packages2install ) {
-   biocLite(p,ask=FALSE, suppressUpdates=TRUE)
-}
-q(status=0)
-EOF
-    #   install.packages(p,repo=repo)
-
-    CFLAGS=$CFLAGS_noboost R --no-save <<EOF
-# bioconductor packages
-source("http://bioconductor.org/biocLite.R")
-packages2install<-c("Rsamtools",'edgeR',
-                    'DESeq','DESeq2','DEXSeq','baySeq',
-                    'limma','marray','igraph')
-
-biocLite(packages2install,ask=FALSE, suppressUpdates=TRUE)
-biocLite("piano",ask=FALSE, suppressUpdates=TRUE)
-#biocLite("org.Hs.eg.db",ask=FALSE, suppressUpdates=TRUE)
-biocLite('RCurl',ask=FALSE, suppressUpdates=TRUE)
-# http://bioconductor.org/packages/2.13/data/annotation/src/contrib/GO.db_2.10.1.tar.gz fails to install
-#biocLite('GO.db',ask=FALSE, suppressUpdates=TRUE)
-#biocLite("topGO",ask=FALSE, suppressUpdates=TRUE)
-#biocLite("biomaRt",ask=FALSE, suppressUpdates=TRUE)
-
-#biocLite('goseq',ask=FALSE, suppressUpdates=TRUE)
-
-species2db<-matrix(c('org.Ag.eg.db','Anopheles',
-'org.At.tair.db','Arabidopsis',
-'org.Bt.eg.db','Bovine',
-'org.Ce.eg.db','Worm',
-'org.Cf.eg.db','Canine',
-'org.Dm.eg.db','Fly',
-'org.Dr.eg.db','Zebrafish',
-'org.EcK12.eg.db','E coli strain K12',
-'org.Gg.eg.db','Chicken',
-'org.Hs.eg.db','Human',
-'org.Mm.eg.db','Mouse',
-'org.Mmu.eg.db','Rhesus',
-'org.Pf.plasmo.db','Malaria',
-'org.Pt.eg.db','Chimp',
-'org.Rn.eg.db','Rat',
-'org.Sc.sgd.db','Yeast',
-'org.Sco.eg.db','Streptomyces coelicolor',
-'org.Ss.eg.db','Pig',
-'org.Tgondii.eg.db','Toxoplasma gondii',
-'org.Xl.eg.db','Xenopus'),byrow=T,ncol=2)
-colnames(species2db)<-c("db","species")
-for (p in species2db[,'db']) {
-biocLite(p,ask=FALSE,suppressUpdates=TRUE)
-}
-
-q()
-EOF
-    #pinfo "Installing EMBAM..."
-    #embam_install $IRAP_DIR/R3/bin/R
-    #pinfo "installing EMBAM...done."
+    CFLAGS=$CFLAGS_noboost echo y | ./scripts/install_R_packages.R
     pinfo "Installing R-3.x packages...done."
 }
 ######################################################
