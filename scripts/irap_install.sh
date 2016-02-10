@@ -766,7 +766,7 @@ function gcc4_install {
     cd ..
     mkdir objdir
     cd objdir
-    $PWD/../gcc-4.8.5/configure --prefix=$IRAP_DIR/gcc --enable-languages=c,c++,fortran --disable-multilib
+    CFLAGS=  $PWD/../gcc-4.8.5/configure --prefix=$IRAP_DIR/gcc --enable-languages=c,c++,fortran --disable-multilib
     make
     make install
     popd
