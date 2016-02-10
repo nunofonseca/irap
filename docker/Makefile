@@ -24,6 +24,10 @@ iRAP-newrel.docker.tar.gz: ../Makefile iRAP-newrel.docker
 	IMAGE=`cat iRAP-newrel.docker| sudo docker build --rm --tag fedora/irap:devel -  | grep "Successfully built" | cut -f 3 -d\ ` && \
 	docker save $$IMAGE |gzip> $@.tmp && mv $@.tmp $@
 
+iRAP-newrel.docker2.tar.gz: ../Makefile iRAP-newrel2.docker
+	IMAGE=`cat iRAP-newrel2.docker| sudo docker build --rm --tag fedora/irap:devel2 -  | grep "Successfully built" | cut -f 3 -d\ ` && \
+	docker save $$IMAGE |gzip> $@.tmp && mv $@.tmp $@
+
 
 install_docker:
 	sudo yum -y install docker-io

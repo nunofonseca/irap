@@ -3,7 +3,7 @@ MAINTAINER Nuno Fonseca email: nuno.fonseca at gmail.com
 
 # Update the image with the latest packages (recommended)
 # and install missing packages
-RUN sed -i "s/failovermethod=priority/failovermethod=roundrobin/" /etc/yum.repos.d/fedora.repo  && yum update -y && yum install -y zlib-devel python-devel bzip2-devel python readline-devel libgfortran gcc-gfortran gcc-c++ libX11-devel libXt-devel numpy gd-devel libxml2-devel libxml2 libpng libcurl-devel expat-devel  libpangocairo db-devel java python gcc g++ gfortran curl-config git which make bzip2 bison gettext-devel  unzip make wget sqlite sqlite-devel db4-devel libdb-devel graphviz texlive tar java-devel xorg-x11-server-Xvfb && yum clean all
+RUN sed -i "s/failovermethod=priority/failovermethod=roundrobin/" /etc/yum.repos.d/fedora.repo  && yum update -y && yum install -y zlib-devel python-devel bzip2-devel python readline-devel libgfortran gcc-gfortran gcc-c++ libX11-devel libXt-devel numpy ksh gd-devel libxml2-devel libxml2 libpng libcurl-devel expat-devel  libpangocairo db-devel java python gcc g++ gfortran curl-config git which make bzip2 bison gettext-devel  unzip make wget sqlite sqlite-devel db4-devel libdb-devel graphviz texlive tar java-devel xorg-x11-server-Xvfb && yum clean all
 
 # 
 WORKDIR /opt

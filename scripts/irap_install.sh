@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =========================================================
-# Copyright 2012-2015,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+# Copyright 2012-2016,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
 #
 # This file is part of iRAP.
 #
@@ -35,7 +35,7 @@ function pinfo {
 }
 
 function usage {
-    echo "Usage: irap_install.sh  -s irap_toplevel_directory [ -c dir -a dir -a -u -m -r -p -q -b]  ";
+    echo "Usage: irap_install.sh  -s irap_toplevel_directory [ -c dir -a dir -a -u -m -r -p -q -b -K -R]  ";
     echo " -s dir : toplevel irap clone directory";
     echo " -c dir : install/update IRAP core files only to directory 'dir'. If dir is not given the value of IRAP_DIR will be used (if available).";
     echo " -a dir : install/update all files (core and 3rd party software) to directory 'dir' (default)";
@@ -50,6 +50,7 @@ function usage {
     echo " -v : collect software versions.";
     echo " -G : install gcc 4.8 before installing Mono (GCC will be installed in \$IRAP_DIR/gcc).";
     echo " -K : use ksh instead of bash (due to an issue trapping signals) while installing some components.";
+    echo " -R : install R.";
     echo " Advanced options:";
     echo " -f : check/fix file permissions"
     echo " -d : download all software and libraries (except R and Perl packages) but do not install.";
@@ -243,10 +244,10 @@ gnuplot_VERSION=4.6.4
 gnuplot_FILE=gnuplot-$gnuplot_VERSION.tar.gz
 gnuplot_URL=http://sourceforge.net/projects/gnuplot/files/gnuplot/$gnuplot_VERSION/$gnuplot_FILE
 
-# default
-R_VERSION=2.15.2
-R_FILE=R-${R_VERSION}.tar.gz 
-R_URL=http://cran.r-project.org/src/base/R-2/$R_FILE
+# deprecated
+R2_VERSION=2.15.2
+R2_FILE=R-${R2_VERSION}.tar.gz 
+R2_URL=http://cran.r-project.org/src/base/R-2/$R2_FILE
 
 # 
 R3_VERSION=3.2.3
@@ -448,9 +449,7 @@ export IRAP_DIR=$IRAP_DIR
 export PATH=\$IRAP_DIR/bin/bowtie1/bin:\$IRAP_DIR/bin:\$IRAP_DIR/scripts:\$PATH
 export LD_LIBRARY_PATH=\$IRAP_DIR/lib:\$LD_LIBRARY_PATH:/usr/local/lib
 export CFLAGS="-I\$IRAP_DIR/include -I\$IRAP_DIR/include/bam -I\$IRAP_DIR/include/boost  \$CFLAGS"
-export R_LIBS=
 export R_LIBS_USER=$IRAP_DIR/Rlibs
-export R3_LIBS_USER=$IRAP_DIR/Rlibs3
 export CXXFLAGS="-I\$IRAP_DIR/include -I\$IRAP_DIR/include/bam -I\$IRAP_DIR/include/boost -L\$IRAP_DIR/lib \$CXXFLAGS"
 export PERL5LIB=\$IRAP_DIR/perl/lib/perl5:\$IRAP_DIR/lib/perl5:\$IRAP_DIR/lib/perl5/x86_64-linux:\$IRAP_DIR/lib/perl5/$PERL_VERSION
 export PYTHONUSERBASE=\$IRAP_DIR/python
@@ -465,8 +464,11 @@ export THREADS=8
 #export JOB_MAX_MEM 32000
 #export IRAP_LSF_PARAMS=
 EOF
+    if [ "$INSTALL_R3-" == "y-" ]; then
+	echo "export R_LIBS=	" >> $1
+	echo "PATH=\$IRAP_DIR/R3/bin:\$PATH"
+    fi
     mkdir -p $IRAP_DIR/Rlibs
-    mkdir -p $IRAP_DIR/Rlibs3
 }
 
 
@@ -853,11 +855,11 @@ function gnuplot_install {
 
 ######################################################
 # R
-function R_install {
-    pinfo "Installing R..."
-    download_software R
-    tar xzvf $R_FILE
-    pushd R-${R_VERSION}
+function R2_install {
+    pinfo "Installing R2..."
+    download_software R2
+    tar xzvf $R2_FILE
+    pushd R-${R2_VERSION}
     export R_LIBS=
     export R_LIBS_USER=$IRAP_DIR/Rlibs
     # assume that makeinfo is installed - configure does not work on 5.2
@@ -872,7 +874,7 @@ function R_install {
     CFLAGS=$CFLAGS_noboost make check
     CFLAGS=$CFLAGS_noboost make install
     popd
-    pinfo "Installing R...done."
+    pinfo "Installing R2...done."
 }
 
 # install R-3.x
@@ -891,20 +893,20 @@ function R3_install {
     make install
     popd
     # wrappers
-    cat <<EOF > $IRAP_DIR/scripts/R3
-#!/bin/bash
-export PATH=\$IRAP_DIR/R3/bin:\$PATH
-export R_LIBS_USER=\$R3_LIBS_USER
-\$IRAP_DIR/R3/bin/R "\$@"
-EOF
-    chmod +x $IRAP_DIR/scripts/R3
-    cat <<EOF > $IRAP_DIR/scripts/Rscript3
-#!/bin/bash
-export PATH=\$IRAP_DIR/R3/bin:\$PATH
-export R_LIBS_USER=\$R3_LIBS_USER
-\$IRAP_DIR/R3/bin/Rscript "\$@"
-EOF
-    chmod +x $IRAP_DIR/scripts/Rscript3
+#     cat <<EOF > $IRAP_DIR/scripts/R3
+# #!/bin/bash
+# export PATH=\$IRAP_DIR/R3/bin:\$PATH
+# export R_LIBS_USER=\$R3_LIBS_USER
+# \$IRAP_DIR/R3/bin/R "\$@"
+# EOF
+#     chmod +x $IRAP_DIR/scripts/R3
+#     cat <<EOF > $IRAP_DIR/scripts/Rscript3
+# #!/bin/bash
+# export PATH=\$IRAP_DIR/R3/bin:\$PATH
+# export R_LIBS_USER=\$R3_LIBS_USER
+# \$IRAP_DIR/R3/bin/Rscript "\$@"
+# EOF
+#     chmod +x $IRAP_DIR/scripts/Rscript3
 
     pinfo "Installing R3-x...done."
 }
@@ -943,8 +945,10 @@ function deps_install {
 	boost_install
     fi
     gnuplot_install
-    R_install
-    R3_install
+    #R_install
+    if [ "$INSTALL_R3-" == "y-" ]; then
+	R3_install
+    fi
     YAP_install
     # some mappers (e.g., tophat) still require samtools 0.x
     samtools_install
@@ -1317,9 +1321,9 @@ species2db<-matrix(c('org.Ag.eg.db','Anopheles',
 'org.Tgondii.eg.db','Toxoplasma gondii',
 'org.Xl.eg.db','Xenopus'),byrow=T,ncol=2)
 colnames(species2db)<-c("db","species")
-#for (p in species2db[,'db']) {
-#biocLite(p,ask=FALSE)
-#}
+for (p in species2db[,'db']) {
+biocLite(p,ask=FALSE)
+}
 
 q()
 EOF
@@ -1954,9 +1958,10 @@ function picard_install {
 UPDATE_FILE_PERMS=n
 INSTALL_JBROWSE=n
 INSTALL_GCC=n
+INSTALL_R3=n
 SPECIAL_SH_TO_USE=bash
 OPTERR=0
-while getopts "s:c:l:a:x:gmqpruhbdtfjvGK"  Option
+while getopts "s:c:l:a:x:gmqpruhbdtfjvGKR"  Option
 do
     case $Option in
 # update/reinstall
@@ -1977,6 +1982,7 @@ do
 	v ) install=collect_software_versions;IRAP_DIR1=$IRAP_DIR;;
 	j ) INSTALL_JBROWSE=y;;
 	G ) INSTALL_GCC=y;;
+	R ) INSTALL_R3=y;;
 	K ) SPECIAL_SH_TO_USE=ksh;;
         h ) usage; exit;;
     esac
@@ -2192,7 +2198,7 @@ pinfo "IRAP_DIR=$IRAP_DIR"
 env |  grep IRAP_DIR
 pinfo "Loading environment $SETUP_FILE...done."
 #check_for_irap_env
-R_packages_install
+#R_packages_install
 R3_packages_install
 
 fastq_qc_install
