@@ -1283,7 +1283,7 @@ source("http://bioconductor.org/biocLite.R")
 # not available in older version of bioconductor
 # 
 #try(biocUpdatePackages(pkgs = c("Biobase", "IRanges", "AnnotationDbi"),ask=FALSE,lib=.libPaths()[1],instlib=.libPaths()[1]))
-update.packages(repos=repo,instlib=.libPaths()[1]))
+try(update.packages(repos=repo,instlib=.libPaths()[1],ask=FALSE))
 
 packages2install<-c("intervals","gclus",'R2HTML',"agricolae",
              "optparse","brew","reshape","gtools","gdata","caTools",
