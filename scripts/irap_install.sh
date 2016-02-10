@@ -132,7 +132,7 @@ function check_dependencies {
 	    pinfo " $bin not found!"
 	    #
 	    if [ "$bin" == "R" ]; then
-		pwarn "please install the R package or run irap_install.sh with -R to install R (version 3)"
+		pwarn "Please install the R package (and update all packages) or run irap_install.sh with -R to install R (version 3)"
 	    else
 		MISSING=1
 	    fi
@@ -1276,7 +1276,11 @@ function R3_packages_install {
     # suppressUpdates should be TRUE otherwise it might try to update a package installed in the systems folder
     CFLAGS=$CFLAGS_noboost R --no-save <<EOF
 repo<-"$CRAN_REPO"
+print(.libPaths())
 source("http://bioconductor.org/biocLite.R")
+# upgrade all installed packages before starting the installation
+biocUpdatePackages(pkgs = c("Biobase", "IRanges", "AnnotationDbi"),ask=FALSE,lib=.libPaths()[1],instlib=.libPaths()[1])
+
 packages2install<-c("intervals","gclus",'R2HTML',"agricolae",
              "optparse","brew","reshape","gtools","gdata","caTools",
              "sfsmisc","gplots","lattice","data.table")
