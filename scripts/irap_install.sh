@@ -132,7 +132,7 @@ function check_dependencies {
 	    pinfo " $bin not found!"
 	    #
 	    if [ "$bin" == "R" ]; then
-		pwarn "Please install the R package (and update all packages) or run irap_install.sh with -R to install R (version 3)"
+		pwarn "Please install the R package (and update all packages) or run irap_install.sh with -R to install R (version 3.2 or above)"
 	    else
 		MISSING=1
 	    fi
@@ -1279,7 +1279,10 @@ repo<-"$CRAN_REPO"
 print(.libPaths())
 source("http://bioconductor.org/biocLite.R")
 # upgrade all installed packages before starting the installation
-biocUpdatePackages(pkgs = c("Biobase", "IRanges", "AnnotationDbi"),ask=FALSE,lib=.libPaths()[1],instlib=.libPaths()[1])
+biocLite("BiocInstaller",ask=FALSE, suppressUpdates=TRUE)
+# not available in older version of bioconductor
+# 
+try(biocUpdatePackages(pkgs = c("Biobase", "IRanges", "AnnotationDbi"),ask=FALSE,lib=.libPaths()[1],instlib=.libPaths()[1]))
 
 packages2install<-c("intervals","gclus",'R2HTML',"agricolae",
              "optparse","brew","reshape","gtools","gdata","caTools",
