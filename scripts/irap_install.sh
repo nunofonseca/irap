@@ -118,19 +118,24 @@ function download2cache {
 }
 
 function check_dependencies {
-    DEVEL_LIBRARIES_REQUIRED="zlib-devel python-devel bzip2-devel python readline-devel libgfortran gcc-gfortran gcc-c++ libX11-devel libXt-devel numpy gd-devel libxml2-devel libxml2 libpng libcurl-devel expat-devel  libpangocairo bison gettext-devel  sqlite-devel sqlite [db-devel|db4-devel|libdb-devel]"
+    DEVEL_LIBRARIES_REQUIRED="zlib-devel python-devel bzip2-devel python readline-devel libgfortran gcc-gfortran gcc-c++ libX11-devel libXt-devel numpy gd-devel libxml2-devel libxml2 libpng libcurl-devel expat-devel  libpangocairo bison gettext-devel  sqlite-devel sqlite [db-devel|db4-devel|libdb-devel] R"
     MISSING=0
     pinfo "If installation fails then please check if the following libraries are installed:"
     pinfo "$DEVEL_LIBRARIES_REQUIRED"
     # Binaries that should be available
     # make is required to...compile make
-    BINARIES="java python gcc g++ gfortran curl-config git which make bzip2 unzip bash"
+    BINARIES="java python gcc g++ gfortran curl-config git which make bzip2 unzip bash R"
     pinfo "Checking dependencies..."
     for bin in $BINARIES; do
 	PATH2BIN=`which $bin 2> /dev/null`
 	if [ "$PATH2BIN-" == "-" ]; then
 	    pinfo " $bin not found!"
- 	    MISSING=1
+	    #
+	    if [ "$bin" == "R" ]; then
+		pwarn "please install the R package or run irap_install.sh with -R to install R (version 3)"
+	    else
+		MISSING=1
+	    fi
 	else
 	    pinfo " $bin found: $PATH2BIN"
 	fi
@@ -450,6 +455,7 @@ export PATH=\$IRAP_DIR/bin/bowtie1/bin:\$IRAP_DIR/bin:\$IRAP_DIR/scripts:\$PATH
 export LD_LIBRARY_PATH=\$IRAP_DIR/lib:\$LD_LIBRARY_PATH:/usr/local/lib
 export CFLAGS="-I\$IRAP_DIR/include -I\$IRAP_DIR/include/bam -I\$IRAP_DIR/include/boost  \$CFLAGS"
 export R_LIBS_USER=$IRAP_DIR/Rlibs
+export R_LIBS=$IRAP_DIR/Rlibs
 export CXXFLAGS="-I\$IRAP_DIR/include -I\$IRAP_DIR/include/bam -I\$IRAP_DIR/include/boost -L\$IRAP_DIR/lib \$CXXFLAGS"
 export PERL5LIB=\$IRAP_DIR/perl/lib/perl5:\$IRAP_DIR/lib/perl5:\$IRAP_DIR/lib/perl5/x86_64-linux:\$IRAP_DIR/lib/perl5/$PERL_VERSION
 export PYTHONUSERBASE=\$IRAP_DIR/python
@@ -466,7 +472,7 @@ export THREADS=8
 EOF
     if [ "$INSTALL_R3-" == "y-" ]; then
 	echo "export R_LIBS=	" >> $1
-	echo "PATH=\$IRAP_DIR/R3/bin:\$PATH"
+	echo "PATH=\$IRAP_DIR/R3/bin:\$PATH" >> $1
     fi
     mkdir -p $IRAP_DIR/Rlibs
 }
@@ -1181,7 +1187,7 @@ function perl_packages_jbrowse_install {
 ##################################
 # R packages
 # Software environment for statistical computing and graphics
-function R_packages_install {
+function R2_packages_install {
     export PATH=$IRAP_DIR/bin:$PATH
     pinfo "Installing R packages..."
     #export R_LIBS=
@@ -1267,38 +1273,37 @@ function R3_packages_install {
     pinfo "Installing R-3.x packages..."
 
     CFLAGS_noboost=`echo $CFLAGS|sed -E "s|\-I[^ ]*boost||g"`
-
-    CFLAGS=$CFLAGS_noboost R3 --no-save <<EOF
+    # suppressUpdates should be TRUE otherwise it might try to update a package installed in the systems folder
+    CFLAGS=$CFLAGS_noboost R --no-save <<EOF
 repo<-"$CRAN_REPO"
 source("http://bioconductor.org/biocLite.R")
 packages2install<-c("intervals","gclus",'R2HTML',"agricolae",
              "optparse","brew","reshape","gtools","gdata","caTools",
              "sfsmisc","gplots","lattice","data.table")
-
 for (p in packages2install ) {
-   biocLite(p,ask=FALSE, suppressUpdates=FALSE)
+   biocLite(p,ask=FALSE, suppressUpdates=TRUE)
 }
 q(status=0)
 EOF
     #   install.packages(p,repo=repo)
 
-    CFLAGS=$CFLAGS_noboost R3 --no-save <<EOF
+    CFLAGS=$CFLAGS_noboost R --no-save <<EOF
 # bioconductor packages
 source("http://bioconductor.org/biocLite.R")
 packages2install<-c("Rsamtools",'edgeR',
                     'DESeq','DESeq2','DEXSeq','baySeq',
                     'limma','marray','igraph')
 
-biocLite(packages2install,ask=FALSE, suppressUpdates=FALSE)
-biocLite("piano",ask=FALSE, suppressUpdates=FALSE)
-#biocLite("org.Hs.eg.db",ask=FALSE, suppressUpdates=FALSE)
-biocLite('RCurl',ask=FALSE, suppressUpdates=FALSE)
+biocLite(packages2install,ask=FALSE, suppressUpdates=TRUE)
+biocLite("piano",ask=FALSE, suppressUpdates=TRUE)
+#biocLite("org.Hs.eg.db",ask=FALSE, suppressUpdates=TRUE)
+biocLite('RCurl',ask=FALSE, suppressUpdates=TRUE)
 # http://bioconductor.org/packages/2.13/data/annotation/src/contrib/GO.db_2.10.1.tar.gz fails to install
-#biocLite('GO.db',ask=FALSE, suppressUpdates=FALSE)
-#biocLite("topGO",ask=FALSE, suppressUpdates=FALSE)
-#biocLite("biomaRt",ask=FALSE, suppressUpdates=FALSE)
+#biocLite('GO.db',ask=FALSE, suppressUpdates=TRUE)
+#biocLite("topGO",ask=FALSE, suppressUpdates=TRUE)
+#biocLite("biomaRt",ask=FALSE, suppressUpdates=TRUE)
 
-#biocLite('goseq',ask=FALSE, suppressUpdates=FALSE)
+#biocLite('goseq',ask=FALSE, suppressUpdates=TRUE)
 
 species2db<-matrix(c('org.Ag.eg.db','Anopheles',
 'org.At.tair.db','Arabidopsis',
@@ -1322,7 +1327,7 @@ species2db<-matrix(c('org.Ag.eg.db','Anopheles',
 'org.Xl.eg.db','Xenopus'),byrow=T,ncol=2)
 colnames(species2db)<-c("db","species")
 for (p in species2db[,'db']) {
-biocLite(p,ask=FALSE)
+biocLite(p,ask=FALSE,suppressUpdates=TRUE)
 }
 
 q()
