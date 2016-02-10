@@ -49,7 +49,7 @@ function usage {
     echo " -j : install jbrowser (with -a).";
     echo " -v : collect software versions.";
     echo " -G : install gcc 4.8 before installing Mono (GCC will be installed in \$IRAP_DIR/gcc).";
-    echo " -K : use ksh instead of bash (due to an issue trapping signals) while installing some components.";
+    echo " -K : use ksh instead of bash (due to an issue trapping signals) while installing some components (R).";
     echo " -R : install R.";
     echo " Advanced options:";
     echo " -f : check/fix file permissions"
