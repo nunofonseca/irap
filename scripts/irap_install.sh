@@ -861,11 +861,12 @@ function R_install {
     export R_LIBS=
     export R_LIBS_USER=$IRAP_DIR/Rlibs
     # assume that makeinfo is installed - configure does not work on 5.2
-    sed -i "s/r_cv_prog_makeinfo_v4=no/r_cv_prog_makeinfo_v4=yes/" configure  
+    #sed -i "s/r_cv_prog_makeinfo_v4=no/r_cv_prog_makeinfo_v4=yes/" configure  
     CFLAGS_noboost=`echo $CFLAGS|sed -E "s|\-I[^ ]*boost||g"`    
     # clean up - delete packages previously installed
     rm -rf $IRAP_DIR/Rlibs/*
-    CFLAGS=$CFLAGS_noboost $SPECIAL_SH_TO_USE ./configure --prefix=$IRAP_DIR --disable-nls
+    CFLAGS=$CFLAGS_noboost $SPECIAL_SH_TO_USE ./configure --prefix=$IRAP_DIR
+    #fedora 23:--disable-nls
     CFLAGS=$CFLAGS_noboost make clean
     CFLAGS=$CFLAGS_noboost make
     CFLAGS=$CFLAGS_noboost make check
