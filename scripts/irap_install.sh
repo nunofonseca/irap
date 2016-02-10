@@ -1279,10 +1279,11 @@ repo<-"$CRAN_REPO"
 print(.libPaths())
 source("http://bioconductor.org/biocLite.R")
 # upgrade all installed packages before starting the installation
-biocLite("BiocInstaller",ask=FALSE, suppressUpdates=TRUE)
+#biocLite("BiocInstaller",ask=FALSE, suppressUpdates=TRUE)
 # not available in older version of bioconductor
 # 
-try(biocUpdatePackages(pkgs = c("Biobase", "IRanges", "AnnotationDbi"),ask=FALSE,lib=.libPaths()[1],instlib=.libPaths()[1]))
+#try(biocUpdatePackages(pkgs = c("Biobase", "IRanges", "AnnotationDbi"),ask=FALSE,lib=.libPaths()[1],instlib=.libPaths()[1]))
+update.packages(repos=repo,instlib=.libPaths()[1]))
 
 packages2install<-c("intervals","gclus",'R2HTML',"agricolae",
              "optparse","brew","reshape","gtools","gdata","caTools",
