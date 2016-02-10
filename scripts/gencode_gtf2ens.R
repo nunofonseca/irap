@@ -1,4 +1,4 @@
-#!/usr/bin/env Rscript3
+#!/usr/bin/env Rscript
 # =========================================================
 #
 # This file is part of iRAP.

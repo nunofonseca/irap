@@ -1,4 +1,4 @@
-#!/usr/bin/env Rscript3
+#!/usr/bin/env Rscript
 ## /*******************************************************************************************
 ##  *
 ##  * Copyright (c) 2012 Nuno Fonseca. All rights reserved.
