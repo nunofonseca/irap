@@ -884,7 +884,7 @@ function R2_install {
 }
 
 # install R-3.x
-function R3_install {
+function R_install {
     pinfo "Installing R-3.x..."
     download_software R3
     tar xzvf $R3_FILE
@@ -953,7 +953,7 @@ function deps_install {
     gnuplot_install
     #R_install
     if [ "$INSTALL_R3-" == "y-" ]; then
-	R3_install
+	R_install
     fi
     YAP_install
     # some mappers (e.g., tophat) still require samtools 0.x
