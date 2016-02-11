@@ -1274,7 +1274,7 @@ function R_packages_install {
 
     CFLAGS_noboost=`echo $CFLAGS|sed -E "s|\-I[^ ]*boost||g"`
     # suppressUpdates should be TRUE otherwise it might try to update a package installed in the systems folder
-    CFLAGS=$CFLAGS_noboost echo y | ./scripts/install_R_packages.R
+    CFLAGS=$CFLAGS_noboost echo y | $SRC_DIR/scripts/install_R_packages.R
     pinfo "Installing R-3.x packages...done."
 }
 ######################################################
