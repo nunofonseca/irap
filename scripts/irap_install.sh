@@ -892,7 +892,7 @@ function R_install {
     export R_LIBS=
     export R_LIBS_USER=$IRAP_DIR/Rlibs3
     CFLAGS_noboost=`echo $CFLAGS|sed -E "s|\-I[^ ]*boost||g"`    
-    CFLAGS=$CFLAGS_noboost $SPECIAL_SH_TO_USE ./configure --prefix=$IRAP_DIR/R3
+    CFLAGS=$CFLAGS_noboost $SPECIAL_SH_TO_USE ./configure --prefix=$IRAP_DIR
     make clean
     make -j $J
     make -j $J check
