@@ -1268,7 +1268,7 @@ EOF
 # 
 # requires libcurl installed in the system
 
-function R3_packages_install {
+function R_packages_install {
     export PATH=$IRAP_DIR/bin:$PATH
     pinfo "Installing R-3.x packages..."
 
@@ -2086,7 +2086,6 @@ fi
 if [ "$install" == "r_pack" ]; then
     check_for_irap_env
     R_packages_install
-    R3_packages_install
     pinfo "Log saved to $logfile"
     exit 0
 fi
@@ -2144,7 +2143,7 @@ env |  grep IRAP_DIR
 pinfo "Loading environment $SETUP_FILE...done."
 #check_for_irap_env
 #R_packages_install
-R3_packages_install
+R_packages_install
 
 fastq_qc_install
 perl_packages_install
