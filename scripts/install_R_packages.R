@@ -37,7 +37,20 @@ if ( version$major < 3 || (version$major>=3 && version$minor<2) ) {
   q(status=1)
 }
 
+##########################################################
+# install all packages to the iRAP folder
+lib.vars <- ls(environment(.libPaths),all=TRUE)
+if ( length(lib.vars)!=1 && lib.vars[1]!=".lib.loc") {
+  cat("ERROR: .lib.loc not found...unable to proceed.\n")
+  q(status=1)
+}
+
+# Keep only the iRAP path (that should be the first from .libPaths())
+assign(".lib.loc",.libPaths()[1],envir=environment(.libPaths))
+message("Installing packages to: ", .libPaths())
+
 source("http://bioconductor.org/biocLite.R")
+
 
 ######
 # Update all packages
@@ -52,7 +65,7 @@ cat("Installing packages:\n")
 packages2install<-c("intervals","gclus",'R2HTML',"agricolae",
                     "optparse","brew","reshape","gtools","gdata","caTools",
                     "sfsmisc","gplots","lattice","data.table",
-                    'edgeR','piano','RCurl'
+                    'edgeR','piano','RCurl',
                     'DESeq','DESeq2','DEXSeq','baySeq',
                     'limma','marray','igraph')
 for (p in packages2install ) {
