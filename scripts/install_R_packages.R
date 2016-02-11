@@ -31,7 +31,7 @@ print(.libPaths())
 # Check if version is ok
 version <- getRversion()
 currentVersion <- sprintf("%d.%d", version$major, version$minor)
-print(version)
+message("R version:",version)
 if ( version$major < 3 || (version$major>=3 && version$minor<2) ) {
   cat("ERROR: R version should be 3.2 or above\n")
   q(status=1)
@@ -47,8 +47,9 @@ if ( length(lib.vars)!=1 && lib.vars[1]!=".lib.loc") {
 
 # Keep only the iRAP path (that should be the first from .libPaths())
 assign(".lib.loc",.libPaths()[1],envir=environment(.libPaths))
-message("Installing packages to: ", .libPaths())
 
+message("Installing packages to: ", .libPaths())
+message("_____________________________________________________")
 source("http://bioconductor.org/biocLite.R")
 
 
@@ -102,7 +103,7 @@ species2db<-matrix(c('org.Ag.eg.db','Anopheles',
                      'org.Xl.eg.db','Xenopus'),byrow=T,ncol=2)
 colnames(species2db)<-c("db","species")
 for (p in species2db[,'db']) {
-  biocLite(p,ask=FALSE,suppressUpdates=TRUE)
+  biocLite(p,ask=FALSE,suppressUpdates=FALSE)
 }
 
 q(status=0)
