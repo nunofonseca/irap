@@ -1,4 +1,4 @@
-#!/usr/bin/env Rscript
+#!/usr/bin/env Rscript 
 # =========================================================
 # Copyright 2012-2016,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
 #
@@ -22,20 +22,27 @@
 # R script to install all R packages required by iRAP
 repo<-"http://www.stats.bris.ac.uk/R/"
 
+#.Library.site<-c()
+#.Library <- c()
+#.libPaths(.libPaths()[1])
+message("Using library: ", .libPaths()[1])
 print(.libPaths())
 
+# Check if version is ok
+version <- getRversion()
+currentVersion <- sprintf("%d.%d", version$major, version$minor)
+print(version)
+if ( version$major < 3 || (version$major>=3 && version$minor<2) ) {
+  cat("ERROR: R version should be 3.2 or above\n")
+  q(status=1)
+}
+
+source("http://bioconductor.org/biocLite.R")
+
 ######
-# upgrade all installed packages before starting the installation
-try(update.packages(repos=repo,instlib=.libPaths()[1],ask=FALSE))
+# Update all packages
+# update.packages(repos=repo,instlib=.libPaths()[1],ask=FALSE)
 
-#biocLite("BiocUpgrade",ask=FALSE, suppressUpdates=TRUE)
-#try(remove.packages("BiocInstaller"))
-source("http://bioconductor.org/biocLite.R")
-#biocLite("BiocInstaller",ask=FALSE, suppressUpdates=TRUE)
-# not available in older versions of bioconductor
-try(biocUpdatePackages(pkgs = c("BiocGenerics","Biobase", "IRanges","AnnotationDbi"),ask=FALSE,instlib=.libPaths()[1]))
-
-source("http://bioconductor.org/biocLite.R")
 
 #biocValid()
 #################
@@ -45,18 +52,14 @@ cat("Installing packages:\n")
 packages2install<-c("intervals","gclus",'R2HTML',"agricolae",
                     "optparse","brew","reshape","gtools","gdata","caTools",
                     "sfsmisc","gplots","lattice","data.table",
-                    'edgeR',
+                    'edgeR','piano','RCurl'
                     'DESeq','DESeq2','DEXSeq','baySeq',
                     'limma','marray','igraph')
 for (p in packages2install ) {
   cat("PACKAGE:",p,"\n")
-  biocLite(p,ask=FALSE, suppressUpdates=TRUE)
+  biocLite(p,ask=FALSE, suppressUpdates=FALSE)
 }
 
-
-biocLite("piano",ask=FALSE, suppressUpdates=TRUE)
-#biocLite("org.Hs.eg.db",ask=FALSE, suppressUpdates=TRUE)
-biocLite('RCurl',ask=FALSE, suppressUpdates=TRUE)
 # http://bioconductor.org/packages/2.13/data/annotation/src/contrib/GO.db_2.10.1.tar.gz fails to install
 #biocLite('GO.db',ask=FALSE, suppressUpdates=TRUE)
 #biocLite("topGO",ask=FALSE, suppressUpdates=TRUE)
