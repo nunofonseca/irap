@@ -33,11 +33,11 @@ try(update.packages(repos=repo,instlib=.libPaths()[1],ask=FALSE))
 source("http://bioconductor.org/biocLite.R")
 #biocLite("BiocInstaller",ask=FALSE, suppressUpdates=TRUE)
 # not available in older versions of bioconductor
-tryCatch(biocUpdatePackages(pkgs = c("Biobase", "IRanges","AnnotationDbi"),ask=FALSE,instlib=.libPaths()[1]))
+try(biocUpdatePackages(pkgs = c("BiocGenerics","Biobase", "IRanges","AnnotationDbi"),ask=FALSE,instlib=.libPaths()[1]))
 
 source("http://bioconductor.org/biocLite.R")
 
-biocValid()
+#biocValid()
 #################
 cat("-----------------------------------------------------\n")
 cat("Installing packages:\n")
