@@ -35,7 +35,7 @@ function pinfo {
 }
 
 function usage {
-    echo "Usage: irap_install.sh  -s irap_toplevel_directory [ -c dir -a dir -a -u -m -r -p -q -b -K -R]  ";
+    echo "Usage: irap_install.sh  -s irap_toplevel_directory [ -c dir -a dir -a -u -m -r -p -q -b -K -R -B]  ";
     echo " -s dir : toplevel irap clone directory";
     echo " -c dir : install/update IRAP core files only to directory 'dir'. If dir is not given the value of IRAP_DIR will be used (if available).";
     echo " -a dir : install/update all files (core and 3rd party software) to directory 'dir' (default)";
@@ -49,6 +49,7 @@ function usage {
     echo " -j : install jbrowser (with -a).";
     echo " -v : collect software versions.";
     echo " -G : install gcc 4.8 before installing Mono (GCC will be installed in \$IRAP_DIR/gcc).";
+    echo " -B : install boost libraries.";
     echo " -K : use ksh instead of bash (due to an issue trapping signals) while installing some components (R).";
     echo " -R : install R.";
     echo " Advanced options:";
@@ -942,12 +943,12 @@ function YAP_install {
 
 function deps_install {
 
-    pinfo "Installing dependencies (make, perk, boost, gnuplot, R, samtools, ...)"
+    pinfo "Installing dependencies (make, perl, boost, gnuplot, R, samtools, ...)"
     make_install
     zlib_install
     perl_install
     #ruby_install
-    if [ "$1-" != "minimal-"  ]; then
+    if [ "$1-" != "minimal-" ] && [ "$BOOST_INSTALL" == "y" ]; then
 	boost_install
     fi
     gnuplot_install
@@ -1904,9 +1905,10 @@ UPDATE_FILE_PERMS=n
 INSTALL_JBROWSE=n
 INSTALL_GCC=n
 INSTALL_R3=n
+INSTALL_BOOST=n
 SPECIAL_SH_TO_USE=bash
 OPTERR=0
-while getopts "s:c:l:a:x:gmqpruhbdtfjvGKR"  Option
+while getopts "s:c:l:a:x:gmqpruhbdtfjvGKRB"  Option
 do
     case $Option in
 # update/reinstall
@@ -1928,6 +1930,7 @@ do
 	j ) INSTALL_JBROWSE=y;;
 	G ) INSTALL_GCC=y;;
 	R ) INSTALL_R3=y;;
+	B ) INSTALL_BOOST=y;;
 	K ) SPECIAL_SH_TO_USE=ksh;;
         h ) usage; exit;;
     esac
