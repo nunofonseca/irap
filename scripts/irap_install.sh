@@ -667,6 +667,8 @@ function bwa_install {
 function osa_install {
     MAPPER=osa
     pinfo "Starting $MAPPER binary installation..."
+    OLD_PATH=$PATH
+    OLD_LD_LIBRARY_PATH=$LD_LIBRARY_PATH	
     if [ $INSTALL_GCC != "n" ]; then
 	gcc4_install
 	export PATH=$IRAP_DIR/gcc/bin:$PATH
@@ -677,6 +679,8 @@ function osa_install {
     unzip $osa_FILE
     pushd OSAv$osa_VERSION
     install_binary $MAPPER . \*
+    PATH=$PATH
+    LD_LIBRARY_PATH=$LD_LIBRARY_PATH	
     popd
     pinfo "$MAPPER installation complete."    
 }
@@ -1835,10 +1839,10 @@ function python_install {
     pinfo "Check python version... (2.6+ required)"
     min=$(python -c "import sys; print (sys.version_info[:])[1]")
     maj=$(python -c "import sys; print (sys.version_info[:])[0]")
-    if [[ $maj -gt 1 ]] && [[ $min  -gt 5 ]] ; then
+    if [[ $maj == "2" ]] && [[ $min  -gt 5 ]] ; then
 	pinfo "OK."
     else
-	pinfo "You need Python2.6+ to run this pipeline."
+	pinfo "You need Python2.6 or 2.7 to run this pipeline."
 	exit 1
     fi
     ###########################################
