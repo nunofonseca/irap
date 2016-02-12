@@ -1359,7 +1359,7 @@ function htseq_install {
     pushd `echo $htseq_FILE|sed "s/.tar.gz//"`
 # python version needs to be equal or greater than  (2.6)
     #. ./build_it ;# not needed in 0.5.4p5
-    python setup.py install --user
+    #python setup.py install --user
     chmod +x scripts/*
     cp scripts/* $IRAP_DIR/bin
     popd
@@ -1832,6 +1832,16 @@ function fusionmap_install {
 # python packages
 function python_install {
     pinfo "Installing python packages..."
+    pinfo "Check python version... (2.6+ required)"
+    min=$(python -c "import sys; print (sys.version_info[:])[1]")
+    maj=$(python -c "import sys; print (sys.version_info[:])[0]")
+    if [[ $maj -gt 1 ]] && [[ $min  -gt 5 ]] ; then
+	pinfo "OK."
+    else
+	pinfo "You need Python2.6+ to run this pipeline."
+	exit 1
+    fi
+    ###########################################
     # only install pip if not already installed
     set +e
     PATH2PIP=`which pip 2> /dev/null`
@@ -1841,11 +1851,12 @@ function python_install {
     if [ "$PATH2PIP-" == "-" ]; then
 	wget --no-check-certificate https://bootstrap.pypa.io/get-pip.py
 	python get-pip.py --user
+	PATH2PIP=$IRAP_DIR/python/bin/pip
 	pinfo "PIP installation complete."    
     else
 	pinfo "pip already installed"
     fi
-    $IRAP_DIR/python/bin/pip install pysam --user    
+    $PATH2PIP install pysam --user    
     export CFLAGS=$CFLAGS_bak
     pinfo "python packages installed"
 }
