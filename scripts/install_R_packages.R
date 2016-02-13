@@ -66,7 +66,7 @@ cat("Installing packages:\n")
 packages2install<-c("intervals","gclus",'R2HTML',"agricolae",
                     "optparse","brew","reshape","gtools","gdata","caTools",
                     "sfsmisc","gplots","lattice","data.table",
-                    'edgeR','piano','RCurl',
+                    'edgeR','piano','RCurl','GO.db',
                     'DESeq','DESeq2','DEXSeq','baySeq',
                     'limma','marray','igraph')
 for (p in packages2install ) {
