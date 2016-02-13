@@ -1383,7 +1383,7 @@ load.annot <- function(file) {
     perror("File ",file," not found")
     quit(status=1)
   }
-  annot.table <- tryCatch(read.tsv(file),error=function(x) return(NULL))
+  annot.table <- tryCatch(read.tsv(file,header=TRUE),error=function(x) return(NULL))
   if ( is.null(annot.table) ) {
     pdebug("Loading annotation (failed)")
     return(NULL)
