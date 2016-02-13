@@ -55,14 +55,15 @@ data.f <- handle.tech.replicates(data.f,opt)
 opt$conds <- map.conds2cols(opt$label2group,colnames(data.f))
 #########################
 library(limma)
-#Note: TODO counts of technical replicates  have to be summed up into a single column
+#Note: TODO counts of technical replicates should be summed up into a single column
 #conds.f <- factor(conds)
 conds <-  as.factor(opt$conds)
 design <- model.matrix(~ 0 + conds)
 colnames(design) <- gsub("conds", "", colnames(design)) #fix col names
-#print(colnames(design))
+
 # reorder
-design <- design[,opt$labels.v]
+design <- design[,opt$labels.v,drop=FALSE]
+
 pinfo("Vooming...")
 voom.cts <- voom(data.f, design = design)
 
@@ -70,22 +71,34 @@ voom.cts <- voom(data.f, design = design)
 fit <- eBayes(lmFit(voom.cts,design))
 
 de <- topTable(fit,number=nrow(fit))
-
+pdebug.save.state("irap_DE_voom","2")
+col <- colnames(de)
+col[1] <- colnames(design)[1]
+col[2] <- colnames(design)[2]
 # add fold change
-label1.i <- 2
-label2.i <- 3
-de$foldChange <- de[,label2.i]/de[,label1.i]
-de$log2FoldChange <- log2(de$foldChange)
-
+label1.i <- 1
+label2.i <- 2
+de.df <- as.data.frame(de)
+colnames(de.df) <- col
+foldChange <- de.df[,label2.i]/de.df[,label1.i]
+log2FoldChange <- log2(foldChange)
+id <- rownames(de.df)
+de.df <- cbind(id,de.df,foldChange,log2FoldChange)
+#print(head(de.df))
+#
+de.df$pvalue <- de.df$P.Value
+de.df$padj <- de.df$adj.P.Val
 pinfo("Annotating DE list...")
 ## annotate the gene list
-if (!is.null(opt$annotation) && !is.null(opt$annotation)) {
-   de.annot <- de
-   match.v  <- match(de.annot$ID,opt$annot[opt$annot[,1] %in% de.annot$ID,1]);
-   de.annot <- cbind(de.annot,opt$annot[match.v,])
+if (!is.null(opt$annotation) && !is.na(opt$annotation) && nrow(de)>0) {
+  de.annot <- de.df[order(de.df$pval),,drop=FALSE];
+  match.v  <- match(de.annot$id,opt$annot[,1]);
+  de.annot <- cbind(de.annot,opt$annot[match.v,,drop=FALSE])
+  
 } else {
-   de.annot <- de;
+   de.annot <- de.df;
 }
+
 de.annot <- de.annot[order(de.annot$P.Value),];
 
 # save DE file
