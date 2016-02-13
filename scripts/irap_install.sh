@@ -1363,7 +1363,8 @@ function htseq_install {
     pushd `echo $htseq_FILE|sed "s/.tar.gz//"`
 # python version needs to be equal or greater than  (2.6)
     #. ./build_it ;# not needed in 0.5.4p5
-    #python setup.py install --user
+    # python setup.py install --user
+    pip install --user .
     chmod +x scripts/*
     cp scripts/* $IRAP_DIR/bin
     popd
