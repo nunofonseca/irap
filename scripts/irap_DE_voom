@@ -82,8 +82,8 @@ de.df <- as.data.frame(de)
 colnames(de.df) <- col
 foldChange <- de.df[,label2.i]/de.df[,label1.i]
 log2FoldChange <- log2(foldChange)
-id <- rownames(de.df)
-de.df <- cbind(id,de.df,foldChange,log2FoldChange)
+ID <- rownames(de.df)
+de.df <- cbind(ID,de.df,foldChange,log2FoldChange)
 #print(head(de.df))
 #
 de.df$pvalue <- de.df$P.Value
