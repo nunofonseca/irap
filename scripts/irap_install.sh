@@ -133,7 +133,7 @@ function check_dependencies {
 	    pinfo " $bin not found!"
 	    #
 	    if [ "$bin" == "R" ]; then
-		pwarn "Please install the R package (and update all packages) or run irap_install.sh with -R to install R (version 3.2 or above)"
+		pinfo "WARNING:Please install the R package (and update all packages) or run irap_install.sh with -R to install R (version 3.2 or above)"
 	    else
 		MISSING=1
 	    fi
