@@ -90,16 +90,17 @@ de.df$pvalue <- de.df$P.Value
 de.df$padj <- de.df$adj.P.Val
 pinfo("Annotating DE list...")
 ## annotate the gene list
-if (!is.null(opt$annotation) && !is.na(opt$annotation) && nrow(de)>0) {
+if (!is.null(opt$annotation) && !is.na(opt$annotation) && nrow(de.df)>0) {
   de.annot <- de.df[order(de.df$pval),,drop=FALSE];
-  match.v  <- match(de.annot$id,opt$annot[,1]);
+  match.v  <- match(de.annot$ID,opt$annot[,1]);
+  # add assert?
   de.annot <- cbind(de.annot,opt$annot[match.v,,drop=FALSE])
   
 } else {
    de.annot <- de.df;
 }
 
-de.annot <- de.annot[order(de.annot$P.Value),];
+de.annot <- de.annot[order(de.annot$padj),];
 
 # save DE file
 save.de2tsv(de.annot,ofile.prefix=opt$out)

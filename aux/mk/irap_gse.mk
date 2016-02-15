@@ -102,12 +102,17 @@ gse_go_annot_col=GOterm
 gse_go_map_file_option=--annotation
 endif
 
-# findstring - empty if not found
-foldchange_col=$(if $(findstring cuffdiff,$(de_method)),10,6)
+#######################################################################
+#  the columns with the foldchange and pvalues vary from DE method used
+#  findstring - empty if not found
+# last method=voom
+foldchange_col=$(if $(findstring cuffdiff,$(de_method)),10,$(if $(findstring deseq2,$(de_method)),6,$(if $(findstring deseq,$(de_method)),6,$(if $(findstring edger,$(de_method)),4,8))))
+
+pvalue_col=$(if $(findstring cuffdiff,$(de_method)),13,$(if $(findstring deseq2,$(de_method)),10,$(if $(findstring deseq,$(de_method)),8,$(if $(findstring edger,$(de_method)),7,6))))
 
 
 define run_piano_goterm=
-irap_GSE_piano --tsv $1 --out $(subst .tsv,,$2) --foldchange-col $(foldchange_col) --annotation_col $(gse_go_annot_col) $(gse_go_map_file_option) $(gse_go_mapping) --pvalue $(gse_pvalue) --minsize $(gse_minsize) --method $(gse_method) --minedge $(gse_minedge) --top $(gse_top)
+irap_GSE_piano --tsv $1 --out $(subst .tsv,,$2) --pvalue-col $(pvalue_col) --foldchange-col $(foldchange_col) --annotation_col $(gse_go_annot_col) $(gse_go_map_file_option) $(gse_go_mapping) --pvalue $(gse_pvalue) --minsize $(gse_minsize) --method $(gse_method) --minedge $(gse_minedge) --top $(gse_top)
 endef
 
 #########
