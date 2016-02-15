@@ -966,6 +966,7 @@ function deps_install {
     samtools1_install
     bedtools_install
     vcftools_install
+    python_packages_install
     #picard_install
     pinfo "Installing dependencies...done."
 }
@@ -1835,7 +1836,7 @@ function fusionmap_install {
 #}
 
 # python packages
-function python_install {
+function python_packages_install {
     pinfo "Installing python packages..."
     pinfo "Check python version... (2.6+ required)"
     min=$(python -c "import sys; print (sys.version_info[:])[1]")
