@@ -452,7 +452,7 @@ function install_binary {
 function gen_setup_irap {
     cat <<EOF > $1
 export IRAP_DIR=$IRAP_DIR
-export PATH=\$IRAP_DIR/bin/bowtie1/bin:\$IRAP_DIR/bin:\$IRAP_DIR/scripts:\$PATH
+export PATH=\$IRAP_DIR/bin/bowtie1/bin:\$IRAP_DIR/bin:\$IRAP_DIR/scripts:\$IRAP_DIR/python/bin/:\$PATH
 export LD_LIBRARY_PATH=\$IRAP_DIR/lib:\$LD_LIBRARY_PATH:/usr/local/lib
 export CFLAGS="-I\$IRAP_DIR/include -I\$IRAP_DIR/include/bam -I\$IRAP_DIR/include/boost  \$CFLAGS"
 export R_LIBS_USER=$IRAP_DIR/Rlibs
