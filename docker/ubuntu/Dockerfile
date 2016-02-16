@@ -35,7 +35,7 @@ RUN apt-get update && apt-get install -y \
 	texinfo \
 	libcurl4-openssl-dev \
 	libexpat1 \
-	libexpat1-dev \ 
+	libexpat1-dev \
 	libpangocairo-1.0-0 \ 
 	libdb-dev \
 	openjdk-7-jre \
@@ -61,9 +61,9 @@ RUN apt-get update && apt-get install -y \
 #libdb-devel 
 
 
-# 
+# R version available in this Ubuntu version is too old
 WORKDIR /opt
-RUN git clone http://github.com/nunofonseca/irap.git  irap_clone  && cd /opt/irap_clone && ./scripts/irap_install.sh -a /irap_install -s . && cd / && rm -rf /irap_install/tmp /opt/irap_clone  /root/.cpan*
+RUN git clone http://github.com/nunofonseca/irap.git  irap_clone  && cd /opt/irap_clone && ./scripts/irap_install.sh -l /irap_install -s . -R && cd / && rm -rf /irap_install/tmp /opt/irap_clone  /root/.cpan*
 
 WORKDIR /
 RUN echo source /irap_install/irap_setup.sh >> ~/.bash_profile && echo source /irap_install/irap_setup.sh >> ~/.bashrc

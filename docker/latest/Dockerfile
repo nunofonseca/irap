@@ -1,4 +1,4 @@
-FROM fedora:20
+ROM fedora:20
 MAINTAINER Nuno Fonseca email: nuno.fonseca at gmail.com
 
 # Update the image with the latest packages (recommended)
@@ -9,7 +9,7 @@ RUN sed -i "s/failovermethod=priority/failovermethod=roundrobin/" /etc/yum.repos
 WORKDIR /opt
 
 # Install and clean in a single layer
-RUN git clone http://github.com/nunofonseca/irap.git  irap_clone  && cd /opt/irap_clone &&./scripts/irap_install.sh -a /irap_install -s . && cd / && rm -rf /irap_install/tmp /opt/irap_clone  /root/.cpan*
+RUN git clone http://github.com/nunofonseca/irap.git  irap_clone  && cd /opt/irap_clone && ./scripts/irap_install.sh -a /irap_install -s . -R -B && cd / && rm -rf /irap_install/tmp /opt/irap_clone  /root/.cpan*
 
 WORKDIR /
 RUN echo source /irap_install/irap_setup.sh >> ~/.bash_profile && echo source /irap_install/irap_setup.sh >> ~/.bashrc
