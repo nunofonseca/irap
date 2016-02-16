@@ -10,14 +10,14 @@ grep "VERSION=" $IRAP_DIR/scripts/irap_install.sh |sort -u | grep -v "^#"| sed -
 if [ "`which R 2>/dev/null`-" = "-" ]; then
     echo "R not found" > /dev/stderr
 else
-    irap_R_package_version.R edgeR Rsamtools limma baySeq >> $DEST_FILE
+    irap_R_package_version.R edgeR Rsamtools limma baySeq limma DESeq2 piano DESeq DEXSeq >> $DEST_FILE
 fi
 
-if [ -x $IRAP_DIR/scripts/R3 ]; then
-    irap_R3_package_version.R DESeq DEXSeq limma DESeq2 piano  >> $DEST_FILE
-else 
-    echo "R3 not found" > /dev/stderr
-fi
+#if [ -x $IRAP_DIR/scripts/R3 ]; then
+#    irap_R3_package_version.R DESeq DEXSeq limma DESeq2 piano  >> $DEST_FILE
+#else 
+#    echo "R3 not found" > /dev/stderr
+#fi
 sed -i "s/VERSION=/version=/" $DEST_FILE
 exit 0
 

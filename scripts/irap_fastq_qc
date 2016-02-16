@@ -4,7 +4,7 @@
 exec make  -Rf "$0"  ${1+"$@"} 
 #exec make --warn-undefined-variables -Rf "$0"  ${1+"$@"} 
 # =========================================================
-# Copyright 2012-2015,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+# Copyright 2012-2016,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
 #
 # This file is part of iRAP.
 #
@@ -338,6 +338,9 @@ go: all
 %.fastq.stats: %.fastq
 	fastx_quality_stats -Q $(qual) -i $< -o $@.tmp && mv $@.tmp $@
 
+%.fastqc.tsv: %.fastqc.zip
+	irap_fastqc2tsv $< > $@.tmp && mv $@.tmp $@
+
 ###########
 # BAM2FASTQ
 ifeq ($(PE),OFF)
@@ -382,7 +385,7 @@ $(out_dir):
 
 #Pair end reads
 ifeq ($(pe_data),1)
-stage0: $(call report_file,1,$(report_dir)/raw_data/$(f1_n).fastqc.zip $(report_dir)/raw_data/$(f2_n).fastqc.zip)
+stage0: $(call report_file,1,$(report_dir)/raw_data/$(f1_n).fastqc.tsv $(report_dir)/raw_data/$(f2_n).fastqc.tsv)
 
 # [TODO] the two following  rules can probably be merged into one...
 $(report_dir)/raw_data/$(f1_n).fastqc.zip: $(data_dir)/$(f1_n).fastq
@@ -394,10 +397,11 @@ $(report_dir)/raw_data/$(f2_n).fastqc.zip: $(data_dir)/$(f2_n).fastq
 else
 
 #Single end reads 
-stage0: $(call report_file,1,$(report_dir)/raw_data/$(f1_n).fastqc.zip)
+stage0: $(call report_file,1,$(report_dir)/raw_data/$(f1_n).fastqc.tsv)
 
 $(report_dir)/raw_data/$(f1_n).fastqc.zip: $(data_dir)/$(f1_n).fastq
 	$(call run-fastqc,$<) && mv $(report_dir)/raw_data/$(f1_n)_fastqc.zip $@
+
 endif
 
 ##########################################################
@@ -515,7 +519,7 @@ all: setup0 stage0 $(out_dir)/$(out_prefix).f.fastq $(out_dir)/$(out_prefix).f.f
 	$(info Skipped filtering.)
 
 
-stage6: $(call report_file,1,$(report_dir)/raw_data/$(out_prefix).f.fastqc.zip)
+stage6: $(call report_file,1,$(report_dir)/raw_data/$(out_prefix).f.fastqc.tsv)
 endif
 #endif report ($(qual_filtering),report)
 else
@@ -585,7 +589,7 @@ all: setup0 stage0 $(out_dir)/$(out_prefix).f.fastq $(out_dir)/$(out_prefix).f.f
 	$(info Skipped filtering.)
 
 
-stage6: $(call report_file,1,$(report_dir)/raw_data/$(out_prefix).f.fastqc.zip)
+stage6: $(call report_file,1,$(report_dir)/raw_data/$(out_prefix).f.fastqc.tsv)
 endif
 
 ####endif ($(qual_filtering),on)
@@ -726,7 +730,7 @@ endif
 #Paired end reads
 ifeq ($(pe_data),1)
 
-stage6:	$(out_dir)/$(out_prefix)_1.f.fastq  $(call report_file,1,$(report_dir)/$(out_prefix)_1.f.qual.png $(report_dir)/$(out_prefix)_2.f.qual.png $(report_dir)/raw_data/$(out_prefix)_1.f.fastqc.zip $(report_dir)/raw_data/$(out_prefix)_2.f.fastqc.zip $(report_dir)/raw_data/$(out_prefix)_sing.f.fastqc.zip)
+stage6:	$(out_dir)/$(out_prefix)_1.f.fastq  $(call report_file,1,$(report_dir)/$(out_prefix)_1.f.qual.png $(report_dir)/$(out_prefix)_2.f.qual.png $(report_dir)/raw_data/$(out_prefix)_1.f.fastqc.tsv $(report_dir)/raw_data/$(out_prefix)_2.f.fastqc.tsv $(report_dir)/raw_data/$(out_prefix)_sing.f.fastqc.tsv)
 
 $(out_dir)/$(out_prefix)_1.f.fastq $(out_dir)/$(out_prefix)_2.f.fastq $(out_dir)/$(out_prefix)_sing.f.fastq: $(out_dir)/$(f1_n).f.fastq $(out_dir)/$(f2_n).f.fastq $(out_dir)/$(f1_n).sing.fastq 
 	rm -f $  $(out_dir)/$(out_prefix)_1.f.fastq $(out_dir)/$(out_prefix)_2.f.fastq $(out_dir)/$(out_prefix)_sing.f.fastq
@@ -738,7 +742,7 @@ $(out_dir)/$(out_prefix)_1.f.fastq $(out_dir)/$(out_prefix)_2.f.fastq $(out_dir)
 #Single end reads
 else
 
-stage6: $(out_dir)/$(out_prefix).f.fastq $(call report_file,1,$(report_dir)/$(out_prefix).f.qual.png $(report_dir)/raw_data/$(out_prefix).f.fastqc.zip) 
+stage6: $(out_dir)/$(out_prefix).f.fastq $(call report_file,1,$(report_dir)/$(out_prefix).f.qual.png $(report_dir)/raw_data/$(out_prefix).f.fastqc.tsv) 
 
 $(out_dir)/$(out_prefix).f.fastq: $(out_dir)/$(f1_n).f.fastq
 	rm -f $(out_dir)/$(out_prefix).f.fastq 

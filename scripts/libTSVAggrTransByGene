@@ -1,4 +1,4 @@
-#!/usr/bin/env Rscript3
+#!/usr/bin/env Rscript
 # =========================================================
 #
 # This file is part of iRAP.
@@ -60,7 +60,7 @@ g2t <- g2t.map[!duplicated(g2t.map$transcript_id),c("gene_id","transcript_id")]
 #head(g2t)
 # merge the two matrices
 new.mat<-merge(tsv.mat,g2t,by.x=colnames(tsv.mat)[1],by.y="transcript_id",all.x=TRUE,sort=F)
-new.mat <- new.mat[new.mat$transcript_id %in% as.character(g2t$transcript_id),]  
+new.mat <- new.mat[new.mat$transcript_id %in% as.character(g2t$transcript_id),,drop=FALSE]  
 gene.not.found <- unique(new.mat[is.na(new.mat$gene_id),"transcript_id"])
 if ( length(gene.not.found) > 0) {
   perror("Gene not found for ",length(gene.not.found)," transcripts")

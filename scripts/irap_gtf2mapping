@@ -1,7 +1,7 @@
-#!/usr/bin/env Rscript3
+#!/usr/bin/env Rscript
 #; -*- mode: R;-*-
 # =========================================================
-# Copyright 2012-2015,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+# Copyright 2012-2016,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
 #
 # This file is part of iRAP.
 #
@@ -83,7 +83,8 @@ options(mc.cores=num.cores)
 cols.needed <- c("transcript_id","gene_id","seqid","start","end","strand","source","exon_number","biotype")
 
 gtf.table <- NULL
-gtf.table <- load.gtf(opt$gtf,selected.attr=cols.needed)
+gtf.table <- load.gtf(opt$gtf)
+#selected.attr=cols.needed)
 
 pinfo("GTF file loaded: ",opt$gtf," ",nrow(gtf.table)," entries")
 #

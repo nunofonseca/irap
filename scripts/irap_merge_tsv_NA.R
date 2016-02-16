@@ -1,4 +1,4 @@
-#!/usr/bin/env Rscript3
+#!/usr/bin/env Rscript
 
 IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
 if ( IRAP.DIR == "" ) {

@@ -1,6 +1,6 @@
 #; -*- mode: Makefile;-*-
 # =========================================================
-# Copyright 2012-2015,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+# Copyright 2012-2016,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
 #
 # This file is part of iRAP.
 #
@@ -436,7 +436,8 @@ endef
 
 ########################################################################
 # BWA 1 
-bwa1_index_options= -a bwtsw
+bwa1_index_options=
+#-a bwtsw
 bwa1_aln_params:= -t $(max_threads) $(bwa1_aln_options)
 bwa1_map_params:= $(bwa1_map_options)
 
@@ -451,7 +452,7 @@ endef
 
 define bwa1_map_se=
 	irap_map.sh bwa bwa aln $(bwa1_aln_params)  $(call qual_bwa,$(1)) $(subst .amb,,$(index_files)) $(2) | \
-	irap_map.sh bwa bwa samse $(bwa1_map_params)  $(subst .amb,,$(index_files)) /dev/fd/1 $(2) > $(3).sam
+	irap_map.sh bwa bwa samse $(bwa1_map_params)  $(subst .amb,,$(index_files)) - $(2) > $(3).sam
 endef
 
 define bwa1_map_pe=
@@ -795,9 +796,14 @@ endef
 define run_osa_index=
 	irap_map.sh osa osa.exe --buildref $(call osa_index_dirname,$(1)) $(1) $(call osa_ref_lib_name,$(1)) &&\
 	irap_map.sh osa osa.exe --buildgm $(call osa_index_dirname,$(1)) $(gtf_file_abspath) $(call osa_ref_lib_name,$(1)) $(call osa_gene_model_name) &&\
-	ls $(shell dirname $(1))/ReferenceLibrary/$(call osa_ref_lib_name,$(1)).gindex1 &&\
+	ls $(call osa_index_dirname,$(1))/ReferenceLibrary/$(call osa_ref_lib_name,$(1)).gindex1 &&\
 	touch $(call osa_index_filename,$(1))
 endef
+
+#	irap_map.sh osa osa.exe --buildref $(call osa_index_dirname,$(1)) $(1) $(call osa_ref_lib_name,$(1)) &&\
+#	irap_map.sh osa osa.exe --buildgm $(call osa_index_dirname,$(1)) $(gtf_file_abspath) $(call osa_ref_lib_name,$(1)) $(call osa_gene_model_name) &&\
+#	ls $(call osa_index_dirname,$(1))/ReferenceLibrary/$(call osa_ref_lib_name,$(1)).gindex1 &&\
+	touch $(call osa_index_filename,$(1))
 
 
 # TODO: if splicing use 
@@ -824,20 +830,21 @@ endef
 # BAM includes unmapped
 
 # osa requires the options to be passed in a conf. file...not user friendly :(
-# gene model must be absolute path?! (01/2012)
+# gene model must be absolute path?! (01/2012)...fixed 01/2016
 # osa ignores the OutputName for the bam file :(
 # - output name: remove the _1/2 and .fastq from the input filename
 define run_osa_map=
 	$(call osa_conf_file,$(1),$(2),`dirname $(3)`/$(1)_tmp) > $(3).conf && \
-	 irap_map.sh osa osa.exe -alignrna `dirname $(word 1,$(files_indexed))` $(call osa_ref_lib_name,$(word 1,$(files_indexed))) \
-	 $(call osa_index_dirname,$(word 1,$(files_indexed)))/ReferenceLibrary/$(call osa_ref_lib_name,$(word 1,$(files_indexed)))_GeneModels/$(call osa_gene_model_name) $(3).conf && \
+	irap_map.sh osa osa.exe -alignrna $(word 1,$(files_indexed)).osa/ $(call osa_ref_lib_name,$(word 1,$(files_indexed))) \
+	$(call osa_gene_model_name) $(3).conf && \
 	samtools sort -m $(SAMTOOLS_SORT_MEM) -T $(3).tmp -o $(3).tmp.bam `dirname $(3)`/$(if $(findstring $(1),$(pe)),$(1)_f.bam,$(1).f.bam)  &&\
 	$(call bam_rehead,$(3).tmp.bam,$(1)) && \
 	mv $(3).tmp.bam $(3) && rm -f `dirname $(3)`/$(1)_f.bam  && rm -f $(3).conf
 endef
 
-#	 irap_map.sh osa osa.exe -alignrna `dirname $(word 1,$(files_indexed))` $(call osa_ref_lib_name,$(word 1,$(files_indexed)))  `dirname $(word 1,$(files_indexed))`/$(call osa_ref_lib_name,$(word 1,$(files_indexed)))_GeneModels/$(call osa_gene_model_name) $(3).conf && \ $(call osa_index_dirname,$(1)) $(gtf_file_abspath) $(call osa_ref_lib_name,$(1)) $(call osa_gene_model_name) &&\
-
+#	 $(call osa_index_dirname,$(word 1,$(files_indexed)))/ReferenceLibrary/$(call osa_ref_lib_name,$(word 1,$(files_indexed)))_GeneModels/$(call osa_gene_model_name) $(3).conf && \
+#  -- fixed... 
+# irap_map.sh osa osa.exe -alignrna $(call osa_index_dirname,$(word 1,$(files_indexed))) $(call osa_ref_lib_name,$(word 1,$(files_indexed))) 
 ######################################################
 # Mapsplice
 

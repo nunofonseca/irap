@@ -1,4 +1,4 @@
-#!/usr/bin/env Rscript3
+#!/usr/bin/env Rscript
 #; -*- mode: R;-*-
 # =========================================================
 #
@@ -64,9 +64,7 @@ suppressPackageStartupMessages(library(DESeq2))
 #Note:counts of technical replicates  have to be summed up into a single column
 
 #cds <- newCountDataSet(data.f,opt$conds)
-
-
-colData
+#colData
 pinfo("Generating DESeq Dataset")
 ddsMat <- DESeqDataSetFromMatrix(countData = as.matrix(data.f[,rownames(colData)]),
                                  colData = colData,
@@ -100,7 +98,7 @@ if ( opt$indfilter ) {
 res<-results(dds,contrast=append("Contrast",opt$labels.v),independentFiltering=opt$indfilter)
 
 
-
+pdebug.save.state("irap_DE_deseq2","2")
 #
 # column names are different from DESeq1
 # add baseMeanA and baseMeanB and id
@@ -117,14 +115,14 @@ bCols <- which(colData$Contrast==opt$labels.v[2])
 #pinfo("A=",aCols)
 #pinfo("B=",bCols)
 if ( length(aCols) == 1 ) {
-  baseMeanA <- ncts[,aCols]
+  baseMeanA <- ncts[,aCols,drop=FALSE]
 } else {
-  baseMeanA <- rowMeans(ncts[,aCols])
+  baseMeanA <- rowMeans(ncts[,aCols,drop=FALSE])
 }
 if ( length(bCols) == 1 ) {
-   baseMeanB <- ncts[,bCols]
+   baseMeanB <- ncts[,bCols,drop=FALSE]
 } else {
-   baseMeanB <- rowMeans(ncts[,bCols])
+   baseMeanB <- rowMeans(ncts[,bCols,drop=FALSE])
 }
 res <- cbind(res,baseMeanA)
 res <- cbind(res,baseMeanB)
@@ -139,7 +137,7 @@ pinfo("Note: the log2FoldChange column contains 'shrunken' log2 foldchange. See 
 # This has little effect on genes with high number of counts.
 
 # sort
-res<-as.data.frame(res[order(res$padj),])
+res<-as.data.frame(res[order(res$padj),,drop=FALSE])
 
 ## annotate the gene list
 if ( !is.null(opt$annotation) && !is.na(opt$annotation)) {

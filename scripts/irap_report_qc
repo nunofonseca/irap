@@ -1,4 +1,4 @@
-#!/usr/bin/env Rscript3
+#!/usr/bin/env Rscript
 #; -*- mode: R;-*-
 # =========================================================
 #
@@ -379,6 +379,43 @@ df <- raw.summary.dataframe(conf)
 print(head(df))
 print(head(t(df)))
 ############################
+# add fastqc results if the file is available
+fastqc.sum.tsv <- paste(report.dir,"fastq_qc_report.tsv",sep="")
+if ( ! file.exists(fastqc.sum.tsv ) ) {
+  perror("File ",fastqc.sum.tsv," not found")
+  q(status=1)
+}
+fastqc.sum <- read.tsv(fastqc.sum.tsv)
+# fix the column names
+new.cols <- gsub(".f$","",gsub("_2.f$","/2",gsub("_1.f$","/1",colnames(fastqc.sum))))
+colnames(fastqc.sum) <- new.cols
+rownames(fastqc.sum) <- fastqc.sum[,1]
+fastqc.sum <- fastqc.sum[,-1]
+fastqc.sum <- t(fastqc.sum)
+# match the two matrices
+i <- intersect(rownames(fastqc.sum),rownames(df))
+if ( length(i) == 0 ) {
+  # qc=off
+  # try to use the file column without the .f suffix
+  # 
+  nl <- gsub(".f$","",as.character(df$File))
+  i <- intersect(rownames(fastqc.sum),nl)
+  if ( length(i) == 0 ) {
+    perror("No libs found in ",fastqc.sum.tsv)
+    q(status=1)
+  }
+  fastqc.sum <- fastqc.sum[i,,drop=FALSE]
+  nl <- rownames(df)
+  names(nl) <- gsub(".f$","",df$File)
+  # rename
+  rownames(fastqc.sum) <- nl[rownames(fastqc.sum)[rownames(fastqc.sum) %in% i]]
+  #print(head(fastqc.sum))
+  #print(rownames(fastqc.sum))
+  i <- intersect(rownames(fastqc.sum),rownames(df))
+}
+df <- cbind(df[i,,drop=FALSE],fastqc.sum[i,,drop=FALSE])
+
+############################
 # passed=number of reads
 if (!conf.is.qc.enabled(conf)) {
     df$Passed <- df$reads
@@ -386,6 +423,7 @@ if (!conf.is.qc.enabled(conf)) {
 pinfo("Expanding table..")
 etdf <- qc.expand.table(t(df),conf)
 pdebug.save.state("irap_report_qc","p2")
+
 ############################
 # save stats file
 df2save <- t(etdf)

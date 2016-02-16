@@ -1,4 +1,4 @@
-#!/usr/bin/env Rscript3
+#!/usr/bin/env Rscript
 ## /*******************************************************************************************
 ##  *
 ##  * Copyright (c) 2012 Nuno Fonseca. All rights reserved.
@@ -44,7 +44,7 @@ opt$htmldir <- paste(gsub("/$","",opt$htmldir),"/",sep="")
 pdebug.enabled <- opt$debug
 
 suppressPackageStartupMessages(library(R2HTML))
-suppressPackageStartupMessages(library(emBAM))
+#suppressPackageStartupMessages(library(emBAM))
 #source("/home/nf/Research/myR/src/emBAM/R/emBAM.R")
 
 bam.file <- opt$bam_file

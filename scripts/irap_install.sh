@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =========================================================
-# Copyright 2012-2015,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+# Copyright 2012-2016,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
 #
 # This file is part of iRAP.
 #
@@ -35,10 +35,11 @@ function pinfo {
 }
 
 function usage {
-    echo "Usage: irap_install.sh  -s irap_toplevel_directory [ -c dir -a dir -a -u -m -r -p -q -b]  ";
+    echo "Usage: irap_install.sh  -s irap_toplevel_directory [ -c dir -a dir -a -u -m -r -p -q -b -K -R -B]  ";
     echo " -s dir : toplevel irap clone directory";
     echo " -c dir : install/update IRAP core files only to directory 'dir'. If dir is not given the value of IRAP_DIR will be used (if available).";
     echo " -a dir : install/update all files (core and 3rd party software) to directory 'dir' (default)";
+    echo " -l dir : lightweight/minimal installation of iRAP (a minimum set of tools will be installed).";    
     echo " -u : update IRAP_core files (alias to -c $IRAP_DIR).";
     echo " -m : update mappers.";
     echo " -r : update R packages.";
@@ -47,6 +48,10 @@ function usage {
     echo " -b : update jbrowser.";
     echo " -j : install jbrowser (with -a).";
     echo " -v : collect software versions.";
+    echo " -G : install gcc 4.8 before installing Mono (GCC will be installed in \$IRAP_DIR/gcc).";
+    echo " -B : install boost libraries.";
+    echo " -K : use ksh instead of bash (due to an issue trapping signals) while installing some components (R).";
+    echo " -R : install R.";
     echo " Advanced options:";
     echo " -f : check/fix file permissions"
     echo " -d : download all software and libraries (except R and Perl packages) but do not install.";
@@ -114,19 +119,24 @@ function download2cache {
 }
 
 function check_dependencies {
-    DEVEL_LIBRARIES_REQUIRED="zlib-devel python-devel bzip2-devel python readline-devel libgfortran gcc-gfortran gcc-c++ libX11-devel libXt-devel numpy gd-devel libxml2-devel libxml2 libpng libcurl-devel expat-devel  libpangocairo bison gettext-devel  sqlite-devel sqlite [db-devel|db4-devel|libdb-devel]"
+    DEVEL_LIBRARIES_REQUIRED="zlib-devel python-devel bzip2-devel python readline-devel libgfortran gcc-gfortran gcc-c++ libX11-devel libXt-devel numpy gd-devel libxml2-devel libxml2 libpng libcurl-devel expat-devel  libpangocairo bison gettext-devel  sqlite-devel sqlite [db-devel|db4-devel|libdb-devel] R"
     MISSING=0
     pinfo "If installation fails then please check if the following libraries are installed:"
     pinfo "$DEVEL_LIBRARIES_REQUIRED"
     # Binaries that should be available
     # make is required to...compile make
-    BINARIES="java python gcc g++ gfortran curl-config git which make bzip2 unzip bash"
+    BINARIES="java python gcc g++ gfortran curl-config git which make bzip2 unzip bash R"
     pinfo "Checking dependencies..."
     for bin in $BINARIES; do
 	PATH2BIN=`which $bin 2> /dev/null`
 	if [ "$PATH2BIN-" == "-" ]; then
 	    pinfo " $bin not found!"
- 	    MISSING=1
+	    #
+	    if [ "$bin" == "R" ]; then
+		pinfo "WARNING:Please install the R package (and update all packages) or run irap_install.sh with -R to install R (version 3.2 or above)"
+	    else
+		MISSING=1
+	    fi
 	else
 	    pinfo " $bin found: $PATH2BIN"
 	fi
@@ -143,12 +153,12 @@ function check_dependencies {
 BFAST_VERSION=0.7.0a
 BFAST_FILE=bfast-$BFAST_VERSION.tar.gz
 BFAST_URL=http://sourceforge.net/projects/bfast/files/bfast/0.7.0/$BFAST_FILE
-#
+# current 1.1.2 - minor changes, no need to upgrade
 bowtie1_VERSION=1.1.1
 bowtie1_FILE=bowtie-${bowtie1_VERSION}-linux-x86_64.zip
 bowtie1_URL=http://sourceforge.net/projects/bowtie-bio/files/bowtie/$bowtie1_VERSION/$bowtie1_FILE
-#
-bowtie2_VERSION=2.2.2
+# current - 2.2.2->2.2.6
+bowtie2_VERSION=2.2.6
 bowtie2_FILE=bowtie2-${bowtie2_VERSION}-linux-x86_64.zip
 bowtie2_URL=http://sourceforge.net/projects/bowtie-bio/files/bowtie2/$bowtie2_VERSION/$bowtie2_FILE
 
@@ -165,7 +175,7 @@ GEM_URL=http://sourceforge.net/projects/gemlibrary/files/gem-library/Binary%20pr
 #
 tophat1_VERSION=1.4.1
 tophat1_FILE=tophat-${tophat1_VERSION}.Linux_x86_64.tar.gz
-tophat1_URL=http://tophat.cbcb.umd.edu/downloads/$tophat1_FILE
+tophat1_URL=http://ccb.jhu.edu/software/tophat/downloads/$tophat1_FILE
 
 #
 #tophat2_VERSION=2.0.13
@@ -173,13 +183,14 @@ tophat1_URL=http://tophat.cbcb.umd.edu/downloads/$tophat1_FILE
 #tophat2_URL=http://tophat.cbcb.umd.edu/downloads/$tophat2_FILE
 #tophat2_URL=http://ccb.jhu.edu/software/tophat/downloads/$tophat2_FILE
 
-# version used in the pcawg SOP
-tophat2_VERSION=2.0.12
+# version used in the pcawg SOP - 2.0.12
+# current version: -> 2.0.12->2.1.0
+tophat2_VERSION=2.1.0
 tophat2_FILE=tophat-${tophat2_VERSION}.Linux_x86_64.tar.gz
 #tophat2_URL=http://tophat.cbcb.umd.edu/downloads/$tophat2_FILE
 tophat2_URL=http://ccb.jhu.edu/software/tophat/downloads/$tophat2_FILE
 
-#
+# 0.7.6 - now in sf
 SMALT_VERSION=0.7.4
 SMALT_FILE=smalt-$SMALT_VERSION.tgz
 SMALT_URL=ftp://ftp.sanger.ac.uk/pub4/resources/software/smalt/$SMALT_FILE
@@ -191,45 +202,46 @@ SOAPsplice_URL=http://soap.genomics.org.cn/down/$SOAPsplice_FILE
 SOAP2_VERSION=2.21
 SOAP2_FILE=soap${SOAP2_VERSION}release.tar.gz
 SOAP2_URL=http://soap.genomics.org.cn/down/$SOAP2_FILE
-# 
-STAR_VERSION=2.4.0i
-STAR_FILE=STAR_${STAR_VERSION}.tar.gz
+# 2.4.0i->2.5.0c
+STAR_VERSION=2.5.0c
+STAR_FILE=${STAR_VERSION}.tar.gz
 STAR_URL=https://github.com/alexdobin/STAR/archive/$STAR_FILE
-#STAR_FILE=STAR_${STAR_VERSION}e.Linux_x86_64.tgz
-#STAR_URL=ftp://ftp2.cshl.edu/gingeraslab/tracks/STARrelease/$STAR_VERSION/$STAR_FILE
 
-#
-GSNAP_VERSION=2013-11-27
-GSNAP_FILE=gmap-gsnap-${GSNAP_VERSION}.tar.gz
+# 
+#GSNAP_VERSION=2013-11-27->gmap-gsnap-2015-12-31.v3.tar.gz
+GSNAP_VERSION=2015-12-31
+GSNAP_FILE=gmap-gsnap-${GSNAP_VERSION}.v3.tar.gz
 GSNAP_URL=http://research-pub.gene.com/gmap/src/$GSNAP_FILE
-#
-mapsplice_VERSION=2.1.8
+
+# 2.2.0
+mapsplice_VERSION=2.2.0
 mapsplice_FILE=MapSplice-v$mapsplice_VERSION.zip
 mapsplice_URL=http://protocols.netlab.uky.edu/~zeng/$mapsplice_FILE
-#
-bwa_VERSION=0.7.4
+# 0.7.4->0.7.12
+bwa_VERSION=0.7.12
 bwa_FILE=bwa-${bwa_VERSION}.tar.bz2
 bwa_URL=http://sourceforge.net/projects/bio-bwa/files/$bwa_FILE
-# 
+# 4.0.2.1->4.1.1.1
 osa_VERSION=4.0.2.1
 osa_FILE=OSAv$osa_VERSION.zip
-osa_URL=http://www.omicsoft.com/osa/software/$osa_FILE
-#
-EMBAM_VERSION=0.1.14
-EMBAM_FILE=emBAM_${EMBAM_VERSION}.tar.gz
-EMBAM_URL=http://embam.googlecode.com/files/$EMBAM_FILE
+osa_URL=http://omicsoft.com/osa/Software/$osa_FILE
+
+# deprecated
+#EMBAM_VERSION=0.1.14
+#EMBAM_FILE=emBAM_${EMBAM_VERSION}.tar.gz
+#EMBAM_URL=http://embam.googlecode.com/files/$EMBAM_FILE
 
 RUBY_VERSION=1.9.3-p484
 RUBY_FILE=ruby-${RUBY_VERSION}.tar.gz
 RUBY_URL=http://ftp.ruby-lang.org/pub/ruby/1.9/$RUBY_FILE
 
-# 5.20.1
-#PERL_VERSION=5.18.4
-PERL_VERSION=5.20.2
+# 
+#PERL_VERSION=5.20.1 -> 5.22.1
+PERL_VERSION=5.20.3
 PERL_FILE=perl-$PERL_VERSION.tar.gz
 PERL_URL=http://www.cpan.org/src/5.0/$PERL_FILE
 
-# previous: 1.52
+# previous: 1.55
 BOOST_VERSION=1.55.0
 BOOST_FILE=boost_`echo $BOOST_VERSION|sed "s/\./_/g"`.tar.bz2
 BOOST_URL=http://sourceforge.net/projects/boost/files/boost/$BOOST_VERSION/$BOOST_FILE
@@ -238,13 +250,13 @@ gnuplot_VERSION=4.6.4
 gnuplot_FILE=gnuplot-$gnuplot_VERSION.tar.gz
 gnuplot_URL=http://sourceforge.net/projects/gnuplot/files/gnuplot/$gnuplot_VERSION/$gnuplot_FILE
 
-# default
-R_VERSION=2.15.2
-R_FILE=R-${R_VERSION}.tar.gz 
-R_URL=http://cran.r-project.org/src/base/R-2/$R_FILE
+# deprecated
+R2_VERSION=2.15.2
+R2_FILE=R-${R2_VERSION}.tar.gz 
+R2_URL=http://cran.r-project.org/src/base/R-2/$R2_FILE
 
 # 
-R3_VERSION=3.1.3
+R3_VERSION=3.2.3
 R3_FILE=R-${R3_VERSION}.tar.gz 
 R3_URL=http://cran.r-project.org/src/base/R-3/$R3_FILE
 
@@ -253,8 +265,9 @@ SAMTOOLS_VERSION=0.1.18
 SAMTOOLS_FILE=samtools-$SAMTOOLS_VERSION.tar.bz2
 SAMTOOLS_URL=http://sourceforge.net/projects/samtools/files/samtools/$SAMTOOLS_VERSION/$SAMTOOLS_FILE
 
-# new samtools
-SAMTOOLS1_VERSION=1.1
+# new samtools: 1.3
+# prev: 1.1
+SAMTOOLS1_VERSION=1.3
 SAMTOOLS1_FILE=samtools-$SAMTOOLS1_VERSION.tar.bz2
 SAMTOOLS1_URL=http://sourceforge.net/projects/samtools/files/samtools/$SAMTOOLS1_VERSION/$SAMTOOLS1_FILE
 
@@ -263,7 +276,8 @@ VCFTOOLS_FILE=vcftools-$VCFTOOLS_VERSION.tar.gz
 VCFTOOLS_URL=https://github.com/vcftools/vcftools/releases/download/v$VCFTOOLS_VERSION/$VCFTOOLS_FILE
 
 
-BCFTOOLS_VERSION=1.2
+# 1.3
+BCFTOOLS_VERSION=1.3
 BCFTOOLS_FILE=bcftools-$BCFTOOLS_VERSION.tar.bz2
 BCFTOOLS_URL=https://github.com/samtools/bcftools/releases/download/$BCFTOOLS_VERSION/$BCFTOOLS_FILE
 
@@ -272,11 +286,13 @@ ZLIB_VERSION=1.2.8
 ZLIB_FILE=zlib-$ZLIB_VERSION.tar.gz
 ZLIB_URL=http://zlib.net/$ZLIB_FILE
 
-BEDTOOLS_VERSION=2.17.0
-BEDTOOLS_FILE=BEDTools.v$BEDTOOLS_VERSION.tar.gz
-BEDTOOLS_URL=http://bedtools.googlecode.com/files/$BEDTOOLS_FILE
-   
-stringtie_VERSION=1.0.3
+#
+BEDTOOLS_VERSION=2.25.0
+BEDTOOLS_FILE=bedtools-$BEDTOOLS_VERSION.tar.gz
+BEDTOOLS_URL=https://github.com/arq5x/bedtools2/releases/download/v$BEDTOOLS_VERSION/$BEDTOOLS_FILE
+
+# 1.0.3->1.2.0
+stringtie_VERSION=1.2.0
 stringtie_FILE=stringtie-${stringtie_VERSION}.Linux_x86_64.tar.gz
 stringtie_URL=http://ccb.jhu.edu/software/stringtie/dl/$stringtie_FILE
 
@@ -298,6 +314,7 @@ cufflinks2_URL=http://cufflinks.cbcb.umd.edu/downloads/$cufflinks2_FILE
 #SAVANT_FILE=Savant-${SAVANT_VERSION}-Linux-x86_64-Install 
 #SAVANT_URL=http://genomesavant.com/savant/dist/v`echo $SAVANT_VERSION|sed "s/./_/g"`/$SAVANT_FILE
 
+# new: 0.7.5 - now in github
 BitSeq_VERSION=0.7.0
 BitSeq_FILE=BitSeq-$BitSeq_VERSION.tar.gz
 BitSeq_URL=http://bitseq.googlecode.com/files/$BitSeq_FILE
@@ -311,6 +328,7 @@ htseq_VERSION=0.6.1p1
 htseq_FILE=HTSeq-${htseq_VERSION}.tar.gz
 htseq_URL=http://pypi.python.org/packages/source/H/HTSeq/$htseq_FILE
 
+# new: 1.6.1
 # latest (1.5.2) fails (same error since 1.2.4)
 # Parameter COVERAGE_STATS not found. Check the spelling!
 FLUX_CAPACITOR_VERSION=1.2.3
@@ -323,23 +341,24 @@ NURD_VERSION=1.1.1
 NURD_FILE=NURD_v${NURD_VERSION}.tar.gz
 NURD_URL=http://bioinfo.au.tsinghua.edu.cn/software/NURD/share/$NURD_FILE
 
-
-IsoEM_VERSION=1.1.1
+#
+IsoEM_VERSION=1.1.4
 IsoEM_FILE=IsoEM-${IsoEM_VERSION}.zip
 IsoEM_URL=http://dna.engr.uconn.edu/software/IsoEM/$IsoEM_FILE
 
-#
-Sailfish_VERSION=0.6.2
-Sailfish_FILE=Sailfish-${Sailfish_VERSION}-Linux_x86-64.tar.gz
-Sailfish_URL=http://github.com/kingsfordgroup/sailfish/releases/download/v$Sailfish_VERSION/$Sailfish_FILE
+# 0.6.2-> 0.9.0
+Sailfish_VERSION=0.9.0
+Sailfish_FILE=v${Sailfish_VERSION}.tar.gz
+Sailfish_URL=http://github.com/kingsfordgroup/sailfish/archive/$Sailfish_FILE
 
-# kallisto
-kallisto_VERSION=0.42.1
+
+# kallisto - 0.42.1 -> 0.42.4 (multithreads)
+kallisto_VERSION=0.42.4
 kallisto_FILE=kallisto_linux-v$kallisto_VERSION.tar.gz
 kallisto_URL=https://github.com/pachterlab/kallisto/releases/download/v$kallisto_VERSION/$kallisto_FILE
 
-#
-rsem_VERSION=1.2.21
+# 1.2.21->1.2.22
+rsem_VERSION=1.2.22
 rsem_FILE=rsem-${rsem_VERSION}.tar.gz
 rsem_URL=http://deweylab.biostat.wisc.edu/rsem/src/$rsem_FILE
 
@@ -360,31 +379,37 @@ IGV_TOOLS_VERSION=2.1.24
 IGV_TOOLS_FILE=igvtools_nogenomes_$IGV_TOOLS_VERSION.zip
 IGV_TOOLS_URL=http://www.broadinstitute.org/igv/projects/downloads/$IGV_TOOLS_FILE
 
-# new: FASTX_VERSION=0.0.13.2
+# new: FASTX_VERSION=0.0.13->0.0.13.2
 FASTX_VERSION=0.0.13
 FASTX_FILE=fastx_toolkit_${FASTX_VERSION}_binaries_Linux_2.6_amd64.tar.bz2
 FASTX_URL=http://hannonlab.cshl.edu/fastx_toolkit/$FASTX_FILE
 
-FASTQC_VERSION=0.10.1
+# 0.10.1->0.11.4
+FASTQC_VERSION=0.11.4
 FASTQC_FILE=fastqc_v${FASTQC_VERSION}.zip
 FASTQC_URL=http://www.bioinformatics.babraham.ac.uk/projects/fastqc/$FASTQC_FILE
 
+# 1.12.0
 JBROWSE_VERSION=1.7.5
 JBROWSE_FILE=download.php?id=35
 JBROWSE_URL=http://jbrowse.org/wordpress/wp-content/plugins/download-monitor/$JBROWSE_FILE
 JBROWSE_EXTRA_UTILS="hgGcPercent bedGraphToBigWig wigCorrelate bigWigInfo bigWigSummary faToNib faToTwoBit hgWiggle"
 JBROWSE_EXTRA_UTILSURL=http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/
 
-# 
-NEW_JBROWSE_VERSION=1.10.12
-NEW_JBROWSE_FILE=download.php?id=85
+# 1.12.0 -- 85
+NEW_JBROWSE_VERSION=1.12.0
+NEW_JBROWSE_FILE=download.php?id=101
 NEW_JBROWSE_URL=http://jbrowse.org/wordpress/wp-content/plugins/download-monitor/$NEW_JBROWSE_FILE
 NEW_JBROWSE_EXTRA_UTILS="hgGcPercent bedGraphToBigWig wigCorrelate bigWigInfo bigWigSummary faToNib faToTwoBit hgWiggle"
 NEW_JBROWSE_EXTRA_UTILSURL=http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/
 
-# osa does not work with 2.10.9 up to 2.11
+# 2.10.8 osa does not work with 2.10.9 up to 2.11
+# 2.10.8 ---> 4.2.2
 MONO_VERSION=2.10.8
 MONO_FILE=mono-${MONO_VERSION}.tar.bz2    
+#MONO_VERSION=4.2.2
+#MONO_FILE=mono-${MONO_VERSION}.tar.bz2    
+#MONO_FILE=mono-${MONO_VERSION}.30.tar.bz2    
 MONO_URL=http://download.mono-project.com/sources/mono/$MONO_FILE
 
 
@@ -427,11 +452,11 @@ function install_binary {
 function gen_setup_irap {
     cat <<EOF > $1
 export IRAP_DIR=$IRAP_DIR
-export PATH=\$IRAP_DIR/bin/bowtie1/bin:\$IRAP_DIR/bin:\$IRAP_DIR/scripts:\$PATH
+export PATH=\$IRAP_DIR/bin/bowtie1/bin:\$IRAP_DIR/bin:\$IRAP_DIR/scripts:\$IRAP_DIR/python/bin/:\$PATH
 export LD_LIBRARY_PATH=\$IRAP_DIR/lib:\$LD_LIBRARY_PATH:/usr/local/lib
 export CFLAGS="-I\$IRAP_DIR/include -I\$IRAP_DIR/include/bam -I\$IRAP_DIR/include/boost  \$CFLAGS"
 export R_LIBS_USER=$IRAP_DIR/Rlibs
-export R3_LIBS_USER=$IRAP_DIR/Rlibs3
+export R_LIBS=$IRAP_DIR/Rlibs
 export CXXFLAGS="-I\$IRAP_DIR/include -I\$IRAP_DIR/include/bam -I\$IRAP_DIR/include/boost -L\$IRAP_DIR/lib \$CXXFLAGS"
 export PERL5LIB=\$IRAP_DIR/perl/lib/perl5:\$IRAP_DIR/lib/perl5:\$IRAP_DIR/lib/perl5/x86_64-linux:\$IRAP_DIR/lib/perl5/$PERL_VERSION
 export PYTHONUSERBASE=\$IRAP_DIR/python
@@ -446,8 +471,11 @@ export THREADS=8
 #export JOB_MAX_MEM 32000
 #export IRAP_LSF_PARAMS=
 EOF
+    if [ "$INSTALL_R3-" == "y-" ]; then
+	echo "export R_LIBS=	" >> $1
+	echo "PATH=\$IRAP_DIR/R3/bin:\$PATH" >> $1
+    fi
     mkdir -p $IRAP_DIR/Rlibs
-    mkdir -p $IRAP_DIR/Rlibs3
 }
 
 
@@ -568,6 +596,7 @@ function gem_install {
     download_software $MAPPER
     tar xjvf $GEM_FILE
     # deps: requires ruby
+    ruby_install
     pushd `echo $GEM_FILE|sed "s/.tbz2//"`
     install_binary $MAPPER bin \*
 #    sed -i "s/^#!/.*ruby/#!$ENV_FP ruby/" $BIN_DIR/$MAPPER/bin/gem*
@@ -593,7 +622,7 @@ function star_install {
     download_software $MAPPER    
     #gunzip -c $STAR_FILE > $EXECF
     tar xzvf $STAR_FILE
-    pushd STAR-STAR_$STAR_VERSION
+    pushd STAR-$STAR_VERSION
     mkdir -p $BIN_DIR/star/bin
     rm -rf $BIN_DIR/star/bin/star/* $BIN_DIR/star/bin/STAR/*
     cp bin/Linux_x86_64_static/STAR $BIN_DIR/star/bin/star
@@ -611,7 +640,7 @@ function gsnap_install {
     # latest stable version
     download_software $MAPPER
     tar xzvf $GSNAP_FILE
-    pushd `echo $GSNAP_FILE|sed "s/.tar.gz//"|sed "s/-gsnap//"`
+    pushd `echo $GSNAP_FILE|sed "s/.tar.gz//"|sed "s/-gsnap//;s/.v3.*//"`
     ./configure --prefix=$BIN_DIR/$MAPPER --with-samtools=$IRAP_DIR
     make clean
     make -j $J
@@ -638,11 +667,20 @@ function bwa_install {
 function osa_install {
     MAPPER=osa
     pinfo "Starting $MAPPER binary installation..."
+    OLD_PATH=$PATH
+    OLD_LD_LIBRARY_PATH=$LD_LIBRARY_PATH	
+    if [ $INSTALL_GCC != "n" ]; then
+	gcc4_install
+	export PATH=$IRAP_DIR/gcc/bin:$PATH
+	export LD_LIBRARY_PATH=$IRAP_DIR/gcc/lib64:$LD_LIBRARY_PATH
+    fi
     mono_install
     download_software $MAPPER
     unzip $osa_FILE
     pushd OSAv$osa_VERSION
     install_binary $MAPPER . \*
+    PATH=$PATH
+    LD_LIBRARY_PATH=$LD_LIBRARY_PATH	
     popd
     pinfo "$MAPPER installation complete."    
 }
@@ -654,6 +692,9 @@ function mapsplice_install {
     unzip $mapsplice_FILE
     pushd MapSplice-v$mapsplice_VERSION
     make clean
+    # do not recompile bowtie and samtools
+    sed -i -E "1s/all:(.*)bowtie/all:\1 /" Makefile
+    sed -i -E "1s/all:(.*)samtools/all:\1 /" Makefile
     make
     install_binary $MAPPER bin \*
     cp mapsplice.py $BIN_DIR/$MAPPER/
@@ -671,12 +712,12 @@ function mappers_install {
    smalt_install
    soap_splice_install
    soap2_install
-   gem_install
 #   gem2_install
    gsnap_install 
    osa_install
    star_install
    pinfo "To install MapSplice run: irap_install.sh -s . -x mapsplice"
+   pinfo "To install GEM run: irap_install.sh -s . -x gem"
    #mapsplice_install
 }
 
@@ -717,6 +758,26 @@ function make_install {
     pinfo "Installing make...done."
 }
 
+####################################################################
+# It may be necessary-mono 2.x does not compile successfully in gcc
+# 4.9 or higher
+function gcc4_install {
+
+    pinfo "Installing gcc 4.8.5..."
+    wget -c ftp://ftp.mirrorservice.org/sites/sourceware.org/pub/gcc/releases/gcc-4.8.5/gcc-4.8.5.tar.gz
+    tar xzvf gcc-4.8.5.tar.gz
+    pushd gcc-4.8.5
+    ./contrib/download_prerequisites
+    cd ..
+    mkdir objdir
+    cd objdir
+    CFLAGS=  $PWD/../gcc-4.8.5/configure --prefix=$IRAP_DIR/gcc --enable-languages=c,c++,fortran --disable-multilib
+    make
+    make install
+    popd
+    pinfo "Installing gcc 4.8.5...done."
+}
+ 
 ######################################################
 # 
 function mono_install {
@@ -805,27 +866,30 @@ function gnuplot_install {
 
 ######################################################
 # R
-function R_install {
-    pinfo "Installing R..."
-    download_software R
-    tar xzvf $R_FILE
-    pushd R-${R_VERSION}
+function R2_install {
+    pinfo "Installing R2..."
+    download_software R2
+    tar xzvf $R2_FILE
+    pushd R-${R2_VERSION}
     export R_LIBS=
     export R_LIBS_USER=$IRAP_DIR/Rlibs
+    # assume that makeinfo is installed - configure does not work on 5.2
+    #sed -i "s/r_cv_prog_makeinfo_v4=no/r_cv_prog_makeinfo_v4=yes/" configure  
     CFLAGS_noboost=`echo $CFLAGS|sed -E "s|\-I[^ ]*boost||g"`    
     # clean up - delete packages previously installed
     rm -rf $IRAP_DIR/Rlibs/*
-    CFLAGS=$CFLAGS_noboost ./configure --prefix=$IRAP_DIR
+    CFLAGS=$CFLAGS_noboost $SPECIAL_SH_TO_USE ./configure --prefix=$IRAP_DIR
+    #fedora 23:--disable-nls
     CFLAGS=$CFLAGS_noboost make clean
     CFLAGS=$CFLAGS_noboost make
     CFLAGS=$CFLAGS_noboost make check
     CFLAGS=$CFLAGS_noboost make install
     popd
-    pinfo "Installing R...done."
+    pinfo "Installing R2...done."
 }
 
 # install R-3.x
-function R3_install {
+function R_install {
     pinfo "Installing R-3.x..."
     download_software R3
     tar xzvf $R3_FILE
@@ -833,27 +897,27 @@ function R3_install {
     export R_LIBS=
     export R_LIBS_USER=$IRAP_DIR/Rlibs3
     CFLAGS_noboost=`echo $CFLAGS|sed -E "s|\-I[^ ]*boost||g"`    
-    CFLAGS=$CFLAGS_noboost  ./configure --prefix=$IRAP_DIR/R3
+    CFLAGS=$CFLAGS_noboost $SPECIAL_SH_TO_USE ./configure --prefix=$IRAP_DIR
     make clean
     make -j $J
     make -j $J check
     make install
     popd
     # wrappers
-    cat <<EOF > $IRAP_DIR/scripts/R3
-#!/bin/bash
-export PATH=\$IRAP_DIR/R3/bin:\$PATH
-export R_LIBS_USER=\$R3_LIBS_USER
-\$IRAP_DIR/R3/bin/R "\$@"
-EOF
-    chmod +x $IRAP_DIR/scripts/R3
-    cat <<EOF > $IRAP_DIR/scripts/Rscript3
-#!/bin/bash
-export PATH=\$IRAP_DIR/R3/bin:\$PATH
-export R_LIBS_USER=\$R3_LIBS_USER
-\$IRAP_DIR/R3/bin/Rscript "\$@"
-EOF
-    chmod +x $IRAP_DIR/scripts/Rscript3
+#     cat <<EOF > $IRAP_DIR/scripts/R3
+# #!/bin/bash
+# export PATH=\$IRAP_DIR/R3/bin:\$PATH
+# export R_LIBS_USER=\$R3_LIBS_USER
+# \$IRAP_DIR/R3/bin/R "\$@"
+# EOF
+#     chmod +x $IRAP_DIR/scripts/R3
+#     cat <<EOF > $IRAP_DIR/scripts/Rscript3
+# #!/bin/bash
+# export PATH=\$IRAP_DIR/R3/bin:\$PATH
+# export R_LIBS_USER=\$R3_LIBS_USER
+# \$IRAP_DIR/R3/bin/Rscript "\$@"
+# EOF
+#     chmod +x $IRAP_DIR/scripts/Rscript3
 
     pinfo "Installing R3-x...done."
 }
@@ -882,21 +946,27 @@ function YAP_install {
 }
 
 function deps_install {
-    pinfo "Installing dependencies (make, perk, ruby, boost, gnuplot, R, samtools, ...)"
+
+    pinfo "Installing dependencies (make, perl, boost, gnuplot, R, samtools, ...)"
     make_install
     zlib_install
     perl_install
-    ruby_install
-    boost_install
+    #ruby_install
+    if [ "$1-" != "minimal-" ] && [ "$BOOST_INSTALL" == "y" ]; then
+	boost_install
+    fi
     gnuplot_install
-    R_install
-    R3_install
+    #R_install
+    if [ "$INSTALL_R3-" == "y-" ]; then
+	R_install
+    fi
     YAP_install
     # some mappers (e.g., tophat) still require samtools 0.x
     samtools_install
     samtools1_install
     bedtools_install
     vcftools_install
+    python_packages_install
     #picard_install
     pinfo "Installing dependencies...done."
 }
@@ -931,8 +1001,8 @@ function samtools1_install {
     make prefix=$IRAP_DIR install
     mkdir -p $INC_DIR/bam
     cp *.h $INC_DIR/bam
-    mkdir  -p $INC_DIR/bam/htslib-1.1
-    cp htslib-1.1/*.h $INC_DIR/bam/htslib-1.1
+    mkdir  -p $INC_DIR/bam/htslib-1.3
+    cp htslib-1.3/*.h $INC_DIR/bam/htslib-1.3
     cp libbam.a $INC_DIR/bam
     #
     pwd
@@ -977,10 +1047,10 @@ function zlib_install {
 # Bedtools
 function bedtools_install {
     pinfo "Installing BEDTOOLS..."
-    BEDTOOLS=BEDTools.v$BEDTOOLS_VERSION
+    BEDTOOLS=bedtools-$BEDTOOLS_VERSION
     download_software BEDTOOLS
     tar xzvf $BEDTOOLS_FILE
-    pushd bedtools-$BEDTOOLS_VERSION
+    pushd bedtools2
     make
     cp bin/* $IRAP_DIR/bin
     popd
@@ -1034,14 +1104,14 @@ EOF
     #cpan autobundle    
     set +e
     cpan  -f -i App::cpanminus
-    cpanm -n -f -i YAML   < /dev/null
+    cpanm -l $IRAP_DIR -n -f -i YAML   < /dev/null
     #cpanm -f -i Test::More@0.99 < /dev/null
-    cpanm -n -i -f ExtUtils::MakeMaker  < /dev/null 
+    cpanm -l $IRAP_DIR  -n -i -f ExtUtils::MakeMaker  < /dev/null 
     # perhaps install the latest perl?
     cpan -f -u 
     # don't test
     #cpanm -n -i  Bundle::CPAN
-    cpanm -f -n -i  CPAN < /dev/null
+    cpanm $IRAP_DIR  -f -n -i  CPAN < /dev/null
     set -e
     # set permissions 
     chmod +w $IRAP_DIR/bin/*
@@ -1073,8 +1143,8 @@ function perl_packages_install {
     perl_cpan_install
     pinfo "Installing perl packages..."
     #  required by iRAP core: Bio::SeqIO
-    cpanm -f -n  Module::Build
-    cpanm -f -n  Bio::SeqIO
+    cpanm -l $IRAP_DIR  --force -n http://www.cpan.org/authors/id/L/LE/LEONT/Module-Build-0.40_11.tar.gz
+    cpanm -l $IRAP_DIR -f -n  Bio::SeqIO
     #cpan -fi CJFIELDS/BioPerl-1.6.1.tar.gz  
     # for jbrowse see jbrowse install
     #cpanm -fi CJFIELDS/BioPerl-1.6.924.tar.gz 
@@ -1090,8 +1160,6 @@ function perl_packages_jbrowse_install {
     
     # TODO: do it only once
     perl_cpan_install
-
-    cpanm --force -n Module::Build
     
     pinfo "Installing perl packages for jbrowse..."
     #    Test::Requisites
@@ -1100,13 +1168,13 @@ function perl_packages_jbrowse_install {
     set +e
     for p in $PACKAGES; do
        pinfo "************ Package $p"
-       cpanm  --force -n $p < /dev/null
+       cpanm -l $IRAP_DIR --force -n $p < /dev/null
     done
     set -e
     # the tests fail...
-    cpanm -n  -i Heap::Simple::Perl
+    cpanm -l $IRAP_DIR -n  -i Heap::Simple::Perl
     # 
-    cpanm -n  -i L/LD/LDS/GD-2.50.tar.gz
+    cpanm -l $IRAP_DIR -n  -i L/LD/LDS/GD-2.50.tar.gz
     # SAMTOOLS needs to be recompiled :(
     mkdir -p $IRAP_DIR/tmp
     pushd $IRAP_DIR/tmp
@@ -1125,7 +1193,7 @@ function perl_packages_jbrowse_install {
 ##################################
 # R packages
 # Software environment for statistical computing and graphics
-function R_packages_install {
+function R2_packages_install {
     export PATH=$IRAP_DIR/bin:$PATH
     pinfo "Installing R packages..."
     #export R_LIBS=
@@ -1140,6 +1208,10 @@ biocLite("DBI",ask=FALSE,suppressUpdates=TRUE)
 download.file("http://cran.r-project.org/src/contrib/Archive/RSQLite/RSQLite_0.11.4.tar.gz","RSQLite_0.11.4.tar.gz")
 install.packages("RSQLite_0.11.4.tar.gz",type="source",repos=NULL)
 download.file("http://cran.r-project.org/src/contrib/Archive/gplots/gplots_2.11.0.tar.gz","gplots_2.11.0.tar.gz")
+
+biocLite("gtools",ask=FALSE,suppressUpdates=TRUE)
+biocLite("gdata",ask=FALSE,suppressUpdates=TRUE)
+biocLite("caTools",ask=FALSE,suppressUpdates=TRUE)
 install.packages("gplots_2.11.0.tar.gz",type="source",repos=NULL)
 download.file("http://cran.r-project.org/src/contrib/Archive/xtable/xtable_1.7-4.tar.gz","xtable_1.7-4.tar.gz")
 install.packages("xtable_1.7-4.tar.gz",type="source",repos=NULL)
@@ -1202,74 +1274,13 @@ EOF
 # 
 # requires libcurl installed in the system
 
-function R3_packages_install {
+function R_packages_install {
     export PATH=$IRAP_DIR/bin:$PATH
     pinfo "Installing R-3.x packages..."
 
     CFLAGS_noboost=`echo $CFLAGS|sed -E "s|\-I[^ ]*boost||g"`
-
-    CFLAGS=$CFLAGS_noboost R3 --no-save <<EOF
-repo<-"$CRAN_REPO"
-source("http://bioconductor.org/biocLite.R")
-packages2install<-c("intervals","gclus",'R2HTML',"agricolae",
-             "optparse","brew","reshape","gtools","gdata","caTools",
-             "sfsmisc","gplots","lattice","data.table")
-
-for (p in packages2install ) {
-   biocLite(p,ask=FALSE, suppressUpdates=FALSE)
-}
-q(status=0)
-EOF
-    #   install.packages(p,repo=repo)
-
-    CFLAGS=$CFLAGS_noboost R3 --no-save <<EOF
-# bioconductor packages
-source("http://bioconductor.org/biocLite.R")
-packages2install<-c("Rsamtools",'edgeR',
-                    'DESeq','DESeq2','DEXSeq','baySeq',
-                    'limma','marray','igraph')
-
-biocLite(packages2install,ask=FALSE, suppressUpdates=FALSE)
-biocLite("piano",ask=FALSE, suppressUpdates=FALSE)
-#biocLite("org.Hs.eg.db",ask=FALSE, suppressUpdates=FALSE)
-biocLite('RCurl',ask=FALSE, suppressUpdates=FALSE)
-# http://bioconductor.org/packages/2.13/data/annotation/src/contrib/GO.db_2.10.1.tar.gz fails to install
-#biocLite('GO.db',ask=FALSE, suppressUpdates=FALSE)
-#biocLite("topGO",ask=FALSE, suppressUpdates=FALSE)
-#biocLite("biomaRt",ask=FALSE, suppressUpdates=FALSE)
-
-#biocLite('goseq',ask=FALSE, suppressUpdates=FALSE)
-
-species2db<-matrix(c('org.Ag.eg.db','Anopheles',
-'org.At.tair.db','Arabidopsis',
-'org.Bt.eg.db','Bovine',
-'org.Ce.eg.db','Worm',
-'org.Cf.eg.db','Canine',
-'org.Dm.eg.db','Fly',
-'org.Dr.eg.db','Zebrafish',
-'org.EcK12.eg.db','E coli strain K12',
-'org.Gg.eg.db','Chicken',
-'org.Hs.eg.db','Human',
-'org.Mm.eg.db','Mouse',
-'org.Mmu.eg.db','Rhesus',
-'org.Pf.plasmo.db','Malaria',
-'org.Pt.eg.db','Chimp',
-'org.Rn.eg.db','Rat',
-'org.Sc.sgd.db','Yeast',
-'org.Sco.eg.db','Streptomyces coelicolor',
-'org.Ss.eg.db','Pig',
-'org.Tgondii.eg.db','Toxoplasma gondii',
-'org.Xl.eg.db','Xenopus'),byrow=T,ncol=2)
-colnames(species2db)<-c("db","species")
-#for (p in species2db[,'db']) {
-#biocLite(p,ask=FALSE)
-#}
-
-q()
-EOF
-    #pinfo "Installing EMBAM..."
-    #embam_install $IRAP_DIR/R3/bin/R
-    #pinfo "installing EMBAM...done."
+    # suppressUpdates should be TRUE otherwise it might try to update a package installed in the systems folder
+    CFLAGS=$CFLAGS_noboost echo y | $SRC_DIR/scripts/install_R_packages.R
     pinfo "Installing R-3.x packages...done."
 }
 ######################################################
@@ -1353,7 +1364,8 @@ function htseq_install {
     pushd `echo $htseq_FILE|sed "s/.tar.gz//"`
 # python version needs to be equal or greater than  (2.6)
     #. ./build_it ;# not needed in 0.5.4p5
-    python setup.py install --user
+    # python setup.py install --user
+    pip install --user .
     chmod +x scripts/*
     cp scripts/* $IRAP_DIR/bin
     popd
@@ -1379,7 +1391,7 @@ function flux_capacitor_install {
 }
 ######################################################
 # IsoEM
-function IsoEM_install {
+function isoem_install {
     pinfo "Installing IsoEM..."
     download_software IsoEM
     unzip $IsoEM_FILE
@@ -1395,11 +1407,13 @@ function IsoEM_install {
 ######################################################
 # Sailfish
 # requires boost
-function Sailfish_install {
+function sailfish_install {
     pinfo "Installing Sailfish..."
     download_software Sailfish
     tar xzvf $Sailfish_FILE
-    pushd `echo $Sailfish_FILE|sed "s/.tar.gz//"`
+    pushd sailfish-$Sailfish_VERSION
+    echo "Not working..."
+    exit 2
     rm -rf $IRAP_DIR/bin/Sailfish/lib/*
     rm -rf $IRAP_DIR/bin/Sailfish/bin/*
     mkdir -p $IRAP_DIR/bin/Sailfish/lib
@@ -1484,8 +1498,8 @@ function quant_install {
     rsem_install
     kallisto_install
     fusionmap_install
-    #IsoEM_install
-    #Sailfish_install
+    #isoem_install
+    #sailfish_install
     #mmseq_install
     #ireckon_install
 }
@@ -1517,6 +1531,7 @@ function fastq_qc_install {
     popd
     pinfo "Installing fastqc...done."
 }
+
 ######################################
 function core_install {
 
@@ -1580,6 +1595,7 @@ function core_install {
 function jbrowse_install {
     pinfo "Installing jbrowse..."
     download_software JBROWSE
+    rm -f  $IRAP_DIR/aux/jbrowse.zip
     mv $JBROWSE_FILE $IRAP_DIR/aux/jbrowse.zip
     unzip $IRAP_DIR/aux/jbrowse.zip
     # TODO: install deps
@@ -1618,7 +1634,7 @@ function jbrowse_install {
     set +e
     cpanm -v --notest -l $IRAP_DIR --installdeps . < /dev/null;
     cpanm -v --notest -l $IRAP_DIR --installdeps . < /dev/null;
-    cpanm -f -v  --installdeps . < /dev/null;
+    cpanm -l -l $IRAP_DIR -f -v  --installdeps . < /dev/null;
     set -e
     rm -rf ~/.cpan
     mv $IRAP_DIR/.cpan.bak2 ~/.cpan 
@@ -1820,8 +1836,18 @@ function fusionmap_install {
 #}
 
 # python packages
-function python_install {
+function python_packages_install {
     pinfo "Installing python packages..."
+    pinfo "Check python version... (2.6+ required)"
+    min=$(python -c "import sys; print (sys.version_info[:])[1]")
+    maj=$(python -c "import sys; print (sys.version_info[:])[0]")
+    if [[ $maj == "2" ]] && [[ $min  -gt 5 ]] ; then
+	pinfo "OK."
+    else
+	pinfo "You need Python2.6 or 2.7 to run this pipeline."
+	exit 1
+    fi
+    ###########################################
     # only install pip if not already installed
     set +e
     PATH2PIP=`which pip 2> /dev/null`
@@ -1831,11 +1857,12 @@ function python_install {
     if [ "$PATH2PIP-" == "-" ]; then
 	wget --no-check-certificate https://bootstrap.pypa.io/get-pip.py
 	python get-pip.py --user
+	PATH2PIP=$IRAP_DIR/python/bin/pip
 	pinfo "PIP installation complete."    
     else
 	pinfo "pip already installed"
     fi
-    $IRAP_DIR/python/bin/pip install pysam --user    
+    $PATH2PIP install pysam --user    
     export CFLAGS=$CFLAGS_bak
     pinfo "python packages installed"
 }
@@ -1893,12 +1920,17 @@ function picard_install {
 ###############################
 UPDATE_FILE_PERMS=n
 INSTALL_JBROWSE=n
+INSTALL_GCC=n
+INSTALL_R3=n
+INSTALL_BOOST=n
+SPECIAL_SH_TO_USE=bash
 OPTERR=0
-while getopts "s:c:a:x:gmqpruhbdtfjv"  Option
+while getopts "s:c:l:a:x:gmqpruhbdtfjvGKRB"  Option
 do
     case $Option in
 # update/reinstall
         a ) install=all;IRAP_DIR1=$OPTARG;;# send all output to a log file
+	l ) install=minimal;IRAP_DIR1=$OPTARG;;# send all output to a log file
 	b ) install=browser;IRAP_DIR1=$IRAP_DIR;;
 	c ) install=core;IRAP_DIR1=$OPTARG;;  # run irap up to the given stage
 	d ) USE_CACHE=n;install=download;IRAP_DIR1=$IRAP_DIR;; # download all the source packages
@@ -1913,6 +1945,10 @@ do
 	t ) install=testing;IRAP_DIR1=$IRAP_DIR;;
 	v ) install=collect_software_versions;IRAP_DIR1=$IRAP_DIR;;
 	j ) INSTALL_JBROWSE=y;;
+	G ) INSTALL_GCC=y;;
+	R ) INSTALL_R3=y;;
+	B ) INSTALL_BOOST=y;;
+	K ) SPECIAL_SH_TO_USE=ksh;;
         h ) usage; exit;;
     esac
 done
@@ -2070,7 +2106,6 @@ fi
 if [ "$install" == "r_pack" ]; then
     check_for_irap_env
     R_packages_install
-    R3_packages_install
     pinfo "Log saved to $logfile"
     exit 0
 fi
@@ -2106,8 +2141,8 @@ fi
 if [ "$install" == "testing" ]; then
     set -e
     check_for_irap_env
-    IsoEM_install
-    Sailfish_install
+    isoem_install
+    #sailfish_install
     #NURD_install
     rsem_install
     pinfo "Log saved to $logfile"
@@ -2116,27 +2151,41 @@ fi
 
 #############
 # all
-rm -f $IRAP_DIR/.cpan.irap.done
-deps_install
+deps_install $install
 core_install
 pinfo "Loading environment $SETUP_FILE..."
 source $SETUP_FILE
+# force cpan installation/reconfiguration
+rm -f $IRAP_DIR/.cpan.irap.done
 pinfo "PATH=$PATH"
 pinfo "IRAP_DIR=$IRAP_DIR"
 env |  grep IRAP_DIR
 pinfo "Loading environment $SETUP_FILE...done."
 #check_for_irap_env
+#R_packages_install
 R_packages_install
-R3_packages_install
-mappers_install
-quant_install
+
 fastq_qc_install
 perl_packages_install
-# report
-if [ $INSTALL_JBROWSE == "y" ] ; then
-    jbrowse_install
+
+if [ "$install" == "minimal" ]; then
+   bowtie2_install
+   tophat2_install
+   star_install
+   htseq_install
+   cufflinks2_install
+   
+   pinfo "WARNING: You chose to install the minimal installation of iRAP. Only the following tools will be available: bowtie2, tophat2, star, cufflinks2 "
+
+else
+    mappers_install
+    quant_install
+    # report
+    if [ $INSTALL_JBROWSE == "y" ] ; then
+	jbrowse_install
+    fi
 fi
-#
+
 collect_software_versions
 # data directory
 data_install

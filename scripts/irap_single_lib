@@ -137,12 +137,6 @@ done
 
 set +e
 
-if [ "$f1-" == "-" ]; then
-    perror "ERROR: -1 parameter not provided" 
-    print_usage
-    exit 1
-fi
-
 
 if [ "$conf-" == "-" ]; then
     perror "ERROR: -c parameter not provided" 
@@ -156,18 +150,55 @@ if [ ! -e $conf ] ; then
     exit 1
 fi
 
+DATA_DIR=`conf_get_data_dir $conf "$irap_options"`
+
+# Add name to iRAP's options
+# if not defined
+is_atlas_run=`grep -c "^atlas_run=" $conf`
+name=
+if [ "$is_atlas_run-" != "0-" ]; then
+    species=`grep "^species=" $conf | head -n 1| cut -f 2 -d=`
+    if [ "$species-" == "-" ]; then
+	perror "species undefined"
+	exit 1
+    fi    
+    name="name=`irap_get_name $conf $irap_options`"
+    irap_options="$irap_options $name"
+fi
+
+if [ "$check_stage0_only" == "y" ]; then
+    irap conf=$conf data_dir=$DATA_DIR  $irap_options max_mem=$mem max_threads=$threads stage0 -n -q
+    exit $?
+fi
 
 if [ "$do_stage0-" == "yes-" ]; then
     pinfo "Running stage0 only"
+    # species
+    species=`grep "^species=" $conf | head -n 1| cut -f 2 -d=`
+    odir=$PWD/$out_dir/$species
+    pinfo "Final files will be placed in $odir"
+    time_log_file=$odir/stage0.time
+    pinfo "Time log file in $time_log_file"
+    touch $time_log_file
+
+    TARGET_DIR=$DATA_DIR/raw_data/single_lib/$folder
+    pinfo "Running iRAP stage0"
+    run_AND_timeIt "stage0" $time_log_file irap conf=$conf data_dir=$DATA_DIR    $irap_options max_mem=$mem max_threads=$threads stage0
+    exit $?
+else
+    if [ "$f1-" == "-" ]; then
+	perror "ERROR: -1 parameter not provided" 
+	print_usage
+	exit 1
+    fi
+    folder=`get_new_folder $f1`
+    TARGET_DIR=$DATA_DIR/raw_data/single_lib/$folder
 fi
 
-# TODO: validate minimum read length
-
 ####################################
-DATA_DIR=`conf_get_data_dir $conf "$irap_options"`
+
 pinfo "Data dir.=$DATA_DIR"
-folder=`get_new_folder $f1`
-TARGET_DIR=$DATA_DIR/raw_data/single_lib/$folder
+
 
 #################################################################
 odir=$PWD/$out_dir/`dirname $f1|cut -f 2- -d /`
@@ -218,25 +249,14 @@ if [ "$f2-" == "-" ]; then
 else
     fp_f2=`readlink -f $f2`
     f2_bn=`basename $f2`
-    check_path $f2 "-2"
+    is_relative_path $f2 "-2"
 fi
 
-is_atlas_run=`grep -c "^atlas_run=" $conf`
-name=
-if [ "$is_atlas_run-" != "0-" ]; then
-    species=`grep "^species=" $conf | head -n 1| cut -f 2 -d=`
-    if [ "$species-" == "-" ]; then
-	perror "species undefined"
-	exit 1
-    fi    
-    name="name=`irap_get_name $conf $irap_options`"
-    irap_options="$irap_options $name"
-fi
 
-if [ "$check_stage0_only" == "y" ]; then
-    irap conf=$conf data_dir=$DATA_DIR  $irap_options max_mem=$mem max_threads=$threads stage0 -n -q
-    exit $?
-fi
+#if [ "$check_stage0_only" == "y" ]; then
+#    irap conf=$conf data_dir=$DATA_DIR  $irap_options max_mem=$mem max_threads=$threads stage0 -n -q
+#    exit $?
+#fi
 
 set -e
 
@@ -310,13 +330,13 @@ EOF
 set +e 
 irap conf=$conf data_dir=$DATA_DIR  $irap_options max_mem=$mem max_threads=$threads stage0 -n -q
 if [ $? !=  0 ]; then
-    if [ "$do_stage0-" == "yes-" ]; then
-	pinfo "Running iRAP stage0"
-	run_AND_timeIt "stage0" $time_log_file irap conf=$conf data_dir=$DATA_DIR    $irap_options max_mem=$mem max_threads=$threads stage0
-    else
+#    if [ "$do_stage0-" == "yes-" ]; then
+#	pinfo "Running iRAP stage0"
+#	run_AND_timeIt "stage0" $time_log_file irap conf=$conf data_dir=$DATA_DIR    $irap_options max_mem=$mem max_threads=$threads stage0
+#    else
 	perror "ERROR:Stage0: incomplete - use -0 to run stage0"
-	exit 1
-    fi
+#	exit 1
+#    fi
 fi
 
 if [ "$do_stage0-" == "yes-" ]; then

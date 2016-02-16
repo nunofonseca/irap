@@ -1,6 +1,6 @@
 #; -*- mode: Makefile;-*-
 # =========================================================
-# Copyright 2012-2015,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+# Copyright 2012-2016,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
 #
 # This file is part of iRAP.
 #
@@ -98,7 +98,7 @@ endef
 endif
 
 define set_DE_DIRS=
-$(eval override DE_DIRS:=$(shell ls --color=never -d -1 $(shell echo $(foreach d,$(call quant_dirs),$(d)/{$(shell echo $(report_de)| sed 's/ /,/g')})) 2>/dev/null))
+$(eval override DE_DIRS:=$(shell ls --color=never -d -1 $(shell echo $(foreach dm,$(report_de),$(foreach d,$(call quant_dirs),$(d)/$(dm)))) 2>/dev/null))
 endef
 
 # 1 - exp name
@@ -266,6 +266,14 @@ $(name)/report/menu.css: $(IRAP_DIR)/aux/css/menu.css
 	cp -f $< $@
 
 #############################
+# a single file with the mapping stats
+$(name)/report/libs_qc.tsv: $(name)/$(mapper)/stats_raw.tsv $(name)/$(mapper)/stats_perc.tsv  $(name)/$(mapper)/featstats_raw.tsv $(name)/$(mapper)/featstats_perc.tsv  $(name)/$(mapper)/genestats_raw.tsv 
+	irap_append2tsv --in "$(name)/$(mapper)/stats_raw.tsv $(name)/$(mapper)/featstats_raw.tsv $(name)/$(mapper)/genestats_raw.tsv" --exclude_aggr  --cols_not_sorted --out $@.1.tmp &&\
+	irap_append2tsv --in "$(name)/$(mapper)/stats_perc.tsv $(name)/$(mapper)/featstats_perc.tsv $(name)/$(mapper)/genestats_perc.tsv" --exclude_aggr --add_row_suffix "_perc" --cols_not_sorted --out $@.2.tmp && \
+	irap_append2tsv --in "$@.1.tmp $@.2.tmp" --exclude_aggr --transpose --out $@.tmp && mv $@.tmp $@ &&\
+	rm -f $@.1.tmp $@.2.tmp
+
+#############################
 # QC
 phony_targets+=qc_report
 
@@ -273,14 +281,17 @@ qc_html_files=$(name)/report/qc.html
 
 qc_report: $(qc_html_files)
 
+# qc=none|on|off
 ifeq ($(qc),none)
-$(name)/report/qc.html: 
+$(name)/report/qc.html $(name)/report/qc.tsv: 
 
 else
-$(name)/report/qc.html: $(conf) $(call must_exist,$(name)/data/)
+$(name)/report/qc.html $(name)/report/qc.tsv: $(conf) $(call must_exist,$(name)/data/) $(name)/report/fastq_qc_report.tsv
 	irap_report_qc $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(name)/report || ( rm -f $@ && exit 1)
 endif
 
+###############################
+# deprecated!
 # fastqc is always executed
 # merge into a single file the statistics collected from the BAMs 
 %.fastq_report.tsv: %.fastqc.zip
@@ -288,14 +299,53 @@ endif
 	unzip -p $< $*_fastqc/fastqc_data.txt  | grep "Total Sequences" >> $@.tmp && \
 	mv $@.tmp $@
 
-
+# deprecated
 %.fastq_report.tsv: %_fastqc/summary.txt
 	awk  -F"\t"  '{print $2"\t"$1}' $<  > $@.tmp && \
 	grep "Total Sequences" $< >> $@.tmp && \
 	mv $@.tmp $@
 
+# deprecated
 $(name)/report/fastqc_report.tsv:  $(foreach p,$(pe),$(name)/report/riq/raw_data/$($(p)_dir)$(p).fastq_report.tsv)
 	$(call pass_args_stdin,irap_mergetsv,$@.tmp, --files="$<") && mv $@.tmp $@
+
+##########
+# new code
+# %.fastq.tsv is created by the irap_fastq_qc code
+
+ifeq ($(qc),none)
+# empty file
+$(name)/report/fastq_qc_report.tsv:
+	touch $@
+
+else
+
+ifeq  ($(qc),off)
+
+$(name)/report/fastq_qc_report.tsv:  $(foreach p,$(pe),$(name)/report/riq/raw_data/$($(p)_dir)/$(call get_fastq_prefix,$(p),pe)_1.fastqc.tsv $(name)/report/riq/raw_data/$($(p)_dir)$(call get_fastq_prefix,$(p),pe)_2.fastqc.tsv) $(foreach p,$(se),$(name)/report/riq/raw_data/$($(p)_dir)$(call get_fastq_prefix,$(p),se).fastqc.tsv)
+	$(call pass_args_stdin,irap_merge2tsv,$@.tmp, --in="$^"  --out $@.tmp) && mv $@.tmp $@
+
+%.fastqc.tsv: %.fastqc.zip
+	irap_fastqc2tsv $< > $@.tmp && mv $@.tmp $@
+
+
+else
+$(name)/report/fastq_qc_report.tsv:  $(foreach p,$(pe),$(name)/report/riq/raw_data/$($(p)_dir)$(p)_1.f.fastqc.tsv $(name)/report/riq/raw_data/$($(p)_dir)$(p)_2.f.fastqc.tsv) $(foreach p,$(se),$(name)/report/riq/raw_data/$($(p)_dir)$(p).f.fastqc.tsv)
+	$(call pass_args_stdin,irap_merge2tsv,$@.tmp, --in="$^"  --out $@.tmp) && mv $@.tmp $@
+
+# SE
+%.f.fastqc.tsv: %.f.fastqc.zip
+	irap_fastqc2tsv $< > $@.tmp && mv $@.tmp $@
+
+# PE
+%_1.f.fastqc.tsv: %_1.f.fastqc.zip 
+	irap_fastqc2tsv $< > $@.tmp && mv $@.tmp $@
+
+%_2.f.fastqc.tsv: %_2.f.fastqc.zip 
+	irap_fastqc2tsv $< > $@.tmp && mv $@.tmp $@
+
+endif
+endif
 
 #############################
 # TODO: info.html
@@ -335,7 +385,7 @@ mapping_report: report_setup $(call mapping_report_targets)
 
 
 # files required for producing the mapping report
-MAPPING_REPORT_PRE_STATS=$(foreach m,$(call mapping_dirs),  $(foreach p,$(pe),$(m)/$($(p)_dir)$(p).pe.hits.bam.stats $(m)/$($(p)_dir)$(p).pe.hits.bam.stats.csv $(m)/$($(p)_dir)$(p).pe.hits.bam.gene.stats) $(foreach s,$(se),$(m)/$($(s)_dir)$(s).se.hits.bam.stats.csv $(m)/$($(s)_dir)$(s).se.hits.bam.gene.stats $(m)/$($(s)_dir)$(s).se.hits.bam.stats))
+MAPPING_REPORT_PRE_STATS=$(foreach m,$(call mapping_dirs),  $(foreach p,$(pe),$(m)/$($(p)_dir)$(p).pe.hits.bam.stats $(m)/$($(p)_dir)$(p).pe.hits.bam.stats.csv $(m)/$($(p)_dir)$(p).pe.hits.bam.gene.stats) $(foreach s,$(se),$(m)/$($(s)_dir)$(s).se.hits.bam.stats.csv $(m)/$($(s)_dir)$(s).se.hits.bam.gene.stats $(m)/$($(s)_dir)$(s).se.hits.bam.stats)) $(name)/report/libs_qc.tsv
 
 # merge into a single file the statistics collected from the BAMs 
 $(name)/%/stats_raw.tsv $(name)/%/stats_perc.tsv:  $(foreach p,$(pe),$(name)/%/$($(p)_dir)$(p).pe.hits.bam.stats.csv) $(foreach s,$(se),$(name)/%/$($(s)_dir)$(s).se.hits.bam.stats.csv)
@@ -367,7 +417,7 @@ $(name)/report/mapping/%.html: $(name)/%/  $(conf) $(call must_exist,$(name)/rep
 
 # statistics per bam file
 %.bam.gff3: %.bam $(gff3_file_abspath)
-	bedtools coverage -abam $< -counts -b $(gff3_file_abspath) > $@.tmp && \
+	bedtools coverage -counts   -a $(gff3_file_abspath) -b $< > $@.tmp &&\
 	mv $@.tmp $@
 
 %.bam.stats: %.bam.gff3 
@@ -387,13 +437,15 @@ $(name)/report/mapping/%.html: $(name)/%/  $(conf) $(call must_exist,$(name)/rep
 # bed files required to get some extra stats
 # exons.bed
 $(name)/data/$(reference_basename).exons.bed: $(gff3_file_abspath) 
-	cat $< | awk 'BEGIN{OFS="\t";} $$3=="exon" {print $$1,$$4,$$5}' | bedtools sort -i /dev/stdin | bedtools merge -i /dev/stdin > $@.tmp && \
-	mv $@.tmp $@
+	cat $< | awk 'BEGIN{OFS="\t";} $$3=="exon" {print $$1,$$4,$$5}' | bedtools sort -i /dev/stdin > $@.tmp.bed && \
+	bedtools merge -i $@.tmp.bed > $@.tmp && \
+	mv $@.tmp $@ && rm -f $@.tmp.bed
 
 # genes.bed
 $(name)/data/$(reference_basename).genes.bed: $(gff3_file_abspath)
-	cat $< | awk 'BEGIN{OFS="\t";} $$3=="gene" {print $$1,$$4,$$5}' |  bedtools sort -i /dev/stdin | bedtools merge -i /dev/stdin > $@.tmp && \
-	mv $@.tmp $@
+	cat $< | awk 'BEGIN{OFS="\t";} $$3=="gene" {print $$1,$$4,$$5}' |  bedtools sort -i /dev/stdin > $@.tmp.bed &&\
+	bedtools merge -i $@.tmp.bed > $@.tmp && \
+	mv $@.tmp $@ && rm -f $@.tmp.bed
 
 # introns
 $(name)/data/$(reference_basename).introns.bed: $(name)/data/$(reference_basename).genes.bed $(name)/data/$(reference_basename).exons.bed

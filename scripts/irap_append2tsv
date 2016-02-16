@@ -1,0 +1,135 @@
+#!/usr/bin/env Rscript
+#; -*- mode: R;-*-
+# =========================================================
+# Copyright 2012-2016,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#    $Id: irap.txt Nuno Fonseca Wed Feb 6 00:51:29 2013$
+# =========================================================
+suppressPackageStartupMessages(library("optparse"))
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+# specify our desired options in a list
+#
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+pdebug.enabled <- FALSE
+
+#######################
+usage <- "irap_merge2tsv --out tsv_filename_prefix [options]"
+option_list <- list(
+  make_option(c("-o","--out"),type="character",default=NULL,help="Output tsv file"),
+  make_option(c("--in"),type="character",dest="tsv_files",default=NULL,help="tsv files"),
+  make_option(c("--rowname_col"),type="character",dest="rowname_col",default="",help="name of the column with the rownames"),
+  make_option(c("--sep"),type="character",dest="col_sep",default="\t",help="column separator"),
+  make_option(c("--add_row_suffix"),type="character",dest="row_suffix",default="",help="Add a suffix to each rowname"),
+  make_option(c("--cols_not_sorted"),action="store_true",dest="cols_not_sorted",default=FALSE,help="Are the columns sorted?"),
+  make_option(c("--exclude_aggr"),action="store_true",dest="exclude_aggr_cols",default=FALSE,help="Exclude columns named Median,Mean,SD."),
+    make_option(c("--transpose"),action="store_true",dest="out_transpose",default=FALSE,help="Transpose the matrix before saving to file."),
+  make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode")
+)
+
+
+# 
+mandatory <- c("out","tsv_files")
+
+#
+args <- importArgsfromStdin()
+opt <- myParseArgs(usage = usage,option_list=option_list,mandatory=mandatory,args=args)
+
+pdebug.enabled <- opt$debug
+pdebug.save.state("irap_append2tsv","p0")
+
+pinfo("Parameters parsed.")
+
+
+library(data.table)
+out.table <- NULL
+
+files <- unlist(strsplit(opt$tsv_files,"[ \t\n]+"))
+nfiles <- length(files)
+ctr <- 0
+#print(files)
+for ( f in files ) {
+  ctr <- ctr+1
+  done <- round(ctr/nfiles*100,2)
+  pinfo("Processing ",ctr," ",done,"%:",f,".")
+  if ( ! file.exists(f) ) {
+    perror("File not found ",f)
+    q(status=1)
+  }
+  # header? check.names=FALSE
+  x <- tryCatch(fread(input=f,header=TRUE,sep=opt$col_sep,
+                      data.table=FALSE,showProgress=TRUE),error=function(x) return(NULL))
+    x <- fread(input=f,header=TRUE,sep=opt$col_sep,
+                        data.table=FALSE,showProgress=TRUE)
+  if ( is.null(x) ) {
+    perror("Error loading ",f)
+    q(status=1)
+  }
+
+  if (sum(duplicated(x[,1]))!=0 ) {
+    perror("duplicated row names in ",f)
+    q(status=1)
+  }
+  if ( opt$row_suffix!="" ) {
+    x[,1] <- gsub("$",opt$row_suffix,x[,1])
+  }
+  rownames(x) <- x[,1]
+  x <- x[,-1,drop=FALSE]
+  if (opt$cols_not_sorted) {
+    x <- x[,order(colnames(x)),drop=FALSE]
+  }
+  if (opt$exclude_aggr_cols) {
+    x <- x[,!colnames(x) %in% c("Mean","Median","SD"),drop=FALSE]
+  }
+  if ( is.null(out.table) ) {
+    out.table <- x
+  } else {
+    # nrow ==
+    if ( ncol(out.table)!=ncol(x) ) {
+      perror("Different number of cols, unable to add ",f," with ",ncol(x), " rows")
+      q(status=1)
+    }
+    # 
+    if (opt$cols_not_sorted) {
+      if ( sum(colnames(x)!=colnames(out.table))>0) {
+        perror("Colnames do not match ",f)
+        q(status=1)
+      }
+    }
+    out.table <- rbind(out.table,x)    
+  }
+}
+
+out.table <- cbind(Rows=rownames(out.table),out.table)
+if ( opt$out_transpose ) {
+  out.table <- t(out.table)
+}
+r <- write.table(out.table,file=opt$out,col.names=TRUE,sep="\t",row.names=F,quote=F)
+pinfo("Saved ",opt$out)
+
+x <- warnings()
+if (!is.null(x)) {
+  print(x)
+}
+
+q()

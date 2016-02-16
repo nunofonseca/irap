@@ -1,5 +1,5 @@
 # =========================================================
-# Copyright 2012-2015,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+# Copyright 2012-2016,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
 #
 #
 # This is free software: you can redistribute it and/or modify
@@ -115,7 +115,7 @@ formats.cols <- list(
   gtf=c("seqid","source","feature","start","end","score","strand","frame","attributes")
   )
 attributes.cols <- list(
-  gencode=c("gene_id","transcript_id","exon_number","gene_name","gene_type","gene_status","transcript type","level","transcript_name","havana_gene","exon_id"),
+  gencode=c("gene_id","transcript_id","exon_number","gene_name","gene_type","gene_status","transcript type","level","transcript_name","havana_gene","exon_id","gene_biotype"),
   ensembl=c("gene_id","transcript_id","exon_number","gene_name","gene_biotype","transcript_name","protein_id","exon_id","exonic_part_number")
   )
 # TODO: improve error handling
@@ -131,7 +131,7 @@ load.gtf <- function(gtf.file,feature=NULL,selected.attr=NULL,gtf.format="auto")
   gtf$attributes <- as.character(gtf$attributes)
   # detect format
   if ( gtf.format=="auto" ) {
-    if (sum(grepl("level",head(gtf$attributes,20))) >0) {
+    if (sum(grepl("level",head(gtf$attributes,50))) >0) {
       gtf.format <- "gencode"
     } else {
       gtf.format <- "ensembl"
@@ -175,6 +175,7 @@ load.gtf <- function(gtf.file,feature=NULL,selected.attr=NULL,gtf.format="auto")
   }
   # try to determine the biotype column (use source by default...)
   biotypes <- gtf[,biotype.column(gtf)]
+  pinfo("biotype col:",biotype.column(gtf))
   gtf$biotype <- biotypes
   #print(head(gtf))
   return(gtf[,! colnames(gtf) %in% c("attributes")])
@@ -1382,7 +1383,7 @@ load.annot <- function(file) {
     perror("File ",file," not found")
     quit(status=1)
   }
-  annot.table <- tryCatch(read.tsv(file),error=function(x) return(NULL))
+  annot.table <- tryCatch(read.tsv(file,header=TRUE),error=function(x) return(NULL))
   if ( is.null(annot.table) ) {
     pdebug("Loading annotation (failed)")
     return(NULL)
@@ -2007,13 +2008,18 @@ source.filt.query <- list("all"=TRUE,
 source.column <- NULL
 #                          "rRNA"=c("rRNA"),
 biotype.column <- function(table) {
-  if ( "source" %in% colnames(table) ) {
+  if ( sum("source" %in% colnames(table))>0 ) {
     sources <- unique(as.character(table$source))
-    if ( sum(grepl("havana",sources,ignore.case=TRUE))>0 ) {
-      if ( "gene_type" %in% colnames(table) ) {
+    if ( sum(grepl("HAVANA",sources,ignore.case=FALSE))>0 ) {
+      pinfo("cols:",colnames(table))
+      if ( sum("gene_type" %in% colnames(table))>0 ) {
         return("gene_type")
-      } else {
-        # hmm, perhaps we should check that the column exists?
+      }
+      # 
+      return("gene_biotype")        
+    } else {
+      if ( sum(grepl("havana",sources,ignore.case=FALSE))>0 ) {
+        # recent ensembl files 
         return("gene_biotype")
       }
     }
