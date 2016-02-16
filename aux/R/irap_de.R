@@ -155,10 +155,10 @@ handle.tech.replicates <- function(data,opt) {
       }
       # sum
       #print(head(data))
-      aggr <- rowSums(data[,cols2aggr])
-      cols <- cols[!cols %in% cols2aggr]
-      data <- data[,cols]
-      data[,n] <- aggr
+      aggr <- rowSums(data[,cols2aggr,drop=FALSE])
+      cols <- cols[!cols %in% cols2aggr,drop=FALSE]
+      data <- data[,cols,drop=FALSE]
+      data[,n,drop=FALSE] <- aggr
       #print(head(data))
       pinfo("Technical replicates: ",paste(cols2aggr,sep=",",collapse=","))
       processed <- append(processed,cols2aggr)
