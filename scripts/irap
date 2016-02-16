@@ -514,7 +514,12 @@ all_pe_files=""
 
 # no need to check the se and pe parameters if
 # the target is stage0 only
-ifeq ($(MAKECMDGOALS),stage0)
+TARGETS=
+ifdef MAKECMDGOALS
+TARGETS=$(MAKECMDGOALS)
+endif
+
+ifeq ($(TARGETS),stage0)
 $(info "Stage0 enabled - skipping validation of se and pe")
 override se:=
 override pe:=
