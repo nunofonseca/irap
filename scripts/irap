@@ -216,7 +216,7 @@ endif
 #************************
 #Version and license info
 pname=IRAP
-version=0.8.0
+version=0.8.0a
 contact=Developed by Nuno Fonseca (authorname (at) acm.org)
 license=This pipeline is distributed  under the terms of the GNU General Public License 3
 
