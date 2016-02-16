@@ -1,4 +1,4 @@
-ROM fedora:20
+FROM fedora:20
 MAINTAINER Nuno Fonseca email: nuno.fonseca at gmail.com
 
 # Update the image with the latest packages (recommended)
