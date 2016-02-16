@@ -516,6 +516,8 @@ all_pe_files=""
 # the target is stage0 only
 ifeq ($(MAKECMDGOALS),stage0)
 $(info "Stage0 enabled - skipping validation of se and pe")
+override se:=
+override pe:=
 else
 ifdef se
  $(info *	se=$(se))
