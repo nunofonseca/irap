@@ -219,6 +219,16 @@ if (rdata.loaded && !is.null(gse.res) ) {
   }
   gse.res.filt <- gse.res.filt[append(c(1,ncol(gse.res.filt)),seq(2,ncol(gse.res.filt)-1))]
   colnames(gse.res.filt)[1] <- f.col.name
+} else {
+  # no rdata
+  if (!opt$is.pathway.analysis) {
+    f.col.name <- "GO"
+  } else {
+    f.col.name <- "Pathway"
+    gse.res[,"Name"] <- ""
+  }
+
+
 }
 
 if (!is.null(gse.res.filt) ) {
@@ -232,7 +242,7 @@ if (!is.null(gse.res.filt) ) {
   r <- write.tsv(gse.res.filt,file=paste(out.dir,"/",raw.tsv.file,sep=""))
   pinfo("Saved ",out.dir,"/",raw.tsv.file)
 
-  if (opt$is.pathway.analysis) {
+  if (opt$is.pathway.analysis && rdata.loaded) {
     # assume kegg
     get.kegg.url <- function(id) {      
       sprintf("<A href='http://www.genome.jp/dbget-bin/www_bget?map%05d' target='_blank'>%05d</A>",id,id)
