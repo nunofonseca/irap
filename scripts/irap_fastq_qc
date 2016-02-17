@@ -45,7 +45,8 @@ exec make  -Rf "$0"  ${1+"$@"}
 .ONESHELL:
 
 .PRECIOUS: %.fastqc.zip
-
+# .SECONDARY needed because precious does not work (make v. 4.1)
+.SECONDARY:
 .PHONY: go all setup0 stage0 stage1 stage2 stage3 stage4 stage5 stage6
 ###########################################################
 #Testing presence/absence of input files (f: single read, f1+f2: pair ends)
