@@ -68,8 +68,11 @@ pinfo("Parameters parsed.")
 # export variables
 #opt$mapper_name="tophat1"
 #file <- "test_files/gse/WildTypeVsMutant.genes.gse.piano.fisher.go.tsv"
-gse.res <- read.tsv(opt$tsv)
-
+gse.res <- read.tsv(opt$tsv,header=TRUE)
+if ( is.null(gse.res) ) {
+  perror("Unable to load file ",opt$tsv)
+  q(status=1)
+}
 pdebug.save.state("irap_report_gse","p0")
 pinfo("Parsing parameters...")
 # check if plots exists (png and eps exist)
