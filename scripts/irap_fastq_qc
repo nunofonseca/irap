@@ -44,6 +44,8 @@ exec make  -Rf "$0"  ${1+"$@"}
 #.SECONDARY: 
 .ONESHELL:
 
+.PRECIOUS: %.fastqc.zip
+
 .PHONY: go all setup0 stage0 stage1 stage2 stage3 stage4 stage5 stage6
 ###########################################################
 #Testing presence/absence of input files (f: single read, f1+f2: pair ends)
@@ -382,7 +384,6 @@ $(out_dir):
 # Initial report, before any filtering (fastqc)
 # Input: initial fastq file 
 # Output: in raw_data/, zipped directory containing the stats summary as text file, HTML and .PNG images  
-.PRECIOUS: %.fastqc.zip
 
 #Pair end reads
 ifeq ($(pe_data),1)
