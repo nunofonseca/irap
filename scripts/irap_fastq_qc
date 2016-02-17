@@ -382,6 +382,7 @@ $(out_dir):
 # Initial report, before any filtering (fastqc)
 # Input: initial fastq file 
 # Output: in raw_data/, zipped directory containing the stats summary as text file, HTML and .PNG images  
+.PRECIOUS: %.fastqc.zip
 
 #Pair end reads
 ifeq ($(pe_data),1)
