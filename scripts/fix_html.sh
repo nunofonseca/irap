@@ -34,14 +34,24 @@ function fix_html_files {
     for f in `find . -maxdepth 1 -name  "*.html"`; do
 	if [ `basename $f` != $menu ]; then
 	    echo "Fixing $f..."
+	    # 1st time
+	    N=`grep -c "$CSS_FILE" $f`
+	    if [ "$N-" == "0-" ]; then
 	    # add CSS FILE
 	    #echo adding menu.css
-	    sed  -E -i "s|<head>.*|<head>$CSS_FILE|" $f
+  		sed  -E -i "s|<head>|<head>$CSS_FILE|" $f
+	    fi
 	    # add menu
 	    # replace toplevel path
 	    # remove r2html
 	    # add
-	    sed  -E -i "s|(<body[^>]*)>.*|\1> $inject_menu|;s|TTOPLEVEL|$path|g;s|R2HTML||;s|aehts.css|irap.css|;s|href=\"*.*irap.css\"|href=${path}irap.css|" $f
+	    #sed  -E -i "s|(<body[^>]*)>.*|\1> $inject_menu|;s|TTOPLEVEL|$path|g;s|R2HTML||;s|aehts.css|irap.css|;s|href=\"*.*irap.css\"|href=${path}irap.css|" $f
+	    N=`grep -c "iRAP" $f`
+	    if [ "$N-" == "0-" ]; then
+		# add the menu for the first time (first line)
+		sed  -E -i "s|(<body[^>]*)>|\1> $inject_menu\n|" $f
+	    fi	    
+	    sed  -E -i "s|(<body[^>].*)>.*|\1> $inject_menu|;s|TTOPLEVEL|$path|g;s|R2HTML||;s|aehts.css|irap.css|;s|href=\"*.*irap.css\"|href=${path}irap.css|" $f
 #	    sed  -E -i "s|(<body[^>]*)>.*|\1> $inject_menu|;s|TTOPLEVEL|$path|g;s|R2HTML||;s|aehts.css|irap.css|;s|href=../../ |href=${path}irap.css |" $f
 	    # remove the line (temporary)
 	    sed -i "s|<p class='character'>Project: <a href='../index.html'>go to main page</a></p>||" $f
