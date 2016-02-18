@@ -46,7 +46,7 @@ function fix_html_files {
 	    # remove r2html
 	    # add
 	    #sed  -E -i "s|(<body[^>]*)>.*|\1> $inject_menu|;s|TTOPLEVEL|$path|g;s|R2HTML||;s|aehts.css|irap.css|;s|href=\"*.*irap.css\"|href=${path}irap.css|" $f
-	    N=`grep -c "iRAP" $f`
+	    N=`grep -c "Just to keep a record on the number of people using iRAP" $f`
 	    if [ "$N-" == "0-" ]; then
 		# add the menu for the first time (first line)
 		sed  -E -i "s|(<body[^>]*)>|\1> $inject_menu\n|" $f
