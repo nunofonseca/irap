@@ -32,7 +32,7 @@
 #include <assert.h>
 
 // Same version as IRAP
-#define VERSION "0.8.0"
+#define VERSION "0.8.0d1"
 
 
 #define BACKLINE "\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b"
