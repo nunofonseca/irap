@@ -95,7 +95,7 @@ endef
 
 # Error messages
 define p_error=
-$(info $(shell date "+%H:%M:%S %d/%m/%Y") * ERROR: $(1)) && $(error Fatal error)
+$(info $(shell date "+%H:%M:%S %d/%m/%Y") * ERROR: $(1)) && $(error Fatal error: $(1))
 endef
 
 # check if the parameter has a value - prints an error if not
