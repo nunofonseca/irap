@@ -258,9 +258,20 @@ function stage0_errors {
     if [ $is_io_error -eq 1 ]; then
 	set_classified_error "iRAP stage0: I/O error"
     else
-	set_error "iRAP Stage0: unclassified error"
+	e=`grep -E "Fatal error:" $errf|tail -n 1`
+	# Error in the file
+	if [ $? -eq 0 ]; then
+	    msg=`echo "$e" | sed "s/.*Fatal error://"|sed "s/ Stop.$//"`
+	    if [ $? -eq 0 ]; then
+		set_classified_error "iRAP stage0: $msg"
+	    else
+		# should never happen... but just in case
+		set_classified_error "iRAP stage0: unclassified error - $e"
+	    fi
+	else
+	    set_error "iRAP Stage0: unclassified error"
+	fi
     fi
-
 }
 
 
