@@ -500,11 +500,16 @@ countstable2rpkms <- function(table,lens,mass.labels=NULL,exitonerror=TRUE) {
     if (exitonerror) { q(status=1) }
     return(NULL)
   }
-  v.compute.rpkm <-  function(l,lens,mass.labels=names(l)) {
+  v.compute.rpkm <-  function(l,lens,mass.labels=NULL) {
     #(l*1e6)/(sum(l)*lens[names(l)]/1000)
-    #pinfo(10^9,"*",l,"/(",sum(l),"*",lens[names(l)],")")
-    return(10^9*l/(sum(l)*lens[names(l)]))
-  }
+     if ( is.null(mass.labels) ) {
+       tot.mass <- sum(l)   
+     } else {
+       tot.mass <- sum(l[mass.labels])
+       irap.assert(tot.mass>0,"Unable to compute FPKMS when the total mass is 0.")
+     }
+     return(10^9*l/(tot.mass*lens[names(l)]))
+   }
   if ( is.vector(table) ) {
     return(round(v.compute.rpkm(table,lens,mass.labels),2))
   } else {
