@@ -437,13 +437,13 @@ $(name)/report/mapping/%.html: $(name)/%/  $(conf) $(call must_exist,$(name)/rep
 # bed files required to get some extra stats
 # exons.bed
 $(name)/data/$(reference_basename).exons.bed: $(gff3_file_abspath) 
-	cat $< | awk 'BEGIN{OFS="\t";} $$3=="exon" {print $$1,$$4,$$5}' | bedtools sort -i /dev/stdin > $@.tmp.bed && \
+	cat $< | awk 'BEGIN{OFS="\t";} $$3=="exon" {print $$1,$$4,$$5}' | sort -u| bedtools sort -i /dev/stdin > $@.tmp.bed && \
 	bedtools merge -i $@.tmp.bed > $@.tmp && \
 	mv $@.tmp $@ && rm -f $@.tmp.bed
 
 # genes.bed
 $(name)/data/$(reference_basename).genes.bed: $(gff3_file_abspath)
-	cat $< | awk 'BEGIN{OFS="\t";} $$3=="gene" {print $$1,$$4,$$5}' |  bedtools sort -i /dev/stdin > $@.tmp.bed &&\
+	cat $< | awk 'BEGIN{OFS="\t";} $$3=="gene" {print $$1,$$4,$$5}' |  sort -u| bedtools sort -i /dev/stdin > $@.tmp.bed &&\
 	bedtools merge -i $@.tmp.bed > $@.tmp && \
 	mv $@.tmp $@ && rm -f $@.tmp.bed
 
