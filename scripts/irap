@@ -2116,5 +2116,7 @@ FORCE:
 #PHONY: performance improvement. Tell MAKE that those targets don't generate any files. 
 .PHONY:  $(phony_targets)
 .SILENT: $(silent_targets)
+# disable deletion of temporary files
+.SECONDARY: 
 
 ###################################################
