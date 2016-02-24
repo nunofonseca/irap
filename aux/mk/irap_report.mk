@@ -438,18 +438,18 @@ $(name)/report/mapping/%.html: $(name)/%/  $(conf) $(call must_exist,$(name)/rep
 # exons.bed
 $(name)/data/$(reference_basename).exons.bed: $(gff3_file_abspath) 
 	cat $< | awk 'BEGIN{OFS="\t";} $$3=="exon" {print $$1,$$4,$$5}' | sort -u| bedtools sort -i /dev/stdin > $@.tmp.bed && \
-	bedtools merge -i $@.tmp.bed > $@.tmp && \
+	bedtools merge -i $@.tmp.bed | bedtools sort -i /dev/stdin > $@.tmp && \
 	mv $@.tmp $@ && rm -f $@.tmp.bed
 
 # genes.bed
 $(name)/data/$(reference_basename).genes.bed: $(gff3_file_abspath)
 	cat $< | awk 'BEGIN{OFS="\t";} $$3=="gene" {print $$1,$$4,$$5}' |  sort -u| bedtools sort -i /dev/stdin > $@.tmp.bed &&\
-	bedtools merge -i $@.tmp.bed > $@.tmp && \
+	bedtools merge -i $@.tmp.bed  | bedtools sort -i /dev/stdin  > $@.tmp && \
 	mv $@.tmp $@ && rm -f $@.tmp.bed
 
 # introns
 $(name)/data/$(reference_basename).introns.bed: $(name)/data/$(reference_basename).genes.bed $(name)/data/$(reference_basename).exons.bed
-	bedtools subtract -a $< -b $(name)/data/$(reference_basename).exons.bed > $@.tmp && if [ `wc -l $@.tmp |cut -f 1 -d\ ` == 0 ]; then echo -e 'dummy_entry\t1\t1' > $@.tmp; fi && mv $@.tmp $@
+	bedtools subtract -sorted -a $< -b $(name)/data/$(reference_basename).exons.bed > $@.tmp && if [ `wc -l $@.tmp |cut -f 1 -d\ ` == 0 ]; then echo -e 'dummy_entry\t1\t1' > $@.tmp; fi && mv $@.tmp $@
 
 
 # M
