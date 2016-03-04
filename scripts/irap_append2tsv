@@ -79,8 +79,8 @@ for ( f in files ) {
   # header? check.names=FALSE
   x <- tryCatch(fread(input=f,header=TRUE,sep=opt$col_sep,
                       data.table=FALSE,showProgress=TRUE),error=function(x) return(NULL))
-    x <- fread(input=f,header=TRUE,sep=opt$col_sep,
-                        data.table=FALSE,showProgress=TRUE)
+  #x <- fread(input=f,header=TRUE,sep=opt$col_sep,
+  #                      data.table=FALSE,showProgress=TRUE)
   if ( is.null(x) ) {
     perror("Error loading ",f)
     q(status=1)
