@@ -870,3 +870,6 @@ qtest3:
 	$(call report_test_check,$@,`wc -l $(IRAP_DIR)/tests/out/chr19_off.f.fastq|cut -f 1 -d\  `,`wc -l $(IRAP_DIR)/tests/test_files/fastq/chr19_1000.fastq|cut -f 1 -d\  `)
 
 FORCE:
+
+# 
+.SECONDARY:
