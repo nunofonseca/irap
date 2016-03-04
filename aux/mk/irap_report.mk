@@ -273,6 +273,7 @@ $(name)/report/libs_qc.tsv: $(name)/$(mapper)/stats_raw.tsv $(name)/$(mapper)/st
 	irap_append2tsv --in "$@.1.tmp $@.2.tmp" --exclude_aggr --transpose --out $@.tmp && mv $@.tmp $@ &&\
 	rm -f $@.1.tmp $@.2.tmp
 
+
 #############################
 # QC
 phony_targets+=qc_report
@@ -313,16 +314,20 @@ $(name)/report/fastqc_report.tsv:  $(foreach p,$(pe),$(name)/report/riq/raw_data
 # new code
 # %.fastq.tsv is created by the irap_fastq_qc code
 
+# Keep the FASTQC report of the data used in the analysis: based on the initial raw data if QC is disabled or based on the filtered QC file
+
 ifeq ($(qc),none)
 # empty file
+FASTQC_REPORT_FILES=
 $(name)/report/fastq_qc_report.tsv:
 	touch $@
 
 else
 
-ifeq  ($(qc),off)
+ifeq  ($(qc),off) 
+FASTQC_REPORT_FILES=$(foreach p,$(pe),$(name)/report/riq/$($(p)_dir)/$(call get_fastq_prefix,$(p),pe)_1.fastqc.tsv $(name)/report/riq/$($(p)_dir)$(call get_fastq_prefix,$(p),pe)_2.fastqc.tsv) $(foreach p,$(se),$(name)/report/riq/$($(p)_dir)$(call get_fastq_prefix,$(p),se).fastqc.tsv)
 
-$(name)/report/fastq_qc_report.tsv:  $(foreach p,$(pe),$(name)/report/riq/raw_data/$($(p)_dir)/$(call get_fastq_prefix,$(p),pe)_1.fastqc.tsv $(name)/report/riq/raw_data/$($(p)_dir)$(call get_fastq_prefix,$(p),pe)_2.fastqc.tsv) $(foreach p,$(se),$(name)/report/riq/raw_data/$($(p)_dir)$(call get_fastq_prefix,$(p),se).fastqc.tsv)
+$(name)/report/fastq_qc_report.tsv:  $(FASTQC_REPORT_FILES)
 	$(call pass_args_stdin,irap_merge2tsv,$@.tmp, --in="$^"  --out $@.tmp) && mv $@.tmp $@
 
 %.fastqc.tsv: %.fastqc.zip
@@ -330,19 +335,22 @@ $(name)/report/fastq_qc_report.tsv:  $(foreach p,$(pe),$(name)/report/riq/raw_da
 
 
 else
-$(name)/report/fastq_qc_report.tsv:  $(foreach p,$(pe),$(name)/report/riq/raw_data/$($(p)_dir)$(p)_1.f.fastqc.tsv $(name)/report/riq/raw_data/$($(p)_dir)$(p)_2.f.fastqc.tsv) $(foreach p,$(se),$(name)/report/riq/raw_data/$($(p)_dir)$(p).f.fastqc.tsv)
+
+FASTQC_REPORT_FILES=$(foreach p,$(pe),$(name)/report/riq/$($(p)_dir)raw_data/$(p)_1.f.fastqc.tsv $(name)/report/riq/$($(p)_dir)raw_data/$(p)_2.f.fastqc.tsv) $(foreach p,$(se),$(name)/report/riq/$($(p)_dir)raw_data/$(p).f.fastqc.tsv)
+
+$(name)/report/fastq_qc_report.tsv:  $(FASTQC_REPORT_FILES)
 	$(call pass_args_stdin,irap_merge2tsv,$@.tmp, --in="$^"  --out $@.tmp) && mv $@.tmp $@
 
 # SE
 %.f.fastqc.tsv: %.f.fastqc.zip
-	irap_fastqc2tsv $< > $@.tmp && mv $@.tmp $@
+	irap_fastqc2tsv $< | sed "1s/.f$$//" > $@.tmp && mv $@.tmp $@
 
 # PE
 %_1.f.fastqc.tsv: %_1.f.fastqc.zip 
-	irap_fastqc2tsv $< > $@.tmp && mv $@.tmp $@
+	irap_fastqc2tsv $< | sed "1s/.f$$//" > $@.tmp && mv $@.tmp $@
 
 %_2.f.fastqc.tsv: %_2.f.fastqc.zip 
-	irap_fastqc2tsv $< > $@.tmp && mv $@.tmp $@
+	irap_fastqc2tsv $< | sed "1s/.f$$//" > $@.tmp && mv $@.tmp $@
 
 endif
 endif
@@ -385,7 +393,7 @@ mapping_report: report_setup $(call mapping_report_targets)
 
 
 # files required for producing the mapping report
-MAPPING_REPORT_PRE_STATS=$(foreach m,$(call mapping_dirs),  $(foreach p,$(pe),$(m)/$($(p)_dir)$(p).pe.hits.bam.stats $(m)/$($(p)_dir)$(p).pe.hits.bam.stats.csv $(m)/$($(p)_dir)$(p).pe.hits.bam.gene.stats) $(foreach s,$(se),$(m)/$($(s)_dir)$(s).se.hits.bam.stats.csv $(m)/$($(s)_dir)$(s).se.hits.bam.gene.stats $(m)/$($(s)_dir)$(s).se.hits.bam.stats)) 
+MAPPING_REPORT_PRE_STATS=$(foreach m,$(call mapping_dirs),  $(foreach p,$(pe),$(m)/$($(p)_dir)$(p).pe.hits.bam.stats $(m)/$($(p)_dir)$(p).pe.hits.bam.stats.csv $(m)/$($(p)_dir)$(p).pe.hits.bam.gene.stats) $(foreach s,$(se),$(m)/$($(s)_dir)$(s).se.hits.bam.stats.csv $(m)/$($(s)_dir)$(s).se.hits.bam.gene.stats $(m)/$($(s)_dir)$(s).se.hits.bam.stats)) $(FASTQC_REPORT_FILES)
 
 # merge into a single file the statistics collected from the BAMs 
 $(name)/%/stats_raw.tsv $(name)/%/stats_perc.tsv:  $(foreach p,$(pe),$(name)/%/$($(p)_dir)$(p).pe.hits.bam.stats.csv) $(foreach s,$(se),$(name)/%/$($(s)_dir)$(s).se.hits.bam.stats.csv)
