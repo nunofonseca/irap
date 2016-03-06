@@ -171,6 +171,28 @@ if [ "$check_stage0_only" == "y" ]; then
     exit $?
 fi
 
+#################################################################
+# 
+set +e
+if [ "-" != "$spikein_fasta-" ]; then
+    pinfo "processing -p option"
+    if [ -e "$spikein_fasta" ]; then
+	tsfile="$DATA_DIR/raw_data/single_lib/`basename $spikein_fasta`"
+	if [ -e $tsfile ]; then
+	    pwarning "File $tsfile already exists...file not overwritten"
+	else
+	    cp -v $spikein_fasta $tsfile
+	    pinfo "Copied $spikein_fasta to $tsfile"
+	fi
+	irap_options="$irap_options spikein_fasta=`basename $tsfile`"
+    else
+	perror "ERROR:: File '$spikein_fasta' not found"
+	exit 1
+    fi
+fi
+set -e
+
+
 if [ "$do_stage0-" == "yes-" ]; then
     pinfo "Running stage0 only"
     # species
@@ -297,26 +319,6 @@ pinfo "FASTQ files in place"
 popd > /dev/null 
 
 #################################################################
-# 
-set +e
-if [ "-" != "$spikein_fasta-" ]; then
-    pinfo "processing -p option"
-    if [ -e "$spikein_fasta" ]; then
-	tsfile="$DATA_DIR/raw_data/single_lib/`basename $spikein_fasta`"
-	if [ -e $tsfile ]; then
-	    pwarning "File $tsfile already exists...file not overwritten"
-	else
-	    cp -v $spikein_fasta $tsfile
-	    pinfo "Copied $spikein_fasta to $tsfile"
-	fi
-	irap_options="$irap_options spikein_fasta=`basename $tsfile`"
-    else
-	perror "ERROR:: File '$spikein_fasta' not found"
-	exit 1
-    fi
-fi
-set -e
-#################################################################
 # TSV with the time and memory used
 time_log_file=$odir/`get_fastq_fileprefix $f1`.time
 pinfo "Time log file in $time_log_file"
@@ -335,7 +337,7 @@ if [ $? !=  0 ]; then
 #	run_AND_timeIt "stage0" $time_log_file irap conf=$conf data_dir=$DATA_DIR    $irap_options max_mem=$mem max_threads=$threads stage0
 #    else
 	perror "ERROR:Stage0: incomplete - use -0 to run stage0"
-#	exit 1
+	exit 1
 #    fi
 fi
 
