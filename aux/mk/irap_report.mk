@@ -423,9 +423,18 @@ mapping_report_req: $(MAPPING_REPORT_PRE_STATS)
 $(name)/report/mapping/%.html: $(name)/%/  $(conf) $(call must_exist,$(name)/report/mapping/)  $(name)/%/stats_raw.tsv $(name)/%/stats_perc.tsv  $(name)/%/featstats_raw.tsv $(name)/%/featstats_perc.tsv  $(name)/%/genestats_raw.tsv 
 	$(call pass_args_stdin,irap_report_mapping,$@, --out $(subst .html,,$@).1.html --mapper $* --bam_stats $(name)/$*/stats_raw.tsv --bam_statsp $(name)/$*/stats_perc.tsv --bam_fstats $(name)/$*/featstats_raw.tsv --bam_fstatsp $(name)/$*/featstats_perc.tsv --bam_gstats $(name)/$*/genestats_raw.tsv --css ../$(CSS_FILE) --cores $(max_threads) ) && mv $(subst .html,,$@).1.html  $@
 
+################
+# temporary fix
+# remove asap
+# %.gff3.sorted: $(gff3_file_abspath)
+# 	sort -k1,1 -k4,4n $< > $@.tmp && mv $@.tmp $@
+
+# %.gff3.filt.sorted: $(gff3_file_abspath) $(name)/data/$(reference_basename).chr_sizes.txt.sorted.bed
+# 	bedtools intersect -wa -a $(gff3_file_abspath) -b $(name)/data/$(reference_basename).chr_sizes.sorted.bed  > $@.tmp &&  sort -k1,1 -k4,4n $@.tmp > $@.tmp2 && mv $@.tmp2 $@ && rm -f $@.tmp
+
 # statistics per bam file
-%.bam.gff3: %.bam $(gff3_file_abspath)
-	bedtools coverage -counts   -a $(gff3_file_abspath) -b $< > $@.tmp &&\
+%.bam.gff3: %.bam $(gff3_file_abspath).filt.sorted $(name)/data/$(reference_basename).chr_sizes.sorted.txt
+	bedtools coverage -counts -sorted  -a $(gff3_file_abspath).filt.sorted -b $< > $@.tmp -g  $(name)/data/$(reference_basename).chr_sizes.sorted.txt &&\
 	mv $@.tmp $@
 
 %.bam.stats: %.bam.gff3 
