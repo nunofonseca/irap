@@ -204,6 +204,7 @@ if [ "$do_stage0-" == "yes-" ]; then
     touch $time_log_file
 
     TARGET_DIR=$DATA_DIR/raw_data/single_lib/$folder
+    mkdir -p $TARGET_DIR
     pinfo "Running iRAP stage0"
     run_AND_timeIt "stage0" $time_log_file irap conf=$conf data_dir=$DATA_DIR    $irap_options max_mem=$mem max_threads=$threads stage0
     exit $?
