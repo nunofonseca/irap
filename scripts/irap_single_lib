@@ -118,7 +118,7 @@ function clean_up_all {
 while getopts "1:2:c:s:m:p:t:i:o:l:h0fCTIVA"  Option
 do
     case $Option in
-	A ) is_atlas_run="y";;
+	A ) is_atlas_run="1";;
 	0 ) do_stage0="yes";;
         1 ) f1=$OPTARG;;
         2 ) f2=$OPTARG;;
