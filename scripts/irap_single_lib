@@ -7,7 +7,8 @@ conf=
 strand=both
 mem=4000000000
 threads=1
-irap_options="atlas_run=y"
+#irap_options="atlas_run=y"
+is_atlas_run=
 irap_options=
 do_stage0=no
 do_clean=n
@@ -41,7 +42,7 @@ source $IRAP_DIR/aux/sh/irap_shared.sh
 function print_usage {
 cat <<EOF
 iRAP wrapper to process a single library
-Usage: irap_single_lib -1 fastq_file [-2 fastq_file2] -c irap.configuration  [-s strand (first,second,both)] [-p spikein_fasta] [-m MEM] [-t threads] [-i irap_options] [-0] [-V] [-C] [-l min_read_length] [-h] 
+Usage: irap_single_lib -1 fastq_file [-2 fastq_file2] -c irap.configuration  [-s strand (first,second,both)] [-p spikein_fasta] [-m MEM] [-t threads] [-i irap_options] [-0] [-V] [-C] [-l min_read_length] [-A] [-h] 
 
 -0  - should be executed once for each
 species/genome/annotation to generate the indexes and other files
@@ -58,6 +59,8 @@ necessary for the analysis.
 -I only run fastq_info
 
 -l minimum read length
+
+-A Expression Atlas  specific mode
 EOF
 }
 
@@ -72,7 +75,7 @@ function irap_get_name {
 	echo "ERROR: $conf not found"
 	exit 1
     fi
-    local is_atlas_run=`grep -c "^atlas_run=" $conf`
+    #local is_atlas_run=`grep -c "^atlas_run=" $conf`
     local name=
     if [ "$is_atlas_run-" != "0-" ]; then
 	local species=`grep "^species=" $conf | head -n 1| cut -f 2 -d=`
@@ -112,9 +115,10 @@ function clean_up_all {
 
 #################################################################
 # 
-while getopts "1:2:c:s:m:p:t:i:o:l:h0fCTIV"  Option
+while getopts "1:2:c:s:m:p:t:i:o:l:h0fCTIVA"  Option
 do
     case $Option in
+	A ) is_atlas_run="y";;
 	0 ) do_stage0="yes";;
         1 ) f1=$OPTARG;;
         2 ) f2=$OPTARG;;
@@ -154,7 +158,7 @@ DATA_DIR=`conf_get_data_dir $conf "$irap_options"`
 
 # Add name to iRAP's options
 # if not defined
-is_atlas_run=`grep -c "^atlas_run=" $conf`
+#is_atlas_run=`grep -c "^atlas_run=" $conf`
 name=
 if [ "$is_atlas_run-" != "0-" ]; then
     species=`grep "^species=" $conf | head -n 1| cut -f 2 -d=`
