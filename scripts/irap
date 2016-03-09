@@ -519,8 +519,15 @@ ifdef MAKECMDGOALS
 TARGETS=$(MAKECMDGOALS)
 endif
 
+# skip validation of SE or PE
 ifeq ($(TARGETS),stage0)
-$(info "Stage0 enabled - skipping validation of se and pe")
+skip_lib_validation=no
+endif
+
+
+#
+ifdef skip_lib_validation
+$(info "Skipping validation of se and pe")
 override se:=
 override pe:=
 else
