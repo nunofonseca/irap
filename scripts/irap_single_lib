@@ -438,7 +438,7 @@ pinfo "Aligning data...complete."
 
 pinfo "Quantification..."
 run_AND_timeIt "iRAP-Quant" $time_log_file  irap $irap_single_lib_options $irap_options stage3as
-# TODO: uncomment below
+# TODO: uncomment below - deprecated 
 #if [ "$is_atlas_run-" != "0-" ]; then
     # also get tpms
 #    pinfo "Quantification (TPM)"
@@ -512,7 +512,7 @@ TSVs=`irap $irap_single_lib_options  $irap_options print_stage3_s_targets  |tail
 
 pinfo "Moving the following files to $odir: $TSVs $REPORT_TSVs"
 cp -a $TSVs $odir
-# Uncomment to enable the generation of TPM matrices
+# Uncomment to enable the generation of TPM matrices - deprecated
 #if [ "$is_atlas_run-" != "0-" ]; then
     # TPM files
 #    TSVs=`irap $irap_single_lib_options quant_norm_method=tpm  $irap_options print_stage3_s_targets  |tail -n 1|grep -v "make:"`
