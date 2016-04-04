@@ -90,6 +90,7 @@ char hdr[MAX_READ_LENGTH];
 char read_buffer[MAX_READ_LENGTH];
 long index_mem=0;
 int is_casava_18=UNDEF;
+int is_int_name=UNDEF;
 int is_paired_data=FALSE;
 int is_interleaved=FALSE;
 int fix_dot=FALSE;
@@ -206,6 +207,26 @@ int is_casava_1_8_readname(const char *s) {
   } 
   regfree(&regex);
   return is_casava_1_8;
+}
+
+// is the read name a plain integer? 
+int is_int_readname(const char *s) {
+  regex_t regex;
+  int reti;
+  int is_int_name=0;
+  reti = regcomp(&regex,"^[0-9]+\n",0);  
+  if ( reti ) { 
+    fprintf(stderr, "Internal error: Could not compile regex\n"); 
+    exit(2); 
+  }
+  /* Execute regular expression */
+  //fprintf(stderr,"%s\n",hdr);
+  reti = regexec(&regex, s, 0, NULL, 0);
+  if ( !reti ) {    // match
+    is_int_name=1;
+  } 
+  regfree(&regex);
+  return is_int_name;
 }
 
 int is_casava_1_8(char *f) {
@@ -362,7 +383,13 @@ char* get_readname(char *s_orig,int *len_p,unsigned long cline,const char *filen
   } 
   if ( is_casava_18 == UNDEF ) {
     is_casava_18=is_casava_1_8_readname(s);
-    if (is_casava_18) fprintf(stderr,"CASAVA=1.8\n");
+    if (is_casava_18) { fprintf(stderr,"CASAVA=1.8\n");
+    } else {
+      is_int_readname(s);
+      if ( is_int_name ) {
+	fprintf(stderr,"Read name provided as a integer\n");
+      }
+    }
   }
   s=&s[1]; // ignore/discard @
   if (is_casava_18) {
@@ -375,11 +402,17 @@ char* get_readname(char *s_orig,int *len_p,unsigned long cline,const char *filen
       len=len-2;
     }
   } else {
+    if ( ! is_int_name ) {      
     // discard last character if PE && not casava 1.8
-    len=strlen(s);
-    if (is_paired_data) 
-      len--;
-    s[len-1]='\0'; 
+      len=strlen(s);
+      if (is_paired_data) 
+	len--;
+      s[len-1]='\0';
+    } else {
+      // keep the sequence unchanged
+      len=strlen(s);
+      s[len-1]='\0';
+    }
   }
   *len_p=len;
   //fprintf(stderr,"read=%s=\n",s);
