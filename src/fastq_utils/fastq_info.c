@@ -229,7 +229,7 @@ int is_int_readname(const char *s) {
     exit(2); 
   }
   /* Execute regular expression */
-  fprintf(stderr,">%s<\n",s);
+  //fprintf(stderr,">%s<\n",s);
   reti = regexec(&regex, s, 0, NULL, 0);
   if ( !reti ) {    // match
     is_int_name=1;
@@ -291,20 +291,23 @@ static inline int compare_headers(const char *hdr1,const char *hdr2) {
 
   unsigned int slen=0;
   //fprintf(stderr,">%s<\n>%s<\n",hdr1,hdr2);
+  // no readname in header2
   if ( hdr2[0]=='\n' || hdr2[0]=='\r' || hdr2[0]=='\0' ) {
     return 1;
   }
   while ( hdr1[slen]!='\0' && hdr2[slen]!='\0' ) {
-    if ( hdr1[slen]!=hdr2[slen] ) {
-      return 1;
-    }
+    if ( hdr1[slen]!=hdr2[slen] ) break;
     slen++;
-  }  
-  if ( hdr1[slen]!='\r' && hdr1[slen]!='\0') {
-    return 0;
   }
-  if ( hdr2[slen]!='\r' && hdr2[slen]!='\0') {
-    return 0;
+  // ignore white spaces
+  unsigned int slen2=slen;
+  while ( hdr1[slen]!='\0' ) {
+    if ( hdr1[slen]!='\r'  &&  hdr1[slen]!='\n' ) return 0;
+    ++slen;
+  }
+  while ( hdr2[slen2]!='\0' ) {
+    if ( hdr2[slen2]!='\r'  &&  hdr2[slen2]!='\n' ) return 0;
+    ++slen2;
   }
   return 1;
 }
