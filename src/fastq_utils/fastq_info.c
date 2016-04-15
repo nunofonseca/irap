@@ -48,6 +48,11 @@
 #define TRUE 1
 #define FALSE 0
 #define UNDEF -1
+
+#define DEFAULT  0
+#define CASAVA18 1
+#define INTEGERNAME 2
+
 //#define HASHSIZE 5
 
 #define READ_LINE(fd) gzgets(fd,&read_buffer[0],MAX_READ_LENGTH)
@@ -89,8 +94,12 @@ char hdr[MAX_READ_LENGTH];
 
 char read_buffer[MAX_READ_LENGTH];
 long index_mem=0;
+
+int readname_format=UNDEF;
+
 int is_casava_18=UNDEF;
 int is_int_name=UNDEF;
+
 int is_paired_data=FALSE;
 int is_interleaved=FALSE;
 int fix_dot=FALSE;
@@ -102,6 +111,10 @@ unsigned long rdlen_ctr[MAX_READ_LENGTH];
 unsigned long min_rl=MAX_READ_LENGTH; // minimum read length
 unsigned long max_rl=0;  // maximum read length
 unsigned long num_rds=0; // number of reads
+
+
+static inline int validate_entry(char *hdr,char *hdr2,char *seq,char *qual,unsigned long linenum,const char* filename);
+
 
 // approx. median read length
 inline unsigned int median_rl(void) {
@@ -117,21 +130,17 @@ inline unsigned int median_rl(void) {
   return(crl);
 }
 
-inline void new_read(unsigned int slen) {
+inline void new_read(const unsigned int slen) {
 
   if (slen<min_rl) {
     min_rl=slen;
-  } 
+  }
   if (slen>max_rl) {
     max_rl=slen;
   }
   rdlen_ctr[slen]++;
   ++num_rds;
 }
-
-
-
-inline int validate_entry(char *hdr,char *hdr2,char *seq,char *qual,unsigned long linenum,const char* filename);
 
 //
 // gzip extension
@@ -214,13 +223,13 @@ int is_int_readname(const char *s) {
   regex_t regex;
   int reti;
   int is_int_name=0;
-  reti = regcomp(&regex,"^[0-9]+\n",0);  
+  reti = regcomp(&regex,"^@?[0-9]+\n?$",0);  
   if ( reti ) { 
     fprintf(stderr, "Internal error: Could not compile regex\n"); 
     exit(2); 
   }
   /* Execute regular expression */
-  //fprintf(stderr,"%s\n",hdr);
+  //fprintf(stderr,">%s<\n",s);
   reti = regexec(&regex, s, 0, NULL, 0);
   if ( !reti ) {    // match
     is_int_name=1;
@@ -277,25 +286,27 @@ static ulong hashit(char *str) {
   return(hash);
 }
 
-
-
 // return 1 if the headers are the same...0 otherwise
 static inline int compare_headers(const char *hdr1,const char *hdr2) {
 
   unsigned int slen=0;
+  //fprintf(stderr,">%s<\n>%s<\n",hdr1,hdr2);
+  if ( hdr2[0]=='\n' || hdr2[0]=='\r' || hdr2[0]=='\0' ) {
+    return 1;
+  }
   while ( hdr1[slen]!='\0' && hdr2[slen]!='\0' ) {
     if ( hdr1[slen]!=hdr2[slen] ) {
-      return 0;
+      return 1;
     }
     slen++;
-  }
+  }  
   if ( hdr1[slen]!='\r' && hdr1[slen]!='\0') {
-    return 1;
+    return 0;
   }
   if ( hdr2[slen]!='\r' && hdr2[slen]!='\0') {
-    return 1;
+    return 0;
   }
-  return 0;
+  return 1;
 }
 
 static INDEX_ENTRY* lookup_header(hashtable sn_index,char *hdr) {
@@ -362,9 +373,9 @@ inline long replace_dots(long long start,char* seq, char *hdr1, char *hdr2, char
   }
   return(replaced);
 }
-
+/* Returns the readname */
 char* get_readname(char *s_orig,int *len_p,unsigned long cline,const char *filename) {
-  int len;
+  int len=0;
   
   // create a copy
   char *s;
@@ -380,19 +391,36 @@ char* get_readname(char *s_orig,int *len_p,unsigned long cline,const char *filen
   if (s[0]!='@' ) {
     fprintf(stderr,"Error in file %s, line %lu: wrong header %s\n",filename,cline,s);
     exit(1);
-  } 
-  if ( is_casava_18 == UNDEF ) {
-    is_casava_18=is_casava_1_8_readname(s);
-    if (is_casava_18) { fprintf(stderr,"CASAVA=1.8\n");
-    } else {
-      is_int_readname(s);
-      if ( is_int_name ) {
-	fprintf(stderr,"Read name provided as a integer\n");
-      }
-    }
   }
-  s=&s[1]; // ignore/discard @
-  if (is_casava_18) {
+  // executed only once
+  if ( readname_format == UNDEF ) {
+      is_casava_18=is_casava_1_8_readname(s);
+      if (is_casava_18) {
+        fprintf(stderr,"CASAVA=1.8\n");
+        readname_format=CASAVA18;
+      } else {
+	is_int_name=is_int_readname(s);
+	if ( is_int_name ) {
+	  fprintf(stderr,"Read name provided as an integer\n");
+	  readname_format=INTEGERNAME;
+	}
+      }
+  }
+  s=&s[1];// ignore/discard @
+  switch(readname_format) {
+  case DEFAULT:
+    // discard last character if PE && not casava 1.8
+    len=strlen(s);
+    if (is_paired_data) 
+      len--;
+    s[len-1]='\0';
+    break;
+  case INTEGERNAME:
+    // keep the sequence unchanged
+    len=strlen(s);
+    s[len-1]='\0';
+    break;
+  case CASAVA18:
     len=0;
     while (s[len]!=' ' && s[len]!='\0') ++len;
     s[len]='\0';
@@ -401,18 +429,7 @@ char* get_readname(char *s_orig,int *len_p,unsigned long cline,const char *filen
       s[len-2]='\0';
       len=len-2;
     }
-  } else {
-    if ( ! is_int_name ) {      
-    // discard last character if PE && not casava 1.8
-      len=strlen(s);
-      if (is_paired_data) 
-	len--;
-      s[len-1]='\0';
-    } else {
-      // keep the sequence unchanged
-      len=strlen(s);
-      s[len-1]='\0';
-    }
+    break;
   }
   *len_p=len;
   //fprintf(stderr,"read=%s=\n",s);
@@ -446,7 +463,7 @@ void index_file(char *filename,hashtable sn_index,long start_offset,long length)
     char *seq=READ_LINE_SEQ(fd1);
     char *hdr2=READ_LINE_HDR2(fd1);
     char *qual=READ_LINE_QUAL(fd1);
-    char* readname=get_readname(hdr,&len,cline,filename);
+    char *readname=get_readname(hdr,&len,cline,filename);
     if (seq==NULL || hdr2==NULL || qual==NULL ) {
       fprintf(stderr,"\nError in file %s, line %lu: file truncated?\n",filename,cline);
       exit(1);
@@ -474,7 +491,7 @@ void index_file(char *filename,hashtable sn_index,long start_offset,long length)
 }
 
 // return 0 on sucess, 1 otherwise
-inline int validate_entry(char *hdr,char *hdr2,char *seq,char *qual,unsigned long linenum,const char* filename) {
+static inline int validate_entry(char *hdr,char *hdr2,char *seq,char *qual,unsigned long linenum,const char* filename) {
   
   // Sequence identifier
   if ( hdr[0]!='@' ) {
@@ -567,7 +584,7 @@ int validate_interleaved(char *f) {
     // Read 1
     char *hdr1=READ_LINE_HDR(fd1);
     if ( hdr1==NULL) break;
-    int len;
+    int len1,len2;
     char *seq1=READ_LINE_SEQ(fd1);
     char *hdr1_2=READ_LINE_HDR2(fd1);
     char *qual1=READ_LINE_QUAL(fd1);
@@ -588,8 +605,8 @@ int validate_interleaved(char *f) {
     if (validate_entry(hdr2,hdr2_2,seq2,qual2,cline+4,f)!=0) {
       return(1);
     }
-    char* readname1=get_readname(hdr1,&len,cline,f);
-    char* readname2=get_readname(hdr2,&len,cline+4,f);
+    char* readname1=get_readname(hdr1,&len1,cline,f);
+    char* readname2=get_readname(hdr2,&len2,cline+4,f);
     if ( strcmp(readname1,readname2) ) {
       fprintf(stderr,"\nError in file %s, line %lu: unpaired read - %s\n",f,cline,readname1);
       return(1);
@@ -671,9 +688,12 @@ int main(int argc, char **argv ) {
   if (argc-nopt ==3) {
     is_paired_data=TRUE;
     //fprintf(stderr,"%d %d %d %s\n",argc,nopt,argc-nopt,argv[2+nopt]);
-    if ( !strncmp(argv[2+nopt],"pe",2) ) {
+    if ( strncmp(argv[2+nopt],"pe",2) ) {
       is_interleaved=FALSE;
-    } 
+    } else {
+      //fprintf(stderr,"Expecting interleaved reads...\n");
+      is_interleaved=TRUE;
+    }
   }
 
   memset(&rdlen_ctr[0],0,sizeof(long)*MAX_READ_LENGTH);
