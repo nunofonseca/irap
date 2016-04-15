@@ -100,7 +100,7 @@ test6:
 	time -p ./fastq_validator tests/c18_1M_2.fastq && \
 	time -p ./fastq_validator tests/casava.1.8i.fastq pe && \
 	time -p ./fastq_validator tests/solexa_1.fastq tests/solexa_2.fastq && \
-	echo "OK! No error detected"
+	echo "OK! No errors detected"
 
 test7:
 	@./fastq_info tests/test_e1.fastq || \
@@ -129,12 +129,12 @@ test7:
 	time -p ./fastq_info tests/pe_bug14.fastq tests/pe_bug14.fastq && \
 	time -p ./fastq_info tests/c18_1M_1.fastq && \
 	time -p ./fastq_info tests/c18_1M_2.fastq && \
-	time -p ./fastq_info tests/c18_1M_1.fastq.gz && \
-	time -p ./fastq_info tests/c18_1M_2.fastq.gz && \
-	time -p ./fastq_info tests/c18_1M_1.fastq.gz tests/c18_1M_1.fastq.gz && \
+	time -p ./fastq_info tests/c18_1M_1.fastq && \
+	time -p ./fastq_info tests/c18_1M_2.fastq && \
+	time -p ./fastq_info tests/c18_1M_1.fastq tests/c18_1M_1.fastq && \
 	time -p ./fastq_info tests/casava.1.8i.fastq pe && \
 	time -p ./fastq_info tests/solexa_1.fastq tests/solexa_2.fastq && \
-	 echo "OK! No error detected"
+	 echo "OK! No errors detected"
 
 
 tests: test1 test2 test3 test4 test5 test6 test7
