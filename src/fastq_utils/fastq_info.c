@@ -222,14 +222,14 @@ int is_casava_1_8_readname(const char *s) {
 int is_int_readname(const char *s) {
   regex_t regex;
   int reti;
-  int is_int_name=0;
-  reti = regcomp(&regex,"^@?[0-9]+\n?$",0);  
+  int is_int_name;
+  reti = regcomp(&regex,"^@?[0-9]+[\n\r]?$",0);  
   if ( reti ) { 
     fprintf(stderr, "Internal error: Could not compile regex\n"); 
     exit(2); 
   }
   /* Execute regular expression */
-  //fprintf(stderr,">%s<\n",s);
+  fprintf(stderr,">%s<\n",s);
   reti = regexec(&regex, s, 0, NULL, 0);
   if ( !reti ) {    // match
     is_int_name=1;
