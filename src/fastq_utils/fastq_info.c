@@ -223,7 +223,7 @@ int is_int_readname(const char *s) {
   regex_t regex;
   int reti;
   int is_int_name=FALSE;
-  reti = regcomp(&regex,"^@?[0-9]+[\n\r]?$",0);  
+  reti = regcomp(&regex,"^@[0-9]+[\n\r]?$",REG_EXTENDED);  
   if ( reti ) { 
     fprintf(stderr, "Internal error: Could not compile regex\n"); 
     exit(2); 
