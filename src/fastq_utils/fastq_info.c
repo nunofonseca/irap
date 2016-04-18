@@ -202,7 +202,7 @@ inline gzFile open_fastq(const char* filename) {
 int is_casava_1_8_readname(const char *s) {
   regex_t regex;
   int reti;
-  int is_casava_1_8=0;
+  int is_casava_1_8=FALSE;
   reti = regcomp(&regex,"[A-Z0-9:]* [12]:[YN]:[0-9]*:.*",0);  
   if ( reti ) { 
     fprintf(stderr, "Internal error: Could not compile regex\n"); 
@@ -212,7 +212,7 @@ int is_casava_1_8_readname(const char *s) {
   //fprintf(stderr,"%s\n",hdr);
   reti = regexec(&regex, s, 0, NULL, 0);
   if ( !reti ) {    // match
-    is_casava_1_8=1;
+    is_casava_1_8=TRUE;
   } 
   regfree(&regex);
   return is_casava_1_8;
@@ -222,7 +222,7 @@ int is_casava_1_8_readname(const char *s) {
 int is_int_readname(const char *s) {
   regex_t regex;
   int reti;
-  int is_int_name;
+  int is_int_name=FALSE;
   reti = regcomp(&regex,"^@?[0-9]+[\n\r]?$",0);  
   if ( reti ) { 
     fprintf(stderr, "Internal error: Could not compile regex\n"); 
@@ -232,38 +232,38 @@ int is_int_readname(const char *s) {
   //fprintf(stderr,">%s<\n",s);
   reti = regexec(&regex, s, 0, NULL, 0);
   if ( !reti ) {    // match
-    is_int_name=1;
+    is_int_name=TRUE;
   } 
   regfree(&regex);
   return is_int_name;
 }
 
-int is_casava_1_8(char *f) {
-  regex_t regex;
-  int reti;
-  int is_casava_1_8=0;
-  reti = regcomp(&regex,"[A-Z0-9:]* [12]:[YN]:[0-9]*:.*",0);  
-  if ( reti ) { 
-    fprintf(stderr, "Internal error: Could not compile regex\n"); 
-    exit(2); 
-  }
-  gzFile fd1=open_fastq(f);
-  char *hdr=READ_LINE(fd1);
-  gzclose(fd1);
-  /* Execute regular expression */
-  //fprintf(stderr,"%s\n",hdr);
-  reti = regexec(&regex, hdr, 0, NULL, 0);
-  if ( !reti ) {    // match
-    is_casava_1_8=1;
-  } 
-  /* else{
-    char msgbuf[100];
-    regerror(reti, &regex, msgbuf, sizeof(msgbuf));
-    //fprintf(stderr, "Regex match failed: %s\n", msgbuf);
-    } */
-  regfree(&regex);
-  return is_casava_1_8;
-}
+/* int is_casava_1_8(char *f) { */
+/*   regex_t regex; */
+/*   int reti; */
+/*   int is_casava_1_8=0; */
+/*   reti = regcomp(&regex,"[A-Z0-9:]* [12]:[YN]:[0-9]*:.*",0);   */
+/*   if ( reti ) {  */
+/*     fprintf(stderr, "Internal error: Could not compile regex\n");  */
+/*     exit(2);  */
+/*   } */
+/*   gzFile fd1=open_fastq(f); */
+/*   char *hdr=READ_LINE(fd1); */
+/*   gzclose(fd1); */
+/*   /\* Execute regular expression *\/ */
+/*   //fprintf(stderr,"%s\n",hdr); */
+/*   reti = regexec(&regex, hdr, 0, NULL, 0); */
+/*   if ( !reti ) {    // match */
+/*     is_casava_1_8=1; */
+/*   }  */
+/*   /\* else{ */
+/*     char msgbuf[100]; */
+/*     regerror(reti, &regex, msgbuf, sizeof(msgbuf)); */
+/*     //fprintf(stderr, "Regex match failed: %s\n", msgbuf); */
+/*     } *\/ */
+/*   regfree(&regex); */
+/*   return is_casava_1_8; */
+/* } */
 
 //unsigned long long qual_vals[126]; // distribution of quality values
 /*
@@ -406,6 +406,8 @@ char* get_readname(char *s_orig,int *len_p,unsigned long cline,const char *filen
 	if ( is_int_name ) {
 	  fprintf(stderr,"Read name provided as an integer\n");
 	  readname_format=INTEGERNAME;
+	} else {
+	  readname_format=DEFAULT;
 	}
       }
   }
