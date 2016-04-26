@@ -233,19 +233,23 @@ edgeR_bibtex=edger.bib
 edgeR_analysis="Differential gene expression"
 
 ####
-mmseq_citation=Turro, Ernest, Shu-Yi Su, Angela Gonçalves, L. J. Coin, Sylvia Richardson, and Alex Lewin. "Haplotype and isoform specific expression estimation using multi-mapping RNA-seq reads." Genome Biol 12, no. 2 (2011): R13.
-mmseq_bibtex=
+#mmseq_citation=Turro, Ernest, Shu-Yi Su, Angela Gonçalves, L. J. Coin, Sylvia Richardson, and Alex Lewin. "Haplotype and isoform specific expression estimation using multi-mapping RNA-seq reads." Genome Biol 12, no. 2 (2011): R13.
+#mmseq_bibtex=
 
 
 ####
 DEXSeq_citation=Anders, Simon, Alejandro Reyes, and Wolfgang Huber. "Detecting differential usage of exons from RNA-seq data." Genome Research (2012).
 DEXSeq_bibtex=dexseq.bib
-DEX_analysis="Differential exon usage"
+DEXSeq_analysis="Differential exon usage"
 
 ####
 baySeq_citation=Hardcastle, Thomas J., and Krystyna A. Kelly. "baySeq: empirical Bayesian methods for identifying differential expression in sequence count data." BMC bioinformatics 11, no. 1 (2010): 422.
 baySeq_bibtex=bayseq.bib
 baySeq_analysis="Differential gene expression"
+
+kallisto_citation=Nicolas L Bray, Harold Pimentel, Páll Melsted, Lior Pachter. "Near-optimal probabilistic RNA-seq quantification." Nature Biotechnology (2016).
+kallisto_bibtex=kallistp.bib
+kallisto_analysis="Gene/transcript quantification"
 
 piano_citation=Väremo, Leif, Jens Nielsen, and Intawat Nookaew. "Enriching the gene set analysis of genome-wide data by incorporating directionality of gene expression and combining statistical hypotheses and methods". Nucleic acids research 41.8 (2013): 4378-4391.
 piano_bibtex=piano.bib
