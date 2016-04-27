@@ -90,8 +90,8 @@ int main(int argc, char *argv[])
   header = bam_header_read(in2);
   num_alns=0;
   while(bam_read1(in2,aln)>=0) { // read alignment
-    if (aln->core.tid < 0) continue;//ignore unaligned reads
-    if (aln->core.flag & BAM_FUNMAP) continue;
+    if (aln->core.tid < 0) goto end_loop;//ignore unaligned reads
+    if (aln->core.flag & BAM_FUNMAP) goto end_loop;
     if (aln->core.flag & BAM_FPAIRED ) { // PAIRED
 
     } else { //SE 
@@ -102,6 +102,7 @@ int main(int argc, char *argv[])
       aln->core.flag&=~BAM_FREAD2;
       fprintf(stderr, ".");  
     }
+  end_loop:
     bam_write1(out,aln);
     if(!out2stdout) PRINT_ALNS_PROCESSED(num_alns);
     ++num_alns;
