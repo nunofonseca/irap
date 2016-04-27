@@ -95,8 +95,8 @@ int main(int argc, char *argv[])
   num_nh=0;
   while(bam_read1(in2,aln)>=0) { // read alignment
     paired=1;
-    if (aln->core.tid < 0) continue;//ignore unaligned reads
-    if (aln->core.flag & BAM_FUNMAP) continue;
+    if (aln->core.tid < 0) goto end_loop;//ignore unaligned reads
+    if (aln->core.flag & BAM_FUNMAP) goto end_loop;
     if (aln->core.flag & BAM_FREAD2) paired=2;
     ++num_alns;
 
@@ -109,6 +109,7 @@ int main(int argc, char *argv[])
       //      printf("!>%s %d\n",bam1_qname(aln),r->ctr);
 #endif
     }
+  end_loop:
     bam_write1(out,aln);
     if(!out2stdout) PRINT_ALNS_PROCESSED(num_alns);
   }
