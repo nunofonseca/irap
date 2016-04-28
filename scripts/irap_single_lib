@@ -20,6 +20,7 @@ do_info_only=n
 check_stage0_only=n
 spikein_fasta=
 tsfile=
+gen_cram=y
 
 out_dir=out
 # files created by irap_single_lib (not by iRAP)
@@ -42,7 +43,7 @@ source $IRAP_DIR/aux/sh/irap_shared.sh
 function print_usage {
 cat <<EOF
 iRAP wrapper to process a single library
-Usage: irap_single_lib -1 fastq_file [-2 fastq_file2] -c irap.configuration  [-s strand (first,second,both)] [-p spikein_fasta] [-m MEM] [-t threads] [-i irap_options] [-0] [-V] [-C] [-l min_read_length] [-A] [-h] 
+Usage: irap_single_lib -1 fastq_file [-2 fastq_file2] -c irap.configuration  [-s strand (first,second,both)] [-p spikein_fasta] [-m MEM] [-t threads] [-i irap_options] [-0] [-V] [-C] [-l min_read_length] [-B] [-A] [-h] 
 
 -0  - should be executed once for each
 species/genome/annotation to generate the indexes and other files
@@ -52,15 +53,17 @@ necessary for the analysis.
 
 -m MEM - value in bytes
 
--C full clean up when it exits
+-C - full clean up when it exits
 
--T clean up only
+-T - clean up only
 
--I only run fastq_info
+-I - only run fastq_info
 
--l minimum read length
+-l - minimum read length
 
--A Expression Atlas  specific mode
+-B - keep only the bam files (by default the alignments are kept as CRAM) 
+
+-A - Expression Atlas  specific mode
 EOF
 }
 
@@ -115,7 +118,7 @@ function clean_up_all {
 
 #################################################################
 # 
-while getopts "1:2:c:s:m:p:t:i:o:l:h0fCTIVA"  Option
+while getopts "1:2:c:s:m:p:t:i:o:l:h0fBCTIVA"  Option
 do
     case $Option in
 	A ) is_atlas_run="1";;
@@ -124,6 +127,7 @@ do
         2 ) f2=$OPTARG;;
         c ) conf=$OPTARG;;
 	C ) do_clean=y;;
+	B ) gen_cram=n;;
 	s ) strand=$OPTARG;;
 	p ) spikein_fasta=$OPTARG;;
 	m ) mem=$OPTARG;;
@@ -325,11 +329,12 @@ popd > /dev/null
 
 #################################################################
 # TSV with the time and memory used
-time_log_file=$odir/`get_fastq_fileprefix $f1`.time
+oprefix=$odir/`get_fastq_fileprefix $f1`
+time_log_file=$oprefix.time
 pinfo "Time log file in $time_log_file"
 touch $time_log_file
 
-cat <<EOF > $odir/cmd
+cat <<EOF > $oprefix.cmd
 irap_single_lib $script_parameters
 EOF
 ########
@@ -471,41 +476,50 @@ BAM=`irap $irap_single_lib_options $irap_options print_stage2_files|tail -n 1|gr
 if [ "$BAM-" == "-" ]; then
     run_AND_timeIt "iRAP-CRAM" $time_log_file  echo no bam no cram
 else
-
     if [ ! -e "$BAM" ]; then
 	perror "Ooops: $BAM not found! This is not good."
 	exit 1
     fi
 
-
-CRAM_FILE=`dirname $odir/$f1_bn`/$libname_noprefix.cram    
-set +e
-if [ $run_faster=="y" ] && [ -e $CRAM_FILE ] && [ -e $CRAM_FILE.md5 ] ; then
-    pinfo "$CRAM_FILE exists - skipping generation of CRAM file. Do not use -f option to force the generation of the CRAM file."
-else
-    # cp while in devel 
-    #mv $BAM $odir/$f1_bn.bam
-    cp $BAM $odir/$f1_bn.bam
-    # add the headers to the BAM
-    samtools view -H $odir/$f1_bn.bam > $odir/.header
-    
-    # create the CRAM file
-    pinfo "CRAMMING..."
-    run_AND_timeIt "iRAP-CRAM" $time_log_file  irap $irap_single_lib_options $irap_options  $odir/$f1_bn.cram
-    if [ $? != 0 ]; then
-	perror "Generation of CRAM file failed"
-	exit 1
+    CRAM_FILE=`dirname $odir/$f1_bn`/$libname_noprefix.cram
+    BAM_FILE=`dirname $odir/$f1_bn`/$libname_noprefix.bam    
+    set +e
+    # Generate the CRAM file?
+    if [ $gen_cram == "y" ] ; then
+	pinfo "Generating a final CRAM file..."
+	if [ $run_faster=="y" ] && [ -e $CRAM_FILE ] && [ -e $CRAM_FILE.md5 ] ; then
+	    pinfo "$CRAM_FILE exists - skipping generation of CRAM file. To force the generation of the CRAM file do not use the -f option."
+	else
+	    # cp while in devel 
+	    #mv $BAM $odir/$f1_bn.bam
+	    cp $BAM $odir/$f1_bn.bam
+	    # add the headers to the BAM
+	    samtools view -H $odir/$f1_bn.bam > $odir/.header
+	    
+	    # create the CRAM file
+	    pinfo "CRAMMING..."
+	    run_AND_timeIt "iRAP-CRAM" $time_log_file  irap $irap_single_lib_options $irap_options  $odir/$f1_bn.cram
+	    if [ $? != 0 ]; then
+		perror "Generation of CRAM file failed"
+		exit 1
+	    fi
+	    pinfo "CRAMMING...done."
+	    
+	    mv $odir/$f1_bn.cram $CRAM_FILE
+	    pinfo "CRAM_FILE created"
+	    # generate the md5sum
+	    md5sum $CRAM_FILE > $CRAM_FILE.tmp.md5 && mv $CRAM_FILE.tmp.md5 $CRAM_FILE.md5
+	    pinfo "$CRAM_FILE.md5 created"
+	    rm -f $odir/$f1_bn.bam
+	    pinfo "Temporary BAM file deleted"
+	fi
+    else
+	pinfo "Generating a final BAM file..."
+	cp $BAM $odir/$BAM_FILE
+	# generate the md5sum
+	md5sum $BAM_FILE > $BAM_FILE.tmp.md5 && mv $BAM_FILE.tmp.md5 $BAM_FILE.md5
+	pinfo "$BAM_FILE.md5 created"
     fi
-    pinfo "CRAMMING...done."
-
-    mv $odir/$f1_bn.cram $CRAM_FILE
-    pinfo "CRAM_FILE created"
-    # generate the md5sum
-    md5sum $CRAM_FILE > $CRAM_FILE.tmp.md5 && mv $CRAM_FILE.tmp.md5 $CRAM_FILE.md5
-    pinfo "$CRAM_FILE.md5 created"
-    rm -f $odir/$f1_bn.bam
-    pinfo "Temporary BAM file deleted"
-fi
 fi
 # 
 TSVs=`irap $irap_single_lib_options  $irap_options print_stage3_s_targets  |tail -n 1|grep -v "make:"`
