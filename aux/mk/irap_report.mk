@@ -434,7 +434,7 @@ $(name)/report/mapping/%.html: $(name)/%/  $(conf) $(call must_exist,$(name)/rep
 
 # statistics per bam file
 %.bam.gff3: %.bam $(gff3_file_abspath).filt.sorted $(name)/data/$(reference_basename).chr_sizes.sorted.txt
-	bedtools coverage -counts -sorted  -a $(gff3_file_abspath).filt.sorted -b $< > $@.tmp -g  $(name)/data/$(reference_basename).chr_sizes.sorted.txt &&\
+	bedtools coverage -counts -sorted  -a $(gff3_file_abspath).filt.sorted -b $< -g  $(name)/data/$(reference_basename).chr_sizes.sorted.txt > $@.tmp  &&\
 	mv $@.tmp $@
 
 %.bam.stats: %.bam.gff3 
