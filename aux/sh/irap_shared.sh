@@ -51,37 +51,37 @@ function conf_get_data_dir {
 function conf_get_mapper {
     conf=$1
     cmdline_options=$2
-    echo `conf_get_var_value mapper $conf "$cmdline_options"`
+    echo `conf_get_var_value mapper $conf "$cmdline_options skip_lib_validation=1"`
 }
 
 function conf_get_quant_method {
     conf=$1
     cmdline_options=$2
-    echo `conf_get_var_value quant_method $conf "$cmdline_options"`
+    echo `conf_get_var_value quant_method $conf "$cmdline_options skip_lib_validation=1"`
 }
 
 function conf_get_name {
     conf=$1
     cmdline_options=$2
-    echo `conf_get_var_value name $conf "$cmdline_options"`
+    echo `conf_get_var_value name $conf "$cmdline_options skip_lib_validation=1"`
 }
 
 function conf_get_reference {
     conf=$1
     cmdline_options=$2
-    echo `conf_get_var_value reference $conf "$cmdline_options"`
+    echo `conf_get_var_value reference $conf "$cmdline_options skip_lib_validation=1"`
 }
 
 function conf_get_gtf {
     conf=$1
     cmdline_options=$2
-    echo `conf_get_var_value gtf_file $conf "$cmdline_options"`
+    echo `conf_get_var_value gtf_file $conf "$cmdline_options skip_lib_validation=1"`
 }
 
 function conf_get_species {
     conf=$1
     cmdline_options=$2
-    echo `conf_get_var_value species $conf "$cmdline_options"`
+    echo `conf_get_var_value species $conf "$cmdline_options skip_lib_validation=1"`
 }
 
 # 1 - conf file
@@ -185,8 +185,9 @@ function run_AND_timeIt {
     datetime=`date "+%F %R"`
     d=`dirname $logfile`
     mkdir -p $d/logs
-    sout=$d/logs/$label.out
-    serr=$d/logs/$label.err
+    fff=`basename $logfile`
+    sout=$d/logs/$fff.$label.out
+    serr=$d/logs/$fff.$label.err
     #echo `pwd`
     echo "CMD: $*" 
     # Redirect stderr and stdout to a file
