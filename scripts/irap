@@ -1312,6 +1312,9 @@ include $(irap_path)/../aux/mk/irap_atlas.mk
 # Fusion
 include $(irap_path)/../aux/mk/irap_fusion.mk
 
+# Junctions
+#include $(irap_path)/../aux/mk/irap_junction.mk
+
 ifdef irap_devel
 $(call p_info,Loading code under development)
 # include under development features
@@ -1538,7 +1541,7 @@ $(name)/data/$(reference_basename).chr_sizes.txt: $(reference_abspath)
 # remove $(name)/data/$(reference_basename).chr_sizes.sorted.txt
 # and rename to  $(name)/data/$(reference_basename).chr_sizes.txt
 $(name)/data/$(reference_basename).chr_sizes.sorted.txt: $(name)/data/$(reference_basename).chr_sizes.txt
-	cat $< |sort -k1,1 > $@.tmp  && mv $@.tmp $@
+	cat $< | sort -k1,1 > $@.tmp  && mv $@.tmp $@
 
 $(name)/data/$(reference_basename).chr_sizes.sorted.bed: $(name)/data/$(reference_basename).chr_sizes.sorted.txt
 	cat $< | awk 'BEGIN {OFS="\t";} {print  $$1,"1",$$2;}'  > $@.tmp && mv $@.tmp $@
