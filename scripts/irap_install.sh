@@ -393,14 +393,14 @@ FASTQC_URL=http://www.bioinformatics.babraham.ac.uk/projects/fastqc/$FASTQC_FILE
 JBROWSE_VERSION=1.7.5
 JBROWSE_FILE=download.php?id=35
 JBROWSE_URL=http://jbrowse.org/wordpress/wp-content/plugins/download-monitor/$JBROWSE_FILE
-JBROWSE_EXTRA_UTILS="hgGcPercent bedGraphToBigWig wigCorrelate bigWigInfo bigWigSummary faToNib faToTwoBit hgWiggle"
+JBROWSE_EXTRA_UTILS="hgGcPercent bedGraphToBigWig wigCorrelate bigWigInfo bigWigSummary faToNib faToTwoBit hgWiggle bigWigMerge"
 JBROWSE_EXTRA_UTILSURL=http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/
 
 # 1.12.0 -- 85
 NEW_JBROWSE_VERSION=1.12.0
 NEW_JBROWSE_FILE=download.php?id=101
 NEW_JBROWSE_URL=http://jbrowse.org/wordpress/wp-content/plugins/download-monitor/$NEW_JBROWSE_FILE
-NEW_JBROWSE_EXTRA_UTILS="hgGcPercent bedGraphToBigWig wigCorrelate bigWigInfo bigWigSummary faToNib faToTwoBit hgWiggle"
+NEW_JBROWSE_EXTRA_UTILS="hgGcPercent bedGraphToBigWig wigCorrelate bigWigInfo bigWigSummary faToNib faToTwoBit hgWiggle bigWigMerge"
 NEW_JBROWSE_EXTRA_UTILSURL=http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/
 
 # 2.10.8 osa does not work with 2.10.9 up to 2.11
@@ -967,6 +967,7 @@ function deps_install {
     bedtools_install
     vcftools_install
     python_packages_install
+    ucsc_utils_install
     #picard_install
     pinfo "Installing dependencies...done."
 }
@@ -1749,6 +1750,18 @@ function data_install {
     pinfo "Creating data folder...done."
 }
 
+function ucsc_utils_install {
+
+    pinfo "Installing extra programs from UCSC..."
+    for f in $JBROWSE_EXTRA_UTILS; do
+	pinfo "Downloading and installing $f..."
+	download $JBROWSE_EXTRA_UTILS_URL/$f
+	chmod +x $f
+	cp $f $IRAP_DIR/bin
+	pinfo "Downloading and installing $f...done"
+    done
+    pinfo "Installing extra programs from UCSC...done."
+}
 #############################################
 # WIP
 function ireckon_install {
