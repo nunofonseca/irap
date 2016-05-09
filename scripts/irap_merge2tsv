@@ -66,7 +66,7 @@ pinfo("Parameters parsed.")
 library(data.table)
 out.table <- NULL
 
-files <- unlist(strsplit(opt$tsv_files,"[ \t\n,]+"))
+files <- unlist(strsplit(opt$tsv_files,"[ \t\n,;]+"))
 nfiles <- length(files)
 ctr <- 0
 #print(files)
