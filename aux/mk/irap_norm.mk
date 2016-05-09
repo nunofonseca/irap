@@ -50,7 +50,7 @@ $(name)/$(mapper)/$(quant_method)/exons.rpkm.$(exon_quant_method).irap.tsv: $(na
 	irap_raw2metric --tsv $<  --lengths $(exon_length) --feature exon --metric rpkm --out $@.tmp && mv $@.tmp $@	
 endif
 
-$(name)/$(mapper)/$(quant_method)/transcripts.rpkm.irap.tsv: $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv $(feat_length)
+$(name)/$(mapper)/$(quant_method)/transcripts.rpkm.$(quant_method).irap.tsv: $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv $(feat_length)
 	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature transcript --metric rpkm --out $@.tmp && mv $@.tmp $@	
 
 
@@ -86,7 +86,7 @@ $(name)/$(mapper)/$(quant_method)/exons.tpm.$(exon_quant_method).irap.tsv: $(nam
 	irap_raw2metric --tsv $<  --lengths $(exon_length) --feature exon --metric tpm --out $@.tmp && mv $@.tmp $@	
 endif
 
-$(name)/$(mapper)/$(quant_method)/transcripts.tpm.irap.tsv: $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv $(feat_length)
+$(name)/$(mapper)/$(quant_method)/transcripts.tpm.$(quant_method).irap.tsv: $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv $(feat_length)
 	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature transcript --metric tpm --out $@.tmp && mv $@.tmp $@	
 
 
