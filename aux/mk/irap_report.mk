@@ -328,7 +328,7 @@ ifeq  ($(qc),off)
 FASTQC_REPORT_FILES=$(foreach p,$(pe),$(name)/report/riq/$($(p)_dir)/$(call get_fastq_prefix,$(p),pe)_1.fastqc.tsv $(name)/report/riq/$($(p)_dir)$(call get_fastq_prefix,$(p),pe)_2.fastqc.tsv) $(foreach p,$(se),$(name)/report/riq/$($(p)_dir)$(call get_fastq_prefix,$(p),se).fastqc.tsv)
 
 $(name)/report/fastq_qc_report.tsv:  $(FASTQC_REPORT_FILES)
-	$(call pass_args_stdin,irap_merge2tsv,$@.tmp, --in="$(subst $(space),;,$^)"  --out $@.tmp) && mv $@.tmp $@
+	$(call pass_args_stdin,irap_merge2tsv,$@.tmp, --in=$(subst $(space),;,$^)  --out $@.tmp) && mv $@.tmp $@
 
 %.fastqc.tsv: %.fastqc.zip
 	irap_fastqc2tsv $< > $@.tmp && mv $@.tmp $@
@@ -339,7 +339,7 @@ else
 FASTQC_REPORT_FILES=$(foreach p,$(pe),$(name)/report/riq/$($(p)_dir)raw_data/$(p)_1.f.fastqc.tsv $(name)/report/riq/$($(p)_dir)raw_data/$(p)_2.f.fastqc.tsv) $(foreach p,$(se),$(name)/report/riq/$($(p)_dir)raw_data/$(p).f.fastqc.tsv)
 
 $(name)/report/fastq_qc_report.tsv:  $(FASTQC_REPORT_FILES)
-	$(call pass_args_stdin,irap_merge2tsv,$@.tmp, --in="$(subst $(space),;,$^)"  --out $@.tmp) && mv $@.tmp $@
+	$(call pass_args_stdin,irap_merge2tsv,$@.tmp, --in=$(subst $(space),;,$^)  --out $@.tmp) && mv $@.tmp $@
 
 # SE
 %.f.fastqc.tsv: %.f.fastqc.zip
