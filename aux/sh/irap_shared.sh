@@ -374,7 +374,7 @@ function iRAP-Mapping_errors {
 	if [ $? -eq 0 ]; then
 	    set_classified_error "iRAP Mapping: no aligned reads in BAM"
 	else
-	    e=`grep -E "bowtie2-align died with signal .* (core dumped)" $errf`
+	    e=`grep -F "bowtie2-align died with signal" $errf`
 	    if [ $? -eq 0 ]; then
 		echo hostname=`hostname`
 		set_classified_error "iRAP Mapping: bowtie2-align  crashed: `hostname`"
@@ -424,9 +424,14 @@ function iRAP-Quant_errors {
 	else
 	    E=`grep -E "(disk I/O error|Stale|IOError:)" $errf`
 	    if [ $? -eq 0 ]; then
-		set_classified_error "iRAP Quant: I/O error"
-	    else	    
-		set_error "iRAP Quant: unclassified error"
+		set_classified_error "iRAP Quant: I/O error"		
+	    else
+		E=`grep -F "ValueError: 'pair_alignments' needs a sequence of paired-end" $errf`
+		if [ $? -eq 0 ]; then
+		    set_classified_error "iRAP Quant: too few paired-end reads"
+		else
+		    set_error "iRAP Quant: unclassified error"
+		fi
 	    fi
 	fi
     fi
