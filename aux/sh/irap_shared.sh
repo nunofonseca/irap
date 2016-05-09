@@ -34,7 +34,7 @@ function conf_get_data_dir {
     # 
     d=`echo $irap_options|grep "data_dir="`
     if [ "$d-" != "-" ]; then
-	d=`echo $irap_options|sed -E "s/.*\s?data_dir=([^\s]+).*/\1/"`
+	d=`echo $irap_options|sed -E "s|.*\s?data_dir=([^ ]+).*|\1|"`
     else
 	d=`grep -E "^\s*data_dir=" $conf | cut -f 2 -d\=`
 	if [ "$d-" == "-" ]; then
