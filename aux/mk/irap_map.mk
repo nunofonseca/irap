@@ -396,13 +396,14 @@ endef
 soapsplice_map_params=  -S 3  -p $(max_threads)  -f 2  -g 1000 $(soapsplice_map_options)
 soapsplice_index_options= 
 
+ifeq ($(mapper),soapsplice)
 ifeq ($(mapper_splicing),no)
  soapsplice_map_params+=
-$(error mapper_splicing option must be on when using soapsplice)
+ $(error mapper_splicing option must be on when using soapsplice)
 else
  soapsplice_map_params+=
 endif
-
+endif
 define run_soapsplice_index=
 	sed 's/ .*//g' $(1) > $(1).soapsplice.fa  && irap_map.sh soap_splice  2bwt-builder $(1).soapsplice.fa $(subst .index,,$(call soapsplice_index_filename,$(1))) && touch $(call soapsplice_index_filename,$(1)) 
 endef
