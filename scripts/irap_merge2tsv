@@ -37,7 +37,7 @@ pdebug.enabled <- FALSE
 usage <- "irap_merge2tsv --out tsv_filename_prefix [options]"
 option_list <- list(
   make_option(c("-o","--out"),type="character",default=NULL,help="Output tsv file"),
-  make_option(c("--in"),type="character",dest="tsv_files",default=NULL,help="tsv files"),
+  make_option(c("--in"),type="character",dest="tsv_files",default=NULL,help="tsv files (file names should be separated by comma)"),
   make_option(c("--rowname_col"),type="character",dest="rowname_col",default="",help="name of the column with the rownames"),
   make_option(c("--sep"),type="character",dest="col_sep",default="\t",help="column separator"),
   make_option(c("--has_no_header"),action="store_true",dest="has_no_header",default=FALSE,help="TSV files already have headers?"),
@@ -66,7 +66,7 @@ pinfo("Parameters parsed.")
 library(data.table)
 out.table <- NULL
 
-files <- unlist(strsplit(opt$tsv_files,"[ \t\n]+"))
+files <- unlist(strsplit(opt$tsv_files,"[ \t\n,]+"))
 nfiles <- length(files)
 ctr <- 0
 #print(files)
