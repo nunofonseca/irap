@@ -1941,9 +1941,12 @@ load.configuration.file <- function(conf_file) {
   # exclude empty lines
   conf.table <- conf.table[line2include,,drop=FALSE]
   pinfo("Loading default parameters...")
+  ###################
+  # handle duplicates
+  conf.table <- conf.table[!duplicated(conf.table[,1]),]
   #################
   # Default values
-  vars <- c("mapper","quant_method","de_method","qual_filtering","qual_filtering","gse_tool")
+  vars <- c("mapper","quant_method","de_method","qual_filtering","gse_tool")
   for ( v in vars ) {
     if ( sum(as.character(conf.table[,1])==v)==0 ) {
       # get default value from IRAP main file
