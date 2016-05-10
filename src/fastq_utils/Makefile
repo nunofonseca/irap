@@ -118,7 +118,6 @@ test7:
 	./fastq_info tests/test_e16.fastq || \
 	./fastq_info tests/test_e17.fastq || \
 	time -p ./fastq_info tests/c18_1M_1.fastq tests/c18_1M_2.fastq || \
-	./fastq_info tests/casava.1.8i_err.Fastq || \
 	echo "OK! all errors detected"
 	./fastq_info -f tests/test_dot.fastq && \
 	./fastq_info tests/test_dot.fastq && \
@@ -126,6 +125,8 @@ test7:
 	./fastq_info tests/test_2.fastq && \
 	./fastq_info tests/test_13.fastq && \
 	./fastq_info tests/test_17.fastq && \
+	./fastq_info tests/test_21_1.fastq && \
+	./fastq_info tests/test_21_1.fastq tests/test_21_2.fastq && \
 	time -p ./fastq_info tests/pe_bug14.fastq tests/pe_bug14.fastq && \
 	time -p ./fastq_info tests/c18_1M_1.fastq && \
 	time -p ./fastq_info tests/c18_1M_2.fastq && \
@@ -136,5 +137,6 @@ test7:
 	time -p ./fastq_info tests/solexa_1.fastq tests/solexa_2.fastq && \
 	 echo "OK! No errors detected"
 
+#	./fastq_info tests/casava.1.8i_err.Fastq || \
 
 tests: test1 test2 test3 test4 test5 test6 test7

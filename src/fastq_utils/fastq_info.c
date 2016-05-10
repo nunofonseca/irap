@@ -218,7 +218,8 @@ int is_casava_1_8_readname(const char *s) {
   return is_casava_1_8;
 }
 
-// is the read name a plain integer? 
+// is the read name a plain integer
+// or it doesn't contain a #/ as the second last letter
 int is_int_readname(const char *s) {
   regex_t regex;
   int reti;
@@ -237,33 +238,6 @@ int is_int_readname(const char *s) {
   regfree(&regex);
   return is_int_name;
 }
-
-/* int is_casava_1_8(char *f) { */
-/*   regex_t regex; */
-/*   int reti; */
-/*   int is_casava_1_8=0; */
-/*   reti = regcomp(&regex,"[A-Z0-9:]* [12]:[YN]:[0-9]*:.*",0);   */
-/*   if ( reti ) {  */
-/*     fprintf(stderr, "Internal error: Could not compile regex\n");  */
-/*     exit(2);  */
-/*   } */
-/*   gzFile fd1=open_fastq(f); */
-/*   char *hdr=READ_LINE(fd1); */
-/*   gzclose(fd1); */
-/*   /\* Execute regular expression *\/ */
-/*   //fprintf(stderr,"%s\n",hdr); */
-/*   reti = regexec(&regex, hdr, 0, NULL, 0); */
-/*   if ( !reti ) {    // match */
-/*     is_casava_1_8=1; */
-/*   }  */
-/*   /\* else{ */
-/*     char msgbuf[100]; */
-/*     regerror(reti, &regex, msgbuf, sizeof(msgbuf)); */
-/*     //fprintf(stderr, "Regex match failed: %s\n", msgbuf); */
-/*     } *\/ */
-/*   regfree(&regex); */
-/*   return is_casava_1_8; */
-/* } */
 
 //unsigned long long qual_vals[126]; // distribution of quality values
 /*
@@ -377,7 +351,7 @@ inline long replace_dots(long long start,char* seq, char *hdr1, char *hdr2, char
   return(replaced);
 }
 /* Returns the readname */
-char* get_readname(char *s_orig,int *len_p,unsigned long cline,const char *filename) {
+char* get_readname(char *s_orig,int *len_p,unsigned long cline,const char *filename,int is_header1) {
   int len=0;
   
   // create a copy
@@ -391,7 +365,7 @@ char* get_readname(char *s_orig,int *len_p,unsigned long cline,const char *filen
   } else {
     s=s_orig;
   }
-  if (s[0]!='@' ) {
+  if ( is_header1==TRUE && s[0]!='@' ) {
     fprintf(stderr,"Error in file %s, line %lu: wrong header %s\n",filename,cline,s);
     exit(1);
   }
@@ -468,14 +442,9 @@ void index_file(char *filename,hashtable sn_index,long start_offset,long length)
     char *seq=READ_LINE_SEQ(fd1);
     char *hdr2=READ_LINE_HDR2(fd1);
     char *qual=READ_LINE_QUAL(fd1);
-    char *readname=get_readname(hdr,&len,cline,filename);
-    if (seq==NULL || hdr2==NULL || qual==NULL ) {
-      fprintf(stderr,"\nError in file %s, line %lu: file truncated?\n",filename,cline);
-      exit(1);
-    }
-    if (validate_entry(hdr,hdr2,seq,qual,cline,filename)!=0) {
-      exit(1);
-    }
+
+    replace_dots(start_pos,seq,hdr,hdr2,qual,fdf);    
+    char *readname=get_readname(hdr,&len,cline,filename,TRUE);
     // check for duplicates
     if ( lookup_header(sn_index,readname)!=NULL ) {
       fprintf(stderr,"\nError in file %s, line %lu: duplicated sequence %s\n",filename,cline,readname);
@@ -485,7 +454,14 @@ void index_file(char *filename,hashtable sn_index,long start_offset,long length)
       fprintf(stderr,"\nError in file %s, line %lu: malloc failed?",filename,cline);
       exit(1);
     }
-    replace_dots(start_pos,seq,hdr,hdr2,qual,fdf);    
+        if (seq==NULL || hdr2==NULL || qual==NULL ) {
+      fprintf(stderr,"\nError in file %s, line %lu: file truncated?\n",filename,cline);
+      exit(1);
+    }
+    if (validate_entry(hdr,hdr2,seq,qual,cline,filename)!=0) {
+      exit(1);
+    }
+
     PRINT_READS_PROCESSED(cline/4);
     //
     cline+=4;
@@ -538,10 +514,12 @@ static inline int validate_entry(char *hdr,char *hdr2,char *seq,char *qual,unsig
   }
   // length of hdr2 should be 1 or be the same has the hdr1
   // ignore the + sign
-  hdr2=&hdr2[1];
-  hdr=&hdr[1];
+  //get_readname(&hdr2[1]);
+  int len;
+  hdr=&hdr[1]; // get readname was already invoked
   if (hdr2[0]!='\0' && hdr2[0]!='\r' ) {
-    if ( !compare_headers(&hdr[1],&hdr2[1]) ) {
+    char *rn2=get_readname(&hdr2[1],(int*)&len,linenum+2,filename,FALSE);
+    if ( !compare_headers(&hdr[1],rn2) ) {
       fprintf(stderr,"\nError in file %s, line %lu:  header2 differs from header1\nheader 1 \"%s\"\nheader 2 \"%s\"\n",filename,linenum,hdr,hdr2);
       return 1;
     }
@@ -574,9 +552,6 @@ static inline int validate_entry(char *hdr,char *hdr2,char *seq,char *qual,unsig
   return 0;
 }
 
-
-
-
 int validate_interleaved(char *f) {
   unsigned long cline=1;
   unsigned long nreads1=0;
@@ -604,21 +579,24 @@ int validate_interleaved(char *f) {
       fprintf(stderr,"\nError in file %s, line %lu: file truncated?\n",f,cline);
       return(1);
     }
+
+    replace_dots(start_pos,seq1,hdr1,hdr1_2,qual1,fdf);    
+    replace_dots(start_pos,seq2,hdr2,hdr2_2,qual2,fdf);    
+
+    char* readname1=get_readname(hdr1,&len1,cline,f,TRUE);
+    char* readname2=get_readname(hdr2,&len2,cline+4,f,TRUE);
+    if ( strcmp(readname1,readname2) ) {
+      fprintf(stderr,"\nError in file %s, line %lu: unpaired read - %s\n",f,cline,readname1);
+      return(1);
+    } 
+
     if (validate_entry(hdr1,hdr1_2,seq1,qual1,cline,f)!=0) {
       return(1);
     }
     if (validate_entry(hdr2,hdr2_2,seq2,qual2,cline+4,f)!=0) {
       return(1);
     }
-    char* readname1=get_readname(hdr1,&len1,cline,f);
-    char* readname2=get_readname(hdr2,&len2,cline+4,f);
-    if ( strcmp(readname1,readname2) ) {
-      fprintf(stderr,"\nError in file %s, line %lu: unpaired read - %s\n",f,cline,readname1);
-      return(1);
-    } 
     PRINT_READS_PROCESSED(cline/4);
-    replace_dots(start_pos,seq1,hdr1,hdr1_2,qual1,fdf);    
-    replace_dots(start_pos,seq2,hdr2,hdr2_2,qual2,fdf);    
     //
     cline+=8;
     nreads1+=2;
@@ -739,7 +717,9 @@ int main(int argc, char **argv ) {
 	char *seq=READ_LINE_SEQ(fd2);
 	char *hdr2=READ_LINE_HDR2(fd2);
 	char *qual=READ_LINE_QUAL(fd2);
-	char* readname=get_readname(hdr,&len,cline,argv[2+nopt]);
+
+	replace_dots(start_pos,seq,hdr,hdr2,qual,fdf);
+	char* readname=get_readname(hdr,&len,cline,argv[2+nopt],TRUE);
 	if (seq==NULL || hdr2==NULL || qual==NULL ) {
 	  fprintf(stderr,"\nError in file %s, line %lu: file truncated?\n",argv[2+nopt],cline);
 	  exit(1);
@@ -764,7 +744,6 @@ int main(int argc, char **argv ) {
 	PRINT_READS_PROCESSED(cline/4);
 	++num_reads2;
 	//
-	replace_dots(start_pos,seq,hdr,hdr2,qual,fdf);
 	cline+=4;
       }
       printf("\n");
