@@ -47,7 +47,7 @@ else
     echo "Generating a merged bw file...done"
 fi
 # add header
-echo track type=bedGraph name="$track_name" description="track_descr" > $out_file.bedgraph
+echo track type=bedGraph name="$track_name" description="$track_descr" > $out_file.bedgraph
 cat $out_file.bedgraph.tmp >> $out_file.bedgraph
 rm -f $out_file.bedgraph.tmp
 echo "$out_file.bw and $out_file.bedgraph created"
