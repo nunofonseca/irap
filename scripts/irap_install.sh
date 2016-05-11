@@ -1875,7 +1875,7 @@ function python_packages_install {
     else
 	pinfo "pip already installed"
     fi
-    $PATH2PIP install pysam --user    
+    $PATH2PIP install pysam==0.8.4 --user    
     export CFLAGS=$CFLAGS_bak
     pinfo "python packages installed"
 }
