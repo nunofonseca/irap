@@ -74,7 +74,7 @@ packages2install<-c("intervals","gclus",'R2HTML',"agricolae",
                     'limma','marray','igraph')
 for (p in packages2install ) {
   cat("PACKAGE:",p,"\n")
-  biocLite(p,ask=FALSE, suppressUpdates=FALSE)
+  biocLite(p,ask=FALSE, suppressUpdates=c("^RcppArmadillo"))
 }
 
 # http://bioconductor.org/packages/2.13/data/annotation/src/contrib/GO.db_2.10.1.tar.gz fails to install
@@ -106,7 +106,7 @@ species2db<-matrix(c('org.Ag.eg.db','Anopheles',
                      'org.Xl.eg.db','Xenopus'),byrow=T,ncol=2)
 colnames(species2db)<-c("db","species")
 for (p in species2db[,'db']) {
-  biocLite(p,ask=FALSE,suppressUpdates=FALSE)
+  biocLite(p,ask=FALSE,, suppressUpdates=c("^RcppArmadillo"))
 }
 
 q(status=0)
