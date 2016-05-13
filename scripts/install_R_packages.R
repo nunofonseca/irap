@@ -63,11 +63,14 @@ source("http://bioconductor.org/biocLite.R")
 cat("-----------------------------------------------------\n")
 cat("Installing packages:\n")
 
+# Install an older version of the package (required by DEseq2 and DEXseq)
+install.packages("http://cran.rstudio.com/src/contrib/00Archive/RcppArmadillo/RcppArmadillo_0.6.600.4.0.tar.gz")
+
 packages2install<-c("intervals","gclus",'R2HTML',"agricolae",
                     "optparse","brew","reshape","gtools","gdata","caTools",
                     "sfsmisc","gplots","lattice","data.table",
                     'edgeR','piano','RCurl','GO.db',
-                    'DESeq','DESeq2','DEXSeq','baySeq',
+                    'DESeq','xtable','DESeq2','DEXSeq','baySeq',
                     'limma','marray','igraph')
 for (p in packages2install ) {
   cat("PACKAGE:",p,"\n")
