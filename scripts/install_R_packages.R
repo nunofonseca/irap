@@ -64,6 +64,7 @@ cat("-----------------------------------------------------\n")
 cat("Installing packages:\n")
 
 # Install an older version of the package (required by DEseq2 and DEXseq)
+biocLite("Rcpp",ask=FALSE, suppressUpdates=FALSE)
 install.packages("http://cran.rstudio.com/src/contrib/00Archive/RcppArmadillo/RcppArmadillo_0.6.600.4.0.tar.gz")
 
 packages2install<-c("intervals","gclus",'R2HTML',"agricolae",
