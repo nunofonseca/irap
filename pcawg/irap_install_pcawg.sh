@@ -51,7 +51,8 @@ export IRAP_DIR=$DIR
 ./scripts/irap_install.sh -s $SRC_DIR  -x make
 ./scripts/irap_install.sh -s $SRC_DIR  -x zlib
 ./scripts/irap_install.sh -s $SRC_DIR  -x perl
-./scripts/irap_install.sh -s $SRC_DIR  -x R3
+# no longer needed
+#./scripts/irap_install.sh -s $SRC_DIR  -x R3
 ./scripts/irap_install.sh -s $SRC_DIR -x gnuplot
 ./scripts/irap_install.sh -s $SRC_DIR -x YAP
 ./scripts/irap_install.sh -s $SRC_DIR -x samtools1
@@ -61,7 +62,7 @@ export IRAP_DIR=$DIR
 ./scripts/irap_install.sh -s $SRC_DIR -x core
 source $DIR/irap_setup.sh
 ./scripts/irap_install.sh -s $SRC_DIR  -x perl_packages
-./scripts/irap_install.sh -s $SRC_DIR  -x R3_packages
+./scripts/irap_install.sh -s $SRC_DIR  -x R_packages
 ./scripts/irap_install.sh -s $SRC_DIR -x tophat2
 ./scripts/irap_install.sh -s $SRC_DIR -x bowtie2
 ./scripts/irap_install.sh -s $SRC_DIR -x bowtie1
