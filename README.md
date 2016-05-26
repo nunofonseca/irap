@@ -1,4 +1,6 @@
 
+[![License](http://img.shields.io/badge/license-GPL%203-brightgreen.svg?style=flat)](http://www.gnu.org/licenses/gpl-3.0.html)
+
 IRAP - Integrated RNA-Seq Analysis Pipeline
 
 
@@ -13,7 +15,7 @@ Contents
 
 
 ============
-* 1. Install
+1. Install
 ============
 
 1.1 Get IRAP from the repository
@@ -29,7 +31,7 @@ Contents
 or, assuming that you use Bash as your shell, add the contents of the irap_setup.sh file to your ~/.bash_profile file.
 
 ===========
-* 2. Update
+2. Update
 ===========
 
 2.1 Go to the irap directory obtained from the repository (see point 1 above in Install)
@@ -39,7 +41,7 @@ or, assuming that you use Bash as your shell, add the contents of the irap_setup
     ./scripts/irap_install.sh -u -s .
 
 ==============
-* 3. Run IRAP
+3. Run IRAP
 ==============
 
 3.1. Prepare your  configuration file (an example is available in docs/myexp.conf)
@@ -82,7 +84,7 @@ Features *under development*
        irap [same options used to run the analysis] report_browser
 
 =================
-* 4. Output files 
+4. Output files 
 =================
 
 All output files produced by IRAP will be placed in sub-folders under
@@ -122,7 +124,7 @@ structure (where <X> denotes the value of the parameter X):
   only supports differential expression analysis at gene level.
 
 ====================
-* 5. Report problems 
+5. Report problems 
 ====================
 
 Errors may occur while running one of the many different pieces of
