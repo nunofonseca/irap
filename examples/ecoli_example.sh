@@ -43,9 +43,11 @@ contrasts=GAvsGB GBvsGA
 GAvsGB=GA GB
 GBvsGA=GB GA
 GA=FA FB FC
-GB=FD FE FF
+GB=FD FE 
+#FF
 
-se=FA FB FC FD FE FF
+se=FA FB FC FD FE 
+#FF
 
 FA=SRR933983.fastq.gz
 FA_rs=50
@@ -67,7 +69,7 @@ FE=SRR933990.fastq.gz
 FE_rs=50
 FE_qual=33
 
-FF=SRR933990.fastq.gz
-FF_rs=50
-FF_qual=33
+#FF=SRR933990.fastq.gz
+#FF_rs=50
+#FF_qual=33
 EOF
