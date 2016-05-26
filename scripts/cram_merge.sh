@@ -1,4 +1,4 @@
-#!/bin/env bash
+#!/usr/bin/env bash
 # merge a set of CRAM files
 # cram_merge.sh file_with_cram_filenames out_file
 # * one cram filename per line
