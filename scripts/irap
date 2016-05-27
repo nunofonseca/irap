@@ -1517,7 +1517,8 @@ $(juncs_file_abspath): $(gtf_file_abspath)
 
 # .gff3.csv: .gff3
 $(gff3_file_abspath): $(gtf_file_abspath)
-	gtf2gff3.pl $< | sed "s/^chr//" |sed "s/^Chr//" | sort -k1,1 -k4,4n > $@.tmp && mv $@.tmp $@
+#	gtf2gff3.pl $< | sed "s/^chr//" |sed "s/^Chr//" | sort -k1,1 -k4,4n > $@.tmp && mv $@.tmp $@
+	gtf2gff3.pl $< | sort -k1,1 -k4,4n > $@.tmp && mv $@.tmp $@
 
 # Filter the gff3 file to contain only the chr that are in the fasta file
 $(gff3_file_abspath).filt.sorted: $(gff3_file_abspath) $(name)/data/$(reference_basename).chr_sizes.sorted.bed
