@@ -8,7 +8,7 @@ pushd $IRAP_DIR/data/reference/ecoli_k12
 wget ftp://ftp.ensemblgenomes.org/pub/release-31/bacteria/fasta/bacteria_0_collection/escherichia_coli_str_k_12_substr_mg1655/dna/Escherichia_coli_str_k_12_substr_mg1655.ASM584v2.31.dna.toplevel.fa.gz
 wget ftp://ftp.ensemblgenomes.org/pub/release-31/bacteria/gtf/bacteria_0_collection/escherichia_coli_str_k_12_substr_mg1655/Escherichia_coli_str_k_12_substr_mg1655.ASM584v2.31.gtf.gz
 gunzip -f Escherichia_coli_str_k_12_substr_mg1655.ASM584v2.31.gtf.gz
-sed  "s/^Chromosome/Chr1/" Escherichia_coli_str_k_12_substr_mg1655.ASM584v2.31.gtf | grep -v "^#" > tmp && mv tmp Escherichia_coli_str_k_12_substr_mg1655.ASM584v2.31.gtf
+cat Escherichia_coli_str_k_12_substr_mg1655.ASM584v2.31.gtf | grep -v "^#" > tmp && mv tmp Escherichia_coli_str_k_12_substr_mg1655.ASM584v2.31.gtf
 popd
 
 
@@ -37,7 +37,7 @@ qual_filtering=on
 # Use a contamination data set to filter out reads
 cont_index=no
 # Toplevel directory with the data
-data_dir=$$(IRAP_DIR)/data
+data_dir=\$(IRAP_DIR)/data
 mapper=bowtie2
 
 # some contrasts...
