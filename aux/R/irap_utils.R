@@ -36,11 +36,11 @@ irap.css <- "irap.css"
 ############################################################
 # Useful functions
 pinfo <- function(...) {
-  cat(past0("[INFO] ",...,"\n"))
+  cat(paste0("[INFO] ",...,"\n"))
 }
 
 pwarning <- function(...) {
-  cat(past0("[WARNING] ",...,"\n"),file=stderr())
+  cat(paste0("[WARNING] ",...,"\n"),file=stderr())
 }
 pmissing <- function(...) {
   cat(paste0("[MISSING FILE] ",...,"\n"))
