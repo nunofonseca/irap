@@ -36,23 +36,23 @@ irap.css <- "irap.css"
 ############################################################
 # Useful functions
 pinfo <- function(...) {
-  cat(paste("[INFO] ",...,"\n",sep=""))
+  cat(past0("[INFO] ",...,"\n"))
 }
 
 pwarning <- function(...) {
-  cat(paste("[WARNING] ",...,"\n",sep=""),file=stderr())
+  cat(past0("[WARNING] ",...,"\n"),file=stderr())
 }
 pmissing <- function(...) {
-  cat(paste("[MISSING FILE] ",...,"\n",sep=""))
+  cat(paste0("[MISSING FILE] ",...,"\n"))
 }
 
 perror <- function(...) {
-  cat(paste("[ERROR] ",...,"\n",sep=""),file=stderr())
+  cat(paste0("[ERROR] ",...,"\n"),file=stderr())
 }
 
 capitalize <- function(s) {
   if ( is.na(s) || is.null(s) ) { return(s); }
-  return(paste(toupper(substring(s, 1,1)),substring(s,2),sep=""))
+  return(paste0(toupper(substring(s, 1,1)),substring(s,2)))
 }
 ##################################################
 # debugging
@@ -61,7 +61,7 @@ pdebug.stage <- NULL
 
 pdebug <- function(...) {
   if ( pdebug.enabled) {
-    cat(paste("[DEBUG] ",...,"\n",sep=""),file=stderr())
+    cat(paste0("[DEBUG] ",...,"\n"),file=stderr())
   }
 }
 
@@ -97,7 +97,7 @@ pdebug.status <- function(status=NULL) {
 pdebug.save.state <- function(file,stage="undef") {  
   if (pdebug.enabled) {
     assign("pdebug.stage",stage,envir = .GlobalEnv)
-    save.image(file=paste(file,".Rdata",sep=""))
+    save.image(file=paste0(file,".Rdata"))
   }
 }
 irap.assert <- function(assertion,...) {
@@ -453,7 +453,7 @@ load.gff3 <- function(file,type="gene",attrs=TRUE,selected.attrs=NULL) {
     pdebug("tags")
     if (nrow(gff3)>0 ) {
       for (tag in tags ) {
-        pattern <- paste("",tag,"=([^;]+)",sep="")
+        pattern <- paste0("",tag,"=([^;]+)")
         m<-regexec(pattern,as.vector(gff3$attributes))
                                         #m<-regexec("^ID=([^;]+);",as.vector(gff3$attributes))
         for ( i in c(1:length(m)) ) { if ( m[[i]][1]==-1 ) { m[[i]]=NA; } }
@@ -799,7 +799,7 @@ irap.ctr <- function(c.name,add.label=TRUE) {
   }
   x <- x+1
   assign(var, x, env=globalenv())
-  if (add.label) return(paste(lab," ",x,sep=""))
+  if (add.label) return(paste0(lab," ",x))
   return(x)
 }
 
@@ -841,7 +841,7 @@ irap.info2html <- function(msg) {
 get.path2template <- function(template) {
   p<-paste(IRAP.DIR,"aux/html",template,sep="/")
   if ( length(grep(".html",p,fixed=T))==0 ) {
-    p <- paste(p,".html",sep="")
+    p <- paste0(p,".html")
   }
   p
 }
@@ -876,16 +876,16 @@ gen.plot2report <- function(filename=NULL,
     }
   }
   if ( dir != "" ) {
-    dir <- paste(dir,"/",sep="")
+    dir <- paste0(dir,"/")
   }  
   # automatic filename  
   if ( is.null(filename)) {
     time.label <- format(Sys.time(), "%d%m%Y%H%M%S")
-    filename <- paste("graph_",time.label,".png",sep="")
+    filename <- paste0("graph_",time.label,".png")
   }
   ps.file <- NA
   data.file <- NA
-  png.file <- paste(dir,filename,".png",sep="")
+  png.file <- paste0(dir,filename,".png")
   png.file <- sub(".png.png$",".png",png.file)
   # width and height is in pixels
   # convert to in
@@ -909,7 +909,7 @@ gen.plot2report <- function(filename=NULL,
   }
   # PS
   if (ps==TRUE) {
-    ps.file <- paste(png.file,".eps",sep="")
+    ps.file <- paste0(png.file,".eps")
     #ps(file=ps.file)
     postscript(file=ps.file,fonts=c("serif", "sans"))
     err <- try(to.plot())
@@ -921,13 +921,13 @@ gen.plot2report <- function(filename=NULL,
   }
   # DATA
   if ( sum(!is.na(data.table)) > 0 ) {
-    data.file <- paste(png.file,".tsv",sep="")
+    data.file <- paste0(png.file,".tsv")
     write.tsv(data.table,data.file)
   }
   png.file
   # HTML
   if ( html == TRUE ) {
-    html <- paste("<DIV class=\"dplot\"><IMG src='",basename(png.file),"' border =0 width=",width," height=",height,"><BR/>",sep="")
+    html <- paste0("<DIV class=\"dplot\"><IMG src='",basename(png.file),"' border =0 width=",width," height=",height,"><BR/>")
     files <- c()
     if (ps==TRUE) {
       files <- append(files,basename(ps.file))
@@ -938,8 +938,8 @@ gen.plot2report <- function(filename=NULL,
       names(files)[length(files)] <- "TSV"
     }
     #
-    html <- paste(html,html.download.bar(files),"</DIV>",sep="")
-    html <- paste(html,"<p class='caption'>",caption,"</p>",sep="")
+    html <- paste0(html,html.download.bar(files),"</DIV>")
+    html <- paste0(html,"<p class='caption'>",caption,"</p>")
   } else {
     HTML=FALSE
   }
@@ -952,9 +952,9 @@ html.download.bar <- function(files) {
   html <- "<DIV class=\"downbar\"> Download: "
   
   for ( f in names(files) ) {
-    html <- paste(html,"&nbsp;<a class='download' href='",basename(files[f]),"'>",f,"</a>",sep="")
+    html <- paste0(html,"&nbsp;<a class='download' href='",basename(files[f]),"'>",f,"</a>")
   }
-  html <- paste(html,"</DIV>",sep="")
+  html <- paste0(html,"</DIV>")
   return(html)
 }
 
@@ -969,13 +969,13 @@ gen.plot <- function(filename=NULL,
   # automatic filename
   if ( is.null(filename)) {
     time.label <- format(Sys.time(), "%d%m%Y%H%M%S")
-    file <- paste("graph_",time.label,".png",sep="")
+    file <- paste0("graph_",time.label,".png")
   }
   plot.filename <- paste(dir,filename,sep="/")
   png(filename=plot.filename,width=width, height=height,bg=bg)
   to.plot()
   dev.off()
-  pdf(file=paste(plot.filename,".pdf",sep=""),width=width, height=height)
+  pdf(file=paste0(plot.filename,".pdf"),width=width, height=height)
   to.plot()
   dev.off()
   plot.filename
@@ -988,8 +988,8 @@ HTML.pprint.conf <- function(conf,names=NULL) {
   if ( ! is.null(names) ) {
     name <- paste(names,sep=" ",collapse=",")
   }
-  HTML( paste("Project name:", name) )
-  HTML( paste("Species:", species) )
+  HTML( paste0("Project name: ", name) )
+  HTML( paste0("Species: ", species) )
 
   contrasts <- conf.get.value(conf,"contrasts")
   if ( is.null(contrasts) ) {
@@ -1106,18 +1106,18 @@ function toggle(showHideDiv, switchTextDiv) {
 irap.HTMLEnd <- function() {
   # IRAP footer
   HTML("<HR>")
-  HTML(paste("IRAP ",irap_version,sep=""))
+  HTML(paste0("IRAP ",irap_version))
   HTMLEndFile()
 }
 ############### 
 div.ids <- 0
 HTML.toogle.div <- function(visible.text, hidden.text) {
   assign("div.ids",div.ids+1,envir = .GlobalEnv)
-  idon  <- paste("t",div.ids,"on",sep="")
-  idoff <- paste("t",div.ids,"off",sep="")
-  paste(
+  idon  <- paste0("t",div.ids,"on")
+  idoff <- paste0("t",div.ids,"off")
+  paste0(
         "<a class=\"button\" id='",idoff,"' href='javascript:toggle(\"",idon,"\",\"",idoff,"\");'>",visible.text,"</a>",
-        "<div class=\"button\" id='",idon,"' style='display: none'>",hidden.text,"</div>",sep="")
+        "<div class=\"button\" id='",idon,"' style='display: none'>",hidden.text,"</div>")
 }
 
 pprint.fieldname <- function(x) {
@@ -1496,7 +1496,7 @@ quant.heatmap <- function(data,nlim=100,key.xlabel="Expression",do.cor=FALSE,den
   }
   if ( do.cor ) {
     data <- cor(data)
-    key.xlabel <- paste(key.xlabel," correlation",sep="")
+    key.xlabel <- paste0(key.xlabel," correlation")
   }
   colors <- topo.colors(ncol(data))
 
@@ -1526,7 +1526,7 @@ plot.panel.label <- function(label,add=")",x=2.5,cex=1.5,col="black",adj=2) {
   } else {
     at=par("usr")[4]
   }
-  mtext(paste(label,add,sep=""), side=2, at=at,line=x,cex=cex,las=2,col=col,adj=adj,padj=0)
+  mtext(paste0(label,add), side=2, at=at,line=x,cex=cex,las=2,col=col,adj=adj,padj=0)
 }
 
 is.wholenumber <- function(x, tol = .Machine$double.eps^0.5)  abs(x - round(x)) < tol 
@@ -1603,7 +1603,7 @@ plot.b2b.barplot <- function(minus,plus,groups,minus.labels=NULL,bottom.labels=c
 file.required <- function(file,fatal=TRUE) {
   if (!file.exists(file)) {
     if (fatal) {
-      cat(paste("ERROR: ",file," not found\n",sep=""))
+      cat(paste0("ERROR: ",file," not found\n"))
       q(status=1)
     }
     pmissing(file)
@@ -1673,7 +1673,7 @@ myParseArgs <- function(usage,option_list,filenames.exist=NULL,multiple.options=
 #############################################################
 conf.get.value <- function(conf,val,get.default=FALSE) {
   #pinfo(">>>>>>>>>>>",val)
-  idx <- grep(paste("^",val,"$",sep=""),conf[,1],ignore.case=TRUE,value=FALSE,perl=TRUE)
+  idx <- grep(paste0("^",val,"$"),conf[,1],ignore.case=TRUE,value=FALSE,perl=TRUE)
   
   #pinfo("AAAAAAAAAAAAAAA:",val,idx,is.null(idx),typeof(idx))
   if (is.null(idx) || length(idx)==0) {
@@ -1710,7 +1710,7 @@ conf.is.qc.enabled <- function(conf) {
 }
 
 conf.get.default.value <- function(var) {
-  cmd <- paste("grep -i '^def_",var,"' ",IRAP.DIR,"/{scripts/irap,aux/mk/*.mk} | cut -f 2 -d= |head -n 1",sep="")
+  cmd <- paste0("grep -i '^def_",var,"' ",IRAP.DIR,"/{scripts/irap,aux/mk/*.mk} | cut -f 2 -d= |head -n 1")
   #pinfo(cmd)
   val <- system(cmd,intern=TRUE)
   if ( is.null(val)) { return(NULL); }
@@ -1837,7 +1837,7 @@ table.set.bgcolor <- function(table,table.col) {
   }
   irap.assert(length(table.v)==length(table.col.v))
   # html
-  html.v <- paste("<div style=\"border: 0px; padding: 0px; background-color: ",table.col.v,";\">",table.v,"</div>",sep="")
+  html.v <- paste0("<div style=\"border: 0px; padding: 0px; background-color: ",table.col.v,";\">",table.v,"</div>")
   # exclude NA
   html.v[is.na(table.v)] <- NA
   # rebuild the matrix
@@ -1885,7 +1885,7 @@ lib.info <- function(exp.conf,lib) {
     q(status=1)
   }
 
-  info <- conf.get.value(exp.conf,paste(lib,"_info",sep=""))
+  info <- conf.get.value(exp.conf,paste0(lib,"_info"))
   if ( is.null(info) || is.na(info)) {
     info <- ""
   }
@@ -2059,7 +2059,7 @@ init.source.filter <- function(table,id.col="ID") {
         qr <- grep(q,sources,value=T)
         #pinfo("Filter: ",f," ",q,"->",paste(qr,collapse="|"))
         source.filt.groups.def[[f]] <- qr
-        re <- paste("(",paste(qr,collapse="|"),")",sep="")
+        re <- paste0("(",paste(qr,collapse="|"),")")
         filt <- NULL
         if (length(qr)!=0) 
           filt <- sapply(table[,source.column],grepl,pattern=re)
@@ -2107,14 +2107,14 @@ apply.source.filter <- function(table,filter.name) {
 #
 get.source.filename <- function(file.prefix,type) {
   if ( type =="all" || type=="All" ) {
-    return(gsub(" ","_",paste(file.prefix,".html",sep="")))
+    return(gsub(" ","_",paste0(file.prefix,".html")))
   }
-  gsub(" ","_",paste(file.prefix,"_",type,".html",sep=""))
+  gsub(" ","_",paste0(file.prefix,"_",type,".html"))
 }
 # outprefix -> menu html
 get.source.filter.menu <- function(file.prefix) {
    get.source.menu.entry <- function(name,file.prefix) {
-     paste("<a href='",basename(get.source.filename(file.prefix,name)),"'>",name,"</a>",sep="")
+     paste0("<a href='",basename(get.source.filename(file.prefix,name)),"'>",name,"</a>")
    }
    sources.menu <- paste(sapply(sort(names(source.filt.groups.def)),get.source.menu.entry,file.prefix),collapse="|")
    sources.menu
