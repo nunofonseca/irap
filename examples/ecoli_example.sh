@@ -5,8 +5,10 @@ mkdir -p $IRAP_DIR/data/reference/ecoli_k12
 mkdir -p $IRAP_DIR/data/raw_data/ecoli_k12
 
 pushd $IRAP_DIR/data/reference/ecoli_k12
-wget -c ftp://ftp.ensemblgenomes.org/pub/release-19/bacteria//fasta/bacteria_22_collection/escherichia_coli_str_k_12_substr_mg1655/dna/Escherichia_coli_str_k_12_substr_mg1655.GCA_000005845.1.19.dna.toplevel.fa.gz 
-wget -c ftp://ftp.ensemblgenomes.org/pub/release-19/bacteria//gtf/bacteria_22_collection/escherichia_coli_str_k_12_substr_mg1655/Escherichia_coli_str_k_12_substr_mg1655.GCA_000005845.1.19.gtf.gz
+wget ftp://ftp.ensemblgenomes.org/pub/release-31/bacteria/fasta/bacteria_0_collection/escherichia_coli_str_k_12_substr_mg1655/dna/Escherichia_coli_str_k_12_substr_mg1655.ASM584v2.31.dna.toplevel.fa.gz
+wget ftp://ftp.ensemblgenomes.org/pub/release-31/bacteria/gtf/bacteria_0_collection/escherichia_coli_str_k_12_substr_mg1655/Escherichia_coli_str_k_12_substr_mg1655.ASM584v2.31.gtf.gz
+gunzip -f Escherichia_coli_str_k_12_substr_mg1655.ASM584v2.31.gtf.gz
+sed  "s/^Chromosome/Chr1/" Escherichia_coli_str_k_12_substr_mg1655.ASM584v2.31.gtf | grep -v "^#" > tmp && mv tmp Escherichia_coli_str_k_12_substr_mg1655.ASM584v2.31.gtf
 popd
 
 
@@ -27,15 +29,16 @@ name=ecoli_ex
 # species
 species=ecoli_k12
 # reference genome
-reference=Escherichia_coli_str_k_12_substr_mg1655.GCA_000005845.1.19.dna.toplevel.fa.gz
+reference=Escherichia_coli_str_k_12_substr_mg1655.ASM584v2.31.dna.toplevel.fa.gz
 # gtf file
-gtf_file=Escherichia_coli_str_k_12_substr_mg1655.GCA_000005845.1.19.gtf.gz
+gtf_file=Escherichia_coli_str_k_12_substr_mg1655.ASM584v2.31.gtf
 # Enable filtering based on quality
 qual_filtering=on
 # Use a contamination data set to filter out reads
 cont_index=no
 # Toplevel directory with the data
-# data_dir=
+data_dir=$$(IRAP_DIR)/data
+mapper=bowtie2
 
 # some contrasts...
 # GA=Group A
