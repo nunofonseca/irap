@@ -1521,10 +1521,10 @@ $(gff3_file_abspath): $(gtf_file_abspath)
 	gtf2gff3.pl $< | sort -k1,1 -k4,4n > $@.tmp && mv $@.tmp $@
 
 # Filter the gff3 file to contain only the chr that are in the fasta file
-$(gff3_file_abspath).filt.sorted: $(gff3_file_abspath) $(name)/data/$(reference_basename).chr_sizes.sorted.bed
+# use the faidx file to ensure that the ordering is the same
+$(gff3_file_abspath).filt.sorted: $(gff3_file_abspath) $(name)/data/$(reference_basename).chr_sizes.sorted.bed $(reference_abspath).fai
 #$(name)/data/$(reference_basename).chr_sizes.sorted.txt
-	bedtools intersect -wa -a $(gff3_file_abspath) -b $(name)/data/$(reference_basename).chr_sizes.sorted.bed  > $@.tmp &&  sort -k1,1 -k4,4n $@.tmp > $@.tmp2 && mv $@.tmp2 $@ && rm -f $@.tmp
-
+	bedtools intersect -wa -a $(gff3_file_abspath) -b $(name)/data/$(reference_basename).chr_sizes.sorted.bed  > $@.tmp &&  bedtools sort -faidx $(reference_abspath).fai  -i $@.tmp > $@.tmp2 && mv $@.tmp2 $@ && rm -f $@.tmp
 
 # 
 $(gff3_file_abspath).csv: $(gff3_file_abspath)
