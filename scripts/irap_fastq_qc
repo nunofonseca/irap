@@ -794,12 +794,6 @@ $(report_dir)/raw_data/%.fastqc.zip: $(out_dir)/%.fastq
 # Output: intermediate & final files removed
 #
 ################################################################
-clean:
-	rm -f $(out_dir)/$(f1_n).filter{1,2,3}.fastq
-
-ifeq ($(pe_data),1)
-	rm -f $(out_dir)/$(f2_n).filter{1,2,3}.fastq
-endif
 
 clean_all:
 	rm -f $(out_dir)/$(f1_n).filter{1,2,3}.fastq
@@ -834,6 +828,12 @@ endif
 
 
 
+endif
+
+clean:
+	rm -f $(out_dir)/$(f1_n).filter{1,2,3}.fastq
+ifeq ($(pe_data),1)
+	rm -f $(out_dir)/$(f2_n).filter{1,2,3}.fastq
 endif
 
 ##################################################
