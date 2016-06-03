@@ -743,19 +743,20 @@ endef
 # endef
 
 
+# Note: SQ needs to be resorted to ensure that bedtools works with --sorted (star version 2.5.0 seems to sort the SQ by length)
 
 #  --sjdbFileChrStartEnd  $(juncs_file_abspath)
 define run_star_map=
 	 irap_map.sh star star $(star_map_params) --genomeDir $(call star_index_dirname,$(word 1,$(files_indexed))) \
 	--readFilesIn $(2) --outFileNamePrefix $(3) --outSAMtype BAM Unsorted $(if $($(1)_rgid),--outSAMattrRGline "ID:$($(1)_rgid)",) \
 	$(if $(filter-out n,$(transcript_quant)), --quantMode TranscriptomeSAM, )  &&\
+	irap_bam_fixSQ_order $(3)Aligned.out.bam $(3)Aligned.out2.bam && mv $(3)Aligned.out2.bam $(3)Aligned.out.bam && \
 	bam_fix_se_flag $(3)Aligned.out.bam - | \
 	samtools sort -m $(SAMTOOLS_SORT_MEM) -T  $(3).tmp  -o $(3).tmp.bam -  && \
 	$(call bam_rehead,$(3).tmp.bam,$(1)) && \
 	$(if $(filter-out n,$(transcript_quant)),mv $(3)Aligned.toTranscriptome.out.bam $(3).trans.bam,true) &&\
 	mv $(3).tmp.bam $(3) && rm -f $(3)Aligned.out.bam 
 endef
-
 
 #
 # --sjdbFileChrStartEnd  -

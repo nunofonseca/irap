@@ -424,13 +424,6 @@ $(name)/report/mapping/%.html: $(name)/%/  $(conf) $(call must_exist,$(name)/rep
 	$(call pass_args_stdin,irap_report_mapping,$@, --out $(subst .html,,$@).1.html --mapper $* --bam_stats $(name)/$*/stats_raw.tsv --bam_statsp $(name)/$*/stats_perc.tsv --bam_fstats $(name)/$*/featstats_raw.tsv --bam_fstatsp $(name)/$*/featstats_perc.tsv --bam_gstats $(name)/$*/genestats_raw.tsv --css ../$(CSS_FILE) --cores $(max_threads) ) && mv $(subst .html,,$@).1.html  $@
 
 ################
-# temporary fix
-# remove asap
-# %.gff3.sorted: $(gff3_file_abspath)
-# 	sort -k1,1 -k4,4n $< > $@.tmp && mv $@.tmp $@
-
-# %.gff3.filt.sorted: $(gff3_file_abspath) $(name)/data/$(reference_basename).chr_sizes.txt.sorted.bed
-# 	bedtools intersect -wa -a $(gff3_file_abspath) -b $(name)/data/$(reference_basename).chr_sizes.sorted.bed  > $@.tmp &&  sort -k1,1 -k4,4n $@.tmp > $@.tmp2 && mv $@.tmp2 $@ && rm -f $@.tmp
 
 # statistics per bam file
 %.bam.gff3: %.bam $(gff3_file_abspath).filt.sorted $(name)/data/$(reference_basename).chr_sizes.sorted.txt
@@ -443,11 +436,11 @@ $(name)/report/mapping/%.html: $(name)/%/  $(conf) $(call must_exist,$(name)/rep
 %.bam.stats.csv: %.bam 
 	irapBAM2stats bam=$<
 
-%.bam.gene.stats: %.bam $(name)/data/$(reference_basename).exons.bed $(name)/data/$(reference_basename).introns.bed
+%.bam.gene.stats: %.bam $(name)/data/$(reference_basename).exons.bed $(name)/data/$(reference_basename).introns.bed $(name)/data/$(reference_basename).chr_sizes.sorted.txt
 	echo -n "Exons	" > $@.tmp &&\
-	bedtools intersect -abam $<  -b $(name)/data/$(reference_basename).exons.bed |samtools view -c - >> $@.tmp && echo >> $@ &&\
+	bedtools intersect -sorted -g $(name)/data/$(reference_basename).chr_sizes.sorted.txt -abam $<  -b $(name)/data/$(reference_basename).exons.bed |samtools view -c - >> $@.tmp && echo >> $@ &&\
 	echo -n "Introns	" >> $@.tmp &&\
-	bedtools intersect -abam $<  -b $(name)/data/$(reference_basename).introns.bed |samtools view -c - >> $@.tmp && echo >> $@ && \
+	bedtools intersect -sorted -g $(name)/data/$(reference_basename).chr_sizes.sorted.txt -abam $<  -b $(name)/data/$(reference_basename).introns.bed |samtools view -c - >> $@.tmp && echo >> $@ && \
 	expr `wc -l $@.tmp | cut -f 1 -d\ ` == 2 && \
 	mv $@.tmp $@
 

@@ -1524,28 +1524,29 @@ $(gff3_file_abspath): $(gtf_file_abspath)
 # use the faidx file to ensure that the ordering is the same
 $(gff3_file_abspath).filt.sorted: $(gff3_file_abspath) $(name)/data/$(reference_basename).chr_sizes.sorted.bed $(reference_abspath).fai
 #$(name)/data/$(reference_basename).chr_sizes.sorted.txt
-	bedtools intersect -wa -a $(gff3_file_abspath) -b $(name)/data/$(reference_basename).chr_sizes.sorted.bed  > $@.tmp &&  bedtools sort -faidx $(reference_abspath).fai  -i $@.tmp > $@.tmp2 && mv $@.tmp2 $@ && rm -f $@.tmp
+	bedtools intersect -wa -a $(gff3_file_abspath) -b $(name)/data/$(reference_basename).chr_sizes.sorted.bed  > $@.tmp &&  bedtools sort -faidx $(name)/data/$(reference_basename).chr_sizes.sorted.bed  -i $@.tmp > $@.tmp2 && mv $@.tmp2 $@ && rm -f $@.tmp
+#$(reference_abspath).fai
 
 # 
 $(gff3_file_abspath).csv: $(gff3_file_abspath)
 	gff32csv.R $<   >   $@.tmp && mv $@.tmp $@
 
-
 $(name)/data/$(reference_basename).gene_class.txt: $(refgeneclass_file)
 	cp $< $@.tmp && mv $@.tmp $@
 
 # file with chr\tchr_size
-$(name)/data/$(reference_basename).chr_sizes.txt: $(reference_abspath)
-	irap_chr_sizes.pl $< |sort -k1,1 > $@.tmp  && mv $@.tmp $@
+$(name)/data/$(reference_basename).chr_sizes.txt: $(reference_abspath).fai
+	cut -f 1,2 $< > $@.tmp && mv $@.tmp $@
+#irap_chr_sizes.pl $< > $@.tmp  && mv $@.tmp $@
 
 # temporary rule:
 # remove $(name)/data/$(reference_basename).chr_sizes.sorted.txt
 # and rename to  $(name)/data/$(reference_basename).chr_sizes.txt
 $(name)/data/$(reference_basename).chr_sizes.sorted.txt: $(name)/data/$(reference_basename).chr_sizes.txt
-	cat $< | sort -k1,1 > $@.tmp  && mv $@.tmp $@
+	sort -k 1,1 $<  > $@.tmp  && mv $@.tmp $@
 
 $(name)/data/$(reference_basename).chr_sizes.sorted.bed: $(name)/data/$(reference_basename).chr_sizes.sorted.txt
-	cat $< | awk 'BEGIN {OFS="\t";} {print  $$1,"1",$$2;}'  > $@.tmp && mv $@.tmp $@
+	cat $< | awk 'BEGIN {OFS="\t";} {print  $$1,"1",$$2;}' > $@.tmp && mv $@.tmp $@
 
 $(reference_abspath).fai: $(reference_abspath)
 	samtools faidx $<

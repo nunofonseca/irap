@@ -34,7 +34,6 @@ override sop=atlas
 endif
 
 
-
 #################
 # SOP 
 ifdef sop

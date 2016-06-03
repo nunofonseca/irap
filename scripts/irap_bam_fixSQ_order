@@ -1,0 +1,20 @@
+#!/bin/bash
+# resort the SQ entries in the header of a BAM file
+if [  "$1-" == "-" ]; then
+   echo "Usage: irap_bam_fixSQ_order bam_filename out_bam" 
+   exit 1
+fi
+
+if [ ! -e  $1 ] ; then
+   echo "$1 not found"
+   exit 1
+fi
+
+set -e 
+# get the current header
+# remove the existing read groups
+samtools view -H $1 | grep -v "^@SQ" > $1.header.sam
+samtools view -H $1 | grep "@SQ" | sort -k 2,2 >> $1.header.sam
+samtools reheader -P $1.header.sam $1 > $2
+rm -f $1.header
+exit 0

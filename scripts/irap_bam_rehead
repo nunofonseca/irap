@@ -15,11 +15,18 @@ fi
 set -e 
 # get the current header
 # remove the existing read groups
-samtools view -H $1 | grep -v "^@RG" > $1.header
+samtools view -H $1 | grep -v "^@RG" > $1.header.sam
 # add the new lines
 lines=`echo $2|sed "s/@/\\\\\@/g"`
-perl -e "print \"$lines\";" >> $1.header
-samtools reheader $1.header $1 > $1.new && mv $1.new $1
-rm -f $1.header
+perl -e "print \"$lines\";" >> $1.header.sam
+# if sort @SQ
+if [ "$IRAP_DO_SORT_SQ-" == "y-" ]; then    
+    grep -v "^@SQ" $1.header.sam > $1.header.sam.tmp
+    grep "@SQ" $1.header.sam | sort -k 2,2 >> $1.header.sam.tmp
+    mv $1.header.sam.tmp $1.header.sam
+fi
+
+samtools reheader -P $1.header.sam $1 > $1.new && mv $1.new $1
+rm -f $1.header.sam
 
 exit 0
