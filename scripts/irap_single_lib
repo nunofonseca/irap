@@ -556,6 +556,7 @@ cp -ar $TSVs $odir/qc
 pinfo "Generating  $odir/versions.tsv..."
 irap $irap_single_lib_options  $irap_options $odir/irap.versions.tsv  > $odir/versions.tsv.tmp && mv $odir/versions.tsv.tmp $odir/versions.tsv
 pinfo "Generating  $odir/versions.tsv...done"
+
 #################################################################
 # Cleanup
 if [ "$do_clean" == "y" ]; then
