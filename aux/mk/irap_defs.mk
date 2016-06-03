@@ -24,11 +24,22 @@
 # Code executed after reading the configuration file and before validating the options
 # It should be used to override default options
 
+###########################################################
+
+# Expression Atlas
+ifdef atlas_run
+$(info * atlas_run mode (overriding some options))
+raw_folder=$(name)_$(species)
+override sop=atlas
+endif
+
+
 
 #################
 # SOP 
 ifdef sop
 $(info * sop=$(sop) (overriding some options))
+
 ifeq ($(sop),pawg3_th2_mapping)
 $(info * SOP=PAWG3 mapping with TopHat2)
 override qc=off
@@ -65,15 +76,9 @@ override max_hits=20
 
 endif
 
-endif
+ifeq ($(sop),atlas)
 
-###########################################################
-# Expression Atlas
-ifdef atlas_run
-# $(lib)_dir default dir should be $(exp_name)_$(species)
-#def_lib_dir=$(name)_$(species)
-$(info * atlas_run mode (overriding some options))
-raw_folder=$(name)_$(species)
+$(info * SOP=Expression Atlas)
 # no need for annotation 
 annot_tsv=off
 de_method?=deseq2
@@ -93,5 +98,8 @@ mapper:=star
 # set the options to reduce the number of memory needed at the expense of mapping speed
 star_index_options=--genomeChrBinNbits 15  --genomeSAsparseD 2 --limitGenomeGenerateRAM 128000000000
 endif
+
+endif
+
 endif
 
