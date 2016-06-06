@@ -72,6 +72,7 @@ override star_index_params:= --sjdbOverhang 100
 override star_map_options:= --outFilterMultimapScoreRange 1  --outFilterMismatchNmax 20 --alignIntronMax 500000 --alignMatesGapMax 1000000 --sjdbScore 2 --alignSJDBoverhangMin 1 --outFilterMatchNminOverLread 0.33 --outFilterScoreMinOverLread 0.33    --outSAMheaderHD @HD VN:1.4
 override max_hits=20
 #
+endif
 
 # non-official
 ifeq ($(sop),pawg3_kallisto)
