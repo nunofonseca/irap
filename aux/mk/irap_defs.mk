@@ -91,8 +91,6 @@ override gtf_file:=gencode.v19.annotation.hs37d5_chr.gtf
 endif
 
 
-endif
-
 ifeq ($(sop),atlas)
 
 $(info * SOP=Expression Atlas)
@@ -118,5 +116,4 @@ endif
 
 endif
 
-endif
 
