@@ -76,17 +76,17 @@ override max_hits=20
 # non-official
 ifeq ($(sop),pawg3_kallisto)
 $(info * SOP=PAWG3 quantification with kallisto)
-override qc=off
-override quant_method=kallisto
+override qc:=off
+override quant_method:=kallisto
 override species=homo_sapiens
-override mapper=none
-override transcript_quant=y
-override exon_quant=n
+override mapper:=none
+override transcript_quant:=y
+override exon_quant:=n
 de_method?=none
 gse_tool?=none
-override reference=hs37d5.genome.chr_only.fa
-override cdna_file=gencode.v19.pc_transcripts.fa.gz 
-override gtf_file=gencode.v19.annotation.hs37d5_chr.gtf
+override reference:=hs37d5.genome.chr_only.fa
+override cdna_file:=gencode.v19.pc_transcripts.fa.gz 
+override gtf_file:=gencode.v19.annotation.hs37d5_chr.gtf
 endif
 
 
