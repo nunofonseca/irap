@@ -8,7 +8,7 @@ strand=both
 mem=4000000000
 threads=1
 #irap_options="atlas_run=y"
-is_atlas_run=
+is_atlas_run=0
 irap_options=
 do_stage0=no
 do_clean=n
