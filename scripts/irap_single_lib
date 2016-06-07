@@ -175,6 +175,7 @@ if [ "$is_atlas_run-" != "0-" ]; then
 fi
 
 if [ "$check_stage0_only" == "y" ]; then
+    echo irap conf=$conf data_dir=$DATA_DIR  $irap_options max_mem=$mem max_threads=$threads stage0 
     irap conf=$conf data_dir=$DATA_DIR  $irap_options max_mem=$mem max_threads=$threads stage0 -n -q
     exit $?
 fi
