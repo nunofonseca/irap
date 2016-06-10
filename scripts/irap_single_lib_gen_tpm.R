@@ -57,7 +57,8 @@ force.gen <- opt$force
 cat("Gene level quantification: found ",length(files.found),"\n")
 for ( f in as.vector(files.found) ) {
   cat("--->",f,"\n")
-  tpm.file <- gsub(".raw.",".tpm.irap.",f)
+  tpm.file <- gsub(".raw.",".tpm.",f)
+  tpm.file <- gsub(".tsv",".irap.tsv",tpm.file)
   if ( file.exists(tpm.file) && ! force.gen ) {
     cat("File ",tpm.file," already exists...skipping generation.\n")
   } else {
