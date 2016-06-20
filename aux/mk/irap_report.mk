@@ -426,8 +426,8 @@ $(name)/report/mapping/%.html: $(name)/%/  $(conf) $(call must_exist,$(name)/rep
 ################
 
 # statistics per bam file
-%.bam.gff3: %.bam $(gff3_file_abspath).filt.sorted $(name)/data/$(reference_basename).chr_sizes.sorted.txt
-	bedtools coverage -counts -sorted  -a $(gff3_file_abspath).filt.sorted -b $< -g  $(name)/data/$(reference_basename).chr_sizes.sorted.txt > $@.tmp  &&\
+%.bam.gff3: %.bam $(gff3_file_abspath).filt.gff3 $(name)/data/$(reference_basename).chr_sizes.sorted.txt
+	bedtools coverage -counts -sorted  -a $(gff3_file_abspath).filt.gff3 -b $< -g  $(name)/data/$(reference_basename).chr_sizes.sorted.txt > $@.tmp  &&\
 	mv $@.tmp $@
 
 %.bam.stats: %.bam.gff3 
@@ -446,13 +446,13 @@ $(name)/report/mapping/%.html: $(name)/%/  $(conf) $(call must_exist,$(name)/rep
 
 # bed files required to get some extra stats
 # exons.bed
-$(name)/data/$(reference_basename).exons.bed: $(gff3_file_abspath) $(name)/data/$(reference_basename).chr_sizes.sorted.bed
+$(name)/data/$(reference_basename).exons.bed: $(gff3_file_abspath).filt.gff3 $(name)/data/$(reference_basename).chr_sizes.sorted.bed
 	cat $< | awk 'BEGIN{OFS="\t";} $$3=="exon" {print $$1,$$4,$$5}' | sort -u| bedtools sort -i /dev/stdin > $@.tmp.bed && \
 	bedtools merge -i $@.tmp.bed | bedtools sort -faidx $(name)/data/$(reference_basename).chr_sizes.sorted.bed -i /dev/stdin > $@.tmp && \
 	mv $@.tmp $@ && rm -f $@.tmp.bed
 
 # genes.bed
-$(name)/data/$(reference_basename).genes.bed: $(gff3_file_abspath) $(name)/data/$(reference_basename).chr_sizes.sorted.bed
+$(name)/data/$(reference_basename).genes.bed: $(gff3_file_abspath).filt.gff3 $(name)/data/$(reference_basename).chr_sizes.sorted.bed
 	cat $< | awk 'BEGIN{OFS="\t";} $$3=="gene" {print $$1,$$4,$$5}' |  sort -u| bedtools sort -i /dev/stdin > $@.tmp.bed &&\
 	bedtools merge -i $@.tmp.bed  | bedtools sort -faidx $(name)/data/$(reference_basename).chr_sizes.sorted.bed -i /dev/stdin  > $@.tmp && \
 	mv $@.tmp $@ && rm -f $@.tmp.bed
