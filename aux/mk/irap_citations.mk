@@ -72,6 +72,7 @@ quant_norm_cufflinks2=cufflinks2
 quant_norm_cufflinks2_nd=cufflinks2
 quant_norm_flux_cap=FLUX_CAPACITOR
 quant_norm_deseq=DESeq
+quant_norm_irap=IRAP
 
 # DE
 de_cuffdiff1=cuffdiff1
@@ -273,7 +274,7 @@ $(if $($(1)_citation),$(call pprint_prog_info,$(1),$($(1)_citation),$($(1)_bibte
 endef
 
 # Scientific software
-progs_used=$(qc_$(qual_filtering))  $(mapper_$(mapper)) $(quant_$(quant_method))  $(quant_norm_$(quant_norm_method))  $(de_$(de_method)) $(gse_$(gse_tool)) IRAP
+progs_used=$(qc_$(qual_filtering))  $(mapper_$(mapper)) $(quant_$(quant_method))  $(quant_norm_$(quant_norm_tool))  $(de_$(de_method)) $(gse_$(gse_tool)) IRAP
 
 silent_targets+= show_citations citations_file
 
