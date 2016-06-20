@@ -69,7 +69,7 @@ $(name)/$(mapper)/$(quant_method)/%.exons.rpkm.$(exon_quant_method).irap.tsv: $(
 ifdef atlas_run
 STAGE3_S_TARGETS+=$(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.genes.rpkm.$(quant_method).irap.tsv $(call lib2quant_folder,$(p))$(p).pe.genes.tpm.$(quant_method).irap.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.rpkm.$(quant_method).irap.tsv $(call lib2quant_folder,$(s))$(s).se.genes.tpm.$(quant_method).irap.tsv)
 ifeq ($(exon_quant),y)
-STAGE3_S_TARGETS+=$(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.exons.rpkm.$(exon_quant_method).irap.tsv $(p) $(call lib2quant_folder,$(p))$(p).pe.exons.tpm.$(exon_quant_method).irap.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.exons.rpkm.$(exon_quant_method).irap.tsv $(call lib2quant_folder,$(s))$(s).se.exons.tpm.$(exon_quant_method).irap.tsv)
+STAGE3_S_TARGETS+=$(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.exons.rpkm.$(exon_quant_method).irap.tsv $(call lib2quant_folder,$(p))$(p).pe.exons.tpm.$(exon_quant_method).irap.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.exons.rpkm.$(exon_quant_method).irap.tsv $(call lib2quant_folder,$(s))$(s).se.exons.tpm.$(exon_quant_method).irap.tsv)
 endif
 endif
 
