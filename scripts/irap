@@ -1815,8 +1815,9 @@ $(quant_method)_quant: mapping $($(quant_method)_quant_files)
 # do not create the final matrix file (used by lsf wrapper)
 quantification_s: $(STAGE3_S_TARGETS)
 
-print_stage3_s_targets: $(STAGE3_S_TARGETS)
-	echo $^
+# $(STAGE3_S_TARGETS)
+print_stage3_s_targets: 
+	echo $(STAGE3_S_TARGETS)
 
 endif
 phony_targets+= quantification $(quant_method)_quant quantification_s
