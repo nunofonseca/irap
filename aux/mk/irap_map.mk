@@ -274,28 +274,35 @@ tophat_reference_prefix=$(reference_prefix)
 define run_tophat1_map=
         $(call tophat_setup_dirs,$(1))
 	irap_map.sh tophat1 tophat  -p $(max_threads) $(call tophat_seglength_option,$($(1)_rs),$(1)) $(call tophat_qual_option,$($(1)_qual)) $(call tophat_strand_params,$(1)) $(tophat1_map_params) $(call tophat_ins_sd_params,$(1)) --no-sort-bam  $(if $($(1)_rgid),--rg-id "$($(1)_rgid)" --rg-sample "$($(1)_rgid)") -G $(gtf_file_abspath) --tmp-dir $(call lib2bam_folder,$(1))$(1)/tmp -o $(call lib2bam_folder,$(1))$(1)	 $(tophat_reference_prefix) $(2) &&\
-	samtools sort -m $(SAMTOOLS_SORT_MEM) -T $(call lib2bam_folder,$(1))$(1)/$(1) -o $(call lib2bam_folder,$(1))$(1)/$(1).bam $(call lib2bam_folder,$(1))$(1)/accepted_hits.bam  && \
+	irap_bam_fixSQ_order $(call lib2bam_folder,$(1))$(1)/accepted_hits.bam $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam && \
+	samtools sort -m $(SAMTOOLS_SORT_MEM) -T $(call lib2bam_folder,$(1))$(1)/$(1) -o $(call lib2bam_folder,$(1))$(1)/$(1).bam $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam  && \
+	rm -f $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam  && \
 	$(call bam_rehead,$(call lib2bam_folder,$(1))$(1)/$(1).bam,$(1)) && \
 	mv $(call lib2bam_folder,$(1))$(1)/$(1).bam $(3)	
 endef
 
 
 
-#picard is necessary to fix some issues with PE aligned reads
+# picard is necessary to fix some issues with PE aligned reads-> replaced picard by bam_tophat2_pe_fix
 #  ("Malformed SAM line: MRNM == '*' although flag bit &0x0008 cleared", 'line 67')
 #$(if $(findstring $(1),$(pe)), $(call run_picard,FixMateInformation) INPUT=$(call lib2bam_folder,$(1))$(1)/accepted_hits.bam ASSUME_SORTED=false VALIDATION_STRINGENCY=LENIENT TMP_DIR=$(call lib2bam_folder,$(1))$(1) && ) 
 # bam_tophat2_pe_fix fix unmapped reads flags
+# ensure that the sequences are ordered in the BAM: irap_bam_fixSQ_order
+#
 define run_tophat2_map=
         $(call tophat_setup_dirs,$(1))
 	irap_map.sh tophat2 tophat2  -p $(max_threads) $(call tophat_seglength_option,$($(1)_rs),$(1)) $(call tophat_qual_option,$($(1)_qual)) $(call tophat_strand_params,$(1)) $(tophat2_map_params) $(call tophat_ins_sd_params,$(1)) -G $(gtf_file_abspath) --tmp-dir $(call lib2bam_folder,$(1))$(1)/tmp -o $(call lib2bam_folder,$(1))$(1) --transcriptome-index $(call tophat2_trans_index_filename,$(word 1,$(files_indexed)),$(word 1,$(files_indexed)))/  $(if $($(1)_rgid),--rg-id "$($(1)_rgid)" --rg-sample "$($(1)_rgid)")   $(tophat_reference_prefix) $(2) && \
 	$(if $($(1)_rgid), $(call addRG2BAM,$(call lib2bam_folder,$(1))$(1)/unmapped.bam,$($(1)_rgid)) && ) \
 	samtools merge -c  - $(call lib2bam_folder,$(1))$(1)/accepted_hits.bam $(call lib2bam_folder,$(1))$(1)/unmapped.bam | \
-	bam_tophat2_fix - - | \
-	samtools sort -m $(SAMTOOLS_SORT_MEM) -T $(call lib2bam_folder,$(1))$(1)/$(1) -o $(call lib2bam_folder,$(1))$(1)/$(1).bam  -  &&\
+	bam_tophat2_fix - - > $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam && \
+	irap_bam_fixSQ_order $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam $(call lib2bam_folder,$(1))$(1)/$(1).tmp2.bam && \
+	rm -f $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam && \
+	samtools sort -m $(SAMTOOLS_SORT_MEM) -T $(call lib2bam_folder,$(1))$(1)/$(1) -o $(call lib2bam_folder,$(1))$(1)/$(1).bam  $(call lib2bam_folder,$(1))$(1)/$(1).tmp2.bam  &&\
+	rm -f $(call lib2bam_folder,$(1))$(1)/$(1).tmp2.bam  && \
 	$(call bam_rehead,$(call lib2bam_folder,$(1))$(1)/$(1).bam,$(1)) && \
 	mv $(call lib2bam_folder,$(1))$(1)/$(1).bam $(3)
 endef
-
+#
 # 1-bam
 # 2-rgid
 define addRG2BAM= 
@@ -375,8 +382,10 @@ endef
 
 
 define run_gsnap_map=
-	irap_map.sh gsnap gsnap $(gsnap_map_params) $(if $($(1)_rgid),--read-group-id $($(1)_rgid),)  $(call gsnap_ins_param,$(1))  -D $(reference_dir) -d `basename $(index_files)|sed "s/.index//"` $(2)  | samtools view -T $(reference_abspath) -bS - | \
-	samtools sort -m $(SAMTOOLS_SORT_MEM) -T $(3).tmp -o $(3).tmp.bam  -  && \
+	irap_map.sh gsnap gsnap $(gsnap_map_params) $(if $($(1)_rgid),--read-group-id $($(1)_rgid),)  $(call gsnap_ins_param,$(1))  -D $(reference_dir) -d `basename $(index_files)|sed "s/.index//"` $(2)  | samtools view -T $(reference_abspath) -bS - > $(3).tmp.bam &&
+	irap_bam_fixSQ_order $(3).tmp.bam $(3).tmp2.bam &&\
+	samtools sort -m $(SAMTOOLS_SORT_MEM) -T $(3).tmp -o $(3).tmp.bam  $(3).tmp2.bam  && \
+	rm -f $(3).tmp2.bam && \
 	$(call bam_rehead,$(3).tmp.bam,$(1)) && \
 	mv $(3).tmp.bam $(3) 
 endef
