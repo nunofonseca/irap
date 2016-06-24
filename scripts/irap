@@ -935,7 +935,7 @@ $(info *	de_method=$(de_method))
 ifndef de_pvalue_cutoff=
  de_pvalue_cutoff=$(def_de_pvalue_cutoff)
 endif
-$(info *	de_pvalue_cutoff=$(de_method))
+$(info *	de_pvalue_cutoff=$(de_pvalue_cutoff))
 
 ifndef de_num_genes_per_table
 de_num_genes_per_table=$(def_de_num_genes_per_table)
