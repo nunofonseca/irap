@@ -1422,7 +1422,7 @@ endif
 
 # sort a bam file by name and index
 %.byname.bam: %.bam
-	samtools sort -n -m $(SAMTOOLS_SORT_MEM) -T $*.byname.tmp -o $*.byname.tmp.bam $< && mv $*.byname.tmp.bam $@ 
+	rm -f $*.byname.tmp.{0,1,2,3,4,5,6,7,8,9}*.bam && samtools sort -n -m $(SAMTOOLS_SORT_MEM) -T $*.byname.tmp -o $*.byname.tmp.bam $< && mv $*.byname.tmp.bam $@ 
 
 # index a bam file
 %.bam.bai: %.bam
