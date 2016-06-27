@@ -2026,8 +2026,8 @@ biotype.column <- function(table) {
       # 
       return("gene_biotype")        
     } else {
-      if ( sum(grepl("(havana|ena)",sources,ignore.case=FALSE))>0 ) {
-        # recent ensembl files 
+      if ( sum(grepl("(havana|ena|WormBase)",sources,ignore.case=FALSE))>0 ) {
+        # more recent ensembl files do not have the biotype in the source column
         return("gene_biotype")
       }
     }
