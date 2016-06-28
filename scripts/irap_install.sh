@@ -1571,6 +1571,8 @@ function core_install {
     fi
     pinfo "Installing irap files...done."
 
+    # examples
+    cp -r $SRC_DIR/examples $IRAP_DIR
 
     #############
     # fastq utils
