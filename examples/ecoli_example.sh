@@ -1,5 +1,5 @@
 #!/bin/bash
-# Create a fungi and microbial contamination DB
+# 
 set -e
 mkdir -p $IRAP_DIR/data/reference/ecoli_k12
 mkdir -p $IRAP_DIR/data/raw_data/ecoli_k12
