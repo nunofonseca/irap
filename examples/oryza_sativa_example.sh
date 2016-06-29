@@ -29,7 +29,7 @@ wget ftp://ftp.ensemblgenomes.org/pub/plants/release-31/gtf/oryza_sativa/Oryza_s
 # Remove comments from the GTF
 zcat Oryza_sativa.IRGSP-1.0.31.gtf.gz | grep -v "^#" > tmp && mv tmp Oryza_sativa.IRGSP-1.0.31.gtf
 # some gene names have ;
-sed -i -E  "s/([a-Z0-9])\;/\1/" Oryza_sativa.IRGSP-1.0.31.gtf
+sed -i -E  "s/([a-zA-Z0-9])\;/\1/g" Oryza_sativa.IRGSP-1.0.31.gtf
 popd
 echo "* Downloading the reference genome and annotation...done."
 
