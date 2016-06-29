@@ -73,10 +73,10 @@ echo "* Creating a configuration file for iRAP...done."
 # Index the genome and perform some other initial preprocessing
 # This needs to be executed only once for each genome/annotation
 echo "* Initializing..."
-irap_single_lib -c oryza_sativa_ex.conf -1 test.fastq -0 -A -t $CORES -o out
+irap_single_lib.sh -c oryza_sativa_ex.conf -1 test.fastq -0 -A -t $CORES -o out
 
 #
-irap_single_lib -c oryza_sativa_ex.conf -1 data/raw_data/oryza/test.fastq  -A -t $CORES -o out
+irap_single_lib.sh -c oryza_sativa_ex.conf -1 data/raw_data/oryza/test.fastq  -A -t $CORES -o out
 # 
 exit 0
 
