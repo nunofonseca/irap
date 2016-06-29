@@ -2184,13 +2184,14 @@ fastq_qc_install
 perl_packages_install
 
 if [ "$install" == "minimal" ]; then
-   bowtie2_install
-   tophat2_install
-   star_install
-   htseq_install
-   cufflinks2_install
+    bowtie2_install
+    bowtie1_install
+    tophat2_install
+    star_install
+    htseq_install
+    cufflinks2_install
    
-   pinfo "WARNING: You chose to install the minimal installation of iRAP. Only the following tools will be available: bowtie2, tophat2, star, cufflinks2 "
+   pinfo "WARNING: You chose to install the minimal installation of iRAP. Only the following tools will be available: bowtie1, bowtie2, tophat2, star, cufflinks2 "
 
 else
     mappers_install
