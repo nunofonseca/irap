@@ -38,6 +38,14 @@ if [ "$IRAP_DIR-" == "-" ]; then
 fi
 
 source $IRAP_DIR/aux/sh/irap_shared.sh
+
+######################
+# Ubuntu compatibility
+if which rename.ul >/dev/null 2>/dev/null; then
+    rename_cmd=rename.ul
+else
+    rename_cmd=rename
+fi
 #################################################################
 #
 function print_usage {
@@ -545,7 +553,7 @@ if [ "$REPORT_TSVs-" != "-"  ]; then
     cp -a $REPORT_TSVs $odir
 fi
 # rename the files (remove the l prefix added by fastq_info)
-rename $libname $libname_noprefix `dirname $odir/$f1_bn`/$libname*
+$rename_cmd $libname $libname_noprefix `dirname $odir/$f1_bn`/$libname*
 
 # copy the info file
 cp $INFO_FILE $odir
