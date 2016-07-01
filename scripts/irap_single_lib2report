@@ -164,8 +164,7 @@ $(call matching_files,$(folders_file),"*transcripts.tpm.*.tsv",$(out)/.transcrip
 #############################################
 # checking the number of files found
 
-files2check=$(out)/.transcripts_tpm_quants_file $(out)/.transcripts_rpkm_quants_file $(out)/.transcripts_raw_quants_file  $(out)/.exons_rpkm_quants_file $(out)/.exons_raw_quants_file $(out)/.genes_tpm_quants_file $(out)/.ge
-nes_rpkm_quants_file $(out)/.genes_raw_quants_file
+files2check=$(out)/.transcripts_tpm_quants_file $(out)/.transcripts_rpkm_quants_file $(out)/.transcripts_raw_quants_file  $(out)/.exons_rpkm_quants_file $(out)/.exons_raw_quants_file $(out)/.genes_tpm_quants_file $(out)/.genes_rpkm_quants_file $(out)/.genes_raw_quants_file
 
 ifndef no_exons_tpm
 files2check+=$(out)/.exons_tpm_quants_file
