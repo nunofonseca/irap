@@ -2215,7 +2215,7 @@ fisherNetworkPlot <- function (gsaRes,
   indSignificant <- which(abs(pValues) <= significance)
   
   if (length(indSignificant) < 1) {
-    stop("less than three gene sets were selected, can not plot (tip: adjust the significance cutoff)")
+    stop("less than one gene sets were selected, cannot plot (tip: adjust the significance cutoff)")
     return(NULL)
   }
   pSignificant <- pValues[indSignificant]
