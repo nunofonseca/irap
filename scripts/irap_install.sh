@@ -185,7 +185,7 @@ tophat1_URL=http://ccb.jhu.edu/software/tophat/downloads/$tophat1_FILE
 
 # version used in the pcawg SOP - 2.0.12
 # current version: -> 2.0.12->2.1.0
-tophat2_VERSION=2.1.0
+tophat2_VERSION=2.1.1
 tophat2_FILE=tophat-${tophat2_VERSION}.Linux_x86_64.tar.gz
 #tophat2_URL=http://tophat.cbcb.umd.edu/downloads/$tophat2_FILE
 tophat2_URL=http://ccb.jhu.edu/software/tophat/downloads/$tophat2_FILE
