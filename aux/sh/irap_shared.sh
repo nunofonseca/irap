@@ -381,7 +381,7 @@ function iRAP-Mapping_errors {
 	    else
 		e=`grep -E "Error running.*tophat_reports" $errf`
 		if [ $? -eq 0 ]; then
-		    set_classified_error "iRAP Mapping: internal tophat2 error"
+		    set_classified_error "iRAP Mapping: internal tophat2 error (known bug)"
 		else
 		    E=`grep -E "(disk I/O error|Stale|IOError:)" $errf`
 		    if [ $? -eq 0 ]; then
