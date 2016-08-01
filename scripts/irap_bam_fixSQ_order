@@ -12,9 +12,22 @@ fi
 
 set -e 
 # get the current header
-# remove the existing read groups
-samtools view -H $1 | grep -v "^@SQ" > $1.header.sam
-samtools view -H $1 | grep "@SQ" | sort -k 2,2 >> $1.header.sam
-samtools reheader -P $1.header.sam $1 > $2
-rm -f $1.header
+samtools view -H $1 | grep "@SQ" > $1.seq.order.sam
+sort -k 2,2 $1.seq.order.sam > $1.seq.neworder.sam
+set +e
+diff $1.seq.neworder.sam $1.seq.order.sam > /dev/null
+DIFF=$?
+set -e
+if [ $DIFF -eq 0 ]; then
+    #same order
+    echo "No reordering of @SQ entries required in BAM file $1"
+    cp $1 $2
+else
+    echo "Reordering @SQ entries in BAM file $1"
+    samtools view -H $1 | grep -v "^@SQ" > $1.header.sam
+    cat $1.seq.neworder.sam >> $1.header.sam
+    ( cat $1.header.sam; samtools view $1 ) | samtools view -b  - > $2.tmp && mv $2.tmp $2
+fi
+# samtools reheader -P $1.header.sam $1 > $2
+#rm -f $1.header $1.seq.neworder.sam $1.seq.order.sam
 exit 0
