@@ -21,7 +21,7 @@ set -e
 if [ $DIFF -eq 0 ]; then
     #same order
     echo "No reordering of @SQ entries required in BAM file $1"
-    cp $1 $2
+    cp $1 $2.tmp && mv $2.tmp $2
 else
     echo "Reordering @SQ entries in BAM file $1"
     samtools view -H $1 | grep -v "^@SQ" > $1.header.sam
