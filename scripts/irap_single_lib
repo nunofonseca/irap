@@ -1,5 +1,5 @@
 #!/bin/bash
-VERSION=0.3d
+VERSION=0.4d
 #irap_single_lib -1 fastq_file [-2 fastq_file2] -c conf  [-s strand (first,second,both)]  -m MEM -t threads -i irap_options [-0] [-h]
 f1=
 f2=
