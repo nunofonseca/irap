@@ -52,7 +52,7 @@ fi
 function print_usage {
 cat <<EOF
 iRAP wrapper to process a single library
-Usage: irap_single_lib -1 fastq_file [-2 fastq_file2] -c irap.configuration  [-s strand (first,second,both)] [-p spikein_fasta] [-m MEM] [-t threads] [-i irap_options] [-0] [-V] [-C] [-l min_read_length] [-B] [-A] [-o output_folder] [-h] 
+Usage: irap_single_lib -1 fastq_file [-2 fastq_file2] -c irap.configuration  [-s strand (first,second,both)] [-p spikein_fasta] [-m MEM] [-t threads] [-i irap_options] [-0] [-V] [-C] [-l min_read_length] [-b] [-B] [-A] [-o output_folder] [-h] 
 
 -0  - should be executed once for each
 species/genome/annotation to generate the indexes and other files
