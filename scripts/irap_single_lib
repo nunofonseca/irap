@@ -19,6 +19,7 @@ tidy_up_only=n
 do_info_only=n
 check_stage0_only=n
 spikein_fasta=
+regen_bam=n
 tsfile=
 gen_cram=y
 
@@ -70,6 +71,8 @@ necessary for the analysis.
 -l - minimum read length
 
 -B - keep only the bam files (by default the alignments are kept as CRAM) 
+
+-b - force the regeneration of the BAM file
 
 -o output_folder  - folder name where the output files will be placed (default: out/)
 
@@ -128,7 +131,7 @@ function clean_up_all {
 
 #################################################################
 # 
-while getopts "1:2:c:s:m:p:t:i:o:l:h0fBCTIVA"  Option
+while getopts "1:2:c:s:m:p:t:i:o:l:h0fBbCTIVA"  Option
 do
     case $Option in
 	A ) is_atlas_run="1";;
@@ -138,6 +141,7 @@ do
         c ) conf=$OPTARG;;
 	C ) do_clean=y;;
 	B ) gen_cram=n;;
+	b ) regen_bam=y;;
 	s ) strand=$OPTARG;;
 	p ) spikein_fasta=$OPTARG;;
 	m ) mem=$OPTARG;;
@@ -448,6 +452,18 @@ pinfo "QC and filtering..."
 run_AND_timeIt "iRAP-QC" $time_log_file  irap $irap_single_lib_options $irap_options stage1
 pinfo "QC and filtering...complete."
 
+# force BAM regeneration
+if [ $regen_bam == "y" ]; then
+    BAM=`irap $irap_single_lib_options $irap_options print_stage2_files|tail -n 1|grep -v "make:"`
+    if [ "$BAM-" == "-" ]; then
+	pinfo "No BAM!? irap $irap_single_lib_options $irap_options print_stage2_files|tail -n 1|grep -v  'make:'"
+    else
+       if [ -e $BAM ]; then
+	pinfo "-b option used: deleting $BAM before running iRAP"
+       fi
+       rm -f $BAM
+    fi
+fi
 
 pinfo "Aligning data..."
 run_AND_timeIt "iRAP-Mapping" $time_log_file  irap $irap_single_lib_options $irap_options stage2
