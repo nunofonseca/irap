@@ -275,7 +275,7 @@ define run_tophat1_map=
         $(call tophat_setup_dirs,$(1))
 	irap_map.sh tophat1 tophat  -p $(max_threads) $(call tophat_seglength_option,$($(1)_rs),$(1)) $(call tophat_qual_option,$($(1)_qual)) $(call tophat_strand_params,$(1)) $(tophat1_map_params) $(call tophat_ins_sd_params,$(1)) --no-sort-bam  $(if $($(1)_rgid),--rg-id "$($(1)_rgid)" --rg-sample "$($(1)_rgid)") -G $(gtf_file_abspath) --tmp-dir $(call lib2bam_folder,$(1))$(1)/tmp -o $(call lib2bam_folder,$(1))$(1)	 $(tophat_reference_prefix) $(2) &&\
 	irap_bam_fixSQ_order $(call lib2bam_folder,$(1))$(1)/accepted_hits.bam $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam && \
-	rm -f $(call lib2bam_folder,$(1))$(1)/$(1).tmp.{0,1,2,3,4,5,6,7,8,9}*.bam && \
+	rm -f $(call lib2bam_folder,$(1))$(1)/$(1).0{0,1,2,3,4,5,6,7,8,9}*.bam && \
 	samtools sort -m $(SAMTOOLS_SORT_MEM) -T $(call lib2bam_folder,$(1))$(1)/$(1) -o $(call lib2bam_folder,$(1))$(1)/$(1).bam $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam  && \
 	rm -f $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam  && \
 	$(call bam_rehead,$(call lib2bam_folder,$(1))$(1)/$(1).bam,$(1)) && \
@@ -297,7 +297,7 @@ define run_tophat2_map=
 	samtools merge -c  - $(call lib2bam_folder,$(1))$(1)/accepted_hits.bam $(call lib2bam_folder,$(1))$(1)/unmapped.bam | \
 	bam_tophat2_fix - - > $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam && \
 	irap_bam_fixSQ_order $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam $(call lib2bam_folder,$(1))$(1)/$(1).tmp2.bam && \
-	rm -f $(call lib2bam_folder,$(1))$(1)/$(1).tmp.{0,1,2,3,4,5,6,7,8,9}*.bam && \
+	rm -f $(call lib2bam_folder,$(1))$(1)/$(1).0{0,1,2,3,4,5,6,7,8,9}*.bam && \
 	samtools sort -m $(SAMTOOLS_SORT_MEM) -T $(call lib2bam_folder,$(1))$(1)/$(1) -o $(call lib2bam_folder,$(1))$(1)/$(1).bam  $(call lib2bam_folder,$(1))$(1)/$(1).tmp2.bam  &&\
 	rm -f $(call lib2bam_folder,$(1))$(1)/$(1).tmp2.bam  && \
 	$(call bam_rehead,$(call lib2bam_folder,$(1))$(1)/$(1).bam,$(1)) && \
