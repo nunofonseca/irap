@@ -172,6 +172,16 @@ if [ ! -e $conf ] ; then
     exit 1
 fi
 
+#############################
+# check if mem is an integer
+int_re='^[0-9]+$'
+
+if ! [[ $mem =~ $int_re ]] ; then
+    perror "-m value ($mem) should be an integer"
+    exit 1
+fi
+
+#############################
 DATA_DIR=`conf_get_data_dir $conf "$irap_options"`
 
 # Add name to iRAP's options
@@ -372,6 +382,7 @@ if [ "$do_stage0-" == "yes-" ]; then
     exit 0
 fi
 
+
 #################################################################
 # run fastq_info on the file
 set -e
@@ -419,6 +430,9 @@ else
     fi
 fi
 pinfo "Lib. details: $DATA_DIR/$folder/$f1_bn.info"
+
+# done file should be created when all analysis are complete
+rm -f $odir/$libname_noprefix.complete
 
 if [ $do_info_only == "y" ]; then
     pinfo "All done"
@@ -548,6 +562,8 @@ else
 	pinfo "$BAM_FILE.md5 created"
     fi
 fi
+
+set -e
 # 
 TSVs=`irap $irap_single_lib_options  $irap_options print_stage3_s_targets  |tail -n 1|grep -v "make:"`
 
@@ -581,10 +597,19 @@ pinfo "Moving the following files to $odir: $TSVs "
 mkdir -p $odir/qc
 cp -ar $TSVs $odir/qc
 
+# data (genome and annotation)
+echo irap $irap_single_lib_options  $irap_options print_data_stats_file
+TSV=`irap $irap_single_lib_options  $irap_options print_data_stats_file  |tail -n 1`
+pinfo "Moving the following files to $odir: $TSV "
+cp -a $TSV $odir/$libname_noprefix.data_info.tsv
+
 # software versions
 pinfo "Generating  $odir/versions.tsv..."
 irap $irap_single_lib_options  $irap_options $odir/irap.versions.tsv  > $odir/versions.tsv.tmp && mv $odir/versions.tsv.tmp $odir/versions.tsv
 pinfo "Generating  $odir/versions.tsv...done"
+cp -a $odir/versions.tsv $odir/$libname_noprefix.versions.tsv
+pinfo "Generating  $odir/$libname_noprefix.versions.tsv...done"
+# keep versions.tsv and irap_versions.tsv for backwards compatibility
 
 #################################################################
 # Cleanup
@@ -594,6 +619,7 @@ else
     run_AND_timeIt "iRAP-tidyup" $time_log_file  irap $irap_single_lib_options $irap_options clean
 fi
 
+touch $odir/$libname_noprefix.complete
 pinfo "Files in $odir"
 pinfo "All done."
 exit 0
