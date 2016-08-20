@@ -67,7 +67,7 @@ cat("Installing packages:\n")
 biocLite("Rcpp",ask=FALSE, suppressUpdates=FALSE)
 install.packages("http://cran.rstudio.com/src/contrib/00Archive/RcppArmadillo/RcppArmadillo_0.6.600.4.0.tar.gz")
 
-packages2install<-c("intervals","gclus",'R2HTML',"agricolae",
+packages2install<-c("intervals","gclus",'R2HTML',"agricolae","bit64",
                     "optparse","brew","reshape","gtools","gdata","caTools",
                     "sfsmisc","gplots","lattice","data.table",
                     'edgeR','piano','RCurl','GO.db',
