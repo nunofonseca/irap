@@ -2,7 +2,7 @@
 # Create a fungi and microbial contamination DB
 set -e
 wget ftp://ftp.ncbi.nlm.nih.gov/refseq/release/fungi/fungi.16.1.genomic.fna.gz
-wget ftp://ftp.ncbi.nlm.nih.gov/refseq/release/microbial/microbial.69.1.genomic.fna.gz
+wget ftp://ftp.ncbi.nlm.nih.gov/refseq/release/archea/microbial.69.1.genomic.fna.gz
 
 gunzip fungi.16.1.genomic.fna.gz
 gunzip microbial.69.1.genomic.fna.gz
