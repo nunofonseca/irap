@@ -1,0 +1,84 @@
+#!/usr/bin/env Rscript
+#; -*- mode: R;-*-
+# =========================================================
+# Copyright 2012-2016,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#    $Id$
+# =========================================================
+
+###############################################################
+suppressPackageStartupMessages(library("optparse"))
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+pdebug.enabled <- FALSE
+
+#######################
+usage <- "irap_annot_stats --rdata irap_length_rdata --out out_file"
+filenames <- c("sizes_file","out_file") ;#filenames that must exist (if defined)
+option_list <- list(
+  make_option(c("-i", "--rdata"), type="character", dest="rdata_file", default=NULL,help="TSV file name with chr sequence and size"),
+  make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name. ")
+)
+
+# check multiple options values
+multiple.options = list( )
+mandatory <- c("rdata_file","out")
+opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
+
+pdebug("FILE=",opt$rdata_file)
+
+###############################################
+###############################################
+
+load(opt$rdata_file)
+if(is.null(gene.length)||
+   is.null(exon.length)||
+   is.null(trans.length) ) {
+    perror("Missing gene.length, exon.length or trans.length in the file")
+    q(status=1)
+}
+
+# 
+my.get.stats <- function(d) {
+    # get a bunch of stats for each vector
+    x <- matrix(c(sum(d),min(d),max(d),length(d),mean(d),median(d)),nrow=1)
+    colnames(x) <- c("size","min.length","max.length",
+                     "num.seqs","mean length","median length")
+    return(round(x,0))
+}
+
+exon.stats <- my.get.stats(exon.length[,5])
+trans.stats <- my.get.stats(trans.length)
+gene.stats <- my.get.stats(gene.length)
+
+colnames(exon.stats) <- paste("Exons:",colnames(exon.stats),sep="")
+colnames(trans.stats) <- paste("Transcripts:",colnames(trans.stats),sep="")
+colnames(gene.stats) <- paste("Genes:",colnames(gene.stats),sep="")
+annot <- matrix(gsub(".fa[sta]*","",gsub(".lengths.Rdata","",basename(opt$rdata_file))))
+colnames(annot) <- "annot"
+x <- cbind(exon.stats,trans.stats,gene.stats,annot)
+write.table(x,file=opt$out,sep="\t",row.names=FALSE,quote=FALSE)
+quit(save="no",status=0)

@@ -1,0 +1,92 @@
+#!/usr/bin/env Rscript
+#; -*- mode: R;-*-
+# =========================================================
+# Copyright 2012-2016,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#    $Id$
+# =========================================================
+
+###############################################################
+suppressPackageStartupMessages(library("optparse"))
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+pdebug.enabled <- FALSE
+
+#######################
+usage <- "irap_genome_stats --sizes chr_sizes --out out_file"
+filenames <- c("sizes_file","out_file") ;#filenames that must exist (if defined)
+option_list <- list(
+  make_option(c("-i", "--sizes"), type="character", dest="sizes_file", default=NULL,help="TSV file name with chr sequence and size"),
+  make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name. ")
+)
+
+# check multiple options values
+multiple.options = list( )
+mandatory <- c("sizes_file","out")
+opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
+
+pdebug("FILE=",opt$sizes_file)
+
+###############################################
+library(data.table)
+if (!require("bit64")) {
+    source("http://bioconductor.org/biocLite.R")
+    biocLite("bit64")
+}
+library(bit64)
+
+###############################################
+#opt <- list()
+#opt$sizes_file <- "/home/nf/Research/Projects/WIP/EREAP/irap_tests/irap_single/processing_data/h/homo_sapiens/data/chr19.fa.chr_sizes.txt"
+
+# load TSV
+data <- fread(opt$sizes_file,sep="\t",header=FALSE,data.table=FALSE)
+pinfo("Loaded file with ",ncol(data)," columns and ",nrow(data)," rows")
+if ( ncol(data) < 2 || nrow(data)==0 ) {
+    perror("Invalid number of columns - expected 2 columns and more than 0 rows.")
+    q(status=1)
+}
+colnames(data) <- c("Seq","Length")
+total.length <- sum(as.numeric(data$Length))
+min.length <- min(data$Length)
+max.length <- max(data$Length)
+num.seqs <- nrow(data)
+mean.length <- mean(data$Length)
+median.length <- median(data$Length)
+x <- matrix(c(total.length,min.length,max.length,num.seqs,mean.length,median.length),nrow=1)
+colnames(x) <- c("Genome:size","Genome:min.length","Genome:max.length",
+                 "Genome:num.sequences","Genome:mean length","Genome:median length")
+
+#
+#opt$sizes_file <- "asdasd.fasta.gz"
+
+genome <- matrix(gsub(".fa(sta)*(.gz)?","",gsub(".chr_sizes.txt","",basename(opt$sizes_file))))
+colnames(genome) <- "Genome"
+genome
+x <- cbind(x,genome)
+
+write.table(x,file=opt$out,sep="\t",row.names=FALSE,quote=FALSE)
+quit(save="no",status=0)
