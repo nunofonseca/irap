@@ -70,7 +70,11 @@ my.get.stats <- function(d) {
     return(round(x,0))
 }
 
-exon.stats <- my.get.stats(exon.length[,5])
+if ( "elength" %in% colnames(exon.length) ) {
+    exon.stats <- my.get.stats(exon.length[,"elength"])
+} else {
+    exon.stats <- my.get.stats(exon.length[,5])
+}
 trans.stats <- my.get.stats(trans.length)
 gene.stats <- my.get.stats(gene.length)
 
