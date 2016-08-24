@@ -1556,11 +1556,12 @@ $(name)/data/$(reference_basename).chr_sizes.txt: $(reference_abspath).fai
 data_stats: $(name)/data/$(reference_basename).$(gtf_file_basename).data_info.tsv
 
 print_data_stats_file:
-	echo $(name)/data/$(reference_basename).$(gtf_file_basename).data_info.tsv
+	@echo $(name)/data/$(reference_basename).$(gtf_file_basename).data_info.tsv
 
 $(name)/data/$(reference_basename).$(gtf_file_basename).data_info.tsv: $(name)/data/$(reference_basename).irap_stats.tsv $(name)/data/$(gtf_file_basename).irap_stats.tsv
 	echo "Species|$(species)" | tr "|" "\n" > $@.tmp2
-	paste $@.tmp2 $^ | column -s $$'\t' -t > $@.tmp && mv $@.tmp $@ && rm -f $@.tmp2
+	echo "Genome|$(reference_basename)" | tr "|" "\n" > $@.tmp3
+	paste $@.tmp2 $@.tmp3 $^   > $@.tmp && mv $@.tmp $@ && rm -f $@.tmp2 $@.tmp3
 
 $(name)/data/$(reference_basename).irap_stats.tsv: $(name)/data/$(reference_basename).chr_sizes.txt
 	irap_genome_stats -i $< -o $@.tmp && mv $@.tmp $@
