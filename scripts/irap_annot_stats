@@ -82,7 +82,7 @@ colnames(exon.stats) <- paste("Exons:",colnames(exon.stats),sep="")
 colnames(trans.stats) <- paste("Transcripts:",colnames(trans.stats),sep="")
 colnames(gene.stats) <- paste("Genes:",colnames(gene.stats),sep="")
 annot <- matrix(gsub(".fa[sta]*","",gsub(".lengths.Rdata","",basename(opt$rdata_file))))
-colnames(annot) <- "annot"
+colnames(annot) <- "Annotation"
 x <- cbind(exon.stats,trans.stats,gene.stats,annot)
 write.table(x,file=opt$out,sep="\t",row.names=FALSE,quote=FALSE)
 quit(save="no",status=0)
