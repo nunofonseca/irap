@@ -351,6 +351,9 @@ Sailfish_VERSION=0.9.0
 Sailfish_FILE=v${Sailfish_VERSION}.tar.gz
 Sailfish_URL=http://github.com/kingsfordgroup/sailfish/archive/$Sailfish_FILE
 
+SALMON_VERSION=0.7.2
+SALMON_FILE=Salmon-${SALMON_VERSION}_linux_x86_64.tar.gz
+SALMON_URL=https://github.com/COMBINE-lab/salmon/releases/download/v${SALMON_VERSION}/${SALMON_FILE}
 
 # kallisto - 0.42.1 -> 0.42.4 (multithreads)
 kallisto_VERSION=0.42.4
@@ -1454,6 +1457,20 @@ function kallisto_install {
     pinfo "kallisto installation complete."    
 }
 
+# salmon
+function salmon_install {
+    pinfo "Installing salmon..."
+    download_software SALMON
+    tar xzvf $SALMON_FILE
+    pushd Salmon-${SALMON_VERSION}_linux_x86_64
+    mkdir -p $IRAP_DIR/bin/salmon/bin $IRAP_DIR/bin/salmon/lib
+    cp bin/* $IRAP_DIR/bin/salmon/bin
+    cp lib/* $IRAP_DIR/bin/salmon/lib
+    popd
+    pinfo "salmon installation complete."    
+}
+
+
 ######################################################
 # Scripture
 function scripture_install {
@@ -1499,6 +1516,7 @@ function quant_install {
     rsem_install
     kallisto_install
     fusionmap_install
+    salmon_install
     #isoem_install
     #sailfish_install
     #mmseq_install
