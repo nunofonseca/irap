@@ -276,10 +276,10 @@ if [ "$tidy_up_only" == "y" ]; then
     name=`irap_get_name $conf "$irap_options"`
     echo toplevel_dir=$name
     if [ -e $name/tophat2 ] ; then
-	find $name/tophat2 -type d -name "`basename $folder`" -print -exec rm -f {} \; ;
+	find $name/tophat2 -type d -name "`basename $folder`" -print -exec rm -rf {} \; ;
     fi
     if [ -e $name/star ] ; then
-	find $name/star -type d -name "`basename $folder`" -print -exec rm -f {} \; ;
+	find $name/star -type d -name "`basename $folder`" -print -exec rm -rf {} \; ;
     fi
     exit 0
 fi
