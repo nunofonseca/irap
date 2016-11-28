@@ -41,7 +41,7 @@ filenames <- c("tsv_file","lengths")
 
 option_list <- list(
   make_option(c("-f", "--feature"), type="character", dest="feature", default="gene",help="Feature (gene,transcript,exon-)"),
-  make_option(c("-m", "--metric"), type="character", dest="metric", default="rpkm", help="Metric (rpkm,tpm) [default %default]"),
+  make_option(c("-m", "--metric"), type="character", dest="metric", default="rpkm", help="Normalization metric (rpkm/fpkm,tpm,fpkm-uq,uq-fpkm) [default %default]"),
   make_option(c("-i", "--tsv"), type="character", dest="tsv_file", help="TSV file name with the matrix with the counts per gene/transcript."),
   make_option(c("-g", "--gtf"), type="character", dest="gtf_file", default=NULL, help="GTF file name"),
   make_option(c("-l", "--lengths"), type="character",dest="lengths_file",default="",help=" [default %default]."),
@@ -54,7 +54,7 @@ option_list <- list(
 # check multiple options values
 multiple.options = list(
   feature=c('gene','exon','transcript'),
-  metric=c('rpkm','tpm')
+  metric=c('rpkm','tpm','fpkm','fpkm-uq','uq-fpkm')
   )
 mandatory <- c("tsv_file","out","lengths_file")
 
@@ -121,7 +121,7 @@ if (opt$feature=="exon" ) {
 
 lengths <- list(gene=gene.length,transcript=trans.length,exon=exon.length)
 pdebug.save.state("irap_raw2metric","p1")
-if ( opt$metric == "rpkm" ) {
+if ( opt$metric == "rpkm" || opt$metric=="fpkm" ) {
   #(read count  * 1,000,000) / (total number of reads * kilobase of gene/transcript/exon)
   rpkm <- countstable2rpkms(table,lengths[[opt$feature]],mass.labels)
   if ( is.vector(rpkm) ) {
@@ -137,6 +137,31 @@ if ( opt$metric == "rpkm" ) {
   pinfo("Saved ",opt$out)
   q(status=0)
 }
+
+if ( opt$metric == "uq-fpkm" || opt$metric=="fpkm-uq" ) {
+  # uq-fpkm=UQ(fpkm)
+  # fpkm-uq= as described in the PCAWG-3 publication with the difference is that no constraint is imposed on the genes used
+    if ( opt$metric == "uq-fpkm" ) {
+        TUQ=TRUE
+        UQ=FALSE 
+    } else {
+        TUQ=FALSE
+        UQ=TRUE 
+    }
+    norm.vals <- countstable2rpkms(table,lengths[[opt$feature]],mass.labels,UQ=UQ,TUQ=TUQ)
+    if ( is.vector(norm) ) {
+        norm.vals <- data.frame(cbind(names(norm.vals),norm.vals),check.names=F)
+        colnames(norm.vals) <- append(capitalize(opt$feature),libnames)
+    } else {
+        norm.vals <- data.frame(cbind(rownames(norm.vals),norm.vals),check.names=F)
+        colnames(norm.vals) <- append(capitalize(opt$feature),colnames(norm.vals)[-1])
+    }
+    # save
+    write.tsv(norm.vals,file=opt$out)
+    pinfo("Saved ",opt$out)
+    q(status=0)
+}
+
 
 if ( opt$metric == "tpm" ) {
   tpm <- countstable2tpm(table,lengths[[opt$feature]])

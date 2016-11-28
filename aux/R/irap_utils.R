@@ -490,34 +490,71 @@ counts2RPKMs <- function(count.matrix,annot.table=NULL) {
   rpkms
 }
 
-# RPKMs
-countstable2rpkms <- function(table,lens,mass.labels=NULL,exitonerror=TRUE) {
+############################################################
+# RPKM/FPKM 
+# TUQ=True then it returns UQ-FPKM = UQ(FPKM) 
+# UQ=TUR then it returns FPKM-UQ (as described in PCAWG)
+countstable2rpkms <- function(table,lens,mass.labels=NULL,exitonerror=TRUE,UQ=FALSE,TUQ=FALSE) {
   # check if there missing features
-  missing.feat <- (!rownames(table) %in% names(lens))
-
-  if ( sum(missing.feat) ) {
-    perror("Length of ",paste(rownames(table)[missing.feat],sep=",")," not found.")
-    if (exitonerror) { q(status=1) }
-    return(NULL)
-  }
-  v.compute.rpkm <-  function(l,lens,mass.labels=NULL) {
-    #(l*1e6)/(sum(l)*lens[names(l)]/1000)
-     if ( is.null(mass.labels) ) {
-       tot.mass <- sum(l)   
-     } else {
-       tot.mass <- sum(l[mass.labels])
-       irap.assert(tot.mass>0,"Unable to compute FPKMS when the total mass is 0.")
-     }
-     return(10^9*l/(tot.mass*lens[names(l)]))
-   }
-  if ( is.vector(table) ) {
-    return(round(v.compute.rpkm(table,lens,mass.labels),2))
-  } else {
-    return(round(apply(table,2,v.compute.rpkm,lens,mass.labels),2))
-  }
+    missing.feat <- (!rownames(table) %in% names(lens))
+    
+    if ( sum(missing.feat) ) {
+        message("ERROR: Length of ",paste(rownames(table)[missing.feat],sep=",")," not found.")
+        if (exitonerror) { q(status=1) }
+        return(NULL)
+    }
+    v.compute.rpkm <-  function(l,lens,mass.labels=NULL,UQ=FALSE) {
+        #(l*1e6)/(sum(l)*lens[names(l)]/1000)        
+        if ( is.null(mass.labels) ) {
+            mass.vals <- l
+        } else {
+            mass.vals <- l[mass.labels]
+        }
+        # UQ?
+        if ( UQ ) {# 
+            mass.vals.no.zero <- mass.vals[mass.vals>0]
+            x <- summary(mass.vals.no.zero)[5]
+            #mass.vals <- mass.vals.no.zero[mass.vals.no.zero>=x]
+            mass.vals <- x*length(mass.labels)
+            #message("UQ:",x,"-",sum(mass.vals.no.zero),"--->",sum(mass.vals))
+        }
+        tot.mass <- sum(mass.vals)     
+        if ( tot.mass == 0 ) {
+            print("Tot.mass==0!!!!")
+            tot.mass <- 1
+        }
+        l <- as.integer(l)
+        #message("Tot.mass:",tot.mass)
+        tot.mass <- as.integer(tot.mass)
+        expr <- (10^9/tot.mass*l/lens)
+        if (TUQ ) {            
+            mass.vals.no.zero <- expr[expr>0]
+            x <- summary(mass.vals.no.zero)[5]
+            expr <- round(expr/x,2)
+            #message("TUQ:",x)
+        }
+        #return((10^9*l)/(tot.mass*lens))
+        return(expr)
+    }
+    # 
+    if ( is.vector(table) ) {
+        stopifnot(sum(!names(table)%in%names(lens))==0)
+        # fix ordering & and convert to numeric
+        lens <- as.numeric(lens[names(table)])
+        res <- round(v.compute.rpkm(table,lens,mass.labels,UQ),2)
+        names(res) <- names(table)
+        return(res)
+    } else {
+        stopifnot(sum(!rownames(table)%in%names(lens))==0)
+        # fix ordering & and convert to numeric
+        lens <- as.numeric(lens[rownames(table)])
+        res <- round(apply(table,2,v.compute.rpkm,lens,mass.labels,UQ),2)
+        rownames(res) <- rownames(table)
+        return(res)
+    }
 }
 
-
+####################################################################
 # TPMs/GPM
 # RSEM: accurate transcript quantification from RNA-Seq data with or without a reference genome
 # BMC Bioinformatics 2011, 12:323  doi:10.1186/1471-2105-12-323
