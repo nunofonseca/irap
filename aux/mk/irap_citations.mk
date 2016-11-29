@@ -249,8 +249,13 @@ baySeq_bibtex=bayseq.bib
 baySeq_analysis="Differential gene expression"
 
 kallisto_citation=Nicolas L Bray, Harold Pimentel, Páll Melsted, Lior Pachter. "Near-optimal probabilistic RNA-seq quantification." Nature Biotechnology (2016).
-kallisto_bibtex=kallistp.bib
+kallisto_bibtex=kallisto.bib
 kallisto_analysis="Gene/transcript quantification"
+
+salmon_citation=Patro, Rob, Geet Duggal, and Carl Kingsford. "Salmon: Accurate, versatile and ultrafast quantification from rna-seq data using lightweight-alignment." bioRxiv (2015): 021592
+salmon_bibtex=salmon.bib
+salmon_analysis="Gene/transcript quantification"
+
 
 piano_citation=Väremo, Leif, Jens Nielsen, and Intawat Nookaew. "Enriching the gene set analysis of genome-wide data by incorporating directionality of gene expression and combining statistical hypotheses and methods". Nucleic acids research 41.8 (2013): 4378-4391.
 piano_bibtex=piano.bib
