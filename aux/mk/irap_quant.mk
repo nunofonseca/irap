@@ -929,4 +929,101 @@ $(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv: $(foreach p,$(p
 endif
 
 
+########################################################
+# Salmon - Quasi mapping mode
+
+ifeq ($(quant_method),salmon)
+
+# 
+ifneq ($(mapper),none)
+$(warning salmon does not need the reads to be aligned)
+endif
+
+# transcripts
+$(call file_exists,$(trans_file))
+
+# K - minimum matching
+# the user should adjust the K to 1/3 of the read length
+# use 21 as default (assuming minum read length of 30)
+ifndef salmon_index_params
+salmon_index_params=--type quasi -k 21
+endif
+
+ifndef salmon_quant_params
+salmon_quant_params=
+endif
+
+
+salmon_index_name=$(trans_file)_salmon/salmon_index
+salmon_index=$(trans_file)_salmon/salmon_index.irap
+
+# Add the reference preparation to STAGE0
+SETUP_DATA_FILES+=$(salmon_index) $(name)/data/mapTrans2Gene.tsv
+
+$(salmon_index): $(trans_file)
+	mkdir -p $(@D) && irap_wrapper.sh salmon salmon index $(salmon_index_params) -i $(salmon_index_name) -t $< && touch $@
+
+
+$(name)/data/mapTrans2Gene.tsv: $(gtf_file_abspath)
+	genMapTrans2Gene -i $< -o $@.tmp -c $(max_threads) && mv $@.tmp $@
+
+# LibType
+#	Paired-end 	Single-end
+#-fr-unstranded 	-l IU 	-l U
+#-fr-firststrand 	-l ISR 	-l SR
+#-fr-secondstrand 	-l ISF 	-l SF
+irap_salmon_lib_type1=$(if $(findstring $(1),first),SR,$(if $(findstring $(1),second),SF,U))
+irap_salmon_lib_type=$(if $(call is_pe_lib,$(1)),I,)$(call irap_salmon_lib_type1,$(1))
+
+# out_directory - 1
+# read lenth - 2 - ignored
+# lib - 3
+# fastq files - 4
+define run_salmon_quant_se=
+ irap_wrapper.sh salmon salmon quant -i $(salmon_index_name) $(salmon_quant_params)  --libType $(call irap_salmon_lib_type,$(3)) -r $(4) -o $(1) -p $(max_threads)
+endef
+define run_salmon_quant_pe=
+ irap_wrapper.sh salmon salmon quant -i $(salmon_index_name) $(salmon_quant_params)  --libType  $(call irap_salmon_lib_type,$(3)) -1 $(word 1,$(4)) -2 $(word 2,$(4))   -o $(1) -p $(max_threads)
+endef
+# 
+
+# abundance.tsv
+# 1 lib
+# 2 file prefix (lib.[pe,se])
+# 3 pe|se
+define make-salmon-quant-rule=
+
+$(call lib2quant_folder,$(1))$(1)/$(1).abundance.tsv: $(call libname2fastq,$(1)) $(salmon_index)
+	(mkdir -p $$(@D) && $$(call run_salmon_quant_$(3),$$(@D),$($(1)_rs),$(1),$(call libname2fastq,$(1))) && mv $$(@D)/quant.sf $$@)
+
+
+$(call lib2quant_folder,$(1))$(2).transcripts.raw.salmon.tsv: $(call lib2quant_folder,$(1))$(1)/$(1).abundance.tsv
+	cut -f 1,5 $$< |tail -n +2 > $$@.tmp && mv $$@.tmp $$@
+
+$(call lib2quant_folder,$(1))$(2).transcripts.tpm.salmon.salmon.tsv: $(call lib2quant_folder,$(1))$(1)/$(1).abundance.tsv
+	cut -f 1,4 $$< |tail -n +2 > $$@.tmp && mv $$@.tmp $$@
+
+
+$(call lib2quant_folder,$(1))$(2).genes.raw.salmon.tsv: $(call lib2quant_folder,$(1))$(2).transcripts.raw.salmon.tsv $(name)/data/mapTrans2Gene.tsv
+	libTSVAggrTransByGene $$< $(name)/data/mapTrans2Gene.tsv $$@.tmp && mv  $$@.tmp $$@
+
+endef
+
+# quantification
+$(foreach l,$(se),$(eval $(call make-salmon-quant-rule,$(l),$(l).se,se)))
+$(foreach l,$(pe),$(eval $(call make-salmon-quant-rule,$(l),$(l).pe,pe)))
+
+
+$(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).tsv) 
+	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) )  > $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).tsv) 
+	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) )  > $@.tmp && mv $@.tmp $@
+
+
+endif
+
+
+
+
 
