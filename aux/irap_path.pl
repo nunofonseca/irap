@@ -263,7 +263,7 @@ m('mapsplice',_,'',no).
 m('none',_,'',_).
 
 all_mappers(X):-all(M,m(M,_,_,_),X).
-all_quant([htseq1,htseq2,basic,flux_cap,cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,nurd,stringtie,stringtie_nd,rsem,kallisto]).
+all_quant([htseq1,htseq2,basic,flux_cap,cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,nurd,stringtie,stringtie_nd,rsem,kallisto,salmon]).
 all_quant_norm([flux_cap,cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,none,deseq,stringtie,stringtie_nd,rsem,irap]).
 all_de([deseq,edger,voom,cuffdiff1,cuffdiff2,cuffdiff1_nd,cuffdiff2_nd,deseq2,none]).
 
@@ -281,6 +281,7 @@ qr('scripture',m(M),'',no):-m(M,_,_,_S),not M==none.
 qr('nurd',m(M),'',no):-m(M,_,_,_S),not M==none.
 qr('rsem',m(star),'',no).
 qr('kallisto',m(none),'',no).
+qr('salmon',m(none),'',no).
 %qr('ireckon',m(M),''):-m(M,_,_).
 %qr('bitseq',m(M),''):-m(M,_,_).
 %qr('isoem',m(M),''):-m(M,_,_).
