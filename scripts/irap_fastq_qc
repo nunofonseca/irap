@@ -733,7 +733,8 @@ endif
 #Paired end reads
 ifeq ($(pe_data),1)
 
-stage6:	$(out_dir)/$(out_prefix)_1.f.fastq  $(call report_file,1,$(report_dir)/$(out_prefix)_1.f.qual.png $(report_dir)/$(out_prefix)_2.f.qual.png $(report_dir)/raw_data/$(out_prefix)_1.f.fastqc.tsv $(report_dir)/raw_data/$(out_prefix)_2.f.fastqc.tsv $(report_dir)/raw_data/$(out_prefix)_sing.f.fastqc.tsv)
+stage6:	$(out_dir)/$(out_prefix)_1.f.fastq  $(call report_file,1,$(report_dir)/$(out_prefix)_1.f.qual.png $(report_dir)/$(out_prefix)_2.f.qual.png $(report_dir)/raw_data/$(out_prefix)_1.f.fastqc.tsv $(report_dir)/raw_data/$(out_prefix)_2.f.fastqc.tsv)
+# don't care about performing detailed anakysis to $(report_dir)/raw_data/$(out_prefix)_sing.f.fastqc.tsv
 
 $(out_dir)/$(out_prefix)_1.f.fastq $(out_dir)/$(out_prefix)_2.f.fastq $(out_dir)/$(out_prefix)_sing.f.fastq: $(out_dir)/$(f1_n).f.fastq $(out_dir)/$(f2_n).f.fastq $(out_dir)/$(f1_n).sing.fastq 
 	rm -f $(out_dir)/$(out_prefix)_1.f.fastq $(out_dir)/$(out_prefix)_2.f.fastq $(out_dir)/$(out_prefix)_sing.f.fastq
@@ -770,7 +771,7 @@ $(report_dir)/%.qual.png $(report_dir)/%.nuc.distr.png: $(data_dir)/%.fastq
 
 
 
-
+# Note: it will fail if the fastq file is empty
 $(report_dir)/raw_data/%.fastqc.zip: $(out_dir)/%.fastq
 	$(call run-fastqc,$<) && mv $(report_dir)/raw_data/$*_fastqc.zip $@
 
