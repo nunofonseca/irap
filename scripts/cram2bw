@@ -1,6 +1,6 @@
 #!/bin/bash
 # convert one or more CRAM files to bigwig/bedgraph
-# includes intron-spanning reads in tge tracks
+# includes intron-spanning reads in the tracks
 # if more than one file is provided, the values are aggregated (summed)
 if [ "$5-" == "-" ]; then
     echo "ERROR: usage: cram2bw chr_sizes.txt_file out_file_prefix track_name track_descr cram_file1 [cram_file2 ...]"
@@ -18,7 +18,7 @@ if [ ! -e $chr_sizes ]; then
     exit 1
 fi
 
-echo "Processing $# cram files"
+echo "Processing $# cram files: $cram_files"
 for f in $cram_files; do
     if [ ! -e $f ]; then
 	echo "ERROR: file $f not found"
