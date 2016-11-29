@@ -37,7 +37,7 @@ for f in $cram_files; do
     echo -n "$f..."
     # exon coverage
     # CRAM->BAM->EXON_COV->BEDGRAPH
-    samtools view -b $f | bedtools intersect -a stdin -b <(grep -w "exon" $gtf_file) | bedtools  genomecov -ibam stdin -bg -g $chr_sizes   > $f.bedgraph
+    samtools view -b $f | bedtools intersect -a stdin -b <(grep -w "exon" $gtf_file) | bedtools  genomecov -ibam stdin -split -bg -g $chr_sizes   > $f.bedgraph
     bedGraphToBigWig $f.bedgraph $chr_sizes $f.bw
     # rm -f $f.bedgraph
     bw_files="$f.bw $bw_files"
