@@ -1,0 +1,56 @@
+#!/bin/bash
+# convert one or more CRAM files to bigwig/bedgraph
+# does not show reads spanning introns
+# if more than one file is provided, the values are aggregated (summed)
+if [ "$5-" == "-" ]; then
+    echo "ERROR: usage: cram2bw-nospliced chr_sizes.txt_file out_file_prefix track_name track_descr cram_file1 [cram_file2 ...]"
+    exit 1
+fi
+chr_sizes=$1
+out_file=$2
+track_name=$3
+track_descr=$4
+shift 4
+cram_files=$*
+set -e 
+if [ ! -e $chr_sizes ]; then
+    echo "ERROR: $chr_sizes not found"
+    exit 1
+fi
+
+echo "Processing $# cram files: $cram_files"
+for f in $cram_files; do
+    if [ ! -e $f ]; then
+	echo "ERROR: file $f not found"
+	exit
+    fi
+done
+bw_files=
+echo "Converting to bedgraph/bw..."
+for f in $cram_files; do
+    echo -n "$f..."
+    # include intron-spanning reads
+    samtools view -b $f | bedtools  genomecov -ibam stdin -split -bg -g $chr_sizes > $f.bedgraph
+    bedGraphToBigWig $f.bedgraph $chr_sizes $f.bw
+    # rm -f $f.bedgraph
+    bw_files="$f.bw $bw_files"
+    echo "done"
+done
+
+if [ $# == 1 ]; then
+    mv $1.bw $out_file.bw
+    mv $1.bedgraph $out_file.bedgraph.tmp
+else
+    echo "Generating a merged bedgraph file..."
+    bigWigMerge $bw_files $out_file.bedgraph.tmp
+    echo "Generating a merged bedgraph file $out_file.bedgraph...done."
+    echo "Generating a merged bw file..."
+    bedGraphToBigWig $out_file.bedgraph $chr_sizes $out_file.bw    
+    echo "Generating a merged bw file...done"
+fi
+# add header
+echo track type=bedGraph name=\"$track_name\" description=\"$track_descr\" > $out_file.bedgraph
+cat $out_file.bedgraph.tmp >> $out_file.bedgraph
+rm -f $out_file.bedgraph.tmp
+echo "$out_file.bw and $out_file.bedgraph created"
+exit 0	
