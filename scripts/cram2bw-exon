@@ -1,20 +1,26 @@
 #!/bin/bash
 # convert one or more CRAM files to bigwig/bedgraph
-# includes intron-spanning reads in tge tracks
+# include intron-spanning reads
 # if more than one file is provided, the values are aggregated (summed)
 if [ "$5-" == "-" ]; then
-    echo "ERROR: usage: cram2bw chr_sizes.txt_file out_file_prefix track_name track_descr cram_file1 [cram_file2 ...]"
+    echo "ERROR: usage: cram2bw-exon chr_sizes.txt_file gtf_file out_file_prefix track_name track_descr cram_file1 [cram_file2 ...]"
     exit 1
 fi
 chr_sizes=$1
-out_file=$2
-track_name=$3
-track_descr=$4
-shift 4
+gtf_file=$2
+out_file=$3
+track_name=$4
+track_descr=$5
+shift 5
 cram_files=$*
 set -e 
 if [ ! -e $chr_sizes ]; then
     echo "ERROR: $chr_sizes not found"
+    exit 1
+fi
+
+if [ ! -e $gtf_file ]; then
+    echo "ERROR: $gtf_file not found"
     exit 1
 fi
 
@@ -29,8 +35,9 @@ bw_files=
 echo "Converting to bedgraph/bw..."
 for f in $cram_files; do
     echo -n "$f..."
-    # include intron-spanning reads
-    samtools view -b $f | bedtools  genomecov -ibam stdin -bg -g $chr_sizes > $f.bedgraph
+    # exon coverage
+    # CRAM->BAM->EXON_COV->BEDGRAPH
+    samtools view -b $f | bedtools intersect -a stdin -b <(grep -w "exon" $gtf_file) | bedtools  genomecov -ibam stdin -bg -g $chr_sizes   > $f.bedgraph
     bedGraphToBigWig $f.bedgraph $chr_sizes $f.bw
     # rm -f $f.bedgraph
     bw_files="$f.bw $bw_files"
