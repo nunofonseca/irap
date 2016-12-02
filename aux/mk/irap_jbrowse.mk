@@ -171,7 +171,7 @@ endef
 ############################################################
 #
 # Track: quantification
-# exon|gene|transcripts-raw|rpkms|nlib-$(Quant)-$(mapper)-GE
+# exon|gene|transcripts-raw|fpkm|rpkm|tpm|nlib-$(Quant)-$(mapper)-GE
 phony_targets+= $(name)/$(mapper)/$(quant_method)/%.tsv.tracks
 
 # remove .se and .pe from the prefix of the file to obtain the libname
@@ -218,19 +218,19 @@ $(name)/$(mapper)/$(quant_method)/%.genes.raw.$(quant_method).tsv.covd.track: $(
 
 # TODO: WIP
 #rpkms
-$(name)/$(mapper)/$(quant_method)/%.exons.rpkms.$(quant_norm_method).tsv.covd.track: 
+$(name)/$(mapper)/$(quant_method)/%.exons.fpkms.$(quant_norm_method).tsv.covd.track: 
 	$(call p_info, TODO/WIP - tsv2bedGraph support for exon level quant)
-#$(name)/$(mapper)/$(quant_method)/%.exons.rpkms.$(quant_norm_method).tsv.bedGraph $(gff3_file_abspath).csv
-#	track_add.sh -d rna_bedgraph  -l "$*-rpkms-$(quant_method)-$(mapper)-EE" -o $(JBROWSE_DATA) -i $< && touch $@
-	track_add.sh -d covd  -l "$*-rpkms-$(quant_method)-$(mapper)-EE" -o $(JBROWSE_DATA) -i $< && touch $@
+#$(name)/$(mapper)/$(quant_method)/%.exons.fpkms.$(quant_norm_method).tsv.bedGraph $(gff3_file_abspath).csv
+#	track_add.sh -d rna_bedgraph  -l "$*-fpkms-$(quant_method)-$(mapper)-EE" -o $(JBROWSE_DATA) -i $< && touch $@
+	track_add.sh -d covd  -l "$*-fpkms-$(quant_method)-$(mapper)-EE" -o $(JBROWSE_DATA) -i $< && touch $@
 
-$(name)/$(mapper)/$(quant_method)/%.transcripts.rpkms.$(quant_norm_method).tsv.covd.track: $(name)/$(mapper)/$(quant_method)/%.transcripts.rpkms.$(quant_norm_method).bedGraph $(gff3_file_abspath).csv
-#	track_add.sh -d rna_bedgraph  -l "$*-rpkms-$(quant_method)-$(mapper)-TE" -o $(JBROWSE_DATA) -i $< && touch $@
-	track_add.sh -d covd -l "$*-rpkms-$(quant_method)-$(mapper)-TE" -o $(JBROWSE_DATA) -i $< && touch $@
+$(name)/$(mapper)/$(quant_method)/%.transcripts.fpkms.$(quant_norm_method).tsv.covd.track: $(name)/$(mapper)/$(quant_method)/%.transcripts.fpkms.$(quant_norm_method).bedGraph $(gff3_file_abspath).csv
+#	track_add.sh -d rna_bedgraph  -l "$*-fpkms-$(quant_method)-$(mapper)-TE" -o $(JBROWSE_DATA) -i $< && touch $@
+	track_add.sh -d covd -l "$*-fpkms-$(quant_method)-$(mapper)-TE" -o $(JBROWSE_DATA) -i $< && touch $@
 
-$(name)/$(mapper)/$(quant_method)/%.genes.rpkms.$(quant_norm_method).tsv.covd.track: $(name)/$(mapper)/$(quant_method)/%.genes.rpkms.$(quant_norm_method).bw $(gff3_file_abspath).csv
-	track_add.sh -d covd  -l "$*-rpkms-$(quant_method)-$(mapper)-GE" -o $(JBROWSE_DATA) -i $< \
-	-m $(call get_metadata,Quantification,$(mapper),$(quant_method),,,RPKMs per gene (GE),"Lib" : "$*") &&\
+$(name)/$(mapper)/$(quant_method)/%.genes.fpkms.$(quant_norm_method).tsv.covd.track: $(name)/$(mapper)/$(quant_method)/%.genes.fpkms.$(quant_norm_method).bw $(gff3_file_abspath).csv
+	track_add.sh -d covd  -l "$*-fpkms-$(quant_method)-$(mapper)-GE" -o $(JBROWSE_DATA) -i $< \
+	-m $(call get_metadata,Quantification,$(mapper),$(quant_method),,,FPKMs per gene (GE),"Lib" : "$*") &&\
 	touch $@
 
 ######

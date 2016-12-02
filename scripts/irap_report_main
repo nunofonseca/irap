@@ -169,12 +169,12 @@ gen.toplevel.menu <- function(menufile) {
   # list name=extension
   metrics <- list(
     "Counts"=c('raw'),
-    "RPKM"=c('rpkm'),
+    "FPKM"=c('fpkm'),
     "Counts/lib size"=c('deseq_nlib')
     )
   metrics2ext <- list(
     "Counts"=c(""),
-    "RPKM"=c(".irap",".stringtie",".nurd",".cufflinks1",".cufflinks2",".rsem"),
+    "FPKM"=c(".irap",".stringtie",".nurd",".cufflinks1",".cufflinks2",".rsem"),
     "Counts/lib size"=c('.irap')
     )
   

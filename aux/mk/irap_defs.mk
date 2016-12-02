@@ -103,7 +103,7 @@ quant_method?=htseq2
 mapper?=tophat2
 exon_quant?=y
 exon_quant_method=dexseq
-quant_norm_method?=rpkm
+quant_norm_method?=fpkm
 quant_norm_tool?=irap
 transcript_quant?=n
 

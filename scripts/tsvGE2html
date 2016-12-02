@@ -68,7 +68,7 @@ option_list <- list(
 # check multiple options values
 multiple.options = list(
   feature=c('gene','exon','CDS'),
-  metric=c('rpkm','raw',"deseq_nlib")
+  metric=c('fpkm','tpm','rpkm','raw',"deseq_nlib")
 )
 mandatory <- c("tsv_file","out",'metric')
 opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
@@ -115,7 +115,9 @@ my.panel.cor<-function(x,y,...) {
 
 pprint.metric<-function(x) {
    str<-list("raw"="Number of reads",
-             "rpkm"="RPKM",
+             "rpkm"="F/RPKM",
+             "fpkm"="FPKM",
+             "tpm"="TPM",
              "nlib"="Number of reads normalized by library size")
    return(str[[x]])
 }
@@ -192,6 +194,12 @@ rownames(table) <- as.character(table[,"ID"])
 # fix colnames (.rpkm)
 if ( opt$metric == "rpkm" ) {
   colnames(table) <- gsub(".rpkm$","",colnames(table))
+}
+if ( opt$metric == "fpkm" ) {
+  colnames(table) <- gsub(".fpkm$","",colnames(table))
+}
+if ( opt$metric == "tpm" ) {
+  colnames(table) <- gsub(".tpm$","",colnames(table))
 }
 
 html.cols2sel <- colnames(table)

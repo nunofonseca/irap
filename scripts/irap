@@ -877,8 +877,12 @@ ifeq (,$(filter $(quant_norm_tool),none $(SUPPORTED_NORM_TOOLS)))
 $(call p_error,quant_norm_tool '$(quant_norm_tool)' invalid)
 endif
 
+ifeq ($(quant_norm_method),rpkm)
+$(call p_error,quant_norm_method Please use fpkm instead of RPKM)
+endif
+
 # Normalization methods
-SUPPORTED_NORM_METHODS=rpkm deseq_nlib tpm
+SUPPORTED_NORM_METHODS=fpkm deseq_nlib tpm
 # rpkm_qn
 ifeq (,$(filter $(quant_norm_method),none $(SUPPORTED_NORM_METHODS)))
 $(call p_error,quant_norm_method '$(quant_norm_method)' invalid)
@@ -889,13 +893,13 @@ endif
 ifneq (,$(filter $(quant_method),cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd nurd stringtie stringtie_nd flux_cap))
 ifndef quant_norm_tool
 quant_norm_tool=$(quant_method)
-override quant_norm_method=rpkm
-$(info * Enabling generation of table of RPKMs since $(quant_method) produces F/RPKMs by default)
+override quant_norm_method=fpkm
+$(info * Enabling generation of table of FPKMs since $(quant_method) produces F/RPKMs by default)
 endif
 ifeq ($(quant_norm_tool),none)
 quant_norm_tool=$(quant_method)
-override quant_norm_method=rpkm
-$(info * Enabling generation of table of RPKMs since $(quant_method) produces F/RPKMs by default)
+override quant_norm_method=fpkm
+$(info * Enabling generation of table of FPKMs since $(quant_method) produces F/RPKMs by default)
 endif
 endif
 

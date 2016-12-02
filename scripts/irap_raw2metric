@@ -76,7 +76,9 @@ exon.length <- NULL
 table <- quant.load(opt$tsv_file)
 # matrix may contain a single column with values
 if ( is.vector(table) ) {
-  names(table) <- ids
+    names(table) <- ids
+    #cat("ERROR: ",opt$tsv_file," should contain a matrix\n")
+    #q(status=1)
 }
 
 # Gene lib1 ....
@@ -126,7 +128,7 @@ if ( opt$metric == "rpkm" || opt$metric=="fpkm" ) {
   rpkm <- countstable2rpkms(table,lengths[[opt$feature]],mass.labels)
   if ( is.vector(rpkm) ) {
     rpkm <- data.frame(cbind(names(rpkm),rpkm),check.names=F)
-    colnames(rpkm) <- append(capitalize(opt$feature),libnames)
+    colnames(rpkm) <- append(capitalize(opt$feature),"Lib")
   } else {
     rpkm <- data.frame(cbind(rownames(rpkm),rpkm),check.names=F)
     colnames(rpkm) <- append(capitalize(opt$feature),colnames(rpkm)[-1])
@@ -140,7 +142,7 @@ if ( opt$metric == "rpkm" || opt$metric=="fpkm" ) {
 
 if ( opt$metric == "uq-fpkm" || opt$metric=="fpkm-uq" ) {
   # uq-fpkm=UQ(fpkm)
-  # fpkm-uq= as described in the PCAWG-3 publication with the difference is that no constraint is imposed on the genes used
+  # fpkm-uq= as described in the PCAWG-3 publication with the difference is that no constraint is imposed on the set of genes used
     if ( opt$metric == "uq-fpkm" ) {
         TUQ=TRUE
         UQ=FALSE 
@@ -151,7 +153,7 @@ if ( opt$metric == "uq-fpkm" || opt$metric=="fpkm-uq" ) {
     norm.vals <- countstable2rpkms(table,lengths[[opt$feature]],mass.labels,UQ=UQ,TUQ=TUQ)
     if ( is.vector(norm) ) {
         norm.vals <- data.frame(cbind(names(norm.vals),norm.vals),check.names=F)
-        colnames(norm.vals) <- append(capitalize(opt$feature),libnames)
+        colnames(norm.vals) <- append(capitalize(opt$feature),"Lib")
     } else {
         norm.vals <- data.frame(cbind(rownames(norm.vals),norm.vals),check.names=F)
         colnames(norm.vals) <- append(capitalize(opt$feature),colnames(norm.vals)[-1])
@@ -167,7 +169,7 @@ if ( opt$metric == "tpm" ) {
   tpm <- countstable2tpm(table,lengths[[opt$feature]])
   if ( is.vector(tpm) ) {
     tpm <- data.frame(cbind(names(tpm),tpm),check.names=F)
-    colnames(tpm) <- append(capitalize(opt$feature),libnames)
+    colnames(tpm) <- append(capitalize(opt$feature),"Lib")
   } else {
     tpm <- data.frame(cbind(rownames(tpm),tpm),check.names=F)
     colnames(tpm) <- append(capitalize(opt$feature),colnames(tpm)[-1])

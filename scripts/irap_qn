@@ -95,8 +95,8 @@ if ( ! is.null(opt$qn_vector_file) ) {
   }
   pinfo("Using provided values for quantile normalization")
 }
-# remove the rpkm from the libname
-colnames(quant) <- gsub(".rpkm","",colnames(quant))
+# remove rpkm/tpm/fpkm from the libname
+colnames(quant) <- gsub(".fpkm",gsub(".tpm",gsub(".rpkm","",colnames(quant))))
 pinfo("Starting quantile normalization (this may take a while)...")
 x <- quantile_norm(quant,means=qn_vector$x)
 pinfo("Quantile normalization complete.")

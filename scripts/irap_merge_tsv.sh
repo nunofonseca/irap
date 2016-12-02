@@ -81,7 +81,7 @@ for f in $*; do
 done
 echo  >> $lfiles_name
 # labels/header
-sed  -e "s/\.[^\.]*\.tsv//g;s/\(.tmp2\|.raw\|.rpkms\|.rpkm\|.genes\|.nlib\|.exons\|.transcripts\)//g;s/\(\.pe\|\.se\)//g;s/ /\t/g;s/^/$FEATURE\t/;" $lfiles_name 
+sed  -e "s/\.[^\.]*\.tsv//g;s/\(.tmp2\|.raw\|.fpkm\|.rpkms\|.rpkm\|.genes\|.nlib\|.exons\|.transcripts\)//g;s/\(\.pe\|\.se\)//g;s/ /\t/g;s/^/$FEATURE\t/;" $lfiles_name 
 
 
 cat $lfiles_name_m

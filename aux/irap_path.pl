@@ -72,14 +72,14 @@ valid_combination([Map,QR,QNT,QN,DE,GSE,Stranded]):-
 valid_norm_selection(_QR,none,_).
 valid_norm_selection(_QR,_,none).
 valid_norm_selection(_QR,irap,_).
-valid_norm_selection(cufflinks1,cufflinks1,rpkm).
-valid_norm_selection(cufflinks2,cufflinks2,rpkm).
-valid_norm_selection(cufflinks2_nd,cufflinks2_nd,rpkm).
-valid_norm_selection(cufflinks1_nd,cufflinks1_nd,rpkm).
-valid_norm_selection(stringtie,stringtie,rpkm).
-valid_norm_selection(stringtie_nd,stringtie_nd,rpkm).
-valid_norm_selection(nurd,nurd,rpkm).
-valid_norm_selection(flux_cap,flux_cap,rpkm).
+valid_norm_selection(cufflinks1,cufflinks1,fpkm).
+valid_norm_selection(cufflinks2,cufflinks2,fpkm).
+valid_norm_selection(cufflinks2_nd,cufflinks2_nd,fpkm).
+valid_norm_selection(cufflinks1_nd,cufflinks1_nd,fpkm).
+valid_norm_selection(stringtie,stringtie,fpkm).
+valid_norm_selection(stringtie_nd,stringtie_nd,fpkm).
+valid_norm_selection(nurd,nurd,fpkm).
+valid_norm_selection(flux_cap,flux_cap,fpkm).
 
 
 stranded_ok(yes,stranded).
