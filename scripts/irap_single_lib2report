@@ -75,6 +75,14 @@ version=0.6.3d4
 #******************************
 # command line parameters
 
+ifndef extra_filter
+extra_filter=
+endif
+
+ifneq ($(extra_filter),)
+$(call p_info,Extra filter=$(extra_filter))
+endif
+
 ifeq ($(folders_file),) 
 $(call p_error,Missing folders_file parameter)
 endif
@@ -131,35 +139,35 @@ endef
 
 ########################################################################
 $(call p_info,Looking for gene level quantification files (raw counts))
-$(call matching_files,$(folders_file),"*genes.raw.*.tsv",$(out)/.genes_raw_quants_file)
+$(call matching_files,$(folders_file),"*genes.raw.*$(extra_filter)*.tsv",$(out)/.genes_raw_quants_file)
 
 $(call p_info,Looking for gene level quantification files (fpkm))
-$(call matching_files,$(folders_file),"*genes.fpkm.*.tsv",$(out)/.genes_fpkm_quants_file)
+$(call matching_files,$(folders_file),"*genes.fpkm.*$(extra_filter)*.tsv",$(out)/.genes_fpkm_quants_file)
 
 $(call p_info,Looking for gene level quantification files (tpm))
-$(call matching_files,$(folders_file),"*genes.tpm.*.tsv",$(out)/.genes_tpm_quants_file)
+$(call matching_files,$(folders_file),"*genes.tpm.*$(extra_filter)*.tsv",$(out)/.genes_tpm_quants_file)
 
 #
 $(call p_info,Looking for exon level quantification files (raw counts))
-$(call matching_files,$(folders_file),"*exons.raw.*.tsv",$(out)/.exons_raw_quants_file)
+$(call matching_files,$(folders_file),"*exons.raw.*$(extra_filter)*.tsv",$(out)/.exons_raw_quants_file)
 
 $(call p_info,Looking for exon level quantification files (fpkm))
-$(call matching_files,$(folders_file),"*exons.fpkm.*.tsv",$(out)/.exons_fpkm_quants_file)
+$(call matching_files,$(folders_file),"*exons.fpkm.*$(extra_filter)*.tsv",$(out)/.exons_fpkm_quants_file)
 
 ifndef no_exons_tpm
 $(call p_info,Looking for exon level quantification files (tpm))
-$(call matching_files,$(folders_file),"*exons.tpm.*.tsv",$(out)/.exons_tpm_quants_file)
+$(call matching_files,$(folders_file),"*exons.tpm.*$(extra_filter)*.tsv",$(out)/.exons_tpm_quants_file)
 endif
 
 #
 $(call p_info,Looking for transcript level quantification files (raw counts))
-$(call matching_files,$(folders_file),"*transcripts.raw.*.tsv",$(out)/.transcripts_raw_quants_file)
+$(call matching_files,$(folders_file),"*transcripts.raw.*$(extra_filter)*.tsv",$(out)/.transcripts_raw_quants_file)
 
 $(call p_info,Looking for transcript level quantification files (fpkm))
-$(call matching_files,$(folders_file),"*transcripts.fpkm.*.tsv",$(out)/.transcripts_fpkm_quants_file)
+$(call matching_files,$(folders_file),"*transcripts.fpkm.*$(extra_filter)*.tsv",$(out)/.transcripts_fpkm_quants_file)
 
 $(call p_info,Looking for transcript level quantification files (tpm))
-$(call matching_files,$(folders_file),"*transcripts.tpm.*.tsv",$(out)/.transcripts_tpm_quants_file)
+$(call matching_files,$(folders_file),"*transcripts.tpm.*$(extra_filter)*.tsv",$(out)/.transcripts_tpm_quants_file)
 
 #############################################
 # checking the number of files found
