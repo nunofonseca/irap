@@ -71,6 +71,7 @@ endef
 # options that are passed directly to the mapper
 tophat1_map_options?=
 tophat2_map_options?=
+hisat2_map_options?=
 bowtie1_map_options?=
 bowtie2_map_options?=
 bwa1_map_options?=
@@ -89,6 +90,7 @@ osa_index_options?=
 
 tophat1_aln_options?=
 tophat2_aln_options?=
+hisat2_aln_options?=
 bowtie1_aln_options?=
 bowtie2_aln_options?=
 bwa1_aln_options?=
@@ -198,7 +200,7 @@ ifeq ($(mapper),tophat2)
 	trim_reads=y
 endif
 
-min_intron_len=6
+min_intron_len?=6
 tophat1_map_params= --min-intron-length $(min_intron_len) $(tophat1_map_options) --no-sort-bam
 tophat2_map_params= --max-multihits $(max_hits) --no-coverage-search --min-intron-length $(min_intron_len) $(tophat2_map_options) --no-sort-bam
 tophat_no_splicing= --no-gtf-juncs --no-novel-juncs --transcriptome-only --no-novel-indels
@@ -308,6 +310,105 @@ endef
 # 2-rgid
 define addRG2BAM= 
 	samtools view -H $(1) > $(1).header && echo -e "@RG\tID:$(2)" >> $(1).header &&  samtools view $(1) | sed "s/$$$$/\tRG:Z:$(2)/" | samtools view -b - | samtools reheader $(1).header /dev/stdin > $(1).tmp && mv $(1).tmp $(1)
+endef
+
+
+
+#####################################################
+# Hisat2
+
+#-novel-splicesite-outfile <path>
+define hisat2_seglength_option=
+	$(shell if [ $(1) \< 60 ]; then echo "--segment-length 20"; else echo ""; fi)
+endef
+
+define hisat2_qual_option=
+	$(shell if [ "$(1)" == "33" ]; then echo ""; else echo "--solexa-quals"; fi)
+endef
+
+
+# override: the reads need to be trimmed when hisat2 is used 
+ifeq ($(mapper),hisat2)
+$(info WARNING: HISAT2 support is still under development)	
+endif
+
+
+# --downstream-transcriptome-assembly - align. for transcript assembly
+# --no-softclip
+# -dta-cufflinks 
+hisat2_min_intron_len?=20
+hisat2_map_params= --min-intronlen $(hisat2_min_intron_len) $(hisat2_map_options) --no-softclip --dta-cufflinks -k $(max_hits)
+
+hisat2_no_splicing= --no-spliced-alignment  --transcriptome-mapping-only
+ifeq ($(mapper_splicing),no)
+	hisat2_map_params+= $(hisat2_no_splicing)
+runtime_splicing_params=
+else
+# 1= index
+# 2= outbam
+runtime_splicing_params= --known-splicesite-infile $(call hisat2_trans_index_filename,$(1),$(1)).splicesites.txt --novel-splicesite-outfile  $(subst .bam,.splicing.tsv,$(2))
+endif
+
+define run_hisat2_index=
+	irap_map.sh HISAT2  hisat2-build --offrate 3 $(1) $(1)
+endef
+
+# 1 - GTF
+
+# --novel-splicesite-outfile path
+# --known-splicesite-infile <path>
+
+# --ss path ... --exon path
+# strand option
+# irap
+# From the manual
+# (TopHat has a similar option, --library-type option, where fr-firststrand corresponds to R and RF; fr-secondstrand corresponds to F and FR.) 
+irap_strand2hisat2option=$(if $(findstring $(1),$(pe)),$(if $(findstring $(1),first),--rna-strandness=RF,$(if $(findstring $(1),second),--rna-strandness=FR,)),$(if $(findstring $(1),first),--rna-strandness=R,$(if $(findstring $(1),second),--rna-strandness=F,)))
+
+# 1 - libname
+define hisat2_strand_params=
+	$(if $(call lib_strand_info,$(1)),$(call irap_strand2hisat2option,$($(1)_strand)),)
+endef
+
+define hisat2_file_params=
+	$(if $(findstring $(1),$(pe)), -1 $(word 1,$(2)) -2 $(word 2,$(2)),$(2))  $(call hisat2_qual_option,$($(1)_qual))  $(call hisat2_strand_params,$(1))
+endef
+
+# 
+define run_hisat2_index_annot=
+	irap_map.sh HISAT2 hisat2_extract_splice_sites.py $(gtf_file_abspath) > $(call hisat2_trans_index_filename,$(1),$(1)).splicesites.txt.tmp && \
+	mv $(call hisat2_trans_index_filename,$(1),$(1)).splicesites.txt.tmp $(call hisat2_trans_index_filename,$(1),$(1)).splicesites.txt && \
+	touch $(call hisat2_trans_index_filename,$(1),$(1))
+endef
+
+# same arguments used for *_index
+define hisat2_index_filename=
+$(2).1.ht2
+endef
+
+define hisat2_trans_index_filename=
+	$(subst .fa,,$(1))_$(subst .gtf,,$(notdir $(gtf_file_abspath)))_hisat_annot
+endef
+
+
+define hisat2_setup_dirs=
+	if [ ! -e $(call lib2bam_folder,$(1))$(1)/tmp ] ; then mkdir -p $(call lib2bam_folder,$(1))$(1)/tmp; fi
+endef
+
+hisat2_reference_prefix=$(reference_prefix)
+
+#  $(call hisat2_ins_sd_params,$(1))
+# --tmp-dir $(call lib2bam_folder,$(1))$(1)/tmp
+# write alignment to disk
+define run_hisat2_map=
+        $(call hisat2_setup_dirs,$(1)) && \
+	irap_map.sh HISAT2 hisat2  -p $(max_threads)   $(hisat2_map_params) $(if $($(1)_rgid),--rg-id "$($(1)_rgid)")  $(call runtime_splicing_params,$(hisat2_reference_prefix),$(3))   $(hisat2_reference_prefix) $(call hisat2_file_params,$(1),$(2)) -S $(call lib2bam_folder,$(1))$(1)/$(1).tmp.sam &&\
+	samtools view -T $(reference_abspath)  -bS  $(call lib2bam_folder,$(1))$(1)/$(1).tmp.sam >  $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam  && \
+	rm -f  $(call lib2bam_folder,$(1))$(1)/$(1).tmp.sam && \
+	samtools sort -m $(SAMTOOLS_SORT_MEM) -T $(call lib2bam_folder,$(1))$(1)/$(1) -o $(call lib2bam_folder,$(1))$(1)/$(1).bam $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam   &&\
+	rm -f $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam &&\
+	$(call bam_rehead,$(call lib2bam_folder,$(1))$(1)/$(1).bam,$(1)) && \
+	mv $(call lib2bam_folder,$(1))$(1)/$(1).bam $(3)
 endef
 
 ####################################################
@@ -914,12 +1015,22 @@ define run_mapsplice_map=
 endef
 
 ########################################################################
-ifneq ($(mapper),tophat2)
-define $(mapper)_index_filenames=
-	$(call $(mapper)_index_filename,$(1),$(1)) 
-endef
-else
+ifeq ($(mapper),tophat2)
 define tophat2_index_filenames=
 	$(call tophat2_index_filename,$(1),$(1)) 	$(call tophat2_trans_index_filename,$(1),$(1))
 endef
 endif
+
+ifeq ($(mapper),hisat2)
+define hisat2_index_filenames=
+	$(call hisat2_index_filename,$(1),$(1)) 	$(call hisat2_trans_index_filename,$(1),$(1))
+endef
+endif
+
+
+ifndef $(mapper)_index_filenames
+define $(mapper)_index_filenames=
+	$(call $(mapper)_index_filename,$(1),$(1)) 
+endef
+endif
+
