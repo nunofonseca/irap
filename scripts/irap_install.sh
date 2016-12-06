@@ -190,6 +190,12 @@ tophat2_FILE=tophat-${tophat2_VERSION}.Linux_x86_64.tar.gz
 #tophat2_URL=http://tophat.cbcb.umd.edu/downloads/$tophat2_FILE
 tophat2_URL=http://ccb.jhu.edu/software/tophat/downloads/$tophat2_FILE
 
+# 
+HISAT2_VERSION=2.0.5
+HISAT2_FILE=hisat2-${HISAT2_VERSION}-Linux_x86_64.zip
+HISAT2_URL=ftp://ftp.ccb.jhu.edu/pub/infphilo/hisat2/downloads/$HISAT2_FILE
+
+
 # 0.7.6 - now in sf
 SMALT_VERSION=0.7.4
 SMALT_FILE=smalt-$SMALT_VERSION.tgz
@@ -554,6 +560,19 @@ function tophat2_install {
     popd
 }
 
+function hisat2_install {
+    MAPPER=HISAT2
+    pinfo  "Starting $MAPPER binary installation..."
+    download_software $MAPPER
+    unzip $HISAT2_FILE
+    pushd `echo $HISAT2_FILE|sed "s/.Linux.*//"`
+    install_binary $MAPPER . \*
+    cp -rf scripts/* $IRAP_DIR/bin/$MAPPER/bin
+    pinfo "$MAPPER installation complete."    
+    popd
+}
+
+
 function smalt_install {
     MAPPER=smalt
     pinfo "Starting $MAPPER binary installation..."
@@ -721,6 +740,7 @@ function mappers_install {
    star_install
    pinfo "To install MapSplice run: irap_install.sh -s . -x mapsplice"
    pinfo "To install GEM run: irap_install.sh -s . -x gem"
+   pinfo "To install HISAT2 run: irap_install.sh -s . -x hisat2"
    #mapsplice_install
 }
 
