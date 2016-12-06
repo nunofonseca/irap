@@ -346,7 +346,9 @@ runtime_splicing_params=
 else
 # 1= index
 # 2= outbam
-runtime_splicing_params= --known-splicesite-infile $(call hisat2_trans_index_filename,$(1),$(1)).splicesites.txt --novel-splicesite-outfile  $(subst .bam,.splicing.tsv,$(2))
+define runtime_splicing_params=
+	--known-splicesite-infile $(call hisat2_trans_index_filename,$(1),$(1)).splicesites.txt --novel-splicesite-outfile  $(2).splicing.tsv
+endef
 endif
 
 define run_hisat2_index=
