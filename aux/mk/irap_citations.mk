@@ -50,6 +50,7 @@ mapper_bowtie2=bowtie2
 mapper_gem=GEM
 mapper_star=STAR
 mapper_osa=OSA
+mapper_HISAT2=HISAT2
 
 # Quant. methods
 quant_basic=empty
@@ -64,6 +65,11 @@ quant_scripture=scripture
 quant_bitseq=BitSeq
 quant_ireckon=Ireckon
 quant_nurd=NURD
+quant_salmon=salmon
+quant_kallisto=kallisto
+quant_stringtie=stringtie
+quant_stringtie_nd=stringtie
+quant_rsem=rsem
 
 # quant_norm_method cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd deseq flux_cap edger 
 quant_norm_cufflinks1=cufflinks1
@@ -107,6 +113,10 @@ STAR_citation="Alexander Dobin, Carrie A. Davis, Felix Schlesinger, Jorg Drenkow
 STAR_bibtex=STAR.bib
 STAR_analysis="Reads alignment"
 
+HISAT2_citation="Kim, Daehwan, Ben Langmead, and Steven L. Salzberg. "HISAT: a fast spliced aligner with low memory requirements." Nature methods 12.4 (2015): 357-360."
+HISAT2_bibtex=HISAT2.bib
+HISAT_analysis="Reads alignment"
+
 #### 
 tophat1_citation=Cole Trapnell, Lior Pachter, and Steven L. Salzberg. TopHat: discovering splice junctions with RNA-Seq Bioinformatics (2009) 25(9): 1105-1111
 tophat1_bibtex=tophat1.bib
@@ -121,6 +131,8 @@ tophat2_analysis="Reads alignment"
 SMALT_citation=http://www.sanger.ac.uk/resources/software/smalt/
 SMALT_bibtex= 
 SMALT_analysis="Reads alignment"
+
+
 
 #### 
 GSNAP_citation=Thomas D. Wu and Serban Nacu.Fast and SNP-tolerant detection of complex variants and splicing in short reads Bioinformatics (2010) 26(7): 873-881 
@@ -181,6 +193,11 @@ cufflinks1_analysis="Gene and transcript quantification"
 cufflinks2_citation=Trapnell, Cole, et al. "Differential gene and transcript expression analysis of RNA-seq experiments with TopHat and Cufflinks." Nature protocols 7.3 (2012): 562-578.
 cufflinks2_bibtex=cufflinks2.bib
 cufflinks2_analysis="Gene and transcript quantification"
+
+#
+rsem_citation=Li, Bo, and Colin N. Dewey. RSEM: accurate transcript quantification from RNA-Seq data with or without a reference genome. BMC bioinformatics 12.1 (2011): 1.
+rsem_bibtex=rsem.bib
+rsem_analysis="Gene and transcript quantification"
 
 ####
 htseq_citation=Simon Anders, Paul Theodor Pyl, Wolfgang Huber: HTSeq – A Python framework to work with high-throughput sequencing data. bioRxiv, 20 Feb 2014, http://doi.org/10.1101/002824.
