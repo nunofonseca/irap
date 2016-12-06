@@ -258,6 +258,7 @@ m('bowtie2',_,'',no).
 m('gem',_,'',no).
 %m('gems',_,'').%RNA-version
 m('star',_,'',stranded).
+m('hisat2',_,'',stranded).
 m('osa',_,'',no).
 m('mapsplice',_,'',no).
 m('none',_,'',_).
