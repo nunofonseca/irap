@@ -317,13 +317,9 @@ endef
 #####################################################
 # Hisat2
 
-#-novel-splicesite-outfile <path>
-define hisat2_seglength_option=
-	$(shell if [ $(1) \< 60 ]; then echo "--segment-length 20"; else echo ""; fi)
-endef
 
 define hisat2_qual_option=
-	$(shell if [ "$(1)" == "33" ]; then echo ""; else echo "--solexa-quals"; fi)
+$(if $(findstring 33,$(1)),--phred33,$(if $(findstring 64,$(1)),--phred64,--solexa-quals))
 endef
 
 
