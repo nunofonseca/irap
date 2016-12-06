@@ -748,7 +748,7 @@ endif
 $(info *	mapper=$(mapper))
 
 # gems
-SUPPORTED_MAPPERS=tophat1 tophat2 smalt gsnap soapsplice bwa1 bwa2 bowtie1 bowtie2 gem star osa mapsplice
+SUPPORTED_MAPPERS=tophat1 tophat2 smalt gsnap soapsplice bwa1 bwa2 bowtie1 bowtie2 gem star osa mapsplice hisat2
 ifeq (,$(filter $(mapper),none $(SUPPORTED_MAPPERS)))
 $(call p_info,[ERROR] Invalid mapper)
 $(error $(mapper) not implemented)
