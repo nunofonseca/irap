@@ -566,9 +566,9 @@ $(out_dir)/$(out_prefix)_2.f.fastq:  $(data_dir)/$(f2_n).fastq
 
 stage6: $(out_dir)/$(out_prefix)_1.f.fastq  $(call report_file,1,$(report_dir)/raw_data/$(f1_n).fastqc.zip $(report_dir)/raw_data/$(f2_n).fastqc.zip)
 	rm -f $(report_dir)/raw_data/$(out_prefix)_1.f.fastqc.zip
-	ln -s $(report_dir)/raw_data/$(f1_n).fastqc.zip $(report_dir)/raw_data/$(out_prefix)_1.f.fastqc.zip
+	ln -s $(abspath $(report_dir)/raw_data/$(f1_n).fastqc.zip) $(report_dir)/raw_data/$(out_prefix)_1.f.fastqc.zip
 	rm -f $(report_dir)/raw_data/$(out_prefix)_2.f.fastqc.zip
-	ln -s $(report_dir)/raw_data/$(f2_n).fastqc.zip $(report_dir)/raw_data/$(out_prefix)_2.f.fastqc.zip
+	ln -s $(abspath $(report_dir)/raw_data/$(f2_n).fastqc.zip) $(report_dir)/raw_data/$(out_prefix)_2.f.fastqc.zip
 
 
 #Single end reads
