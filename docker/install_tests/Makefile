@@ -1,5 +1,5 @@
 
-IRAP_VERSION=0.8.0a
+IRAP_VERSION=08122016
 
 #texlive-texinfo
 #cp /sbin/install-info /usr/bin/install-info
