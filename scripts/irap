@@ -111,6 +111,7 @@ endif
 
 # complain if a file does not exist and exit
 file_exists=$(if  $(realpath $(1)),,$(call p_error,$(1) not found))
+file_exists_ce=$(if  $(realpath $(1)),,$(call p_error,$(1) - $(2)))
 
 #  check if a variable  $(1) is defined - return the variable name if it is defined or empty otherwise
 is_defined=$(if $(subst undefined,,$(origin $(1))),$(1),)
