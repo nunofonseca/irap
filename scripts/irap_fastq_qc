@@ -53,8 +53,8 @@ exec make  -Rf "$0"  ${1+"$@"}
 f2:=
 
 ifdef f
-f1=$(shell echo $(f)|cut -f 1 -d\ )
-f2=$(shell echo $(f)|cut -f 2 -d\ )
+f1=$(word 1,$(f))
+f2=$(word 2,$(f))
 $(info $(f1) $(f2))
 ifeq ($(strip $(f2)),$(strip $(f1)))
 # undefine only available in make version 3.82 and above
@@ -127,7 +127,7 @@ endif
 endif
 
 #Does files f2 exist?
-ifdef f2
+ifneq ($(f2),)
 ifeq ($(wildcard $(data_dir)/$(f2)),)
 ifeq ($(wildcard $(data_dir)/$(f2).gz),)
 $(error * Fastq file f2 $(data_dir)/$(f2) does not exist)
@@ -161,7 +161,7 @@ endif
 endif
 
 #Pair ends
-ifdef f2
+ifneq ($(f2),)
 pe_data=1
 f1_p=$(data_dir)/$(f1)
 f2_p=$(data_dir)/$(f2)
@@ -495,7 +495,7 @@ $(out_dir)/$(out_prefix)_2.f.fastq:  $(data_dir)/$(f2_n).fastq
 	rm -f $@
 	ln -s $(abspath $(data_dir))/$(f2_n).fastq $@
 
-stage6: $(out_dir)/$(out_prefix)_1.f.fastq  $(call report_file,1,$(report_dir)/raw_data/$(f1_n).fastqc.zip $(report_dir)/raw_data/$(f2_n).fastqc.zip)
+stage6: $(out_dir)/$(out_prefix)_1.f.fastq  $(call report_file,1,$(report_dir)/raw_data/$(f1_n).fastqc.zip $(report_dir)/raw_data/$(f2_n).fastqc.zip) $(report_dir)/raw_data/$(out_prefix)_1.f.fastqc.tsv $(report_dir)/raw_data/$(out_prefix)_2.f.fastqc.tsv)
 	rm -f $(report_dir)/raw_data/$(out_prefix)_1.f.fastqc.zip
 	ln -s $(report_dir)/raw_data/$(f1_n).fastqc.zip $(report_dir)/raw_data/$(out_prefix)_1.f.fastqc.zip
 	rm -f $(report_dir)/raw_data/$(out_prefix)_2.f.fastqc.zip
@@ -556,6 +556,7 @@ all: setup0 stage0 $(out_dir)/$(out_prefix)_1.f.fastq.stats $(out_dir)/$(out_pre
 	ln -s $(abspath $(report_dir)/$(out_prefix)_2.f.csv) $(report_dir)/$(f2_n).csv
 	$(info Skipped fastq filtering.)
 
+# skip filtering and create symlinks to the original fastq files
 $(out_dir)/$(out_prefix)_1.f.fastq:  $(data_dir)/$(f1_n).fastq
 	rm -f $@
 	ln -s $(abspath $(data_dir))/$(f1_n).fastq $@
@@ -564,13 +565,17 @@ $(out_dir)/$(out_prefix)_2.f.fastq:  $(data_dir)/$(f2_n).fastq
 	rm -f $@
 	ln -s $(abspath $(data_dir))/$(f2_n).fastq $@
 
-stage6: $(out_dir)/$(out_prefix)_1.f.fastq  $(call report_file,1,$(report_dir)/raw_data/$(f1_n).fastqc.zip $(report_dir)/raw_data/$(f2_n).fastqc.zip)
-	rm -f $(report_dir)/raw_data/$(out_prefix)_1.f.fastqc.zip
-	ln -s $(abspath $(report_dir)/raw_data/$(f1_n).fastqc.zip) $(report_dir)/raw_data/$(out_prefix)_1.f.fastqc.zip
-	rm -f $(report_dir)/raw_data/$(out_prefix)_2.f.fastqc.zip
-	ln -s $(abspath $(report_dir)/raw_data/$(f2_n).fastqc.zip) $(report_dir)/raw_data/$(out_prefix)_2.f.fastqc.zip
+$(report_dir)/raw_data/$(out_prefix)_1.f.fastqc.zip: $(out_dir)/$(out_prefix)_1.f.fastq
+	$(call run-fastqc,$<) && mv $(report_dir)/raw_data/$(out_prefix)_1.f_fastqc.zip $@
+
+$(report_dir)/raw_data/$(out_prefix)_2.f.fastqc.zip: $(out_dir)/$(out_prefix)_2.f.fastq
+	$(call run-fastqc,$<) && mv $(report_dir)/raw_data/$(out_prefix)_2.f_fastqc.zip $@
 
 
+stage6: $(out_dir)/$(out_prefix)_1.f.fastq  $(call report_file,1,$(report_dir)/raw_data/$(f1_n).fastqc.zip $(report_dir)/raw_data/$(f2_n).fastqc.zip $(report_dir)/raw_data/$(out_prefix)_1.f.fastqc.zip $(report_dir)/raw_data/$(out_prefix)_2.f.fastqc.zip $(report_dir)/raw_data/$(out_prefix)_1.f.fastqc.tsv $(report_dir)/raw_data/$(out_prefix)_2.f.fastqc.tsv)
+
+
+$(info out_prefix_pe=$(out_prefix))
 #Single end reads
 else
 
@@ -591,7 +596,7 @@ all: setup0 stage0 $(out_dir)/$(out_prefix).f.fastq $(out_dir)/$(out_prefix).f.f
 	$(shell if [ -e $(f1_n).filter1.fastq.qual.png ]; then mv $(out_dir)/$(f1_n)*.png $(report_dir)/raw_data ; fi)
 	$(info Skipped filtering.)
 
-
+$(info out_prefix_se=$(out_prefix))
 stage6: $(call report_file,1,$(report_dir)/raw_data/$(out_prefix).f.fastqc.tsv)
 endif
 

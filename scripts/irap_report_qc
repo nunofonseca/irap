@@ -239,7 +239,7 @@ quality.details.matrix <- function(bp.data,conf) {
   # $dir.name/riq/            - filtered data
   # $dir.name/riq/raw_data    - raw/unfiltered data
   dir.name <- paste(conf.get.value(conf,"report.dir"),"riq/",sep="")
-  # each column should correspond to a lib should be 
+  # each column should corresponds to a lib
   data <- bp.data
   # extra row
   data<-rbind(data,rep("",ncol(data)))
@@ -302,10 +302,20 @@ quality.details.matrix <- function(bp.data,conf) {
     #
     #trace(path2qual.report)
     #debug(path2qual.report)
-    files.filt   <- path2qual.report(paste(dir.name2,"raw_data/",sep=""),filtered.file)
+    files.filt <- path2qual.report(paste(dir.name2,"raw_data/",sep=""),filtered.file)
+    
+
     # add a link to the the detailed report
-    data["Passed",lib] <- paste(data["Passed",lib]," <a class='download' href='",files.filt["index"],"' target='_top'>QR</a>",sep="")
     data["Initial data (quality report)",lib] <- paste("<a class='download' href='",files.unfilt["index"],"' target='_top'>QR</a>",sep="")
+    qc.filter <- (conf.get.value(conf,"qc")!="on")
+    if ( qc.filter ) {
+        data["Passed",lib] <- paste(data["Passed",lib]," <a class='download' href='",files.filt["index"],"' target='_top'>QR</a>",sep="")
+    } else {
+        print(files.filt)
+        data["Passed",lib]  <- data["Initial data (quality report)",lib] 
+        files.filt <- files.unfilt
+    }
+    
     # Add a div to show the plots before and after filtering
     width <- 450
     visible.text <- "+"
@@ -341,7 +351,7 @@ path2qual.report <- function(dir.name,file.prefix) {
       return(NULL)
     }
     # unzip file
-    unzip.cmd <- paste("unzip -d ",root.dir," ",filt.qual.zip,sep="")
+    unzip.cmd <- paste("unzip -o -d ",root.dir," ",filt.qual.zip,sep="")
     system(unzip.cmd)
     if (!file.exists(filt.qual.dir)) {
       pwarning("Unzip file ",filt.qual.zip," apparently failed.")
@@ -365,7 +375,7 @@ pinfo("Configuration file ",opt$conf.file," loaded.")
 pdebug.save.state("irap_report_qc","p0")
 
 qual_filt=conf.get.value(conf,"qual_filtering")
-pinfo("Quality filtering:",qual_filt)
+pinfo("Quality filtering:",conf.is.qc.enabled(conf))
 # QC filtering may be on or off
 report.dir <- opt$rep_dir
 report.dir <- paste(sub("/$","",report.dir),"/",sep="")
@@ -385,15 +395,24 @@ if ( ! file.exists(fastqc.sum.tsv ) ) {
   perror("File ",fastqc.sum.tsv," not found")
   q(status=1)
 }
+pinfo("Loading ",fastqc.sum.tsv)
 fastqc.sum <- read.tsv(fastqc.sum.tsv)
-# fix the column names
+pinfo("Loading ",fastqc.sum.tsv," done.")
+cat(dim(fastqc.sum),"\n")
+cat(colnames(fastqc.sum),"\n")
+
+
+# fix the column names (this will break when the libraries end with _1/2 and are not PE)
 new.cols <- gsub(".f$","",gsub("_2.f$","/2",gsub("_1.f$","/1",colnames(fastqc.sum))))
+cat("new cols:",new.cols,"\n")
 colnames(fastqc.sum) <- new.cols
 rownames(fastqc.sum) <- fastqc.sum[,1]
 fastqc.sum <- fastqc.sum[,-1]
 fastqc.sum <- t(fastqc.sum)
 # match the two matrices
 i <- intersect(rownames(fastqc.sum),rownames(df))
+print(rownames(fastqc.sum))
+print(rownames(df))
 if ( length(i) == 0 ) {
   # qc=off
   # try to use the file column without the .f suffix
@@ -421,6 +440,7 @@ if (!conf.is.qc.enabled(conf)) {
     df$Passed <- df$reads
 }
 pinfo("Expanding table..")
+
 etdf <- qc.expand.table(t(df),conf)
 pdebug.save.state("irap_report_qc","p2")
 

@@ -287,7 +287,7 @@ ifeq ($(qc),none)
 $(name)/report/qc.html $(name)/report/qc.tsv: 
 
 else
-$(name)/report/qc.html $(name)/report/qc.tsv: $(conf) $(call must_exist,$(name)/data/) $(name)/report/fastq_qc_report.tsv
+$(name)/report/qc.html $(name)/report/qc.tsv: $(conf) $(call must_exist,$(name)/data/)  $(name)/report/fastq_qc_report.tsv
 	irap_report_qc $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(name)/report || ( rm -f $@ && exit 1)
 endif
 
