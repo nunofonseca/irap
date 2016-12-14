@@ -239,7 +239,7 @@ define run_nurd=
         samtools view $(1) > $(1).sam && \
 	NURD $(nurd_params) -O $(3).dir -G $(2) -S $(1).sam && \
 	rm -f $(1).sam && \
-	mv $(3).dir/`basename $(1).sam`.nurd.fpkm $(3).nurd.tsv  && \
+	mv $(3).dir/`basename $(1).sam`.nurd.rpkm $(3).nurd.tsv  && \
 	mv $(3).dir/`basename $(1).sam`.nurd.rdcnt $(3).raw.nurd.tsv 
 endef
 
