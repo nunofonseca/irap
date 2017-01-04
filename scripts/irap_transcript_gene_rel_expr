@@ -175,8 +175,8 @@ get.rel.expr <- function(trans.quant.matrix,map.gene2trans) {
     return(doms)
 }
 
-#rel.expr <- get.rel.expr(data,mapping)
-rel.expr <- get.rel.expr(data[,c(1,2)],mapping)
+rel.expr <- get.rel.expr(data,mapping)
+#rel.expr <- get.rel.expr(data[,c(1),drop=FALSE],mapping)
 save(rel.expr,mapping,file=paste(opt$out,".Rdata",sep=""))
 write.tsv(rel.expr,file=opt$out,rownames.label="Gene")
 quit(save="no",status=0)
