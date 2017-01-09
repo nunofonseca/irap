@@ -74,6 +74,7 @@ tophat2_map_options?=
 hisat2_map_options?=
 bowtie1_map_options?=
 bowtie2_map_options?=
+bowtie2_index_options?=
 bwa1_map_options?=
 bwa2_map_options?=
 gsnap_map_options?=
@@ -153,9 +154,10 @@ endef
 # ifeq ($(mapper),bowtie2) 
 #  mapper_splicing=no
 # endif
+bowtie2_index_params=$(bowtie2_index_options)
 
 define run_bowtie2_index=
-	irap_map.sh bowtie2  bowtie2-build --offrate 3 $(1) $(1)
+	irap_map.sh bowtie2  bowtie2-build --offrate 3 $(bowtie2_index_params) $(1) $(1) 
 endef
 
 # same arguments used for *_index
