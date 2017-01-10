@@ -337,6 +337,10 @@ endif
 hisat2_min_intron_len?=20
 hisat2_map_params= --min-intronlen $(hisat2_min_intron_len) $(hisat2_map_options) --no-softclip --dta-cufflinks -k $(max_hits)
 
+# default options
+hisat2_index_options?=--offrate 3
+hisat2_index_params=  $(hisat2_index_options) -p $(max_threads)
+
 hisat2_no_splicing= --no-spliced-alignment  --transcriptome-mapping-only
 ifeq ($(mapper_splicing),no)
 	hisat2_map_params+= $(hisat2_no_splicing)
@@ -350,7 +354,7 @@ endef
 endif
 
 define run_hisat2_index=
-	irap_map.sh HISAT2  hisat2-build --offrate 3 $(1) $(1)
+	irap_map.sh HISAT2  hisat2-build $(hisat2_index_params) $(1) $(1)
 endef
 
 # 1 - GTF
