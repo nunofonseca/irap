@@ -37,7 +37,7 @@ qual_filtering=on
 # Use a contamination data set to filter out reads
 cont_index=no
 # Toplevel directory with the data
-data_dir=\$(IRAP_DIR)/data
+data_dir=$(IRAP_DIR)/data
 mapper=bowtie2
 
 # some contrasts...
