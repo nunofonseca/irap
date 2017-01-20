@@ -20,7 +20,7 @@
 # =========================================================
 # TODO: create an object for the conf. information
 
-irap_version<-"0.8.2"
+irap_version<-"0.8.2d1"
 
 
 IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
@@ -558,6 +558,8 @@ countstable2rpkms <- function(table,lens,mass.labels=NULL,exitonerror=TRUE,UQ=FA
 # TPMs/GPM
 # RSEM: accurate transcript quantification from RNA-Seq data with or without a reference genome
 # BMC Bioinformatics 2011, 12:323  doi:10.1186/1471-2105-12-323
+# http://arxiv.org/abs/1104.3889 - TPM=(FPKM/SUM(FPKM))*10^6
+# TODO: call the FPKM function
 countstable2tpm <- function(table,lens,exitonerror=TRUE) {
   # check if there missing features
   missing.feat <- (!rownames(table) %in% names(lens))

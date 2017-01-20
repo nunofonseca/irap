@@ -74,6 +74,7 @@ tophat2_map_options?=
 hisat2_map_options?=
 bowtie1_map_options?=
 bowtie2_map_options?=
+bowtie2_index_options?=
 bwa1_map_options?=
 bwa2_map_options?=
 gsnap_map_options?=
@@ -153,15 +154,24 @@ endef
 # ifeq ($(mapper),bowtie2) 
 #  mapper_splicing=no
 # endif
+bowtie2_index_params=$(bowtie2_index_options) --threads $(max_threads)
 
 define run_bowtie2_index=
-	irap_map.sh bowtie2  bowtie2-build --offrate 3 $(1) $(1)
+	irap_map.sh bowtie2  bowtie2-build --offrate 3 $(bowtie2_index_params) $(1) $(1) 
 endef
 
 # same arguments used for *_index
+ifdef big_genome
+# ensure that bowtie2 will build a large index
+bowtie2_index_params+= --large-index
+define bowtie2_index_filename=
+$(2).1.bt2l 
+endef
+else
 define bowtie2_index_filename=
 $(2).1.bt2
 endef
+endif
 
 define bowtie2_file_params=
 	$(if $(findstring $(1),$(pe)), $(call bowtie_ins_sd_params,$(1)) -1 $(word 1,$(2)) -2 $(word 2,$(2)), $(call tophat_qual_option,$($(1)_qual)) -U $(2))
@@ -335,6 +345,10 @@ endif
 hisat2_min_intron_len?=20
 hisat2_map_params= --min-intronlen $(hisat2_min_intron_len) $(hisat2_map_options) --no-softclip --dta-cufflinks -k $(max_hits)
 
+# default options
+hisat2_index_options?=--offrate 3
+hisat2_index_params=  $(hisat2_index_options) -p $(max_threads)
+
 hisat2_no_splicing= --no-spliced-alignment  --transcriptome-mapping-only
 ifeq ($(mapper_splicing),no)
 	hisat2_map_params+= $(hisat2_no_splicing)
@@ -348,7 +362,7 @@ endef
 endif
 
 define run_hisat2_index=
-	irap_map.sh HISAT2  hisat2-build --offrate 3 $(1) $(1)
+	irap_map.sh HISAT2  hisat2-build $(hisat2_index_params) $(1) $(1)
 endef
 
 # 1 - GTF

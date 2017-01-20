@@ -108,12 +108,16 @@ quant_norm_tool?=irap
 transcript_quant?=n
 
 ifdef big_genome
+do_not_use_star?=n
+ifneq ($(do_not_use_star),y)
 $(info * Big genome, overriding mapper: $(mapper) -> star)
 mapper:=star
 # set the options to reduce the number of memory needed at the expense of mapping speed
 star_index_options=--genomeChrBinNbits 15  --genomeSAsparseD 2 --limitGenomeGenerateRAM 128000000000
+else
+$(info * Using alternative Atlas SOP for big genomes (mapper=$(mapper)))
 endif
-
+endif
 endif
 
 endif

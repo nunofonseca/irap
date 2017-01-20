@@ -1,0 +1,177 @@
+#!/usr/bin/env Rscript
+#; -*- mode: R;-*-
+# =========================================================
+# Copyright 2012-2016,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#    $Id$
+# =========================================================
+
+###############################################################
+suppressPackageStartupMessages(library("optparse"))
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+#
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+library(parallel)
+
+pdebug.enabled <- FALSE
+#######################
+usage <- "irap_transcript_gene_rel_expr --tsv file --map gene2transcript [options]"
+filenames <- c("tsv_file","mapping_file") ;#filenames that must exist (if defined)
+option_list <- list(
+  make_option(c("-i", "--tsv_file"), type="character", dest="tsv_file", default=NULL,help="TSV file name with the quantification by transcript"),
+  make_option(c("-m", "--mapping_file"), type="character", dest="mapping_file", default=NULL,help="TSV file name with the  mapping between transcripts and genes."),
+  make_option(c("--trans_col"), type="numeric",default=1,help="Column with the transcript ids [default %default]."),
+  make_option(c("--gene_col"), type="numeric",default=2,help="Column with the gene ids [default %default]."),
+  make_option(c("-c", "--cores"), type="numeric",default=1,dest="num_cores",help="Number of cores to use ([default %default])"),
+  make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
+  make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name. The file will contain the relative expression of a transcript within a gene.")
+)
+
+# check multiple options values
+multiple.options = list( )
+mandatory <- c("tsv_file","mapping_file","out")
+opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
+
+pdebug.enabled <- opt$debug
+#pdebug(opt)
+  
+opt$fc <- as.numeric(opt$fc)
+
+pdebug("TSVFILE=",opt$tsv_file)
+pdebug("MAPPINGFILE=",opt$mapping_file)
+
+
+###############################################
+
+tryCatch(num.cores <- as.integer(as.numeric(opt$num_cores)),warning=
+         function(w) {
+           perror("Invalid number of cores ",opt$num_cores)
+           q(status=3)    
+       }
+)
+if (num.cores<1) {
+  perror("Invalid number of cores ",opt$num_cores)
+  q(status=3)    
+}
+
+irap.assert(num.cores>0)
+
+if ( num.cores>detectCores()) {
+  num.cores <- detectCores()
+  pwarning("The number of cores to use exceeds the cores available. Reducing the limit to ",detectCores())
+}
+
+options(cores=num.cores)
+options(mc.cores=num.cores)
+
+###############################################
+
+# load TSV
+# TODO: trap and report errors
+data <- quant.load(opt$tsv_file)
+
+# load mapping
+mapping.data<- read.tsv(opt$mapping_file)
+# filter
+#mapping.data<-mapping.data[mapping.data$source=="protein_coding",]
+# TODO: validate values
+mapping <- unique(mapping.data[,c(opt$trans_col,opt$gene_col)])
+colnames(mapping) <- c("trans","gene")
+
+pinfo("Data loaded")
+
+## debug
+pdebug.save.state("irap_transcript_gene_rel_expr","1")
+
+#map.gene2trans <- mapping
+# compute the dominant transcript
+transcript.rel.expression<- function(expr.vals.by.trans,map.gene2trans,min.fold.change=2,genes.sel=NULL) {
+  # data
+  # gene's transcripts
+  #gene.trans <- map.gene2trans
+    get.rel.trans.expr <- function(gene,gene.trans.expr) {
+    #
+    # gene.data: vector -> names=transcript_ids
+    # returns NA if the gene is not expressed 
+        pdebug("Computing relative transcript expression for gene ",gene,"(# transcripts=",length(gene.trans.expr),")")    
+        
+        # Missing transcripts?        
+        tot.expr <- sum(gene.trans.expr,na.rm=T)    
+        if (tot.expr==0) {
+            return(rep(0,length(gene.trans.expr)))
+        }
+        r.expr <- round(gene.trans.expr/tot.expr,2)
+        #pdebug(r.expr)
+        #stopifnot(round(sum(r.expr),1)==1)        
+        return(r.expr)
+    }
+    genes.in.transcripts <- unique(as.character(map.gene2trans[map.gene2trans$trans %in% names(expr.vals.by.trans),"gene"]))
+    pinfo("Genes:",length(genes.in.transcripts))
+  
+    rownames(map.gene2trans) <- map.gene2trans$trans
+    # mapped transcripts
+    mapped.trans <- names(expr.vals.by.trans) %in% rownames(map.gene2trans)
+    if ( ! is.null(genes.sel) ) {    
+        genes.sel <- intersect(genes.in.transcripts,genes.sel)
+    } else {
+        genes.sel <- genes.in.transcripts
+    }
+    # result vector is initialized with NAs
+    rel.expr.vals.by.trans <- expr.vals.by.trans*NA
+
+    #g <- genes.sel[21]
+    genes.l <- as.character(map.gene2trans$gene)
+
+    for ( g in genes.sel ) {
+        gene.transcripts <- rownames(map.gene2trans[genes.l==g,])
+        #gene.transcripts
+        gene.trans.expr <- expr.vals.by.trans[gene.transcripts]
+        names(gene.trans.expr) <- gene.transcripts
+        #gene <- g
+        rel.expr.vals.by.trans[gene.transcripts] <- get.rel.trans.expr(g,gene.trans.expr)
+        cat(".")
+    }
+    return(rel.expr.vals.by.trans)
+}
+
+get.rel.expr <- function(trans.quant.matrix,map.gene2trans) {
+#trans.quant.matrix <- data
+    libs <- colnames(trans.quant.matrix)
+    set.names <- function(v,vnames) { names(v) <- vnames; return(v) }
+    y <- as.list(trans.quant.matrix)
+    y <- lapply(y,set.names,rownames(trans.quant.matrix))
+    #expr.vals.by.trans <- y[[1]]
+    x <- mclapply(y,FUN=transcript.rel.expression,map.gene2trans,mc.allow.recursive=FALSE)
+    doms <- data.frame(x)
+    colnames(doms) <- libs
+    return(doms)
+}
+
+rel.expr <- get.rel.expr(data,mapping)
+save(rel.expr,mapping,file=paste(opt$out,".Rdata",sep=""))
+write.tsv(rel.expr,file=opt$out,rownames.label="Gene")
+quit(save="no",status=0)
+
+
