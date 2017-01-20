@@ -154,16 +154,24 @@ endef
 # ifeq ($(mapper),bowtie2) 
 #  mapper_splicing=no
 # endif
-bowtie2_index_params=$(bowtie2_index_options)
+bowtie2_index_params=$(bowtie2_index_options) --threads $(max_threads)
 
 define run_bowtie2_index=
 	irap_map.sh bowtie2  bowtie2-build --offrate 3 $(bowtie2_index_params) $(1) $(1) 
 endef
 
 # same arguments used for *_index
+ifdef big_genome
+# ensure that bowtie2 will build a large index
+bowtie2_index_params+= --large-index
+define bowtie2_index_filename=
+$(2).1.bt2l 
+endef
+else
 define bowtie2_index_filename=
 $(2).1.bt2
 endef
+endif
 
 define bowtie2_file_params=
 	$(if $(findstring $(1),$(pe)), $(call bowtie_ins_sd_params,$(1)) -1 $(word 1,$(2)) -2 $(word 2,$(2)), $(call tophat_qual_option,$($(1)_qual)) -U $(2))
