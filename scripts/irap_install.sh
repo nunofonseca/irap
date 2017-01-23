@@ -961,9 +961,12 @@ function YAP_install {
 	cp yap.tgz $SRC_DIR/download/
     fi
     pushd mainline
-    CFLAGS=  ./configure --prefix=$IRAP_DIR --disable-myddas --disable-horus
-    CFLAGS=  make
-    CFLAGS=  make install
+    # cleanup
+    rm -rf $IRAP_DIR/include/Yap $IRAP_DIR/share/Yap $IRAP_DIR/lib/Yap $IRAP_DIR/lib/libYap*
+    CXXFLAGS= CFLAGS=  ./configure --prefix=$IRAP_DIR --disable-myddas --disable-horus
+    CXXFLAGS=  CFLAGS=  make clean
+    CXXFLAGS=  CFLAGS=  make
+    CXXFLAGS=  CFLAGS=  make install
     popd
     pinfo "Installing YAP...done."
 }
