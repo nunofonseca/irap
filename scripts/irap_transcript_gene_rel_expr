@@ -57,8 +57,6 @@ opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filena
 pdebug.enabled <- opt$debug
 #pdebug(opt)
   
-opt$fc <- as.numeric(opt$fc)
-
 pdebug("TSVFILE=",opt$tsv_file)
 pdebug("MAPPINGFILE=",opt$mapping_file)
 
@@ -164,13 +162,14 @@ get.rel.expr <- function(trans.quant.matrix,map.gene2trans) {
     y <- lapply(y,set.names,rownames(trans.quant.matrix))
     #expr.vals.by.trans <- y[[1]]
     x <- mclapply(y,FUN=transcript.rel.expression,map.gene2trans,mc.allow.recursive=FALSE)
+    save.image(file=paste0(opt$out,".Rdata"))
     doms <- data.frame(x)
     colnames(doms) <- libs
     return(doms)
 }
 
 rel.expr <- get.rel.expr(data,mapping)
-save(rel.expr,mapping,file=paste(opt$out,".Rdata",sep=""))
+save(rel.expr,mapping,file=paste0(opt$out,".Rdata"))
 write.tsv(rel.expr,file=opt$out,rownames.label="Gene")
 quit(save="no",status=0)
 
