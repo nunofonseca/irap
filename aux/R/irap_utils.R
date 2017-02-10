@@ -191,45 +191,35 @@ get.gene.length.from.gtf.file <- function(gtf.file,filter.biotype=NULL,length.mo
   gtf <- load.gtf(gtf.file)
   get.gene.length.from.gtf(gtf,filter.biotype,length.mode)
 }
-## #
-## # Given a matrix obtained from a gtf file returns a vector with the length of the genes
-## get.gene.length.from.gtf <- function(gtf,filter.biotype=NULL,length.mode="union.exons") {
-##   # TODO: validate gtf
-##   # protein coding
-##   suppressPackageStartupMessages(library(parallel))
-##   if ( !is.null(filter.biotype) ) {
-##     gtf <- gtf[gtf$gene_biotype==filter.biotype,,drop=FALSE]
-##   }
-##   # compute the length for each exon
-##   gtf <- gtf[gtf$feature=="exon",,drop=FALSE]
-##   gene.ids <- as.character(unique(gtf$gene_id))
-##   #pinfo(gene.ids)
-##   glen <- mclapply(gene.ids,FUN=get.gene.length,gtf.data=gtf,mode=length.mode)
-##   glen <- unlist(glen)
-##   names(glen) <- gene.ids
-##   glen  
-## }
+
 
 get.gene.length.from.gtf <- function(gtf,filter.biotype=NULL,length.mode="union.exons") {
   library(data.table)
   dt <- as.data.table(gtf)
-
   if ( !is.null(filter.biotype) ) {
     dt<-subset(dt,gene_biotype==filter.biotype)
-  }  
-  dt<-subset(dt,feature=="exon",c("feature","gene_id","start","end"))  
-  setkey(dt,"gene_id")
-
-  gene.ids <- unique(dt$gene_id)
-  #glen <-unlist(mclapply(x,FUN=pgenes.length,gene.ids,i2p,dt=dt,mode=length.mode,exons.only=TRUE))
-  #pinfo(gene.ids)
-  pget.gene.length <- function(gene.id) {
-    return(get.gene.length(gene.id,gtf.data=dt,mode=length.mode,exons.only=TRUE))
   }
-  gc()
-  glen <- unlist(mcMap(pget.gene.length,gene.ids),recursive=FALSE)
-  names(glen) <- gene.ids
-  glen  
+
+  dt<-subset(dt,feature=="exon",c("feature","gene_id","start","end","seqid"),key=c('seqid'))
+
+  pfun <- function(chr,dt) {
+      dt<-subset(dt,seqid==chr,key=c('gene_id'))
+      #setkey(dt,gene_id)
+      gene.ids <- unique(as.character(dt$gene_id))
+      v <- rep(0,times=length(gene.ids))
+      names(v) <- gene.ids
+      #pinfo(chr,":",length(gene.ids))
+      for ( gene.id in gene.ids ) {
+          #print(gene.id)
+          v[gene.id] <- get.gene.length(gene.id,gtf.data=subset(dt,gene_id==gene.id,drop=FALSE),mode=length.mode,exons.only=TRUE)
+      }
+      return(v)
+  }
+  chrs <- as.character(unique(dt$seqid))
+  #pinfo("Chrs",chrs)
+  x <- mclapply(chrs,FUN=pfun,dt=dt,mc.allow.recursive = FALSE)
+  #print(length(x))
+  return(unlist(x))
 }
 
 
@@ -237,17 +227,14 @@ get.gene.length <- function(gene.id,gtf.data,mode="sum.exons",lim=+Inf,do.plot=F
   library(data.table)
 
   if (!exons.only) {
-    dt<-subset(gtf.data,feature=="exon")
+    dt <- subset(gtf.data,feature=="exon")
   } else {
     dt <- gtf.data
   }
-  dt <- dt[list(gene.id)]
-  #print(gene.id)
-  #print(nrow(dt))
-  #print(head(dt))
-  start.end <- as.matrix(subset(dt,,c("start","end"),drop=FALSE))
-  #print(start.end)
-  #gene.ids <- unique(dt$gene_id)
+
+  start.end <- as.matrix(subset(dt,gene_id==gene.id,sel=c("start","end"),drop=FALSE))
+
+
   suppressPackageStartupMessages(library("intervals"))
   library(methods)
 
@@ -268,7 +255,7 @@ get.gene.length <- function(gene.id,gtf.data,mode="sum.exons",lim=+Inf,do.plot=F
   }
   if ( do.plot ) 
     plot(i)
-  res
+  return(res)
 }
 #
 addGeneFeature2gtf <- function(gtf) {
@@ -356,31 +343,25 @@ addGeneFeature2gtf <- function(gtf) {
 get.transcript.length.from.gtf <- function(gtf,filter.biotype=NULL) {
   # TODO: validate gtf
   # protein coding
-  suppressPackageStartupMessages(library(parallel))
-  library(data.table)
-  dt <- as.data.table(gtf)
+    suppressPackageStartupMessages(library(parallel))
+    library(data.table)
+    dt <- as.data.table(gtf)
+    
+    if ( !is.null(filter.biotype)) {
+        dt <- dt[dt$gene_biotype==filter.biotype,]
+    }
+    dt<-subset(dt,dt$feature=="exon",c("feature","transcript_id","start","end"))
+    dt$elen <- abs(dt$end-dt$start)+1
+    setkey(dt,"transcript_id")
 
-  if ( !is.null(filter.biotype)) {
-    dt <- dt[dt$gene_biotype==filter.biotype,]
-  }
-  dt<-subset(dt,dt$feature=="exon",c("feature","gene_id","transcript_id","exon_id","start","end"))
-  setkey(dt,"gene_id","transcript_id")
-  # compute the length for each transcript
-  gene.ids <- unique(dt$gene_id)
-  
-  get.gene.transcripts.length <- function(gene.id) {
-    gtf <- dt[list(gene.id),drop=FALSE]
-    transcript.ids <- unique(gtf$transcript_id)
-    transcript.ids <- transcript.ids[!is.na(transcript.ids)]
-    #print(transcript.ids)
-    tlen <- unlist(lapply(transcript.ids,get.transcript.length,gtf))
-    names(tlen) <- transcript.ids
+    tids <- unique(dt$transcript_id)
+    tlen <- rep(0,times=length(tids))
+    names(tlen) <- tids
+    len <- aggregate(dt$elen,by=list(tid=dt$transcript_id),FUN=sum)
+    tlen <- len[,2]
+    names(tlen) <- len[,1]
+    dt <- NULL
     return(tlen)
-  }
-  gc()
-  tlen <- unlist(mcMap(get.gene.transcripts.length,gene.ids),recursive=FALSE)
-  dt <- NULL
-  return(tlen)
 }
 
 ## # Given a matrix obtained from a gtf file returns a vector with the length of the transcripts
@@ -400,7 +381,7 @@ get.transcript.length.from.gtf <- function(gtf,filter.biotype=NULL) {
 ## }
 
 
-#
+# Sum the length of the exons
 get.transcript.length <-  function(transcript.id,gtf.data) {
   s <- subset(gtf.data,transcript_id==transcript.id,c("start","end"),drop=FALSE)
   len <- sum(abs(s$start-s$end))+nrow(s)
@@ -418,7 +399,7 @@ get.exon.length.from.gtf <- function(gtf,filter.biotype=NULL) {
   gtf <- gtf[gtf$feature=="exon",,drop=FALSE]  
   elen <- abs(gtf$start-gtf$end)+1
   gtf$elength <- elen
-  gtf[,c("exon_id","gene_id","transcript_id","exon_number","elength")]
+  return(gtf[,c("exon_id","gene_id","transcript_id","exon_number","elength")])
 }
 
 

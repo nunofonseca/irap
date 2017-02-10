@@ -34,17 +34,18 @@ if ( IRAP.DIR == "" ) {
 # specify our desired options in a list
 #
 source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
-pdebug.enabled <- TRUE
+pdebug.enabled <- FALSE
 
 #######################
 usage <- "irap_gtf2featlength --gtf file --out outprefix [--cores number_cores]"
 filenames <- c("gtf_file") ;#filenames that must exist (if defined)
 option_list <- list(
 #  make_option(c("-v", "--verbose"), action="store_true", default=TRUE, help="Print extra output [default]"),
-#  make_option(c("-q", "--quietly"), action="store_false", default=FALSE,dest="verbose", help="Print little output"),
+                                        #  make_option(c("-q", "--quietly"), action="store_false", default=FALSE,dest="verbose", help="Print little output"),
+    make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug/profile mode"),
     make_option(c("-c", "--cores"), type="character",default="2",dest="num_cores",help="Number of cores to use ([default %default])"),
-  make_option(c("-g", "--gtf"), type="character", dest="gtf_file", default=NULL,help="GTF file"),
-  make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name prefix. A RData file will be created containing several matrices (for genes, transcripts, and exons) with two columns: 1st col containds the name  of the features and the 2nd column the respective length.")
+    make_option(c("-g", "--gtf"), type="character", dest="gtf_file", default=NULL,help="GTF file"),
+    make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name prefix. A RData file will be created containing several matrices (for genes, transcripts, and exons) with two columns: 1st col containds the name  of the features and the 2nd column the respective length.")
 )
 
 mandatory <- c("gtf_file","out")
@@ -69,19 +70,24 @@ if ( num.cores>detectCores()) {
   pwarning("The number of cores to use exceeds the cores available. Reducing the limit to ",detectCores())
 }
 
-#pdebug.enabled <- opt$debug
+pdebug.enabled <- opt$debug
 options(cores=num.cores)
 options(mc.cores=num.cores)
 options(warn=1)
+
+#save.image("debug.Rdata")
 # Load gtf file
-colsOfInterest <- c("start","end","feature","gene_id","transcript_id","exon_number","exon_id")
+colsOfInterest <- c("start","end","feature","gene_id","transcript_id","exon_number","exon_id","seqid")
 pinfo("Loading gtf file ",opt$gtf_file)
-gtf <- load.gtf(opt$gtf_file,selected.attr=colsOfInterest)
+start.time <- Sys.time()
+gtf <- load.gtf(opt$gtf_file,feature="exon",selected.attr=colsOfInterest)
 pinfo("Loading gtf file ",opt$gtf_file," complete.")
+cat("Time taken: ",Sys.time()-start.time," s\n")
 # add biotype column
 biotypes <- gtf[,biotype.column(gtf)]
 gtf$biotype <- biotypes
 pinfo(colnames(gtf))
+pinfo("Read ",nrow(gtf)," rows from ",opt$gtf_file,"\n")
 if ( sum(!colsOfInterest %in% colnames(gtf)) > 0 ) {
   perror("Missing data in GTF file:",colsOfInterest[!colsOfInterest %in% colnames(gtf)])
   q(status=1)
@@ -90,22 +96,67 @@ gtf <- gtf[,colsOfInterest]
 gtf <- gtf[gtf$feature=="exon",]
 pinfo("Using ",nrow(gtf)," exons")
 # compute the lengths
+############################################################
 pinfo("Computing length of genes...")
+if ( pdebug.enabled) Rprof(paste0(opt$out,".gene.profile"),memory=T,line.profiling = TRUE,interval=0.01)
+start.time <- Sys.time()
 gene.length  <- get.gene.length.from.gtf(gtf)
-print(head(gene.length))
+cat("Time taken: ",Sys.time()-start.time," s\n")
+
+if ( pdebug.enabled) {
+    Rprof(NULL)
+    print(head(gene.length))
+    Rprof(paste0(opt$out,".trans.profile"),memory=T,line.profiling = TRUE,interval=0.01)
+}
+############################################################
 pinfo("Computing length of transcripts...")
+start.time <- Sys.time()
 trans.length <- get.transcript.length.from.gtf(gtf)
-print(head(trans.length))
+cat("Time taken: ",Sys.time()-start.time," s\n")
+if ( pdebug.enabled) {
+    Rprof(NULL)
+    print(head(trans.length))
+}
+############################################################
 pinfo("Computing length of exons...")
+if ( pdebug.enabled) Rprof(paste0(opt$out,".exons.profile"),memory=T,line.profiling = TRUE,interval=0.01)
+start.time <- Sys.time()
 exon.length  <- get.exon.length.from.gtf(gtf)
-print(head(exon.length))
-# save as Rdata files
+cat("Time taken: ",Sys.time()-start.time," s\n")
+if ( pdebug.enabled) {
+    Rprof(NULL)
+    print(head(exon.length))
+}
+##################################################################
+# save as Rdata file
 out.file <- paste(opt$out,".Rdata",sep="")
 save(gene.length,trans.length,exon.length,file=out.file)
+# save as tsv file
+out.file1 <- paste(opt$out,".gene_length.tsv",sep="")
+write.table(x=data.frame(Feature=names(gene.length),Length=gene.length),file=out.file1,sep="\t",quote=FALSE,row.names=F,col.names=TRUE)
+
+out.file2 <- paste(opt$out,".exon_length.tsv",sep="")
+write.table(x=exon.length,file=out.file2,sep="\t",quote=FALSE,row.names=F,col.names=TRUE)
+
+out.file3 <- paste(opt$out,".trans_length.tsv",sep="")
+write.table(x=data.frame(Feature=names(trans.length),Length=trans.length),file=out.file3,sep="\t",quote=FALSE,row.names=F,col.names=TRUE)
+
 pinfo("Saved length of genes, transcripts and exons to ",out.file)
+pinfo("-->",out.file1,"\n")
+pinfo("-->",out.file2,"\n")
+pinfo("-->",out.file3,"\n")
 pinfo("#Genes: ",length(gene.length))
 pinfo("#Transcripts: ",length(trans.length))
 pinfo("#Exons: ",nrow(exon.length))
+if ( pdebug.enabled) {
+    cat("Gene...\n")
+    print(summaryRprof(filename=paste0(opt$out,".gene.profile"),memory="both",lines="both"))
+    cat("Trans...\n")
+    print(summaryRprof(filename=paste0(opt$out,".trans.profile"),memory="both",lines="both"))
+    cat("Exons...\n")
+    print(summaryRprof(filename=paste0(opt$out,".exons.profile"),memory="both",lines="both"))
+}
+
 q(status=0)
 
 
