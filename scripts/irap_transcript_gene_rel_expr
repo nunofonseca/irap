@@ -162,7 +162,7 @@ get.rel.expr <- function(trans.quant.matrix,map.gene2trans) {
     y <- lapply(y,set.names,rownames(trans.quant.matrix))
     #expr.vals.by.trans <- y[[1]]
     x <- mclapply(y,FUN=transcript.rel.expression,map.gene2trans,mc.allow.recursive=FALSE)
-    save.image(file=paste0(opt$out,".Rdata"))
+    #save.image(file=paste0(opt$out,".Rdata"))
     doms <- data.frame(x)
     colnames(doms) <- libs
     return(doms)
