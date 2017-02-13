@@ -1085,6 +1085,7 @@ endif
 # Make stuff
 phony_targets=
 silent_targets= 
+precious_targets=
 
 empty:=
 space:=$(empty) $(empty)#
@@ -1608,10 +1609,12 @@ $(name)/data/empty.gene.annot.tsv:
 # collect genes, transcripts and exons lengths
 # generate only once
 $(gtf_file_abspath).lengths.Rdata: $(gtf_file_abspath)
-	irap_gtf2featlength --gtf $< -o $@.tmp --cores $(max_threads) && mv $@.tmp.Rdata $@
+	irap_gtf2featlength --gtf $< -o $@.tmp --cores $(max_threads) && mv $@.tmp.Rdata $@ && rename "$(gtf_file_abspath).lengths.Rdata.tmp" "$(gtf_file_abspath)" $@.tmp.*
 
 $(name)/data/$(gtf_file_basename).lengths.Rdata: $(gtf_file_abspath).lengths.Rdata
-	cp $< $@.tmp && mv $@.tmp $@
+	cp $< $@.tmp && mv $@.tmp $@ 
+
+precious_targets+=$(name)/data/$(gtf_file_basename).lengths.Rdata
 
 $(gtf_file_abspath).DEXSeq.gff.lengths.Rdata: $(gtf_file_abspath).DEXSeq.gff
 	irap_DexSeqExonLen --gff $< -o $@.tmp --cores $(max_threads) && mv $@.tmp.Rdata $@
@@ -2183,11 +2186,10 @@ save_cache:
 # FORCE the program to run even if files haven't changed
 FORCE:
 
-
 #PHONY: performance improvement. Tell MAKE that those targets don't generate any files. 
 .PHONY:  $(phony_targets)
 .SILENT: $(silent_targets)
 # disable deletion of temporary files
-.SECONDARY: 
-
+.SECONDARY: $(precious_targets)
+.PRECIOUS: $(precious_targets)
 ###################################################
