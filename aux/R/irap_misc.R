@@ -160,7 +160,7 @@ panel.cor <- function(x, y, cor.method="pearson", digits=2, prefix="", cex.cor=1
     r <- cor(x,y,method=cor.method)
     txt <- round(r,digits)
     txt <- paste(prefix, txt, sep="")
-    if(missing(cex.cor)) cex <- 0.8/strwidth(txt)
+    if(missing(cex.cor)) cex.cor <- 0.8/strwidth(txt)
 
     text(0.5, 0.5, txt,cex=cex.cor)
     par(usr = usr,    xaxt="s",yaxt="s")
