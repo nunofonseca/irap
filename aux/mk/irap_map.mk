@@ -823,7 +823,7 @@ bfast_map_options= -A $(bfast_A)
 # stranded RNA-seq data: do not need to use any specific STAR options
 # TODO: if splicing use 
 
-star_map_params=  --genomeLoad NoSharedMemory --runThreadN $(max_threads) --outSAMunmapped Within --outFilterMultimapNmax $(max_hits) --outSAMattributes NH HI NM MD AS XS  --outSAMstrandField intronMotif   $(star_map_options) 
+star_map_params=  --genomeLoad NoSharedMemory --runThreadN $(max_threads) --outSAMunmapped Within --outFilterMultimapNmax $(max_hits) --outSAMattributes NH HI NM MD AS XS  --outSAMstrandField intronMotif --twopassMode Basic   $(star_map_options) 
 star_index_params= --runThreadN $(max_threads) $(star_index_options)
 
 ifeq ($(mapper_splicing),no)
