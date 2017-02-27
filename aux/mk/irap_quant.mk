@@ -21,6 +21,9 @@
 #    $Id: 0.1.3 Nuno Fonseca Wed Dec 26 16:16:19 2012$
 # =========================================================
 
+
+
+
 #*****************
 # Cufflinks 1 & 2
 #*****************
@@ -428,6 +431,9 @@ $(foreach l,$(pe),$(eval $(call make-htseq-quant-rule,$(l),$(quant_method),$(l).
 
 # counts per transcript
 $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv: $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).tsv)
+	( $(call pass_args_stdin,irap_merge_tsv.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/$(quant_method)/transcripts.riu.$(quant_method).irap.tsv: $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.riu.$(quant_method).irap.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.riu.$(quant_method).irap.tsv)
 	( $(call pass_args_stdin,irap_merge_tsv.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
 
 endif
@@ -1023,7 +1029,19 @@ $(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv: $(foreach p,$(p
 
 endif
 
+#
+###############################
+# relative isoform usage (RIU)
+ifeq ($(transcript_quant),y)
+$(name)/$(mapper)/$(quant_method)/%.transcripts.riu.$(quant_method).irap.tsv: $(name)/$(mapper)/$(quant_method)/%.transcripts.raw.$(quant_method).tsv $(name)/data/mapTrans2Gene.tsv
+	irap_transcript_gene_rel_expr --tsv $<  --map $(name)/data/mapTrans2Gene.tsv --cores $(max_threads)  --gene_col 1 --trans_col 2  --out $@.tmp && mv $@.tmp $@	
 
+$(name)/$(mapper)/$(quant_method)/transcripts.riu.$(quant_method).irap.tsv: $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.riu.$(quant_method).irap.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.riu.$(quant_method).irap.tsv)
+	( $(call pass_args_stdin,irap_merge_tsv.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
 
-
+STAGE3_S_TARGETS+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).tsv)
+ifdef atlas_run
+STAGE3_S_TARGETS+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.fpkm.$(quant_method).irap.tsv $(call lib2quant_folder,$(p))$(p).pe.transcripts.tpm.$(quant_method).irap.tsv) $(foreach s,$(se),  $(call lib2quant_folder,$(s))$(s).se.transcripts.fpkm.$(quant_method).irap.tsv $(call lib2quant_folder,$(s))$(s).se.transcripts.tpm.$(quant_method).irap.tsv)
+endif
+endif
 

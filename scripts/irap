@@ -293,6 +293,7 @@ def_annot_tsv=off
 def_lib_dir=
 
 CSS_FILE?=irap.css
+
 ################################################################################
 # START!
 $(info *****************************************************)
@@ -1819,13 +1820,13 @@ define exons_quant_norm=
 $(if $(filter y,$(exon_quant)),$(1),)
 endef
 
-
+#$(if $(filter y,$(transcript_quant)),$(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv,)
 define transcripts_quant_file=
-$(if $(filter y,$(transcript_quant)),$(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv,)
+$(if $(filter y,$(transcript_quant)),$(name)/$(mapper)/$(quant_method)/transcripts.riu.$(quant_method).irap.tsv,)
 endef
 
 define transcripts_quant_files=
-$(if $(filter y,$(transcript_quant)),$(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).tsv),)
+$(if $(filter y,$(transcript_quant)),$(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.riu.$(quant_method).irap.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.riu.$(quant_method).irap.tsv),)
 endef
 
 define transcripts_quant_norm=
