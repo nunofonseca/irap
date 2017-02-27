@@ -1195,7 +1195,7 @@ function perl_packages_jbrowse_install {
     set +e
     for p in $PACKAGES; do
        pinfo "************ Package $p"
-       cpanm -l $IRAP_DIR --force -n $p < /dev/null
+       cpanm -l $IRAP_DIR --notest --force -n $p < /dev/null
     done
     set -e
     # the tests fail...
@@ -1674,14 +1674,16 @@ function jbrowse_install {
     #Installing /home/nf/perl5/lib/perl5/x86_64-linux/auto/DBI/DBI.so
 
     #unset INSTALL_BASE
-    cpanm -f local::lib < /dev/null    
+    cpanm -l $IRAP_DIR --notest -f local::lib < /dev/null    
     set +e
     cpanm -v --notest -l $IRAP_DIR --installdeps . < /dev/null;
     cpanm -v --notest -l $IRAP_DIR --installdeps . < /dev/null;
-    cpanm -l -l $IRAP_DIR -f -v  --installdeps . < /dev/null;
+    cpanm  -l $IRAP_DIR -f -v  --installdeps . < /dev/null;
     set -e
-    rm -rf ~/.cpan
-    mv $IRAP_DIR/.cpan.bak2 ~/.cpan 
+    if [ -e $IRAP_DIR/.cpan.bak2 ] ; then
+	rm -rf ~/.cpan
+	mv $IRAP_DIR/.cpan.bak2 ~/.cpan
+    fi
     # cpanm -v --notest -l $IRAP_DIR --installdeps . < /dev/null;
     pinfo "Uncompressing and installing jbrowse...extra PERL packages (done)"
     pinfo "Uncompressing and installing jbrowse...compiling wig2png"
