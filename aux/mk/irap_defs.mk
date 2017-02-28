@@ -30,7 +30,10 @@
 ifdef atlas_run
 $(info * atlas_run mode (overriding some options))
 raw_folder=$(name)_$(species)
+sop?=
+ifneq ($(sop),atlas_te)
 override sop=atlas
+endif
 endif
 
 
@@ -92,7 +95,6 @@ endif
 
 
 ifeq ($(sop),atlas)
-
 $(info * SOP=Expression Atlas)
 # no need for annotation 
 annot_tsv=off
@@ -121,3 +123,20 @@ endif
 endif
 
 endif
+
+# Transcript expression SOP
+ifeq ($(sop),atlas_te)
+$(info * SOP=Expression Atlas (transcript expression))
+# no need for annotation 
+annot_tsv=off
+de_method?=none
+# deseq2 with independent filtering
+deseq2_params=
+quant_method?=kallisto
+mapper=none
+exon_quant?=n
+exon_quant_method=none
+quant_norm_method?=fpkm
+quant_norm_tool?=irap
+transcript_quant?=y
+endif	
