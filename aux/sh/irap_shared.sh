@@ -48,6 +48,23 @@ function conf_get_data_dir {
     echo $d
 }
 
+function conf_get_sop2 {
+    local conf=$1
+    local irap_options=$2
+    # lookup in the conf file
+    # 
+    d=`echo $irap_options|grep "sop2="`
+    if [ "$d-" != "-" ]; then
+	d=`echo $irap_options|sed -E "s|.*\s?sop2=([^ ]+).*|\1|"`
+    else
+	d=`grep -E "^\s*sop2=" $conf | cut -f 2 -d\=`
+	if [ "$d-" == "-" ]; then
+	    d=""
+	fi
+    fi
+    echo $d
+}
+
 function conf_get_mapper {
     conf=$1
     cmdline_options=$2
@@ -83,6 +100,7 @@ function conf_get_species {
     cmdline_options=$2
     echo `conf_get_var_value species $conf "$cmdline_options skip_lib_validation=1"`
 }
+
 
 # 1 - conf file
 # 2 - cmdline options
