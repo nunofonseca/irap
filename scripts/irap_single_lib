@@ -198,10 +198,29 @@ if [ "$is_atlas_run-" != "0-" ]; then
     irap_options="$irap_options $name"
 fi
 
+# TODO
+# Is there a second sop (sop2=) in the conf file
+sop2=$(conf_get_sop2 $conf "$irap_options" 2> /dev/null)
+# Note: although SOP2 may generate BAM files, irap_single_lib
+# will only consume the BAMs from the initial/default options
+if [ "$sop2-" != "-" ]; then
+    pinfo "Second SOP=$sop2"
+fi
+
 if [ "$check_stage0_only" == "y" ]; then
     echo irap conf=$conf data_dir=$DATA_DIR  $irap_options max_mem=$mem max_threads=$threads stage0 
     irap conf=$conf data_dir=$DATA_DIR  $irap_options max_mem=$mem max_threads=$threads stage0 -n -q
-    exit $?
+    estatus=$?
+    if [ $estatus -ne 0 ]; then
+	exit $?
+    fi
+    estatus=0
+    if [ "$sop2-" != "-" ]; then
+	echo irap conf=$conf data_dir=$DATA_DIR  $irap_options max_mem=$mem max_threads=$threads sop=$sop2  stage0 
+	irap conf=$conf data_dir=$DATA_DIR $irap_options max_mem=$mem max_threads=$threads sop=$sop2  stage0 -n -q
+	estatus=$?
+    fi    
+    exit $estatus
 fi
 
 #################################################################
@@ -241,7 +260,17 @@ if [ "$do_stage0-" == "yes-" ]; then
     mkdir -p $TARGET_DIR
     pinfo "Running iRAP stage0"
     run_AND_timeIt "stage0" $time_log_file irap conf=$conf data_dir=$DATA_DIR    $irap_options max_mem=$mem max_threads=$threads stage0
-    exit $?
+    estatus=$?
+    if [ $estatus -ne 0 ]; then
+	exit $?
+    fi
+    estatus=0
+    if [ "$sop2-" != "-" ]; then
+	pinfo "Running iRAP stage0 ($sop2)"
+	run_AND_timeIt "stage0" $time_log_file irap conf=$conf data_dir=$DATA_DIR    $irap_options max_mem=$mem max_threads=$threads sop=$sop2 stage0
+	estatus=$?
+    fi
+    exit $estatus
 else
     if [ "$f1-" == "-" ]; then
 	perror "ERROR: -1 parameter not provided" 
@@ -309,21 +338,14 @@ else
     is_relative_path $f2 "-2"
 fi
 
-
-#if [ "$check_stage0_only" == "y" ]; then
-#    irap conf=$conf data_dir=$DATA_DIR  $irap_options max_mem=$mem max_threads=$threads stage0 -n -q
-#    exit $?
-#fi
-
 set -e
 
 ##################################################################
-# place the tarball in the right folder
+# place the tarball in the correct folder
 
 mkdir -p $TARGET_DIR
 # target should be unique
 sl_init_files="$sl_init_files $TARGET_DIR"
-
 
 ##################################################################
 # put the fastq files in the "expected" folder
@@ -365,17 +387,24 @@ irap_single_lib $script_parameters
 EOF
 ########
 # Check if stage0 is ok
-set +e 
+set +e
+pinfo "Checking stage0..."
 irap conf=$conf data_dir=$DATA_DIR  $irap_options max_mem=$mem max_threads=$threads stage0 -n -q
 if [ $? !=  0 ]; then
-#    if [ "$do_stage0-" == "yes-" ]; then
-#	pinfo "Running iRAP stage0"
-#	run_AND_timeIt "stage0" $time_log_file irap conf=$conf data_dir=$DATA_DIR    $irap_options max_mem=$mem max_threads=$threads stage0
-#    else
+    perror "ERROR:Stage0: incomplete - use -0 to run stage0"
+    exit 1
+fi
+pinfo "Checking stage0...ok."
+if [ "$sop2-" != "-" ]; then
+    pinfo "Checking stage0 of sop=$sop2..."
+    irap conf=$conf $irap_single_lib_options $irap_options sop=$sop2 stage0 -n -q
+    if [ $? !=  0 ]; then
 	perror "ERROR:Stage0: incomplete - use -0 to run stage0"
 	exit 1
-#    fi
+    fi
+    pinfo "Checking stage0 of sop=$sop2...ok"
 fi
+    
 
 if [ "$do_stage0-" == "yes-" ]; then
     pinfo "Stage0 complete."
@@ -562,13 +591,24 @@ else
 	pinfo "$BAM_FILE.md5 created"
     fi
 fi
-
 set -e
 # 
 TSVs=`irap $irap_single_lib_options  $irap_options print_stage3_s_targets  |tail -n 1|grep -v "make:"`
 
-pinfo "Moving the following files to $odir: $TSVs $REPORT_TSVs"
+pinfo "Moving the following files to $odir: $TSVs"
 cp -a $TSVs $odir
+#
+#######################################################################
+#
+if [ "$sop2-" != "-" ]; then
+    pinfo "Quantification (SOP2)..."
+    run_AND_timeIt "iRAP-Quant" $time_log_file  irap $irap_single_lib_options $irap_options sop=$sop2 stage3as
+    TSVs=`irap $irap_single_lib_options  $irap_options sop=$sop2 print_stage3_s_targets  |tail -n 1|grep -v "make:"`
+
+    pinfo "Moving the following files to $odir: $TSVs"
+    cp -a $TSVs $odir
+fi
+
 # Enable the generation of TPM matrices
 # if [ "$is_atlas_run-" != "0-" ]; then
 #     # TPM files
@@ -617,6 +657,9 @@ if [ "$do_clean" == "y" ]; then
     clean_up_all
 else
     run_AND_timeIt "iRAP-tidyup" $time_log_file  irap $irap_single_lib_options $irap_options clean
+    if [ "$sop2-" != "-" ]; then
+	run_AND_timeIt "iRAP-tidyup" $time_log_file  irap $irap_single_lib_options $irap_options sop=$sop2 clean
+    fi    
 fi
 
 touch $odir/$libname_noprefix.complete
