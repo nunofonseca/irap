@@ -264,7 +264,7 @@ if [ "$do_stage0-" == "yes-" ]; then
     run_AND_timeIt "stage0" $time_log_file irap conf=$conf data_dir=$DATA_DIR    $irap_options max_mem=$mem max_threads=$threads stage0
     estatus=$?
     if [ $estatus -ne 0 ]; then
-	exit $?
+	exit $estatus
     fi
     estatus=0
     if [ "$sop2-" != "-" ]; then
