@@ -208,14 +208,16 @@ if [ "$sop2-" != "-" ]; then
 fi
 
 if [ "$check_stage0_only" == "y" ]; then
-    echo irap conf=$conf data_dir=$DATA_DIR  $irap_options max_mem=$mem max_threads=$threads stage0 
+    pinfo "Checking stage0..."
+    echo irap conf=$conf data_dir=$DATA_DIR  $irap_options max_mem=$mem max_threads=$threads stage0 -n -q
     irap conf=$conf data_dir=$DATA_DIR  $irap_options max_mem=$mem max_threads=$threads stage0 -n -q
     estatus=$?
     if [ $estatus -ne 0 ]; then
-	exit $?
+	exit $estatus
     fi
     estatus=0
     if [ "$sop2-" != "-" ]; then
+	pinfo "Checking stage0 ($sop2)..."
 	echo irap conf=$conf data_dir=$DATA_DIR  $irap_options max_mem=$mem max_threads=$threads sop=$sop2  stage0 
 	irap conf=$conf data_dir=$DATA_DIR $irap_options max_mem=$mem max_threads=$threads sop=$sop2  stage0 -n -q
 	estatus=$?
