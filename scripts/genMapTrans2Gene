@@ -80,8 +80,11 @@ out.file <- opt$out_file
 pinfo("Loading ",gtf.file)
 gtf.mat <- load.gtf(gtf.file,selected.attr=c("gene_id","transcript_id"))
 pinfo("GTF file loaded")
+
 # remove duplicate entries (due to exons)
 gtf.mat.u <- gtf.mat[!duplicated(gtf.mat$transcript_id),c("gene_id","transcript_id")]
+# remove NAs
+gtf.mat.u <- gtf.mat.u[!is.na(gtf.mat.u$transcript_id),,drop=FALSE]
 nrow(gtf.mat.u)
 write.table(gtf.mat.u,file=out.file,row.names=F,sep="\t",quote=FALSE,col.names=T)
   
