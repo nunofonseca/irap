@@ -1613,15 +1613,16 @@ $(gtf_file_abspath).lengths.Rdata: $(gtf_file_abspath)
 	irap_gtf2featlength --gtf $< -o $@.tmp --cores $(max_threads) && mv $@.tmp.Rdata $@ && rename "$(gtf_file_abspath).lengths.Rdata.tmp" "$(gtf_file_abspath)" $@.tmp.*
 
 $(name)/data/$(gtf_file_basename).lengths.Rdata: $(gtf_file_abspath).lengths.Rdata
-	cp $< $@.tmp && mv $@.tmp $@ 
+	sleep 2 && cp $< $@.tmp && mv $@.tmp $@ 
 
 precious_targets+=$(name)/data/$(gtf_file_basename).lengths.Rdata
 
 $(gtf_file_abspath).DEXSeq.gff.lengths.Rdata: $(gtf_file_abspath).DEXSeq.gff
 	irap_DexSeqExonLen --gff $< -o $@.tmp --cores $(max_threads) && mv $@.tmp.Rdata $@
 
+# sleep to ensure that the file will not have the same timestamp
 $(name)/data/$(gtf_file_basename).dexseq.lengths.Rdata: $(gtf_file_abspath).DEXSeq.gff.lengths.Rdata
-	cp $< $@.tmp && mv $@.tmp $@
+	sleep 2 && cp $< $@.tmp && mv $@.tmp $@
 
 
 
