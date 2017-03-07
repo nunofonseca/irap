@@ -122,7 +122,7 @@ endif
 endif
 endif
 
-endif
+
 
 # Transcript expression SOP
 ifeq ($(sop),atlas_te)
@@ -140,3 +140,6 @@ quant_norm_method?=fpkm
 quant_norm_tool?=irap
 transcript_quant?=y
 endif	
+
+# END SOP defs
+endif
