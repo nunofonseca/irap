@@ -126,9 +126,8 @@ $(shell mkdir -p $(out))
 # 1-folders file
 # 2-file name pattern
 # 3-file with the files matching the file name pattern
-define matching_files=
-$(call shell,(cat $(1) | while read n; do  for f in $$n; do find $$f -name "$(2)" -printf "%p "; done; done; ) > $(3).tmp && mv $(3).tmp $(3))
-endef
+matching_files=$(call shell,(cat $(1) | while read n; do for f in $$n; do find $$f -name "$(2)" -printf "%p "; done; done; ) > $(3).tmp && mv $(3).tmp $(3))
+
 
 # 1-file
 # 2-expected number of files
@@ -153,42 +152,32 @@ endef
 # SCan the folder for all possible quantification files
 # 1 - quant_method
 define gen_files=
-
 $(call p_info,Looking for gene level quantification files $(1) (raw counts))
 $(call matching_files,$(folders_file),"*genes.raw.*$(1)*.tsv",$(out)/.genes_raw_quants_file.$(1))
-
 $(call p_info,Looking for gene level quantification files $(1)  (fpkm))
 $(call matching_files,$(folders_file),"*genes.fpkm.*$(1)*.tsv",$(out)/.genes_fpkm_quants_file.$(1))
-
 $(call p_info,Looking for gene level quantification files  $(1) (tpm))
 $(call matching_files,$(folders_file),"*genes.tpm.*$(1)*.tsv",$(out)/.genes_tpm_quants_file.$(1))
-
 $(call p_info,Looking for exon level quantification files  $(1) (raw counts))
 $(call matching_files,$(folders_file),"*exons.raw.*$(1)*.tsv",$(out)/.exons_raw_quants_file.$(1))
-
 $(call p_info,Looking for exon level quantification files  $(1) (fpkm))
 $(call matching_files,$(folders_file),"*exons.fpkm.*$(1)*.tsv",$(out)/.exons_fpkm_quants_file.$(1))
-
 ifndef no_exons_tpm
 $(call p_info,Looking for exon level quantification files  $(1) (tpm))
 $(call matching_files,$(folders_file),"*exons.tpm.*$(1)*.tsv",$(out)/.exons_tpm_quants_file.$(1))
 endif
-
 $(call p_info,Looking for transcript level quantification files  $(1)  (raw counts))
 $(call matching_files,$(folders_file),"*transcripts.raw.*$(1)*.tsv",$(out)/.transcripts_raw_quants_file.$(1))
-
 $(call p_info,Looking for transcript level quantification files  $(1) (fpkm))
 $(call matching_files,$(folders_file),"*transcripts.fpkm.*$(1)*.tsv",$(out)/.transcripts_fpkm_quants_file.$(1))
-
 $(call p_info,Looking for transcript level quantification files  $(1) (tpm))
 $(call matching_files,$(folders_file),"*transcripts.tpm.*$(1)*.tsv",$(out)/.transcripts_tpm_quants_file.$(1))
-
 $(call p_info,Looking for transcript relative isoform usage files  $(1)  (riu))
 $(call matching_files,$(folders_file),"*transcripts.riu.*$(1)*.tsv",$(out)/.transcripts_riu_quants_file.$(1))
-
 endef
 
-x=$(call $(foreach q,$(QUANT_METHODS), $(call gen_files,$q))))
+#x=$(call $(foreach q,$(QUANT_METHODS), $(call gen_files,$q))))
+$(call $(foreach q,$(QUANT_METHODS), $(call gen_files,$q)))
 
 #############################################
 # checking the number of files found
@@ -198,8 +187,9 @@ ifndef no_exons_tpm
 files2check+=$(foreach q,$(QUANT_METHODS), $(out)/.exons_tpm_quants_file.$(q))
 endif
 
-#$(foreach f,$(files2check),$(info $(call check_file,$f)))
+
 #$(info $(files2check))
+$(foreach f,$(files2check),$(info $(call check_file,$f)))
 targets=$(foreach f,$(files2check), $(if $(realpath $(f)),$(subst /.,/,$(dir $f)$(subst _,.,$(subst _quants_file,,$(notdir $f).tsv)))))
 
 
