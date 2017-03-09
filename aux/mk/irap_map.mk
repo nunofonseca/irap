@@ -831,8 +831,8 @@ ifeq ($(mapper_splicing),no)
  star_map_params+= --sjdbOverhang  0
 else
 # TODO: replace 20 by readlength-1 
- star_map_params+= $(if $(filter --sjdbOverhang,$(star_map_options)),, --sjdbOverhang 20)
-star_index_params+= $(if $(filter --sjdbOverhang,$(star_map_options)),, --sjdbOverhang 20)
+ star_map_params+= $(if $(filter --sjdbOverhang,$(star_aln_options)),, --sjdbOverhang 20)
+star_index_params+= $(if $(filter --sjdbOverhang,$(star_aln_options)),, --sjdbOverhang 20)
 endif
 
 define star_qual_option=
