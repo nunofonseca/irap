@@ -1,6 +1,6 @@
 #; -*- mode: Makefile;-*-
 # =========================================================
-# Copyright 2012-2016,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+# Copyright 2012-2017,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
 #
 # This file is part of iRAP.
 #
@@ -22,7 +22,8 @@
 # =========================================================
 
 
-
+# Transcript quantification
+mapTrans2gene=$(name)/data/$(gtf_file_basename).mapTrans2Gene.tsv
 
 #*****************
 # Cufflinks 1 & 2
@@ -209,7 +210,7 @@ endef
 # strand option
 # irap
 # first  -> --library-type=fr-firststrand 
-# second -> --library-type=fr-secondstrand 
+# second -> --library-type=fr-secondstrand riu
 irap_strand2htseqoption=$(if $(findstring $(1),first),reverse,$(if $(findstring $(1),second),yes,no))
 
 
@@ -433,8 +434,8 @@ $(foreach l,$(pe),$(eval $(call make-htseq-quant-rule,$(l),$(quant_method),$(l).
 $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv: $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).tsv)
 	( $(call pass_args_stdin,irap_merge_tsv.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/$(quant_method)/transcripts.riu.$(quant_method).irap.tsv: $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.riu.$(quant_method).irap.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.riu.$(quant_method).irap.tsv)
-	( $(call pass_args_stdin,irap_merge_tsv.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
+# $(name)/$(mapper)/$(quant_method)/transcripts.riu.$(quant_method).irap.tsv: $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.riu.$(quant_method).irap.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.riu.$(quant_method).irap.tsv)
+# 	( $(call pass_args_stdin,irap_merge_tsv.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
 
 endif
 
@@ -877,12 +878,12 @@ kallisto_index_name=$(trans_file)_kallisto/kallisto_index
 kallisto_index=$(trans_file)_kallisto/kallisto_index.irap
 
 # Add the reference preparation to STAGE0
-SETUP_DATA_FILES+=$(kallisto_index) $(name)/data/mapTrans2Gene.tsv
+SETUP_DATA_FILES+=$(kallisto_index) $(mapTrans2gene)
 
 $(kallisto_index): $(trans_file)
 	mkdir -p $(@D) && irap_wrapper.sh kallisto kallisto index $(kallisto_index_params) -i $(kallisto_index_name)  $< && touch $@
 
-$(name)/data/mapTrans2Gene.tsv: $(gtf_file_abspath)
+$(mapTrans2gene): $(gtf_file_abspath)
 	genMapTrans2Gene -i $< -o $@.tmp -c $(max_threads) && mv $@.tmp $@
 
 # out_directory - 1
@@ -912,8 +913,8 @@ $(call lib2quant_folder,$(1))$(2).transcripts.tpm.kallisto.kallisto.tsv: $(call 
 	cut -f 1,5 $$< |tail -n +2 > $$@.tmp && mv $$@.tmp $$@
 
 
-$(call lib2quant_folder,$(1))$(2).genes.raw.kallisto.tsv: $(call lib2quant_folder,$(1))$(2).transcripts.raw.kallisto.tsv $(name)/data/mapTrans2Gene.tsv
-	libTSVAggrTransByGene $$< $(name)/data/mapTrans2Gene.tsv $$@.tmp && mv  $$@.tmp $$@
+$(call lib2quant_folder,$(1))$(2).genes.raw.kallisto.tsv: $(call lib2quant_folder,$(1))$(2).transcripts.raw.kallisto.tsv $(mapTrans2gene)
+	libTSVAggrTransByGene $$< $(mapTrans2gene) $$@.tmp && mv  $$@.tmp $$@
 
 
 endef
@@ -964,13 +965,13 @@ salmon_index_name=$(trans_file)_salmon/salmon_index
 salmon_index=$(trans_file)_salmon/salmon_index.irap
 
 # Add the reference preparation to STAGE0
-SETUP_DATA_FILES+=$(salmon_index) $(name)/data/mapTrans2Gene.tsv
+SETUP_DATA_FILES+=$(salmon_index) $(mapTrans2gene)
 
 $(salmon_index): $(trans_file)
 	mkdir -p $(@D) && irap_wrapper.sh salmon salmon index $(salmon_index_params) -i $(salmon_index_name) -t $< && touch $@
 
 
-$(name)/data/mapTrans2Gene.tsv: $(gtf_file_abspath)
+$(mapTrans2gene): $(gtf_file_abspath)
 	genMapTrans2Gene -i $< -o $@.tmp -c $(max_threads) && mv $@.tmp $@
 
 # LibType
@@ -1010,8 +1011,8 @@ $(call lib2quant_folder,$(1))$(2).transcripts.tpm.salmon.salmon.tsv: $(call lib2
 	cut -f 1,4 $$< |tail -n +2 > $$@.tmp && mv $$@.tmp $$@
 
 
-$(call lib2quant_folder,$(1))$(2).genes.raw.salmon.tsv: $(call lib2quant_folder,$(1))$(2).transcripts.raw.salmon.tsv $(name)/data/mapTrans2Gene.tsv
-	libTSVAggrTransByGene $$< $(name)/data/mapTrans2Gene.tsv $$@.tmp && mv  $$@.tmp $$@
+$(call lib2quant_folder,$(1))$(2).genes.raw.salmon.tsv: $(call lib2quant_folder,$(1))$(2).transcripts.raw.salmon.tsv $(mapTrans2gene)
+	libTSVAggrTransByGene $$< $(mapTrans2gene) $$@.tmp && mv  $$@.tmp $$@
 
 endef
 
@@ -1030,18 +1031,57 @@ $(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv: $(foreach p,$(p
 endif
 
 #
-###############################
-# relative isoform usage (RIU)
+#####################################################################
+# relative isoform usage (RIU) and dominant transcript
 ifeq ($(transcript_quant),y)
-$(name)/$(mapper)/$(quant_method)/%.transcripts.riu.$(quant_method).irap.tsv: $(name)/$(mapper)/$(quant_method)/%.transcripts.raw.$(quant_method).tsv $(name)/data/mapTrans2Gene.tsv
-	irap_transcript_gene_rel_expr --tsv $<  --map $(name)/data/mapTrans2Gene.tsv --cores $(max_threads)  --gene_col 1 --trans_col 2  --out $@.tmp && mv $@.tmp $@	
+
+
+$(name)/$(mapper)/$(quant_method)/%.transcripts.riu.$(quant_method).irap.tsv: $(name)/$(mapper)/$(quant_method)/%.transcripts.raw.$(quant_method).tsv $(mapTrans2gene)
+	irap_transcript_gene_rel_expr --tsv $<  --map $(mapTrans2gene) --cores $(max_threads)  --gene_col 1 --trans_col 2  --out $@.tmp && mv $@.tmp $@	
 
 $(name)/$(mapper)/$(quant_method)/transcripts.riu.$(quant_method).irap.tsv: $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.riu.$(quant_method).irap.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.riu.$(quant_method).irap.tsv)
 	( $(call pass_args_stdin,irap_merge_tsv.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
 
-STAGE3_S_TARGETS+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).tsv)
+$(name)/$(mapper)/$(quant_method)/%.transcripts.dt.$(quant_method).irap.tsv: $(name)/$(mapper)/$(quant_method)/%.transcripts.riu.$(quant_method).irap.tsv  $(mapTrans2gene)
+	irap_riu2dominant --fc $(dt_fc) -i $< --map $(mapTrans2gene) --cores $(max_threads) --gene_col 1 --trans_col 2  --out $@.tmp && mv $@.tmp $@
+
+# dominant transcript
+$(name)/$(mapper)/$(quant_method)/transcripts.dt.$(quant_method).irap.tsv:$(name)/$(mapper)/$(quant_method)/transcripts.riu.$(quant_method).irap.tsv $(mapTrans2gene)
+	irap_riu2dominant --fc $(dt_fc) -i $< --map $(mapTrans2gene) --cores $(max_threads) --gene_col 1 --trans_col 2  --out $@.tmp && mv $@.tmp $@
+
+# do not get the dominant transcript
+ifeq ($(dt_fc),n)
+trans_file_target=riu
+else
+trans_file_target=dt
+endif
+
+STAGE3_S_TARGETS+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.$(trans_file_target).$(quant_method).irap.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.$(trans_file_target).$(quant_method).irap.tsv)
+
+
+# useful functions
+define transcripts_quant_file=
+$(if $(filter y,$(transcript_quant)),$(name)/$(mapper)/$(quant_method)/transcripts.$(trans_file_target).$(quant_method).irap.tsv $(name)/$(mapper)/$(quant_method)/transcripts.$(trans_file_target).$(quant_method).irap.tsv,)
+endef
+
+define transcripts_quant_files=
+$(if $(filter y,$(transcript_quant)),$(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.$(trans_file_target).$(quant_method).irap.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.$(trans_file_target).$(quant_method).irap.tsv),)
+endef
+
+
+#STAGE3_S_TARGETS+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).tsv)
+
+
 ifdef atlas_run
+# 
 STAGE3_S_TARGETS+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.fpkm.$(quant_method).irap.tsv $(call lib2quant_folder,$(p))$(p).pe.transcripts.tpm.$(quant_method).irap.tsv) $(foreach s,$(se),  $(call lib2quant_folder,$(s))$(s).se.transcripts.fpkm.$(quant_method).irap.tsv $(call lib2quant_folder,$(s))$(s).se.transcripts.tpm.$(quant_method).irap.tsv)
 endif
+
+else
+# no transcript quantification
+define transcripts_quant_file=
+endef
+define transcripts_quant_files=
+endef
 endif
 
