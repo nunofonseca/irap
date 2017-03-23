@@ -5,7 +5,7 @@ exec make --warn-undefined-variables -Rf "$0"  ${1+"$@"}
 # send the standard output to a log file --quiet
 # exec bash -c 'make  --warn-undefined-variables -Rf "$0" ${1+"$@"}  | tee  `date "+%d%m%y%H%M"`.log" - 
 # =========================================================
-# Copyright 2012-2016,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+# Copyright 2012-2017,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
 #
 # This file is part of iRAP.
 #
