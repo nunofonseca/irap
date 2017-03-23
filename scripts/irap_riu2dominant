@@ -1,0 +1,199 @@
+#!/usr/bin/env Rscript
+#; -*- mode: R;-*-
+# =========================================================
+# Copyright 2012-2017,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#    $Id$
+# =========================================================
+
+###############################################################
+suppressPackageStartupMessages(library("optparse"))
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+#
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+library(parallel)
+
+pdebug.enabled <- FALSE
+#######################
+usage <- "irap_riu2dominant --tsv riu.tsv --map gene2transcript -fc fold-change [options]"
+filenames <- c("tsv_file","mapping_file") ;#filenames that must exist (if defined)
+option_list <- list(
+  make_option(c("--fc"), type="numeric",default=2,help="Fold-change [default %default]."),
+  make_option(c("-i", "--tsv_file"), type="character", dest="tsv_file", default=NULL,help="TSV file name with the relative isoform usage (riu)."),
+  make_option(c("-m", "--mapping_file"), type="character", dest="mapping_file", default=NULL,help="TSV file name with the  mapping between transcripts and genes."),
+  make_option(c("--trans_col"), type="numeric",default=1,help="Column in the mapping file with the transcript ids [default %default]."),
+  make_option(c("--gene_col"), type="numeric",default=2,help="Column in the mapping file with the gene ids[default %default]."),
+  make_option(c("-c", "--cores"), type="numeric",default=1,dest="num_cores",help="Number of cores to use ([default %default])"),
+  make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
+  make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name. The file will contain the dominant transcript determined for each gene and library (NA if it was not possible to determine).")
+)
+
+# check multiple options values
+multiple.options = list( )
+mandatory <- c("tsv_file","mapping_file","out")
+opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
+
+pdebug.enabled <- opt$debug
+#pdebug(opt)
+  
+opt$fc <- as.numeric(opt$fc)
+
+pdebug("TSVFILE=",opt$tsv_file)
+pdebug("MAPPINGFILE=",opt$mapping_file)
+pdebug("fc=",opt$fc)
+
+
+###############################################
+
+tryCatch(num.cores <- as.integer(as.numeric(opt$num_cores)),warning=
+         function(w) {
+           perror("Invalid number of cores ",opt$num_cores)
+           q(status=3)    
+       }
+)
+if (num.cores<1) {
+  perror("Invalid number of cores ",opt$num_cores)
+  q(status=3)    
+}
+
+irap.assert(num.cores>0)
+
+if ( num.cores>detectCores()) {
+  num.cores <- detectCores()
+  pwarning("The number of cores to use exceeds the cores available. Reducing the limit to ",detectCores())
+}
+
+options(cores=num.cores)
+options(mc.cores=num.cores)
+
+# TODO : comment
+save.image("test.Rdata")
+###############################################
+
+# load TSV
+# TODO: trap and report errors
+data <- quant.load(opt$tsv_file)
+
+# load mapping
+mapping.data<- read.tsv(opt$mapping_file)
+# filter
+#mapping.data<-mapping.data[mapping.data$source=="protein_coding",]
+# TODO: validate values
+mapping <- unique(mapping.data[,c(opt$trans_col,opt$gene_col)])
+colnames(mapping) <- c("trans","gene")
+
+pinfo("Data loaded")
+
+# compute the dominant transcript
+dominant.transcript <- function(expr.vals.by.trans,map.gene2trans,min.fold.change=2,genes.sel=NULL) {
+  # data
+  # gene's transcripts
+  #gene.trans <- map.gene2trans
+  get.gene.dominant.trans <- function(gene,gene.riu.expr,min.fold.change=2) {
+    #
+    # gene.data: vector -> names=transcript_ids
+    # returns NA if the gene is not expressed 
+    # returns ND if it was unable to determine the fc
+    pdebug("Computing dominant transcript for ",gene," that has ",length(gene.riu.expr)," transcripts")    
+    dom.trans <- NA
+    # Missing transcripts?
+    N <- is.na(gene.riu.expr)
+    if ( sum(N) > 0 ) {      
+      pwarning("Warning: missing ",sum(N),"/",length(gene.riu.expr)," transcripts for gene ", gene," - ",paste(names(gene.riu.expr)[N],collapse=","))
+      gene.riu.expr <- gene.riu.expr[!N]
+    }
+    if (length(gene.riu.expr)==1) {
+      dom.trans <- names(gene.riu.expr)
+      return(dom.trans)
+    }
+    names(dom.trans) <- gene
+    if (sum(gene.riu.expr)==0) {
+      return(dom.trans)
+    }
+    r.expr <- sort(gene.riu.expr,decreasing=T)    
+    pdebug(r.expr)
+    # fold change
+    # r.expr[2] may be zero and r.expr[1] is always non zero
+    ifc <- r.expr[2]/r.expr[1]
+    pdebug("IFC=",ifc)
+    if ( ifc <= 1/min.fold.change ) {
+      dom.trans <- names(r.expr)[1]
+    } else {
+      dom.trans <- "ND"
+    }
+    return(dom.trans)
+  }
+  #
+  genes.in.transcripts <- unique(as.character(map.gene2trans[map.gene2trans$trans %in% names(expr.vals.by.trans),"gene"]))
+  pinfo("Genes:",length(genes.in.transcripts))
+  #print(head(genes.in.transcripts))
+  rownames(map.gene2trans) <- map.gene2trans$trans
+  # mapped transcripts
+  mapped.trans <- names(expr.vals.by.trans) %in% rownames(map.gene2trans)
+  #
+  if ( ! is.null(genes.sel) ) {    
+    genes.sel <- intersect(genes.in.transcripts,genes.sel)
+  } else {
+    genes.sel <- genes.in.transcripts
+  }
+  # add expression to matrix
+  genes <- vector(mode="character",length=length(genes.sel))
+  names(genes) <- genes.sel
+  #head(genes.sel)
+  genes.l <- as.character(map.gene2trans$gene)
+  for ( g in genes.sel ) {
+      gene.transcripts <- rownames(map.gene2trans[genes.l==g,])
+      gene.trans.expr <- expr.vals.by.trans[gene.transcripts]
+      names(gene.trans.expr) <- gene.transcripts
+    # returns the dominant transcript ID for each sample/ col(NA if it was not possible to determine one)
+      genes[g] <- get.gene.dominant.trans(g,gene.trans.expr,min.fold.change)
+      cat(".")
+  }
+  return(genes)
+}
+
+# returns a matrix with the dominant transcript for each gene/sample
+get.dom.trans <- function(trans.quant.matrix,map.gene2trans,min.fold.change=2) {
+
+    libs <- colnames(trans.quant.matrix)
+    set.names <- function(v,vnames) { names(v) <- vnames; return(v) }
+    y <- as.list(trans.quant.matrix)
+    y <- lapply(y,set.names,rownames(trans.quant.matrix))
+    x <- mclapply(y,FUN=dominant.transcript,map.gene2trans,min.fold.change,mc.allow.recursive=FALSE)
+    doms <- data.frame(x)
+    colnames(doms) <- libs
+    return(doms)
+}
+
+dom.trans <- get.dom.trans(data,mapping,opt$fc)
+# save(dom.trans,mapping,file=paste(opt$out,".Rdata",sep=""))
+write.tsv(dom.trans,file=opt$out,rownames.label="Gene")
+quit(save="no",status=0)
+
+head(dom.trans)
+trans.quant.matrix <- data
+#load("/home/nf/Research/Projects/WIP/PanCancer/pancancer_priv/transcripts/wip.Rdata")
+load("/home/nf/Research/Projects/WIP/PanCancer/pancancer_priv/transcripts/irap_dominant_transcript.Rdata")
+head(data)
