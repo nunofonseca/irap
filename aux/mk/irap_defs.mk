@@ -1,6 +1,6 @@
 #; -*- mode: Makefile;-*-
 # =========================================================
-# Copyright 2012-2016,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+# Copyright 2012-2017,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
 #
 # This file is part of iRAP.
 #
@@ -108,6 +108,7 @@ exon_quant_method=dexseq
 quant_norm_method?=fpkm
 quant_norm_tool?=irap
 transcript_quant?=n
+dt_fc=no
 
 ifdef big_genome
 do_not_use_star?=n
