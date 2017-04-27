@@ -100,7 +100,8 @@ def_contamination_mismatches=3
 
 # default mapper
 def_mapper=bowtie
-
+# Extra options that may be passed to the mapper
+mapper_extra_options?=
 # 
 ifdef run_tests
 undefine run_tests
@@ -676,12 +677,12 @@ $(out_dir)/%.filter2.fastq: $(out_dir)/%.filter1.fastq
 else
 ifeq ($(mapper),bowtie)
 $(out_dir)/%.filter2.fastq: $(out_dir)/%.filter1.fastq
-	$(mapper_path) -p $(threads) -v $(contamination_mismatches) -q --phred$(qual)-quals --un $@.tmp   $(cont_index)  $<  && mv $@.tmp $@
+	$(mapper_path) -p $(threads) -v $(contamination_mismatches) -q $(mapper_extra_options) --phred$(qual)-quals  --un $@.tmp   $(cont_index)  $< | samtools view -b - > $(out_dir)/$*.cont.bam.tmp && mv $(out_dir)/$*.cont.bam.tmp $(out_dir)/$*.cont.bam && mv $@.tmp $@
 endif
 
 ifeq ($(mapper),bowtie2)
 $(out_dir)/%.filter2.fastq: $(out_dir)/%.filter1.fastq
-	$(mapper_path) -p $(threads)  --un $@.tmp  --fast-local  --phred$(qual) -x $(cont_index) -U $<   -S /dev/stdout | samtools view -b - > $@.cont.bam && mv $@.tmp $@
+	$(mapper_path) -p $(threads)   $(mapper_extra_options) --un $@.tmp  --fast-local  --phred$(qual) -x $(cont_index) -U $<   -S /dev/stdout  | samtools view -b - > $(out_dir)/$*.cont.bam.tmp && mv $(out_dir)/$*.cont.bam.tmp $(out_dir)/$*.cont.bam && mv $@.tmp $@
 endif
 
 endif
