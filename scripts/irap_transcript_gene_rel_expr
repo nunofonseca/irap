@@ -105,7 +105,7 @@ mapping <- mapping[!is.na(mapping$trans),,drop=FALSE]
 # all transcripts in the mapping should be found in the quant file
 miss <- !rownames(data)%in%mapping$trans
 if ( sum(miss) > 0 ) {
-    print(head(rownames(data)))
+    print(head(rownames(data)[miss]))
     perror("Transcripts not found in the ",opt$mapping_file," mapping file.")    
     quit(status=2)
 }
