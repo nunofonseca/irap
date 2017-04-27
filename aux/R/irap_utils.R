@@ -20,7 +20,7 @@
 # =========================================================
 # TODO: create an object for the conf. information
 
-irap_version<-"0.8.5d1"
+irap_version<-"0.8.5p1"
 
 
 IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
