@@ -282,7 +282,7 @@ def_de_annot_genes_only=n
 # Htseq - produce a sam file with annotations?y/n
 htseq_sam_output_def=n
 
-# Dominant transcript fold-change - no (n) to disable it
+# Dominant transcript fold-change - no (n) to disables it
 # only used if transcript quantification is y
 dt_fc=2
 
@@ -1613,7 +1613,8 @@ $(name)/data/empty.gene.annot.tsv:
 # collect genes, transcripts and exons lengths
 # generate only once
 $(gtf_file_abspath).lengths.Rdata: $(gtf_file_abspath)
-	irap_gtf2featlength --gtf $< -o $@.tmp --cores $(max_threads) && mv $@.tmp.Rdata $@ && rename "$(gtf_file_abspath).lengths.Rdata.tmp" "$(gtf_file_abspath)" $@.tmp.*
+	irap_gtf2featlength --gtf $< -o $@.tmp --cores $(max_threads) && mv $@.tmp.Rdata $@ && mv $@.tmp.gene_length.tsv $@.gene_length.tsv && mv $@.tmp.exon_length.tsv $@.exon_length.tsv && mv $@.tmp.trans_length.tsv $@.trans_length.tsv
+
 
 $(name)/data/$(gtf_file_basename).lengths.Rdata: $(gtf_file_abspath).lengths.Rdata
 	sleep 2 && cp $< $@.tmp && mv $@.tmp $@ 
