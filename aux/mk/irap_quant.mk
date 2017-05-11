@@ -25,6 +25,7 @@
 # Transcript quantification
 mapTrans2gene=$(name)/data/$(gtf_file_basename).mapTrans2Gene.tsv
 
+
 #*****************
 # Cufflinks 1 & 2
 #*****************
@@ -878,13 +879,13 @@ kallisto_index_name=$(trans_file)_kallisto/kallisto_index
 kallisto_index=$(trans_file)_kallisto/kallisto_index.irap
 
 # Add the reference preparation to STAGE0
-SETUP_DATA_FILES+=$(kallisto_index) $(mapTrans2gene)
+SETUP_DATA_FILES+=$(kallisto_index)
 
 $(kallisto_index): $(trans_file)
 	mkdir -p $(@D) && irap_wrapper.sh kallisto kallisto index $(kallisto_index_params) -i $(kallisto_index_name)  $< && touch $@
 
-$(mapTrans2gene): $(gtf_file_abspath)
-	genMapTrans2Gene -i $< -o $@.tmp -c $(max_threads) && mv $@.tmp $@
+#$(mapTrans2gene): $(gtf_file_abspath)
+#	genMapTrans2Gene -i $< -o $@.tmp -c $(max_threads) && mv $@.tmp $@
 
 # out_directory - 1
 # fastq files - 2
@@ -965,14 +966,13 @@ salmon_index_name=$(trans_file)_salmon/salmon_index
 salmon_index=$(trans_file)_salmon/salmon_index.irap
 
 # Add the reference preparation to STAGE0
-SETUP_DATA_FILES+=$(salmon_index) $(mapTrans2gene)
+SETUP_DATA_FILES+=$(salmon_index)
+
 
 $(salmon_index): $(trans_file)
 	mkdir -p $(@D) && irap_wrapper.sh salmon salmon index $(salmon_index_params) -i $(salmon_index_name) -t $< && touch $@
 
 
-$(mapTrans2gene): $(gtf_file_abspath)
-	genMapTrans2Gene -i $< -o $@.tmp -c $(max_threads) && mv $@.tmp $@
 
 # LibType
 #	Paired-end 	Single-end
@@ -1034,6 +1034,11 @@ endif
 #####################################################################
 # relative isoform usage (RIU) and dominant transcript
 ifeq ($(transcript_quant),y)
+
+SETUP_DATA_FILES+=$(mapTrans2gene)
+
+$(mapTrans2gene): $(gtf_file_abspath)
+	genMapTrans2Gene -i $< -o $@.tmp -c $(max_threads) && mv $@.tmp $@
 
 
 $(name)/$(mapper)/$(quant_method)/%.transcripts.riu.$(quant_method).irap.tsv: $(name)/$(mapper)/$(quant_method)/%.transcripts.raw.$(quant_method).tsv $(mapTrans2gene)
