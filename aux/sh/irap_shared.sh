@@ -363,11 +363,16 @@ function iRAP-QC_errors {
 					    if [ $? -eq 0 ]; then
 						set_classified_error "gzip: unexpected end of file"			
 					    else
-						E=`grep -E "0 paired reads! are the headers ok?" $errf`
+						E=`grep -F "uk.ac.babraham.FastQC.Sequence.SequenceFormatException: " $errf`
 						if [ $? -eq 0 ]; then
-						    set_classified_error "QC: 5 reads without mates"			
-						else					
-						    set_error "QC: unclassified error"
+						    set_classified_error "gzip: fastq error probably due to trailing garbage in the compressed (gziped) file"			
+						else
+						    E=`grep -E "0 paired reads! are the headers ok?" $errf`
+						    if [ $? -eq 0 ]; then
+							set_classified_error "QC: 5 reads without mates"			
+						    else					
+							set_error "QC: unclassified error"
+						    fi
 						fi
 					    fi
 					fi
