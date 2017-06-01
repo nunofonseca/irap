@@ -156,6 +156,11 @@ nofiles1=$(foreach m,$(quant_norm_method),$(foreach p,$(pe), $(call lib2quant_fo
 STAGE3_S_OFILES+= $(nofiles1)
 nofiles=$(nofiles1)
 
+
+ofiles=$(foreach m,$(quant_norm_method),$(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.genes.$(m).$(quant_method).$(quant_norm_tool).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.$(m).$(quant_method).$(quant_norm_tool).tsv))
+STAGE3_S_OFILES+= $(ofiles)
+nofiles=$(ofiles)
+
 ifeq ($(transcript_quant),y)
 nquant_files+=$(foreach m,$(quant_norm_method),$(name)/$(mapper)/$(quant_method)/transcripts.$(m).$(quant_method).$(quant_norm_tool).tsv)
 nofiles2=$(foreach m,$(quant_norm_method),$(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.$(m).$(quant_method).$(quant_norm_tool).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.$(m).$(quant_method).$(quant_norm_tool).tsv))
