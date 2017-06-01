@@ -159,6 +159,7 @@ done
 
 set +e
 
+irap_options="$irap_options isl_mode=y"
 
 if [ "$conf-" == "-" ]; then
     perror "ERROR: -c parameter not provided" 
@@ -595,7 +596,7 @@ else
 fi
 set -e
 # 
-TSVs=`irap $irap_single_lib_options  $irap_options print_stage3_s_targets  |tail -n 1|grep -v "make:"`
+TSVs=`irap $irap_single_lib_options  $irap_options print_stage3_s_files  |tail -n 1|grep -v "make:"`
 
 pinfo "Moving the following files to $odir: $TSVs"
 cp -a $TSVs $odir
@@ -605,7 +606,7 @@ cp -a $TSVs $odir
 if [ "$sop2-" != "-" ]; then
     pinfo "Quantification (SOP2)..."
     run_AND_timeIt "iRAP-Quant" $time_log_file  irap $irap_single_lib_options $irap_options sop=$sop2 stage3as
-    TSVs=`irap $irap_single_lib_options  $irap_options sop=$sop2 print_stage3_s_targets  |tail -n 1|grep -v "make:"`
+    TSVs=`irap $irap_single_lib_options  $irap_options sop=$sop2 print_stage3_s_files  |tail -n 1|grep -v "make:"`
 
     pinfo "Moving the following files to $odir: $TSVs"
     cp -a $TSVs $odir
