@@ -297,6 +297,8 @@ def_lib_dir=
 
 CSS_FILE?=irap.css
 
+isl_mode?=n
+
 ################################################################################
 # START!
 $(info *****************************************************)
@@ -330,6 +332,7 @@ ifdef lib_info
  include $(lib_info)
  $(info * Information about the libraries loaded.)
 endif
+
 
 ###############################################
 # Load some definitions
@@ -976,6 +979,12 @@ endif
 
 #$(info annot_tsv=$(annot_tsv))
 
+###############################################
+# isl enabled -> stage3 targets=stage4
+ifeq ($(isl_mode),y)
+$(info *	isl_mode enabled)
+endif
+
 #************
 # Constraints
 #************
@@ -1270,17 +1279,19 @@ endef
 
 
 ################################################################################
-# TODO: STAGE0
+# Files produced at each stage
 SETUP_DATA_FILES=
 STAGE3_OUT_FILES=
 STAGE2_OUT_FILES=
 STAGE4_OUT_FILES=
 STAGE5_OUT_FILES=
+
+# STAGE3 library level targets
 STAGE3_S_TARGETS=
 STAGE3_S_OFILES=
 
+##
 STAGE1_OUT_FILES=$(foreach p,$(se),$(call lib2filt_folder,$(p))$(p).f.fastq) $(foreach p,$(pe),$(call lib2filt_folder,$(p))$(p)_1.f.fastq)
-
 
 ifneq ($(mapper),none)
 
@@ -1842,12 +1853,15 @@ quantification:
 $(quant_method)_quant_files=
 $(quant_method)_quant:
 quantification_s:
-print_stage3_s_targets:
 
 else
+###################################
+# quantification enabled
+###################################
 $(quant_method)_quant_files=$(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv $(call transcripts_quant_file)  $(call exons_quant_file) 
 
 STAGE3_S_TARGETS+=$(call genes_quant_files) $(call transcripts_quant_files)  $(call exons_quant_files)
+
 
 # Raw  + Normalized 
 quantification: norm_quant $(quant_method)_quant 
@@ -1861,6 +1875,9 @@ quantification_s: $(STAGE3_S_TARGETS)
 print_stage3_s_targets: 
 	echo $(STAGE3_S_TARGETS)
 
+###################################
+# quantification enabled/end
+###################################
 endif
 phony_targets+= quantification $(quant_method)_quant quantification_s
 STAGE3_OUT_FILES+=$($(quant_method)_quant_files) 
