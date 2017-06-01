@@ -864,6 +864,8 @@ $(name)/$(mapper)/$(quant_method)/genes.fpkm.$(quant_method).$(quant_method).tsv
 
 endif
 
+
+
 ########################################################
 # kallisto
 
@@ -1095,7 +1097,7 @@ endef
 
 #STAGE3_S_TARGETS+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).tsv)
 
-
+# Atlas specific - get fpkms and tpms
 ifdef atlas_run
 # 
 STAGE3_S_TARGETS+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.fpkm.$(quant_method).irap.tsv $(call lib2quant_folder,$(p))$(p).pe.transcripts.tpm.$(quant_method).irap.tsv) $(foreach s,$(se),  $(call lib2quant_folder,$(s))$(s).se.transcripts.fpkm.$(quant_method).irap.tsv $(call lib2quant_folder,$(s))$(s).se.transcripts.tpm.$(quant_method).irap.tsv)
