@@ -73,8 +73,11 @@ gene.length <- NULL
 trans.length <- NULL
 exon.length <- NULL
 # load TSV
-# TODO: trap and report errors
+
+##
+pinfo("Loading ",opt$tsv_file)
 table <- quant.load(opt$tsv_file)
+pinfo("Loading ",opt$tsv_file," done.")
 # matrix may contain a single column with values
 if ( is.vector(table) ) {
     names(table) <- ids
@@ -83,10 +86,10 @@ if ( is.vector(table) ) {
 }
 
 # Gene lib1 ....
-
-if ( ! opt$lengths_tsv_format ) {
-# load lengths
-    load(opt$lengths_file)
+if ( ! opt$lengths_tsv_format && is.null(opt$gtf_file)) {
+    ## load lengths
+    pinfo("Loading ",opt$lengths_file)
+    load(opt$lengths_file)   
     if ( opt$feature=="gene" && ! exists("gene.length")) {
         perror("Unable to get the length of genes from ",opt$lengths_file)
         q(status=1)
@@ -95,8 +98,11 @@ if ( ! opt$lengths_tsv_format ) {
         perror("Unable to get the length of exons from ",opt$lengths_file)
         q(status=1)
     }
-} else {
-    # TSV format
+    pinfo("Loading ",opt$lengths_file," done.")
+}
+if ( opt$lengths_tsv_format && is.null(opt$gtf_file)) {
+    ## TSV format
+    pinfo("Loading ",opt$lengths_file, " (tsv format)")
     lens.df <- read.table(opt$lengths_file,sep="\t",header=F,comment.char="",quote="")
     lens <- lens.df[,2]
     names(lens) <- lens.df[,1]
@@ -109,6 +115,7 @@ if ( ! opt$lengths_tsv_format ) {
             trans.length <- lens
         }
     }
+    pinfo("Loading ",opt$lengths_file," done.")
 }
 pdebug("data loaded")
 
@@ -120,9 +127,9 @@ if (!is.null(opt$gtf_file) ) {
   gtf.table <- load.gtf(opt$gtf_file,selected.attr=c(feature.label,"biotype"))
   pinfo("GTF file loaded: ",opt$gtf," ",nrow(gtf.table)," entries")
 
-  if ( opt$mass_pconly) {
-    mass.labels <- gtf.table[gtf.table$biotype=="protein_coding",feature.label]
-  }
+  #if ( opt$mass_pconly) {
+  #  mass.labels <- gtf.table[gtf.table$biotype=="protein_coding",feature.label]
+  #}
 }
 
 if (opt$feature=="exon" ) {
