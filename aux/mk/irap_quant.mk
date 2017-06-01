@@ -25,6 +25,17 @@
 # Transcript quantification
 mapTrans2gene=$(name)/data/$(gtf_file_basename).mapTrans2Gene.tsv
 
+## Output files produced
+STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).tsv)
+
+ifeq ($(transcript_quant),y)
+STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).tsv)
+endif
+
+ifeq ($(exon_quant),y)
+STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.exons.raw.$(exon_quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.exons.raw.$(exon_quant_method).tsv)
+endif
+
 
 #*****************
 # Cufflinks 1 & 2
@@ -852,6 +863,8 @@ $(name)/$(mapper)/$(quant_method)/genes.fpkm.$(quant_method).$(quant_method).tsv
 
 endif
 
+
+
 ########################################################
 # kallisto
 
@@ -1059,9 +1072,16 @@ ifeq ($(dt_fc),n)
 trans_file_target=riu
 else
 trans_file_target=dt
+STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.dt.$(quant_method).irap.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.dt.$(quant_method).irap.tsv)
 endif
 
 STAGE3_S_TARGETS+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.$(trans_file_target).$(quant_method).irap.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.$(trans_file_target).$(quant_method).irap.tsv)
+
+# riu files are always produced
+STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.riu.$(quant_method).irap.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.riu.$(quant_method).irap.tsv)
+
+# include the raw counts
+STAGE3_OFILES+= $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).irap.tsv  $(name)/$(mapper)/$(quant_method)/transcripts.riu.$(quant_method).irap.tsv 
 
 
 # useful functions
@@ -1076,10 +1096,12 @@ endef
 
 #STAGE3_S_TARGETS+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).tsv)
 
-
+# Atlas specific - get fpkms and tpms
 ifdef atlas_run
 # 
 STAGE3_S_TARGETS+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.fpkm.$(quant_method).irap.tsv $(call lib2quant_folder,$(p))$(p).pe.transcripts.tpm.$(quant_method).irap.tsv) $(foreach s,$(se),  $(call lib2quant_folder,$(s))$(s).se.transcripts.fpkm.$(quant_method).irap.tsv $(call lib2quant_folder,$(s))$(s).se.transcripts.tpm.$(quant_method).irap.tsv)
+# include fpkm/TPMs 
+STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.fpkm.$(quant_method).irap.tsv $(call lib2quant_folder,$(p))$(p).pe.transcripts.tpm.$(quant_method).irap.tsv) $(foreach s,$(se),  $(call lib2quant_folder,$(s))$(s).se.transcripts.fpkm.$(quant_method).irap.tsv $(call lib2quant_folder,$(s))$(s).se.transcripts.tpm.$(quant_method).irap.tsv)
 endif
 
 else
