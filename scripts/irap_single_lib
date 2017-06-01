@@ -159,6 +159,7 @@ done
 
 set +e
 
+irap_options="$irap_options isl_mode=y"
 
 if [ "$conf-" == "-" ]; then
     perror "ERROR: -c parameter not provided" 
