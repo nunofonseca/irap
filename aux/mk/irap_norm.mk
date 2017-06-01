@@ -65,11 +65,16 @@ $(name)/$(mapper)/$(quant_method)/%.transcripts.fpkm.$(quant_method).irap.tsv: $
 $(name)/$(mapper)/$(quant_method)/%.exons.fpkm.$(exon_quant_method).irap.tsv: $(name)/$(mapper)/$(quant_method)/%.exons.raw.$(exon_quant_method).tsv
 	irap_raw2metric --tsv $<  --lengths $(exon_length) --feature exon --metric fpkm --out $@.tmp && mv $@.tmp $@	
 
-# TODO: uncomment to unable TPM normalization for Atlas
+# 
 ifdef atlas_run
-STAGE3_S_TARGETS+=$(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.genes.fpkm.$(quant_method).irap.tsv $(call lib2quant_folder,$(p))$(p).pe.genes.tpm.$(quant_method).irap.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.fpkm.$(quant_method).irap.tsv $(call lib2quant_folder,$(s))$(s).se.genes.tpm.$(quant_method).irap.tsv)
+norm_files=$(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.genes.fpkm.$(quant_method).irap.tsv $(call lib2quant_folder,$(p))$(p).pe.genes.tpm.$(quant_method).irap.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.fpkm.$(quant_method).irap.tsv $(call lib2quant_folder,$(s))$(s).se.genes.tpm.$(quant_method).irap.tsv)
+STAGE3_S_TARGETS+=$(norm_files)
+STAGE3_S_OFILES+=$(norm_files)
+
 ifeq ($(exon_quant),y)
-STAGE3_S_TARGETS+=$(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.exons.fpkm.$(exon_quant_method).irap.tsv $(call lib2quant_folder,$(p))$(p).pe.exons.tpm.$(exon_quant_method).irap.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.exons.fpkm.$(exon_quant_method).irap.tsv $(call lib2quant_folder,$(s))$(s).se.exons.tpm.$(exon_quant_method).irap.tsv)
+norm_files=$(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.exons.fpkm.$(exon_quant_method).irap.tsv $(call lib2quant_folder,$(p))$(p).pe.exons.tpm.$(exon_quant_method).irap.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.exons.fpkm.$(exon_quant_method).irap.tsv $(call lib2quant_folder,$(s))$(s).se.exons.tpm.$(exon_quant_method).irap.tsv)
+STAGE3_S_TARGETS+=$(norm_files)
+STAGE3_S_OFILES+=$(norm_files)
 endif
 endif
 
@@ -143,13 +148,31 @@ ifneq ($(quant_norm_method),none)
 
 nquant_files=$(foreach m,$(quant_norm_method),$(name)/$(mapper)/$(quant_method)/genes.$(m).$(quant_method).$(quant_norm_tool).tsv)
 
+
+ofiles=$(foreach m,$(quant_norm_method),$(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.genes.$(m).$(quant_method).$(quant_norm_tool).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.$(m).$(quant_method).$(quant_norm_tool).tsv))
+STAGE3_S_OFILES+= $(ofiles)
+nofiles=$(ofiles)
+
 ifeq ($(transcript_quant),y)
 nquant_files+=$(foreach m,$(quant_norm_method),$(name)/$(mapper)/$(quant_method)/transcripts.$(m).$(quant_method).$(quant_norm_tool).tsv)
+ofiles=$(foreach m,$(quant_norm_method),$(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.$(m).$(quant_method).$(quant_norm_tool).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.$(m).$(quant_method).$(quant_norm_tool).tsv))
+STAGE3_S_OFILES+= $(ofiles)
+nofiles+=$(ofiles)
 endif
 
 ifeq ($(exon_quant),y)
 nquant_files+=$(foreach m,$(quant_norm_method),$(name)/$(mapper)/$(quant_method)/exons.$(m).$(exon_quant_method).$(quant_norm_tool).tsv)
+ofiles=$(foreach m,$(quant_norm_method),$(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.exons.$(m).$(exon_quant_method).$(quant_norm_tool).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.exons.$(m).$(exon_quant_method).$(quant_norm_tool).tsv))
+STAGE3_S_OFILES+= $(ofiles)
+nofiles+=$(ofiles)
+
+
 endif
+
+ifeq ($(isl_mode),y)
+STAGE3_S_TARGETS+= $(nofiles)
+endif
+
 
 
 STAGE4_OUT_FILES+= $(nquant_files)
