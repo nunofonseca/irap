@@ -21,9 +21,12 @@
 #    $Id: 0.1.3 Nuno Fonseca Wed Dec 26 16:16:19 2012$
 # =========================================================
 
+## Notes:
+## 1 - Always produce gene expression quantification
 
-# Transcript quantification
+## Needed for transcript quantification
 mapTrans2gene=$(name)/data/$(gtf_file_basename).mapTrans2Gene.tsv
+
 
 ## Output files produced
 STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).tsv) 
@@ -1068,6 +1071,8 @@ $(name)/$(mapper)/$(quant_method)/%.transcripts.dt.$(quant_method).irap.tsv: $(n
 $(name)/$(mapper)/$(quant_method)/transcripts.dt.$(quant_method).irap.tsv:$(name)/$(mapper)/$(quant_method)/transcripts.riu.$(quant_method).irap.tsv $(mapTrans2gene)
 	irap_riu2dominant --fc $(dt_fc) -i $< --map $(mapTrans2gene) --cores $(max_threads) --gene_col 1 --trans_col 2  --out $@.tmp && mv $@.tmp $@
 
+
+
 # do not get the dominant transcript
 ifeq ($(dt_fc),n)
 trans_file_target=riu
@@ -1076,7 +1081,9 @@ trans_file_target=dt
 STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.dt.$(quant_method).irap.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.dt.$(quant_method).irap.tsv)
 endif
 
-STAGE3_S_TARGETS+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.$(trans_file_target).$(quant_method).irap.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.$(trans_file_target).$(quant_method).irap.tsv)
+
+STAGE3_S_TARGETS+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.$(trans_file_target).$(quant_method).irap.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.$(trans_file_target).$(quant_method).irap.tsv) 
+
 
 # riu files are always produced
 STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.riu.$(quant_method).irap.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.riu.$(quant_method).irap.tsv) 
@@ -1112,4 +1119,26 @@ endef
 define transcripts_quant_files=
 endef
 endif
+
+
+##################################
+## collect QC stats
+$(name)/$(mapper)/$(quant_method)/%.genes.raw.$(quant_method).quant_qc.tsv: $(name)/$(mapper)/$(quant_method)/%.genes.raw.$(quant_method).tsv
+	irap_quant_qc --tsv $< --feature gene --metric raw --gtf $(gtf_file_abspath) --out $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/$(quant_method)/%.exons.raw.$(exon_quant_method).quant_qc.tsv: $(name)/$(mapper)/$(quant_method)/%.exons.raw.$(exon_quant_method).tsv
+	irap_quant_qc --tsv $< --feature exon --metric raw --gtf $(gtf_file_abspath) --out $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/$(quant_method)/%.transcripts.raw.$(quant_method).quant_qc.tsv: $(name)/$(mapper)/$(quant_method)/%.transcripts.raw.$(quant_method).tsv
+	irap_quant_qc --tsv $< --feature transcript --metric raw --gtf $(gtf_file_abspath) --out $@.tmp && mv $@.tmp $@
+
+#####################################
+##
+ifeq ($(isl_mode),y)
+STAGE3_S_TARGETS+= $(a_quant_qc_stats)
+STAGE3_S_OFILES+= $(a_quant_qc_stats)
+else
+STAGE4_TARGETS+=$(a_quant_qc_stats)
+endif
+
 
