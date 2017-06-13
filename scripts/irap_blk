@@ -1,0 +1,107 @@
+#!/bin/sh
+#; -*- mode: Makefile;-*-
+#the next line restarts using\
+exec make --warn-undefined-variables -Rf "$0"  ${1+"$@"} 
+# send the standard output to a log file --quiet
+# exec bash -c 'make  --warn-undefined-variables -Rf "$0" ${1+"$@"}  | tee  `date "+%d%m%y%H%M"`.log" - 
+# =========================================================
+# Copyright 2012-2017,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+# =========================================================
+
+##################
+# Setup some paths
+# path to script
+path=.
+path?=$(shell if which irap >/dev/null 2>/dev/null; then dirname $(MAKEFILE_LIST); else dirname `which irap`; fi)
+
+ifdef path
+ PATH:=$(path):$(PATH)
+endif
+
+# Requires make 4.1 or above
+VERSION_OK=$(shell if [ `make --version|head -n 1 | cut -f3 -d\ ` \< 4.1 ]; then echo 0; else echo 1; fi )
+ifeq ($(VERSION_OK),0)
+ $(error make version needs to be 4.1 or above)
+endif
+
+irap_path:=$(shell dirname `which irap`)
+
+#####################################################################
+# Default target - bulk RNA-seq
+all: setup quality_filtering_and_report mapping quantification DE GSE
+
+include $(irap_path)/../aux/mk/irap_core.mk
+
+#################
+# Upgrade cleanup
+
+cleanup_3_0: cleanup_3_0_data cleanup_3_0_reference
+
+cleanup_3_0_data:
+	rm -f $(name)/data/gene.annot.{tsv,Rdata}
+# rpkm - force regeneration
+	rm -f $(name)/*/*/*.rpkm.*
+
+cleanup_3_0_reference:
+	rm -f $(data_dir)/reference/$(species)/*gene.annot.{tsv,Rdata}
+	rm -f $(data_dir)/reference/$(species)/*gene_annot.{tsv,Rdata}
+
+##
+cleanup_4_0: cleanup_4_0_data cleanup_4_0_reference
+
+cleanup_4_0_data:
+	rm -rf $(name)/report/quant/*
+	rm -rf $(name)/report/qc*
+	rm -rf $(name)/report/mapping/*
+
+
+# the ids changed
+cleanup_4_0_reference:
+	rm -f $(gtf_file_abspath).exon_id.gtf
+
+# 0.4.2d and above
+tophat2_update_index: 
+	$(call run_tophat2_index,$(word 1,$(files_indexed)))
+
+tophat2_reuse_index:
+	ln -s $(call tophat2_trans_index_filename_old,$(reference_abspath)) $(call tophat2_trans_index_filename,$(reference_abspath))
+# cp the gff3 file to the new location
+# 0.4.3d and above
+gff3_update: $(data_dir)/reference/$(species)/$(notdir $(gff3_file_abspath))
+	cp -a $(data_dir)/reference/$(species)/$(notdir $(gff3_file)) $(name)/data/$(notdir $(gff3_file))
+	cp -a $(data_dir)/reference/$(species)/$(notdir $(juncs_file_abspath)) $(name)/data/$(notdir $(juncs_file_abspath))
+
+# Force deseq2 to rerun and the quant. matrices to be regenerated (first gene in the list was being discarded)
+upgrade_0.7.0:
+	rm -f $(STAGE3_S_TARGETS) $(STAGE3_OUT_FILES) $(STAGE4_OUT_FILES)
+#	rerunning irap
+	$(call p_info,Updating...)
+	irap 
+
+
+force_stage2:
+	rm -f $(STAGE2_OUT_FILES)
+	$(call p_info,Updating...)
+	irap stage2
+
+stage0_fix:
+	irap stage0
+	irap stage0
+
