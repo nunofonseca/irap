@@ -186,20 +186,8 @@ $(name)/$(mapper)/$(quant_method)/%.transcripts.$(1).$(quant_method).$(2).quant_
 
 endef
 
-## generate the rules
+## generate the rules for each norm. method
 $(foreach nm,$(SUPPORTED_NORM_METHODS),$(eval $(call make-qc-norm-rules,$(nm),$(quant_norm_tool))))
-
-## counts
-$(name)/$(mapper)/$(quant_method)/%.genes.raw.$(quant_method).quant_qc.tsv: $(name)/$(mapper)/$(quant_method)/%.genes.raw.$(quant_method).tsv
-	irap_quant_qc --tsv $< --feature gene --metric raw --gtf $(gtf_file_abspath) --out $@.tmp && mv $@.tmp $@
-
-$(name)/$(mapper)/$(quant_method)/%.exons.raw.$(exon_quant_method).quant_qc.tsv: $(name)/$(mapper)/$(quant_method)/%.exons.raw.$(exon_quant_method).tsv
-	irap_quant_qc --tsv $< --feature exon --metric raw --gtf $(gtf_file_abspath) --out $@.tmp && mv $@.tmp $@
-
-$(name)/$(mapper)/$(quant_method)/%.transcripts.raw.$(quant_method).quant_qc.tsv: $(name)/$(mapper)/$(quant_method)/%.transcripts.raw.$(quant_method).tsv
-	irap_quant_qc --tsv $< --feature transcript --metric raw --gtf $(gtf_file_abspath) --out $@.tmp && mv $@.tmp $@
-
-## rules for the other norm methods
 
 
 ####################################
