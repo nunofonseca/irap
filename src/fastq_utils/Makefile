@@ -2,6 +2,8 @@
 CFLAGS=-O3 -L$(IRAP_DIR)/lib -Wall
 #-g -Wunused-result 
 
+SHELL=bash
+
 ifdef DEBUG
 CFLAGS+= -g -DDEBUG=1
 endif
@@ -19,7 +21,7 @@ fastq_info:  hash.o fastq_info.o
 	gcc  $(CFLAGS) $^ -o $@ -lz
 
 fastq_filterpair: hash.o fastq_filterpair.o
-	gcc  $(CFLAGS) $^ -o $@
+	gcc  $(CFLAGS) $^ -o $@ -lz
 
 fastq_num_reads: fastq_num_reads.c
 	gcc  $(CFLAGS)  -o $@  $<
@@ -49,12 +51,12 @@ clean:
 
 test1:
 	./fastq_filterpair tests/test_2.fastq tests/test_2.fastq  f1.fastq f2.fastq up.fastq
-	diff f1.fastq tests/test_2.fastq
+	diff <(zcat f1.fastq) tests/test_2.fastq
 
 test2:
 	./fastq_filterpair tests/a_1.fastq tests/a_2.fastq  f1.fastq f2.fastq up.fastq
-	diff f2.fastq tests/a_2.fastq
-	diff f1.fastq tests/a_1.fastq
+	diff <(zcat f2.fastq) tests/a_2.fastq
+	diff <(zcat f1.fastq) tests/a_1.fastq
 
 test3:
 	time -p ./fastq_filterpair tests/casava.1.8_2.fastq tests/casava.1.8_2.fastq  f1.fastq f2.fastq up.fastq
