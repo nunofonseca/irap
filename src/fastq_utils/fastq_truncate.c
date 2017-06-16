@@ -18,7 +18,6 @@
  * along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
- *    $Id$
  * =========================================================
  */
 #include <stdio.h>
@@ -29,60 +28,27 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define PRINT_READS_PROCESSED(c) { if (c%1000000==0) { fprintf(stderr,"\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b%lu",cline/4);fflush(stderr); }}
+#include "fastq.h"
 
-
-#define MAX_READ_LENGTH 1024000
-char read_buffer[MAX_READ_LENGTH];
-#define READ_LINE(fd) fgets(&read_buffer[0],MAX_READ_LENGTH,fd)
-
-inline FILE* open_fastq(char* filename) {
-
-  FILE *fd1=fopen(filename,"r");
-  if (fd1==NULL) {
-    fprintf(stderr,"Unable to open %s\n",filename);
-    exit(1);
-  }
-  return(fd1);
-}
 
 int main(int argc, char **argv ) {
 
-  //printf("%d",sizeof(struct index_entry)); 
-  
   if (argc!=3) {
     fprintf(stderr,"Usage: fastq_truncate fastq1 num_reads\n");
     exit(1);
   }
-  FILE *fd1=open_fastq(argv[1]);
   long num_reads=atol(argv[2]);
-  // ************************************************************
-  unsigned long cline=1;
-  unsigned long cur_read=0;
 
-  // read the entry using another fd
-  cline=1;
-  while(!feof(fd1) && cur_read<num_reads) {
-    char *hdr=READ_LINE(fd1);
-    if ( hdr==NULL) break;
-    if ( hdr[0]!='@' ) {
-      fprintf(stderr,"line %lu: error in header %s",cline,hdr);
-      return 1;
-    }
-    READ_LINE(fd1);
-    READ_LINE(fd1);
-    READ_LINE(fd1);
-    cline+=4;
-    cur_read++;
-    
-    PRINT_READS_PROCESSED(cline/4);
+  FASTQ_FILE *fd1=fastq_new(argv[1],FALSE,"r");
+  FASTQ_ENTRY *m1=fastq_new_entry();
+
+  while(!gzeof(fd1->fd)) {
+    if (fd1->num_rds>=num_reads) break;
+    if (fastq_read_next_entry(fd1,m1)==0) break;
+    fastq_write_entry2stdout(m1);
+
   }
-  if ( cur_read==num_reads) {
-    long pos=ftell(fd1);
-    fclose(fd1);
-    truncate(argv[1],pos);
-  } else {
-    fclose(fd1);
-  }
+  fastq_destroy(fd1);
   exit(0);
 }
+
