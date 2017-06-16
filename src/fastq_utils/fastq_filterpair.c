@@ -32,6 +32,7 @@
 
 #include "fastq.h"
 
+#define VERSION "0.9.0a"
 
 int main(int argc, char **argv) {
   unsigned long paired=0;
@@ -39,6 +40,8 @@ int main(int argc, char **argv) {
     *m2=fastq_new_entry();
 
   char rname[MAX_LABEL_LENGTH];
+
+  fprintf(stderr,"Version iRAP %s\n",VERSION);
   
   if (argc!=6) {
     fprintf(stderr,"Usage: filterpair fastq1 fastq2 paired1 paired2 unpaired\n");
@@ -68,9 +71,9 @@ int main(int argc, char **argv) {
   char *p1=argv[3];
   char *p2=argv[4];
   char *p3=argv[5];
-  FASTQ_FILE* fdw1=fastq_new(p1,FALSE,"w");
-  FASTQ_FILE* fdw2=fastq_new(p2,FALSE,"w");
-  FASTQ_FILE* fdw3=fastq_new(p3,FALSE,"w");
+  FASTQ_FILE* fdw1=fastq_new(p1,FALSE,"w4");
+  FASTQ_FILE* fdw2=fastq_new(p2,FALSE,"w4");
+  FASTQ_FILE* fdw3=fastq_new(p3,FALSE,"w4");
   unsigned long up2=0;
 
   if ( fdw1==NULL || fdw2==NULL || fdw3==NULL ) {
@@ -78,10 +81,10 @@ int main(int argc, char **argv) {
     exit(1);
   }
   // go back to the beginning
-  gzrewind(fd1->fd);
-  
+  fastq_rewind(fd1);
+  fprintf(stderr,"Processing %s\n",fd2->filename);fflush(stderr);  
   while(!gzeof(fd2->fd)) {
-    if (fastq_read_entry(fd2,m2)==0) break;
+    if (fastq_read_next_entry(fd2,m2)==0) break;
     unsigned long len;
     char *readname=fastq_get_readname(fd2,m2,&rname[0],&len,TRUE);
     // lookup hdr in index
@@ -96,8 +99,10 @@ int main(int argc, char **argv) {
       fastq_write_entry(fdw2,m2);
       // assume that the order is similar to minimize seeks
       if ( gztell(fd1->fd) != e->entry_start ) {
+	//fprintf(stderr,"+");
         fastq_seek_copy_read(e->entry_start,fd1,fdw1);
       } else {
+	//fprintf(stderr,"-");
 	fastq_read_entry(fd1,m1);
 	fastq_write_entry(fdw1,m1);
       }
@@ -110,7 +115,7 @@ int main(int argc, char **argv) {
   fprintf(stderr,"Recording %ld unpaired reads from %s\n",index->n_entries,argv[1]);fflush(stderr);
 
 
-  //#ifndef SEQDISKACCESS
+#ifdef SEEKAPPROACH
   init_hash_traversal(index);
   unsigned long cline=0;
   INDEX_ENTRY* e;
@@ -120,36 +125,24 @@ int main(int argc, char **argv) {
     ++cline;
   }
   //
-/* #else */
-/*   //sequential disk access */
-/*   // */
-/*   gzrewind(fd1->fd); */
-/*   unsigned long remaining=index->n_entries; */
-/*   while(!gzeof(fd1) && remaining ) { */
-/*     //long start_pos=ftell(fd2); */
-/*     char *hdr=READ_LINE(fd1); */
+#else
+  unsigned long remaining=index->n_entries;
+  //FASTQ_ENTRY *m1=fastq_new_entry();
+  //char rname[MAX_LABEL_LENGTH];
 
-/*     if ( hdr==NULL) break; */
-/*     if ( hdr[0]!='@' ) { */
-/*       fprintf(stderr,"line %ld %s: error in header %s",cline,argv[1],hdr); */
-/*       return 1; */
-/*     } */
-/*     unsigned long len; */
-/*     char *readname=fastq_get_readname(fd1,&m1,&rname[0],&len,TRUE); */
-/*     // lookup hdr in index */
-/*     INDEX_ENTRY* e=fastq_index_lookup_header(index,readname); */
-/*     if (e!=NULL) { */
-/*       fastq_seek_copy_read(e->entry_start,fd1,fdw3); */
-/*       remaining--; */
-/*     } else { */
-/*       READ_LINE(fd1);//seq */
-/*       READ_LINE(fd1);//qual */
-/*       READ_LINE(fd1);//qual */
-/*     } */
-/*     PRINT_READS_PROCESSED(cline/4,100000); */
-/*     cline+=4; */
-/*   } */
-//#endif
+  while(!gzeof(fd1->fd) && remaining ) {
+    if (fastq_read_next_entry(fd1,m1)==0) break;
+    unsigned long len;
+    char *readname=fastq_get_readname(fd1,m1,&rname[0],&len,TRUE);
+    // lookup hdr in index
+    INDEX_ENTRY* e=fastq_index_lookup_header(index,readname);
+    if (e!=NULL) {
+      //fastq_index_delete(readname,index);
+      fastq_write_entry(fdw3,m1);
+      remaining--;
+    }
+  }
+#endif
   fprintf(stderr,"\n");
   fprintf(stderr,"Unpaired from %s: %ld\n",argv[1],index->n_entries);
   fprintf(stderr,"Unpaired from %s: %ld\n",argv[2],up2);

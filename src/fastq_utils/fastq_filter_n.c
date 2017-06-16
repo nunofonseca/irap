@@ -29,7 +29,7 @@
 #include <stdlib.h>
 
 #include "fastq.h"
-#define VERSION "0.8.5d3"
+#define VERSION "0.9.0a"
 
 
 int main(int argc, char **argv ) {
@@ -62,7 +62,7 @@ int main(int argc, char **argv ) {
     fprintf(stderr,"Usage: fastq_filter_n [ -n 0 ] fastq1\n");
     exit(1);
   }
-
+  
   fprintf(stderr,"Discard reads with more than %d%% of Ns\n",max_n);
   
   FASTQ_FILE *fd1=fastq_new(argv[nopt+1],FALSE,"r");
@@ -80,7 +80,7 @@ int main(int argc, char **argv ) {
       if (m1->seq[k]=='\n' || m1->seq[k]=='\0') break;
       if (m1->seq[k]=='N' || m1->seq[k]=='n'  ) {
 	++num_n;
-	if ( num_n > max_num_n) break;
+	if ( num_n > max_num_n ) break;
       }
     }
     // 

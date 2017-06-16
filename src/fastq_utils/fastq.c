@@ -43,6 +43,10 @@ static void fastq_close(gzFile fd);
 
 
 /* ******************************************************************************* */
+void fastq_rewind(FASTQ_FILE* fd) {
+  fd->cline=1;
+  gzrewind(fd->fd);
+}
 void fastq_write_entry2stdout(FASTQ_ENTRY *e) {
   fprintf(stdout,"%s",e->hdr1);
   fprintf(stdout,"%s",e->seq);
@@ -516,6 +520,8 @@ inline gzFile fastq_open(const char* filename,const char *mode) {
     fprintf(stderr,"\nError: Unable to open %s\n",filename);
     exit(1);
   }
+  //gzbuffer(fd1,sizeof(FASTQ_ENTRY)*2);
+  // too large value slows down seek
   gzbuffer(fd1,128000);
   return(fd1);
 }
