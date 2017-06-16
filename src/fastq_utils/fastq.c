@@ -1,0 +1,588 @@
+#include "fastq.h"
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <string.h>
+#include <stdlib.h>
+#include <regex.h> 
+#include <zlib.h> 
+
+// Macros
+//static char read_buffer[MAX_READ_LENGTH+1];
+
+// public
+unsigned long index_mem=0;
+char* encodings[]={"33","64","solexa","33 *"};
+
+#define READ_LINE(fd) gzgets(fd,&read_buffer[0],MAX_READ_LENGTH)
+
+
+FASTQ_FILE* new_fastq_file(const char* filename,const int);
+// functions
+static int is_casava_1_8_readname(const char *s);
+static int is_int_readname(const char *s);
+
+
+
+void free_indexentry(INDEX_ENTRY *e);
+INDEX_ENTRY* new_indexentry(hashtable ht,char*hdr,int len,long start_pos);
+
+static inline int compare_headers(const char *hdr1,const char *hdr2); //?
+
+
+
+static inline char* GZ_READ(gzFile fd,char *s,long max);
+static inline void GZ_WRITE(gzFile fd,char *s);
+
+//
+gzFile fastq_open(const char* filename,const char *mode);
+gzFile fastq_open_write(const char* filename);
+static void fastq_close(gzFile fd);
+
+
+/* ******************************************************************************* */
+void fastq_write_entry2stdout(FASTQ_ENTRY *e) {
+  fprintf(stdout,"%s",e->hdr1);
+  fprintf(stdout,"%s",e->seq);
+  fprintf(stdout,"%s",e->hdr2);
+  fprintf(stdout,"%s",e->qual);
+}
+
+void fastq_is_pe(FASTQ_FILE* fd) {
+  fd->is_pe=TRUE;
+}
+void fastq_new_entry_stats(FASTQ_FILE *fd, FASTQ_ENTRY* entry) {
+
+  unsigned long slen=entry->read_len;
+  if (slen<fd->min_rl) {
+    fd->min_rl=slen;
+  }
+  if (slen>fd->max_rl) {
+    fd->max_rl=slen;
+  }
+  ++fd->num_rds;
+  fd->last_rl=slen;
+  fd->rdlen_ctr[slen]++;
+  // update min/max quality
+}
+
+FASTQ_ENTRY* fastq_new_entry(void) {
+
+  FASTQ_ENTRY* new=(FASTQ_ENTRY*)malloc(sizeof(FASTQ_ENTRY));
+  if (new==NULL) {
+    fprintf(stderr,"ERROR: unable to allocate %ld bytes of memory\n",sizeof(FASTQ_ENTRY));
+    exit(1);
+  }
+  new->read_len=0;
+  new->offset=0;
+  return(new);
+}
+/*
+ *
+ */
+FASTQ_FILE* fastq_new(const char* filename, const int fix_dot,const char *mode) {
+  
+  FASTQ_FILE* new=(FASTQ_FILE*)malloc(sizeof(FASTQ_FILE));
+  if (new==NULL) {
+    fprintf(stderr,"ERROR: unable to allocate %ld bytes of memory\n",sizeof(FASTQ_FILE));
+    exit(1);
+  }
+  new->cur_offset=0L;
+  new->max_rl=0L;
+  new->last_rl=0L;
+  new->min_rl=MAX_READ_LENGTH;
+  new->min_qual=126;
+  new->max_qual=0;
+  new->num_rds=0;
+  new->fix_dot=fix_dot;
+  new->fixed_dot=FALSE;
+  new->is_pe=FALSE;
+  new->readname_format=UNDEF;
+  new->is_casava_18=UNDEF;
+  strncpy(new->filename,filename,MAX_FILENAME_LENGTH-1);
+  new->filename[MAX_FILENAME_LENGTH]='\0';
+  new->fd=fastq_open(filename,mode);
+  memset(new->rdlen_ctr,0,sizeof(long)*MAX_READ_LENGTH);
+  return(new);
+}
+
+FASTQ_ENTRY* tmp_entry=NULL;
+static FASTQ_ENTRY* get_tmp_entry() {
+  if (tmp_entry!=NULL) return tmp_entry;
+  tmp_entry=fastq_new_entry();
+  return tmp_entry;
+}
+
+void fastq_seek_copy_read(long offset,FASTQ_FILE* from,FASTQ_FILE* to) {
+  if (gzseek(from->fd,offset,SEEK_SET)<0) {
+    fprintf(stderr,"Error: gzseek failed.\n");
+    exit(1);
+  }
+  FASTQ_ENTRY* e=get_tmp_entry();
+  fastq_read_entry(from,e);
+  fastq_write_entry(to,e);
+}
+
+
+static inline char* GZ_READ(gzFile fd,char *s,long max) {
+  char *s2=gzgets(fd,s,max);
+  if ( s2!=Z_NULL ) return(s2);
+  s[0]='\0';
+  return(NULL);
+  //fprintf(stderr,"ERROR: read from file\n");
+  //exit(1);
+}
+
+static inline void GZ_WRITE(gzFile fd,char *s) {
+  int n=gzputs(fd,s);
+  if ( n>0 ) return;
+  if ( *s=='\0' ) return;
+  const char *errmsg=gzerror(fd,&n);
+  fprintf(stderr,"Error: %s.\n",errmsg);
+  /* switch(n) { */
+  /* case Z_ERRNO: */
+  /*   fprintf(stderr,"Error: Internal error (%d).\n",errno()); */
+  /*   break; */
+  /* case Z_STREAM_ERROR: */
+  /*   fprintf(stderr,"Error: The stream is invalid, is not open for writing, or is in an invalid state.\n"); */
+  /*   break; */
+  /* case Z_BUF_ERROR: */
+  /*   fprintf(stderr,"Error: internal error.\n"); */
+  /*   break; */
+  /* case Z_MEM_ERROR: */
+  /*   fprint(stderr,"Error: Insufficient memory available to compress.\n"); */
+  /*   break; */
+  /* } */
+  exit(1);
+}
+
+int fastq_read_next_entry(FASTQ_FILE* fd,FASTQ_ENTRY *e) {
+
+  int r=fastq_read_entry(fd,e);
+  if ( r <=0 ) return r;
+  fastq_new_entry_stats(fd,e);
+  return(1);
+}
+/* read the next entry e from the fastq stream fd */
+int fastq_read_entry(FASTQ_FILE* fd,FASTQ_ENTRY *e) {
+
+  e->offset=gztell(fd->fd);
+  if(gzeof(fd->fd)) return 0;
+  GZ_READ(fd->fd,&e->hdr1[0],MAX_LABEL_LENGTH);
+  if ( e->hdr1[0]=='\0') return 0;
+  GZ_READ(fd->fd,&e->seq[0],MAX_READ_LENGTH);
+  GZ_READ(fd->fd,&e->hdr2[0],MAX_LABEL_LENGTH);
+  GZ_READ(fd->fd,&e->qual[0],MAX_READ_LENGTH);
+  if (e->seq[0]=='\0' || e->hdr2[0]=='\0' || e->qual[0]=='\0' ) {
+    fprintf(stderr,"ERROR: file truncated: line %ld\n",fd->cline);
+    exit(1);
+  }
+  fd->cline+=4;
+  e->read_len=strlen(e->seq);
+  return(1);
+}
+
+
+/* read the next entry e from the fastq stream fd */
+void fastq_write_entry(FASTQ_FILE* fd,FASTQ_ENTRY *e) {
+
+  GZ_WRITE(fd->fd,&e->hdr1[0]);
+  GZ_WRITE(fd->fd,&e->seq[0]);
+  GZ_WRITE(fd->fd,&e->hdr2[0]);
+  GZ_WRITE(fd->fd,&e->qual[0]);  
+}
+
+
+char* fastq_qualRange2enc(int min_qual,int max_qual) {
+  int enc=0;
+  if ( max_qual <=73 ) {
+    enc=0; //33
+  } else if ( min_qual <59 ) {
+    enc=0; // 33
+  } else if ( min_qual >=64 && max_qual>74 ) {
+    enc=1; // 64
+  } else if (min_qual >=59 && max_qual>74 ) { // min_qual<64
+    enc=2; // solexa
+  } else {
+    enc=3; // 33 is the default value (* means that the default value was used
+  }
+  // raw reads should not have a value greater than min_qual+60
+  // higher scores are possible in assemblies or read maps (http://en.wikipedia.org/wiki/FASTQ_format)
+  if ( max_qual > min_qual+60  ) {
+    return(NULL);
+  }
+  return encodings[enc];
+}
+
+// return 0 on sucess, 1 otherwise
+inline int fastq_validate_entry(FASTQ_FILE* fd,FASTQ_ENTRY *e) {
+//(char *hdr,char *hdr2,char *seq,char *qual,unsigned long linenum,const char* filename) {
+  char rname1[MAX_LABEL_LENGTH];
+  char rname2[MAX_LABEL_LENGTH];
+
+  // Sequence identifier
+  if ( e->hdr1[0]!='@' ) {
+    fprintf(stderr,"\nError in file %s, line %lu: sequence identifier should start with an @ - %s\n",fd->filename,fd->cline,e->hdr1);
+    return 1;
+  }  
+  if ( e->hdr1[1]=='\0' || e->hdr1[1]=='\n' || e->hdr1[1]=='\r') {
+    fprintf(stderr,"\nError in file %s, line %lu: sequence identifier should be longer than 1\n",fd->filename,fd->cline);	   
+    return 1;
+  }
+  // sequence
+  unsigned long slen=0;
+  while ( e->seq[slen]!='\0' && e->seq[slen]!='\n' && e->seq[slen]!='\r' ) {
+    // check content: ACGT acgt nN 0123....include the .?
+    if ( e->seq[slen]!='A' && e->seq[slen]!='C' && e->seq[slen]!='G' && e->seq[slen]!='T' &&
+	 e->seq[slen]!='a' && e->seq[slen]!='c' && e->seq[slen]!='g' && e->seq[slen]!='t' &&
+	 e->seq[slen]!='0' && e->seq[slen]!='1' && e->seq[slen]!='2' && e->seq[slen]!='3' &&
+	 e->seq[slen]!='n' && e->seq[slen]!='N' && e->seq[slen]!='.' ) {
+      fprintf(stderr,"\nError in file %s, line %lu: invalid character '%c' (hex. code:'%x'), expected ACGTacgt0123nN.\n",fd->filename,fd->cline+1,e->seq[slen],e->seq[slen]);
+      return 1;
+    }
+    slen++;
+  }  
+  fastq_new_entry_stats(fd,e);  
+  // check len
+  if (slen < MIN_READ_LENGTH ) {
+    fprintf(stderr,"\nError in file %s, line %lu: read length too small - %lu\n",fd->filename,fd->cline+1,slen);
+    return 1;
+  }
+  // be tolerant
+  //if (hdr2[1]!='\0' && hdr2[1]!='\n' && hdr2[1]!='\r') {
+  //  fprintf(stderr,"Error in file %s, line %lu:  header2 wrong. The line should contain only '+' followed by a newline.\n",filename,linenum+2);
+  //  return 1;
+  //}  
+  if (e->hdr2[0]!='+') {
+    fprintf(stderr,"\nError in file %s, line %lu:  header2 wrong. The line should contain only '+' followed by a newline or read name (header1).\n",fd->filename,fd->cline+2);
+    return 1;
+  }
+  // length of hdr2 should be 1 or be the same has the hdr1
+  // ignore the + sign
+  //get_readname(&hdr2[1]);
+  unsigned long len;
+  if (e->hdr2[0]!='\0' && e->hdr2[0]!='\r' ) {    
+    char *rn1=fastq_get_readname(fd,e,&rname1[0],&len,TRUE);
+    char *rn2=fastq_get_readname(fd,e,&rname2[0],&len,FALSE);
+    if ( !compare_headers(rn1,rn2) ) {
+      fprintf(stderr,"\nError in file %s, line %lu:  header2 differs from header1\nheader 1 \"%s\"\nheader 2 \"%s\"\n",fd->filename,fd->cline,e->hdr1,e->hdr2);
+      return 1;
+    }
+  }
+  // qual length==slen
+  unsigned long qlen=0;
+  while ( e->qual[qlen]!='\0' && e->qual[qlen]!='\n' && e->qual[qlen]!='\r') {
+    int x=(int)e->qual[qlen];
+    if (x<fd->min_qual) { fd->min_qual=x; }
+    if (x>fd->max_qual) { fd->max_qual=x; }
+    qlen++;    
+  }  
+
+  if ( qlen!=slen ) {
+    fprintf(stderr,"\nError in file %s, line %lu: sequence and quality don't have the same length %lu!=%lu\n",fd->filename,fd->cline,slen,qlen);
+    return 1;
+  }
+  return 0;
+}
+
+
+// add option to replace dots
+void fastq_index_readnames(FASTQ_FILE* fd1,hashtable index,long long start_offset,int replace_dots) {
+
+  fd1->fix_dot=replace_dots;
+  FASTQ_ENTRY *m1=fastq_new_entry();
+  char rname[MAX_LABEL_LENGTH];
+
+  if (fd1->fd==NULL) {
+    fprintf(stderr,"Unable to open %s\n",fd1->filename);
+    exit(1);
+  }
+  // move to the right position
+  if(start_offset>0) {
+    fprintf(stderr, " Not implemented\n");
+    exit(1);
+  }
+  unsigned long len;
+  // index creation could be done in parallel...
+  while(!gzeof(fd1->fd)) {
+    if ( fastq_read_next_entry(fd1,m1)==0) break;
+
+    char* readname=fastq_get_readname(fd1,m1,&rname[0],&len,TRUE);
+    //fprintf(stderr,"4---%s\n",readname);fflush(stderr);
+    // TODO: replace dots() -> needs a new file
+    //    replace_dots(start_pos,seq,hdr,hdr2,qual,fdf);    
+    // check for duplicates
+    if ( fastq_index_lookup_header(index,readname)!=NULL ) {
+      fprintf(stderr,"\nError in file %s, line %lu: duplicated sequence %s\n",fd1->filename,fd1->cline,readname);
+      exit(1);
+    }
+
+    if ( new_indexentry(index,readname,len,m1->offset)==NULL) {
+      fprintf(stderr,"line %lu: malloc failed?",fd1->cline-4);
+      exit(1);
+    }
+    // TODO validate option
+    if (fastq_validate_entry(fd1,m1)!=0) {
+      exit(1);
+    }
+    PRINT_READS_PROCESSED(fd1->cline/4,100000);
+  }  
+  //fastq_close(fd1->fd);
+  return;
+}
+
+char* fastq_get_readname(FASTQ_FILE* fd, FASTQ_ENTRY* e,char* rn,unsigned long *len_p,int is_header1) {
+  unsigned long len=0;
+  char *hdr;
+  if ( is_header1) hdr=e->hdr1;
+  else  hdr=e->hdr2;
+
+  if ( is_header1==TRUE && hdr[0]!='@' ) {
+    fprintf(stderr,"Error in file %s, line %lu: wrong header %s\n",fd->filename,fd->cline,hdr);
+    exit(1);
+  }
+
+  // rn=&rn[1];// ignore/discard @
+  if ( strncpy(rn,&hdr[1],MAX_LABEL_LENGTH-1)==NULL ) {
+      fprintf(stderr, "Error in strcpy\n");
+      exit(1);
+  }
+  // executed only once
+  if ( fd->readname_format == UNDEF ) {
+      fd->is_casava_18=is_casava_1_8_readname(rn);
+      if (fd->is_casava_18) {
+        fprintf(stderr,"CASAVA=1.8\n");
+        fd->readname_format=CASAVA18;
+      } else {
+	int is_int_name=is_int_readname(rn);
+	if ( is_int_name ) {
+	  fprintf(stderr,"Read name provided as an integer\n");
+	  fd->readname_format=INTEGERNAME;
+	} else {
+	  fd->readname_format=DEFAULT;
+	}
+      }
+  }
+  
+  switch(fd->readname_format) {
+  case DEFAULT:
+    // discard last character if PE && not casava 1.8
+    len=strlen(rn);
+    if (fd->is_pe) 
+      len--;
+    rn[len-1]='\0';
+    break;
+  case INTEGERNAME:
+    // keep the sequence unchanged
+    len=strlen(rn);
+    rn[len-1]='\0';
+    break;
+  case CASAVA18:
+    len=0;
+    while (rn[len]!=' ' && rn[len]!='\0') ++len;
+    rn[len]='\0';
+    if  ( rn[len-2] == '/' ) {
+      // discard /[12]
+      rn[len-2]='\0';
+      len=len-2;
+    }
+    break;
+  }
+  *len_p=len;
+  //fprintf(stderr,"read=%s=\n",s);
+  return(rn);
+}
+
+
+//unsigned long long qual_vals[126]; // distribution of quality values
+/*
+sdbm
+this algorithm was created for sdbm (a public-domain reimplementation of ndbm) database library.
+it was found to do well in scrambling bits, causing better distribution of the keys and fewer splits.
+it also happens to be a good general hashing function with good distribution.
+the actual function is hash(i) = hash(i - 1) * 65599 + str[i]; what is included below is the faster version used in gawk.
+[there is even a faster, duff-device version] the magic constant 65599 was picked out of thin air while experimenting with
+different constants, and turns out to be a prime. this is one of the algorithms used in berkeley db (see sleepycat) and elsewhere.
+*/
+static ulong hashit(char *str) {
+
+  ulong hash = 0;
+  int c;
+  
+  while ((c = *str++))
+    hash = c + (hash << 6) + (hash << 16) - hash;
+  
+  return(hash);
+}
+
+
+
+// return 1 if the headers are the same...0 otherwise
+static inline int compare_headers(const char *hdr1,const char *hdr2) {
+
+  unsigned int slen=0;
+  //fprintf(stderr,">%s<\n>%s<\n",hdr1,hdr2);
+  // no readname in header2
+  if ( hdr2[0]=='\n' || hdr2[0]=='\r' || hdr2[0]=='\0' ) {
+    return 1;
+  }
+  while ( hdr1[slen]!='\0' && hdr2[slen]!='\0' ) {
+    if ( hdr1[slen]!=hdr2[slen] ) break;
+    slen++;
+  }
+  // ignore white spaces
+  unsigned int slen2=slen;
+  while ( hdr1[slen]!='\0' ) {
+    if ( hdr1[slen]!='\r'  &&  hdr1[slen]!='\n' ) return 0;
+    ++slen;
+  }
+  while ( hdr2[slen2]!='\0' ) {
+    if ( hdr2[slen2]!='\r'  &&  hdr2[slen2]!='\n' ) return 0;
+    ++slen2;
+  }
+  return 1;
+}
+
+void fastq_index_delete(char *rname,hashtable index) {
+  unsigned long key=hashit(rname);
+  INDEX_ENTRY* e=fastq_index_lookup_header(index,rname);
+  if (delete(index,key,e)!=e) {
+    fprintf(stderr,"Error: Unable to delete entry from index\n");
+    exit(1);
+  }
+  free_indexentry(e);  
+}
+INDEX_ENTRY* fastq_index_lookup_header(hashtable sn_index,char *hdr) {
+  // lookup hdr in sn_index
+  ulong key=hashit(hdr);
+  //printf("looking for %s: key=%lu\n",hdr,key);
+  INDEX_ENTRY* e=(INDEX_ENTRY*)get_object(sn_index,key);
+  while (e!=NULL) {      // confirm that hdr are equal
+    if ( !strcmp(hdr,e->hdr)) break;
+    e=(INDEX_ENTRY*)get_next_object(sn_index,key);
+  }
+  return e;
+}
+
+//long collisions[HASHSIZE+1];
+INDEX_ENTRY* new_indexentry(hashtable ht,char*hdr,int len,long start_pos) {
+  
+  // Memory chunck: |[index_entry]len bytes+1|
+  char *mem_block=(char*)malloc(sizeof(INDEX_ENTRY)+len+1);
+  if (mem_block==NULL) { return(NULL);}  
+  INDEX_ENTRY *e=(INDEX_ENTRY*)&mem_block[0];
+
+  e->hdr=(char*)&mem_block[sizeof(INDEX_ENTRY)];
+  e->entry_start=start_pos;
+  
+  strncpy(e->hdr,hdr,len);
+  e->hdr[len]='\0';
+  // add to hash table
+  ulong key=hashit(e->hdr);
+  //collisions[key%HASHSIZE]++;
+  if(insere(ht,key,e)<0) {
+    fprintf(stderr,"\nError adding %s to index\n",hdr);
+    return(NULL);
+  }
+  index_mem+=sizeof(INDEX_ENTRY)+len+1+sizeof(hashnode);
+  return(e);
+}
+
+void free_indexentry(INDEX_ENTRY *e) {
+  free(e);
+  // remove entry from hash table
+  return;
+}
+
+void fastq_destroy(FASTQ_FILE* fd) {
+  fastq_close(fd->fd);
+}
+
+static inline void fastq_close(gzFile fd) {
+  //if (fd==NULL) { return; }
+  if (gzclose(fd)!=Z_OK) {
+    fprintf(stderr,"\nError: unable to close file descriptor\n");
+    exit(1);
+  }
+}
+
+inline gzFile fastq_open(const char* filename,const char *mode) {
+  gzFile fd1;
+  
+  fd1=gzopen(filename,mode);
+  if (fd1==NULL) {
+    fprintf(stderr,"\nError: Unable to open %s\n",filename);
+    exit(1);
+  }
+  gzbuffer(fd1,128000);
+  return(fd1);
+}
+
+
+//  http://support.illumina.com/help/SequencingAnalysisWorkflow/Content/Vault/Informatics/Sequencing_Analysis/CASAVA/swSEQ_mCA_FASTQFiles.htm
+// check if the read name format was generated by casava 1.8
+int is_casava_1_8_readname(const char *s) {
+  regex_t regex;
+  int reti;
+  int is_casava_1_8=FALSE;
+  reti = regcomp(&regex,"[A-Z0-9:]* [12]:[YN]:[0-9]*:.*",0);  
+  if ( reti ) { 
+    fprintf(stderr, "Internal error: Could not compile regex\n"); 
+    exit(2); 
+  }
+  /* Execute regular expression */
+  //fprintf(stderr,"%s\n",hdr);
+  reti = regexec(&regex, s, 0, NULL, 0);
+  if ( !reti ) {    // match
+    is_casava_1_8=TRUE;
+  } 
+  regfree(&regex);
+  return is_casava_1_8;
+}
+
+// is the read name a plain integer
+// or it doesn't contain a #/ as the second last letter
+static int is_int_readname(const char *s) {
+  regex_t regex;
+  int reti;
+  int is_int_name=FALSE;
+  // @ was alread removed
+  reti = regcomp(&regex,"^[0-9]+[\n\r]?$",REG_EXTENDED);  
+  if ( reti ) { 
+    fprintf(stderr, "Internal error: Could not compile regex\n"); 
+    exit(2); 
+  }
+  /* Execute regular expression */
+  //fprintf(stderr,">%s<\n",s);
+  reti = regexec(&regex, s, 0, NULL, 0);
+  if ( !reti ) {    // match
+    is_int_name=TRUE;
+  } 
+  regfree(&regex);
+  return is_int_name;
+}
+
+inline long replace_dot_by_N(char* seq) {
+  long n=0;  
+  long replaced=0;
+  while (seq[n]!='\0') {
+    if (seq[n]=='.') {
+      ++replaced;
+      seq[n]='N';
+    }
+    ++n;
+  }
+  return replaced;
+}
+
+inline long replace_dots(long long start,char* seq, char *hdr1, char *hdr2, char *qual,gzFile fd) {
+  // FIX .
+  long replaced=0;
+  //if ( fix_dot ) {
+    replaced+=replace_dot_by_N(seq);
+    gzprintf(fd,"%s%s%s%s",hdr1,seq,hdr2,qual);
+    //}
+  return(replaced);
+}

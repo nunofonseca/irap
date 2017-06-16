@@ -18,7 +18,6 @@
 # along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-#    $Id: 0.1.1$
 # =========================================================
 */
 #include <stdio.h>
@@ -31,252 +30,15 @@
 #include <regex.h> 
 #include <zlib.h> 
 
-
-#include "hash.h"
-// 1MB
-// disable this option if disk access is fast (local disk)
-// enable it for network disks
-#define SEQDISKACCESS 1
-
-#define MAX_READ_LENGTH 1024000
-
-#define HASHSIZE 7000001
-//#define HASHSIZE 5
-
-#define READ_LINE(fd) gzgets(fd,&read_buffer[0],MAX_READ_LENGTH)
-
-#define PRINT_READS_PROCESSED(c) { if (c%500000==0) { printf("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b%lu",c);fflush(stdout); }}
-
-struct index_entry {
-  
-  // file offset: start entry
-  // file offset: end entry
-  // chat hdr(40)
-  char *hdr;
-  off_t entry_start;
-  //unsigned  int  nbytes;
-};
-typedef struct index_entry INDEX_ENTRY;
-
-char read_buffer[MAX_READ_LENGTH];
-long index_mem=0;
-int is_casava_18;
-
-/*
-sdbm
-this algorithm was created for sdbm (a public-domain reimplementation of ndbm) database library.
-it was found to do well in scrambling bits, causing better distribution of the keys and fewer splits.
-it also happens to be a good general hashing function with good distribution.
-the actual function is hash(i) = hash(i - 1) * 65599 + str[i]; what is included below is the faster version used in gawk.
-[there is even a faster, duff-device version] the magic constant 65599 was picked out of thin air while experimenting with
-different constants, and turns out to be a prime. this is one of the algorithms used in berkeley db (see sleepycat) and elsewhere.
-*/
-static unsigned long hashit(char *str) {
-
-  unsigned long hash = 0;
-  int c;
-  
-  while ((c = *str++))
-    hash = c + (hash << 6) + (hash << 16) - hash;
-  
-  return hash;
-}
-
-//long collisions[HASHSIZE+1];
-INDEX_ENTRY* new_indexentry(hashtable ht,char*hdr,int len,long start_pos) {
-  
-  // Memory chunck: |[index_entry]len bytes+1|
-  char *mem_block=(char*)malloc(sizeof(INDEX_ENTRY)+len+1);
-  if (mem_block==NULL) { return(NULL);}  
-  INDEX_ENTRY *e=(INDEX_ENTRY*)&mem_block[0];
-
-  e->hdr=(char*)&mem_block[sizeof(INDEX_ENTRY)];
-  e->entry_start=start_pos;
-  
-  strncpy(e->hdr,hdr,len);
-  
-  // add to hash table
-  unsigned long key=hashit(e->hdr);
-  //collisions[key%HASHSIZE]++;
-  if(insere(ht,key,e)<0) {
-    fprintf(stderr,"Error adding %s to index\n",hdr);
-    return(NULL);
-  }
-  index_mem+=sizeof(INDEX_ENTRY)+len+1+sizeof(hashnode);
-  return(e);
-}
-
-void free_indexentry(INDEX_ENTRY *e) {
-  free(e);
-  // remove entry from hash table
-  return;
-}
-
-inline gzFile open_fastq(const char* filename) {
-  gzFile fd1;
-  
-  fd1=gzopen(filename,"r");
-  if (fd1==NULL) {
-    fprintf(stderr,"\nError: Unable to open %s\n",filename);
-    exit(1);
-  }
-  gzbuffer(fd1,128000);
-  return(fd1);
-}
-
-char* get_readname(char *s,int *len_p,int cline) {
-  int len;
-  if (s[0]!='@' ) {
-    fprintf(stderr,"line %ul: error in header %s",cline,s);
-    exit(1);
-  } 
-  s=&s[1]; // ignore/discard @
-  if (is_casava_18) {
-    len=0;
-    while (s[len]!=' ') ++len;
-    s[len]='\0';
-  } else {
-    len=strlen(s);
-    len--;
-    s[len-1]='\0'; 
-  }
-  *len_p=len;
-  //fprintf(stderr,"read=%s=\n",s);
-  return(s);
-}
-// TODO: optimize this bit of code
-
-inline void GZ_WRITE(gzFile fd,char *s) {
-  int n=gzputs(fd,s);
-  if ( n>0 ) return;
-  const char *errmsg=gzerror(fd,&n);
-  fprintf(stderr,"Error: %s.\n",errmsg);
-  /* switch(n) { */
-  /* case Z_ERRNO: */
-  /*   fprintf(stderr,"Error: Internal error (%d).\n",errno()); */
-  /*   break; */
-  /* case Z_STREAM_ERROR: */
-  /*   fprintf(stderr,"Error: The stream is invalid, is not open for writing, or is in an invalid state.\n"); */
-  /*   break; */
-  /* case Z_BUF_ERROR: */
-  /*   fprintf(stderr,"Error: internal error.\n"); */
-  /*   break; */
-  /* case Z_MEM_ERROR: */
-  /*   fprint(stderr,"Error: Insufficient memory available to compress.\n"); */
-  /*   break; */
-  /* } */
-  exit(1);
-}
-
-void gz_copy_read(long offset,gzFile from,gzFile to) {
-  if (gzseek(from,offset,SEEK_SET)<0) {
-    fprintf(stderr,"Error: gzseek failed.\n");
-    exit(1);
-  }
-  GZ_WRITE(to,READ_LINE(from));
-  GZ_WRITE(to,READ_LINE(from));
-  GZ_WRITE(to,READ_LINE(from));
-  GZ_WRITE(to,READ_LINE(from));
-}
+#include "fastq.h"
 
 
-void index_file(char *filename,hashtable index,long start_offset,long length) {
-  gzFile fd1=open_fastq(filename);
-  if (fd1==NULL) {
-    fprintf(stderr,"Unable to open %s\n",filename);
-    exit(1);
-  }
-  // move to the right position
-  if(length>0) {
-    fprintf(stderr, " Not implemented\n");
-    exit(1);
-  }
-  long cline=1;
-  // index creation could be done in parallel
-  while(!gzeof(fd1)) {
-    long start_pos=gztell(fd1);
-    char *hdr=READ_LINE(fd1);
+int main(int argc, char **argv) {
+  unsigned long paired=0;
+  FASTQ_ENTRY *m1=fastq_new_entry(),
+    *m2=fastq_new_entry();
 
-    if ( hdr==NULL) break;
-    int len;
-    char* readname=get_readname(hdr,&len,cline);
-    //fprintf(stderr,"index: =%s=\n",readname);
-    // get seq
-    //printf("cline=%ld\nLEN=%ld  hdr=%s\n",cline,len,hdr);
-    if ( new_indexentry(index,readname,len,start_pos)==NULL) {
-      fprintf(stderr,"line %lu: malloc failed?",cline);
-      exit(1);
-    }
-    char *seq=READ_LINE(fd1);
-    char *hdr2=READ_LINE(fd1);
-    char *qual=READ_LINE(fd1);
-    
-    if (seq==NULL || hdr2==NULL || qual==NULL ) {
-      fprintf(stderr,"line %lu: file truncated",cline);
-      exit(1);
-    }
-    
-    PRINT_READS_PROCESSED(cline/4);
-    //
-    cline+=4;
-  }
-  
-  gzclose(fd1);
-  return;
-}
-
-inline static INDEX_ENTRY* lookup_header(hashtable index,char *hdr) {
-  // lookup hdr in index
-  unsigned long key=hashit(hdr);
-  INDEX_ENTRY* e=(INDEX_ENTRY*)get_object(index,key);
-  while (e!=NULL) {      // confirm that hdr are equal
-    if ( !strcmp(hdr,e->hdr)) break;
-    e=(INDEX_ENTRY*)get_next_object(index,key);
-  }
-  return e;
-}
-
-
-// check if the read name format was generated by casava 1.8
-int is_casava_1_8(char *f) {
-  regex_t regex;
-  int reti;
-  int is_casava_1_8=0;
-  reti = regcomp(&regex,"[A-Z0-9:]* [12]:[YN]:[0-9]*:.*",0);  
-  if ( reti ) { 
-    fprintf(stderr, "Could not compile regex\n"); 
-    exit(1); 
-  }
-  gzFile fd1=open_fastq(f);
-  char *hdr=READ_LINE(fd1);
-  gzclose(fd1);
-  /* Execute regular expression */
-  //fprintf(stderr,"%s\n",hdr);
-  reti = regexec(&regex, hdr, 0, NULL, 0);
-  if ( !reti ) {    // match
-    is_casava_1_8=1;
-  } 
-  /* else{
-    char msgbuf[100];
-    regerror(reti, &regex, msgbuf, sizeof(msgbuf));
-    //fprintf(stderr, "Regex match failed: %s\n", msgbuf);
-    } */
-  regfree(&regex);
-  return is_casava_1_8;
-}
-
-inline void close_gzip_fastq(gzFile fd) {
-  if (fd==NULL) { return; }
-  if (gzclose(fd)!=Z_OK) {
-    fprintf(stderr,"\nError: unable to close file descriptor\n");
-    exit(1);
-  }
-}
-
-int main(int argc, char **argv ) {
-  long paired=0;
-
-  //printf("%d",sizeof(struct index_entry)); 
+  char rname[MAX_LABEL_LENGTH];
   
   if (argc!=6) {
     fprintf(stderr,"Usage: filterpair fastq1 fastq2 paired1 paired2 unpaired\n");
@@ -284,135 +46,120 @@ int main(int argc, char **argv ) {
     exit(1);
   }
 
-  gzFile fd1=open_fastq(argv[1]);
-  gzFile fd2=open_fastq(argv[2]);
-  gzclose(fd1);
-  gzclose(fd2);
-  // ************************************************************
-  // casava 1.8?
-  is_casava_18=is_casava_1_8(argv[1]);
-  if (is_casava_18) fprintf(stderr,"CASAVA=1.8\n");
+  FASTQ_FILE* fd1=fastq_new(argv[1],FALSE,"r");
+  fastq_is_pe(fd1);
+  FASTQ_FILE* fd2=fastq_new(argv[2],FALSE,"r");
+  fastq_is_pe(fd2);
+
   fprintf(stderr,"HASHSIZE=%u\n",HASHSIZE);
-  // ************************************************************
-  unsigned long cline=1;
+
   //memset(&collisions[0],0,HASHSIZE+1);
   hashtable index=new_hashtable(HASHSIZE);
   index_mem+=sizeof(hashtable);
 
-  index_file(argv[1],index,0,-1);
-  printf("\n");
+  fprintf(stderr,"Scanning and indexing all reads from %s\n",fd1->filename);
+  fastq_index_readnames(fd1,index,0,FALSE);
+  fprintf(stderr,"Scanning complete.\n");
+
   // print some info
-  printf("Reads indexed: %ld\n",index->n_entries);
-  printf("Memory used in indexing: %ld MB\n",index_mem/1024/1024);  
+  fprintf(stderr,"Reads indexed: %ld\n",index->n_entries);
+  fprintf(stderr,"Memory used in indexing: %ld MB\n",index_mem/1024/1024);
   // 
   char *p1=argv[3];
   char *p2=argv[4];
   char *p3=argv[5];
-  fd1=open_fastq(argv[1]);
-  fd2=open_fastq(argv[2]);
-  gzFile fdw1=gzopen(p1,"w");
-  gzFile fdw2=gzopen(p2,"w");
-  gzFile fdw3=gzopen(p3,"w");
+  FASTQ_FILE* fdw1=fastq_new(p1,FALSE,"w");
+  FASTQ_FILE* fdw2=fastq_new(p2,FALSE,"w");
+  FASTQ_FILE* fdw3=fastq_new(p3,FALSE,"w");
   unsigned long up2=0;
 
   if ( fdw1==NULL || fdw2==NULL || fdw3==NULL ) {
     fprintf(stderr,"Unable to create output files\n");
     exit(1);
   }
+  // go back to the beginning
+  gzrewind(fd1->fd);
   
-  // read the entry using another fd
-  cline=1;
-  while(!gzeof(fd2)) {
-    long start_pos=gztell(fd2);
-    char *hdr=READ_LINE(fd2);
-
-    if ( hdr==NULL) break;
-    int len;
-    char *readname=get_readname(hdr,&len,cline);
+  while(!gzeof(fd2->fd)) {
+    if (fastq_read_entry(fd2,m2)==0) break;
+    unsigned long len;
+    char *readname=fastq_get_readname(fd2,m2,&rname[0],&len,TRUE);
     // lookup hdr in index
-    INDEX_ENTRY* e=lookup_header(index,readname);
+    INDEX_ENTRY* e=fastq_index_lookup_header(index,readname);
     if (e==NULL) {
-      //fprintf(stderr,"%s not found!\n",readname);
+      // singleton
       ++up2;
-      gz_copy_read(start_pos,fd2,fdw3);
+      fastq_write_entry(fdw3,m2);
     } else {
-      unsigned long key=hashit(readname);
       // pair found
       ++paired;
-      gz_copy_read(start_pos,fd2,fdw2);
-      gz_copy_read(e->entry_start,fd1,fdw1);
-      // remove entry from index
-      if (delete(index,key,e)!=e) {
-	fprintf(stderr,"Unable to delete entry from index\n");
-	exit(1);
+      fastq_write_entry(fdw2,m2);
+      // assume that the order is similar to minimize seeks
+      if ( gztell(fd1->fd) != e->entry_start ) {
+        fastq_seek_copy_read(e->entry_start,fd1,fdw1);
+      } else {
+	fastq_read_entry(fd1,m1);
+	fastq_write_entry(fdw1,m1);
       }
-      free_indexentry(e);
+      // remove entry from index
+      fastq_index_delete(readname,index);
     }
-    PRINT_READS_PROCESSED(cline/4);
-
-    cline+=4;
+    PRINT_READS_PROCESSED(fd2->cline/4,100000);
   }
-  printf("\n");
-  printf("Recording %ld unpaired reads from %s\n",index->n_entries,argv[1]);fflush(stdout);
-  close_gzip_fastq(fd1);
+  fprintf(stderr,"\n");
+  fprintf(stderr,"Recording %ld unpaired reads from %s\n",index->n_entries,argv[1]);fflush(stderr);
 
 
-  // record the unpaired from argv[1]
-  fd1=open_fastq(argv[1]); 
-#ifndef SEQDISKACCESS
+  //#ifndef SEQDISKACCESS
   init_hash_traversal(index);
+  unsigned long cline=0;
   INDEX_ENTRY* e;
-  cline=1;
   while((e=(INDEX_ENTRY*)next_hash_object(index))!=NULL) {
-          gz_copy_read(e->entry_start,fd1,fdw3);
-	  PRINT_READS_PROCESSED(cline);
-	  ++cline;
+    fastq_seek_copy_read(e->entry_start,fd1,fdw3);
+    PRINT_READS_PROCESSED(cline,100000);
+    ++cline;
   }
   //
-#else
-  //sequential disk access
-  //
-  cline=1;
-  unsigned long remaining=index->n_entries;
-  while(!gzeof(fd1) && remaining ) {
-    //long start_pos=ftell(fd2);
-    char *hdr=READ_LINE(fd1);
+/* #else */
+/*   //sequential disk access */
+/*   // */
+/*   gzrewind(fd1->fd); */
+/*   unsigned long remaining=index->n_entries; */
+/*   while(!gzeof(fd1) && remaining ) { */
+/*     //long start_pos=ftell(fd2); */
+/*     char *hdr=READ_LINE(fd1); */
 
-    if ( hdr==NULL) break;
-    if ( hdr[0]!='@' ) {
-      fprintf(stderr,"line %ld %s: error in header %s",cline,argv[1],hdr);
-      return 1;
-    }
-    int len;
-    char *readname=get_readname(hdr,&len,cline);
-    // lookup hdr in index
-    INDEX_ENTRY* e=lookup_header(index,readname);
-    if (e!=NULL) {
-      gz_copy_read(e->entry_start,fd1,fdw3);
-      remaining--;
-    } else {
-      READ_LINE(fd1);//seq
-      READ_LINE(fd1);//qual
-      READ_LINE(fd1);//qual
-    }
-    PRINT_READS_PROCESSED(cline/4);
-    cline+=4;
-  }
-  gzclose(fd1);
-#endif
-  printf("\n");
-  printf("Unpaired from %s: %ld\n",argv[1],index->n_entries);
-  printf("Unpaired from %s: %ld\n",argv[2],up2);
-  printf("Paired: %ld\n",paired);
-  /*fseek(fd2,start_pos,SEEK_SET);
-    printf("%s",READ_LINE(fd2));
-    printf("%s",READ_LINE(fd2));
-    printf("%s",READ_LINE(fd2));
-    printf("%s",READ_LINE(fd2));
-  */
-  close_gzip_fastq(fdw1);
-  close_gzip_fastq(fdw2);
-  close_gzip_fastq(fdw3);
+/*     if ( hdr==NULL) break; */
+/*     if ( hdr[0]!='@' ) { */
+/*       fprintf(stderr,"line %ld %s: error in header %s",cline,argv[1],hdr); */
+/*       return 1; */
+/*     } */
+/*     unsigned long len; */
+/*     char *readname=fastq_get_readname(fd1,&m1,&rname[0],&len,TRUE); */
+/*     // lookup hdr in index */
+/*     INDEX_ENTRY* e=fastq_index_lookup_header(index,readname); */
+/*     if (e!=NULL) { */
+/*       fastq_seek_copy_read(e->entry_start,fd1,fdw3); */
+/*       remaining--; */
+/*     } else { */
+/*       READ_LINE(fd1);//seq */
+/*       READ_LINE(fd1);//qual */
+/*       READ_LINE(fd1);//qual */
+/*     } */
+/*     PRINT_READS_PROCESSED(cline/4,100000); */
+/*     cline+=4; */
+/*   } */
+//#endif
+  fprintf(stderr,"\n");
+  fprintf(stderr,"Unpaired from %s: %ld\n",argv[1],index->n_entries);
+  fprintf(stderr,"Unpaired from %s: %ld\n",argv[2],up2);
+  fprintf(stderr,"Paired: %ld\n",paired);
+  // close
+  fastq_destroy(fdw1);
+  fastq_destroy(fdw2);
+  fastq_destroy(fdw3);
+  fastq_destroy(fd1);
+  fastq_destroy(fd2);
   if ( paired == 0 ) {
     fprintf(stderr,"!!!WARNING!!! 0 paired reads! are the headers ok?\n");
     exit(1);

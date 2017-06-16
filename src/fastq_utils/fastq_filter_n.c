@@ -18,7 +18,6 @@
  * along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
- *    $Id$
  * =========================================================
  */
 #include <stdio.h>
@@ -29,62 +28,67 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define MAX_READ_LENGTH 1024000
-char read_buffer[5][MAX_READ_LENGTH];
-#define READ_LINE(fd,pos) fgets(&read_buffer[pos][0],MAX_READ_LENGTH,fd)
-#define WRITE_READ(fd) {fputs(read_buffer[1],fd);fputs(read_buffer[2],fd);fputs(read_buffer[3],fd);fputs(read_buffer[4],fd);}
+#include "fastq.h"
+#define VERSION "0.8.5d3"
 
-
-inline FILE* open_fastq(char* filename) {
-
-  FILE *fd1=fopen(filename,"r");
-  if (fd1==NULL) {
-    fprintf(stderr,"Unable to open %s\n",filename);
-    exit(1);
-  }
-  return(fd1);
-}
 
 int main(int argc, char **argv ) {
 
-  //printf("%d",sizeof(struct index_entry)); 
+  int nopt=0; 
+  int c;
+  opterr = 0;
+
+  fprintf(stderr,"Version iRAP %s\n",VERSION); 
+  // add an option -n N
+  //if (optopt == 'c')
+  char *cvalue = NULL;
+  unsigned max_n=0;
+  while ((c = getopt (argc, argv, "n:")) != -1)
+    switch (c) 
+      {
+      case 'n':
+	cvalue = optarg;
+	max_n=atoi(cvalue);
+	if ( max_n > 100 ) max_n=100;
+  	nopt+=2;
+        break;
+      default:
+  	++nopt;
+        fprintf(stderr,"ERROR: Option -%c invalid\n",optopt);
+  	exit(1);
+      }
   
-  if (argc!=2) {
-    fprintf(stderr,"Usage: fastq_filter_n fastq1\n");
+  if (argc-nopt<2 || argc-nopt>3) { 
+    fprintf(stderr,"Usage: fastq_filter_n [ -n 0 ] fastq1\n");
     exit(1);
   }
-  FILE *fd1=open_fastq(argv[1]);
-  // ************************************************************
-  unsigned long cline=1;
-  unsigned long cur_read=0;
-  //char tmp_buffer[MAX_READ_LENGTH];
-  // read the entry using another fd
-  cline=1;
-  while(!feof(fd1)) {
-    char *hdr=READ_LINE(fd1,1);
-    if ( hdr==NULL) break;
-    if ( hdr[0]!='@' ) {
-      fprintf(stderr,"line %lu: error in header %s",cline,hdr);
-      return 1;
-    }
-    //
-    char *seq=READ_LINE(fd1,2);
-    READ_LINE(fd1,3);
-    READ_LINE(fd1,4);
+
+  fprintf(stderr,"Discard reads with more than %d%% of Ns\n",max_n);
+  
+  FASTQ_FILE *fd1=fastq_new(argv[nopt+1],FALSE,"r");
+
+  unsigned num_n,max_num_n;
+  FASTQ_ENTRY *m1=fastq_new_entry();
+
+  while(!gzeof(fd1->fd)) {
+    num_n=0;
+    if (fastq_read_entry(fd1,m1)==0) break;
     
-    short n_found=0;
     int k;
+    max_num_n=m1->read_len*max_n/100;
     for ( k=0;k<MAX_READ_LENGTH;k++) {
-      if (seq[k]=='\n') break;
-      if (seq[k]=='N' || seq[k]=='n' ) {
-	n_found=1; break;
+      if (m1->seq[k]=='\n' || m1->seq[k]=='\0') break;
+      if (m1->seq[k]=='N' || m1->seq[k]=='n'  ) {
+	++num_n;
+	if ( num_n > max_num_n) break;
       }
     }
-    if ( ! n_found ) 
-      WRITE_READ(stdout);
-    cline+=4;
-    cur_read++;    
+    // 
+    if ( num_n <= max_num_n  ) {
+      fastq_write_entry2stdout(m1);
+    }
+    PRINT_READS_PROCESSED(fd1->cline,100000);
   }
-  fclose(fd1);
+  fastq_destroy(fd1);
   exit(0);
 }
