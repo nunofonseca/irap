@@ -127,10 +127,7 @@ fi
 
 
 # bam_annotate.sh -b test_files/bam/Brain60R3.se.hits.bam -e test_files/bed/chr19.fa.exons.bed -g test_files/bed/chr19.fa.genes.bed
-
-# bed6 file
-# 1. generate the bed6 file
-# 2. add tests to irap test suit
+# TODO: overlap using the  strand info (-s option)
 if [ "$annot_files-" != "-" ]; then
     cmd1="tagBam -i $bam_file  -files  $annot_files   -tag  YB  -labels $annot_tags | "
     input_file="stdin"
@@ -139,7 +136,7 @@ else
     input_file=$bam_file
 fi
 
-# TODO: overlap using the  strand info (-s option)
+
 if  [ $num_feat_ann_files -eq 1 ]; then
     cmd="$cmd1 tagBam -i $input_file  -names   -tag $feat_annot_tags  -files $feat_annot_files"
 else
