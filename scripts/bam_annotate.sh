@@ -126,7 +126,7 @@ if [ $num_feat_ann_files -eq 0  ]; then
 fi
 
 
-# bam_annotate.sh -b test_files/bam/Brain60R3.se.hits.bam -e test_files/bed/chr19.fa.exons.bed -g test_files/bed/chr19.fa.genes.bed
+# 
 # TODO: overlap using the  strand info (-s option)
 if [ "$annot_files-" != "-" ]; then
     cmd1="tagBam -i $bam_file  -files  $annot_files   -tag  YB  -labels $annot_tags | "
