@@ -6,17 +6,10 @@ fi
 
 if [ -e $1 ]; then 
     fastq_num_reads $1
+    exit 0
 else 
     echo "ERROR! $1 file not found" >&2
     echo NA
     exit 0
-if [ -e $1.gz ]; then 
-    echo "ERROR! .gz files are not supported" >&2
-    exit 1
-#    zgrep -c "^+$" $1.gz
-else
-    echo "ERROR! File $1(.gz) not found." >&2
-    exit 1
 fi
-fi
-exit 0
+
