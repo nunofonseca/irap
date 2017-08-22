@@ -1,0 +1,106 @@
+#!/usr/bin/env Rscript
+#; -*- mode: R;-*-
+# =========================================================
+# Copyright 2012-2017,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+# =========================================================
+
+###############################################################
+suppressPackageStartupMessages(library("optparse"))
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+#
+# specify our desired options in a list
+#
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+pdebug.enabled <- TRUE
+#######################
+usage <- "sparse2tsv --stsv file --out outfile [options]"
+filenames <- c("tsv_file","lengths")
+
+option_list <- list(
+    make_option(c("-c", "--non_zero_rows"), type="numeric", dest="min_non_zero_rows", default=0, help="Exclude columns/cells with less than the given number of non-zero rows (genes/transcripts) [default %default%]"),
+    make_option(c("-i", "--stsv"), type="character", dest="stsv_file", help="sparse TSV file name."),
+    make_option(c("-l", "--all_feat"), type="character", dest="all_feat_file", default=NULL, help="filname of a TSV file containing all features names (in the first column)."),
+    make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
+    make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name (the content is compressed with gzip).")
+)
+
+mandatory <- c("stsv_file","out")
+filenames <- c("stsv_file","all_feat_file")
+#pinfo("saved")
+opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,mandatory=mandatory)
+
+# ensure that the path include / in the end
+pdebug.enabled <- opt$debug
+
+pdebug.save.state("sparse2tsv","p1")
+
+all.feat <- NULL
+if ( !is.null(opt$all_feat_file) ) {
+    pinfo("Reading ",opt$all_feat_file," ...")
+    all.feat <- as.character(unique(read.table(opt$all_feat_file,header=T,sep="\t")[,1]))
+    pinfo("Reading ",opt$all_feat_file," ...done.")
+    pinfo("Expected ",length(all.feat)," unique genes/transcripts")
+}
+library(data.table)
+pinfo("Reading ",opt$stsv_file," ...")
+x <- fread(opt$stsv_file,header=TRUE,sep="\t",check.names=FALSE,data.table=FALSE)
+pinfo("Reading ",opt$stsv_file," ... done.")
+pinfo(paste(dim(x),collapse=","))
+
+if(ncol(x)==4) {
+    ## merge col 2 and 3
+    pinfo("Merging column 2 and 3...")
+    x[,2] <- paste(x[,2],"::",x[,3],sep="")
+    x <- x[,-3]
+    pinfo("Merging column 2 and 3...done.")
+}
+nr <- length(unique(x[,1]))
+nc <- length(unique(x[,2]))
+nx <- matrix(0,nrow=nr,ncol=nc,dimnames=list(unique(x[,1]),unique(x[,2])))
+crow <- nc
+while ( crow > 0 ) {
+    nx[as.character(x[crow,1]),as.character(x[crow,2])] <- x[crow,3]
+    crow <-crow-1
+}
+## filter columns
+filt <- colSums(nx)
+nte <- sum(filt<opt$min_non_zero_rows)
+pinfo("Filtering out ",nte," cells out of ",ncol(nx))
+nx <- nx[,filt>=opt$min_non_zero_rows,drop=FALSE]
+## include the missing genes
+if ( !is.null(all.feat)) {    
+    toadd <- all.feat[!all.feat%in%rownames(nx)]
+    if (length(toadd)>0 ) {
+        pinfo("Adding ",length(toadd)," missing rows to final matrix")
+        new.x <- matrix(0,nrow=length(toadd),ncol=ncol(nx),dimnames=list(toadd,colnames(nx)))
+        nx <- rbind(nx,new.x)
+    }
+}
+##
+gz1 <- gzfile(opt$out, "w")
+write.tsv(cbind(Feature=rownames(nx),nx),file=gz1)
+close(gz1)
+pinfo("Saved ",opt$out, " (",nrow(nx),",",ncol(nx),")")
+q(status=0)
