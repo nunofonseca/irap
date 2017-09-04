@@ -24,30 +24,14 @@ exec make  -Rf "$0"  ${1+"$@"}
 #
 #    $Id: scripts/irap Nuno Fonseca Wed Jan 2 10:26:31 2013$
 # =========================================================
-#Filter a fastq file (paired-end, or single reads)
-#Input file: 1 or 2 fastq files (single/pair end reads) - .fq(.gz) .fastq(.gz)
-#Output files: a series of filtered fastq files + quality reports
-#Filtering steps: 
-#0. Collect stats before any filtering (STAGE 0)
-#1. Check base quality (STAGE 1)
-#2. Check for contamination (STAGE 2)
-#3. Discard reads with Ns (STAGE 3)
-#4. Fix pair end reads if necessary (STAGE 4)
-#5. Count read number in each fastq files (STAGE 5)
-#6. Collect stats after filtering process + clean (STAGE 6)
-#
-#A README file (fastq_qc_README.txt) with more details about each steps and 
-# the general process is available in the same directory.
-#
 ###########################################################
-# TODO: check for contamination on multiple organisms
 #.SECONDARY: 
 .ONESHELL:
-
-.PRECIOUS: %.fastqc.zip
+SHELL=bash
+.PRECIOUS: %.fastqc.zip %.fastq.gz %.tsv
 # .SECONDARY needed because precious does not work (make v. 4.1)
 .SECONDARY:
-.PHONY: go all setup0 stage0 stage1 stage2 stage3 stage4 stage5 stage6
+.PHONY: go all setup0 stage0 stage1 stage2 stage3 stage4  stage6
 ###########################################################
 #Testing presence/absence of input files (f: single read, f1+f2: pair ends)
 f2:=
@@ -61,12 +45,19 @@ ifeq ($(strip $(f2)),$(strip $(f1)))
 undefine f2
 endif
 endif
-$(info f1=$(f1))
+$(info f1:=$(f1))
 ifdef f2
-$(info f2=$(f2))
+$(info f2:=$(f2))
 else
 $(info f2=)
 endif
+
+# index file (optional)
+index1?=
+$(info index1:=$(index1))
+
+index2?=
+$(info index2:=$(index2))
 #######################################################
 ##Path to the script itself
 path?=$(shell if which irap_fastq_qc >/dev/null 2>/dev/null; then \
@@ -79,6 +70,33 @@ ifndef path
 	$(error * Path for irap_fastq_qc not found)
 endif
 
+#######################################################
+# barcodes info
+umi_read?=undef
+umi_offset?=
+umi_size?=
+
+cell_read?=undef
+cell_offset?=
+cell_size?=
+
+sample_read?=undef
+sample_offset?=
+sample_size?=
+
+barcode_min_qual?=10
+
+# by default keep the whole read
+read1_offset?=0
+read1_size?=-1
+read2_offset?=0
+read2_size?=-1
+
+read_value_ok=$(if $(filter $($(1)),index1 index2 read1 read2 read undef), ,$(error invalid value of $(1) - $($(1))))
+
+$(call read_value_ok,sample_read)
+$(call read_value_ok,umi_read)
+$(call read_value_ok,cell_read)
 
 #######################################################
 #Assign default values  
@@ -97,6 +115,9 @@ def_min_len=20
 def_min_qual=10
 #Default contamination 
 def_contamination_mismatches=3
+# Default percentage of bases in a read that can have uncalled bases
+# default: only keep the reads with no uncalled bases
+def_max_n=0
 
 # default mapper
 def_mapper=bowtie
@@ -114,68 +135,56 @@ $(info *************************************************)
 $(info * )
 $(info * Required Parameters:)
 
+ifndef input_dir
+input_dir=.
+endif
+
+
 ifndef data_dir
 data_dir=$(def_data_dir)
 endif
+# where to find the contamination index
 def_cont_index=$(data_dir)/contamination/e_coli
 
+# Add a /
+ifneq ($(input_dir),)
+override input_dir:=$(patsubst %/,%,$(input_dir))/
+endif
 
 #Does file f1 exist?
-ifeq ($(wildcard $(data_dir)/$(f1)),) 
-ifeq ($(wildcard $(data_dir)/$(f1).gz),)
-$(error * Fastq file f1 $(data_dir)/$(f1) does not exist)
-endif
+ifeq ($(wildcard $(input_dir)$(f1)),) 
+$(error * Fastq file f1 $(input_dir)$(f1) does not exist)
+#endif
 endif
 
 #Does files f2 exist?
 ifneq ($(f2),)
-ifeq ($(wildcard $(data_dir)/$(f2)),)
-ifeq ($(wildcard $(data_dir)/$(f2).gz),)
-$(error * Fastq file f2 $(data_dir)/$(f2) does not exist)
+ifeq ($(wildcard $(input_dir)$(f2)),)
+#ifeq ($(wildcard $(input_dir)$(f2).gz),)
+$(error * Fastq file f2 $(input_dir)$(f2) does not exist)
+#endif
 endif
 endif
+
+
+ifneq ($(index1),)
+ifeq ($(wildcard $(input_dir)$(index1)),)
+$(error * Fastq file index $(input_dir)$(index1) does not exist)
 endif
+endif
+
+ifneq ($(index2),)
+ifeq ($(wildcard $(input_dir)$(index2)),)
+$(error * Fastq file index $(input_dir)$(index2) does not exist)
+endif
+endif
+
 
 ##Input fastq files
 #Testing for f1
 ifndef f1
 $(error missing fastq file(s) given as parameters f1 and f2)
 endif
-
-PE=OFF
-pe_data=0
-ifdef is_pe
-ifeq ($(is_pe),y)
-pe_data=1
-PE=ON
-endif
-endif
-
-# check if we get a bam file
-ifeq ($(suffix $(f1)),.bam)
-ifeq ($(PE),OFF)
-$(eval override f1:=$(basename $(f1)).fastq)
-else
-$(eval override f2:=$(basename $(f1))_2.fastq)
-$(eval override f1:=$(basename $(f1))_1.fastq)
-endif
-endif
-
-#Pair ends
-ifneq ($(f2),)
-pe_data=1
-f1_p=$(data_dir)/$(f1)
-f2_p=$(data_dir)/$(f2)
-FILES=$(f1_p) $(f2_p)
-PE=ON
-else
-#Single ends
-f1_p=$(data_dir)/$(f1)
-FILES=$(f1_p)
-PE=OFF
-endif
-
-$(info * FILES=$(FILES) pe=$(PE))
 
 # mapper
 ifdef mapper
@@ -202,15 +211,15 @@ endif
 #Output directory
 #If none, use data directory (default = current directory)
 ifndef out_dir
-out_dir=$(data_dir)
+out_dir=$(input_dir)
 endif
 
 ifeq ($(out_prefix),$(subst .fastq,,$(subst .gz,,$(f1))))
-$(error * out_prefix should be different than fastq file prefix)
+$(error * out_prefix should not be the input fastq file prefix)
 endif
 
 #Temporary directory
-#If none, use output directory (default = data_dir)
+#If none, use output directory (default = input_dir)
 ifndef tmp_dir
 tmp_dir=$(out_dir)
 endif
@@ -221,24 +230,96 @@ ifndef cont_index
 cont_index=$(def_cont_index)
 endif
 
-#Directory to write the reports in (output files)
-#If none, set to output directory
-ifndef report_dir
-report_dir=$(out_dir)
+## Maximum memory (MB)
+max_mem?=10000
+
+# max memory in GB
+max_mem_gb:=$(shell expr $(max_mem) \/ 1000)
+
+ifndef SAMTOOLS_SORT_MEM
+ SAMTOOLS_SORT_MEM:=$(shell bash -c "expr $(max_mem_gb) \* 75 \/ 100")G
 endif
+
 
 # trim / in the right
-$(eval override report_dir=$(patsubst %/,%,$(report_dir)))
 $(eval override out_dir=$(patsubst %/,%,$(out_dir)))
-$(eval override data_dir=$(patsubst %/,%,$(data_dir)))
+#$(eval override data_dir=$(patsubst %/,%,$(data_dir)))
 
 
-#Level of reporting
-#Possible values 2,1 or 0 (0:no reporting, 1:reporting start/end,  2:reporting every steps)
-ifndef report_level
-report_level=2
+# all QC and filtering is made in a specific folder
+toplevel_output_folder=$(out_dir)
+$(shell mkdir -p $(toplevel_output_folder))
+$(info * toplevel_output_folder=$(toplevel_output_folder))
+
+#First target, so default one being run: run all the filtering steps.
+#Unless specified in argument, this will be run 
+go: all
+
+##################
+## PATHS to files
+##################
+
+f1_p:=$(input_dir)$(f1)
+FILES:=$(f1_p)
+
+if1:=$(abspath $(toplevel_output_folder)/$(dir $(f1)))/orig_$(notdir $(f1))
+
+ORIGFILES=$(if1)
+
+
+# PE
+ifdef is_pe
+ifeq ($(is_pe),y)
+pe_data:=1
+PE=ON
+f2_p:=$(input_dir)$(f2)
+FILES+= $(f2_p)
+if2:=$(abspath $(toplevel_output_folder)/$(dir $(f2)))/orig_$(notdir $(f2))
+ORIGFILES+=$(if2)
+# original file (symlink)
+$(if2): $(f2_p)
+	rm -f $@ && mkdir -p $(@D) && ln -s $(abspath $(f2_p)) $@
 endif
-$(info * report_level=$(report_level) )
+endif
+# original file (symlink)
+$(if1): $(f1_p)
+	rm -f $@ && mkdir -p $(@D) && ln -s $(abspath $(f1_p)) $@
+
+# index file
+index1_p?=
+iindex1?=
+ifneq ($(index1),)
+index1_p:=$(input_dir)$(index1)
+iindex1:=$(abspath $(toplevel_output_folder)/$(dir $(index1)))/orig_$(notdir $(index1))
+FILES+= $(index1_p)
+$(iindex1): $(index1_p)
+	rm -f $@ && mkdir -p $(@D) && ln -s $(abspath $(index1_p)) $@
+endif
+
+
+index2_p?=
+iindex2?=
+ifneq ($(index2),)
+index2_p:=$(input_dir)$(index2)
+iindex2:=$(abspath $(toplevel_output_folder)/$(dir $(index2)))/orig_$(notdir $(index2))
+FILES+= $(index2_p)
+$(iindex2): $(index2_p)
+	rm -f $@ && mkdir -p $(@D) && ln -s $(abspath $(index2_p)) $@
+endif
+
+
+PE?=OFF
+pe_data?=0
+override out_prefix:=$(dir $(if1))$(out_prefix)
+
+out_folder:=$(dir $(if1))
+$(info * FILES=$(FILES) pe=$(PE))
+$(info * out_folder=$(out_folder))
+$(info * out_prefix=$(out_prefix))
+
+
+
+# if1/if2 are sym links in $(out_prefix) out_dir pointing to the original files
 
 #Minimum quality - any base below this threshold is removed
 #If none, set to default one
@@ -251,7 +332,7 @@ endif
 endif
 $(info * min_qual=$(min_qual) )
 
-#Number of threads (E.g.: when running on a computer farm)
+#Number of threads 
 #If none, set to default one
 ifndef threads
 threads=$(def_threads)
@@ -264,6 +345,11 @@ ifndef qual_filtering
 qual_filtering=$(def_qual_filtering)
 endif
 
+# alias off=none
+ifeq ($(qual_filtering),none)
+override qual_filtering:=off
+endif
+
 #Minimum length of a read after filtering
 #Set to 85% of the read by default
 ifndef min_len
@@ -272,10 +358,17 @@ endif
 bases2trim=$(shell perl -e "print $(read_size)-$(min_len)")
 $(info * min_len=$(min_len))
 
+
+## Uncalled bases
+max_n?=$(def_max_n)
+
+$(info * max_n=$(max_n)  maximum percentage of uncalled bases allowed in a read [0-100]. A value of 100 disables the filtering of reads based on the occurrence of uncalled bases.)
+
 #Quality score encoding (fastq file)
 #If none provided, determine it with external script
+# TODO: use fastq_info instead
 ifndef qual
-qual:=$(shell perl scripts/Fastq_QualityEncoding.pl $(data_dir)/$(f1) -verbose 0)
+qual:=$(shell fastq_info $(if1)  |& grep "Quality encoding:" | cut -f 3 -d\ )
 $(info * fastq quality score encoding=$(qual))
 endif
 
@@ -295,12 +388,34 @@ ifndef trim
 trim=n
 endif
 $(info * trim=$(trim))
-# basename of the reads files (extract gz extension if necessary)
-f1_n:=$(subst .fq,,$(subst .fastq,,$(subst .fastq.gz,,$(basename $(f1)))))
-ifdef f2
-f2_n:=$(subst .fq,,$(subst .fastq,,$(subst .fastq.gz,,$(basename $(f2)))))
+
+# Trim poly-A/T? y|n
+trim_poly_at?=n
+# minimum poly-at length
+# by default, if a read has at least 10 consecutive A or T in the edges then it will be trimmed. This option is only used if trim_poly_at is set to y
+poly_at_len?=10
+$(info * trim_poly_at=$(trim_poly_at))
+ifeq ($(trim_poly_at),y)
+$(info * poly_at_len=$(poly_at_len))
+endif
+
+file_prefix=$(subst .cram,,$(subst .bam,,$(subst .fq,,$(subst .fastq,,$(subst .fastq.gz,,$(basename $(1)))))))
+# filename prefix (no extensions)
+f1_n:=$(call file_prefix,$(basename $(if1)))
+ifdef if2
+f2_n:=$(call file_prefix,$(basename $(if1)))
 else
 f2_n=
+endif
+
+index1_n?=
+ifneq ($(iindex1),)
+index1_n:=$(subst .fq,,$(subst .fastq,,$(subst .fastq.gz,,$(basename $(iindex1)))))
+endif
+
+index2_n?=
+ifneq ($(iindex2),)
+index2_n:=$(subst .fq,,$(subst .fastq,,$(subst .fastq.gz,,$(basename $(iindex2)))))
 endif
 
 # check if the mapper is available
@@ -313,138 +428,245 @@ $(info * mapper=$(mapper_path))
 endif
 
 
+#Paired end reads
+ifeq ($(pe_data),1)
+OUT_FASTQ_FILES=$(out_prefix)_1.f.fastq.gz $(out_prefix)_2.f.fastq.gz
+else
+OUT_FASTQ_FILES= $(out_prefix).f.fastq.gz 
+endif
 
-###################
-#Function called at each filtering step 
-#to check the level of reporting and report accordingly
-# Two arguments: @stage=$(1) @file=$(2) 
-define report_file=
-$(shell if [ "$(report_level)" = "2" ]; then echo $(2); else if [ `perl -e 'print($(report_level) * $(1))'` = "1" ] ; then echo $(2); fi ; fi;)
-endef
+OFF_TARGETS=setup0 stage0 stage6 $(OUT_FASTQ_FILES)
+
+$(info * out_fastq_files=$(OUT_FASTQ_FILES))
 
 $(info *************************************************)
-#First target, so default one being run: run all the filtering steps.
-#Unless specified in argument, this will be run 
-go: all
+
+
+### DEBUG
+#$(info $(qc_dir))
+#$(info =============$(if1))
+#$(info =============$(if2))
+
+# only format accepted now for the index file is fastq.gz
+ifneq ($(index1),)
+ifneq ($(suffix $(iindex1)),.gz)
+$(error ERROR: index1 $(index1) should be provided has a .fastq.gz file)
+endif
+endif
+
+ifneq ($(index2),)
+ifneq ($(suffix $(iindex2)),.gz)
+$(error ERROR: index2 $(index2) should be provided has a .fastq.gz file)
+endif
+endif
+##############################################################
+# other types of input files besides .fastq.gz
+ifeq ($(suffix $(if1)),.fastq)
+
+$(if1).gz:  $(if1)
+	rm -f $@.tmp && gzip -f -c $< > $@.tmp && mv $@.tmp $@
+ifeq ($(PE),OFF)
+$(eval override if1:=$(if1).gz)
+else
+$(if2).gz:  $(if2)
+	rm -f $@.tmp && gzip -f -c $< > $@.tmp && mv $@.tmp $@
+$(eval override if2:=$(if2).gz)
+$(eval override if1:=$(if1).gz)
+endif
+endif
+
+ifeq ($(suffix $(if1)),.bam)
+ifeq ($(PE),OFF)
+$(eval override if1:=$(basename $(if1)).fastq.gz)
+else
+$(eval override if2:=$(basename $(if1))_2.fastq.gz)
+$(eval override f2_n:=$f1_n)
+$(eval override if1:=$(basename $(if1))_1.fastq.gz)
+
+endif
+endif
+ifeq ($(suffix $(if1)),.cram)
+ifeq ($(PE),OFF)
+$(eval override if1:=$(basename $(if1)).fastq.gz)
+else
+$(eval override if2:=$(basename $(if1))_2.fastq.gz)
+$(eval override if1:=$(basename $(if1))_1.fastq.gz)
+endif
+endif
+
+
+### DEBUG
+#$(info $(qc_dir))
+#$(info =============$(if1))
+#$(info =============$(if2))
+
+##$(error ooo)
 
 #######################################################
 # MISCELLANEOUS CODE
 #Unzip files if necessary
-%.fastq: %.fq
+%.fastq.gz: %.fq.gz
 	cd $(dir $@) && ln -s $(notdir $<) $(notdir $@)
 
-%.fastq: %.fq.gz
-	gunzip -f -c $< > $@.tmp && mv $@.tmp $@
+%.fastq.gz: %.fq
+	rm -f $@.tmp && gzip -f -c $< > $@.tmp && mv $@.tmp $@
 
-%.fastq: %.fastq.gz
-	gunzip -f -c $< > $@.tmp && mv $@.tmp $@
+#%.fastq: %.fastq.gz
+#	gunzip -f -c $< > $@.tmp && mv $@.tmp $@
 
-%.fastq.stats: %.fastq
-	fastx_quality_stats -Q $(qual) -i $< -o $@.tmp && mv $@.tmp $@
+#%.fastq.stats: %.fastq.gz
+#	fastx_quality_stats -Q $(qual) -i $< -o $@.tmp && mv $@.tmp $@
 
 %.fastqc.tsv: %.fastqc.zip
 	irap_fastqc2tsv $< > $@.tmp && mv $@.tmp $@
 
+
+# Define the 'run-fastqc 'function'
+# single argument ($1) : a fastq file
+define run-fastqc =
+	fastqc -t $(threads) --noextract  $(1)
+endef
+
+# no need to uncompress
+%.fastqc.zip: %.fastq.gz
+	$(call run-fastqc,$<) && mv $(subst .fastqc,_fastqc,$@) $@
+
+%.fastqc.zip: %.fastq
+	$(call run-fastqc,$<) && mv $(subst .fastqc,_fastqc,$@) $@
+
+
 ###########
 # BAM2FASTQ
 ifeq ($(PE),OFF)
-%.fastq: %.bam
-	bamToFastq -i $^ -fq $@.tmp  && mv $@.tmp $@
+%.fastq.gz: %.bam
+	bamToFastq -i $^ -fq $@.tmp  && gzip $@.tmp && mv $@.tmp.gz $@
 else
 # pair-end data
 # bam files need to be sorted by name
-%_1.fastq %_2.fastq: %.bam
+%_1.fastq.gz %_2.fastq.gz: %.bam
 	$(info Converting bam to fastq...note that the bam file needs to be sorted by name.)
-	samtools sort -T $<.tmp -n $< -o $<.sorted && \
-	bamToFastq -i $^.sorted.bam -fq $*_1.fastq.tmp -fq2 $*_2.fastq.tmp && mv $*_2.fastq.tmp $*_2.fastq && mv $*_1.fastq.tmp $*_1.fastq 
+	bamToFastq -i <(samtools sort -m $(SAMTOOLS_SORT_MEM) -n $< )  -fq $*_1.fastq.tmp -fq2 $*_2.fastq.tmp && gzip $*_2.fastq.tmp && gzip $*_1.fastq.tmp && mv $*_2.fastq.tmp.gz $*_2.fastq.gz && mv $*_1.fastq.tmp.gz $*_1.fastq.gz
+endif
+# PE/SE BAM
+
+################
+# CRAM2FASTQ
+ifeq ($(PE),OFF)
+%.fastq.gz: %.cram
+	bamToFastq -i <(samtools view -b $<)  -fq $@.tmp  && \
+	( fastq_not_empty $@.tmp || (echo "ERROR: empty fastq file from $<" && exit 1 )) &&\
+	gzip -f $@.tmp && \
+	mv $@.tmp.gz $@
+else
+# pair-end data
+# bam files need to be sorted by name
+%_1.fastq.gz %_2.fastq.gz: %.cram
+	$(info Converting cram to fastq...note that the cram file needs to be sorted by name.)
+	bamToFastq -i <(samtools sort -m $(SAMTOOLS_SORT_MEM) -n $< )  -fq $*_1.fastq.tmp -fq2 $*_2.fastq.tmp &&  \
+	( fastq_not_empty $*_1.fastq.tmp || (echo "ERROR: empty fastq file from $<" && exit 1 )) && \
+	gzip -f $*_2.fastq.tmp && gzip -f $*_1.fastq.tmp && \
+	mv $*_2.fastq.tmp.gz $*_2.fastq.gz && mv $*_1.fastq.tmp.gz $*_1.fastq.gz 
+endif
+# PE/SE CRAM
+
+##########################################################
+
+setup0: $(out_folder)
+
+$(out_folder):
+	mkdir -p $@
+
+
+################################################################################
+# Pre-processing
+# Remove barcodes, handle UMI, cell barcodes, etc
+################################################################################
+
+# if no preprocessing is performed then a symbolic link is created
+# to the files in the previous step of the analysis.
+# assummptions:
+#  1) we have a 1-1 mapping between original file and pre-processed file - no demultiplex
+#  2) input files are in fastq(.gz) format
+
+
+phony_targets+= preprocess
+
+# default
+preprocess_barcodes?=no
+# valid values: no, yes
+ifneq (,$(filter $(umi_read) $(cell_read) $(sample_read),index1 index2 read1 read2))
+override preprocess_barcodes:=yes
+$(info Preprocessing barcodes)
 endif
 
-#Generate initial statistics from the input fastq file
-%.stats.txt: %.fastq
-	fastx_quality_stats -Q $(qual) -i $< -o $@.tmp 
-	fastq_quality_boxplot_graph.sh -i $@.tmp -o $^.qual.png -t "$<"
-	fastx_nucleotide_distribution_graph.sh -i $@.tmp -o $^.nuc.distr.png -t "$<"
-	mv $@.tmp $@
+$(info $(filter $(umi_read) $(cell_read) $(sample_read),index1 index2 read1 read2))
 
-#Define the 'run-fastqc 'function'
-# single argument ($1) : a fastq file
-define run-fastqc =
-	fastqc -t $(threads) -o $(report_dir)/raw_data --noextract  $(1)
-endef
+ifeq ($(preprocess_barcodes),no)
+# just create a symlink
+%.pre.fastq.gz: %.fastq.gz
+	rm -f $@ && ln -s $< $@
+endif
 
-setup0: $(report_dir)/raw_data $(out_dir)
+$(info pb=$(preprocess_barcodes))
 
-$(report_dir)/raw_data:
-	mkdir -p $@
+ifeq ($(preprocess_barcodes),yes)
+# -s/-p single-end/paired-end
+# min_quality?
+index_opts=
+ifneq ($(index1),)
+index_opts+= --index1 $(iindex1) 
+endif
 
-$(out_dir):
-	mkdir -p $@
+ifneq ($(index2),)
+index_opts+= --index2 $(iindex2) 
+endif
 
+# options to pass to fastq_pre_barcodes 
+fastq_pre_barcodes_opts+=$(index_opts) --phred_encoding $(qual) --min_qual $(barcode_min_qual)
+
+ifneq ($(umi_read),undef)
+fastq_pre_barcodes_opts+=--umi_read $(umi_read)  --umi_offset $(umi_offset) --umi_size $(umi_size)
+endif
+
+ifneq ($(cell_read),undef)
+fastq_pre_barcodes_opts+=--cell_read $(cell_read)  --cell_offset $(cell_offset) --cell_size $(cell_size)
+endif
+
+ifneq ($(sample_read),undef)
+fastq_pre_barcodes_opts+=--sample_read $(sample_read)  --sample_offset $(sample_offset) --sample_size $(sample_size)
+endif
+
+
+%.pre.fastq.gz: %.fastq.gz $(iindex1) $(iindex2)
+	fastq_pre_barcodes $(fastq_pre_barcodes_opts) --read1_offset $(read1_offset) --read1_size $(read1_size) --read1 $< --outfile1 $@.tmp    && mv $@.tmp $@
+
+%_1.pre.fastq.gz %_2.pre.fastq.gz: %_1.fastq.gz %_2.fastq.gz $(iindex1) $(iindex2)
+	fastq_pre_barcodes $(fastq_pre_barcodes_opts) --read1_offset $(read1_offset) --read1_size $(read1_size) --read2_offset $(read2_offset) --read2_size $(read2_size) --outfile1 $*_1.pre.fastq.gz.tmp --outfile2  $*_2.pre.fastq.gz.tmp --read1 $*_1.fastq.gz --read2  $*_2.fastq.gz    && \
+	mv $*_2.pre.fastq.gz.tmp $*_2.pre.fastq.gz && \
+	mv $*_1.pre.fastq.gz.tmp $*_1.pre.fastq.gz
+endif
+## end pre_process_barcodes
 
 ##########################################################
 # STAGE 0
-# Initial report, before any filtering (fastqc)
-# Input: initial fastq file 
-# Output: in raw_data/, zipped directory containing the stats summary as text file, HTML and .PNG images  
-
-#Pair end reads
-ifeq ($(pe_data),1)
-stage0: $(call report_file,1,$(report_dir)/raw_data/$(f1_n).fastqc.tsv $(report_dir)/raw_data/$(f2_n).fastqc.tsv)
-
-# [TODO] the two following  rules can probably be merged into one...
-$(report_dir)/raw_data/$(f1_n).fastqc.zip: $(data_dir)/$(f1_n).fastq
-	$(call run-fastqc,$<) && mv $(report_dir)/raw_data/$(f1_n)_fastqc.zip $@
-
-$(report_dir)/raw_data/$(f2_n).fastqc.zip: $(data_dir)/$(f2_n).fastq
-	$(call run-fastqc,$<) && mv $(report_dir)/raw_data/$(f2_n)_fastqc.zip $@
-
-else
-
-#Single end reads 
-stage0: $(call report_file,1,$(report_dir)/raw_data/$(f1_n).fastqc.tsv)
-
-$(report_dir)/raw_data/$(f1_n).fastqc.zip: $(data_dir)/$(f1_n).fastq
-	$(call run-fastqc,$<) && mv $(report_dir)/raw_data/$(f1_n)_fastqc.zip $@
-
-endif
+STAGE0_TARGETS=
+##$(subst .fastq.gz,.pre.fastqc.tsv,$(ORIGFILES))
+$(info stage0=$(STAGE0_TARGETS))
+stage0: $(STAGE0_TARGETS)
 
 ##########################################################
-# Stage 5: Collect statistics about the filtering process
-#          and cleanup
-# Input: fastq output from previous stages (*filter*.fastaq, *.f.fastq)
-# Output: text file (*.f.csv) with number of reads in each STAGE-x fastq files
+# Stage 5:
 
-#Pair end reads
-ifeq ($(pe_data),1)
-stage5: $(report_dir)/$(f1_n).f.csv $(report_dir)/$(f2_n).f.csv $(report_dir)/$(f1_n).sing.csv  
+# stats from the final filtered fastq file
+%.f.csv: %.f.fastq.gz
+	echo $*,`num_reads.sh $<`,\
+	`num_reads.sh $*.filter1.fastq.gz`,\
+	`num_reads.sh $*.filter2.fastq.gz`,\
+	`num_reads.sh $*.filter3.fastq.gz`,\
+	`num_reads.sh $*.f.fastq.gz` > $@.tmp && mv $@.tmp $@
 
-else
-# SE data
-stage5: $(report_dir)/$(f1_n).f.csv 
-
-endif
-
-#Define function to calculate the read number in each fastq file + filtering ON
-define n_reads =
-$(shell if [ -e $(1) ]; then grep -c "^+" $(1); else zgrep -c "^+" $(1).gz; fi)
-endef
-
-#Define function to calculate the read number in initial fastq file + NO filtering
-#(pretend 'virtual' intermediate files have same read number)
-define n_reads_noqc =
-$(shell A=`if [ -e $(1) ]; then grep -c "^+" $(1); else zgrep -c "^+" $(1).gz; fi`; echo $$A,$$A,$$A,$$A)
-endef
-
-$(report_dir)/%.f.csv:  
-#$(out_dir)/%.f.fastq $(out_dir)/%.filter1.fastq $(out_dir)/%.filter2.fastq $(out_dir)/%.filter3.fastq $(data_dir)/%.fastq
-	echo $*,`num_reads.sh $(data_dir)/$*.fastq`,\
-	`num_reads.sh $(out_dir)/$*.filter1.fastq`,\
-	`num_reads.sh $(out_dir)/$*.filter2.fastq`,\
-	`num_reads.sh $(out_dir)/$*.filter3.fastq`,\
-	`num_reads.sh $(out_dir)/$*.f.fastq` > $@.tmp && mv $@.tmp $@
-
-$(report_dir)/%.sing.csv:  $(out_dir)/%.sing.fastq
-	echo sing_$*,0,0,0,0,`num_reads.sh  $(out_dir)/$*.sing.fastq` > $@.tmp && mv $@.tmp $@
+%.sing.csv:  %.sing.fastq.gz
+	echo sing_$*,0,0,0,0,`num_reads.sh  $*.sing.fastq` > $@.tmp && mv $@.tmp $@
 
 
 ##########################################################
@@ -452,84 +674,59 @@ $(report_dir)/%.sing.csv:  $(out_dir)/%.sing.fastq
 $(info * Starting fastq filtering...)
 
 ##########################################################
-
-
-#Quality filtering OFF
-#Check the initial read quality
-ifneq ($(qual_filtering),on)
-#
+# Quality filtering OFF
+# Check the initial read quality
 ifeq ($(qual_filtering),report)
-###############################
-$(report_dir)/%.f.csv:  $(out_dir)/%.f.fastq 
+#
+# always the same number of reads
+%.f.csv:  %.f.fastq.gz
 	A=`num_reads.sh $<` && echo $*,$$A,$$A,$$A,$$A,$$A > $@.tmp && mv $@.tmp $@
 
-#Produce the same files as if fastqc has been run
-#and create symbolic links
+## do nothing
 stage2:
 stage3:
 stage4:
 stage5:
 
+# Generate symlinks 
+$(out_prefix).f.fastq.gz:  $(subst .fastq.gz,.pre.fastq.gz,$(if1))
+	rm -f $@ && ln -s $< $@
 
+$(out_prefix)_1.f.fastq.gz:  $(subst .fastq.gz,.pre.fastq.gz,$(if1))
+	rm -f $@ && ln -s $< $@
+
+$(out_prefix)_2.f.fastq.gz:  $(subst .fastq.gz,.pre.fastq.gz,$(if2))
+	rm -f $@ && ln -s $< $@
+
+REPORT_TARGETS=setup0 stage0   stage6 $(OUT_FASTQ_FILES) $(subst .fastq.gz,.csv,$(OUT_FASTQ_FILES))
+#Paired end reads
+#
+#Main call, no filtering, collect stats, cleaning at the end (rm files)
+all: $(REPORT_TARGETS)
+	$(info out_files=$(OUT_FASTQ_FILES) $(subst .fastq.gz,.csv,$(OUT_FASTQ_FILES)) $(subst .fastq.gz,.fastqc.tsv,$(OUT_FASTQ_FILES)))
+	echo Skipped fastq filtering.
+
+###########################
+
+STAGE6_REPORT_FILES= $(subst .fastq.gz,.fastqc.tsv,$(OUT_FASTQ_FILES))
 #Paired end reads
 ifeq ($(pe_data),1)
-
-#Main call, no filtering, collect stats, cleaning at the end (rm files)
-all: setup0 stage0 $(out_dir)/$(out_prefix)_1.f.fastq.stats $(out_dir)/$(out_prefix)_2.f.fastq.stats $(out_dir)/$(out_prefix)_1.f.fastq $(out_dir)/$(out_prefix)_2.f.fastq $(report_dir)/$(out_prefix)_1.f.csv $(report_dir)/$(out_prefix)_2.f.csv  stage6
-	$(shell if [ -e $(f1_n).filter1.fastq.qual.png ]; then mv $(out_dir)/$(f1_n)*.png $(report_dir)/raw_data ; fi)
-	$(shell if [ -e $(f2_n).filter1.fastq.qual.png ]; then mv $(out_dir)/$(f2_n)*.png $(report_dir)/raw_data ; fi)
-	rm -f $(report_dir)/$(f1_n).f.csv
-	ln -s $(abspath $(report_dir)/$(out_prefix)_1.f.csv) $(report_dir)/$(f1_n).f.csv
-	rm -f $(report_dir)/$(f2_n).f.csv
-	ln -s $(abspath $(report_dir)/$(out_prefix)_2.f.csv) $(report_dir)/$(f2_n).f.csv
-	rm -f $(report_dir)/$(f1_n).csv
-	ln -s $(abspath $(report_dir)/$(out_prefix)_1.f.csv) $(report_dir)/$(f1_n).csv
-	rm -f $(report_dir)/$(f2_n).csv
-	ln -s $(abspath $(report_dir)/$(out_prefix)_2.f.csv) $(report_dir)/$(f2_n).csv
-	$(info Skipped fastq filtering.)
-
-$(out_dir)/$(out_prefix)_1.f.fastq:  $(data_dir)/$(f1_n).fastq
-	rm -f $@
-	ln -s $(abspath $(data_dir))/$(f1_n).fastq $@
-
-$(out_dir)/$(out_prefix)_2.f.fastq:  $(data_dir)/$(f2_n).fastq
-	rm -f $@
-	ln -s $(abspath $(data_dir))/$(f2_n).fastq $@
-
-stage6: $(out_dir)/$(out_prefix)_1.f.fastq  $(call report_file,1,$(report_dir)/raw_data/$(f1_n).fastqc.zip $(report_dir)/raw_data/$(f2_n).fastqc.zip) $(report_dir)/raw_data/$(out_prefix)_1.f.fastqc.tsv $(report_dir)/raw_data/$(out_prefix)_2.f.fastqc.tsv)
-	rm -f $(report_dir)/raw_data/$(out_prefix)_1.f.fastqc.zip
-	ln -s $(report_dir)/raw_data/$(f1_n).fastqc.zip $(report_dir)/raw_data/$(out_prefix)_1.f.fastqc.zip
-	rm -f $(report_dir)/raw_data/$(out_prefix)_2.f.fastqc.zip
-	ln -s $(report_dir)/raw_data/$(f2_n).fastqc.zip $(report_dir)/raw_data/$(out_prefix)_2.f.fastqc.zip
-
-
-#Single end reads
+STAGE6_REPORT_FILES+=  $(f1_n).fastqc.zip $(f2_n).fastqc.zip 
 else
-
-$(report_dir)/raw_data/%.fastqc.zip: $(out_dir)/%.fastq
-	$(call run-fastqc,$<) && mv $(report_dir)/raw_data/$*_fastqc.zip $@
-
-$(out_dir)/$(out_prefix).f.fastq:  $(data_dir)/$(f1_n).fastq
-	rm -f $@  
-	ln -s $(abspath $(data_dir))/$(f1_n).fastq $@
-
-#Main call, no filtering, collect stats only
-all: setup0 stage0 $(out_dir)/$(out_prefix).f.fastq $(out_dir)/$(out_prefix).f.fastq.stats   $(report_dir)/$(out_prefix).f.csv    stage6
-	rm -f $(report_dir)/$(f1_n).f.csv
-	ln -s $(abspath $(report_dir)/$(out_prefix).f.csv) $(report_dir)/$(f1_n).f.csv
-	rm -f $(report_dir)/$(f1_n).csv
-	ln -s $(abspath $(report_dir)/$(out_prefix).f.csv) $(report_dir)/$(f1_n).csv
-	$(shell if [ -e $(f1_n).filter1.fastq.qual.png ]; then mv $(out_dir)/$(f1_n)*.png $(report_dir)/raw_data ; fi)
-	$(info Skipped filtering.)
-
-
-stage6: $(call report_file,1,$(report_dir)/raw_data/$(out_prefix).f.fastqc.tsv)
+STAGE6_REPORT_FILES+=  $(f1_n).fastqc.zip 
 endif
-#endif report ($(qual_filtering),report)
-else
 
-# ($(qual_filtering),do not perform qc)
-$(report_dir)/%.f.csv:  $(out_dir)/%.f.fastq 
+stage6: $(STAGE6_REPORT_FILES)
+
+endif
+#endif qual_filtering=report
+###################################################
+
+###################################################
+# qual_filtering OFF
+ifeq ($(qual_filtering),off)
+
+%.f.csv:  %.f.fastq.gz
 	A=`num_reads.sh $<` && echo $*,$$A,$$A,$$A,$$A,$$A > $@.tmp && mv $@.tmp $@
 
 #Produce the same files as if fastqc has been run
@@ -539,150 +736,100 @@ stage3:
 stage4:
 stage5:
 
-
-#Paired end reads
-ifeq ($(pe_data),1)
-
 #Main call, no filtering, collect stats, cleaning at the end (rm files)
-all: setup0 stage0 $(out_dir)/$(out_prefix)_1.f.fastq.stats $(out_dir)/$(out_prefix)_2.f.fastq.stats $(out_dir)/$(out_prefix)_1.f.fastq $(out_dir)/$(out_prefix)_2.f.fastq $(report_dir)/$(out_prefix)_1.f.csv $(report_dir)/$(out_prefix)_2.f.csv  stage6
-	$(shell if [ -e $(f1_n).filter1.fastq.qual.png ]; then mv $(out_dir)/$(f1_n)*.png $(report_dir)/raw_data ; fi)
-	$(shell if [ -e $(f2_n).filter1.fastq.qual.png ]; then mv $(out_dir)/$(f2_n)*.png $(report_dir)/raw_data ; fi)
-	rm -f $(report_dir)/$(f1_n).f.csv
-	ln -s $(abspath $(report_dir)/$(out_prefix)_1.f.csv) $(report_dir)/$(f1_n).f.csv
-	rm -f $(report_dir)/$(f2_n).f.csv
-	ln -s $(abspath $(report_dir)/$(out_prefix)_2.f.csv) $(report_dir)/$(f2_n).f.csv
-	rm -f $(report_dir)/$(f1_n).csv
-	ln -s $(abspath $(report_dir)/$(out_prefix)_1.f.csv) $(report_dir)/$(f1_n).csv
-	rm -f $(report_dir)/$(f2_n).csv
-	ln -s $(abspath $(report_dir)/$(out_prefix)_2.f.csv) $(report_dir)/$(f2_n).csv
-	$(info Skipped fastq filtering.)
+all: $(OFF_TARGETS) $(OUT_FASTQ_FILES) $(subst .f.fastq.gz,.f.csv,$(OUT_FASTQ_FILES))
+	@echo out_files=$(OUT_FASTQ_FILES) $(subst .f.fastq.gz,.f.csv,$(OUT_FASTQ_FILES))
+	@echo Skipped fastq filtering.
 
 # skip filtering and create symlinks to the original fastq files
-$(out_dir)/$(out_prefix)_1.f.fastq:  $(data_dir)/$(f1_n).fastq
-	rm -f $@
-	ln -s $(abspath $(data_dir))/$(f1_n).fastq $@
-
-$(out_dir)/$(out_prefix)_2.f.fastq:  $(data_dir)/$(f2_n).fastq
-	rm -f $@
-	ln -s $(abspath $(data_dir))/$(f2_n).fastq $@
-
-$(report_dir)/raw_data/$(out_prefix)_1.f.fastqc.zip: $(out_dir)/$(out_prefix)_1.f.fastq
-	$(call run-fastqc,$<) && mv $(report_dir)/raw_data/$(out_prefix)_1.f_fastqc.zip $@
-
-$(report_dir)/raw_data/$(out_prefix)_2.f.fastqc.zip: $(out_dir)/$(out_prefix)_2.f.fastq
-	$(call run-fastqc,$<) && mv $(report_dir)/raw_data/$(out_prefix)_2.f_fastqc.zip $@
-
-
-stage6: $(out_dir)/$(out_prefix)_1.f.fastq  $(call report_file,1,$(report_dir)/raw_data/$(f1_n).fastqc.zip $(report_dir)/raw_data/$(f2_n).fastqc.zip $(report_dir)/raw_data/$(out_prefix)_1.f.fastqc.zip $(report_dir)/raw_data/$(out_prefix)_2.f.fastqc.zip $(report_dir)/raw_data/$(out_prefix)_1.f.fastqc.tsv $(report_dir)/raw_data/$(out_prefix)_2.f.fastqc.tsv)
-
-
-$(info out_prefix_pe=$(out_prefix))
-#Single end reads
-else
-
-
-$(report_dir)/raw_data/%.fastqc.zip: $(out_dir)/%.fastq
-	$(call run-fastqc,$<) && mv $(report_dir)/raw_data/$*_fastqc.zip $@
-
-$(out_dir)/$(out_prefix).f.fastq:  $(data_dir)/$(f1_n).fastq
-	rm -f $@  
-	ln -s $(abspath $(data_dir))/$(f1_n).fastq $@
-
-#Main call, no filtering, collect stats only
-all: setup0 stage0 $(out_dir)/$(out_prefix).f.fastq $(out_dir)/$(out_prefix).f.fastq.stats   $(report_dir)/$(out_prefix).f.csv    stage6
-	rm -f $(report_dir)/$(f1_n).f.csv
-	ln -s $(abspath $(report_dir)/$(out_prefix).f.csv) $(report_dir)/$(f1_n).f.csv
-	rm -f $(report_dir)/$(f1_n).csv
-	ln -s $(abspath $(report_dir)/$(out_prefix).f.csv) $(report_dir)/$(f1_n).csv
-	$(shell if [ -e $(f1_n).filter1.fastq.qual.png ]; then mv $(out_dir)/$(f1_n)*.png $(report_dir)/raw_data ; fi)
-	$(info Skipped filtering.)
-
-$(info out_prefix_se=$(out_prefix))
-stage6: $(call report_file,1,$(report_dir)/raw_data/$(out_prefix).f.fastqc.tsv)
-endif
-
-####endif ($(qual_filtering),on)
-# Quality filtering ON
-endif
-
-else
-
-#Main call, complete filtering, collect stats, cleaning at the end (rm files)
-#all: setup0 stage0 stage1 stage2 stage3 stage3 stage4 stage5 stage6 clean
-all: setup0 stage0 stage1 stage2 stage3 stage3 stage4 stage5 stage6
-	$(shell if [ -e $(f1_n).filter1.fastq.qual.png ]; then mv $(out_dir)/$(f1_n)*.png $(report_dir)/raw_data ; fi)
-
-#Paired end reads
 ifeq ($(pe_data),1)
-	$(shell if [ -e $(f2_n).filter1.fastq.qual.png ]; then mv $(out_dir)/$(f2_n)*.png $(report_dir)/raw_data ; fi)
-endif
-	$(info * Filtering complete.)
+$(out_prefix)_1.f.fastq.gz:  $(f1_n)_1.pre.fastq.gz
+	rm -f $@ && ln -s $(abspath $<)  $@
 
+$(out_prefix)_2.f.fastq.gz:  $(f1_n)_2.pre.fastq.gz
+	rm -f $@ && ln -s $(abspath $<)  $@
+else
+$(out_prefix).f.fastq.gz:  $(f1_n).pre.fastq.gz
+	rm -f $@  && ln -s $(abspath $<) $@
+endif
+
+stage6: 
+$(info $(OFF_TARGETS))
+endif
+# qual_filtering OFF
+###################################################
+
+###################################################
+# qual_filtering ON
+ifeq ($(qual_filtering),on)
+
+all: setup0 stage0 stage1 stage2 stage3 stage3 stage4  stage6
+	$(info out_files=$(OUT_FASTQ_FILES) $(subst .fastq.gz,.csv,$(OUT_FASTQ_FILES)) $(subst .fastq.gz,.fastqc.tsv,$(OUT_FASTQ_FILES)))
+	@echo Filtering complete.
 
 ################################################################
 # STAGE 1 - QUALITY BASED
 # Input: the initial fastq file
-# Output: filtered fastq file (*.filter1.fastq), stats as a text file (*.filter1.stats.txt) and PNG images (*.filter1.*.png)
+# Output: filtered fastq file (*.filter1.fastq)
 # Filter: base quality, read length after filtering, artifacts of experimental procedure
 
-#Paired end reads
-ifeq ($(pe_data),1)
-stage1: $(out_dir)/$(f1_n).filter1.fastq  $(out_dir)/$(f2_n).filter1.fastq $(call report_file,0,$(out_dir)/$(f1_n).filter1.stats.txt $(out_dir)/$(f2_n).filter1.stats.txt)
-
-#Single reads
-else
-stage1: $(out_dir)/$(f1_n).filter1.fastq $(call report_file,0,$(out_dir)/$(f1_n).filter1.stats.txt)
-endif
+stage1: $(subst .fastq.gz,.filter1.fastq.gz,$(ORIGFILES)) 
 
 ####################################################################################
-#-p Minimum percent of bases that must have min_qual
+# -p Minimum percent of bases that must have min_qual
 ifeq ($(trim),y)
 trim_cmd= fastx_trimmer -l $(min_len) -m $(min_len) -v -Q $(qual) |
 else
 trim_cmd=
 endif
+
+ifeq ($(trim_poly_at),y)
+trim_poly_at_cmd= fastq_trim_poly_at --min_len $(min_len) --min_poly_at_len $(poly_at_len) --file - --outfile - | zcat |
+else
+trim_poly_at_cmd=
+endif
+
 filter1_cmd=fastq_quality_filter  -v -Q $(qual) -p $(qual_perc) -q $(min_qual) |  \
-	fastq_quality_trimmer  -v -Q $(qual) -t $(min_qual)  -l $(min_len) | $(trim_cmd) \
+	fastq_quality_trimmer  -v -Q $(qual) -t $(min_qual)  -l $(min_len) | $(trim_poly_at_cmd) \
+	$(trim_cmd) \
 	fastx_artifacts_filter -v -Q $(qual) 
 
-$(out_dir)/%.filter1.fastq: $(data_dir)/%.fastq.gz
-	zcat $< | $(filter1_cmd) > $@.tmp && mv $@.tmp $@
-
-$(out_dir)/%.filter1.fastq: $(data_dir)/%.fastq
-	cat $< | $(filter1_cmd) > $@.tmp && mv $@.tmp $@
+%.filter1.fastq.gz: %.pre.fastq.gz
+	zcat $< | $(filter1_cmd) | gzip -c -  > $@.tmp && \
+	( fastq_not_empty $@.tmp || (echo "ERROR: no reads pass the quality thresholds ($<)" && exit 1 )) &&\
+	mv $@.tmp $@
 
 
 ################################################################
 # STAGE 2 - CHECK FOR CONTAMINATION
 # Input: fastq output from stage 1 (*.filter1.fastq)
-# Output: filtered fastq file (*.filter2.fastq), stats as a text file (*.filter2.stats.txt) and PNG images (*.filter2.*.png)
+# Output: filtered fastq file (*.filter2.fastq)
 # Filter: E.coli contamination - remove any E.coli contaminated reads
 
 #Paired end reads
-ifeq ($(pe_data),1)
-stage2: $(out_dir)/$(f1_n).filter2.fastq $(out_dir)/$(f2_n).filter2.fastq $(call report_file,0,$(out_dir)/$(f1_n).filter2.stats.txt  $(out_dir)/$(f2_n).filter2.stats.txt)
-
-#Single end reads
-else
-stage2: $(out_dir)/$(f1_n).filter2.fastq $(call report_file,0,$(out_dir)/$(f1_n).filter2.stats.txt)
-endif
+stage2: $(subst .fastq.gz,.filter2.fastq.gz,$(ORIGFILES)) 
 
 #If NO test for contamination
 # Generate the files *filter2
 ifeq ($(cont_index),no)
-$(out_dir)/%.filter2.fastq: $(out_dir)/%.filter1.fastq
-	cp $< $@.tmp && mv $@.tmp $@
-
-#If test for contamination
+## no cont check
+%.filter2.fastq.gz: %.filter1.fastq.gz
+	rm -f $@ && ln -s $< $@
 else
+# check for contamination
 ifeq ($(mapper),bowtie)
-$(out_dir)/%.filter2.fastq: $(out_dir)/%.filter1.fastq
-	$(mapper_path) --sam -p $(threads) -v $(contamination_mismatches) -q $(mapper_extra_options) --phred$(qual)-quals  --un $@.tmp   $(cont_index)  $< | samtools view -b - > $(out_dir)/$*.cont.bam.tmp && mv $(out_dir)/$*.cont.bam.tmp $(out_dir)/$*.cont.bam && mv $@.tmp $@
+%.filter2.fastq.gz: %.filter1.fastq.gz
+	$(mapper_path) --sam -p $(threads) -v $(contamination_mismatches) -q $(mapper_extra_options) --phred$(qual)-quals  --un $@.tmp   $(cont_index)  <(zcat $<) | samtools view -b - > $*.cont.bam.tmp && \
+	( fastq_not_empty $@.tmp || (echo "ERROR: no reads pass the contamination filter ($<)" && exit 1 )) && \
+	gzip $@.tmp && \
+	mv $*.cont.bam.tmp $*.cont.bam && mv $@.tmp.gz $@
 endif
 
 ifeq ($(mapper),bowtie2)
-$(out_dir)/%.filter2.fastq: $(out_dir)/%.filter1.fastq
-	$(mapper_path) -p $(threads)   $(mapper_extra_options) --un $@.tmp  --fast-local  --phred$(qual) -x $(cont_index) -U $<   -S /dev/stdout  | samtools view -b - > $(out_dir)/$*.cont.bam.tmp && mv $(out_dir)/$*.cont.bam.tmp $(out_dir)/$*.cont.bam && mv $@.tmp $@
+%.filter2.fastq.gz: %.filter1.fastq.gz
+	$(mapper_path) -p $(threads)   $(mapper_extra_options) --un $@.tmp  --fast-local  --phred$(qual) -x $(cont_index) -U <(zcat $<)   -S /dev/stdout  | samtools view -b - > $*.cont.bam.tmp && \
+	( fastq_not_empty $@.tmp || (echo "ERROR: no reads pass the contamination filter ($<)" && exit 1 )) &&\
+	gzip $@.tmp && mv $*.cont.bam.tmp $*.cont.bam && mv $@.tmp.gz $@
 endif
 
 endif
@@ -691,21 +838,21 @@ endif
 ################################################################
 # STAGE 3 - DISCARD READS WITH Ns
 # Input: fastq output from stage 2 (*.filter2.fastq)
-# Output: filtered fastq file (*.filter3.fastq), stats as a text file (*.filter3.stats.txt) and PNG images (*.filter3.*.png)
+# Output: filtered fastq file (*.filter3.fastq), stats as a text file (*.filter3.stats.txt) 
 # Filter: remove any reads containing any number of Ns
 
-#Paired end reads
-ifeq ($(pe_data),1)
-stage3: $(out_dir)/$(f1_n).filter3.fastq $(out_dir)/$(f2_n).filter3.fastq $(call report_file,0,$(out_dir)/$(f1_n).filter3.stats.txt $(out_dir)/$(f2_n).filter3.stats.txt)
+stage3: $(subst .fastq.gz,.filter3.fastq.gz,$(ORIGFILES)) 
 
-#Single end end reads
+ifeq ($(max_n),100)
+# option disabled, just create a symlink
+%.filter3.fastq.gz: %.filter2.fastq.gz
+	rm -f $@ && ln -s $< $@
 else
-stage3: $(out_dir)/$(f1_n).filter3.fastq $(call report_file,0,$(out_dir)/$(f1_n).filter3.stats.txt)
+%.filter3.fastq.gz: %.filter2.fastq.gz
+	fastq_filter_n -n $(max_n) $< | gzip -c - > $@.tmp && \
+	( fastq_not_empty $@.tmp || (echo "ERROR: no reads pass the uncalled bases filter ($<)" && exit 1 )) && \
+	mv $@.tmp $@
 endif
-
-$(out_dir)/%.filter3.fastq: $(out_dir)/%.filter2.fastq
-	fastq_filter_n $< > $@.tmp && mv $@.tmp $@
-
 
 ################################################################
 # STAGE 4 - FIX PAIRED-END READS (if paired)  
@@ -714,167 +861,73 @@ $(out_dir)/%.filter3.fastq: $(out_dir)/%.filter2.fastq
 # Filter: If reads were paired and only one read was filtered out, remove the second one. 
 #         If reads were not paired, the output file is a copy of the input file.
 
-#Paired end reads
+stage4: $(subst .fastq.gz,.f.fastq.gz,$(ORIGFILES)) 
+
 ifeq ($(pe_data),1)
-stage4:	$(out_dir)/$(f1_n).f.fastq
-
-$(out_dir)/$(f1_n).f.fastq $(out_dir)/$(f2_n).f.fastq $(out_dir)/$(f1_n).sing.fastq: $(out_dir)/$(f1_n).filter3.fastq $(out_dir)/$(f2_n).filter3.fastq
-	fastq_filterpair $^ $(out_dir)/$(f1_n).f.fastq.tmp $(out_dir)/$(f2_n).f.fastq $(out_dir)/$(f1_n).sing.fastq && mv $(out_dir)/$(f1_n).f.fastq.tmp $(out_dir)/$(f1_n).f.fastq
-
-#Single end reads - don't do anything, copy input file into output file 
+#PE
+%_1.f.fastq.gz %_2.f.fastq.gz %.sing.fastq.gz: %_1.filter3.fastq.gz %_2.filter3.fastq.gz
+	fastq_filterpair $^ $*_1.f.fastq.gz.tmp $*_2.f.fastq.gz $*.sing.fastq.gz &&\
+	( fastq_not_empty $*_1.f.fastq.gz.tmp || (echo "ERROR: no paired-end reads after applying the filters ($<)" && exit 1 )) && \
+	mv $*_1.f.fastq.gz.tmp $*_1.f.fastq.gz
 else
-stage4: $(out_dir)/$(f1_n).f.fastq
-
-$(out_dir)/$(f1_n).f.fastq: $(out_dir)/$(f1_n).filter3.fastq
-	cp $^ $@.tmp && mv $@.tmp $@
-
+#Single end reads - don't do anything, copy (ln) input file
+%.f.fastq.gz: %.filter3.fastq.gz
+	rm -f $@ && ln -s $< $@
 endif
 
 
 ################################################################
-# STAGE 6 - CREATE SYMBOLIC LINKS and GENERATE FINAL REPORTS 
-# Input: fastq output from stage 4 (*.f.fastq)
-# Output: file name contains the "out_prefix"; fastq file (symbolic link to stage-4 fastq file), stats as a text file ($out_prefix.f.fastq.stats) and PNG images ($output_prefix.f.*.png)
+# STAGE 6 
 
-#Paired end reads
+stage6:	$(OUT_FASTQ_FILES) $(subst .fastq.gz,.csv,$(OUT_FASTQ_FILES))  $(subst .fastq.gz,.fastqc.tsv,$(OUT_FASTQ_FILES)) 
+
+#$(info debug  	$(OUT_FASTQ_FILES) $(subst .fastq.gz,.csv,$(OUT_FASTQ_FILES))  $(subst .fastq.gz,.fastqc.tsv,$(OUT_FASTQ_FILES)) )
 ifeq ($(pe_data),1)
+$(out_prefix)_1.f.fastq.gz: $(f1_n).f.fastq.gz
+	rm -f $@ && ln -s $< $@
 
-stage6:	$(out_dir)/$(out_prefix)_1.f.fastq  $(call report_file,1,$(report_dir)/$(out_prefix)_1.f.qual.png $(report_dir)/$(out_prefix)_2.f.qual.png $(report_dir)/raw_data/$(out_prefix)_1.f.fastqc.tsv $(report_dir)/raw_data/$(out_prefix)_2.f.fastqc.tsv)
-# don't care about performing detailed anakysis to $(report_dir)/raw_data/$(out_prefix)_sing.f.fastqc.tsv
+$(out_prefix)_2.f.fastq.gz: $(f2_n).f.fastq.gz
+	rm -f $@ && ln -s $< $@
 
-$(out_dir)/$(out_prefix)_1.f.fastq $(out_dir)/$(out_prefix)_2.f.fastq $(out_dir)/$(out_prefix)_sing.f.fastq: $(out_dir)/$(f1_n).f.fastq $(out_dir)/$(f2_n).f.fastq $(out_dir)/$(f1_n).sing.fastq 
-	rm -f $(out_dir)/$(out_prefix)_1.f.fastq $(out_dir)/$(out_prefix)_2.f.fastq $(out_dir)/$(out_prefix)_sing.f.fastq
-	ln -s $(f1_n).f.fastq $(out_dir)/$(out_prefix)_1.f.fastq 
-	ln -s $(f2_n).f.fastq $(out_dir)/$(out_prefix)_2.f.fastq 
-	ln -s $(f1_n).sing.fastq $(out_dir)/$(out_prefix)_sing.f.fastq
+$(out_prefix)_1.f.csv: $(f1_n).f.csv
+	rm -f $@ && cp $< $@
 
-
+$(out_prefix)_2.f.csv: $(f2_n).f.csv
+	rm -f $@ && cp $< $@
 #Single end reads
 else
-
-stage6: $(out_dir)/$(out_prefix).f.fastq $(call report_file,1,$(report_dir)/$(out_prefix).f.qual.png $(report_dir)/raw_data/$(out_prefix).f.fastqc.tsv) 
-
-$(out_dir)/$(out_prefix).f.fastq: $(out_dir)/$(f1_n).f.fastq
-	rm -f $(out_dir)/$(out_prefix).f.fastq 
-	ln -s $(f1_n).f.fastq $(out_dir)/$(out_prefix).f.fastq 
+$(out_prefix).f.fastq.gz: $(f1_n).f.fastq.gz
+	rm -f $@ && 	ln -s $< $@
+$(out_prefix).f.csv: $(f1_n).f.csv
+	rm -f $@ && cp  $< $@
 endif
-
-
-define gen_stats=
-	fastx_quality_stats -Q $(qual) -i $< -o $(1).stats
-	fastq_quality_boxplot_graph.sh  -i $(1).stats -o $(report_dir)/$(2).qual.png -t `basename $(2)`
-	fastx_nucleotide_distribution_graph.sh -i $(1).stats -o $(report_dir)/$(2).nuc.distr.png -t `basename $(2)`
-endef
-
-# Two rules for different sources of data
-# quality plot for the final file and initial unfiltered file
-$(report_dir)/%.qual.png $(report_dir)/%.nuc.distr.png: $(out_dir)/%.fastq
-	$(call gen_stats,$^,$*)
-
-
-$(report_dir)/%.qual.png $(report_dir)/%.nuc.distr.png: $(data_dir)/%.fastq
-	$(call gen_stats,$^,$*)
-
-
-
-# Note: it will fail if the fastq file is empty
-$(report_dir)/raw_data/%.fastqc.zip: $(out_dir)/%.fastq
-	$(call run-fastqc,$<) && mv $(report_dir)/raw_data/$*_fastqc.zip $@
-
-
-# STAGE 6 - CLEANING
+endif
+# qual_filtering=on
+###########################################################
 #
-# At the moment, needs to be explicitly called to be run 
-#    e.g. scripts/irap_fastq_qc f1=MY_FILE.fastq read_size=100 out_prefix=MY_FILE_clean data_dir=MY_DIR clean_for_testing
-#
-# clean
-# Input: intermediate fastq files (i.e. not last generated one)
-# Output: intermediate fastq files removed
-#
-# clean_all
-# Input: intermediate files (i.e. not last generated one)
-# Output: intermediate files removed (fastq+stats)
-#                                                                                                                                                                                                    
-# clean_for_testing
-# For testing purposes, to clear up a folder (and re-run the program)
-# Input: intermediate & final files
-# Output: intermediate & final files removed
-#
-################################################################
 
 clean_all:
-	rm -f $(out_dir)/$(f1_n).filter{1,2,3}.fastq
-	rm -f $(out_dir)/$(f1_n).filter{1,2,3}.*.png
+ifeq ($(is_pe),y)
+	rm -f $(out_prefix)_{1,2}.filter{1,2,3}.fastq.gz
+else
+	rm -f $(out_prefix).filter{1,2,3}.fastq.gz
+endif
 	rm -f $(out_dir)/$(f1_n).filter{1,2,3}.*.txt
 ifeq ($(pe_data),1)
 	rm -f $(out_dir)/$(f2_n).filter{1,2,3}.fastq
-	rm -f $(out_dir)/$(f2_n).filter{1,2,3}.*.png
 	rm -f $(out_dir)/$(f2_n).filter{1,2,3}.*.txt
 endif
 
 
-clean_for_testing:
-	rm -f $(out_dir)/$(f1_n).filter{1,2,3}.fastq
-	rm -f $(out_dir)/$(f1_n).filter{1,2,3}.fastq.tmp
-	rm -f $(out_dir)/$(f1_n).filter{1,2,3}.*.png
-	rm -f $(out_dir)/$(f1_n).filter{1,2,3}.*.txt
-	rm -f $(out_dir)/$(f1_n).f.fastq
-	rm -f $(out_dir)/$(f1_n).f.csv
-	rm -f $(out_dir)/$(out_prefix).f.*.png
-	rm -f $(out_dir)/$(out_prefix).f.*.stats
-	rm -f $(out_dir)/$(out_prefix).f.fastq
-ifeq ($(pe_data),1)
-	rm -f $(out_dir)/$(f2_n).filter{1,2,3}.fastq
-	rm -f $(out_dir)/$(f2_n).filter{1,2,3}.*.png
-	rm -f $(out_dir)/$(f2_n).filter{1,2,3}.*.txt
-	rm -f $(out_dir)/$(f2_n).f.fastq
-	rm -f $(out_dir)/$(f2_n).f.csv
 endif
 
-endif
-
-
-
-endif
-
+# clean intermediate files
 clean:
-	rm -f $(out_dir)/$(f1_n).filter{1,2,3}.fastq
+	rm -f $(out_prefix).* $(f1_n).filter{1,2,3}.* $(f1_n).*
 ifeq ($(pe_data),1)
-	rm -f $(out_dir)/$(f2_n).filter{1,2,3}.fastq
+	rm -f $(out_prefix).* $(f2_n).filter{1,2,3}.* $(f2_n).*
 endif
 
-##################################################
-# TESTS
-# (WIP)
-
-####################################
-# 1- test name
-# 2- result
-# 3- expected result
-define report_test_check
-    if [ "$(2)-" == "$(3)-" ]; then echo Test $(1) OK; else  echo Test $(1) FAILURE; fi
-endef 
-
-# 
-# irap_fastq_qc run_tests=1
-TEST_PARAMS=-q tmp_dir=$(IRAP_DIR)/tests out_dir=$(IRAP_DIR)/tests/out report_dir=$(IRAP_DIR)/tests/out/rep  threads=1 data_dir=$(IRAP_DIR)/tests/test_files/fastq/
-FASTQ1_PARAMS=read_size=60 qual=33 f='chr19_1000.fastq'
-
-qtests:	qtest1 qtest2 qtest3
-
-qtest1:
-	@MAKEFLAGS= irap_fastq_qc  $(TEST_PARAMS) $(FASTQ1_PARAMS) qual_filtering=on min_qual=10 trim=y cont_index=$(IRAP_DIR)/data/contamination/e_coli   out_prefix=chr19_1000 &> $@.out
-	$(call report_test_check,$@,1,`grep -c "out_prefix should be different that fastq file prefix" $@.out`)
-
-# all reads pass the test
-qtest2:
-	@MAKEFLAGS= irap_fastq_qc  $(TEST_PARAMS) $(FASTQ1_PARAMS) qual_filtering=on min_qual=10 trim=y cont_index=$(IRAP_DIR)/data/contamination/e_coli   out_prefix=chr19 &> $@.out
-	$(call report_test_check,$@,`wc -l $(IRAP_DIR)/tests/out/chr19.f.fastq|cut -f 1 -d\  `,`wc -l $(IRAP_DIR)/tests/test_files/fastq/chr19_1000.fastq|cut -f 1 -d\  `)
-
-# qual_filtering off=> all reads pass the test
-qtest3:
-	@MAKEFLAGS= irap_fastq_qc  $(TEST_PARAMS) $(FASTQ1_PARAMS) qual_filtering=off min_qual=10 trim=y cont_index=$(IRAP_DIR)/data/contamination/e_coli   out_prefix=chr19_off &> $@.out
-	$(call report_test_check,$@,`wc -l $(IRAP_DIR)/tests/out/chr19_off.f.fastq|cut -f 1 -d\  `,`wc -l $(IRAP_DIR)/tests/test_files/fastq/chr19_1000.fastq|cut -f 1 -d\  `)
 
 FORCE:
 
