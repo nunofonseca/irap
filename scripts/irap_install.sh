@@ -148,18 +148,25 @@ function check_dependencies {
     fi
 
 }
+
+function get_CFLAGS_woBOOST {
+    echo $CFLAGS|sed -E "s|\-I[^ ]*boost||g"
+}
+
 #################################
 # VERSIONS, SRC file and URL
 BFAST_VERSION=0.7.0a
 BFAST_FILE=bfast-$BFAST_VERSION.tar.gz
 BFAST_URL=http://sourceforge.net/projects/bfast/files/bfast/0.7.0/$BFAST_FILE
 # current 1.1.2 - minor changes, no need to upgrade
-bowtie1_VERSION=1.1.1
-bowtie1_FILE=bowtie-${bowtie1_VERSION}-linux-x86_64.zip
-bowtie1_URL=http://sourceforge.net/projects/bowtie-bio/files/bowtie/$bowtie1_VERSION/$bowtie1_FILE
-# current - 2.2.6->2.2.9
-bowtie2_VERSION=2.2.9
-bowtie2_FILE=bowtie2-${bowtie2_VERSION}-linux-x86_64.zip
+# 1.1.1->1.2.0
+bowtie1_VERSION=1.2
+bowtie1_VERSION_f=1.2.0
+bowtie1_FILE=bowtie-${bowtie1_VERSION}-linux-legacy-x86_64.zip
+bowtie1_URL=http://sourceforge.net/projects/bowtie-bio/files/bowtie/$bowtie1_VERSION_f/$bowtie1_FILE
+# current - 2.2.6->2.2.9-> 2.3.2
+bowtie2_VERSION=2.3.2
+bowtie2_FILE=bowtie2-${bowtie2_VERSION}-legacy-linux-x86_64.zip
 bowtie2_URL=http://sourceforge.net/projects/bowtie-bio/files/bowtie2/$bowtie2_VERSION/$bowtie2_FILE
 
 #
@@ -208,23 +215,24 @@ SOAPsplice_URL=http://soap.genomics.org.cn/down/$SOAPsplice_FILE
 SOAP2_VERSION=2.21
 SOAP2_FILE=soap${SOAP2_VERSION}release.tar.gz
 SOAP2_URL=http://soap.genomics.org.cn/down/$SOAP2_FILE
-# 2.4.0i->2.5.0c
-STAR_VERSION=2.5.0c
+# 2.4.0i->2.5.0c->2.5.3
+STAR_VERSION=2.5.3a
 STAR_FILE=${STAR_VERSION}.tar.gz
 STAR_URL=https://github.com/alexdobin/STAR/archive/$STAR_FILE
 
 # 
 #GSNAP_VERSION=2013-11-27->gmap-gsnap-2015-12-31.v3.tar.gz
-GSNAP_VERSION=2015-12-31
-GSNAP_FILE=gmap-gsnap-${GSNAP_VERSION}.v3.tar.gz
+# ->2017-05-08
+GSNAP_VERSION=2017-05-08
+GSNAP_FILE=gmap-gsnap-${GSNAP_VERSION}.tar.gz
 GSNAP_URL=http://research-pub.gene.com/gmap/src/$GSNAP_FILE
 
-# 2.2.0
-mapsplice_VERSION=2.2.0
+# 2.2.0->2.2.1
+mapsplice_VERSION=2.2.1
 mapsplice_FILE=MapSplice-v$mapsplice_VERSION.zip
 mapsplice_URL=http://protocols.netlab.uky.edu/~zeng/$mapsplice_FILE
-# 0.7.4->0.7.12
-bwa_VERSION=0.7.12
+# 0.7.4->0.7.12->0.7.15
+bwa_VERSION=0.7.15
 bwa_FILE=bwa-${bwa_VERSION}.tar.bz2
 bwa_URL=http://sourceforge.net/projects/bio-bwa/files/$bwa_FILE
 # 4.0.2.1->4.1.1.1
@@ -237,7 +245,8 @@ osa_URL=http://omicsoft.com/osa/Software/$osa_FILE
 #EMBAM_FILE=emBAM_${EMBAM_VERSION}.tar.gz
 #EMBAM_URL=http://embam.googlecode.com/files/$EMBAM_FILE
 
-RUBY_VERSION=1.9.3-p484
+# > 4.8.3
+RUBY_VERSION=1.9.3-p551
 RUBY_FILE=ruby-${RUBY_VERSION}.tar.gz
 RUBY_URL=http://ftp.ruby-lang.org/pub/ruby/1.9/$RUBY_FILE
 
@@ -247,22 +256,24 @@ PERL_VERSION=5.20.3
 PERL_FILE=perl-$PERL_VERSION.tar.gz
 PERL_URL=http://www.cpan.org/src/5.0/$PERL_FILE
 
-# previous: 1.55
-BOOST_VERSION=1.55.0
+# previous: 1.55->1.64?
+BOOST_VERSION=1.64.0
 BOOST_FILE=boost_`echo $BOOST_VERSION|sed "s/\./_/g"`.tar.bz2
 BOOST_URL=http://sourceforge.net/projects/boost/files/boost/$BOOST_VERSION/$BOOST_FILE
 
-gnuplot_VERSION=4.6.4   
+##4.6.4->5.0.6
+gnuplot_VERSION=5.0.6
 gnuplot_FILE=gnuplot-$gnuplot_VERSION.tar.gz
 gnuplot_URL=http://sourceforge.net/projects/gnuplot/files/gnuplot/$gnuplot_VERSION/$gnuplot_FILE
 
+#
 # deprecated
 R2_VERSION=2.15.2
 R2_FILE=R-${R2_VERSION}.tar.gz 
 R2_URL=http://cran.r-project.org/src/base/R-2/$R2_FILE
 
 # 
-R3_VERSION=3.2.5
+R3_VERSION=3.3.3
 R3_FILE=R-${R3_VERSION}.tar.gz 
 R3_URL=http://cran.r-project.org/src/base/R-3/$R3_FILE
 
@@ -271,9 +282,9 @@ SAMTOOLS_VERSION=0.1.18
 SAMTOOLS_FILE=samtools-$SAMTOOLS_VERSION.tar.bz2
 SAMTOOLS_URL=http://sourceforge.net/projects/samtools/files/samtools/$SAMTOOLS_VERSION/$SAMTOOLS_FILE
 
-# new samtools: 1.3
-# prev: 1.1
-SAMTOOLS1_VERSION=1.3.1
+# new samtools: 1.3-> 1.4.1
+# prev: 1.1 
+SAMTOOLS1_VERSION=1.4.1
 SAMTOOLS1_FILE=samtools-$SAMTOOLS1_VERSION.tar.bz2
 SAMTOOLS1_URL=http://sourceforge.net/projects/samtools/files/samtools/$SAMTOOLS1_VERSION/$SAMTOOLS1_FILE
 
@@ -282,23 +293,23 @@ VCFTOOLS_FILE=vcftools-$VCFTOOLS_VERSION.tar.gz
 VCFTOOLS_URL=https://github.com/vcftools/vcftools/releases/download/v$VCFTOOLS_VERSION/$VCFTOOLS_FILE
 
 
-# 1.3
-BCFTOOLS_VERSION=1.3
+# 1.3->1.4.1
+BCFTOOLS_VERSION=1.4.1
 BCFTOOLS_FILE=bcftools-$BCFTOOLS_VERSION.tar.bz2
 BCFTOOLS_URL=https://github.com/samtools/bcftools/releases/download/$BCFTOOLS_VERSION/$BCFTOOLS_FILE
 
-
-ZLIB_VERSION=1.2.8
+# 1.2.11
+ZLIB_VERSION=1.2.11
 ZLIB_FILE=zlib-$ZLIB_VERSION.tar.gz
 ZLIB_URL=http://zlib.net/$ZLIB_FILE
 
-#
+#2.25.0->2.26.0
 BEDTOOLS_VERSION=2.25.0
 BEDTOOLS_FILE=bedtools-$BEDTOOLS_VERSION.tar.gz
 BEDTOOLS_URL=https://github.com/arq5x/bedtools2/releases/download/v$BEDTOOLS_VERSION/$BEDTOOLS_FILE
 
-# 1.0.3->1.2.0
-stringtie_VERSION=1.2.0
+# 1.0.3->1.2.0 -> 1.3.3
+stringtie_VERSION=1.3.3
 stringtie_FILE=stringtie-${stringtie_VERSION}.Linux_x86_64.tar.gz
 stringtie_URL=http://ccb.jhu.edu/software/stringtie/dl/$stringtie_FILE
 
@@ -321,23 +332,26 @@ cufflinks2_URL=http://cufflinks.cbcb.umd.edu/downloads/$cufflinks2_FILE
 #SAVANT_URL=http://genomesavant.com/savant/dist/v`echo $SAVANT_VERSION|sed "s/./_/g"`/$SAVANT_FILE
 
 # new: 0.7.5 - now in github
-BitSeq_VERSION=0.7.0
-BitSeq_FILE=BitSeq-$BitSeq_VERSION.tar.gz
-BitSeq_URL=http://bitseq.googlecode.com/files/$BitSeq_FILE
+BitSeq_VERSION=0.7.5
+BitSeq_FILE=v${BitSeq_VERSION}.tar.gz
+BitSeq_URL=https://github.com/BitSeq/BitSeq/archive/$BitSeq_FILE
 
 #MMSEQ_VERSION=1.0.0-beta2
 #MMSEQ_FILE=mmseq_${MMSEQ_VERSION}.zip
 #MMSEQ_URL=http://www.bgx.org.uk/software/$MMSEQ_FILE
 
 #htseq_VERSION=0.5.4p5
-htseq_VERSION=0.6.1p1
+htseq_VERSION=0.6.1p2
+htseq_VERSION=0.7.2
 htseq_FILE=HTSeq-${htseq_VERSION}.tar.gz
-htseq_URL=http://pypi.python.org/packages/source/H/HTSeq/$htseq_FILE
+#htseq_URL=http://pypi.python.org/packages/source/H/HTSeq/
+htseq_URL=https://pypi.python.org/packages/46/f7/6105848893b1d280692eac4f4f3c08ed7f424cec636aeda66b50bbcf217e/${htseq_FILE}#md5=8ddaaf53e83547fbca3bba7b84c9dde8
 
 # new: 1.6.1
 # latest (1.5.2) fails (same error since 1.2.4)
 # Parameter COVERAGE_STATS not found. Check the spelling!
-FLUX_CAPACITOR_VERSION=1.2.3
+FLUX_CAPACITOR_VERSION=1.6.1
+#FLUX_CAPACITOR_VERSION=1.2.3
 FLUX_CAPACITOR_FILE=flux-capacitor-$FLUX_CAPACITOR_VERSION.tgz
 #FLUX_CAPACITOR_URL=http://sammeth.net/artifactory/barna-nightly/barna/barna.capacitor/$FLUX_CAPACITOR_VERSION/$FLUX_CAPACITOR_FILE
 FLUX_CAPACITOR_URL=http://sammeth.net/artifactory/barna/barna/barna.capacitor/$FLUX_CAPACITOR_VERSION/$FLUX_CAPACITOR_FILE
@@ -352,22 +366,25 @@ IsoEM_VERSION=1.1.4
 IsoEM_FILE=IsoEM-${IsoEM_VERSION}.zip
 IsoEM_URL=http://dna.engr.uconn.edu/software/IsoEM/$IsoEM_FILE
 
-# 0.6.2-> 0.9.0
-Sailfish_VERSION=0.9.0
-Sailfish_FILE=v${Sailfish_VERSION}.tar.gz
-Sailfish_URL=http://github.com/kingsfordgroup/sailfish/archive/$Sailfish_FILE
+# 0.6.2-> 0.9.0->0.10.0
+Sailfish_VERSION=0.10.0
+Sailfish_FILE=SailfishBeta-${Sailfish_VERSION}_CentOS5.tar.gz
+#Sailfish_URL=http://github.com/kingsfordgroup/sailfish/archive/$Sailfish_FILE
+Sailfish_URL=http://github.com/kingsfordgroup/sailfish/releases/download/v$Sailfish_VERSION/$Sailfish_FILE
 
-SALMON_VERSION=0.7.2
+# 0.7.2 -> 0.8.2
+SALMON_VERSION=0.8.2
 SALMON_FILE=Salmon-${SALMON_VERSION}_linux_x86_64.tar.gz
 SALMON_URL=https://github.com/COMBINE-lab/salmon/releases/download/v${SALMON_VERSION}/${SALMON_FILE}
 
 # kallisto - 0.42.1 -> 0.42.4 (multithreads)
-kallisto_VERSION=0.42.4
+# 0.42.4->0.43.1
+kallisto_VERSION=0.43.1
 kallisto_FILE=kallisto_linux-v$kallisto_VERSION.tar.gz
 kallisto_URL=https://github.com/pachterlab/kallisto/releases/download/v$kallisto_VERSION/$kallisto_FILE
 
-# 1.2.21->1.2.22
-rsem_VERSION=1.2.22
+# 1.2.21->1.2.22->1.3.0
+rsem_VERSION=1.3.0
 rsem_FILE=rsem-${rsem_VERSION}.tar.gz
 rsem_URL=http://deweylab.biostat.wisc.edu/rsem/src/$rsem_FILE
 
@@ -375,26 +392,34 @@ FUSIONMAP_VERSION=2015-03-31
 FUSIONMAP_FILE=FusionMap_${FUSIONMAP_VERSION}.zip
 FUSIONMAP_URL=http://omicsoft.com/fusionmap/Software/$FUSIONMAP_FILE
 
+FUSIONCATCHER_VERSION=0.99.7b
+FUSIONCATCHER_FILE=bootstrap.py
+
+FUSIONCATCHER_URL=http://sf.net/projects/fusioncatcher/files/$FUSIONCATHER_FILE
+http://sf.net/projects/fusioncatcher/files/bootstrap.py
 
 SCRIPTURE_VERSION=beta2
 SCRIPTURE_FILE=scripture-${SCRIPTURE_VERSION}.jar 
 SCRIPTURE_URL=ftp://ftp.broadinstitute.org/pub/papers/lincRNA/$SCRIPTURE_FILE
 
-IGV_VERSION=2.1.24
+# 2.1.24->2.3.93
+IGV_VERSION=2.3.93
 IGV_FILE=IGV_$IGV_VERSION.zip
 IGV_URL=http://www.broadinstitute.org/igv/projects/downloads/$IGV_FILE
 
-IGV_TOOLS_VERSION=2.1.24
-IGV_TOOLS_FILE=igvtools_nogenomes_$IGV_TOOLS_VERSION.zip
-IGV_TOOLS_URL=http://www.broadinstitute.org/igv/projects/downloads/$IGV_TOOLS_FILE
+# 2.1.24->2.3.93
+IGV_TOOLS_VERSION=2.3.93
+#IGV_TOOLS_FILE=igvtools_nogenomes_$IGV_TOOLS_VERSION.zip
+IGV_TOOLS_FILE=igvtools_$IGV_TOOLS_VERSION.zip
+IGV_TOOLS_URL=http://data.broadinstitute.org/igv/projects/downloads/$IGV_TOOLS_FILE
 
-# new: FASTX_VERSION=0.0.13->0.0.13.2
+# new: FASTX_VERSION=0.0.13->0.0.13.2->0.0.14
 FASTX_VERSION=0.0.13
 FASTX_FILE=fastx_toolkit_${FASTX_VERSION}_binaries_Linux_2.6_amd64.tar.bz2
 FASTX_URL=http://hannonlab.cshl.edu/fastx_toolkit/$FASTX_FILE
 
-# 0.10.1->0.11.4
-FASTQC_VERSION=0.11.4
+# 0.10.1->0.11.4->0.11.5
+FASTQC_VERSION=0.11.5
 FASTQC_FILE=fastqc_v${FASTQC_VERSION}.zip
 FASTQC_URL=http://www.bioinformatics.babraham.ac.uk/projects/fastqc/$FASTQC_FILE
 
@@ -406,8 +431,8 @@ JBROWSE_EXTRA_UTILS="hgGcPercent bedGraphToBigWig wigCorrelate bigWigInfo bigWig
 JBROWSE_EXTRA_UTILSURL=http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/
 
 # 1.12.0 -- 85
-NEW_JBROWSE_VERSION=1.12.0
-NEW_JBROWSE_FILE=download.php?id=101
+NEW_JBROWSE_VERSION=1.12.3
+NEW_JBROWSE_FILE=download.php?id=109
 NEW_JBROWSE_URL=http://jbrowse.org/wordpress/wp-content/plugins/download-monitor/$NEW_JBROWSE_FILE
 NEW_JBROWSE_EXTRA_UTILS="hgGcPercent bedGraphToBigWig wigCorrelate bigWigInfo bigWigSummary faToNib faToTwoBit hgWiggle bigWigMerge"
 NEW_JBROWSE_EXTRA_UTILSURL=http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/
@@ -421,8 +446,22 @@ MONO_FILE=mono-${MONO_VERSION}.tar.bz2
 #MONO_FILE=mono-${MONO_VERSION}.30.tar.bz2    
 MONO_URL=http://download.mono-project.com/sources/mono/$MONO_FILE
 
+## 1.119->2.9.2
+PICARD_VERSION=2.9.2
+https://github.com/broadinstitute/picard/releases/download/2.9.2/picard.jar
+PICARD_FILE=picard-tools-$PICARD_VERSION.zip
+PICARD_URL=http://sourceforge.net/projects/picard/files/picard-tools/$PICARD_VERSION/$PICARD_FILE/download
 
-MAKE_VERSION=4.1
+
+fastq_utils_VERSION=0.11.0
+fastq_utils_FILE=$fastq_utils_VERSION.tar.gz
+fastq_utils_URL=https://github.com/nunofonseca/fastq_utils/archive/$fastq_utils_FILE
+
+umis_VERSION=0.6.0
+umis_FILE=v${umis_VERSION}.tar.gz
+umis_URL=https://github.com/vals/umis/archive/${umis_FILE}
+
+MAKE_VERSION=4.2
 MAKE_FILE=make-${MAKE_VERSION}.tar.gz
 MAKE_URL=http://ftp.gnu.org/gnu/make/$MAKE_FILE
 ##################################
@@ -436,8 +475,8 @@ function download_software {
 	soap_splice ) download $SOAPsplice_URL;;
 	soap2 ) download $SOAP2_URL;download http://soap.genomics.org.cn/down/soap2sam.tar.gz;;
 	SOAP2 ) download $SOAP2_URL;download http://soap.genomics.org.cn/down/soap2sam.tar.gz;;
-	JBROWSE ) download $JBROWSE_URL $JBROWSE_FILE; for f in $JBROWSE_EXTRA_UTILS; do  download $JBROWSE_EXTRA_UTILSURL/$f $f; done ;;
-	NEW_JBROWSE ) download $NEW_JBROWSE_URL $NEW_JBROWSE_FILE; for f in $NEW_JBROWSE_EXTRA_UTILS; do  download $NEW_JBROWSE_EXTRA_UTILSURL/$f $f; done ;;
+	OLD_JBROWSE ) download $JBROWSE_URL $JBROWSE_FILE; for f in $JBROWSE_EXTRA_UTILS; do  download $JBROWSE_EXTRA_UTILSURL/$f $f; done ;;
+	JBROWSE ) download $NEW_JBROWSE_URL $NEW_JBROWSE_FILE; for f in $NEW_JBROWSE_EXTRA_UTILS; do  download $NEW_JBROWSE_EXTRA_UTILSURL/$f $f; done ;;
 	* ) url=${name}_URL; file=${name}_FILE; download ${!url} ${!file};;
     esac
 }
@@ -459,6 +498,8 @@ function install_binary {
 }
 
 function gen_setup_irap {
+    python_dir=python$(python --version 2> /dev/stdout | sed "s/.* \(.*\)\..*/\1/")
+
     cat <<EOF > $1
 export IRAP_DIR=$IRAP_DIR
 export PATH=\$IRAP_DIR/bin/bowtie1/bin:\$IRAP_DIR/bin:\$IRAP_DIR/scripts:\$IRAP_DIR/python/bin/:\$PATH
@@ -469,6 +510,7 @@ export R_LIBS=$IRAP_DIR/Rlibs
 export CXXFLAGS="-I\$IRAP_DIR/include -I\$IRAP_DIR/include/bam -I\$IRAP_DIR/include/boost -L\$IRAP_DIR/lib \$CXXFLAGS"
 export PERL5LIB=\$IRAP_DIR/perl/lib/perl5:\$IRAP_DIR/lib/perl5:\$IRAP_DIR/lib/perl5/x86_64-linux:\$IRAP_DIR/lib/perl5/$PERL_VERSION
 export PYTHONUSERBASE=\$IRAP_DIR/python
+export PYTHONPATH=\$IRAP_DIR/lib64/$python_dir/site-packages:\$IRAP_DIR/lib/$python_dir/site-packages:\$PYTHONPATH
 # Adjust to your needs and uncomment the following lines
 # in order to use iRAP with the LSF job scheduler
 # note: memory values are in MB 
@@ -509,7 +551,7 @@ function bowtie1_install {
     pinfo "Starting $MAPPER source installation..."
     download_software $MAPPER
     unzip $bowtie1_FILE
-    pushd bowtie-$bowtie1_VERSION
+    pushd bowtie-${bowtie1_VERSION}-legacy
     #export BITS=64
     #make clean
     #make -j 4 all
@@ -717,7 +759,7 @@ function mapsplice_install {
     # do not recompile bowtie and samtools
     sed -i -E "1s/all:(.*)bowtie/all:\1 /" Makefile
     sed -i -E "1s/all:(.*)samtools/all:\1 /" Makefile
-    make
+    CFLAGS=-fpermissive make
     install_binary $MAPPER bin \*
     cp mapsplice.py $BIN_DIR/$MAPPER/
     popd
@@ -736,11 +778,13 @@ function mappers_install {
    soap2_install
 #   gem2_install
    gsnap_install 
-   osa_install
+   #osa_install
    star_install
    pinfo "To install MapSplice run: irap_install.sh -s . -x mapsplice"
    pinfo "To install GEM run: irap_install.sh -s . -x gem"
    pinfo "To install HISAT2 run: irap_install.sh -s . -x hisat2"
+   pinfo "To install OSA run: irap_install.sh -s . -x osa"
+
    #mapsplice_install
 }
 
@@ -898,7 +942,7 @@ function R2_install {
     export R_LIBS_USER=$IRAP_DIR/Rlibs
     # assume that makeinfo is installed - configure does not work on 5.2
     #sed -i "s/r_cv_prog_makeinfo_v4=no/r_cv_prog_makeinfo_v4=yes/" configure  
-    CFLAGS_noboost=`echo $CFLAGS|sed -E "s|\-I[^ ]*boost||g"`    
+    CFLAGS_noboost=$(get_CFLAGS_woBOOST)
     # clean up - delete packages previously installed
     rm -rf $IRAP_DIR/Rlibs/*
     CFLAGS=$CFLAGS_noboost $SPECIAL_SH_TO_USE ./configure --prefix=$IRAP_DIR
@@ -919,7 +963,8 @@ function R_install {
     pushd R-${R3_VERSION}
     export R_LIBS=
     export R_LIBS_USER=$IRAP_DIR/Rlibs3
-    CFLAGS_noboost=`echo $CFLAGS|sed -E "s|\-I[^ ]*boost||g"`    
+    CFLAGS_noboost=$(get_CFLAGS_woBOOST)
+
     CFLAGS=$CFLAGS_noboost $SPECIAL_SH_TO_USE ./configure --prefix=$IRAP_DIR
     make clean
     make -j $J
@@ -1024,12 +1069,14 @@ function samtools1_install {
     download_software SAMTOOLS1
     tar xvjf $SAMTOOLS1_FILE
     pushd samtools-${SAMTOOLS1_VERSION}
+    #CFLAGS=  ./configure prefix=$IRAP_DIR
+    sed -i "s/ -g / /" Makefile 
     make -j $J prefix=$IRAP_DIR
     make prefix=$IRAP_DIR install
     mkdir -p $INC_DIR/bam
     cp *.h $INC_DIR/bam
-    mkdir  -p $INC_DIR/bam/htslib-1.3.1
-    cp htslib-1.3.1/*.h $INC_DIR/bam/htslib-1.3.1
+    mkdir  -p $INC_DIR/bam/htslib-1.4.1
+    cp htslib-1.4.1/*.h $INC_DIR/bam/htslib-1.4.1
     cp libbam.a $INC_DIR/bam
     #
     pwd
@@ -1037,6 +1084,7 @@ function samtools1_install {
     tar xjvf $BCFTOOLS_FILE
     pushd bcftools-${BCFTOOLS_VERSION}
     sed -i -E "s|^prefix\s*=.*|prefix=$IRAP_DIR|"  Makefile
+    sed -i "s/ -g / /" Makefile 
     make -j $J 
     make install
     popd
@@ -1049,7 +1097,7 @@ function vcftools_install {
     download_software VCFTOOLS
     tar xvzf $VCFTOOLS_FILE
     pushd vcftools-${VCFTOOLS_VERSION}
-    ./configure prefix=$IRAP_DIR
+    CXXFLAGS=  ./configure prefix=$IRAP_DIR
     make -j $J prefix=$IRAP_DIR
     make prefix=$IRAP_DIR install
     popd
@@ -1224,8 +1272,7 @@ function R2_packages_install {
     export PATH=$IRAP_DIR/bin:$PATH
     pinfo "Installing R packages..."
     #export R_LIBS=
-    CFLAGS_noboost=`echo $CFLAGS|sed -E "s|\-I[^ ]*boost||g"`
-
+    CFLAGS_noboost=$(get_CFLAGS_woBOOST)
     CFLAGS=$CFLAGS_noboost R --no-save <<EOF
 repo<-"$CRAN_REPO"
 
@@ -1305,7 +1352,7 @@ function R_packages_install {
     export PATH=$IRAP_DIR/bin:$PATH
     pinfo "Installing R-3.x packages..."
 
-    CFLAGS_noboost=`echo $CFLAGS|sed -E "s|\-I[^ ]*boost||g"`
+    CFLAGS_noboost=$(get_CFLAGS_woBOOST)
     # suppressUpdates should be TRUE otherwise it might try to update a package installed in the systems folder
     CFLAGS=$CFLAGS_noboost echo y | $SRC_DIR/scripts/install_R_packages.R
     pinfo "Installing R-3.x packages...done."
@@ -1392,9 +1439,8 @@ function htseq_install {
 # python version needs to be equal or greater than  (2.6)
     #. ./build_it ;# not needed in 0.5.4p5
     # python setup.py install --user
-    pip install --user .
-    chmod +x scripts/*
-    cp scripts/* $IRAP_DIR/bin
+    pip install --prefix $IRAP_DIR .
+    ## htseq is copied to $IRAP_DIR/bin
     popd
     pinfo "Installing HTSeq...done."
 }
@@ -1431,6 +1477,7 @@ function isoem_install {
     pinfo "IsoEM installation complete."    
 }
 
+
 ######################################################
 # Sailfish
 # requires boost
@@ -1438,9 +1485,17 @@ function sailfish_install {
     pinfo "Installing Sailfish..."
     download_software Sailfish
     tar xzvf $Sailfish_FILE
-    pushd sailfish-$Sailfish_VERSION
-    echo "Not working..."
-    exit 2
+    #pushd sailfish-$Sailfish_VERSION
+    pushd $(echo $Sailfish_FILE|sed "s/.tar.gz//")
+    # install the binaries
+    #    echo "Not working..."
+    #    exit 2
+    #mkdir build
+    #cd build
+    # new dep: tbb-devel boost
+    #cmake -DCMAKE_INSTALL_PREFIX=$IRAP_DIR -DBOOST_ROOT=$IRAP_DIR/lib  ..
+    #make
+    #make install
     rm -rf $IRAP_DIR/bin/Sailfish/lib/*
     rm -rf $IRAP_DIR/bin/Sailfish/bin/*
     mkdir -p $IRAP_DIR/bin/Sailfish/lib
@@ -1493,11 +1548,36 @@ function salmon_install {
     pinfo "salmon installation complete."    
 }
 
+function fastq_utils_install {
+    pinfo "Compiling and installing fastq_utils processing programs..."
+    download_software fastq_utils
+    tar xzvf $fastq_utils_FILE
+    pushd fastq_utils-${fastq_utils_VERSION}
+    #./install_deps.sh
+    make install
+    cp bin/*  $BIN_DIR
+    popd
+    pinfo "Compiling and installing fastq_utils processing programs...done."
+}
+
+
+function umis_install {
+    pinfo "Compiling and installing umis..."
+    git clone https://github.com/vals/umis.git
+    pushd umis
+    
+    download_software umis
+    tar xzvf $umis_FILE
+    pushd umis-${umis_VERSION}
+    pip install --prefix $IRAP_DIR .
+    popd
+    pinfo "Compiling and installing umis...done."
+}
 
 ######################################################
 # Scripture
 function scripture_install {
-#download ftp://ftp.broadinstitute.org/pub/papers/lincRNA/scripture.jar
+
     pinfo "Installing scripture..."
     download_software SCRIPTURE
     mv scripture-$SCRIPTURE_VERSION.jar $IRAP_DIR/bin/scripture.jar
@@ -1506,26 +1586,33 @@ function scripture_install {
 java -Xmx8000m -jar \$IRAP_DIR/bin/scripture.jar \$*
 EOF
     chmod +x $IRAP_DIR/scripts/scripture
-    
-# scripture requires IGVTools
-# IGV 2.1 requires Java 6 or greater. 
+    pinfo "Scripture requires IGV..."
+    igv_install
+    pinfo "Installing scripture...done"
+}
+
+function igv_install {
+    pinfo "Installing IGV..."
+    ## scripture requires IGVTools
+    ## IGV 2.1 requires Java 6 or greater. 
     download_software IGV
     unzip $IGV_FILE
     cp IGV_$IGV_VERSION/* $IRAP_DIR/bin/
     chmod +x $IRAP_DIR/bin/igv*
-    rm -rf IGV_$IGV_VERSION $IGV.zip
+    ##rm -rf IGV_$IGV_VERSION $IGV_FILE.zip
     
     cat <<EOF > $IRAP_DIR/bin/igv.sh
 #!$ENV_FP bash
 java -Dapple.laf.useScreenMenuBar=true -Xmx750m -jar $IRAP_DIR/bin/igv.jar $*
 EOF
     
-    IGVTOOLS=igvtools_nogenomes_$IGV_TOOLS_VERSION
+    ##IGVTOOLS=igvtools_nogenomes_$IGV_TOOLS_VERSION
+    ##IGVTOOLS=$(echo $IGV_TOOLS_FILE|sed "s/.zip//")
     download_software IGV_TOOLS
     unzip $IGV_TOOLS_FILE
     cp IGVTools/* $IRAP_DIR/bin/
     echo "exit 0" >> $IRAP_DIR/bin/igvtools
-    pinfo "Installing scripture...done"
+    pinfo "Installing IGV...done"
 }
 
 function quant_install {
@@ -1533,17 +1620,23 @@ function quant_install {
     cufflinks2_install
     htseq_install
     flux_capacitor_install
-    scripture_install
-    NURD_install
+    nurd_install
     stringtie_install
     rsem_install
     kallisto_install
-    fusionmap_install
     salmon_install
     #isoem_install
     #sailfish_install
     #mmseq_install
     #ireckon_install
+    pinfo "To install sailfish run: irap_install.sh -s . -x sailfish"
+    pinfo "To install fusionmap run: irap_install.sh -s . -x fusionmap"
+    pinfo "To install fusioncatcher run: irap_install.sh -s . -x fusioncatcher"
+    pinfo "To install scripture run: irap_install.sh -s . -x scripture"
+    # scripture_install
+    # fusionmap_install
+    # fusioncatcher
+
 }
 
 ######################################################
@@ -1618,12 +1711,7 @@ function core_install {
     #############
     # fastq utils
     # Fastq processing utilities
-    pinfo "Compiling and installing fastq/bam processing programs..."
-    pushd $SRC_DIR/src/fastq_utils
-    make -j $J -B
-    TARGETS=`grep "^TARGETS=" Makefile| cut -f 2 -d=`
-    cp $TARGETS $BIN_DIR
-    popd
+    fastq_utils_install
     pushd $SRC_DIR/src/bamutils
     make -B
     cp bam_pe_insert bam_fix_NH bam_fix_se_flag bam_tophat2_fix bamRindex $BIN_DIR
@@ -1636,7 +1724,7 @@ function core_install {
 }
 ###############################################
 # may be useful...but requires a web server
-function jbrowse_install {
+function old_jbrowse_install {
     pinfo "Installing jbrowse..."
     download_software JBROWSE
     rm -f  $IRAP_DIR/aux/jbrowse.zip
@@ -1718,7 +1806,8 @@ function jbrowse_install {
     popd
     pinfo "jbrowse installation complete."
 }
-function new_jbrowse_install {
+
+function jbrowse_install {
     pinfo "Installing new jbrowse..."
     download_software NEW_JBROWSE
     mv $NEW_JBROWSE_FILE $IRAP_DIR/aux/latest_jbrowse.zip
@@ -1795,6 +1884,7 @@ function data_install {
     pinfo "Creating data folder...done."
 }
 
+
 function ucsc_utils_install {
 
     pinfo "Installing extra programs from UCSC..."
@@ -1860,7 +1950,7 @@ EOF
 #     pinfo "$MAPPER installation complete."    
 #}
 
-function NURD_install {
+function nurd_install {
     pinfo "Installing NURD..."
     download_software NURD
     tar xzvf $NURD_FILE
@@ -1870,6 +1960,17 @@ function NURD_install {
     cp NURD $IRAP_DIR/bin
     popd
     pinfo "NURD installation complete."    
+}
+
+######################################
+# Fusion catcher
+function fusioncatcher_install {
+
+    pinfo "Installation of FusionCather..."
+    download_software FUSIONCATCHER
+    pip install --prefix $IRAP_DIR  biopython 
+    python $FUSIONCATCHER_FILE -a -y --download -p $IRAP_DIR
+    pinfo "FusionCatcher installation complete."    
 }
 
 
@@ -1959,12 +2060,9 @@ function miso_install {
     pushd yarden-MISO-*
     python setup.py build
     python setup.py install   --user
-    pinfo "RSEM installation complete."    
+    pinfo "miso installation complete."    
 }
 
-PICARD_VERSION=1.119
-PICARD_FILE=picard-tools-$PICARD_VERSION.zip
-PICARD_URL=http://sourceforge.net/projects/picard/files/picard-tools/$PICARD_VERSION/$PICARD_FILE/download
 
 function picard_install {
     pinfo "Installing Picard..."
