@@ -1,0 +1,251 @@
+#!/usr/bin/env Rscript
+#; -*- mode: R;-*-
+# =========================================================
+# Copyright 2012-2017,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+# =========================================================
+
+###############################################################
+suppressPackageStartupMessages(library("optparse"))
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+#
+# specify our desired options in a list
+#
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+pdebug.enabled <- TRUE
+#######################
+usage <- "irap_sc3 --tsv file --out out_file_prefix [options]"
+filenames <- c("tsv_file","lengths")
+
+option_list <- list(
+    make_option(c("-i", "--tsv"), type="character", dest="tsv_file", help="TSV file name with the matrix with the counts per cell by gene/transcript."),
+    make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name prefix."),
+    make_option(c("-m", "--min_clusters"), type="numeric",default=1,help="Minimum number of clusters."),
+    make_option(c("-M", "--max_clusters"), type="numeric",default=9,help="Maximum number of clusters."),
+    make_option(c("-c", "--max_threads"), type="numeric",default=1,help="Maximum number of threads that may be used."),
+  make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode")
+)
+
+multiple.options <- NULL
+mandatory <- c("tsv_file","out")
+
+#pinfo("saved")
+opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
+
+##Sys.setenv(IRAP_DIR="../irap")
+## opt <- list()
+## opt$tsv_file <- "test_files/quant/huge.genes.raw.tsv"
+## opt$min_clusters <- 5
+## opt$max_clusters <- 9
+## opt$max_threads <- 3
+
+suppressPackageStartupMessages(library(SC3))
+suppressPackageStartupMessages(library(scater))
+
+out.prefix <- opt$out
+pdebug.enabled <- opt$debug
+
+#
+pdebug.save.state("irap_sc3","p0")
+## data("sc_example_counts")
+## data("sc_example_cell_info")
+## sc_example_cell_info
+
+myRunTSNE <- function (object, reduction.use = "pca", cells.use = NULL, dims.use = 1:5, 
+    genes.use = NULL, seed.use = 1, do.fast = TRUE, add.iter = 0, 
+    dim.embed = 2, distance.matrix = NULL, ...) 
+{
+    if (!is.null(x = distance.matrix)) {
+        genes.use <- rownames(x = object@data)
+    }
+    if (is.null(x = genes.use)) {
+        data.use <- GetDimReduction(object = object, reduction.type = reduction.use, 
+            slot = "cell.embeddings")[, dims.use]
+    }
+    if (!is.null(x = genes.use)) {
+        data.use <- t(PrepDR(object = object, genes.use = genes.use))
+    }
+    set.seed(seed = seed.use)
+    if (do.fast) {
+        if (is.null(x = distance.matrix)) {
+            data.tsne <- Rtsne(X = as.matrix(x = data.use), dims = dim.embed, 
+                ...)
+        }
+        else {
+            data.tsne <- Rtsne(X = as.matrix(x = distance.matrix), 
+                dims = dim.embed, is_distance = TRUE)
+        }
+        data.tsne <- data.tsne$Y
+    }
+    else {
+        data.tsne <- tsne(X = data.use, k = dim.embed, ...)
+    }
+    if (add.iter > 0) {
+        data.tsne <- tsne(x = data.use, initial_config = as.matrix(x = data.tsne), 
+            max_iter = add.iter, ...)
+    }
+    colnames(x = data.tsne) <- paste0("tSNE_", 1:ncol(x = data.tsne))
+    rownames(x = data.tsne) <- rownames(x = data.use)
+    object <- SetDimReduction(object = object, reduction.type = "tsne", 
+        slot = "cell.embeddings", new.data = data.tsne)
+    object <- SetDimReduction(object = object, reduction.type = "tsne", 
+        slot = "key", new.data = "tSNE_")
+    parameters.to.store <- as.list(environment(), all = TRUE)[names(formals("RunTSNE"))]
+    return(list(obj=object,tsne=data.tsne,data.used=data.use))
+}
+
+
+
+## head(sc_example_counts)
+## head(table)
+##
+pinfo("Loading ",opt$tsv_file)
+table <- quant.load(opt$tsv_file)
+pinfo("Loading ",opt$tsv_file," done.")
+
+if ( ncol(table)<=2 ) {
+    perror("Insufficient samples/cells to cluster")
+    q(status=1)
+}
+
+#source("http://bioconductor.org/biocLite.R")
+#biocLite("SC3",suppressUpdates=TRUE)
+
+## save
+##  write.tsv(tpm,file=opt$out)
+##  pinfo("Saved ",opt$out)
+sceset <- newSCESet(countData = table)
+sceset <- calculateQCMetrics(sceset)
+
+##    plotPCA(sceset)
+
+#####################################################
+## Tracy-Widom theory on random matrices to estimate
+## $ k_estimation - which should be the default value of K
+sceset <- sc3_estimate_k(sceset)
+
+sel.k <- sceset@sc3$k_estimation
+clusters2test <- round(abs(opt$max_clusters-opt$min_clusters)/2,0)
+k.range <- c(sel.k-clusters2test,sel.k+clusters2test)
+pinfo("Checking clusters in the range ",k.range[1]," to ", k.range[2])
+
+## 
+sceset <- sc3(sceset, ks = seq(k.range[1],k.range[2]), biology = TRUE, n_cores=opt$max_threads,k_estimator=TRUE)
+
+#sc3_plot_cluster_stability(sceset, k = sel.k)
+#sc3_plot_markers(sceset, k = sel.k)
+##data.frame containing the marker genes, corresponding cluster indexes and adjusted p-values##
+
+#sc3_plot_consensus(sceset,k=sel.k)
+#sc3_plot_cluster_stability(sceset,k=max(ks))
+
+#######################################
+## single matrix with all clusters
+l <- as.matrix(table[NULL,,drop=FALSE])
+for (k in seq(k.range[1],k.range[2])) {
+    p_data <- pData(sceset)
+    label <- paste0("sc3_",k,"_clusters")
+    pData(sceset)[,label]
+    clus <- p_data[,label]
+    names(clus) <- rownames(p_data)
+    l <- rbind(l,clus[colnames(l)])
+}
+l <- as.data.frame(cbind(K=seq(k.range[1],k.range[2]),l))
+sel.K <- l$K==sel.k
+l <- cbind(sel.K,l)
+clusters.m <- l
+## save the cluster(s)
+ofile <- paste0(out.prefix,"_clusters.tsv")
+write.table(clusters.m,file=ofile,sep="\t",row.names=FALSE,col.names=TRUE,quote=FALSE)
+pinfo("Created ",ofile)
+
+##########################################
+## Marker genes for each cluster
+## gene x #clusters
+l <- as.matrix(table[,NULL,drop=FALSE])
+##head(l)
+for (k in seq(k.range[1],k.range[2])) {
+    p_data <- pData(sceset)
+    label <- paste0("sc3_",k,"_clusters")
+    pData(sceset)[,label]
+    clus <- p_data[,label]
+    names(clus) <- rownames(p_data)
+    l <- cbind(l,clus[colnames(l)])
+}
+l <- as.data.frame(cbind(K=seq(k.range[1],k.range[2]),l))
+
+p.val.cutoff <- 0.01
+auroc.cutoff <- 0.95
+
+f_data <- fData(sceset)
+sel <- f_data[ , grep("*_markers_*", colnames(f_data))]
+
+#k <- sel.k
+for (k in seq(k.range[1],k.range[2])) {
+    label <- paste0("sc3_",k,"_markers_clusts")
+    pval.col <- paste0("sc3_",k,"_markers_padj")
+    auroc.col <- paste0("sc3_",k,"_markers_auroc")
+    #genes2keep <- sel[,pval.col]<=p.val.cutoff & sel[,auroc.col]>=auroc.cutoff
+    sel2 <- sel[,c(label,pval.col,auroc.col)]
+    # arrange column names
+    colnames(sel2) <- gsub("sc3_.*_markers_","",colnames(sel2))
+    ## clean table
+    x <- rowSums(apply(sel2,c(1,2),is.na))
+    clean.sel <- sel2[x==0,,drop=FALSE]
+    dim(clean.sel)
+    ## write
+    ofile <- paste0(out.prefix,"_",k,"_marker_genes.tsv")
+    write.table(clean.sel,file=ofile,sep="\t",row.names=FALSE,col.names=TRUE,quote=FALSE)
+    pinfo("Created ",ofile)
+}
+
+## TSNE coordinates? or run Seurat?
+library(Seurat)
+nbt <- CreateSeuratObject(raw.data=table,project="irap",min.cells = 3,min.genes = 1000,is.expr=1)
+
+## log normalize
+nbt <- NormalizeData(object = nbt)
+## Scales and centers gene expression
+nbt <- ScaleData(object = nbt)
+nbt <- FindVariableGenes(object = nbt, mean.function = ExpMean, dispersion.function = LogVMR, 
+                         x.low.cutoff = 0.0125, x.high.cutoff = 3, y.cutoff = 0.5)
+nbt <- RunPCA(object = nbt, pc.genes = nbt@var.genes, do.print = FALSE, pcs.print = 1:5)
+
+library(Rtsne)
+perp.values <- c(5,10,15,20)
+for (p in perp.values) {
+    nbt.res <- myRunTSNE(object = nbt, dims.use = 1:20,  do.fast = TRUE,perplexity=10)
+    ofile <- paste0(out.prefix,"_tsne_perp_",p,".tsv",sep="\t")
+    write.table(nbt.res$tsne,file=ofile,row.names=FALSE,quote=FALSE)
+    pinfo("Created ",ofile)
+    par(bty="l",mar=c(4,4,1,8))
+    plot(nbt.res$tsne)
+}
+
+##col=ai.col.t[rownames(nbt.res$tsne)],pch=ai.pch[rownames(nbt.res$tsne)]
+plot(nbt.res$tsne,col=ai.col.t[rownames(nbt.res$tsne)],pch=ai.pch[rownames(nbt.res$tsne)])
+
+
+q(status=0)
+
