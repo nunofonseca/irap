@@ -147,7 +147,7 @@ dominant.transcript <- function(expr.vals.by.trans,map.gene2trans,min.fold.chang
   }
   #
   genes.in.transcripts <- unique(as.character(map.gene2trans[map.gene2trans$trans %in% names(expr.vals.by.trans),"gene"]))
-  pinfo("Genes:",length(genes.in.transcripts))
+  #pinfo("Genes:",length(genes.in.transcripts))
   #print(head(genes.in.transcripts))
   rownames(map.gene2trans) <- map.gene2trans$trans
   # mapped transcripts
