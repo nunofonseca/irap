@@ -36,30 +36,50 @@ handle_args([File]):-!,
 		     start_graph(File).
 
 handle_args([M,Q,NT,NM,D]):-!,
-    (valid_combination([M,Q,NT,NM,D,none,no])->
+    (valid_combination([M,Q,NT,NM,D,none,no,blk,none])->
      format("valid~n",[])
     ;
      format("invalid~n",[])
     ).
 handle_args([M,Q,NT,NM,D,G]):-!,
-    (valid_combination([M,Q,NT,NM,D,G,no])->
+    (valid_combination([M,Q,NT,NM,D,G,no,blk,none])->
      format("valid~n",[])
     ;
      format("invalid~n",[])
     ).
 
 handle_args([M,Q,NT,NM,D,G,StrandedData]):-!,
-    (valid_combination([M,Q,NT,NM,D,G,StrandedData])->
+    (valid_combination([M,Q,NT,NM,D,G,StrandedData,blk,none])->
      format("valid~n",[])
     ;
      format("invalid~n",[])
     ).
 
+handle_args([M,Q,NT,NM,D,G,StrandedData,Blk_SC,SC_Prot]):-!,
+    (valid_combination([M,Q,NT,NM,D,G,StrandedData,Blk_SC,SC_Prot])->
+     format("valid~n",[])
+    ;
+     format("invalid~n",[])
+    ).
+
+
 handle_args(_):-
-    format("ERROR! usage: irap_paths [ FILENAME | Mapper Quant Norm DE | Mapper Quant NormTool NormMethod DE GSE StrandedData@{yes,no}]~n",[]).
+    format("ERROR! usage: irap_paths [ FILENAME | Mapper Quant Norm DE | Mapper Quant NormTool NormMethod DE GSE StrandedData@{yes,no} blk|sc sc_protocol]~n",[]).
 
 
-valid_combination([Map,QR,QNT,QN,DE,GSE,Stranded]):-
+%% mappers supported for single cell
+sc_mapper(hisat2).
+sc_mapper(star).
+sc_mapper(tophat2).
+sc_mapper(tophat1).
+sc_mapper(bowtie2).
+sc_mapper(bowtie1).
+sc_mapper(none).
+sc_mapper(kallisto).
+
+%%sc_mappers(rapmap).
+
+valid_combination([Map,QR,QNT,QN,DE,GSE,Stranded,blk,_]):-
     m(Map,_,_,S1),
     qr(QR,m(Map),_,S2),
     valid_norm_selection(QR,QNT,QN),
@@ -67,6 +87,31 @@ valid_combination([Map,QR,QNT,QN,DE,GSE,Stranded]):-
     (Stranded==yes->(Map==none->true;S1==stranded,stranded_ok(Stranded,S2));true),
     de(DE,qr(QR),_),
     gse(GSE,de(DE),_).
+
+%% smart-seq2 - has UMIs => subset of quantification methods and no fpkm
+valid_combination([Map,QR,QNT,QN,DE,GSE,Stranded,sc,'smart-seq2']):-
+    m(Map,_,_,S1),
+    sc_mapper(Map),
+    qr_sc(QR,m(Map),_,S2),
+    valid_norm_selection(QR,QNT,QN),
+    !,
+    (Stranded==yes->(Map==none->true;S1==stranded,stranded_ok(Stranded,S2));true),
+    DE==none,
+    %%de(DE,qr(QR),_),
+    gse(GSE,de(DE),_).
+
+valid_combination([Map,QR,QNT,QN,DE,GSE,Stranded,sc,SC_PROT]):-
+    (SC_PROT=='smart-seq2'->fail;true),
+    m(Map,_,_,S1),
+    sc_mapper(Map),
+    qr_sc(QR,m(Map),_,S2),
+    valid_norm_selection(QR,QNT,QN),
+    !,
+    (Stranded==yes->(Map==none->true;S1==stranded,stranded_ok(Stranded,S2));true),
+    DE==none,
+    %%de(DE,qr(QR),_),
+    gse(GSE,de(DE),_).
+
 
 % Quant method, Norm tool, Norm Method
 valid_norm_selection(_QR,none,_).
@@ -261,13 +306,15 @@ m('star',_,'',stranded).
 m('hisat2',_,'',stranded).
 m('osa',_,'',no).
 m('mapsplice',_,'',no).
+m('kallisto',_,'',_).
 m('none',_,'',_).
 
 all_mappers(X):-all(M,m(M,_,_,_),X).
-all_quant([htseq1,htseq2,basic,flux_cap,cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,nurd,stringtie,stringtie_nd,rsem,kallisto,salmon]).
+all_quant([htseq1,htseq2,basic,flux_cap,cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,nurd,stringtie,stringtie_nd,rsem,kallisto,salmon,umi_count]).
 all_quant_norm([flux_cap,cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,none,deseq,stringtie,stringtie_nd,rsem,irap]).
 all_de([deseq,edger,voom,cuffdiff1,cuffdiff2,cuffdiff1_nd,cuffdiff2_nd,deseq2,none]).
 
+%% bulk rna
 qr('htseq1',m(M),'Only requires the NH flag defined',stranded):-m(M,_,_,_S),not M==none.
 qr('htseq2',m(M),'Only requires the NH flag defined',stranded):-m(M,_,_,_S),not M==none.
 qr('basic',m(M),'',S):-m(M,_,_,S),not M==none.
@@ -283,11 +330,21 @@ qr('nurd',m(M),'',no):-m(M,_,_,_S),not M==none.
 qr('rsem',m(star),'',no).
 qr('kallisto',m(none),'',no).
 qr('salmon',m(none),'',no).
+
+
 %qr('ireckon',m(M),''):-m(M,_,_).
 %qr('bitseq',m(M),''):-m(M,_,_).
 %qr('isoem',m(M),''):-m(M,_,_).
 %qr('sailfish',m(M),''):-m(M,_,_).
 qr(none,m(M),'',_):-m(M,_,_,_S).
+
+
+%% single cell
+%qr_sc('umi_tools',m(_),'',no).
+qr_sc('umis',m(_),'',_).
+qr_sc('umi_count',m(_),'',_).
+qr_sc('htseq2',m(_),'',no).%% smart-seq2 without UMIs
+qr_sc(none,m(M),'',_):-m(M,_,_,_S).
 
 qn(cufflinks1,qr(cufflinks1),_,stranded).
 qn(cufflinks2,qr(cufflinks2),_,stranded).
