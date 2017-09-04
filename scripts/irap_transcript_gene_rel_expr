@@ -143,7 +143,7 @@ transcript.rel.expression<- function(expr.vals.by.trans,map.gene2trans,min.fold.
         return(r.expr)
     }
     genes.in.transcripts <- unique(as.character(map.gene2trans[map.gene2trans$trans %in% names(expr.vals.by.trans),"gene"]))
-    pinfo("Genes:",length(genes.in.transcripts))
+    ##pinfo("Genes:",length(genes.in.transcripts))
   
     rownames(map.gene2trans) <- map.gene2trans$trans
     # mapped transcripts
