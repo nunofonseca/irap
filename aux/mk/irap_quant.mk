@@ -18,7 +18,6 @@
 # along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-#    $Id: 0.1.3 Nuno Fonseca Wed Dec 26 16:16:19 2012$
 # =========================================================
 
 ## Notes:
@@ -179,6 +178,10 @@ define run_flux_cap=
 	mv $(4).tmp2 $(4) 
 endef
 
+
+#************************************
+# bulkRNA-seq 
+#************************************
 
 #************
 # HTSeq-count
@@ -461,8 +464,6 @@ $(foreach l,$(pe),$(eval $(call make-htseq-quant-rule,$(l),$(quant_method),$(l).
 $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv: $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).tsv)
 	( $(call pass_args_stdin,irap_merge_tsv.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
 
-# $(name)/$(mapper)/$(quant_method)/transcripts.riu.$(quant_method).irap.tsv: $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.riu.$(quant_method).irap.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.riu.$(quant_method).irap.tsv)
-# 	( $(call pass_args_stdin,irap_merge_tsv.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
 
 endif
 
@@ -893,7 +894,7 @@ endif
 # transcripts
 $(call file_exists,$(trans_file))
 
-#
+
 ifndef kallisto_index_params
 kallisto_index_params=
 endif
@@ -903,6 +904,7 @@ kallisto_quant_params=
 endif
 
 
+# -> prefux
 kallisto_index_name=$(trans_file)_kallisto/kallisto_index
 kallisto_index=$(trans_file)_kallisto/kallisto_index.irap
 
@@ -910,10 +912,10 @@ kallisto_index=$(trans_file)_kallisto/kallisto_index.irap
 SETUP_DATA_FILES+=$(kallisto_index)
 
 $(kallisto_index): $(trans_file)
-	mkdir -p $(@D) && irap_wrapper.sh kallisto kallisto index $(kallisto_index_params) -i $(kallisto_index_name)  $< && touch $@
+	$(call run_kallisto_index)
+##	mkdir -p $(@D) && irap_wrapper.sh kallisto kallisto index $(kallisto_index_params) -i $(kallisto_index_name)  $< && touch $@
 
-#$(mapTrans2gene): $(gtf_file_abspath)
-#	genMapTrans2Gene -i $< -o $@.tmp -c $(max_threads) && mv $@.tmp $@
+
 
 # out_directory - 1
 # fastq files - 2
@@ -998,7 +1000,9 @@ SETUP_DATA_FILES+=$(salmon_index)
 
 
 $(salmon_index): $(trans_file)
-	mkdir -p $(@D) && irap_wrapper.sh salmon salmon index $(salmon_index_params) -i $(salmon_index_name) -t $< && touch $@
+	$(call run_salmon_index)
+##	mkdir -p $(@D) && irap_w
+##	mkdir -p $(@D) && irap_wrapper.sh salmon salmon index $(salmon_index_params) -i $(salmon_index_name) -t $< && touch $@
 
 
 
