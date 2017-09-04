@@ -52,6 +52,7 @@ option_list <- list(
   make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name prefix. An HTML and TSV.gz file will be created.")
 )
 
+## TODO: this variable is shared between irap_raw2metric and irap_quant_qc -> move to another file
 # check multiple options values
 multiple.options = list(
   feature=c('gene','exon','transcript'),
