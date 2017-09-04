@@ -166,7 +166,7 @@ bowtie1_FILE=bowtie-${bowtie1_VERSION}-linux-x86_64.zip
 bowtie1_URL=http://sourceforge.net/projects/bowtie-bio/files/bowtie/$bowtie1_VERSION/$bowtie1_FILE
 # current - 2.2.6->2.2.9-> 2.3.2
 bowtie2_VERSION=2.3.2
-bowtie2_FILE=bowtie2-${bowtie2_VERSION}-legacy-linux-x86_64.zip
+bowtie2_FILE=bowtie2-${bowtie2_VERSION}-linux-x86_64.zip
 bowtie2_URL=http://sourceforge.net/projects/bowtie-bio/files/bowtie2/$bowtie2_VERSION/$bowtie2_FILE
 
 #
