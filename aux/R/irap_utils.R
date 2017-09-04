@@ -1427,7 +1427,7 @@ load.annot <- function(file) {
 }
 # keep backwards compatibility by using read.table when data.table is not 
 # available
-qload.tsv <- function(f,header=NULL,comment.char="") {
+qload.tsv <- function(f,header=NULL,comment.char="",nrows=-1L) {
   tsv.data <- NULL
   if (require("data.table",quietly=TRUE,character.only=TRUE) &&
       compareVersion(as.character(packageVersion("data.table")),"1.9.6")>=0) {
@@ -1442,9 +1442,9 @@ qload.tsv <- function(f,header=NULL,comment.char="") {
       f <- paste(f," | grep -v \"^",comment.char,"\"",sep="")
     }
     if (is.null(header)) header="auto"
-    tryCatch(tsv.data <- fread(input=f,sep = "\t", header=header,check.names=FALSE,data.table=FALSE),error=function(x) NULL)
+    tryCatch(tsv.data <- fread(input=f,sep = "\t", nrows=nrows, header=header,check.names=FALSE,data.table=FALSE),error=function(x) NULL)
   } else 
-    tryCatch(tsv.data <- read.table(f,sep = "\t", header=header, comment.char=comment.char, quote = "\"",check.names=FALSE),error=function(x) NULL)
+    tryCatch(tsv.data <- read.table(f,sep = "\t", header=header, comment.char=comment.char, quote = "\"", nrows=nrows, check.names=FALSE),error=function(x) NULL)
   return(tsv.data)
 }
 
