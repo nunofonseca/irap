@@ -72,9 +72,11 @@ if [ "$*-" == "-" ]; then
 fi
 
 ## mandatory
-if [ ! -e  $bam_file ]; then
-    perror "BAM file not found $bam_file"
-    exit 1
+if [ "$bam_file-" != "--" ]; then
+    if [ ! -e  $bam_file ]; then
+	perror "BAM file not found $bam_file"
+	exit 1
+    fi
 fi
 pinfo BAM=$bam_file
 
@@ -138,9 +140,9 @@ fi
 
 
 if  [ $num_feat_ann_files -eq 1 ]; then
-    cmd="$cmd1 tagBam -i $input_file  -names   -tag $feat_annot_tags  -files $feat_annot_files"
+    cmd="$cmd1 tagBam -i $input_file  -names -s  -tag $feat_annot_tags  -files $feat_annot_files"
 else
-    cmd="$cmd1 tagBam -i $input_file  -names  -tag GX  -files $gene_bed_file | tagBam -i stdin  -names  -tag  TX  -files $trans_bed_file"
+    cmd="$cmd1 tagBam -i $input_file  -names -s -tag GX  -files $gene_bed_file | tagBam -i stdin  -names  -tag  TX  -files $trans_bed_file"
 fi
 echo $cmd > /dev/stderr
 exec bash -c "$cmd"
