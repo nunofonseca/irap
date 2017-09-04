@@ -44,7 +44,7 @@ $(info * sop=$(sop) (overriding some options))
 
 ifeq ($(sop),pawg3_th2_mapping)
 $(info * SOP=PAWG3 mapping with TopHat2)
-override qc=off
+override qc=report
 ifdef quant_method
 ifneq ($(quant_method),kallisto)
 override mapper=tophat2
@@ -62,7 +62,7 @@ endif
 
 ifeq ($(sop),pawg3_star_mapping)
 $(info * SOP=PAWG3 mapping with STAR)
-override qc:=off
+override qc:=report
 override mapper:=star
 override species:=homo_sapiens
 quant_method?=none
@@ -80,7 +80,7 @@ endif
 # non-official
 ifeq ($(sop),pawg3_kallisto)
 $(info * SOP=PAWG3 quantification with kallisto)
-override qc:=off
+override qc:=report
 override quant_method:=kallisto
 override species=homo_sapiens
 override mapper:=none
@@ -140,6 +140,7 @@ exon_quant_method=none
 quant_norm_method?=fpkm
 quant_norm_tool?=irap
 transcript_quant?=y
+#dt_fc=no
 endif	
 
 # END SOP defs
