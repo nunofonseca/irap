@@ -59,8 +59,24 @@ file_exists_ce=$(if  $(realpath $(1)),,$(call p_error,$(1) - $(2)))
 #  check if a variable  $(1) is defined - return the variable name if it is defined or empty otherwise
 is_defined=$(if $(subst undefined,,$(origin $(1))),$(1),)
 
+
+###################################################################
+# Variables
+ifdef def_lib_dir
+override def_lib_dir:=$(patsubst %/,%,$(def_lib_dir))/
+endif
+#
+
+ifneq ($(origin raw_data_dir),undefined)
+def_lib_dir:=
+endif
+
+#raw_data_dir?=
+def_lib_dir?=
+
+$(info ---------$(def_lib_dir))
 # ensure that the dir name starts and ends with a /
-check_libdir_ok=$(if $(call is_defined,$(1)_dir),$(patsubst %/,%,$($(1)_dir))/,$(patsubst %/,%,$(def_lib_dir))/)
+check_libdir_ok=$(if $(call is_defined,$(1)_dir),$(patsubst %/,%,$($(1)_dir))/,$(def_lib_dir))
 
 # *****************
 # Stranded data
@@ -85,12 +101,34 @@ check_sheader_ok=$(if $(call is_defined,$(1)_shl),$($(1)_shl),$(if $($(1)_rgid),
 
 has_stranded_data=no
 set_has_stranded_data=$(if $(filter both,$($(1)_strand)),,$(eval has_stranded_data=yes))
+##########################
+# barcode values - lib, bc
+check_bc_value_ok=$(if $(call is_defined,$(1)_$(2)),$($(1)_$(2)),$(def_$(bc)))
 
+# the following parameters may be defined once - and are applied as default values
+# for all libraries/assays - or defined per assay
+def_umi_read?=undef
+def_umi_offset?=0
+def_umi_size?=0
+def_cell_read?=undef
+def_cell_offset?=0
+def_cell_size?=0
+def_sample_read?=undef
+def_sample_offset?=0
+def_sample_size?=0
+def_read1_offset?=0
+def_read1_size?=-1
+def_read2_offset?=0
+def_read2_size?=-1
+def_index1?=undef
+def_index2?=undef
+def_known_umi_file?=
 
+barcode_min_qual?=10
 # ****************
 # Paths
 # get the path for a filtered fastq file
-lib2filt_folder=$(name)/data/$($(1)_dir)
+lib2filt_folder=$(name)/data/qc/$($(1)_dir)
 # get the path for a bam file
 lib2bam_folder=$(name)/$(mapper)/$($(1)_dir)
 #
@@ -141,7 +179,7 @@ endef
 rnaseq_type?=blk
 
 ## single_cell_protocol=none 
-sc_protocol=none
+sc_protocol?=none
 
 ifndef debug	
  debug=1
@@ -188,10 +226,18 @@ def_max_threads=1
 #Minimal base quality accepted
 def_min_read_quality=10
 
+# Trim poly-A/T? y|n
+def_trim_poly_at=n
+
+# minimum poly-at length
+# by default, if a read has at least 10 consecutive A or T in the edges then it will be trimmed. This option is only used if trim_poly_at is set to y
+def_trim_poly_at_len=10
+
 #Trim all reads to the minimum read size after quality trimming - y/n
 def_trim_reads=y
 
-# Quality filtering - on/off/none (alias: qc)
+# none is being kept for backwards compatibility
+# Quality filtering - on/report/off/none (alias: qc)
 def_qual_filtering=on
 
 # Mapper to use in QC contamination check 
@@ -243,10 +289,10 @@ def_de_num_genes_per_table=300
 #def_annot_tsv=auto
 def_annot_tsv=off
 
-def_lib_dir=
-
 CSS_FILE?=irap.css
 
+###########
+## Internal 
 isl_mode?=n
 
 ################################################################################
@@ -309,7 +355,7 @@ endif
 # data_dir Data directory (directory where the data is expected to be)
 # Directory organization
 # data_dir/reference/species/(fasta+(cdna+gtf))
-# data_dir/raw_data/$(raw_folder)/
+# default: data_dir/raw_data/$(raw_folder)/
 
 # check if data dir exists and structure is OK
 # TODO
@@ -320,6 +366,7 @@ endif
 
 $(info *	data_dir=$(data_dir))
 $(call file_exists,$(data_dir))
+
 
 #********
 # Species
@@ -334,6 +381,19 @@ endif
 ifndef raw_folder
  raw_folder=$(species)
 endif
+
+#***************
+# raw_data_dir - folder where the raw data (fastq/bam) may be found
+# 
+ifdef raw_data_dir
+ifneq ($(raw_data_dir)-,-)
+# not empty
+override raw_data_dir:=$(raw_data_dir)/
+endif
+endif
+# always add a end /
+raw_data_dir?=$(data_dir)/raw_data/$(raw_folder)/
+$(info *	raw_data_dir=$(raw_data_dir))
 
 #**********************
 # Reference genome file
@@ -364,16 +424,28 @@ gtf_file_basename:=$(notdir $(gtf_file_abspath))
 $(info *       gtf_file  = $(gtf_file))
 $(call file_exists,$(gtf_file_dir)/$(gtf_file))
 
+# irap's gtf file
+# lgtf_file_dir:=
+
 # ************
 # spikein data
+ifdef spikein_fasta
+ifeq ($(spikein_fasta),ERCC)
+override spikein_fasta:=$(data_dir)/ercc.fasta.gz
+spikein_fasta_abspath:=$(abspath $(spikein_fasta))
+else
+spikein_fasta_abspath:=$(abspath $(spikein_fasta))
+endif
+
+endif
 
 ifdef spikein_fasta
 spikein_data=y
 $(info *	spikein_data=y)
-spikein_fasta_abspath:=$(data_dir)/raw_data/$(raw_folder)/$(spikein_fasta)
+#spikein_fasta_abspath:=$(raw_data_dir)/$(spikein_fasta)
 $(call file_exists,$(spikein_fasta_abspath))
 # remove .gz
-override spikein_fasta_abspath:=$(data_dir)/raw_data/$(raw_folder)/$(subst .gz,,$(spikein_fasta))
+override spikein_fasta_abspath:=$(subst .gz,,$(spikein_fasta_abspath))
 # gtf and fasta files
 # new reference file cannot be shared across experiments
 reference_dir:=$(name)/data
@@ -389,9 +461,7 @@ reference_basename=$(notdir $(reference_abspath))
 gtf_file_dir:=$(name)/data
 user_gtf_abspath:=$(gtf_file_abspath)
 gtf_file_abspath:=$(name)/data/$(subst .fasta,,$(spikein_fasta_prefix)).$(subst .gz,,$(notdir $(user_gtf_abspath)))
-#$(patsubst %.gtf,%.spike.gtf,$(subst .gz,,$(gtf_file)))
 spikein_gtf_file:=$(patsubst %.fasta,%.gtf,$(spikein_fasta_abspath))
-#$(gtf_file_dir)/spike.gtf
 override gtf_file:=$(notdir $(gtf_file_abspath))
 
 ## concentration (TSV file)
@@ -411,12 +481,6 @@ ifndef single_cell
 single_cell=n
 endif
 
-ifeq ($(single_cell),y)
-$(info *	single_cell=y)
-ifndef spikein_data
-$(call p_error,spikein_fasta parameter needs to be provided when analysing single cell data)
-endif
-endif
 
 # ****************
 # file with the junctions (as used by tophat)
@@ -512,6 +576,7 @@ ifdef se
  $(foreach l,$(se),$(call check_se_libname_ok,$(l)))
  $(foreach l,$(se),$(call check_param_ok,$(l)_rs))
  $(foreach l,$(se),$(call check_param_ok,$(l)_qual))
+ $(foreach l,$(se),$(foreach bc,known_umi_file index1 index2 umi_read umi_offset umi_size cell_read cell_offset cell_size sample_read sample_offset sample_size read1_offset read2_offset read1_size read2_size,$(eval $(l)_$(bc)=$(call check_bc_value_ok,$(l),$(bc)))))
  ifile_given=1
 endif
 
@@ -550,6 +615,7 @@ ifdef pe
  $(foreach l,$(pe),$(call check_param_ok,$(l)_rs))
  $(foreach l,$(pe),$(call check_param_ok,$(l)_qual))
  $(foreach l,$(pe),$(call set_rs_list,$(l)_rs))
+ $(foreach l,$(pe),$(foreach bc,umi_read umi_offset umi_size cell_read cell_offset cell_size sample_read sample_offset sample_size read1_offset read2_offset read1_size read2_size,$(eval $(l)_$(bc)=$(call check_bc_value_ok,$(l),$(bc)))))
  #$(foreach l,$(pe),$(call check_param_ok,$(l)_mp))
  ifile_given=1
 endif
@@ -644,7 +710,7 @@ $(info *	rnaseq_type=$(rnaseq_type))
 
 ifeq ($(rnaseq_type),sc)
 ## single cell protocol
-SUPPORTED_SCP:=none smart-seq2
+SUPPORTED_SCP:=none smart-seq2 drop-seq 10x_v1 10x_v2
 # drop-seq 10x
 ifeq (,$(filter $(sc_protocol),$(SUPPORTED_SCP)))
 $(call p_info,[ERROR] Invalid sc_protocol - valid values are $(SUPPORTED_SCP))
@@ -653,6 +719,50 @@ endif
 $(info *	sc_protocol=$(sc_protocol))
 
 endif
+
+################################################################
+## single cell specific parameters
+
+## Simple cell filter
+## Cells with less or equal than $(sc_non_zero_rows) are discarded
+sc_non_zero_rows=1
+## increasing this filter can make the intermidiate files smaller but there is no track of the cells lost
+
+## parameters passed to bam_umi_count (umi_count quant. option)
+bam_umi_count_params?=--min_reads 0 --multi_mapped
+## --uniq_mapped --multi_mapped
+umis_params?=--cb_cutoff 2
+
+
+########################
+## single cell filtering
+cell_filt_min_features?=0.35   # minimum number of features expressed as a percentage of the total number of features
+
+cell_filt_max_ERCC?=0.8  # maximum percentage of expression that may be atributed to ERCC spike-ins
+
+# pre-blacklisted cells
+cell_filt_controls?=   # file with the a known list of cells that should not be used in downstream analysis
+
+cell_filt_outliers?=y   # filter outliers based on the total number of counts (y|n)
+## Exclude outliers based on the 5*median absolute difference (like scater).
+
+cell_filt_min_expression?=1
+
+cell_filt_min_cell_expr?=50000 # minimum number of counts per cell
+
+########################
+## Clustering
+## Only used in sc mode
+min_clusters?=2
+max_clusters?=2
+clustering_method:=sc3
+
+# Optional two column tsv file with cell annotations 
+# cells_samples_annotation=
+#
+
+# not used yet
+# valid_clustering_methods=sc3
 
 #********
 # Threads
@@ -676,7 +786,7 @@ $(info *	tmp_dir=$(tmp_dir) (temporary directory))
 #******************
 # Quality filtering
 #******************
-# on|off|report|none
+# on|off|report=none(deprecated)
 ifdef qc
  qual_filtering=$(qc)
 endif
@@ -694,9 +804,26 @@ ifndef qc
 qc=$(qual_filtering)
 endif
 
+# on - perform filtering of the reads
+# report - just collect QC stats
+# off - skip filtering and collection of QC stats
+qc_modes=on off report
+ifeq (,$(filter $(qc),$(qc_modes)))
+$(call p_info,[ERROR] Invalid qc/qual_filtering value)
+endif
+
+
 ifndef trim_reads
  trim_reads=$(def_trim_reads)
 endif
+
+
+# Trim poly-A/T? y|n
+trim_poly_at?=$(def_trim_poly_at)
+# minimum poly-at length
+# by default, if a read has at least 10 consecutive A or T in the edges then it will be trimmed. This option is only used if trim_poly_at is set to y
+trim_poly_at_len?=$(def_trim_poly_at_len)
+
 
 #*************
 # Min. quality
@@ -711,6 +838,8 @@ ifndef min_read_quality
  min_read_quality=$(def_min_read_quality)
 endif
 
+# Maximum (percentage) of uncalled bases acceptable in a read
+max_n?=0
 
 #*******************
 # Contamination file
@@ -729,6 +858,10 @@ $(info *	mapper=$(mapper))
 
 # gems
 SUPPORTED_MAPPERS=tophat1 tophat2 smalt gsnap soapsplice bwa1 bwa2 bowtie1 bowtie2 gem star osa mapsplice hisat2
+ifeq ($(rnaseq_type),sc)
+SUPPORTED_MAPPERS+= kallisto 
+endif
+
 ifeq (,$(filter $(mapper),none $(SUPPORTED_MAPPERS)))
 $(call p_info,[ERROR] Invalid mapper)
 $(error $(mapper) not implemented)
@@ -774,11 +907,12 @@ ifndef quant_method
  quant_method:=$(def_quant_method)
 endif
 
-#SUPPORTED_QUANT_METHODS=basic htseq1 htseq2 cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd scripture flux_cap
-SUPPORTED_QUANT_METHODS=basic htseq1 htseq2 cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd scripture flux_cap nurd stringtie stringtie_nd rsem kallisto salmon
+SUPPORTED_QUANT_METHODS=basic htseq1 htseq2 cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd scripture flux_cap nurd stringtie stringtie_nd rsem kallisto salmon umi_count umis 
 
 # methods that produce transcript level quantification by default
-TRANS_QUANT_METHODS=flux_cap cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd nurd stringtie stringtie_nd rsem kallisto salmon
+TRANS_QUANT_METHODS=flux_cap cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd nurd stringtie stringtie_nd rsem kallisto salmon umi_count 
+#umi_count kallisto_umi 
+# umis?
 
 #rsem isoem sailfish bitseq
 ifeq (,$(filter $(quant_method),$(SUPPORTED_QUANT_METHODS) none))
@@ -801,12 +935,12 @@ endif
 
 ifndef transcript_quant
 transcript_quant=$(def_transcript_quant)
-endif
-
 ifneq (,$(filter $(quant_method),$(TRANS_QUANT_METHODS)))
 $(info Enabling transcript_quant since  $(quant_method) supports it by default)
 override transcript_quant:=y
 endif
+endif
+
 
 
 $(info *	exon_quant=$(exon_quant))
@@ -819,7 +953,6 @@ $(info *	transcript_quant=$(transcript_quant))
 #####################
 # Exon quantification
 SUPPORTED_EXON_QUANT_METHODS=stringtie dexseq htseq1 htseq2
-
 
 
 ifeq ($(strip $(exon_quant)),y) 
@@ -1036,6 +1169,33 @@ exon_length=$(name)/data/$(gtf_file_basename).lengths.Rdata
 endif
 
 
+##
+## barcodes (umi, cell, sample)
+barcode_post_process_bam?=n
+$(info *	barcode_post_process_bam=$(barcode_post_process_bam))
+
+# 1 - lib
+# 2 - in bam
+# 3 - out bam
+ifeq ($(barcode_post_process_bam),y)
+## alignments to the genome
+define do_post_process_bam_cmd=
+bam_add_tags  --inbam $(2) --outbam - | bam_annotate.sh -b - -e $(name)/data/$(reference_basename).exons.bed   -i $(name)/data/$(reference_basename).introns.bed  -g $(name)/data/$(reference_basename).genes.bed6 -t $(name)/data/$(reference_basename).transcripts.bed6 > $(3).tmp && mv $(3).tmp $(3)
+endef
+## Alignments to the transcriptome - assumes that the chr/seq contains the transcript ID
+define do_post_process_trans_bam_cmd=
+bam_add_tags --tx_2_gx $(mapTrans2gene) --tx  --inbam $(2) --outbam - > $(3).tmp && mv $(3).tmp $(3)
+endef
+
+else
+define do_post_process_bam_cmd=
+true 
+endef
+define do_post_process_trans_bam_cmd=
+true 
+endef
+endif
+
 ###############################################################################
 # When the number of libraries is greater than BIG_LIM then pass the arguments
 # to some scripts from stdin
@@ -1132,7 +1292,7 @@ endef
 # 1-libname
 # path to the filtered fastq files 
 define libname2fastq=
-$(if $(call is_pe_lib,$(1)),$(call lib2filt_folder,$(1))$(1)_1.f.fastq $(call lib2filt_folder,$(1))$(1)_2.f.fastq,$(call lib2filt_folder,$(1))$(1).f.fastq)
+$(if $(call is_pe_lib,$(1)),$(call lib2filt_folder,$(1))$(1)_1.f.fastq.gz $(call lib2filt_folder,$(1))$(1)_2.f.fastq.gz,$(call lib2filt_folder,$(1))$(1).f.fastq.gz)
 endef
 
 # 1-libname
@@ -1264,7 +1424,7 @@ STAGE3_S_TARGETS=
 STAGE3_S_OFILES=
 
 ##
-STAGE1_OUT_FILES=$(foreach p,$(se),$(call lib2filt_folder,$(p))$(p).f.fastq) $(foreach p,$(pe),$(call lib2filt_folder,$(p))$(p)_1.f.fastq)
+STAGE1_OUT_FILES=$(foreach p,$(se),$(call lib2filt_folder,$(p))$(p).f.fastq.gz) $(foreach p,$(pe),$(call lib2filt_folder,$(p))$(p)_1.f.fastq.gz)
 
 ifneq ($(mapper),none)
 
@@ -1297,6 +1457,7 @@ include $(irap_path)/../aux/mk/irap_report.mk
 include $(irap_path)/../aux/mk/irap_citations.mk
 # Quantification
 include $(irap_path)/../aux/mk/irap_quant.mk
+include $(irap_path)/../aux/mk/irap_sc_quant.mk
 # Normalization
 include $(irap_path)/../aux/mk/irap_norm.mk
 # DE
@@ -1310,6 +1471,10 @@ include $(irap_path)/../aux/mk/irap_atlas.mk
 # Fusion
 include $(irap_path)/../aux/mk/irap_fusion.mk
 
+# QC - single cell
+include $(irap_path)/../aux/mk/irap_sc_qc.mk
+include $(irap_path)/../aux/mk/irap_clustering.mk
+
 
 ifdef irap_devel
 $(call p_info,Loading code under development)
@@ -1320,8 +1485,8 @@ include $(irap_path)/../aux/mk/irap_junction.mk
 endif
 
 # Check if the options provided are valid
-ifeq (invalid,$(shell irap_paths $(mapper) $(quant_method) $(quant_norm_tool) $(quant_norm_method) $(de_method) $(gse_tool) $(has_stranded_data)))
-  $(error invalid combination mapper:$(mapper) -> quant_method:$(quant_method) -> quant_norm method:$(quant_norm_method) quant_norm_tool:$(quant_norm_tool) -> de_method:$(de_method) for the given data)
+ifeq (invalid,$(shell irap_paths $(mapper) $(quant_method) $(quant_norm_tool) $(quant_norm_method) $(de_method) $(gse_tool) $(has_stranded_data) $(rnaseq_type) $(sc_protocol)))
+  $(error invalid combination mapper:$(mapper) -> quant_method:$(quant_method) -> quant_norm method:$(quant_norm_method) quant_norm_tool:$(quant_norm_tool) -> de_method:$(de_method) rnaseq_type:$(rnaseq_type) sc_protocol:$(sc_protocol) for the given data)
 endif
 
 $(info *========================================================)
@@ -1346,13 +1511,37 @@ $(call p_info,[DONE] Initialization)
 ###################
 # Quality Filtering
 ###################
-read_qual_filter_common_params=tmp_dir=$(tmp_dir)  threads=$(max_threads)  qual_filtering=$(qual_filtering)  min_qual=$(min_read_quality) trim=$(trim_reads) cont_index=$(cont_index) mapper=$(cont_mapper)
+read_qual_filter_common_params=tmp_dir=$(tmp_dir)  threads=$(max_threads)  qual_filtering=$(qual_filtering)  min_qual=$(min_read_quality) trim=$(trim_reads) cont_index=$(cont_index) mapper=$(cont_mapper) max_n=$(max_n) max_mem=$(max_mem) poly_at_len=$(trim_poly_at_len) trim_poly_at=$(trim_poly_at)
+
+# get a param value pair iff the value passed is not empty and not undef
+# 1 - param name
+# 2 - value
+get_param_value_pair=$(if $(call not_empty_not_undef,$(2)),$(1)$(2),)
+not_empty_not_undef=$(if $(subst undef,,$(1)),1,)
+
+# 1 - lib
+define get_opt_barcode_params=
+barcode_min_qual=$(barcode_min_qual) \
+$(call get_param_value_pair,umi_read=,$(subst read,,$($(1)_umi_read))) $(call get_param_value_pair,umi_size=,$($(1)_umi_size))  $(call get_param_value_pair,umi_offset=,$($(1)_umi_offset)) \
+$(call get_param_value_pair,cell_read=,$(subst read,,$($(1)_cell_read))) $(call get_param_value_pair,cell_size=,$($(1)_cell_size))  $(call get_param_value_pair,cell_offset=,$($(1)_cell_offset)) \
+$(call get_param_value_pair,sample_read=,$(subst read,,$($(1)_sample_read))) $(call get_param_value_pair,sample_size=,$($(1)_sample_size))  $(call get_param_value_pair,sample_offset=,$($(1)_sample_offset)) \
+ $(call get_param_value_pair,known_umi_file=,$($(1)_known_umi_file)) \
+ $(call get_param_value_pair,index1=,$($(1)_index1)) \
+ $(call get_param_value_pair,index2=,$($(1)_index2)) \
+ $(call get_param_value_pair,read1_offset=,$($(1)_read1_offset))  $(call get_param_value_pair,read2_offset=,$($(1)_read2_offset)) \
+ $(call get_param_value_pair,read1_size=,$($(1)_read1_size)) $(call get_param_value_pair,read2_size=,$($(1)_read2_size))
+endef
 
 # 1 - libname
-# 2 - extra options
+# 2 - input folder
+# 3 - output folder
+# 4 - extra options
+#s
 define do_quality_filtering_and_report=
-	irap_fastq_qc $(read_qual_filter_common_params) data_dir=$(data_dir)/raw_data/$(raw_folder)/$($(1)_dir) read_size=$($(1)_rs)   qual=$($(1)_qual) f="$($(1))" out_prefix=$(1) is_pe=$(call is_pe_lib,$(1)) out_dir=$(name)/data/$($(1)_dir) report_dir=$(name)/report/riq/$($(1)_dir) $(2)
+	irap_fastq_qc $(read_qual_filter_common_params) input_dir=$(2) read_size=$($(1)_rs)   qual=$($(1)_qual) f="$($(1))" out_prefix=$(1) is_pe=$(call is_pe_lib,$(1)) out_dir=$(3)  $(4) $(call get_opt_barcode_params,$(1))
 endef
+#	irap_fastq_qc $(read_qual_filter_common_params) data_dir=$(raw_data_dir)$($(1)_dir) read_size=$($(1)_rs)   qual=$($(1)_qual) f="$($(1))" out_prefix=$(1) is_pe=$(#call is_pe_lib,$(1)) out_dir=$(name)/data/$($(1)_dir)  $(2)
+# report_dir=$(name)/report/riq/$($(1)_dir)
 
 define not_empty=
 	$(if $(call file_exists,$(1),),$(call p_error,File $(1) not found))
@@ -1480,7 +1669,7 @@ phony_targets+= setup setup_files
 ################################################################################
 # Setup initial files
 # file with the length of the features (gene, isoform, exon)
-SETUP_DATA_FILES+= setup_data_files2 $(name)/data/$(gtf_file_basename).gene_class.txt $(index_files) $(gtf_file_abspath).checked  $(gtf_file_abspath).exon_id.gtf $(juncs_file_abspath)   $(annot_tsv)  $(name)/data/$(reference_basename).introns.bed 
+SETUP_DATA_FILES+= setup_data_files2 $(name)/data/$(gtf_file_basename).gene_class.txt $(index_files) $(gtf_file_abspath).checked  $(gtf_file_abspath).exon_id.gtf $(juncs_file_abspath)   $(annot_tsv)  $(name)/data/$(reference_basename).introns.bed  $(name)/data/$(reference_basename).genes.bed6 $(name)/data/$(reference_basename).transcripts.bed6
 
 setup_data_files2: $(gff3_file_abspath).filt.gff3 $(name)/data/$(reference_basename).$(gtf_file_basename).data_info.tsv 
 #phony_targets+=setup_data_files2
@@ -1621,7 +1810,7 @@ $(name)/data/$(gtf_file_basename).dexseq.lengths.Rdata: $(gtf_file_abspath).DEXS
 # Setup directory structure
 phony_targets+= setup_dirs
 
-setup_dirs: $(tmp_dir) $(name)/report/riq/ $(if $(mapper),$(name)/$(mapper)/) $(name)/data/  $(if $(quant_method),$(name)/$(mapper)/$(quant_method)/)  $(if $(de_method),$(name)/$(mapper)/$(quant_method)/$(de_method)/)
+setup_dirs: $(tmp_dir) $(name)/report/riq/ $(if $(mapper),$(name)/$(mapper)/) $(name)/data/  $(if $(quant_method),$(name)/$(mapper)/$(quant_method)/)  $(if $(de_method),$(name)/$(mapper)/$(quant_method)/$(de_method)/) $(name)/data/pre
 	$(call p_info,[DONE] Directory structure created)
 
 $(tmp_dir):
@@ -1633,6 +1822,9 @@ $(tmp_dir):
 
 
 $(name)/data/:
+	mkdir -p $@
+
+$(name)/data/pre:
 	mkdir -p $@
 
 $(name)/report/riq/:
@@ -1648,13 +1840,11 @@ $(name)/$(mapper)/$(quant_method)/$(de_method)/:
 	mkdir -p $@
 
 
+
 ################################################################################
 # Read Filtering
 ################################################################################
 # reuse the data filtered between experiments?
-
-
-
 phony_targets+= qc quality_filtering_and_report clean_quality_filtering_and_report_cleanup
 
 ifdef min_read_len
@@ -1672,31 +1862,34 @@ quality_filtering_and_report: setup	$(STAGE1_OUT_FILES)
 phony_targets+= do_qc
 do_qc: $(STAGE1_OUT_FILES)
 
-ifeq ($(qc),none)
-$(info QC disabled)
-# QC is disabled (no report, no filtering)
-%.f.fastq: 
-	$(call p_info,Filtering disabled $(call fix_libname,$(notdir $*)))
-	echo $(data_dir)/raw_data/$(raw_folder)$($(call fix_libname,$(notdir $*))_dir) $(name)/data$($(call fix_libname,$(notdir $*))_dir) $(name)/report/riq/
-	$(foreach f,$($(call fix_libname,$(notdir $*))),ln -s $(abspath $(data_dir)/raw_data/$(raw_folder)$($(call fix_libname,$(notdir $*))_dir)/$f) $(name)/data$($(call fix_libname,$(notdir $*))_dir)/$(notdir $*).f.fastq)
+####################################################################
+# Preprocessing of the input files (.fastq/.bam), QC, filtering
 
-# nothing to do
-clean_quality_filtering_and_report_cleanup:
+define make-pe-qc-rule=
+$(info $(call lib2filt_folder,$(1))$(1)_1.f.fastq.gz $(call lib2filt_folder,$(1))$(1)_2.f.fastq.gz: $(raw_data_dir)$($(1)_dir)/$(word 1,$($(1)))  $(raw_data_dir)$($(1)_dir)/$(word 2,$($(1))))
+$(call lib2filt_folder,$(1))$(1)_1.f.fastq.gz $(call lib2filt_folder,$(1))$(1)_2.f.fastq.gz: $(raw_data_dir)$($(1)_dir)/$(word 1,$($(1)))  $(raw_data_dir)$($(1)_dir)/$(word 2,$($(1)))
+	$$(call p_info,Filtering $(call fix_libname,$(1)))
+	$$(call do_quality_filtering_and_report,$(call fix_libname,$(1)),$(raw_data_dir)$($(1)_dir),$$(@D),) || (rm -f $$@ && exit 1)
+endef
 
-else
-# SE 
-#$(name)/data/%.f.fastq: 
-%.f.fastq: 
-	$(call p_info,Filtering $(call fix_libname,$(notdir $*)))
-	$(call do_quality_filtering_and_report,$(call fix_libname,$(notdir $*)),) || (rm -f $@ && exit 1)
-#	$(call not_empty,$@)
+define make-se-qc-rule=
+$(info $(call lib2filt_folder,$(1))$(1).f.fastq.gz: $(raw_data_dir)$($(1)_dir)/$($(1)))
+$(call lib2filt_folder,$(1))$(1).f.fastq.gz: $(raw_data_dir)$($(1)_dir)/$($(1))
+	$$(call p_info,Filtering $(call fix_libname,$(1)))
+	$$(call do_quality_filtering_and_report,$(1),$(raw_data_dir)$($(1)_dir),$$(@D),) || (rm -f $$@ && exit 1)
+
+endef
+$(foreach l,$(se),$(eval $(call make-se-qc-rule,$(l))))
+# rules for PE libraries
+$(foreach l,$(pe),$(eval $(call make-pe-qc-rule,$(l))))
 
 
 # Cleanup
 clean_quality_filtering_and_report_cleanup:
-	$(foreach p,$(se) $(pe),$(call do_quality_filtering_and_report,$(call fix_libname,$(p)),clean);)
-endif
+	$(foreach p,$(se) $(pe),$(call do_quality_filtering_and_report,$(p),$(raw_data_dir)$($(p)_dir)/,$(dir $(call lib2filt_folder,$(p))),clean))
 
+
+# TODO: deprecated
 print_qc_dirs_files:
 	echo	$(foreach l,$(se) $(pe),$(name)/report/riq/$($(l)_dir) )
 
@@ -1757,7 +1950,7 @@ define make-se-bam-rule=
 ifeq ($(mapper),star)
 $(call lib2bam_folder,$(1))$(1).se.hits.bam.trans.bam: $(call lib2bam_folder,$(1))$(1).se.hits.bam
 endif
-$(call lib2bam_folder,$(1))$(1).se.hits.bam: $(call lib2filt_folder,$(1))$(1).f.fastq $(index_files) $(gtf_file_abspath) $(reference_prefix) 
+$(call lib2bam_folder,$(1))$(1).se.hits.bam: $(call lib2filt_folder,$(1))$(1).f.fastq.gz $(index_files) $(gtf_file_abspath) $(reference_prefix) 
 	$(call run_$(mapper)_map,$(1),$$<,$$@)
 endef
 
@@ -1767,8 +1960,8 @@ define make-pe-bam-rule=
 ifeq ($(mapper),star)
 $(call lib2bam_folder,$(1))$(1).pe.hits.bam.trans.bam: $(call lib2bam_folder,$(1))$(1).pe.hits.bam
 endif
-$(call lib2bam_folder,$(1))$(1).pe.hits.bam: $(call mapper_ifiles,$(mapper),$(1),$(call lib2filt_folder,$(1))$(1)_1.f.fastq $(call lib2filt_folder,$(1))$(1)_2.f.fastq)   $(index_files)
-	$(call run_$(mapper)_map,$(1),$(call mapper_ifiles,$(mapper),$(1),$(call lib2filt_folder,$(1))$(1)_1.f.fastq $(call lib2filt_folder,$(1))$(1)_2.f.fastq),$$@)
+$(call lib2bam_folder,$(1))$(1).pe.hits.bam: $(call mapper_ifiles,$(mapper),$(1),$(call lib2filt_folder,$(1))$(1)_1.f.fastq.gz $(call lib2filt_folder,$(1))$(1)_2.f.fastq.gz)   $(index_files)
+	$(call run_$(mapper)_map,$(1),$(call mapper_ifiles,$(mapper),$(1),$(call lib2filt_folder,$(1))$(1)_1.f.fastq.gz $(call lib2filt_folder,$(1))$(1)_2.f.fastq.gz),$$@)
 endef
 
 
