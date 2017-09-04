@@ -46,18 +46,53 @@ irap_path:=$(shell dirname `which irap`)
 #####################################################################
 #
 override rnaseq_type:=sc
-sc_protocol?=smart-seq2
+sc_protocol?=10x_v2
 quant_method?=umi_count
 
-# default SOP
+########################################
+# default options for each protocol
+# obviously, may be overriden by the users
+ifeq ($(sc_protocol),drop-seq)
+mapper?=kallisto
+quant_method?=umi_count
+endif
+
+ifeq ($(sc_protocol),10x_v2)
+mapper?=kallisto
+quant_method?=umi_count
+#bam_umi_count_params?=--min_reads 0 --multi_mapped
+# --cb_cutoff Number of counts to filter cellular barcodes.
+#umis_params?=--cb_cutoff auto
+sc_non_zero_rows?=1
+cell_filt_min_features?=0.3
+cell_filt_max_ERCC?=0.75
+cell_filt_outliers?=y
+qc?=report
+#trim_poly_at?=
+#trim_poly_at_len=10
+endif
+
+# under devel
+ifeq ($(sc_protocol),10x_v1)
+quant_method?=umi_count
+mapper?=kallisto
+endif
+
+
+ifeq ($(sc_protocol),smart-seq)
+mapper?=kallisto
+quant_method?=kallisto
+#trim_poly_at?=y
+#trim_poly_at_len=8
+qc?=on
+endif
 
 #####################################################################
 # Default target - sc RNA-seq
-all: setup quality_filtering_and_report mapping quantification 
+all: setup quality_filtering_and_report mapping quantification filter_cells clustering
 
 include $(irap_path)/../aux/mk/irap_core.mk
 
-stage0_fix:
-	irap stage0
-	irap stage0
+# Checks for each protocol
+
 
