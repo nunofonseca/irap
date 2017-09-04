@@ -72,7 +72,7 @@ packages2install<-c("intervals","gclus",'R2HTML',"agricolae","bit64",
                     "sfsmisc","gplots","lattice","data.table",
                     'edgeR','piano','RCurl','GO.db',
                     'DESeq','xtable','DESeq2','DEXSeq','baySeq',
-                    'limma','marray','igraph')
+                    'limma','marray','igraph',"scater","Rtsne","SC3")
 for (p in packages2install ) {
   cat("PACKAGE:",p,"\n")
   biocLite(p,ask=FALSE, suppressUpdates=c("^RcppArmadillo"))
