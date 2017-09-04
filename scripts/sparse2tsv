@@ -41,7 +41,10 @@ filenames <- c("tsv_file","lengths")
 option_list <- list(
     make_option(c("-c", "--non_zero_rows"), type="numeric", dest="min_non_zero_rows", default=0, help="Exclude columns/cells with less than the given number of non-zero rows (genes/transcripts) [default %default%]"),
     make_option(c("-i", "--stsv"), type="character", dest="stsv_file", help="sparse TSV file name."),
-    make_option(c("-l", "--all_feat"), type="character", dest="all_feat_file", default=NULL, help="filname of a TSV file containing all features names (in the first column)."),
+    make_option(c("-l", "--all_feat"), type="character", dest="all_feat_file", default=NULL, help="filename of a TSV file containing all features names (in the first column)."),
+    make_option(c("-n", "--all_feat_col"), type="numeric", dest="all_feat_col", default=1, help="column in the file passed in --all_teat with the feature names."),
+    make_option(c("--gzip"),action="store_true",dest="compress",default=FALSE,help="Compress tsv file"),
+    make_option(c("--sort"),action="store_true",dest="sort",default=FALSE,help="sort final matrix by feature name"),
     make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
     make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name (the content is compressed with gzip).")
 )
@@ -59,7 +62,7 @@ pdebug.save.state("sparse2tsv","p1")
 all.feat <- NULL
 if ( !is.null(opt$all_feat_file) ) {
     pinfo("Reading ",opt$all_feat_file," ...")
-    all.feat <- as.character(unique(read.table(opt$all_feat_file,header=T,sep="\t")[,1]))
+    all.feat <- as.character(unique(read.table(opt$all_feat_file,header=T,sep="\t")[,opt$all_feat_col]))
     pinfo("Reading ",opt$all_feat_file," ...done.")
     pinfo("Expected ",length(all.feat)," unique genes/transcripts")
 }
@@ -68,7 +71,7 @@ pinfo("Reading ",opt$stsv_file," ...")
 x <- fread(opt$stsv_file,header=TRUE,sep="\t",check.names=FALSE,data.table=FALSE)
 pinfo("Reading ",opt$stsv_file," ... done.")
 pinfo(paste(dim(x),collapse=","))
-
+print(head(x))
 if(ncol(x)==4) {
     ## merge col 2 and 3
     pinfo("Merging column 2 and 3...")
@@ -76,18 +79,34 @@ if(ncol(x)==4) {
     x <- x[,-3]
     pinfo("Merging column 2 and 3...done.")
 }
-nr <- length(unique(x[,1]))
-nc <- length(unique(x[,2]))
-nx <- matrix(0,nrow=nr,ncol=nc,dimnames=list(unique(x[,1]),unique(x[,2])))
-crow <- nc
-while ( crow > 0 ) {
-    nx[as.character(x[crow,1]),as.character(x[crow,2])] <- x[crow,3]
-    crow <-crow-1
+if(ncol(x)==2) {
+    ## it is not really a sparse matrix...
+    nx <- x[,2,drop=FALSE]
+    ##nx <- x[unique(x[,1]),2,drop=FALSE]
+    rownames(nx) <- as.character(x[,1])
+} else {
+    nr <- length(unique(x[,1]))
+    nc <- length(unique(x[,2]))
+    nx <- matrix(0,nrow=nr,ncol=nc,dimnames=list(unique(x[,1]),unique(x[,2])))
+    crow <- nc
+    while ( crow > 0 ) {
+        nx[as.character(x[crow,1]),as.character(x[crow,2])] <- x[crow,3]
+        crow <-crow-1
+    }
 }
 ## filter columns
-filt <- colSums(nx)
-nte <- sum(filt<opt$min_non_zero_rows)
+print(nx)
+filt <- colSums(nx,na.rm=TRUE)
+nte <- sum(filt<opt$min_non_zero_rows,na.rm=TRUE)
+pinfo("nte=",nte)
+pinfo("ncol ",ncol(nx)," nx=",nte)
+pinfo("filt ",filt)
+if ( nte == ncol(nx) ) {
+    perror("All cells filtered out  - unable to proceed.")
+    quit(status=1)
+}
 pinfo("Filtering out ",nte," cells out of ",ncol(nx))
+
 nx <- nx[,filt>=opt$min_non_zero_rows,drop=FALSE]
 ## include the missing genes
 if ( !is.null(all.feat)) {    
@@ -99,8 +118,17 @@ if ( !is.null(all.feat)) {
     }
 }
 ##
-gz1 <- gzfile(opt$out, "w")
-write.tsv(cbind(Feature=rownames(nx),nx),file=gz1)
-close(gz1)
+if ( opt$sort ) {
+    nx <- nx[sort(rownames(nx)),,drop=FALSE]
+}
+##
+if (opt$compress) {
+    ofile <- gzfile(opt$out, "w")
+} else {
+    ofile <- opt$out
+}
+write.tsv(cbind(Feature=rownames(nx),nx),file=ofile)
+if (opt$compress) 
+    close(gz1)
 pinfo("Saved ",opt$out, " (",nrow(nx),",",ncol(nx),")")
 q(status=0)
