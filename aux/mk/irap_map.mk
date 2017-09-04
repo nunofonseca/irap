@@ -144,6 +144,7 @@ define run_bowtie1_map=
 	samtools view -T $(reference_abspath) -F 0xC -bS - > $(3).tmp.bam && \
 	$(call bam_fix_nh,$(3).tmp.bam,-) | \
 	samtools sort -m $(SAMTOOLS_SORT_MEM) -T $(3).tmp -o $(3).tmp.bam - && \
+	$(call do_post_process_bam_cmd,$(1),$(3).tmp.bam,$(3).tmp.bam)  && \
 	rm -f $(3).tmp2.bam && \
 	mv $(3).tmp.bam $(3)
 endef
@@ -184,6 +185,7 @@ define run_bowtie2_map=
 	samtools view -T $(reference_abspath) -F 0xC -bS - > $(3).tmp.bam && \
 	$(call bam_fix_nh,$(3).tmp.bam,-) | \
 	samtools sort -m $(SAMTOOLS_SORT_MEM) -T $(3).tmp -o $(3).tmp.bam -  && \
+	$(call do_post_process_bam_cmd,$(1),$(3).tmp.bam,$(3).tmp.bam)  && \
 	$(call bam_rehead,$(3).tmp.bam,$(1)) && \
 	rm -f $(3).tmp2.bam && \
 	mv $(3).tmp.bam $(3)
@@ -290,6 +292,7 @@ define run_tophat1_map=
 	rm -f $(call lib2bam_folder,$(1))$(1)/$(1).0{0,1,2,3,4,5,6,7,8,9}*.bam && \
 	samtools sort -m $(SAMTOOLS_SORT_MEM) -T $(call lib2bam_folder,$(1))$(1)/$(1) -o $(call lib2bam_folder,$(1))$(1)/$(1).bam $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam  && \
 	rm -f $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam  && \
+	$(call do_post_process_bam_cmd,$(1),$(call lib2bam_folder,$(1))$(1)/$(1).bam,$(call lib2bam_folder,$(1))$(1)/$(1).bam)  && \
 	$(call bam_rehead,$(call lib2bam_folder,$(1))$(1)/$(1).bam,$(1)) && \
 	mv $(call lib2bam_folder,$(1))$(1)/$(1).bam $(3)	
 endef
@@ -312,6 +315,7 @@ define run_tophat2_map=
 	rm -f $(call lib2bam_folder,$(1))$(1)/$(1).0{0,1,2,3,4,5,6,7,8,9}*.bam && \
 	samtools sort -m $(SAMTOOLS_SORT_MEM) -T $(call lib2bam_folder,$(1))$(1)/$(1) -o $(call lib2bam_folder,$(1))$(1)/$(1).bam  $(call lib2bam_folder,$(1))$(1)/$(1).tmp2.bam  &&\
 	rm -f $(call lib2bam_folder,$(1))$(1)/$(1).tmp2.bam  && \
+	$(call do_post_process_bam_cmd,$(1),$(call lib2bam_folder,$(1))$(1)/$(1).bam,$(call lib2bam_folder,$(1))$(1)/$(1).bam)  && \
 	$(call bam_rehead,$(call lib2bam_folder,$(1))$(1)/$(1).bam,$(1)) && \
 	mv $(call lib2bam_folder,$(1))$(1)/$(1).bam $(3)
 endef
@@ -419,6 +423,7 @@ define run_hisat2_map=
 	rm -f  $(call lib2bam_folder,$(1))$(1)/$(1).tmp.sam && \
 	samtools sort -m $(SAMTOOLS_SORT_MEM) -T $(call lib2bam_folder,$(1))$(1)/$(1) -o $(call lib2bam_folder,$(1))$(1)/$(1).bam $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam   &&\
 	rm -f $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam &&\
+	$(call do_post_process_bam_cmd,$(1),$(call lib2bam_folder,$(1))$(1)/$(1).bam,$(call lib2bam_folder,$(1))$(1)/$(1).bam)  && \
 	$(call bam_rehead,$(call lib2bam_folder,$(1))$(1)/$(1).bam,$(1)) && \
 	mv $(call lib2bam_folder,$(1))$(1)/$(1).bam $(3)
 endef
@@ -500,6 +505,7 @@ define run_gsnap_map=
 	irap_bam_fixSQ_order $(3).tmp.bam $(3).tmp2.bam &&\
 	samtools sort -m $(SAMTOOLS_SORT_MEM) -T $(3).tmp -o $(3).tmp.bam  $(3).tmp2.bam  && \
 	rm -f $(3).tmp2.bam && \
+	$(call do_post_process_bam_cmd,$(1),$(3).tmp.bam,$(3).tmp.bam)  && \
 	$(call bam_rehead,$(3).tmp.bam,$(1)) && \
 	mv $(3).tmp.bam $(3) 
 endef
@@ -878,7 +884,8 @@ define run_star_map=
 	bam_fix_se_flag $(3)Aligned.out.bam - | \
 	samtools sort -m $(SAMTOOLS_SORT_MEM) -T  $(3).tmp  -o $(3).tmp.bam -  && \
 	$(call bam_rehead,$(3).tmp.bam,$(1)) && \
-	$(if $(filter-out n,$(transcript_quant)),mv $(3)Aligned.toTranscriptome.out.bam $(3).trans.bam,true) &&\
+	$(if $(filter-out n,$(transcript_quant)),mv $(3)Aligned.toTranscriptome.out.bam $(3).trans.bam && $(call do_post_process_bam_cmd,$(1),$(3).trans.bam),true) &&\
+	$(call do_post_process_bam_cmd,$(1),$(call lib2bam_folder,$(1))$(1)/$(1).bam,$(call lib2bam_folder,$(1))$(1)/$(1).bam)  && \
 	mv $(3).tmp.bam $(3) && rm -f $(3)Aligned.out.bam 
 endef
 
@@ -1026,6 +1033,43 @@ define run_mapsplice_map=
 	$(call bam_rehead,$(3).tmp.bam,$(1)) && \
 	mv $(3).tmp.bam $(3) && rm -f $(3).fix.bam
 endef
+
+
+########################################################################
+# Kallisto
+kallisto_index_params?=
+kallisto_map_params?=
+kallisto_map_params+= --threads $(max_threads) --pseudobam
+
+define kallisto_index_filename=
+$(trans_file)_kallisto/kallisto_index.irap
+endef
+
+define kallisto_index_prefix=
+$(trans_file)_kallisto/kallisto_index
+endef
+
+
+# ignore arguments
+define run_kallisto_index=
+	mkdir -p $(dir $(call kallisto_index_filename)) && \
+	irap_wrapper.sh kallisto kallisto index $(kallisto_index_params) -i $(call kallisto_index_prefix)  $(trans_file) && \
+	touch $(call kallisto_index_filename)
+endef
+
+# should be used for single cell only
+define run_kallisto_map=
+	$(call tophat_setup_dirs,$(1))
+	irap_wrapper.sh kallisto kallisto pseudo $(if $(call is_pe_lib,$(1)),,--single -l $($(1)_rs) -s 1)  $(kallisto_map_params) -i $(call kallisto_index_prefix) -o $(dir $(call lib2bam_folder,$(1))$(1)) $(2)  | \
+	samtools view -b - | \
+	$(call do_post_process_trans_bam_cmd,$(1),-,$(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam) &&\
+	samtools sort -m $(SAMTOOLS_SORT_MEM) -T $(call lib2bam_folder,$(1))$(1)/$(1) -o $(call lib2bam_folder,$(1))$(1)/$(1).bam $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam && \
+	$(call bam_rehead,$(call lib2bam_folder,$(1))$(1)/$(1).bam,$(1)) && \
+	mv $(call lib2bam_folder,$(1))$(1)/$(1).bam $(3)	
+endef
+
+
+
 
 ########################################################################
 ifeq ($(mapper),tophat2)
