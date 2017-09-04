@@ -160,10 +160,10 @@ BFAST_FILE=bfast-$BFAST_VERSION.tar.gz
 BFAST_URL=http://sourceforge.net/projects/bfast/files/bfast/0.7.0/$BFAST_FILE
 # current 1.1.2 - minor changes, no need to upgrade
 # 1.1.1->1.2.0
-bowtie1_VERSION=1.2
-bowtie1_VERSION_f=1.2.0
-bowtie1_FILE=bowtie-${bowtie1_VERSION}-linux-legacy-x86_64.zip
-bowtie1_URL=http://sourceforge.net/projects/bowtie-bio/files/bowtie/$bowtie1_VERSION_f/$bowtie1_FILE
+#bowtie1_VERSION=1.2
+bowtie1_VERSION=1.2.1.1
+bowtie1_FILE=bowtie-${bowtie1_VERSION}-linux-x86_64.zip
+bowtie1_URL=http://sourceforge.net/projects/bowtie-bio/files/bowtie/$bowtie1_VERSION/$bowtie1_FILE
 # current - 2.2.6->2.2.9-> 2.3.2
 bowtie2_VERSION=2.3.2
 bowtie2_FILE=bowtie2-${bowtie2_VERSION}-legacy-linux-x86_64.zip
@@ -221,7 +221,6 @@ STAR_FILE=${STAR_VERSION}.tar.gz
 STAR_URL=https://github.com/alexdobin/STAR/archive/$STAR_FILE
 
 # 
-#GSNAP_VERSION=2013-11-27->gmap-gsnap-2015-12-31.v3.tar.gz
 # ->2017-05-08
 GSNAP_VERSION=2017-05-08
 GSNAP_FILE=gmap-gsnap-${GSNAP_VERSION}.tar.gz
@@ -551,7 +550,7 @@ function bowtie1_install {
     pinfo "Starting $MAPPER source installation..."
     download_software $MAPPER
     unzip $bowtie1_FILE
-    pushd bowtie-${bowtie1_VERSION}-legacy
+    pushd bowtie-${bowtie1_VERSION}
     #export BITS=64
     #make clean
     #make -j 4 all
