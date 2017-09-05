@@ -96,12 +96,16 @@ endef
 #*****************
 # Stringtie
 #*****************
-ifndef stringtie_params
-	stringtie_params=
-# deprecated: -s 190000000
-endif
+stringtie_params?=
 
 stringtie_params+= 
+
+## library specific parameters
+##--rf	Assumes a stranded library fr-firststrand.
+##--fr	Assumes a stranded library fr-secondstrand.
+# 1 - libname
+stringtie_lib_params=$(if $(findstring $($(1)_strand),first),--rf,$(if $(findstring $($(1)_strand),second),--fr,))
+
 
 # params
 # 1- bam file
@@ -114,7 +118,7 @@ stringtie_params+=
 # $(2).gtf - fpkm per transcript/exon
 # use -l CUFF to reuse the cufflinks code for novel transcripts
 define run_stringtie=
-	mkdir -p $(call lib2quant_folder,$(2))$(2) && irap_wrapper.sh stringtie stringtie  -p $(max_threads) $(3)  -o $(call lib2quant_folder,$(2))$(2)/$(2).tmp.gtf -B   -G $(gtf_file_abspath)   $(stringtie_params) $(1)  && rename .tmp. . $(call lib2quant_folder,$(2))$(2)/$(2)*.tmp* && mv $(call lib2quant_folder,$(2))$(2)/$(2).gtf $(4)
+	mkdir -p $(call lib2quant_folder,$(2))$(2) && irap_wrapper.sh stringtie stringtie  -p $(max_threads) $(3)  -o $(call lib2quant_folder,$(2))$(2)/$(2).tmp.gtf -B   -G $(gtf_file_abspath) $(call stringtie_lib_params,$(2))  $(stringtie_params) $(1)  && rename .tmp. . $(call lib2quant_folder,$(2))$(2)/$(2)*.tmp* && mv $(call lib2quant_folder,$(2))$(2)/$(2).gtf $(4)
 endef
 #-C $(call lib2quant_folder,$(2))$(2)/$(2).cov.tmp.gtf
 
