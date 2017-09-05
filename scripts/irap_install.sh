@@ -338,12 +338,10 @@ BitSeq_URL=https://github.com/BitSeq/BitSeq/archive/$BitSeq_FILE
 #MMSEQ_FILE=mmseq_${MMSEQ_VERSION}.zip
 #MMSEQ_URL=http://www.bgx.org.uk/software/$MMSEQ_FILE
 
-#htseq_VERSION=0.5.4p5
-htseq_VERSION=0.6.1p2
-htseq_VERSION=0.7.2
-htseq_FILE=HTSeq-${htseq_VERSION}.tar.gz
-#htseq_URL=http://pypi.python.org/packages/source/H/HTSeq/
-htseq_URL=https://pypi.python.org/packages/46/f7/6105848893b1d280692eac4f4f3c08ed7f424cec636aeda66b50bbcf217e/${htseq_FILE}#md5=8ddaaf53e83547fbca3bba7b84c9dde8
+htseq_VERSION=0.8.0
+htseq_FILE=release_${htseq_VERSION}.tar.gz
+htseq_URL=https://github.com/simon-anders/htseq/archive/${htseq_FILE}
+
 
 # new: 1.6.1
 # latest (1.5.2) fails (same error since 1.2.4)
@@ -1422,11 +1420,15 @@ function htseq_install {
     pinfo "Installing HTSeq..."
     download_software htseq
     tar xzvf $htseq_FILE
-    pushd `echo $htseq_FILE|sed "s/.tar.gz//"`
+    pushd htseq-`echo $htseq_FILE|sed "s/.tar.gz//"`
 # python version needs to be equal or greater than  (2.6)
     #. ./build_it ;# not needed in 0.5.4p5
     # python setup.py install --user
+    pip install --prefix $IRAP_DIR  'matplotlib>=1.4'
+    pip install --prefix $IRAP_DIR  Cython
+    pip install --prefix $IRAP_DIR  'pysam>=0.9'
     pip install --prefix $IRAP_DIR .
+##    pip install --prefix $IRAP_DIR .
     ## htseq is copied to $IRAP_DIR/bin
     popd
     pinfo "Installing HTSeq...done."
