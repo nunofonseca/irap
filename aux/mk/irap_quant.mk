@@ -107,12 +107,16 @@ endef
 #*****************
 # Stringtie
 #*****************
-ifndef stringtie_params
-	stringtie_params=
-# deprecated: -s 190000000
-endif
+stringtie_params?=
 
 stringtie_params+= 
+
+## library specific parameters
+##--rf	Assumes a stranded library fr-firststrand.
+##--fr	Assumes a stranded library fr-secondstrand.
+# 1 - libname
+stringtie_lib_params=$(if $(findstring $($(1)_strand),first),--rf,$(if $(findstring $($(1)_strand),second),--fr,))
+
 
 # params
 # 1- bam file
@@ -125,7 +129,7 @@ stringtie_params+=
 # $(2).gtf - fpkm per transcript/exon
 # use -l CUFF to reuse the cufflinks code for novel transcripts
 define run_stringtie=
-	mkdir -p $(call lib2quant_folder,$(2))$(2) && irap_wrapper.sh stringtie stringtie  -p $(max_threads) $(3)  -o $(call lib2quant_folder,$(2))$(2)/$(2).tmp.gtf -B   -G $(gtf_file_abspath)   $(stringtie_params) $(1)  && rename .tmp. . $(call lib2quant_folder,$(2))$(2)/$(2)*.tmp* && mv $(call lib2quant_folder,$(2))$(2)/$(2).gtf $(4)
+	mkdir -p $(call lib2quant_folder,$(2))$(2) && irap_wrapper.sh stringtie stringtie  -p $(max_threads) $(3)  -o $(call lib2quant_folder,$(2))$(2)/$(2).tmp.gtf -B   -G $(gtf_file_abspath) $(call stringtie_lib_params,$(2))  $(stringtie_params) $(1)  && rename .tmp. . $(call lib2quant_folder,$(2))$(2)/$(2)*.tmp* && mv $(call lib2quant_folder,$(2))$(2)/$(2).gtf $(4)
 endef
 #-C $(call lib2quant_folder,$(2))$(2)/$(2).cov.tmp.gtf
 
@@ -1104,7 +1108,7 @@ STAGE3_S_TARGETS+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.trans
 STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.riu.$(quant_method).irap.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.riu.$(quant_method).irap.tsv) 
 
 # include the raw counts
-STAGE3_OFILES+= $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).irap.tsv  $(name)/$(mapper)/$(quant_method)/transcripts.riu.$(quant_method).irap.tsv 
+STAGE3_S_OFILES+= $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).irap.tsv  $(name)/$(mapper)/$(quant_method)/transcripts.riu.$(quant_method).irap.tsv 
 
 
 # useful functions
