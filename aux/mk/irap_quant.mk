@@ -192,9 +192,8 @@ endef
 #************
 
 # 
-ifndef htseq_params
-htseq_params= -q  
-endif
+htseq_params?=
+htseq_params+= -q  
 
 
 define htseq_sam_output_param=
