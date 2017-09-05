@@ -203,7 +203,7 @@ HISAT2_FILE=hisat2-${HISAT2_VERSION}-Linux_x86_64.zip
 HISAT2_URL=ftp://ftp.ccb.jhu.edu/pub/infphilo/hisat2/downloads/$HISAT2_FILE
 
 
-# 0.7.6 - now in sf
+# 0.7.6 now in sf
 SMALT_VERSION=0.7.4
 SMALT_FILE=smalt-$SMALT_VERSION.tgz
 SMALT_URL=ftp://ftp.sanger.ac.uk/pub4/resources/software/smalt/$SMALT_FILE
@@ -235,15 +235,12 @@ mapsplice_URL=http://protocols.netlab.uky.edu/~zeng/$mapsplice_FILE
 bwa_VERSION=0.7.15
 bwa_FILE=bwa-${bwa_VERSION}.tar.bz2
 bwa_URL=http://sourceforge.net/projects/bio-bwa/files/$bwa_FILE
+
 # 4.0.2.1->4.1.1.1
 osa_VERSION=4.0.2.1
 osa_FILE=OSAv$osa_VERSION.zip
 osa_URL=http://omicsoft.com/osa/Software/$osa_FILE
 
-# deprecated
-#EMBAM_VERSION=0.1.14
-#EMBAM_FILE=emBAM_${EMBAM_VERSION}.tar.gz
-#EMBAM_URL=http://embam.googlecode.com/files/$EMBAM_FILE
 
 # > 4.8.3
 RUBY_VERSION=1.9.3-p551
@@ -262,9 +259,10 @@ BOOST_FILE=boost_`echo $BOOST_VERSION|sed "s/\./_/g"`.tar.bz2
 BOOST_URL=http://sourceforge.net/projects/boost/files/boost/$BOOST_VERSION/$BOOST_FILE
 
 ##4.6.4->5.0.6
-gnuplot_VERSION=5.0.6
-gnuplot_FILE=gnuplot-$gnuplot_VERSION.tar.gz
-gnuplot_URL=http://sourceforge.net/projects/gnuplot/files/gnuplot/$gnuplot_VERSION/$gnuplot_FILE
+## no longer needed since irap version 0.9.*
+#gnuplot_VERSION=5.0.6
+#gnuplot_FILE=gnuplot-$gnuplot_VERSION.tar.gz
+#gnuplot_URL=http://sourceforge.net/projects/gnuplot/files/gnuplot/$gnuplot_VERSION/$gnuplot_FILE
 
 #
 # deprecated
@@ -777,33 +775,21 @@ function mappers_install {
    tophat1_install
    tophat2_install
    #bfast_install
-   smalt_install
-   soap_splice_install
-   soap2_install
-#   gem2_install
+   #smalt_install
    gsnap_install 
    ## osa_install
    star_install
+   hisat2_install
    pinfo "To install GEM run: irap_install.sh -s . -x gem"
-   pinfo "To install HISAT2 run: irap_install.sh -s . -x hisat2"
+   # pinfo "To install HISAT2 run: irap_install.sh -s . -x hisat2"
    pinfo "To install OSA run: irap_install.sh -s . -x osa"
    pinfo "To install soap2 run: irap_install.sh -s . -x soap2"
+   pinfo "To install soap_splice run: irap_install.sh -s . -x soap_splice"
    pinfo "To install smalt run: irap_install.sh -s . -x smalt"
    pinfo "To install MapSplice run: irap_install.sh -s . -x mapsplice"
 }
 
-########################
-function embam_install {
-        
-    R=$1
-    if [ "$R-" == "-" ];  then
-	R=$IRAP_DIR/bin/R
-    fi
-    pinfo "Starting emBAM source installation..."
-    download_software EMBAM
-    $R  CMD INSTALL $EMBAM_FILE
-    pinfo "Starting emBAM source installation...done."
-}
+
 function  collect_software_versions {
     pinfo "Collecting software versions..."
     irap_gen_version_mk.sh
@@ -1030,7 +1016,7 @@ function deps_install {
     if [ "$1-" != "minimal-" ] && [ "$BOOST_INSTALL" == "y" ]; then
 	boost_install
     fi
-    gnuplot_install
+    #gnuplot_install
     #R_install
     if [ "$INSTALL_R3-" == "y-" ]; then
 	R_install
@@ -1343,10 +1329,7 @@ for (p in species2db[,'db']) {
 
 q()
 EOF
-    # deprecated
-    #pinfo "Installing EMBAM..."
-    #embam_install $IRAP_DIR/bin/R
-    #pinfo "installing EMBAM...done."
+
     pinfo "Installing R packages...done."
 }
 # 
