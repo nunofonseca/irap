@@ -1385,7 +1385,7 @@ function cufflinks2_install {
     pinfo "Downloading and installing cufflinks2...done."
 }
 #######################################################
-#bitseq
+#bitseq - WIP
 #Bayesian Inference of Transcripts from Sequencing Data
 function bitseq_install {
     pinfo "Installing BitSeq..."
