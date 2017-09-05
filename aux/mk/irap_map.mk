@@ -77,7 +77,6 @@ bowtie2_map_options?=
 bowtie2_index_options?=
 bwa1_map_options?=
 bwa2_map_options?=
-gsnap_map_options?=
 smalt_map_options?=
 gem_map_options?=
 gem_index_options?=
@@ -100,7 +99,6 @@ gsnap_aln_options?=
 smalt_index_options?=
 soapsplice_aln_options?=
 mapsplice_aln_options?=
-#star_aln_options?=
 osa_aln_options?=
 
 #####################################################
@@ -387,7 +385,7 @@ define hisat2_strand_params=
 endef
 
 define hisat2_file_params=
-	$(if $(findstring $(1),$(pe)), -1 $(word 1,$(2)) -2 $(word 2,$(2)),$(2))  $(call hisat2_qual_option,$($(1)_qual))  $(call hisat2_strand_params,$(1))
+	$(if $(findstring $(1),$(pe)), -1 $(word 1,$(2)) -2 $(word 2,$(2)), -U $(2))  $(call hisat2_qual_option,$($(1)_qual))  $(call hisat2_strand_params,$(1))
 endef
 
 # 
@@ -472,7 +470,7 @@ endef
 
 # -N 1 : novel splicing
 # -m, --max-mismatches=FLOAT
-# TODO: tune parameters!!!
+gsnap_map_options?= --max-mismatches=0.1 -N 1
 gsnap_map_params=  -A sam  -t $(max_threads)  $(gsnap_map_options)
 gsnap_index_options= 
 
@@ -501,7 +499,7 @@ endef
 
 
 define run_gsnap_map=
-	irap_map.sh gsnap gsnap $(gsnap_map_params) $(if $($(1)_rgid),--read-group-id $($(1)_rgid),)  $(call gsnap_ins_param,$(1))  -D $(reference_dir) -d `basename $(index_files)|sed "s/.index//"` $(2)  | samtools view -T $(reference_abspath) -bS - > $(3).tmp.bam &&
+	irap_map.sh gsnap gsnap $(gsnap_map_params) $(if $($(1)_rgid),--read-group-id $($(1)_rgid),)  $(call gsnap_ins_param,$(1)) --gunzip  -D $(reference_dir) -d `basename $(index_files)|sed "s/.index//"` $(2)  | samtools view -T $(reference_abspath) -bS - > $(3).tmp.bam &&
 	irap_bam_fixSQ_order $(3).tmp.bam $(3).tmp2.bam &&\
 	samtools sort -m $(SAMTOOLS_SORT_MEM) -T $(3).tmp -o $(3).tmp.bam  $(3).tmp2.bam  && \
 	rm -f $(3).tmp2.bam && \
@@ -878,6 +876,7 @@ endef
 #  --sjdbFileChrStartEnd  $(juncs_file_abspath)
 define run_star_map=
 	 irap_map.sh star star $(star_map_params) --genomeDir $(call star_index_dirname,$(word 1,$(files_indexed))) \
+	--readFilesCommand zcat \
 	--readFilesIn $(2) --outFileNamePrefix $(3) --outSAMtype BAM Unsorted $(if $($(1)_rgid),--outSAMattrRGline "ID:$($(1)_rgid)",) \
 	$(if $(filter-out n,$(transcript_quant)), --quantMode TranscriptomeSAM, )  &&\
 	irap_bam_fixSQ_order $(3)Aligned.out.bam $(3)Aligned.out2.bam && mv $(3)Aligned.out2.bam $(3)Aligned.out.bam && \
@@ -885,7 +884,7 @@ define run_star_map=
 	samtools sort -m $(SAMTOOLS_SORT_MEM) -T  $(3).tmp  -o $(3).tmp.bam -  && \
 	$(call bam_rehead,$(3).tmp.bam,$(1)) && \
 	$(if $(filter-out n,$(transcript_quant)),mv $(3)Aligned.toTranscriptome.out.bam $(3).trans.bam && $(call do_post_process_bam_cmd,$(1),$(3).trans.bam),true) &&\
-	$(call do_post_process_bam_cmd,$(1),$(call lib2bam_folder,$(1))$(1)/$(1).bam,$(call lib2bam_folder,$(1))$(1)/$(1).bam)  && \
+	$(call do_post_process_bam_cmd,$(1),$(3).tmp.bam,$(1),$(3).tmp.bam)  && \
 	mv $(3).tmp.bam $(3) && rm -f $(3)Aligned.out.bam 
 endef
 
@@ -1003,30 +1002,38 @@ mapsplice_map_params=   --min-intron $(mapsplice_min_intron)  $(mapsplice_map_op
 mapsplice_index_params= --offrate 3 
 
 define mapsplice_index_filename=
-$(1).mapsplice.index
+$(1).mapsplice/irap.mapsplice.index
+endef
+
+define mapsplice_index_dir=
+$(dir $(call mapsplice_index_filename,$(1)))
 endef
 
 define mapsplice_index_prefix=
-$(1).mapsplice
+$(1).mapsplice/irap
 endef
 
 define mapsplice_file_params=
-	$(if $(findstring $(1),$(pe)), -1 $(word 1,$(2)) -2 $(word 2,$(2)) $(call qual_mapsplice,$($(1)_qual)), -1 $(2) $(call qual_mapsplice,$($(1)_qual)))
+	$(if $(findstring $(1),$(pe)), -1 <(zcat $(word 1,$(2))) -2 <(zcat $(word 2,$(2))) $(call qual_mapsplice,$($(1)_qual)), -1 <(zcat $(2)) $(call qual_mapsplice,$($(1)_qual)))
 endef
 
-#
+# generate a index for each chr and for all
 define run_mapsplice_index=
+	mkdir -p $(call mapsplice_index_dir,$(1)) && \
 	sed 's/ .*//g' $(1) > $(call mapsplice_index_prefix,$(1)).fa && \
-	irap_fasta_split.pl $(call mapsplice_index_prefix,$(1)).fa $(call mapsplice_index_prefix,$(1)) && \
-	irap_map.sh mapsplice  bowtie-build $(mapsplice_index_params) $(call mapsplice_index_prefix,$(1)).fa $(call mapsplice_index_prefix,$(1)) && \
+	irap_fasta_split.pl $(call mapsplice_index_prefix,$(1)).fa $(call mapsplice_index_dir,$(1))/seqs && \
+	irap_mapsplice_index.sh $(call mapsplice_index_dir,$(1))/seqs $(mapsplice_index_params) && \
+	irap_map.sh mapsplice bowtie-build  $(mapsplice_index_params)  $(call mapsplice_index_prefix,$(1)).fa $(call mapsplice_index_prefix,$(1)) && \
 	touch $(call mapsplice_index_filename,$(1))
 endef
 
 
 #-c The directory containing the sequence files of reference genome. All sequence files are required to:
-# BAM file does not contain the NH flag and the mate information is not ok (htseq fails)
+# the BAM file does not contain the NH flag and the mate information is not ok (htseq fails)
+# mapsplice does not support compressed gzip fastq files
+# mapsplice does not support reading the fastq files from streams
 define run_mapsplice_map=
-	 irap_map.sh mapsplice python $(IRAP_DIR)/bin/mapsplice/mapsplice.py  $(mapsplice_map_params) --threads	 $(max_threads) --bam -o  $(call lib2bam_folder,$(1))$(1) -c $(call mapsplice_index_prefix,$(word 1,$(files_indexed))) -x $(call mapsplice_index_prefix,$(word 1,$(files_indexed))) $(call mapsplice_file_params,$(1),$(2)) &&\
+	 irap_map.sh mapsplice python $(IRAP_DIR)/bin/mapsplice/mapsplice.py  $(mapsplice_map_params) --threads	 $(max_threads) --bam -o  $(call lib2bam_folder,$(1))$(1) --chromosome-dir $(call mapsplice_index_dir,$(word 1,$(files_indexed)))/seqs --bowtie-index  $(call mapsplice_index_prefix,$(word 1,$(files_indexed))) $(call mapsplice_file_params,$(1),$(2)) &&\
 	samtools fixmate  $(call lib2bam_folder,$(1))$(1)/alignments.bam $(3).fix.bam && \
 	$(call bam_fix_nh,$(3).fix.bam,-) | \
 	samtools sort -m $(SAMTOOLS_SORT_MEM) -T $(3).tmp -o $(3).tmp.bam -  && \

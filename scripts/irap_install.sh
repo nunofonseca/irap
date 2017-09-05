@@ -191,14 +191,14 @@ tophat1_URL=http://ccb.jhu.edu/software/tophat/downloads/$tophat1_FILE
 #tophat2_URL=http://ccb.jhu.edu/software/tophat/downloads/$tophat2_FILE
 
 # version used in the pcawg SOP - 2.0.12
-# current version: -> 2.0.12->2.1.0
+# current version: -> 2.0.12->2.1.1
 tophat2_VERSION=2.1.1
 tophat2_FILE=tophat-${tophat2_VERSION}.Linux_x86_64.tar.gz
 #tophat2_URL=http://tophat.cbcb.umd.edu/downloads/$tophat2_FILE
 tophat2_URL=http://ccb.jhu.edu/software/tophat/downloads/$tophat2_FILE
 
-# 
-HISAT2_VERSION=2.0.5
+# ftp://ftp.ccb.jhu.edu/pub/infphilo/hisat2/downloads/hisat2-2.1.0-Linux_x86_64.zip
+HISAT2_VERSION=2.1.0
 HISAT2_FILE=hisat2-${HISAT2_VERSION}-Linux_x86_64.zip
 HISAT2_URL=ftp://ftp.ccb.jhu.edu/pub/infphilo/hisat2/downloads/$HISAT2_FILE
 
@@ -230,6 +230,7 @@ GSNAP_URL=http://research-pub.gene.com/gmap/src/$GSNAP_FILE
 mapsplice_VERSION=2.2.1
 mapsplice_FILE=MapSplice-v$mapsplice_VERSION.zip
 mapsplice_URL=http://protocols.netlab.uky.edu/~zeng/$mapsplice_FILE
+
 # 0.7.4->0.7.12->0.7.15
 bwa_VERSION=0.7.15
 bwa_FILE=bwa-${bwa_VERSION}.tar.bz2
@@ -749,6 +750,9 @@ function osa_install {
 }
 
 function mapsplice_install {
+    # Note: mapsplice will not be supported until
+    # mapsplice supports fastq.gz files or
+    # can take the fastq from a stream (<(zcat ...))
     MAPPER=mapsplice
     pinfo "Starting $MAPPER source installation..."
     download_software $MAPPER
@@ -756,8 +760,9 @@ function mapsplice_install {
     pushd MapSplice-v$mapsplice_VERSION
     make clean
     # do not recompile bowtie and samtools
-    sed -i -E "1s/all:(.*)bowtie/all:\1 /" Makefile
-    sed -i -E "1s/all:(.*)samtools/all:\1 /" Makefile
+    # need to do it since mapsplice (2.2.1) has the paths hardcoded
+    #sed -i -E "1s/all:(.*)bowtie/all:\1 /" Makefile
+    #sed -i -E "1s/all:(.*)samtools/all:\1 /" Makefile
     CFLAGS=-fpermissive make
     install_binary $MAPPER bin \*
     cp mapsplice.py $BIN_DIR/$MAPPER/
@@ -779,12 +784,12 @@ function mappers_install {
    gsnap_install 
    #osa_install
    star_install
-   pinfo "To install MapSplice run: irap_install.sh -s . -x mapsplice"
    pinfo "To install GEM run: irap_install.sh -s . -x gem"
    pinfo "To install HISAT2 run: irap_install.sh -s . -x hisat2"
    pinfo "To install OSA run: irap_install.sh -s . -x osa"
-
-   #mapsplice_install
+   pinfo "To install soap2 run: irap_install.sh -s . -x soap2"
+   pinfo "To install smalt run: irap_install.sh -s . -x smalt"
+   pinfo "To install MapSplice run: irap_install.sh -s . -x mapsplice"
 }
 
 ########################
