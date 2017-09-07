@@ -677,7 +677,7 @@ $(out_dir)/%.filter2.fastq: $(out_dir)/%.filter1.fastq
 else
 ifeq ($(mapper),bowtie)
 $(out_dir)/%.filter2.fastq: $(out_dir)/%.filter1.fastq
-	$(mapper_path) -p $(threads) -v $(contamination_mismatches) -q $(mapper_extra_options) --phred$(qual)-quals  --un $@.tmp   $(cont_index)  $< | samtools view -b - > $(out_dir)/$*.cont.bam.tmp && mv $(out_dir)/$*.cont.bam.tmp $(out_dir)/$*.cont.bam && mv $@.tmp $@
+	$(mapper_path) --sam -p $(threads) -v $(contamination_mismatches) -q $(mapper_extra_options) --phred$(qual)-quals  --un $@.tmp   $(cont_index)  $< | samtools view -b - > $(out_dir)/$*.cont.bam.tmp && mv $(out_dir)/$*.cont.bam.tmp $(out_dir)/$*.cont.bam && mv $@.tmp $@
 endif
 
 ifeq ($(mapper),bowtie2)
