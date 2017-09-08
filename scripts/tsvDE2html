@@ -92,7 +92,7 @@ if ( sum(duplicated(table[,1]))>0 ) {
 }
 rownames(table) <- as.character(table[,1])
 
-pdebug.save.state("tsvDE2html0","p0")
+pdebug.save.state("tsvDE2html","p0")
 
 cols2sel <- colnames(table)
 pdebug(opt$flavour," mode")
