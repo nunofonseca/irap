@@ -896,7 +896,7 @@ kallisto_quant_params=
 endif
 
 
-# -> prefux
+#
 kallisto_index_name=$(trans_file)_kallisto/kallisto_index
 kallisto_index=$(trans_file)_kallisto/kallisto_index.irap
 
