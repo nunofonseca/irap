@@ -270,7 +270,7 @@ R2_VERSION=2.15.2
 R2_FILE=R-${R2_VERSION}.tar.gz 
 R2_URL=http://cran.r-project.org/src/base/R-2/$R2_FILE
 
-# 
+# 3.3.3
 R3_VERSION=3.3.3
 R3_FILE=R-${R3_VERSION}.tar.gz 
 R3_URL=http://cran.r-project.org/src/base/R-3/$R3_FILE
@@ -301,7 +301,7 @@ ZLIB_FILE=zlib-$ZLIB_VERSION.tar.gz
 ZLIB_URL=http://zlib.net/$ZLIB_FILE
 
 #2.25.0->2.26.0
-BEDTOOLS_VERSION=2.25.0
+BEDTOOLS_VERSION=2.26.0
 BEDTOOLS_FILE=bedtools-$BEDTOOLS_VERSION.tar.gz
 BEDTOOLS_URL=https://github.com/arq5x/bedtools2/releases/download/v$BEDTOOLS_VERSION/$BEDTOOLS_FILE
 
@@ -407,10 +407,11 @@ IGV_TOOLS_VERSION=2.3.93
 IGV_TOOLS_FILE=igvtools_$IGV_TOOLS_VERSION.zip
 IGV_TOOLS_URL=http://data.broadinstitute.org/igv/projects/downloads/$IGV_TOOLS_FILE
 
-# new: FASTX_VERSION=0.0.13->0.0.13.2->0.0.14
+# new: FASTX_VERSION=0.0.13
 FASTX_VERSION=0.0.13
 FASTX_FILE=fastx_toolkit_${FASTX_VERSION}_binaries_Linux_2.6_amd64.tar.bz2
 FASTX_URL=http://hannonlab.cshl.edu/fastx_toolkit/$FASTX_FILE
+
 
 # 0.10.1->0.11.4->0.11.5
 FASTQC_VERSION=0.11.5
@@ -447,7 +448,7 @@ PICARD_FILE=picard-tools-$PICARD_VERSION.zip
 PICARD_URL=http://sourceforge.net/projects/picard/files/picard-tools/$PICARD_VERSION/$PICARD_FILE/download
 
 
-fastq_utils_VERSION=0.11.0
+fastq_utils_VERSION=0.12.5
 fastq_utils_FILE=$fastq_utils_VERSION.tar.gz
 fastq_utils_URL=https://github.com/nunofonseca/fastq_utils/archive/$fastq_utils_FILE
 
@@ -1628,7 +1629,7 @@ function quant_install {
 
 ######################################################
 # Fastq QC
-function fastq_qc_install { 
+function fastx_install {
     ###############
     # Fastx toolkit
     # Collection of command line tools for Short-Reads FASTA/FASTQ files preprocessing.
@@ -1637,6 +1638,9 @@ function fastq_qc_install {
     tar xvjf $FASTX_FILE
     mv bin/* $BIN_DIR
     pinfo "Downloading and installing FASTX toolkit...done."
+}
+function fastq_qc_install { 
+
     
     ########
     # fastqc
@@ -2308,6 +2312,7 @@ pinfo "Loading environment $SETUP_FILE...done."
 #R_packages_install
 R_packages_install
 
+fastx_install
 fastq_qc_install
 perl_packages_install
 
