@@ -275,24 +275,23 @@ R3_VERSION=3.3.3
 R3_FILE=R-${R3_VERSION}.tar.gz 
 R3_URL=http://cran.r-project.org/src/base/R-3/$R3_FILE
 
-# 
-SAMTOOLS_VERSION=0.1.18
+# 0.1.18->0.1.19
+SAMTOOLS_VERSION=0.1.19
 SAMTOOLS_FILE=samtools-$SAMTOOLS_VERSION.tar.bz2
 SAMTOOLS_URL=http://sourceforge.net/projects/samtools/files/samtools/$SAMTOOLS_VERSION/$SAMTOOLS_FILE
 
-# new samtools: 1.3-> 1.4.1
-# prev: 1.1 
-SAMTOOLS1_VERSION=1.4.1
+# new samtools: 1.3-> 1.5
+SAMTOOLS1_VERSION=1.5
 SAMTOOLS1_FILE=samtools-$SAMTOOLS1_VERSION.tar.bz2
 SAMTOOLS1_URL=http://sourceforge.net/projects/samtools/files/samtools/$SAMTOOLS1_VERSION/$SAMTOOLS1_FILE
 
-VCFTOOLS_VERSION=0.1.14
+VCFTOOLS_VERSION=0.1.15
 VCFTOOLS_FILE=vcftools-$VCFTOOLS_VERSION.tar.gz
 VCFTOOLS_URL=https://github.com/vcftools/vcftools/releases/download/v$VCFTOOLS_VERSION/$VCFTOOLS_FILE
 
 
-# 1.3->1.4.1
-BCFTOOLS_VERSION=1.4.1
+# 1.3->1.5
+BCFTOOLS_VERSION=1.5
 BCFTOOLS_FILE=bcftools-$BCFTOOLS_VERSION.tar.bz2
 BCFTOOLS_URL=https://github.com/samtools/bcftools/releases/download/$BCFTOOLS_VERSION/$BCFTOOLS_FILE
 
@@ -343,11 +342,10 @@ htseq_FILE=release_${htseq_VERSION}.tar.gz
 htseq_URL=https://github.com/simon-anders/htseq/archive/${htseq_FILE}
 
 
-# new: 1.6.1
-# latest (1.5.2) fails (same error since 1.2.4)
+# latest (1.6.1) fails (same error since 1.2.4)
 # Parameter COVERAGE_STATS not found. Check the spelling!
-FLUX_CAPACITOR_VERSION=1.6.1
-#FLUX_CAPACITOR_VERSION=1.2.3
+#FLUX_CAPACITOR_VERSION=1.6.1
+FLUX_CAPACITOR_VERSION=1.2.3
 FLUX_CAPACITOR_FILE=flux-capacitor-$FLUX_CAPACITOR_VERSION.tgz
 #FLUX_CAPACITOR_URL=http://sammeth.net/artifactory/barna-nightly/barna/barna.capacitor/$FLUX_CAPACITOR_VERSION/$FLUX_CAPACITOR_FILE
 FLUX_CAPACITOR_URL=http://sammeth.net/artifactory/barna/barna/barna.capacitor/$FLUX_CAPACITOR_VERSION/$FLUX_CAPACITOR_FILE
@@ -1063,8 +1061,8 @@ function samtools1_install {
     make prefix=$IRAP_DIR install
     mkdir -p $INC_DIR/bam
     cp *.h $INC_DIR/bam
-    mkdir  -p $INC_DIR/bam/htslib-1.4.1
-    cp htslib-1.4.1/*.h $INC_DIR/bam/htslib-1.4.1
+    mkdir  -p $INC_DIR/bam/htslib-1.5
+    cp htslib-1.5/*.h $INC_DIR/bam/htslib-1.5
     cp libbam.a $INC_DIR/bam
     #
     pwd
