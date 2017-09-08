@@ -37,15 +37,15 @@ quant_qc_stats:=$(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.genes.ra
 a_quant_qc_stats+= $(quant_qc_stats)
 
 ifeq ($(transcript_quant),y)
-quant_qc_stats:= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).transcripts.raw.$(quant_method).quant_qc.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).quant_qc.tsv)
-a_quant_qc_stats+= $(quant_qc_stats)
+quant_qc_statst:= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).transcripts.raw.$(quant_method).quant_qc.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).quant_qc.tsv)
+a_quant_qc_stats+= $(quant_qc_statst)
 
 STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).tsv) 
 endif
 
 ifeq ($(exon_quant),y)
-quant_qc_stats:= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).exons.raw.$(exon_quant_method).quant_qc.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.exons.raw.$(exon_quant_method).quant_qc.tsv)
-a_quant_qc_stats+= $(quant_qc_stats)
+quant_qc_statse:= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).exons.raw.$(exon_quant_method).quant_qc.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.exons.raw.$(exon_quant_method).quant_qc.tsv)
+a_quant_qc_stats+= $(quant_qc_statse)
 
 STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.exons.raw.$(exon_quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.exons.raw.$(exon_quant_method).tsv) 
 endif
@@ -907,7 +907,7 @@ kallisto_quant_params=
 endif
 
 
-# -> prefux
+#
 kallisto_index_name=$(trans_file)_kallisto/kallisto_index
 kallisto_index=$(trans_file)_kallisto/kallisto_index.irap
 
