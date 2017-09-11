@@ -794,22 +794,22 @@ endif
 star_map_params+=
 # --quantMode TranscriptomeSAM will be enabled in the star code because transcript quantification is enabled
 
+# extra parameters passed when preparing the reference
+rsem_prepare_ref_params?=
+# extra parameters passed to rsem-calculate-expression 
+rsem_params?=
+rsem_params+=--alignments  --estimate-rspd  --calc-ci --no-bam-output --seed 12321 -p $(max_threads) --ci-memory $(max_mem)
 
-ifndef rsem_params
-rsem_params=
-endif
-
-rsem_params=--bam --estimate-rspd  --calc-ci --no-bam-output --seed 12321 -p $(max_threads) --ci-memory $(max_mem)
-
-
+##--bam
 rsem_reference_name=$(subst .gtf,rsem,$(gtf_file_abspath))/rsemref
 rsem_reference_target=$(rsem_reference_name)/rsem.irap
-
+# --strandedness non|forward|reverse
+# --paired-end
 # Add the reference preparation to STAGE0
 SETUP_DATA_FILES+=$(rsem_reference_target)
 
 $(rsem_reference_target): $(reference_abspath)  $(gtf_file_abspath)
-	mkdir -p $(@D) &&	irap_wrapper.sh rsem rsem-prepare-reference  --gtf $(gtf_file_abspath) $(reference_abspath)  $(rsem_reference_name) && touch $@
+	mkdir -p $(@D) &&	irap_wrapper.sh rsem rsem-prepare-reference  --gtf $(gtf_file_abspath) $(reference_abspath)  $(rsem_reference_name) $(rsem_prepare_ref_params) && touch $@
 
 # 1 bam
 # 2 output prefix
@@ -819,7 +819,7 @@ $(rsem_reference_target): $(reference_abspath)  $(gtf_file_abspath)
 define run_rsem=
 	irap_wrapper.sh rsem rsem-calculate-expression $(rsem_params)   $(3) $(1) $(rsem_reference_name) $(2)
 endef
-
+## 
 #sample_name.genes.results
 #sample.name.isoforms.results
 # 1 lib
@@ -887,13 +887,10 @@ endif
 $(call file_exists,$(trans_file))
 
 
-ifndef kallisto_index_params
-kallisto_index_params=
-endif
-
-ifndef kallisto_quant_params
-kallisto_quant_params=
-endif
+# Note: currently if kallisto is ran in quant mode no bam file is kept
+kallisto_index_params?=
+# --fusion --bias
+kallisto_quant_params?=
 
 
 #
@@ -903,9 +900,10 @@ kallisto_index=$(trans_file)_kallisto/kallisto_index.irap
 # Add the reference preparation to STAGE0
 SETUP_DATA_FILES+=$(kallisto_index)
 
+# code now in irap_map.mk
 $(kallisto_index): $(trans_file)
 	$(call run_kallisto_index)
-##	mkdir -p $(@D) && irap_wrapper.sh kallisto kallisto index $(kallisto_index_params) -i $(kallisto_index_name)  $< && touch $@
+
 
 
 
@@ -913,9 +911,9 @@ $(kallisto_index): $(trans_file)
 # fastq files - 2
 # single-end? - 4
 # read lenth - 3
-# stranded data not supported
+# lib - 5
 define run_kallisto_quant=
- irap_wrapper.sh kallisto kallisto quant $(kallisto_quant_params) -i $(kallisto_index_name) $(if $(4),,--single) -l $(3) -s 1  -t $(max_threads) -o $(1)  $(2)
+ irap_wrapper.sh kallisto kallisto quant $(kallisto_quant_params) -i $(kallisto_index_name) $(if $(4),,--single) $(call kallisto_strand_params,$(5)) -l $(3) -s 1  -t $(max_threads) -o $(1)  $(2)
 endef
 # 
 
@@ -926,7 +924,7 @@ define make-kallisto-quant-rule=
 
 
 $(call lib2quant_folder,$(1))$(1)/$(1).abundance.tsv: $(call libname2fastq,$(1)) $(kallisto_index)
-	(mkdir -p $$(@D) && $$(call run_kallisto_quant,$$(@D),$(call libname2fastq,$(1)),$($(1)_rs),$(call is_pe_lib,$(1))) && mv $$(@D)/abundance.tsv $$@)
+	(mkdir -p $$(@D) && $$(call run_kallisto_quant,$$(@D),$(call libname2fastq,$(1)),$($(1)_rs),$(call is_pe_lib,$(1)),$(1)) && mv $$(@D)/abundance.tsv $$@)
 
 
 $(call lib2quant_folder,$(1))$(2).transcripts.raw.kallisto.tsv: $(call lib2quant_folder,$(1))$(1)/$(1).abundance.tsv
