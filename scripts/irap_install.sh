@@ -1560,7 +1560,7 @@ function fastq_utils_install {
 
 function umis_install {
     pinfo "Compiling and installing umis..."
-    git clone https://github.com/vals/umis.git
+    #git clone https://github.com/vals/umis.git
     pushd umis    
     download_software umis
     #tar xzvf $umis_FILE
