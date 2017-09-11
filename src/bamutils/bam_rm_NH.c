@@ -27,7 +27,7 @@
 #include <sam.h>
 #include <kstring.h>      
 
-#include "../fastq_utils/hash.h"
+#include "hash.h"
 #include <string.h>
 #include <assert.h>
 
