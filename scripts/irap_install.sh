@@ -499,7 +499,7 @@ function gen_setup_irap {
 
     cat <<EOF > $1
 export IRAP_DIR=$IRAP_DIR
-export PATH=\$IRAP_DIR/bin/bowtie1/bin:\$IRAP_DIR/bin:\$IRAP_DIR/scripts:\$IRAP_DIR/python/bin/:\$PATH
+export PATH=\$IRAP_DIR/python/bin/:\$IRAP_DIR/bin/bowtie1/bin:\$IRAP_DIR/bin:\$IRAP_DIR/scripts:\$IRAP_DIR/python/bin/:\$PATH
 export LD_LIBRARY_PATH=\$IRAP_DIR/lib:\$LD_LIBRARY_PATH:/usr/local/lib
 export CFLAGS="-I\$IRAP_DIR/include -I\$IRAP_DIR/include/bam -I\$IRAP_DIR/include/boost  \$CFLAGS"
 export R_LIBS_USER=$IRAP_DIR/Rlibs
@@ -1423,11 +1423,11 @@ function htseq_install {
     tar xzvf $htseq_FILE
     pushd htseq-`echo $htseq_FILE|sed "s/.tar.gz//"`
 # python version needs to be equal or greater than  (2.6)
-    #. ./build_it ;# not needed in 0.5.4p5
     # python setup.py install --user
-    pip install --prefix $IRAP_DIR  'matplotlib>=1.4'
-    pip install --prefix $IRAP_DIR  Cython
-    pip install --prefix $IRAP_DIR  'pysam>=0.9'
+    # ignore pre-installed packages
+    pip install --prefix $IRAP_DIR --ignore-installed 'matplotlib>=1.4'
+    pip install --prefix $IRAP_DIR --upgrade --ignore-installed Cython
+    pip install --prefix $IRAP_DIR --ignore-installed 'pysam>=0.9'
     pip install --prefix $IRAP_DIR .
 ##    pip install --prefix $IRAP_DIR .
     ## htseq is copied to $IRAP_DIR/bin
@@ -1561,12 +1561,12 @@ function fastq_utils_install {
 function umis_install {
     pinfo "Compiling and installing umis..."
     #git clone https://github.com/vals/umis.git
-    pushd umis    
+    #pushd umis    
     download_software umis
     #tar xzvf $umis_FILE
     unzip $umis_FILE    
     pushd umis-master
-    pip install --upgrade --prefix $IRAP_DIR .
+    pip install  --prefix $IRAP_DIR .
     popd
     pinfo "Compiling and installing umis...done."
 }
@@ -2021,6 +2021,7 @@ function python_packages_install {
     else
 	pinfo "pip already installed"
     fi
+    ##$PATH2PIP install pysam==0.8.4 --user
     $PATH2PIP install pysam==0.8.4 --user    
     export CFLAGS=$CFLAGS_bak
     pinfo "python packages installed"
