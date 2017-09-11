@@ -92,7 +92,7 @@ if ( sum(duplicated(table[,1]))>0 ) {
 }
 rownames(table) <- as.character(table[,1])
 
-pdebug.save.state("tsvDE2html0","p0")
+pdebug.save.state("tsvDE2html","p0")
 
 cols2sel <- colnames(table)
 pdebug(opt$flavour," mode")
@@ -250,7 +250,7 @@ if ( length(fields$groups) > 0 ) {
 pdebug("Applying pvalue cut-off")
 before <- nrow(table)
 uncut.table <- table
-
+#dim(before)
 #exclude NA and empty lines
 #table <- table[!is.na(table[,fields$PVALUE.FIELD]),]
 #table <- table[table[,1]!='',]
