@@ -206,7 +206,8 @@ if ( opt$flavour == "voom" ) {
   fields$PVALUE.FIELD <- "adj.P.Val"
   fields$FOLDCHANGE_MEDIAN <- "AveExpr"
   fields$groups <- colnames(table)[c(1,2)]
-  fields$ANNOT.ID <- "ID"  
+  fields$ANNOT.ID <- "ID"
+  fields$URL.FIELD.ID <- "ID"
   fields$ID.in.ANNOT <- "ID"
 }
 
