@@ -43,20 +43,25 @@ endif
 
 irap_path:=$(shell dirname `which irap`)
 
+
 #####################################################################
 #
 override rnaseq_type:=sc
 sc_protocol?=10x_v2
 quant_method?=umi_count
 
-########################################
+#####################################################################
 # default options for each protocol
 # obviously, may be overriden by the users
+#####################################################################
+
+# Drop-seq
 ifeq ($(sc_protocol),drop-seq)
 mapper?=kallisto
 quant_method?=umi_count
 endif
 
+# 10X v2
 ifeq ($(sc_protocol),10x_v2)
 mapper?=kallisto
 quant_method?=umi_count
@@ -72,22 +77,23 @@ qc?=report
 #trim_poly_at_len=10
 endif
 
-# under devel
+
+# 10X v1
 ifeq ($(sc_protocol),10x_v1)
 quant_method?=umi_count
 mapper?=kallisto
 endif
 
-
+# smart-seq
 ifeq ($(sc_protocol),smart-seq)
-mapper?=kallisto
+mapper?=none
 quant_method?=kallisto
-# rsem_params+= --single-cell-prior
 #trim_poly_at?=y
 #trim_poly_at_len=8
 qc?=on
 endif
 
+# rsem_params+= --single-cell-prior
 #####################################################################
 # Default target - sc RNA-seq
 all: setup quality_filtering_and_report mapping quantification filter_cells clustering
