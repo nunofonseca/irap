@@ -41,9 +41,6 @@ endif
 ifeq (kallisto_umi,$(quant_method))
 
 # use kallisto to align
-kallisto quant -i index -o out --pseudobam r1.fastq r2.fastq | samtools view -Sb - > out.bam
-kallisto pseudo [arguments] FASTQ-files
--t, --threads=INT
 
 define make-kallisto-quant-rule=
 
