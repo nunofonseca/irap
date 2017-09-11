@@ -11,28 +11,28 @@ clean:
 	rm -f *.o $(OFILES) bam_fix_se_flag
 
 bam_pe_insert: bam_pe_insert.c
-	gcc  $<   -L $(LIBDIRS) -lbam -lm -lz -o $@  -I $(IDIRS) 
+	gcc  $<   -L $(LIBDIRS) -lpthread -lbam -lm -lz -o $@  -I $(IDIRS) 
 
 bam_tophat2_fix: bam_tophat2_fix.c
-	gcc  $<   -L $(LIBDIRS) -lbam -lm -lz -o $@  -I $(IDIRS) 
+	gcc  $<   -L $(LIBDIRS) -lpthread -lbam -lm -lz -o $@  -I $(IDIRS) 
 
 bamStrand: bamStrand.c
-	gcc  $<   -L $(LIBDIRS) -lbam -lm -lz -o $@  -I $(IDIRS) 
+	gcc  $<   -L $(LIBDIRS) -lpthread -lbam -lm -lz -o $@  -I $(IDIRS) 
 
 
 # -lrt
 bamRindex: bamRindex.c
-	gcc  $<   -L $(LIBDIRS) -lbam -lm -lz -lsqlite3  -o $@  -I $(IDIRS) 
+	gcc  $<   -L $(LIBDIRS)  -lpthread  -lbam -lm -lz -lsqlite3  -o $@  -I $(IDIRS) 
 
 
 bam_fix_se_flag: bam_fix_se_flag.c
-	gcc  $(CFLAGS) $^   -L $(LIBDIRS) -lbam -lm -lz -o $@  -I $(IDIRS) 
+	gcc  $(CFLAGS) $^   -L $(LIBDIRS)  -lpthread  -lbam -lm -lz -o $@  -I $(IDIRS) 
 
-bam_fix_NH: bam_fix_NH.o ../fastq_utils/hash.o
-	gcc  $(CFLAGS) $^   -L $(LIBDIRS) -lbam -lm -lz -o $@  -I $(IDIRS) 
+bam_fix_NH: bam_fix_NH.o hash.o
+	gcc  $(CFLAGS) $^   -L $(LIBDIRS)  -lpthread  -lbam -lm -lz -o $@  -I $(IDIRS) 
 
 bam_rm_NH: bam_rm_NH.o 
-	gcc  $(CFLAGS) $^   -L $(LIBDIRS) -lbam -lm -lz -o $@  -I $(IDIRS) 
+	gcc  $(CFLAGS) $^   -L $(LIBDIRS)  -lpthread -lbam -lm -lz -o $@  -I $(IDIRS) 
 
 bam_fix_NH.o: bam_fix_NH.c
 	gcc $(CFLAGS) -c  $<   -I $(IDIRS) 
@@ -40,7 +40,7 @@ bam_fix_NH.o: bam_fix_NH.c
 bam_rm_NH.o: bam_rm_NH.c
 	gcc $(CFLAGS) -c  $<   -I $(IDIRS) 
 
-../fastq_utils/hash.o: ../fastq_utils/hash.c ../fastq_utils/hash.h
+hash.o: hash.c hash.h
 	gcc $(CFLAGS) -c $<
 
 tests: run_bam_fix_tests run_bamRindex_tests
