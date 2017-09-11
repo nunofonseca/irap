@@ -910,7 +910,7 @@ endif
 SUPPORTED_QUANT_METHODS=basic htseq1 htseq2 cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd scripture flux_cap nurd stringtie stringtie_nd rsem kallisto salmon umi_count umis 
 
 # methods that produce transcript level quantification by default
-TRANS_QUANT_METHODS=flux_cap cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd nurd stringtie stringtie_nd rsem kallisto salmon umi_count 
+TRANS_QUANT_METHODS=flux_cap cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd nurd stringtie stringtie_nd rsem kallisto salmon umi_count bitseq
 #umi_count kallisto_umi 
 # umis?
 
@@ -920,7 +920,7 @@ $(call p_info,[ERROR] quant_method)
 $(error $(quant_method) not supported)
 endif
 
-quant_method:=$(strip $(quant_method))
+quant_method:=$(strip $(quant_method))	
 $(info *	quant_method=$(quant_method))
 
 ifndef exon_quant
