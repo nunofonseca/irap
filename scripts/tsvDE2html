@@ -250,7 +250,7 @@ if ( length(fields$groups) > 0 ) {
 pdebug("Applying pvalue cut-off")
 before <- nrow(table)
 uncut.table <- table
-
+#dim(before)
 #exclude NA and empty lines
 #table <- table[!is.na(table[,fields$PVALUE.FIELD]),]
 #table <- table[table[,1]!='',]
