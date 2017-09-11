@@ -2352,7 +2352,7 @@ if [ "$install" == "minimal" ]; then
     tophat2_install
     star_install    
    
-    pinfo "WARNING: You chose to install the minimal installation of iRAP. Only the following tools will be available: bowtie1, bowtie2, tophat2, star, cufflinks2 "
+    pinfo "WARNING: You chose to install the minimal installation of iRAP. Only a subset of the tools will be available"
 
 else
     mappers_install
