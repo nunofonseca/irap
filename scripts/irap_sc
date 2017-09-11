@@ -82,6 +82,7 @@ endif
 ifeq ($(sc_protocol),smart-seq)
 mapper?=kallisto
 quant_method?=kallisto
+# rsem_params+= --single-cell-prior
 #trim_poly_at?=y
 #trim_poly_at_len=8
 qc?=on
