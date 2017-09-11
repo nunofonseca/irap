@@ -270,8 +270,8 @@ R2_VERSION=2.15.2
 R2_FILE=R-${R2_VERSION}.tar.gz 
 R2_URL=http://cran.r-project.org/src/base/R-2/$R2_FILE
 
-# 3.3.3
-R3_VERSION=3.3.3
+# 3.xx fails to compile due to pcre dependency
+R3_VERSION=3.2.5
 R3_FILE=R-${R3_VERSION}.tar.gz 
 R3_URL=http://cran.r-project.org/src/base/R-3/$R3_FILE
 
@@ -379,8 +379,9 @@ kallisto_URL=https://github.com/pachterlab/kallisto/releases/download/v$kallisto
 
 # 1.2.21->1.2.22->1.3.0
 rsem_VERSION=1.3.0
-rsem_FILE=rsem-${rsem_VERSION}.tar.gz
-rsem_URL=http://deweylab.biostat.wisc.edu/rsem/src/$rsem_FILE
+rsem_FILE=v${rsem_VERSION}.tar.gz
+rsem_URL=https://github.com/deweylab/RSEM/archive/$rsem_FILE
+
 
 FUSIONMAP_VERSION=2015-03-31
 FUSIONMAP_FILE=FusionMap_${FUSIONMAP_VERSION}.zip
@@ -1497,14 +1498,21 @@ function sailfish_install {
 
 ######################################################
 # rsem
+# requires samtools and BOOST
 function rsem_install {
     pinfo "Installing rsem..."
     download_software rsem
     tar xzvf $rsem_FILE
-    pushd rsem-$rsem_VERSION
-    make
+    pushd RSEM-$rsem_VERSION
+    sed -E -i "s|.\(PROGRAMS\)\s+.\(SAMTOOLS\)/samtools|\$(PROGRAMS)|"  Makefile
+    sed -E -i "s|CXXFLAGS =|CXXFLAGS += |"  Makefile
+    sed -E -i "s|LDFLAGS =|LDFLAGS ?=|"  Makefile
+    sed -E -i "s|--without-curses||"  Makefile
     mkdir -p $IRAP_DIR/bin/rsem/bin
-    cp rsem* extract-* convert-* $IRAP_DIR/bin/rsem/bin
+    prefix=$IRAP_DIR/bin/rsem make
+    prefix=$IRAP_DIR/bin/rsem make install
+    #mkdir -p $IRAP_DIR/bin/rsem/bin
+    #cp rsem* extract-* convert-* $IRAP_DIR/bin/rsem/bin
     popd
     pinfo "rsem installation complete."    
 }
@@ -1541,9 +1549,9 @@ function fastq_utils_install {
     download_software fastq_utils
     tar xzvf $fastq_utils_FILE
     pushd fastq_utils-${fastq_utils_VERSION}
-    #./install_deps.sh
+    ./install_deps.sh
     make install
-    cp bin/*  $BIN_DIR
+    cp bin/fast* bin/bam*  $BIN_DIR
     popd
     pinfo "Compiling and installing fastq_utils processing programs...done."
 }
@@ -1598,7 +1606,7 @@ EOF
     ##IGVTOOLS=$(echo $IGV_TOOLS_FILE|sed "s/.zip//")
     download_software IGV_TOOLS
     unzip $IGV_TOOLS_FILE
-    cp IGVTools/* $IRAP_DIR/bin/
+    cp -rf IGVTools/* $IRAP_DIR/bin/
     echo "exit 0" >> $IRAP_DIR/bin/igvtools
     pinfo "Installing IGV...done"
 }
