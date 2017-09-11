@@ -2323,6 +2323,7 @@ R_packages_install
 fastx_install
 fastq_qc_install
 perl_packages_install
+umis_install
 
 if [ "$install" == "minimal" ]; then
     bowtie2_install
