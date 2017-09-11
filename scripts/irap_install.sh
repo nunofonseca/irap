@@ -453,8 +453,9 @@ fastq_utils_VERSION=0.12.5
 fastq_utils_FILE=$fastq_utils_VERSION.tar.gz
 fastq_utils_URL=https://github.com/nunofonseca/fastq_utils/archive/$fastq_utils_FILE
 
+# devel - 
 umis_VERSION=0.6.0
-umis_FILE=v${umis_VERSION}.tar.gz
+umis_FILE=master.zip
 umis_URL=https://github.com/vals/umis/archive/${umis_FILE}
 
 MAKE_VERSION=4.2
@@ -1560,12 +1561,12 @@ function fastq_utils_install {
 function umis_install {
     pinfo "Compiling and installing umis..."
     git clone https://github.com/vals/umis.git
-    pushd umis
-    
+    pushd umis    
     download_software umis
-    tar xzvf $umis_FILE
-    pushd umis-${umis_VERSION}
-    pip install --prefix $IRAP_DIR .
+    #tar xzvf $umis_FILE
+    unzip $umis_FILE    
+    pushd umis-master
+    pip install --upgrade --prefix $IRAP_DIR .
     popd
     pinfo "Compiling and installing umis...done."
 }
@@ -2086,7 +2087,7 @@ do
     case $Option in
 # update/reinstall
         a ) install=all;IRAP_DIR1=$OPTARG;;# send all output to a log file
-	l ) install=minimal;IRAP_DIR1=$OPTARG;;# send all output to a log file
+	l ) install=minimal;IRAP_DIR1=$OPTARG;;
 	b ) install=browser;IRAP_DIR1=$IRAP_DIR;;
 	c ) install=core;IRAP_DIR1=$OPTARG;;  # run irap up to the given stage
 	d ) USE_CACHE=n;install=download;IRAP_DIR1=$IRAP_DIR;; # download all the source packages
