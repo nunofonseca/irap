@@ -35,11 +35,12 @@ function pinfo {
 }
 
 function usage {
-    echo "Usage: irap_install.sh  -s irap_toplevel_directory [ -c dir -a dir -a -u -m -r -p -q -b -K -R -B]  ";
+    echo "Usage: irap_install.sh  -s irap_toplevel_directory [ -c dir -a dir -a -u -m -r -p -q -b -K -R -B -S]  ";
     echo " -s dir : toplevel irap clone directory";
     echo " -c dir : install/update IRAP core files only to directory 'dir'. If dir is not given the value of IRAP_DIR will be used (if available).";
     echo " -a dir : install/update all files (core and 3rd party software) to directory 'dir' (default)";
-    echo " -l dir : lightweight/minimal installation of iRAP (a minimum set of tools will be installed).";    
+    echo " -l dir : lightweight/minimal installation of iRAP (a minimum set of tools will be installed).";
+    echo " -S dir : lightweight/minimal installation of iRAP for scRNA-seq (a minimum set of tools will be installed).";    
     echo " -u : update IRAP_core files (alias to -c $IRAP_DIR).";
     echo " -m : update mappers.";
     echo " -r : update R packages.";
@@ -55,6 +56,7 @@ function usage {
     echo " Advanced options:";
     echo " -f : check/fix file permissions"
     echo " -d : download all software and libraries (except R and Perl packages) but do not install.";
+##    echo " -D : skip the installation of dependencies.";
     echo " -x software: install/update software.";
 }
 
@@ -391,7 +393,6 @@ FUSIONCATCHER_VERSION=0.99.7b
 FUSIONCATCHER_FILE=bootstrap.py
 
 FUSIONCATCHER_URL=http://sf.net/projects/fusioncatcher/files/$FUSIONCATHER_FILE
-http://sf.net/projects/fusioncatcher/files/bootstrap.py
 
 SCRIPTURE_VERSION=beta2
 SCRIPTURE_FILE=scripture-${SCRIPTURE_VERSION}.jar 
@@ -444,7 +445,6 @@ MONO_URL=http://download.mono-project.com/sources/mono/$MONO_FILE
 
 ## 1.119->2.9.2
 PICARD_VERSION=2.9.2
-https://github.com/broadinstitute/picard/releases/download/2.9.2/picard.jar
 PICARD_FILE=picard-tools-$PICARD_VERSION.zip
 PICARD_URL=http://sourceforge.net/projects/picard/files/picard-tools/$PICARD_VERSION/$PICARD_FILE/download
 
@@ -1422,14 +1422,13 @@ function htseq_install {
     download_software htseq
     tar xzvf $htseq_FILE
     pushd htseq-`echo $htseq_FILE|sed "s/.tar.gz//"`
-# python version needs to be equal or greater than  (2.6)
+    # python version needs to be equal or greater than  (2.6)
     # python setup.py install --user
     # ignore pre-installed packages
     pip install --prefix $IRAP_DIR --ignore-installed 'matplotlib>=1.4'
     pip install --prefix $IRAP_DIR --upgrade --ignore-installed Cython
     pip install --prefix $IRAP_DIR --ignore-installed 'pysam>=0.9'
     pip install --prefix $IRAP_DIR .
-##    pip install --prefix $IRAP_DIR .
     ## htseq is copied to $IRAP_DIR/bin
     popd
     pinfo "Installing HTSeq...done."
@@ -1550,8 +1549,9 @@ function fastq_utils_install {
     download_software fastq_utils
     tar xzvf $fastq_utils_FILE
     pushd fastq_utils-${fastq_utils_VERSION}
-    ./install_deps.sh
-    make install
+    CFLAGS_noboost=$(get_CFLAGS_woBOOST)
+    CFLAGS=$CFLAGS_noboost ./install_deps.sh
+    CFLAGS=$CFLAGS_noboost make install
     cp bin/fast* bin/bam*  $BIN_DIR
     popd
     pinfo "Compiling and installing fastq_utils processing programs...done."
@@ -1622,6 +1622,8 @@ function quant_install {
     rsem_install
     kallisto_install
     salmon_install
+    umis_install
+
     #isoem_install
     #sailfish_install
     #mmseq_install
@@ -2080,14 +2082,19 @@ INSTALL_JBROWSE=n
 INSTALL_GCC=n
 INSTALL_R3=n
 INSTALL_BOOST=n
+# all|bulk|sc
+INSTALL_RNA=all
+INSTALL_DEPS=y
 SPECIAL_SH_TO_USE=bash
 OPTERR=0
-while getopts "s:c:l:a:x:gmqpruhbdtfjvGKRB"  Option
+while getopts "s:c:l:a:x:gmqpruhbdtfjvGKRBSD"  Option
 do
     case $Option in
 # update/reinstall
         a ) install=all;IRAP_DIR1=$OPTARG;;# send all output to a log file
-	l ) install=minimal;IRAP_DIR1=$OPTARG;;
+	l ) install=minimal;INSTALL_RNA=all;IRAP_DIR1=$OPTARG;;
+	S ) install=minimal;INSTALL_RNA=sc;IRAP_DIR1=$OPTARG;;
+	D ) INSTALL_DEPS=n;;
 	b ) install=browser;IRAP_DIR1=$IRAP_DIR;;
 	c ) install=core;IRAP_DIR1=$OPTARG;;  # run irap up to the given stage
 	d ) USE_CACHE=n;install=download;IRAP_DIR1=$IRAP_DIR;; # download all the source packages
@@ -2308,7 +2315,12 @@ fi
 
 #############
 # all
-deps_install $install
+
+if [ "$INSTALL_DEPS" == "y" ]; then
+    deps_install $install
+else
+    pinfo "Skipping the installation of dependencies (-D option used)"
+fi
 core_install
 pinfo "Loading environment $SETUP_FILE..."
 source $SETUP_FILE
@@ -2319,23 +2331,28 @@ pinfo "IRAP_DIR=$IRAP_DIR"
 env |  grep IRAP_DIR
 pinfo "Loading environment $SETUP_FILE...done."
 #check_for_irap_env
-#R_packages_install
 R_packages_install
-
 fastx_install
 fastq_qc_install
 perl_packages_install
-umis_install
 
 if [ "$install" == "minimal" ]; then
+    if [ "$INSTALL_RNA" == "sc" ]; then
+	umis_install
+	kallisto_install
+	hisat2_install
+    fi
+    if [ "$INSTALL_RNA" == "all" ] ||  [ "$INSTALL_RNA" == "bulk" ]; then
+	htseq_install
+	kallisto_install
+	cufflinks2_install
+    fi
     bowtie2_install
     bowtie1_install
     tophat2_install
-    star_install
-    htseq_install
-    cufflinks2_install
+    star_install    
    
-   pinfo "WARNING: You chose to install the minimal installation of iRAP. Only the following tools will be available: bowtie1, bowtie2, tophat2, star, cufflinks2 "
+    pinfo "WARNING: You chose to install the minimal installation of iRAP. Only the following tools will be available: bowtie1, bowtie2, tophat2, star, cufflinks2 "
 
 else
     mappers_install
