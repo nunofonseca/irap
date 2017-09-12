@@ -26,6 +26,8 @@
 ## Needed for transcript quantification
 mapTrans2gene=$(name)/data/$(gtf_file_basename).mapTrans2Gene.tsv
 
+$(mapTrans2gene): $(gtf_file_abspath)
+	genMapTrans2Gene -i $< -o $@.tmp -c $(max_threads) && mv $@.tmp $@
 
 ## Output files produced
 STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).tsv) 
@@ -1059,8 +1061,6 @@ ifeq ($(transcript_quant),y)
 
 SETUP_DATA_FILES+=$(mapTrans2gene)
 
-$(mapTrans2gene): $(gtf_file_abspath)
-	genMapTrans2Gene -i $< -o $@.tmp -c $(max_threads) && mv $@.tmp $@
 
 
 $(name)/$(mapper)/$(quant_method)/%.transcripts.riu.$(quant_method).irap.tsv: $(name)/$(mapper)/$(quant_method)/%.transcripts.raw.$(quant_method).tsv $(mapTrans2gene)
