@@ -151,7 +151,7 @@ nquant_files=$(foreach m,$(quant_norm_method),$(name)/$(mapper)/$(quant_method)/
 
 ofiles1=$(foreach m,$(quant_norm_method),$(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.genes.$(m).$(quant_method).$(quant_norm_tool).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.$(m).$(quant_method).$(quant_norm_tool).tsv))
 STAGE3_S_OFILES+= $(ofiles1)
-nofiles=$(ofiles)
+nofiles=$(ofiles1)
 
 ifeq ($(transcript_quant),y)
 nquant_files+=$(foreach m,$(quant_norm_method),$(name)/$(mapper)/$(quant_method)/transcripts.$(m).$(quant_method).$(quant_norm_tool).tsv)
