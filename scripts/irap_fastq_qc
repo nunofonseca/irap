@@ -640,10 +640,13 @@ endif
 %.pre.fastq.gz: %.fastq.gz $(iindex1) $(iindex2)
 	fastq_pre_barcodes $(fastq_pre_barcodes_opts) --read1_offset $(read1_offset) --read1_size $(read1_size) --read1 $< --outfile1 $@.tmp    && mv $@.tmp $@
 
+ifeq ($(pe_data),1)
 %_1.pre.fastq.gz %_2.pre.fastq.gz: %_1.fastq.gz %_2.fastq.gz $(iindex1) $(iindex2)
 	fastq_pre_barcodes $(fastq_pre_barcodes_opts) --read1_offset $(read1_offset) --read1_size $(read1_size) --read2_offset $(read2_offset) --read2_size $(read2_size) --outfile1 $*_1.pre.fastq.gz.tmp --outfile2  $*_2.pre.fastq.gz.tmp --read1 $*_1.fastq.gz --read2  $*_2.fastq.gz    && \
 	mv $*_2.pre.fastq.gz.tmp $*_2.pre.fastq.gz && \
 	mv $*_1.pre.fastq.gz.tmp $*_1.pre.fastq.gz
+endif
+
 endif
 ## end pre_process_barcodes
 
