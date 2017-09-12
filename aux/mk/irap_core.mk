@@ -74,7 +74,7 @@ endif
 #raw_data_dir?=
 def_lib_dir?=
 
-$(info ---------$(def_lib_dir))
+#$(info ---------$(def_lib_dir))
 # ensure that the dir name starts and ends with a /
 check_libdir_ok=$(if $(call is_defined,$(1)_dir),$(patsubst %/,%,$($(1)_dir))/,$(def_lib_dir))
 
@@ -431,7 +431,7 @@ $(call file_exists,$(gtf_file_dir)/$(gtf_file))
 # spikein data
 ifdef spikein_fasta
 ifeq ($(spikein_fasta),ERCC)
-override spikein_fasta:=$(data_dir)/ercc.fasta.gz
+override spikein_fasta:=$(data_dir)/ercc/ercc.fasta.gz
 spikein_fasta_abspath:=$(abspath $(spikein_fasta))
 else
 spikein_fasta_abspath:=$(abspath $(spikein_fasta))
@@ -920,7 +920,7 @@ $(call p_info,[ERROR] quant_method)
 $(error $(quant_method) not supported)
 endif
 
-quant_method:=$(strip $(quant_method))	
+quant_method:=$(strip $(quant_method))
 $(info *	quant_method=$(quant_method))
 
 ifndef exon_quant
@@ -955,7 +955,7 @@ $(info *	transcript_quant=$(transcript_quant))
 SUPPORTED_EXON_QUANT_METHODS=stringtie dexseq htseq1 htseq2
 
 
-ifeq ($(strip $(exon_quant)),y) 
+ifeq ($(strip $(exon_quant)),y)
 ifneq (,$(filter $(quant_method),cufflinks1 cufflinks2 cufflinks2_nd cufflinks1_nd nurd stringtie stringtie_nd rsem kallisto salmon))
 $(error Sorry... currently $(quant_method) cannot be used together with exon_quantification)
 endif
