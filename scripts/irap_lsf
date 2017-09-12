@@ -18,32 +18,71 @@
 # along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-#    $Id: 0.1.1 Nuno Fonseca Thu Dec 20 21:19:56 2012$
 # =========================================================
 #Send irap jobs to the farm - if paired end files, parallelize
 #Input: a config file and irap parameters
 #Output: send jobs on the farm
 set -e 
+function stop_now {
+    cur_status=$1
+    shift 1
+    wf1=$1
+    shift 1
+    pend=$*
+    if [ "$wave-" == "$cur_status-" ]; then
+	final_job $pend $wf1
+	exit
+    fi
+}
+
+function usage {
+    echo "irap_lsf [-s -l level] irap options"
+}
+###################################
+level=6
+irap_cmd=irap
+
+
+while getopts "l:s"  Option; do
+    case $Option in
+	s ) irap_cmd=irap_sc;;
+        l ) level=$OPTARG;;
+	h) usage; exit;;
+    esac
+done
+
+shift $((OPTIND-1))
+echo $*
+
 
 ###################################
 # load shared code
 LSF_CMD=irap_lsf
 source $IRAP_DIR/aux/sh/irap_fun.sh
 source $IRAP_DIR/aux/sh/lsf_shared_code.sh
+cmd="$irap_cmd "
+
+wave=$level
+set +e
+$cmd conf=$conf $IRAP_PARAMS -n -q
+
+if [ $? -eq 0 ]; then
+    echo "All done - no need to submit jobs"
+    exit 0
+fi
+
 
 wf1=`irap_init_job|tail -n 1`
 wf2=`stage0_jobs $wf1|tail -n 1`
+stop_now 0 $wf1 $wf2
 wf3=`stage123_jobs $wf2|tail -n 1`
+stop_now 2  $wf1 $wf3
 wf4=`stage3_jobs $wf3|tail -n 1`
+stop_now 3 $wf1 $wf4
 wf5=`stage4_jobs $wf4|tail -n 1`
+stop_now 4 $wf1 $wf5
 wf6=`stage5_jobs $wf5 |tail -n 1`
 
 final_job $wf6 $wf1
-
 exit
-
-
-
-
-
 
