@@ -22,6 +22,7 @@ spikein_fasta=
 regen_bam=n
 tsfile=
 gen_cram=y
+cmd=irap
 
 out_dir=out
 # files created by irap_single_lib (not by iRAP)
@@ -73,6 +74,8 @@ necessary for the analysis.
 -B - keep only the bam files (by default the alignments are kept as CRAM) 
 
 -b - force the regeneration of the BAM file
+
+-S - single cell (default is bulk)
 
 -o output_folder  - folder name where the output files will be placed (default: out/)
 
@@ -131,7 +134,7 @@ function clean_up_all {
 
 #################################################################
 # 
-while getopts "1:2:c:s:m:p:t:i:o:l:h0fBbCTIVA"  Option
+while getopts "1:2:c:s:m:p:t:i:o:l:h0fBbCTIVAS"  Option
 do
     case $Option in
 	A ) is_atlas_run="1";;
@@ -151,6 +154,7 @@ do
 	T ) tidy_up_only=y;do_clean=y;;
 	V ) check_stage0_only=y;;
 	I ) do_info_only=y;;
+	S ) cmd=irap_sc;;
 	i ) irap_options=$OPTARG;;
 	l ) min_read_size=$OPTARG;;
         h ) print_usage; exit;;	
@@ -210,8 +214,8 @@ fi
 
 if [ "$check_stage0_only" == "y" ]; then
     pinfo "Checking stage0..."
-    echo irap conf=$conf data_dir=$DATA_DIR  $irap_options max_mem=$mem max_threads=$threads stage0 -n -q
-    irap conf=$conf data_dir=$DATA_DIR  $irap_options max_mem=$mem max_threads=$threads stage0 -n -q
+    echo $cmd conf=$conf data_dir=$DATA_DIR  $irap_options max_mem=$mem max_threads=$threads stage0 -n -q
+    $cmd conf=$conf data_dir=$DATA_DIR  $irap_options max_mem=$mem max_threads=$threads stage0 -n -q
     estatus=$?
     if [ $estatus -ne 0 ]; then
 	exit $estatus
@@ -219,8 +223,8 @@ if [ "$check_stage0_only" == "y" ]; then
     estatus=0
     if [ "$sop2-" != "-" ]; then
 	pinfo "Checking stage0 ($sop2)..."
-	echo irap conf=$conf data_dir=$DATA_DIR  $irap_options max_mem=$mem max_threads=$threads sop=$sop2  stage0 
-	irap conf=$conf data_dir=$DATA_DIR $irap_options max_mem=$mem max_threads=$threads sop=$sop2  stage0 -n -q
+	echo $cmd conf=$conf data_dir=$DATA_DIR  $irap_options max_mem=$mem max_threads=$threads sop=$sop2  stage0 
+	$cmd conf=$conf data_dir=$DATA_DIR $irap_options max_mem=$mem max_threads=$threads sop=$sop2  stage0 -n -q
 	estatus=$?
     fi    
     exit $estatus
@@ -262,7 +266,7 @@ if [ "$do_stage0-" == "yes-" ]; then
     TARGET_DIR=$DATA_DIR/raw_data/single_lib/$folder
     mkdir -p $TARGET_DIR
     pinfo "Running iRAP stage0"
-    run_AND_timeIt "stage0" $time_log_file irap conf=$conf data_dir=$DATA_DIR    $irap_options max_mem=$mem max_threads=$threads stage0
+    run_AND_timeIt "stage0" $time_log_file $cmd conf=$conf data_dir=$DATA_DIR    $irap_options max_mem=$mem max_threads=$threads stage0
     estatus=$?
     if [ $estatus -ne 0 ]; then
 	exit $estatus
@@ -270,7 +274,7 @@ if [ "$do_stage0-" == "yes-" ]; then
     estatus=0
     if [ "$sop2-" != "-" ]; then
 	pinfo "Running iRAP stage0 ($sop2)"
-	run_AND_timeIt "stage0" $time_log_file irap conf=$conf data_dir=$DATA_DIR    $irap_options max_mem=$mem max_threads=$threads sop=$sop2 stage0
+	run_AND_timeIt "stage0" $time_log_file $cmd conf=$conf data_dir=$DATA_DIR    $irap_options max_mem=$mem max_threads=$threads sop=$sop2 stage0
 	estatus=$?
     fi
     exit $estatus
@@ -392,7 +396,7 @@ EOF
 # Check if stage0 is ok
 set +e
 pinfo "Checking stage0..."
-irap conf=$conf data_dir=$DATA_DIR  $irap_options max_mem=$mem max_threads=$threads stage0 -n -q
+$cmd conf=$conf data_dir=$DATA_DIR  $irap_options max_mem=$mem max_threads=$threads stage0 -n -q
 if [ $? !=  0 ]; then
     perror "ERROR:Stage0: incomplete - use -0 to run stage0"
     exit 1
@@ -400,7 +404,7 @@ fi
 pinfo "Checking stage0...ok."
 if [ "$sop2-" != "-" ]; then
     pinfo "Checking stage0 of sop=$sop2..."
-    irap conf=$conf $irap_single_lib_options $irap_options sop=$sop2 stage0 -n -q
+    $cmd conf=$conf $irap_single_lib_options $irap_options sop=$sop2 stage0 -n -q
     if [ $? !=  0 ]; then
 	perror "ERROR:Stage0: incomplete - use -0 to run stage0"
 	exit 1
@@ -495,14 +499,14 @@ irap_clean_conf="$irap_single_lib_options $irap_options"
 
 ##################################################################
 pinfo "QC and filtering..."
-run_AND_timeIt "iRAP-QC" $time_log_file  irap $irap_single_lib_options $irap_options stage1
+run_AND_timeIt "iRAP-QC" $time_log_file  $cmd $irap_single_lib_options $irap_options stage1
 pinfo "QC and filtering...complete."
 
 # force BAM regeneration
 if [ $regen_bam == "y" ]; then
-    BAM=`irap $irap_single_lib_options $irap_options print_stage2_files|tail -n 1|grep -v "make:"`
+    BAM=`$cmd $irap_single_lib_options $irap_options print_stage2_files|tail -n 1|grep -v "make:"`
     if [ "$BAM-" == "-" ]; then
-	pinfo "No BAM!? irap $irap_single_lib_options $irap_options print_stage2_files|tail -n 1|grep -v  'make:'"
+	pinfo "No BAM!? $cmd $irap_single_lib_options $irap_options print_stage2_files|tail -n 1|grep -v  'make:'"
     else
        if [ -e $BAM ]; then
 	pinfo "-b option used: deleting $BAM before running iRAP"
@@ -512,11 +516,11 @@ if [ $regen_bam == "y" ]; then
 fi
 
 pinfo "Aligning data..."
-run_AND_timeIt "iRAP-Mapping" $time_log_file  irap $irap_single_lib_options $irap_options stage2
+run_AND_timeIt "iRAP-Mapping" $time_log_file  $cmd $irap_single_lib_options $irap_options stage2
 pinfo "Aligning data...complete."
 
 pinfo "Quantification..."
-run_AND_timeIt "iRAP-Quant" $time_log_file  irap $irap_single_lib_options $irap_options stage3as
+run_AND_timeIt "iRAP-Quant" $time_log_file $cmd $irap_single_lib_options $irap_options stage3as
 # Also get TPMs
 # if [ "$is_atlas_run-" != "0-" ]; then
 #     # also get tpms
@@ -528,12 +532,12 @@ pinfo "Quantification...complete."
 #################################################################
 pinfo "Mapping QC..."
 # report files
-REPORT_TSVs=`irap $irap_single_lib_options  $irap_options print_mapping_report_req  |tail -n 1 |grep -v "make:"`
+REPORT_TSVs=`$cmd $irap_single_lib_options  $irap_options print_mapping_report_req  |tail -n 1 |grep -v "make:"`
 if [ "$REPORT_TSVs-" == "-" ]; then
     pinfo "No mapping report"
     run_AND_timeIt "iRAP-Mapping-QC" $time_log_file  echo nothing to do
 else
-    run_AND_timeIt "iRAP-Mapping-QC" $time_log_file  irap $irap_single_lib_options $irap_options  $REPORT_TSVs
+    run_AND_timeIt "iRAP-Mapping-QC" $time_log_file  $cmd $irap_single_lib_options $irap_options  $REPORT_TSVs
 fi
 if [ $? != 0 ]; then
     perror "iRAP Mapping QC failed"
@@ -545,7 +549,7 @@ pinfo "Mapping QC...complete."
 #################################################################
 # BAM->CRAM
 set -e
-BAM=`irap $irap_single_lib_options $irap_options print_stage2_files|tail -n 1|grep -v "make:"`
+BAM=`$cmd $irap_single_lib_options $irap_options print_stage2_files|tail -n 1|grep -v "make:"`
 if [ "$BAM-" == "-" ]; then
     run_AND_timeIt "iRAP-CRAM" $time_log_file  echo no bam no cram
 else
@@ -571,7 +575,7 @@ else
 	    
 	    # create the CRAM file
 	    pinfo "CRAMMING..."
-	    run_AND_timeIt "iRAP-CRAM" $time_log_file  irap $irap_single_lib_options $irap_options  $odir/$f1_bn.cram
+	    run_AND_timeIt "iRAP-CRAM" $time_log_file  $cmd $irap_single_lib_options $irap_options  $odir/$f1_bn.cram
 	    if [ $? != 0 ]; then
 		perror "Generation of CRAM file failed"
 		exit 1
@@ -596,7 +600,7 @@ else
 fi
 set -e
 # 
-TSVs=`irap $irap_single_lib_options  $irap_options print_stage3_s_files  |tail -n 1|grep -v "make:"`
+TSVs=`$cmd $irap_single_lib_options  $irap_options print_stage3_s_files  |tail -n 1|grep -v "make:"`
 
 pinfo "Moving the following files to $odir: $TSVs"
 cp -a $TSVs $odir
@@ -605,8 +609,8 @@ cp -a $TSVs $odir
 #
 if [ "$sop2-" != "-" ]; then
     pinfo "Quantification (SOP2)..."
-    run_AND_timeIt "iRAP-Quant" $time_log_file  irap $irap_single_lib_options $irap_options sop=$sop2 stage3as
-    TSVs=`irap $irap_single_lib_options  $irap_options sop=$sop2 print_stage3_s_files  |tail -n 1|grep -v "make:"`
+    run_AND_timeIt "iRAP-Quant" $time_log_file  $cmd $irap_single_lib_options $irap_options sop=$sop2 stage3as
+    TSVs=`$cmd $irap_single_lib_options  $irap_options sop=$sop2 print_stage3_s_files  |tail -n 1|grep -v "make:"`
 
     pinfo "Moving the following files to $odir: $TSVs"
     cp -a $TSVs $odir
@@ -634,21 +638,21 @@ $rename_cmd $libname $libname_noprefix `dirname $odir/$f1_bn`/$libname*
 cp $INFO_FILE $odir
 
 # QC
-echo irap $irap_single_lib_options  $irap_options print_qc_dirs_files 
-TSVs=`irap $irap_single_lib_options  $irap_options print_qc_dirs_files  |tail -n 1`
+echo $cmd $irap_single_lib_options  $irap_options print_qc_dirs_files 
+TSVs=`$cmd $irap_single_lib_options  $irap_options print_qc_dirs_files  |tail -n 1`
 pinfo "Moving the following files to $odir: $TSVs "
 mkdir -p $odir/qc
 cp -ar $TSVs $odir/qc
 
 # data (genome and annotation)
-echo irap $irap_single_lib_options  $irap_options print_data_stats_file
-TSV=`irap $irap_single_lib_options  $irap_options print_data_stats_file  |tail -n 1`
+echo $cmd $irap_single_lib_options  $irap_options print_data_stats_file
+TSV=`$cmd $irap_single_lib_options  $irap_options print_data_stats_file  |tail -n 1`
 pinfo "Moving the following files to $odir: $TSV "
 cp -a $TSV $odir/$libname_noprefix.data_info.tsv
 
 # software versions
 pinfo "Generating  $odir/versions.tsv..."
-irap $irap_single_lib_options  $irap_options $odir/irap.versions.tsv  > $odir/versions.tsv.tmp && mv $odir/versions.tsv.tmp $odir/versions.tsv
+$cmd $irap_single_lib_options  $irap_options $odir/irap.versions.tsv  > $odir/versions.tsv.tmp && mv $odir/versions.tsv.tmp $odir/versions.tsv
 pinfo "Generating  $odir/versions.tsv...done"
 cp -a $odir/versions.tsv $odir/$libname_noprefix.versions.tsv
 pinfo "Generating  $odir/$libname_noprefix.versions.tsv...done"
@@ -659,9 +663,9 @@ pinfo "Generating  $odir/$libname_noprefix.versions.tsv...done"
 if [ "$do_clean" == "y" ]; then
     clean_up_all
 else
-    run_AND_timeIt "iRAP-tidyup" $time_log_file  irap $irap_single_lib_options $irap_options clean
+    run_AND_timeIt "iRAP-tidyup" $time_log_file  $cmd $irap_single_lib_options $irap_options clean
     if [ "$sop2-" != "-" ]; then
-	run_AND_timeIt "iRAP-tidyup" $time_log_file  irap $irap_single_lib_options $irap_options sop=$sop2 clean
+	run_AND_timeIt "iRAP-tidyup" $time_log_file  $cmd $irap_single_lib_options $irap_options sop=$sop2 clean
     fi    
 fi
 
