@@ -200,14 +200,19 @@ function irap_init_job {
 function stage0_jobs {
     waitfor=$1
     stage0_targets=`$cmd conf=$conf $IRAP_PARAMS print_stage0_files|tail -n 1`
-    let i=1
-    p_info "* Stage 0..." 
-    for f in $stage0_targets; do    
-	submit_job "${jobname_prefix}0[$i]"  -w "ended($waitfor)" $cmd conf=$conf  $IRAP_PARAMS $f
-	let i=$i+1
-    done
-    p_info "* Stage 0...$i jobs" 
-    echo "${jobname_prefix}0*" 
+    $cmd conf=$conf $IRAP_PARAMS $stage0_targets -n -q
+    if [ $? -eq 0 ]; then
+	echo $waitfor
+    else
+	let i=1
+	p_info "* Stage 0..." 
+	for f in $stage0_targets; do    
+	    submit_job "${jobname_prefix}0[$i]"  -w "ended($waitfor)" $cmd conf=$conf  $IRAP_PARAMS $f
+	    let i=$i+1
+	done
+	p_info "* Stage 0...$i jobs" 
+	echo "${jobname_prefix}0*"
+    fi
 }
 
 function stage1_jobs {    
@@ -265,14 +270,15 @@ function stage12_jobs {
 function stage123_jobs {    
     waitfor=$1
     declare -i s1=0
-    declare -i s2=0
     # Paired end files
     p_info "* Step 1,2, and 3 (PE)"
     for p in $pe ; do 
-	let s1=s1+1
-	let s2=s2+1
 	p_info "Lib (PE): $p"
-	CUR_STAGE=stage123 submit_job "${jobname_prefix}s123[${s1}]" -w "ended($waitfor)" "$cmd conf=$conf  pe=$p se=  $IRAP_PARAMS stage1 stage2 stage3as"
+	$cmd conf=$conf  pe=$p se=  $IRAP_PARAMS stage1 stage2 stage3as -n -q
+	if [ $? -ne 0 ]; then
+	    let s1=s1+1
+	    CUR_STAGE=stage123 submit_job "${jobname_prefix}s123[${s1}]" -w "ended($waitfor)" "$cmd conf=$conf  pe=$p se=  $IRAP_PARAMS stage1 stage2 stage3as"
+	fi
     done
 
     # Single end files
@@ -280,12 +286,18 @@ function stage123_jobs {
     CUR_STAGE=stage123
     p_info "* Step 1,2, and 3 (SE)"
     for f in $se ; do
-	let s2=s2+1
-	let s1=s1+1
 	p_info "Lib (SE): $f"
-	CUR_STAGE=stage123 submit_job "${jobname_prefix}s123[${s1}]" -w "ended($waitfor)" "$cmd conf=$conf  pe= se=$f  $IRAP_PARAMS stage1 stage2 stage3as"
+	$cmd conf=$conf  se=$p pe=  $IRAP_PARAMS stage1 stage2 stage3as -n -q
+	if [ $? -ne 0 ]; then
+	    let s1=s1+1
+	    CUR_STAGE=stage123 submit_job "${jobname_prefix}s123[${s1}]" -w "ended($waitfor)" "$cmd conf=$conf  pe= se=$f  $IRAP_PARAMS stage1 stage2 stage3as"
+	fi
     done
-    echo "${jobname_prefix}s123*"
+    if [ "$s1" == "0"]; then
+	echo $waitfor
+    else
+	echo "${jobname_prefix}s123*"
+    fi
 }
 
 # run stage3 - Normalization/merging
@@ -295,8 +307,13 @@ function stage3_jobs {
     CUR_STAGE=stage3 
 
     p_info "Stage3"
-    submit_job "${jobname_prefix}q"  -w "ended($waitfor)"  "$cmd conf=$conf  $IRAP_PARAMS stage3"
-    echo "${jobname_prefix}q"
+    $cmd conf=$conf  $IRAP_PARAMS stage3 -n -q
+    if [ $? -ne 0 ]; then    
+	submit_job "${jobname_prefix}q"  -w "ended($waitfor)"  "$cmd conf=$conf  $IRAP_PARAMS stage3"
+	echo "${jobname_prefix}q"
+    else
+	echo $waitfor
+    fi
 }
 
 function stage4_jobs {
