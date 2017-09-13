@@ -449,7 +449,7 @@ PICARD_FILE=picard-tools-$PICARD_VERSION.zip
 PICARD_URL=http://sourceforge.net/projects/picard/files/picard-tools/$PICARD_VERSION/$PICARD_FILE/download
 
 
-fastq_utils_VERSION=0.12.5
+fastq_utils_VERSION=0.12.6
 fastq_utils_FILE=$fastq_utils_VERSION.tar.gz
 fastq_utils_URL=https://github.com/nunofonseca/fastq_utils/archive/$fastq_utils_FILE
 
