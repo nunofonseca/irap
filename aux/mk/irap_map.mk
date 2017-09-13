@@ -1046,7 +1046,7 @@ endef
 # Kallisto
 kallisto_index_params?=
 kallisto_map_params?=
-kallisto_map_params+= --threads $(max_threads) --pseudobam
+kallisto_map_params+= --threads 1 --pseudobam
 
 define kallisto_index_filename=
 $(trans_file)_kallisto/kallisto_index.irap
@@ -1060,7 +1060,7 @@ irap_strand2kallistooption=$(if $(findstring $(1),first),--fr-stranded,$(if $(fi
 
 # 1 - lib
 define kallisto_strand_params=
-	$(if $(call lib_strand_info,$(1)),$(call irap_strand2tophatoption,$($(1)_strand)),)
+	$(if $(call lib_strand_info,$(1)),$(call irap_strand2kallistooption,$($(1)_strand)),)
 endef
 
 # ignore arguments
@@ -1074,8 +1074,8 @@ endef
 define run_kallisto_map=
 	$(call tophat_setup_dirs,$(1))
 	irap_wrapper.sh kallisto kallisto pseudo $(if $(call is_pe_lib,$(1)),,--single -l $($(1)_rs) -s 1)  $(call kallisto_strand_params,$(1))  $(kallisto_map_params) -i $(call kallisto_index_prefix) -o $(dir $(call lib2bam_folder,$(1))$(1)) $(2)  | \
-	samtools view -b - | \
-	$(call do_post_process_trans_bam_cmd,$(1),-,$(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam) &&\
+	samtools view -b - > $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam && \
+	$(call do_post_process_trans_bam_cmd,$(1),$(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam, $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam) &&\
 	samtools sort -m $(SAMTOOLS_SORT_MEM) -T $(call lib2bam_folder,$(1))$(1)/$(1) -o $(call lib2bam_folder,$(1))$(1)/$(1).bam $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam && \
 	$(call bam_rehead,$(call lib2bam_folder,$(1))$(1)/$(1).bam,$(1)) && \
 	mv $(call lib2bam_folder,$(1))$(1)/$(1).bam $(3)	
