@@ -1,0 +1,101 @@
+#!/usr/bin/env Rscript
+# =========================================================
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#    $Id: irap.txt Nuno Fonseca Sun Jan 13 14:02:59 2013$
+# =========================================================
+args <- commandArgs(trailingOnly=TRUE)
+
+usage<-"irap_filter_cols matrix qc_res out_file\n";
+if (length(args)!=3) {
+  cat("ERROR!");
+  cat(usage);
+  q(status=1);
+}
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+
+mat.file <- args[1]
+qc.file <- args[2]
+out.file <- args[3]
+
+##
+#qc.file <- "/home/nf/Research/Projects/WIP/EREAP/irap_tests/test_sc/kallisto/umi_count/genes.raw.umi_count.qc.tsv"
+#mat.file <- "/home/nf/Research/Projects/WIP/EREAP/irap_tests/test_sc/kallisto/umi_count/genes.raw.umi_count.tsv"
+#out.file <- "lixo"
+
+library(data.table)
+#
+pinfo("Loading ",qc.file)
+qc.table <- qload.tsv(qc.file,header=TRUE)
+pinfo("Loading ",qc.file," done.")
+
+## First column should contain the cells/sample names
+## last column (overall) should contain the PASS/FAIL call
+col.names <- as.character(qc.table[,1])
+## quick checks
+if ( anyDuplicated(col.names)>0 ) {
+    perror("Found duplicated entries in the first column of ",qc.file)
+    q(status=1)
+}
+
+last.col <- colnames(qc.table)[ncol(qc.table)]
+if ( last.col!="Overall" ) {
+    perror("Overall column is not the last column in ",qc.file)
+    q(status=1)    
+}
+#last.col
+outcome <- qc.table[,last.col]
+names(outcome) <- col.names
+
+failed <- outcome=="FAIL"
+pinfo("Removing ",sum(failed), " cells/samples from ",mat.file)
+
+if (sum(failed)==0 ) {
+    ## speedup - just copy
+    pinfo("No changes to input matrix...copying it")
+    cmd <- paste0("cp ",mat.file," ", out.file)
+    pinfo("Running ",cmd)
+    system(cmd)
+    q(status=0)
+}
+
+## this may be optimized in the future
+cols <- colnames(fread(mat.file,nrows=1))
+both <- intersect(cols[-1],col.names)
+if ( length(both)!=length(col.names) ) {
+    perror("Mismatch in the cell/sample names between the two input samples")
+    q(status=1)
+}
+
+##
+drop <- which(cols%in%names(failed))
+#drop
+## support gzip files?
+
+cmd <- paste0("cut --complement --fields ",paste(drop,sep=",")," ",mat.file," > ",out.file)
+pinfo("Running ",cmd)
+system(cmd)
+
+pinfo("Filtering complete.")
+q(status=0)
