@@ -73,6 +73,15 @@ cell_filt_min_features?=0.3
 cell_filt_max_ERCC?=0.75
 cell_filt_outliers?=y
 qc?=report
+
+# default values?
+# index1=R1 file index2=I1 reads=R2
+umi_read=index1
+umi_size=10
+umi_offset=16
+cell_read=index2
+cell_size=8
+cell_offset=0
 #trim_poly_at?=
 #trim_poly_at_len=10
 endif
