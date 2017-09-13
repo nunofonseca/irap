@@ -287,13 +287,13 @@ function stage123_jobs {
     p_info "* Step 1,2, and 3 (SE)"
     for f in $se ; do
 	p_info "Lib (SE): $f"
-	$cmd conf=$conf  se=$p pe=  $IRAP_PARAMS stage1 stage2 stage3as -n -q
+	$cmd conf=$conf  se=$f pe=  $IRAP_PARAMS stage1 stage2 stage3as -n -q
 	if [ $? -ne 0 ]; then
 	    let s1=s1+1
 	    CUR_STAGE=stage123 submit_job "${jobname_prefix}s123[${s1}]" -w "ended($waitfor)" "$cmd conf=$conf  pe= se=$f  $IRAP_PARAMS stage1 stage2 stage3as"
 	fi
     done
-    if [ "$s1" == "0"]; then
+    if [ "$s1" == "0" ]; then
 	echo $waitfor
     else
 	echo "${jobname_prefix}s123*"
