@@ -907,6 +907,9 @@ $(kallisto_index): $(trans_file)
 	$(call run_kallisto_index)
 
 
+ifeq ($(mapper),kallisto)
+SETUP_DATA_FILES+=$(mapTrans2gene)
+endif
 
 
 # out_directory - 1
@@ -1054,7 +1057,7 @@ $(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv: $(foreach p,$(p
 
 endif
 
-#
+
 #####################################################################
 # relative isoform usage (RIU) and dominant transcript
 ifeq ($(transcript_quant),y)
