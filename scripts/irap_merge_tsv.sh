@@ -44,9 +44,9 @@ if [ "$FEATURE-" == "-" ]; then
 fi
 #echo $FEATURE >&2
 if [ $HEADER == "no" ]; then
-    filter_header=
+    filter_header="tail -n +2 - |"
 else
-    filter_header="tail -n +2 |"
+    filter_header=
 fi
 ##################################
 # Number of columns
