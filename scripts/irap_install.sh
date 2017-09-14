@@ -273,7 +273,8 @@ R2_FILE=R-${R2_VERSION}.tar.gz
 R2_URL=http://cran.r-project.org/src/base/R-2/$R2_FILE
 
 # 3.xx fails to compile due to pcre dependency
-R3_VERSION=3.2.5
+# 3.2.5 -> 3.4.1
+R3_VERSION=3.4.1
 R3_FILE=R-${R3_VERSION}.tar.gz 
 R3_URL=http://cran.r-project.org/src/base/R-3/$R3_FILE
 
