@@ -122,6 +122,7 @@ def_read2_offset?=0
 def_read2_size?=-1
 def_index1?=undef
 def_index2?=undef
+def_index3?=undef
 def_known_umi_file?=
 
 barcode_min_qual?=10
@@ -576,7 +577,7 @@ ifdef se
  $(foreach l,$(se),$(call check_se_libname_ok,$(l)))
  $(foreach l,$(se),$(call check_param_ok,$(l)_rs))
  $(foreach l,$(se),$(call check_param_ok,$(l)_qual))
- $(foreach l,$(se),$(foreach bc,known_umi_file index1 index2 umi_read umi_offset umi_size cell_read cell_offset cell_size sample_read sample_offset sample_size read1_offset read2_offset read1_size read2_size,$(eval $(l)_$(bc)=$(call check_bc_value_ok,$(l),$(bc)))))
+ $(foreach l,$(se),$(foreach bc,known_umi_file index1 index2 index3 umi_read umi_offset umi_size cell_read cell_offset cell_size sample_read sample_offset sample_size read1_offset read2_offset read1_size read2_size,$(eval $(l)_$(bc)=$(call check_bc_value_ok,$(l),$(bc)))))
  ifile_given=1
 endif
 
@@ -1528,6 +1529,7 @@ $(call get_param_value_pair,sample_read=,$(subst read,,$($(1)_sample_read))) $(c
  $(call get_param_value_pair,known_umi_file=,$($(1)_known_umi_file)) \
  $(call get_param_value_pair,index1=,$($(1)_index1)) \
  $(call get_param_value_pair,index2=,$($(1)_index2)) \
+ $(call get_param_value_pair,index3=,$($(1)_index3)) \
  $(call get_param_value_pair,read1_offset=,$($(1)_read1_offset))  $(call get_param_value_pair,read2_offset=,$($(1)_read2_offset)) \
  $(call get_param_value_pair,read1_size=,$($(1)_read1_size)) $(call get_param_value_pair,read2_size=,$($(1)_read2_size))
 endef

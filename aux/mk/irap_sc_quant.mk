@@ -101,7 +101,8 @@ endif
 
 # Generate a single matrix
 $(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).tsv)
-	( $(call pass_args_stdin,irap_merge_tsv_gz.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
+	( $(call pass_args_stdin,irap_merge_tsv.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
+
 
 endif
 ## umis
