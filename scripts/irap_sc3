@@ -147,7 +147,7 @@ sceset <- sc3_estimate_k(sceset)
 
 sel.k <- sceset@sc3$k_estimation
 clusters2test <- round(abs(opt$max_clusters-opt$min_clusters)/2,0)
-k.range <- c(sel.k-clusters2test,sel.k+clusters2test)
+k.range <- c(max(2,sel.k-clusters2test),max(2,sel.k+clusters2test))
 pinfo("Checking clusters in the range ",k.range[1]," to ", k.range[2])
 
 ## 
@@ -200,7 +200,7 @@ auroc.cutoff <- 0.95
 
 f_data <- fData(sceset)
 sel <- f_data[ , grep("*_markers_*", colnames(f_data))]
-
+print(head(sel))
 #k <- sel.k
 for (k in seq(k.range[1],k.range[2])) {
     label <- paste0("sc3_",k,"_markers_clusts")
@@ -208,6 +208,7 @@ for (k in seq(k.range[1],k.range[2])) {
     auroc.col <- paste0("sc3_",k,"_markers_auroc")
     #genes2keep <- sel[,pval.col]<=p.val.cutoff & sel[,auroc.col]>=auroc.cutoff
     sel2 <- sel[,c(label,pval.col,auroc.col)]
+    sel2$feat <- rownames(sel2)
     # arrange column names
     colnames(sel2) <- gsub("sc3_.*_markers_","",colnames(sel2))
     ## clean table
@@ -233,7 +234,7 @@ nbt <- FindVariableGenes(object = nbt, mean.function = ExpMean, dispersion.funct
 nbt <- RunPCA(object = nbt, pc.genes = nbt@var.genes, do.print = FALSE, pcs.print = 1:5)
 
 library(Rtsne)
-perp.values <- c(5,10,15,20)
+perp.values <- c(1, 5,10,15,20)
 for (p in perp.values) {
     nbt.res <- myRunTSNE(object = nbt, dims.use = 1:20,  do.fast = TRUE,perplexity=10)
     ofile <- paste0(out.prefix,"_tsne_perp_",p,".tsv",sep="\t")
