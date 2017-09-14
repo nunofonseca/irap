@@ -39,7 +39,7 @@ clustering: $(clustering_files)
 
 
 # also generates _marker_genes.tsv for each k
-# and multiple files with the coordinates of TSNe based on different perpelixity values - tsne_perp_PERP_VAL.tsv
+# and multiple files with the coordinates of TSNe based on different perplexity values - tsne_perp_PERP_VAL.tsv
 $(name)/$(mapper)/$(quant_method)/sc3/genes.raw.filtered.$(quant_method).irap.clusters.tsv: $(name)/$(mapper)/$(quant_method)/genes.raw.filtered.$(quant_method).irap.tsv 
 	irap_sc3 --tsv $< --out $(name)/$(mapper)/$(quant_method)/sc3/genes.raw.$(quant_method).qc --min_clusters $(min_clusters) --max_clusters $(max_clusters) --max_threads $(max_threads) && mv $(name)/$(mapper)/$(quant_method)/sc3/genes.raw.$(quant_method).qc_clusters.tsv $@
 

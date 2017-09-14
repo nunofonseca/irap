@@ -179,9 +179,11 @@ define pprint_libname=
 $(subst .pe,,$(subst .se,,$(1)))
 endef
 
+
 jbrowser_stage3_targets: 
 	echo $(stage3_tracks_targets)
 
+$(info $(name)/$(mapper)/$(quant_method)/%.tsv.tracks: $(name)/$(mapper)/$(quant_method)/%.bw $(name)/$(mapper)/$(quant_method)/%.bedGraph)
 $(name)/$(mapper)/$(quant_method)/%.tsv.tracks: $(name)/$(mapper)/$(quant_method)/%.bw $(name)/$(mapper)/$(quant_method)/%.bedGraph
 	touch $@
 
