@@ -877,6 +877,9 @@ endif
 
 ########################################################
 # kallisto
+ifeq ($(mapper),kallisto)
+SETUP_DATA_FILES+=$(mapTrans2gene)
+endif
 
 ifeq ($(quant_method),kallisto)
 
@@ -907,9 +910,6 @@ $(kallisto_index): $(trans_file)
 	$(call run_kallisto_index)
 
 
-ifeq ($(mapper),kallisto)
-SETUP_DATA_FILES+=$(mapTrans2gene)
-endif
 
 
 # out_directory - 1
