@@ -58,6 +58,10 @@ $(info index1:=$(index1))
 
 index2?=
 $(info index2:=$(index2))
+
+index3?=
+$(info index2:=$(index3))
+
 #######################################################
 ##Path to the script itself
 path?=$(shell if which irap_fastq_qc >/dev/null 2>/dev/null; then \
@@ -176,6 +180,12 @@ endif
 ifneq ($(index2),)
 ifeq ($(wildcard $(input_dir)$(index2)),)
 $(error * Fastq file index $(input_dir)$(index2) does not exist)
+endif
+endif
+
+ifneq ($(index3),)
+ifeq ($(wildcard $(input_dir)$(index3)),)
+$(error * Fastq file index $(input_dir)$(index3) does not exist)
 endif
 endif
 
@@ -307,6 +317,16 @@ $(iindex2): $(index2_p)
 	rm -f $@ && mkdir -p $(@D) && ln -s $(abspath $(index2_p)) $@
 endif
 
+index4_p?=
+iindex4?=
+ifneq ($(index3),)
+index3_p:=$(input_dir)$(index3)
+iindex3:=$(abspath $(toplevel_output_folder)/$(dir $(index3)))/orig_$(notdir $(index3))
+FILES+= $(index3_p)
+$(iindex3): $(index3_p)
+	rm -f $@ && mkdir -p $(@D) && ln -s $(abspath $(index3_p)) $@
+endif
+
 
 PE?=OFF
 pe_data?=0
@@ -418,6 +438,11 @@ ifneq ($(iindex2),)
 index2_n:=$(subst .fq,,$(subst .fastq,,$(subst .fastq.gz,,$(basename $(iindex2)))))
 endif
 
+index3_n?=
+ifneq ($(iindex3),)
+index3_n:=$(subst .fq,,$(subst .fastq,,$(subst .fastq.gz,,$(basename $(iindex3)))))
+endif
+
 # check if the mapper is available
 ifneq ($(cont_index),no)
 mapper_path?=$(shell PATH=$(IRAP_DIR)/bin/$(mapper)/bin:$(PATH) which $(mapper) 2>/dev/null)
@@ -459,6 +484,13 @@ ifneq ($(suffix $(iindex2)),.gz)
 $(error ERROR: index2 $(index2) should be provided has a .fastq.gz file)
 endif
 endif
+
+ifneq ($(index3),)
+ifneq ($(suffix $(iindex3)),.gz)
+$(error ERROR: index3 $(index3) should be provided has a .fastq.gz file)
+endif
+endif
+
 ##############################################################
 # other types of input files besides .fastq.gz
 ifeq ($(suffix $(if1)),.fastq)
@@ -594,12 +626,12 @@ phony_targets+= preprocess
 # default
 preprocess_barcodes?=no
 # valid values: no, yes
-ifneq (,$(filter $(umi_read) $(cell_read) $(sample_read),index1 index2 read1 read2))
+ifneq (,$(filter $(umi_read) $(cell_read) $(sample_read),index1 index2 index3 read1 read2))
 override preprocess_barcodes:=yes
 $(info Preprocessing barcodes)
 endif
 
-$(info $(filter $(umi_read) $(cell_read) $(sample_read),index1 index2 read1 read2))
+$(info $(filter $(umi_read) $(cell_read) $(sample_read),index1 index2 index3 read1 read2))
 
 ifeq ($(preprocess_barcodes),no)
 # just create a symlink
@@ -621,6 +653,11 @@ ifneq ($(index2),)
 index_opts+= --index2 $(iindex2) 
 endif
 
+ifneq ($(index3),)
+index_opts+= --index3 $(iindex3) 
+endif
+
+
 # options to pass to fastq_pre_barcodes 
 fastq_pre_barcodes_opts+=$(index_opts) --phred_encoding $(qual) --min_qual $(barcode_min_qual)
 
@@ -637,11 +674,11 @@ fastq_pre_barcodes_opts+=--sample_read $(sample_read)  --sample_offset $(sample_
 endif
 
 
-%.pre.fastq.gz: %.fastq.gz $(iindex1) $(iindex2)
+%.pre.fastq.gz: %.fastq.gz $(iindex1) $(iindex2)  $(iindex3)
 	fastq_pre_barcodes $(fastq_pre_barcodes_opts) --read1_offset $(read1_offset) --read1_size $(read1_size) --read1 $< --outfile1 $@.tmp    && mv $@.tmp $@
 
 ifeq ($(pe_data),1)
-%_1.pre.fastq.gz %_2.pre.fastq.gz: %_1.fastq.gz %_2.fastq.gz $(iindex1) $(iindex2)
+%_1.pre.fastq.gz %_2.pre.fastq.gz: %_1.fastq.gz %_2.fastq.gz $(iindex1) $(iindex2)  $(iindex3)
 	fastq_pre_barcodes $(fastq_pre_barcodes_opts) --read1_offset $(read1_offset) --read1_size $(read1_size) --read2_offset $(read2_offset) --read2_size $(read2_size) --outfile1 $*_1.pre.fastq.gz.tmp --outfile2  $*_2.pre.fastq.gz.tmp --read1 $*_1.fastq.gz --read2  $*_2.fastq.gz    && \
 	mv $*_2.pre.fastq.gz.tmp $*_2.pre.fastq.gz && \
 	mv $*_1.pre.fastq.gz.tmp $*_1.pre.fastq.gz
