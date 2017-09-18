@@ -37,23 +37,24 @@ fi
 ###################################
 # Does the matrix have an header?
 FEATURE=`$CAT $f1 | head -n 1 | cut -f 1|grep -i -E "(Gene|Exon|Transcript|Feature)"`
-HEADER=yes
+HAS_HEADER=yes
 if [ "$FEATURE-" == "-" ]; then
     FEATURE="Gene"
-    HEADER=no
+    HAS_HEADER=no
 fi
 #echo $FEATURE >&2
-if [ $HEADER == "no" ]; then
-    filter_header="tail -n +2 - |"
-else
+
+if [ $HAS_HEADER == "no" ]; then
     filter_header=
+else
+    filter_header="tail -n +2 - |"
 fi
 ##################################
 # Number of columns
 NCOLS=`$CAT $f1 | head -n 1| tr "\t" "\n" | wc -l`
 #echo "NCOLS=$NCOLS|"
 
-if [ "$NCOLS-" != "2" ]; then
+if [ "$NCOLS-" != "2" ] || [ $HAS_HEADER == "yes" ]; then
     KEEP_COL_NAME=yes
 else
     KEEP_COL_NAME=no
@@ -79,15 +80,17 @@ if [ "$KEEP_COL_NAME" == "yes" ]; then
     for f in $*; do
 	echo Comparing $f1 $f >&2    
 	#cut -f 1 $f > b.tmp
-	DIFF=`$GREP -v CUFF $f| $filter_header  cut -f 1 | diff -q $f1.tmp -`
-	if [ "$DIFF-" = "-" ]; then
+	#echo "$GREP -v CUFF $f|   cut -f 1 | diff -q $f1.tmp -" >&2
+	DIFF=`$GREP -v CUFF $f|  cut -f 1 | diff -q $f1.tmp -`
+	if [ "$DIFF-" == "-" ]; then
 	    echo "$FEATURE order OK" >&2
 	else
+	    #echo $DIFF >&2
 	    echo "ERROR: order of the rows is different - $f1 $f" >&2
 	    exit 1
 	fi
 	rm -f b.tmp
-	$GREP -v CUFF $f| $filter_header cut -f 2-  | paste $lfiles_name_m - > $lfiles_name_m.tmp
+	$GREP -v CUFF $f|  cut -f 2-  | paste $lfiles_name_m - > $lfiles_name_m.tmp
 	mv $lfiles_name_m.tmp $lfiles_name_m
     done
 
@@ -108,10 +111,10 @@ else
     fi
 
     for f in $*; do
-	echo Comparing $f1 $f >&2    
+	echo Comparing-b $f1 $f >&2    
 	#cut -f 1 $f > b.tmp
 	DIFF=`$GREP -v CUFF $f| $filter_header  cut -f 1 | diff -q $f1.tmp -`
-	if [ "$DIFF-" = "-" ]; then
+	if [ "$DIFF-" == "-" ]; then
 	    echo "$FEATURE order OK" >&2
 	else
 	    echo "ERROR: order of the rows is different - $f1 $f" >&2
