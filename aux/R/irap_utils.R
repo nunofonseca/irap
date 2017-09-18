@@ -1192,7 +1192,7 @@ write.tsv <- function(x,file,header=TRUE,rownames.label=NULL,fix=TRUE) {
     }
   }
   write.table(x,file,sep="\t",row.names=F,col.names=header,quote=F)
-  return(1)
+  invisible(1)
 }
 
 read.tsv <- function(file,header=T) {

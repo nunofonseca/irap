@@ -1,0 +1,199 @@
+#!/usr/bin/env Rscript
+#; -*- mode: R;-*-
+# =========================================================
+# Copyright 2012-2017,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+# =========================================================
+
+###############################################################
+suppressPackageStartupMessages(library("optparse"))
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+#
+# specify our desired options in a list
+#
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+pdebug.enabled <- TRUE
+#######################
+usage <- "irap_cell_qc --tsv file --out out_file_prefix [options]"
+filenames <- c("tsv_file","controls_file")
+
+## 
+option_list <- list(
+    make_option(c("-i", "--tsv"), type="character", dest="tsv_file", help="TSV file name with the matrix with the counts per cell by gene/transcript."),
+    make_option(c("-c", "--controls"), type="character", default=NULL,dest="controls_file", help="File with a known list of cells that should be discarded."),
+    make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name prefix."),
+    make_option(c("-f", "--min_features"), type="numeric",default=0,help="Minimum number of features expressed. (as a percentage of the total number of features)"),
+    make_option(c("-m", "--min_counts"), type="numeric",default=0,dest="min_counts",help="Minimum number of counts."),
+    make_option(c("-g", "--max_ERCC"), type="numeric",default=0.7,help="Maximum percentage of expression that may be assigned to ERCC spkeins."),
+    make_option(c("-e", "--filt_outliers"), action="store_true",default=FALSE,dest="outliers",help="Detect outliers based on the median absolute difference (like scater)."),
+    make_option(c("-n", "--min_expression"), type="numeric",default=0,help="the minium expression level to consider a feature expressed."),
+    make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode")
+)
+
+
+# check multiple options values
+##multiple.options = list(
+##  feature=c('gene','exon','transcript'),
+##  metric=c('rpkm','tpm','fpkm','fpkm-uq','uq-fpkm')
+##  )
+multiple.options <- NULL
+mandatory <- c("tsv_file","out")
+
+#pinfo("saved")
+opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
+
+pdebug.enabled <- opt$debug
+
+#
+pdebug.save.state("irap_cell_qc","p0")
+
+
+if ( opt$min_features<0 || opt$min_features>1 ) {
+    perror("--min_feature value should be in the range of [0,1]")
+    quit(status=1)
+}
+
+if ( opt$max_ERCC<0 || opt$max_ERCC>1 ) {
+    perror("--max_ERCC value should be in the range of [0,1]")
+    quit(status=1)
+}
+
+if ( opt$min_expression<0 ) {
+    perror("--min_expression value should be equal or greater than 0")
+    quit(status=1)
+}
+if ( opt$min_counts<0 ) {
+    perror("--min_counts value should be equal or greater than 0")
+    quit(status=1)
+}
+##
+pinfo("Loading ",opt$tsv_file)
+table <- quant.load(opt$tsv_file)
+pinfo("Loading ",opt$tsv_file," done.")
+
+pdebug.save.state("irap_cell_qc","p1")
+suppressPackageStartupMessages(library(scater))
+
+##
+ercc.feat <- grep("ERCC-*",rownames(table),ignore.case=TRUE)
+## include MT genes too?
+if (length(ercc.feat)>0 ) {
+    pinfo("Found ",length(ercc.feat)," ERCC genes")
+    if ( sum(rowSums(table[ercc.feat,])>0) == 0 ) {
+        pinfo("ERCC without expression, ignoring it for QC")
+        ercc.feat <- NULL
+    }
+}
+
+sceset <- newSCESet(countData = table,lowerDetectionLimit=opt$min_expression)
+## QC 
+sceset <- calculateQCMetrics(sceset,feature_controls=list(ERCC=ercc.feat))
+
+
+## Features (genes/transcripts) expressed
+perc.feat.expressed <- 1-pData(sceset)$pct_dropout/100
+names(perc.feat.expressed) <- rownames(pData(sceset))
+perc.feat.expressed.status <- perc.feat.expressed
+perc.feat.expressed.status[perc.feat.expressed>=opt$min_features] <- "PASS"
+perc.feat.expressed.status[perc.feat.expressed<opt$min_features] <- "FAIL"
+
+## ERCCs
+max.ercc <- pData(sceset)$pct_exprs_feature_controls_ERCC/100
+names(max.ercc) <- rownames(pData(sceset)$pct_exprs_feature_controls_ERCC)
+max.ercc.status <- max.ercc
+max.ercc.status[max.ercc.status>opt$max_ERCC] <- "FAIL"
+max.ercc.status[max.ercc.status!="FAIL"] <- "PASS"
+
+control.status <- rownames(pData(sceset))
+names(control.status) <- rownames(pData(sceset))
+control.status[names(control.status)] <- "PASS"
+## blacklisted
+if (!is.null(opt$controls_file) ) {
+    x <- as.character(read.table(controls.file,header=FALSE,col.names=c("Cells"))[,1])  
+    control.status[control.status%in%x] <- "FAIL"    
+} 
+
+# outliers
+outlier <- isOutlier(pData(sceset)$total_counts, nmads = 5)
+names(outlier) <- rownames(pData(sceset))
+outlier.status <- outlier
+outlier.status[outlier.status] <- "FAIL"
+outlier.status[!outlier] <- "PASS"
+
+## total number of expression
+min.counts <- pData(sceset)$total_counts
+names(min.counts) <- rownames(pData(sceset)$total_counts)
+min.counts.status <- min.counts
+min.counts.status[min.counts.status<=opt$min_counts]<- "FAIL"
+min.counts.status[min.counts.status>opt$min_counts] <- "PASS"
+
+
+## generate a single matrix
+df <- data.frame(list(controls=control.status,
+                      outlier=outlier.status,
+                      ercc=max.ercc.status,
+                      total.expr=min.counts.status,
+                      expr.feat=perc.feat.expressed.status))
+df <- cbind(Cells=rownames(df),df)
+overall <- rowSums(df=="FAIL")>0
+overall[overall] <- "FAIL"
+overall[overall!="FAIL"] <- "PASS"
+df <- cbind(df,Overall=overall)
+
+num.pass <- sum(df$Overall=="PASS")
+num.failed <- sum(df$Overall!="PASS")
+p.passed <- round(num.pass/nrow(df)*100,2)
+pinfo("Passing QC=",p.passed," % cells")
+if (num.failed>0) {
+    det <- unlist(apply(df[,-1],MARGIN=2,FUN=table))
+    det <- det[grepl("FAIL",names(det))]
+    names(det) <- gsub(".FAIL","",names(det))
+    pinfo("Cells not passing QC")
+    print(det)
+}
+
+pinfo("Saving to ",opt$out)
+write.tsv(df,file=opt$out,header=T)
+
+## save a few summary stats
+# # cells, #cells passing QC, #cells failed QC, %cells passed QC, # cells that failed QC for each criteria
+x <- c(nrow(df),num.pass,num.failed,p.passed)
+names(x) <-c("#Cells","# passed QC","# failed QC","% passed QC")
+det <- rowSums(apply(df[,-1],MARGIN=1,FUN=grepl,pattern="FAIL"))
+names(det) <- paste(colnames(df)[-1]," filter",sep="")
+
+sum.stats <- c(x,det[-length(det)])
+sum.stats.m <- sum.stats
+dim(sum.stats.m) <- c(1,length(sum.stats))
+colnames(sum.stats.m) <- names(sum.stats)
+write.tsv(sum.stats.m,file=paste0(opt$out,".stats.tsv"),header=T)
+
+pdebug.save.state("irap_cell_qc","pf")
+q(status=0)
+
+## debug
+load("irap_cell_qc.Rdata")
+library(scater)
+max.ercc <- pData(sceset)$pct_exprs_feature_controls_ERCC/100
+max(pData(sceset)$pct_exprs_feature_controls_ERCC/100)
