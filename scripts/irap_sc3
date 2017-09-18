@@ -245,7 +245,7 @@ for (p in perp.values) {
 }
 
 ##col=ai.col.t[rownames(nbt.res$tsne)],pch=ai.pch[rownames(nbt.res$tsne)]
-plot(nbt.res$tsne,col=ai.col.t[rownames(nbt.res$tsne)],pch=ai.pch[rownames(nbt.res$tsne)])
+##plot(nbt.res$tsne,col=ai.col.t[rownames(nbt.res$tsne)],pch=ai.pch[rownames(nbt.res$tsne)])
 
 
 q(status=0)
