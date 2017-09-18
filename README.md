@@ -23,5 +23,5 @@ the developers of the program.
 The authors of IRAP always appreciate receiving suggestions for
 improvements, and reports of bugs in the pipeline or in the
 documentation. Please submit them through
-http://nunofonseca.github.io/irap/
+https://github.com/nunofonseca/irap/issues
 
