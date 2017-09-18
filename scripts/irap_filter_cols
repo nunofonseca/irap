@@ -67,6 +67,7 @@ if ( last.col!="Overall" ) {
 #last.col
 outcome <- qc.table[,last.col]
 names(outcome) <- col.names
+print(table(outcome))
 
 failed <- outcome=="FAIL"
 pinfo("Removing ",sum(failed), " cells/samples from ",mat.file)
@@ -86,7 +87,7 @@ if (sum(failed)==0 ) {
 }
 
 ## this may be optimized in the future
-cols <- colnames(fread(mat.file,nrows=1))
+cols <- colnames(qload.tsv(mat.file,header=TRUE,nrows=1))
 both <- intersect(cols[-1],col.names)
 if ( length(both)!=length(col.names) ) {
     perror("Mismatch in the cell/sample names between the two input samples")
@@ -94,11 +95,12 @@ if ( length(both)!=length(col.names) ) {
 }
 
 ##
-drop <- which(cols%in%names(failed))
+drop <- which(cols%in%names(failed[failed]))
+
 #drop
 ## support gzip files?
 
-cmd <- paste0("cut --complement --fields ",paste(drop,sep=",")," ",mat.file," > ",out.file)
+cmd <- paste0("cut --complement --fields ",paste(drop,sep=",",collapse=",")," ",mat.file," > ",out.file)
 pinfo("Running ",cmd)
 system(cmd)
 
