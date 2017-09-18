@@ -76,7 +76,8 @@ def_lib_dir?=
 
 #$(info ---------$(def_lib_dir))
 # ensure that the dir name starts and ends with a /
-check_libdir_ok=$(if $(call is_defined,$(1)_dir),$(patsubst %/,%,$($(1)_dir))/,$(def_lib_dir))
+#check_libdir_ok=$(if $(call is_defined,$(1)_dir),$(patsubst %/,%,$($(1)_dir))/,$(def_lib_dir))
+check_libdir_ok=$(if $(call is_defined,$(1)_dir),$(patsubst %/,%,$($(1)_dir))/,$(dir $(word  1,$($(1)))))
 
 # *****************
 # Stranded data
@@ -333,7 +334,9 @@ endif
 
 ###############################################
 # Load some definitions
+include $(irap_path)/../aux/mk/irap_sc_defs.mk
 include $(irap_path)/../aux/mk/irap_defs.mk
+
 
 ###############################################################
 # Check and validate the parameters values
@@ -711,7 +714,7 @@ $(info *	rnaseq_type=$(rnaseq_type))
 
 ifeq ($(rnaseq_type),sc)
 ## single cell protocol
-SUPPORTED_SCP:=none smart-seq2 drop-seq 10x_v1 10x_v2
+SUPPORTED_SCP:=none smart-seq2 drop-seq 10x_v1 10x_v1p 10x_v2 10x_v2p
 # drop-seq 10x
 ifeq (,$(filter $(sc_protocol),$(SUPPORTED_SCP)))
 $(call p_info,[ERROR] Invalid sc_protocol - valid values are $(SUPPORTED_SCP))
@@ -1527,9 +1530,9 @@ $(call get_param_value_pair,umi_read=,$(subst read,,$($(1)_umi_read))) $(call ge
 $(call get_param_value_pair,cell_read=,$(subst read,,$($(1)_cell_read))) $(call get_param_value_pair,cell_size=,$($(1)_cell_size))  $(call get_param_value_pair,cell_offset=,$($(1)_cell_offset)) \
 $(call get_param_value_pair,sample_read=,$(subst read,,$($(1)_sample_read))) $(call get_param_value_pair,sample_size=,$($(1)_sample_size))  $(call get_param_value_pair,sample_offset=,$($(1)_sample_offset)) \
  $(call get_param_value_pair,known_umi_file=,$($(1)_known_umi_file)) \
- $(call get_param_value_pair,index1=,$($(1)_index1)) \
- $(call get_param_value_pair,index2=,$($(1)_index2)) \
- $(call get_param_value_pair,index3=,$($(1)_index3)) \
+ $(call get_param_value_pair,index1=,$(notdir $($(1)_index1))) \
+ $(call get_param_value_pair,index2=,$(notdir $($(1)_index2))) \
+ $(call get_param_value_pair,index3=,$(notdir $($(1)_index3))) \
  $(call get_param_value_pair,read1_offset=,$($(1)_read1_offset))  $(call get_param_value_pair,read2_offset=,$($(1)_read2_offset)) \
  $(call get_param_value_pair,read1_size=,$($(1)_read1_size)) $(call get_param_value_pair,read2_size=,$($(1)_read2_size))
 endef
@@ -1540,7 +1543,7 @@ endef
 # 4 - extra options
 #s
 define do_quality_filtering_and_report=
-	irap_fastq_qc $(read_qual_filter_common_params) input_dir=$(2) read_size=$($(1)_rs)   qual=$($(1)_qual) f="$($(1))" out_prefix=$(1) is_pe=$(call is_pe_lib,$(1)) out_dir=$(3)  $(4) $(call get_opt_barcode_params,$(1))
+	irap_fastq_qc $(read_qual_filter_common_params) input_dir=$(2) read_size=$($(1)_rs)   qual=$($(1)_qual) f="$(notdir $($(1)))" out_prefix=$(1) is_pe=$(call is_pe_lib,$(1)) out_dir=$(3)  $(4) $(call get_opt_barcode_params,$(1))
 endef
 #	irap_fastq_qc $(read_qual_filter_common_params) data_dir=$(raw_data_dir)$($(1)_dir) read_size=$($(1)_rs)   qual=$($(1)_qual) f="$($(1))" out_prefix=$(1) is_pe=$(#call is_pe_lib,$(1)) out_dir=$(name)/data/$($(1)_dir)  $(2)
 # report_dir=$(name)/report/riq/$($(1)_dir)
@@ -1868,15 +1871,15 @@ do_qc: $(STAGE1_OUT_FILES)
 # Preprocessing of the input files (.fastq/.bam), QC, filtering
 
 define make-pe-qc-rule=
-$(info $(call lib2filt_folder,$(1))$(1)_1.f.fastq.gz $(call lib2filt_folder,$(1))$(1)_2.f.fastq.gz: $(raw_data_dir)$($(1)_dir)/$(word 1,$($(1)))  $(raw_data_dir)$($(1)_dir)/$(word 2,$($(1))))
-$(call lib2filt_folder,$(1))$(1)_1.f.fastq.gz $(call lib2filt_folder,$(1))$(1)_2.f.fastq.gz: $(raw_data_dir)$($(1)_dir)/$(word 1,$($(1)))  $(raw_data_dir)$($(1)_dir)/$(word 2,$($(1)))
+$(info $(call lib2filt_folder,$(1))$(1)_1.f.fastq.gz $(call lib2filt_folder,$(1))$(1)_2.f.fastq.gz: $(raw_data_dir)$($(1)_dir)/$(notdir $(word 1,$($(1))))  $(raw_data_dir)$($(1)_dir)/$(notdir $(word 2,$($(1)))))
+$(call lib2filt_folder,$(1))$(1)_1.f.fastq.gz $(call lib2filt_folder,$(1))$(1)_2.f.fastq.gz: $(raw_data_dir)$($(1)_dir)/$(notdir $(word 1,$($(1))))  $(raw_data_dir)$($(1)_dir)/$(notdir $(word 2,$($(1))))
 	$$(call p_info,Filtering $(call fix_libname,$(1)))
 	$$(call do_quality_filtering_and_report,$(call fix_libname,$(1)),$(raw_data_dir)$($(1)_dir),$$(@D),) || (rm -f $$@ && exit 1)
 endef
 
 define make-se-qc-rule=
-$(info $(call lib2filt_folder,$(1))$(1).f.fastq.gz: $(raw_data_dir)$($(1)_dir)/$($(1)))
-$(call lib2filt_folder,$(1))$(1).f.fastq.gz: $(raw_data_dir)$($(1)_dir)/$($(1))
+$(info $(call lib2filt_folder,$(1))$(1).f.fastq.gz: $(raw_data_dir)$($(1)_dir)/$(notdir $($(1))))
+$(call lib2filt_folder,$(1))$(1).f.fastq.gz: $(raw_data_dir)$($(1)_dir)/$(notdir $($(1)))
 	$$(call p_info,Filtering $(call fix_libname,$(1)))
 	$$(call do_quality_filtering_and_report,$(1),$(raw_data_dir)$($(1)_dir),$$(@D),) || (rm -f $$@ && exit 1)
 
