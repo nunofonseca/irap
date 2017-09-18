@@ -237,7 +237,7 @@ library(Rtsne)
 perp.values <- c(1, 5,10,15,20)
 for (p in perp.values) {
     nbt.res <- myRunTSNE(object = nbt, dims.use = 1:20,  do.fast = TRUE,perplexity=10)
-    ofile <- paste0(out.prefix,"_tsne_perp_",p,".tsv",sep="\t")
+    ofile <- paste0(out.prefix,"_tsne_perp_",p,".tsv")
     write.table(nbt.res$tsne,file=ofile,row.names=FALSE,quote=FALSE)
     pinfo("Created ",ofile)
     par(bty="l",mar=c(4,4,1,8))
