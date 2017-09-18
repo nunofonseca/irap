@@ -60,7 +60,7 @@ index2?=
 $(info index2:=$(index2))
 
 index3?=
-$(info index2:=$(index3))
+$(info index3:=$(index3))
 
 #######################################################
 ##Path to the script itself
@@ -96,7 +96,7 @@ read1_size?=-1
 read2_offset?=0
 read2_size?=-1
 
-read_value_ok=$(if $(filter $($(1)),index1 index2 read1 read2 read undef), ,$(error invalid value of $(1) - $($(1))))
+read_value_ok=$(if $(filter $($(1)),index1 index2 index3 read1 read2 read undef), ,$(error invalid value of $(1) - $($(1))))
 
 $(call read_value_ok,sample_read)
 $(call read_value_ok,umi_read)
@@ -291,6 +291,8 @@ $(if2): $(f2_p)
 	rm -f $@ && mkdir -p $(@D) && ln -s $(abspath $(f2_p)) $@
 endif
 endif
+if2?=
+
 # original file (symlink)
 $(if1): $(f1_p)
 	rm -f $@ && mkdir -p $(@D) && ln -s $(abspath $(f1_p)) $@
@@ -317,8 +319,8 @@ $(iindex2): $(index2_p)
 	rm -f $@ && mkdir -p $(@D) && ln -s $(abspath $(index2_p)) $@
 endif
 
-index4_p?=
-iindex4?=
+index3_p?=
+iindex3?=
 ifneq ($(index3),)
 index3_p:=$(input_dir)$(index3)
 iindex3:=$(abspath $(toplevel_output_folder)/$(dir $(index3)))/orig_$(notdir $(index3))
@@ -423,7 +425,7 @@ file_prefix=$(subst .cram,,$(subst .bam,,$(subst .fq,,$(subst .fastq,,$(subst .f
 # filename prefix (no extensions)
 f1_n:=$(call file_prefix,$(basename $(if1)))
 ifdef if2
-f2_n:=$(call file_prefix,$(basename $(if1)))
+f2_n:=$(call file_prefix,$(basename $(if2)))
 else
 f2_n=
 endif
@@ -750,6 +752,7 @@ all: $(REPORT_TARGETS)
 
 STAGE6_REPORT_FILES= $(subst .fastq.gz,.fastqc.tsv,$(OUT_FASTQ_FILES))
 #Paired end reads
+$(info f1_n=$(f1_n))
 ifeq ($(pe_data),1)
 STAGE6_REPORT_FILES+=  $(f1_n).fastqc.zip $(f2_n).fastqc.zip 
 else
