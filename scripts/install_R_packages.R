@@ -72,6 +72,7 @@ packages2install<-c("intervals","gclus",'R2HTML',"agricolae","bit64",
                     "sfsmisc","gplots","lattice","data.table",
                     'edgeR','piano','RCurl','GO.db',
                     'DESeq','xtable','DESeq2','DEXSeq','baySeq',
+                    "cluster","KernSmooth",
                     'limma','marray','igraph',"scater","Rtsne","SC3",
                     "Seurat")
 for (p in packages2install ) {
