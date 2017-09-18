@@ -50,57 +50,6 @@ override rnaseq_type:=sc
 sc_protocol?=10x_v2
 quant_method?=umi_count
 
-#####################################################################
-# default options for each protocol
-# obviously, may be overriden by the users
-#####################################################################
-
-# Drop-seq
-ifeq ($(sc_protocol),drop-seq)
-mapper?=kallisto
-quant_method?=umi_count
-endif
-
-# 10X v2
-ifeq ($(sc_protocol),10x_v2)
-mapper?=kallisto
-quant_method?=umi_count
-#bam_umi_count_params?=--min_reads 0 --multi_mapped
-# --cb_cutoff Number of counts to filter cellular barcodes.
-#umis_params?=--cb_cutoff auto
-sc_non_zero_rows?=1
-cell_filt_min_features?=0.3
-cell_filt_max_ERCC?=0.75
-cell_filt_outliers?=y
-qc?=report
-
-# default values?
-# index1=R1 file index2=I1 reads=R2
-umi_read=index1
-umi_size=10
-umi_offset=16
-cell_read=index2
-cell_size=8
-cell_offset=0
-#trim_poly_at?=
-#trim_poly_at_len=10
-endif
-
-
-# 10X v1
-ifeq ($(sc_protocol),10x_v1)
-quant_method?=umi_count
-mapper?=kallisto
-endif
-
-# smart-seq
-ifeq ($(sc_protocol),smart-seq)
-mapper?=none
-quant_method?=kallisto
-#trim_poly_at?=y
-#trim_poly_at_len=8
-qc?=on
-endif
 
 # rsem_params+= --single-cell-prior
 #####################################################################
