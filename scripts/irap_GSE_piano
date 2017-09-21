@@ -186,7 +186,7 @@ pinfo("Data in ",opt$tsv.file," loaded: ",nrow(df)," entries")
 if (!is.null(opt$go.file)) {
   pinfo("Reading ",opt$go.file)
   gene2go<-NULL
-  tryCatch(gene2go <- read.table(opt$go.file,sep="\t",header=F,comment.char="!",quote="\""),error=function(x) NULL)
+  tryCatch(gene2go <- read.table(opt$go.file,sep="\t",as.is=TRUE,header=F,comment.char="!",quote="\""),error=function(x) NULL)
   if ( is.null(gene2go) ) {
     perror("Empty file ",opt$go.file,"?")
     q(status=2)
@@ -201,7 +201,7 @@ if (!is.null(opt$go.file)) {
   if (!is.null(opt$descr.file)) {
      pinfo("Reading ",opt$descr.file)
      go2descr <- NULL
-     tryCatch(go2descr <- read.table(opt$descr.file,sep="\t",header=F,comment.char="!",quote="\""),error=function(x) NULL)
+     tryCatch(go2descr <- read.table(opt$descr.file,sep="\t",as.is=TRUE,header=F,comment.char="!",quote="\""),error=function(x) NULL)
     if ( is.null(go2descr) ) {
       perror("Empty file ",opt$descr.file,"?")
       q(status=1)
@@ -292,23 +292,28 @@ set2 <- names(pval)
 # opt$plot.annot.only
 
 if ( opt$annot.only ) {
-  # expand set 1
-  # genes without annotation
-  #print(head(gene2go))
-  no.value <- is.na(gene2go[,2]) | gene2go[,2]==""
-  to.exclude <- as.character(gene2go[no.value,1])
-  #print(length(to.exclude))
-  #print(head(set1))
-  n1 <- length(set1)
-  set1 <- set1[!set1 %in% to.exclude]
-  n2 <- length(set1)
-  set2 <- set2[!set2 %in% to.exclude]
-  pinfo("Excluded ",n1-n2," genes with no annotation")
+    no.value <- (is.na(gene2go[,2]) | gene2go[,2]=="")
+    with.annot <- gene2go[,2]!="" & !is.na(gene2go[,2])
+    feat.with.annot <- unique(as.character(gene2go[with.annot,1]))
+    to.exclude <- unique(as.character(gene2go[no.value,1]))
+    ## 2017-09-20: make the filtering more robust
+    to.exclude <- to.exclude[!to.exclude %in% feat.with.annot]
+    pinfo(length(to.exclude)," genes with no annotation")
+    ##
+    n1 <- length(set1)    
+    set1 <- set1[set1 %in% feat.with.annot]
+    n2 <- length(set1)
+    n3 <- length(set2)
+    set2 <- set2[set2 %in% feat.with.annot]
+    n4 <- length(set2)
+    ##pinfo(n1)
+    ##pinfo(n3)
+    ##pinfo(n2)
+    ##pinfo(n4)
+    pinfo("Excluded ",n3-n4," genes with no annotation")
 }
 
-
-
-
+## 
 set1.annot <- gene2go[gene2go[,1] %in% set1,,drop=FALSE]
 set2.annot <- gene2go[gene2go[,1] %in% set2,,drop=FALSE]
 print.empty <- FALSE
@@ -317,7 +322,7 @@ print.empty <- FALSE
 minSizeLim <- opt$min.size
 maxSizeLim <- opt$max.size
 pinfo("#Genes=",length(set2)," #genes (pvalue<=",pval.lim,")=",length(set1))
-
+write.tsv(set1,file=paste0(opt$out,"_list.tsv"))
 if(nrow(set2.annot)==0 ) {
   err.file <- opt
   ifile <- opt$annotation
