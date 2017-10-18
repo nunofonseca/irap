@@ -31,13 +31,21 @@ pdebug.enabled <- TRUE
 
 args <- commandArgs(trailingOnly=TRUE)
 
+exit.on.error <- ""
 tsv.file <- args[1]
 g2t.file<- args[2]
 out.file <- args[3]
+exit.on.error <- args[4]
 
+if ( is.na(exit.on.error) || is.null(exit.on.error) || exit.on.error=="1" ) {
+    # default: TRUE
+    exit.on.error <- TRUE
+} else {
+    exit.on.error <- FALSE
+}
 # TODO validate arguments
 if ( is.na(out.file)) {
-  cat("ERROR!\n usage: tsvAggrTransByGene TSVfile mapGene2Trans outfile\n")
+  cat("ERROR!\n usage: tsvAggrTransByGene TSVfile mapGene2Trans outfile [exit_on_error@{0,1}]\n")
   q(status=1) 		
 } 
 #tsv.file <- "test3_ens78/none/kallisto//PE1.transcripts.raw.kallisto.tsv"
@@ -55,6 +63,15 @@ pinfo("expression loaded")
 pinfo("Loading mapping")
 g2t.map <- read.table(g2t.file,sep="\t",header=T)
 
+## ensembl workaround
+## sometime after version 80 Ensembl decided to use transcript ids
+## in the cdna file different from the transcripts ids found in the GTF!?
+if ( sum(grepl(".",tsv.mat$transcript_id,fixed=TRUE))==nrow(tsv.mat) && sum(grepl(".",as.character(g2t.map$transcript_id),fixed=TRUE))==0 ) {
+    pinfo("Applying Ensembl workaround")
+    tsv.mat$transcript_id <- gsub("\\.[0-9]+","",tsv.mat$transcript_id)
+    print(head(tsv.mat))
+}
+
 # remove duplicate entries (due to exons)
 g2t <- g2t.map[!duplicated(g2t.map$transcript_id),c("gene_id","transcript_id")]
 #head(g2t)
@@ -65,10 +82,10 @@ gene.not.found <- unique(new.mat[is.na(new.mat$gene_id),"transcript_id"])
 if ( length(gene.not.found) > 0) {
   perror("Gene not found for ",length(gene.not.found)," transcripts")
   print(head(as.character(gene.not.found)))
-  q(status=1)
+  if (exit.on.error) q(status=1)
 }
 #print(head(new.mat))
-nrow(new.mat)
+#nrow(new.mat)
 # aggregate!
 cols2aggr <- colnames(new.mat)[! colnames(new.mat) %in% c(colnames(new.mat)[1],"gene_id","transcript_id")]
 a<-aggregate(new.mat[,cols2aggr], by=list(gene_id=new.mat$gene_id), "sum")
