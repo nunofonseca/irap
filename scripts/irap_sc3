@@ -35,20 +35,23 @@ if ( IRAP.DIR == "" ) {
 source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
 pdebug.enabled <- TRUE
 #######################
-usage <- "irap_sc3 --tsv file --out out_file_prefix [options]"
-filenames <- c("tsv_file","lengths")
+usage <- "irap_sc3 --in file --out out_file_prefix [options]"
+filenames <- c("ifile","lengths")
 
 option_list <- list(
-    make_option(c("-i", "--tsv"), type="character", dest="tsv_file", help="TSV file name with the matrix with the counts per cell by gene/transcript."),
+    make_option(c("-i", "--ifile"), type="character", dest="ifile", help="TSV file name with the matrix with the counts per cell by gene/transcript."),
+    make_option(c("--mtx"), action="store_true",default=FALSE,dest="is_mtx",help="The input file is in Matrix Market format. Default is TSV format."),
+    make_option(c("--tsv"), action="store_false",default=FALSE,dest="is_mtx",help="The input file is in Matrix Market format. Default is TSV format."),
     make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name prefix."),
     make_option(c("-m", "--min_clusters"), type="numeric",default=1,help="Minimum number of clusters."),
     make_option(c("-M", "--max_clusters"), type="numeric",default=9,help="Maximum number of clusters."),
     make_option(c("-c", "--max_threads"), type="numeric",default=1,help="Maximum number of threads that may be used."),
-  make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode")
+    make_option(c("--auto_k"),action="store_true",dest="auto_k",default=FALSE,help=""),
+    make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode")
 )
 
 multiple.options <- NULL
-mandatory <- c("tsv_file","out")
+mandatory <- c("ifile","out")
 
 #pinfo("saved")
 opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
@@ -120,9 +123,13 @@ myRunTSNE <- function (object, reduction.use = "pca", cells.use = NULL, dims.use
 ## head(sc_example_counts)
 ## head(table)
 ##
-pinfo("Loading ",opt$tsv_file)
-table <- quant.load(opt$tsv_file)
-pinfo("Loading ",opt$tsv_file," done.")
+pinfo("Loading ",opt$ifile)
+if ( opt$is_mtx ) {
+    table <- mtx.load(opt$ifile)
+} else {
+    table <- quant.load(opt$ifile)
+}
+pinfo("Loading ",opt$ifile," done.")
 
 if ( ncol(table)<=2 ) {
     perror("Insufficient samples/cells to cluster")
@@ -135,6 +142,10 @@ if ( ncol(table)<=2 ) {
 ## save
 ##  write.tsv(tpm,file=opt$out)
 ##  pinfo("Saved ",opt$out)
+if (ncol(table)<=3) {
+    perror("Number of samples/cells too small (",ncol(table),")")
+    q(status=1)
+}
 sceset <- newSCESet(countData = table)
 sceset <- calculateQCMetrics(sceset)
 
@@ -143,12 +154,22 @@ sceset <- calculateQCMetrics(sceset)
 #####################################################
 ## Tracy-Widom theory on random matrices to estimate
 ## $ k_estimation - which should be the default value of K
-sceset <- sc3_estimate_k(sceset)
+if (opt$auto_k) {
+    sceset <- sc3_estimate_k(sceset)
+    sel.k <- sceset@sc3$k_estimation
+    pinfo("Automatically selected K = ",sel.k)
+    clusters2test <- round(abs(opt$max_clusters-opt$min_clusters)/2,0)
+    k.range <- c(max(2,sel.k-clusters2test),max(2,sel.k+clusters2test))
+    pinfo("Checking clusters in the range ",k.range[1]," to ", k.range[2])
+} else {
+    sceset <- sc3_estimate_k(sceset)
+    sel.k <- sceset@sc3$k_estimation
+    clusters2test <- round(abs(opt$max_clusters-opt$min_clusters)/2,0)
+    min.k <- max(2,opt$min_clusters)
+    k.range <- c(min.k,max(min.k,opt$max_clusters))
+    pinfo("Checking clusters in the range ",k.range[1]," to ", k.range[2])
 
-sel.k <- sceset@sc3$k_estimation
-clusters2test <- round(abs(opt$max_clusters-opt$min_clusters)/2,0)
-k.range <- c(max(2,sel.k-clusters2test),max(2,sel.k+clusters2test))
-pinfo("Checking clusters in the range ",k.range[1]," to ", k.range[2])
+}
 
 ## 
 sceset <- sc3(sceset, ks = seq(k.range[1],k.range[2]), biology = TRUE, n_cores=opt$max_threads,k_estimator=TRUE)
@@ -162,7 +183,9 @@ sceset <- sc3(sceset, ks = seq(k.range[1],k.range[2]), biology = TRUE, n_cores=o
 
 #######################################
 ## single matrix with all clusters
-l <- as.matrix(table[NULL,,drop=FALSE])
+pinfo("Preparing to save clusters table")
+l <- matrix(nrow=0,ncol=ncol(table))
+#l <- as.matrix(table[NULL,,drop=FALSE])
 for (k in seq(k.range[1],k.range[2])) {
     p_data <- pData(sceset)
     label <- paste0("sc3_",k,"_clusters")
@@ -171,6 +194,7 @@ for (k in seq(k.range[1],k.range[2])) {
     names(clus) <- rownames(p_data)
     l <- rbind(l,clus[colnames(l)])
 }
+
 l <- as.data.frame(cbind(K=seq(k.range[1],k.range[2]),l))
 sel.K <- l$K==sel.k
 l <- cbind(sel.K,l)
@@ -183,8 +207,8 @@ pinfo("Created ",ofile)
 ##########################################
 ## Marker genes for each cluster
 ## gene x #clusters
-l <- as.matrix(table[,NULL,drop=FALSE])
-##head(l)
+pinfo("Preparing to save marker genes")
+l <- matrix(nrow=0,ncol=ncol(table))
 for (k in seq(k.range[1],k.range[2])) {
     p_data <- pData(sceset)
     label <- paste0("sc3_",k,"_clusters")
@@ -221,6 +245,7 @@ for (k in seq(k.range[1],k.range[2])) {
     pinfo("Created ",ofile)
 }
 
+pinfo("Generating TSNEs...")
 ## TSNE coordinates? or run Seurat?
 library(Seurat)
 nbt <- CreateSeuratObject(raw.data=table,project="irap",min.cells = 3,min.genes = 1000,is.expr=1)
@@ -236,6 +261,7 @@ nbt <- RunPCA(object = nbt, pc.genes = nbt@var.genes, do.print = FALSE, pcs.prin
 library(Rtsne)
 perp.values <- c(1, 5,10,15,20)
 for (p in perp.values) {
+    pinfo("TSNE: perplexity ",p)
     nbt.res <- myRunTSNE(object = nbt, dims.use = 1:20,  do.fast = TRUE,perplexity=10)
     ofile <- paste0(out.prefix,"_tsne_perp_",p,".tsv")
     write.table(nbt.res$tsne,file=ofile,row.names=FALSE,quote=FALSE)
