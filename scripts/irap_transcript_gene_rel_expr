@@ -46,6 +46,7 @@ option_list <- list(
   make_option(c("--gene_col"), type="numeric",default=2,help="Column with the gene ids [default %default]."),
   make_option(c("-c", "--cores"), type="numeric",default=1,dest="num_cores",help="Number of cores to use ([default %default])"),
   make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
+  make_option(c("--exit_on_error"),action="store_true",dest="exit.on.error",default=FALSE,help="Exit on error. by default it will emit an warning and try to continue."),
   make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name. The file will contain the relative expression of a transcript within a gene.")
 )
 
@@ -90,6 +91,7 @@ options(mc.cores=num.cores)
 # TODO: trap and report errors
 data <- quant.load(opt$tsv_file)
 
+print(head(data))
 # load mapping
 mapping.data<- read.tsv(opt$mapping_file)
 # filter
@@ -102,19 +104,33 @@ pinfo("Data loaded")
 # remove NAs
 mapping <- mapping[!is.na(mapping$trans),,drop=FALSE]
 
-# all transcripts in the mapping should be found in the quant file
-miss <- !rownames(data)%in%mapping$trans
+## ensembl workaround
+## sometime after version 80 Ensembl decided to use transcript ids
+## in the cdna file different from the transcripts ids found in the GTF!?
+if ( sum(grepl(".",rownames(data),fixed=TRUE))==nrow(data) && sum(grepl(".",as.character(mapping$trans),fixed=TRUE))==0 ) {
+    pinfo("Applying Ensembl workaround")
+    rownames(data) <- gsub("\\.[0-9]+","",rownames(data))
+    print(head(data))
+}
+
+# all transcripts should be found in the mapping
+miss <- !(rownames(data)%in%as.character(mapping$trans))
 if ( sum(miss) > 0 ) {
     print(head(rownames(data)[miss]))
-    perror("Transcripts not found in the ",opt$mapping_file," mapping file.")    
-    quit(status=2)
+    # transcripts specific to the cdna file and not found in the GTF
+    ofile <- paste0(opt$out,"_transcripts_not_found.lst")
+    pinfo(sum(!miss)," transcripts found")
+    perror(sum(miss)," Transcripts not found in the ",opt$mapping_file," mapping file. List saved in ",ofile)
+
+    write.table(rownames(data)[miss],file=ofile,quote=FALSE,sep="\t",row.names=FALSE,col.names=FALSE)
+    if ( opt$exit.on.error || sum(!miss)==0 )  quit(status=2)
 }
 # transcripts need to be unique
 sel <- duplicated(mapping$trans)
 if (sum(sel)>0 ) {
     print(head(mapping[sel,]))
     perror("Duplicated transcripts found in the ",opt$mapping_file," mapping file.")
-    quit(status=2)
+    if (opt$exit.on.error) quit(status=2)
 }
 
 ## debug
