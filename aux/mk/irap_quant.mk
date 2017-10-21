@@ -1054,7 +1054,7 @@ $(mapTrans2gene): $(gtf_file_abspath)
 
 
 $(name)/$(mapper)/$(quant_method)/%.transcripts.riu.$(quant_method).irap.tsv: $(name)/$(mapper)/$(quant_method)/%.transcripts.raw.$(quant_method).tsv $(mapTrans2gene)
-	irap_transcript_gene_rel_expr --tsv $<  --map $(mapTrans2gene) --cores $(max_threads)  --gene_col 1 --trans_col 2  --out $@.tmp && mv $@.tmp $@	
+	irap_transcript_gene_rel_expr --tsv_file $<  --map $(mapTrans2gene) --cores $(max_threads)  --gene_col 1 --trans_col 2  --out $@.tmp && mv $@.tmp $@	
 
 $(name)/$(mapper)/$(quant_method)/transcripts.riu.$(quant_method).irap.tsv: $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.riu.$(quant_method).irap.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.riu.$(quant_method).irap.tsv)
 	( $(call pass_args_stdin,irap_merge_tsv.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
