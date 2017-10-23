@@ -18,8 +18,6 @@
 # You should have received a copy of the GNU General Public License
 # along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
 #
-#
-#    $Id: 0.1.1$
 # =========================================================
 
 ###############################################################
@@ -37,17 +35,19 @@ source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
 pdebug.enabled <- TRUE
 #######################
 usage <- "irap_raw2metric --tsv file --lengths lengths.Rdata [options]"
-filenames <- c("tsv_file","lengths")
+filenames <- c("ifile","lengths")
 
 option_list <- list(
   make_option(c("-f", "--feature"), type="character", dest="feature", default="gene",help="Feature (gene,transcript,exon-)"),
   make_option(c("-m", "--metric"), type="character", dest="metric", default="rpkm", help="Normalization metric (rpkm/fpkm,tpm,fpkm-uq,uq-fpkm) [default %default]"),
-  make_option(c("-i", "--tsv"), type="character", dest="tsv_file", help="TSV file name with the matrix with the counts per gene/transcript."),
+  make_option(c("-i", "--ifile"), type="character", dest="ifile", help="TSV file name with the matrix with the counts per gene/transcript."),
   make_option(c("-g", "--gtf"), type="character", dest="gtf_file", default=NULL, help="GTF file name"),
   make_option(c("-l", "--lengths"), type="character",dest="lengths_file",default="",help=" [default %default]."),
   make_option(c("-e", "--exclude"), type="character",dest="toexclude",default="",help="biotypes to exclude (separated by comma) [default %default]."),
   make_option(c("--length_as_tsv"), dest="lengths_tsv_format",action="store_true",default=FALSE,help="lengths are provided in a two column TSV file with the feature and length [default %default]."),
                                         #make_option(c("p","--rpkm_pc"),action="store_true",dest="mass_pconly",default=FALSE,help="Consider protein coding only for the total number of reads (rpkm) [default %default]"),
+  make_option(c("--mtx"), action="store_true",default=FALSE,dest="is_mtx",help="The input file is in Matrix Market format. Default is TSV format."),
+  make_option(c("--tsv"), action="store_true",default=FALSE,dest="is_mtx",help="The input file is in TSV format (default)."),
   make_option(c("--exit_on_error"),action="store_true",dest="exit.on.error",default=FALSE,help="Exit when an inconsistency is found between the expression matrix and the file with the lengths. by default it will emit an warning and try to continue."),
   make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
   make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name prefix. An HTML and TSV.gz file will be created.")
@@ -59,7 +59,7 @@ multiple.options = list(
   feature=c('gene','exon','transcript'),
   metric=c('rpkm','tpm','fpkm','fpkm-uq','uq-fpkm')
   )
-mandatory <- c("tsv_file","out","lengths_file")
+mandatory <- c("ifile","out","lengths_file")
 
 #pinfo("saved")
 opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
@@ -77,13 +77,18 @@ exon.length <- NULL
 # load TSV
 
 ##
-pinfo("Loading ",opt$tsv_file)
-table <- quant.load(opt$tsv_file)
-pinfo("Loading ",opt$tsv_file," done.")
+pinfo("Loading ",opt$ifile)
+if ( opt$is_mtx ) {
+    table <- mtx.load(opt$ifile)
+} else {
+    table <- quant.load(opt$ifile)
+}
+pinfo("Loading ",opt$ifile," done.")
+
 # matrix may contain a single column with values
 if ( is.vector(table) ) {
     names(table) <- ids
-    #cat("ERROR: ",opt$tsv_file," should contain a matrix\n")
+    #cat("ERROR: ",opt$ifile," should contain a matrix\n")
     #q(status=1)
 }
 
@@ -135,7 +140,6 @@ if (!is.null(opt$gtf_file) ) {
 }
 
 if (opt$feature=="exon" ) {
-  #eids <- paste(exon.length$gene_id,exon.length$transcript_id,exon.length$exon_number,sep=".")
   #eids <- paste(exon.length$gene_id,exon.length$exon_number,sep=".")
   if ( sum( "exon_id" %in% colnames(exon.length)) > 0 ) {
     eids <- as.character(exon.length$exon_id)
@@ -172,19 +176,22 @@ if (!opt$exit.on.error) {
 pdebug.save.state("irap_raw2metric","p1")
 if ( opt$metric == "rpkm" || opt$metric=="fpkm" ) {
   #(read count  * 1,000,000) / (total number of reads * kilobase of gene/transcript/exon)
-  rpkm <- countstable2rpkms(table,lengths[[opt$feature]],mass.labels)
-  if ( is.vector(rpkm) ) {
-    rpkm <- data.frame(cbind(names(rpkm),rpkm),check.names=F)
-    colnames(rpkm) <- append(capitalize(opt$feature),"Lib")
-  } else {
-    rpkm <- data.frame(cbind(rownames(rpkm),rpkm),check.names=F)
-    colnames(rpkm) <- append(capitalize(opt$feature),colnames(rpkm)[-1])
-  }
-
-  # save
-  write.tsv(rpkm,file=opt$out)
-  pinfo("Saved ",opt$out)
-  q(status=0)
+    rpkm <- countstable2rpkms(table,lengths[[opt$feature]],mass.labels)
+    if ( is.vector(rpkm) ) {
+        rpkm <- data.frame(cbind(names(rpkm),rpkm),check.names=F)
+        colnames(rpkm) <- append(capitalize(opt$feature),"Lib")
+    } 
+    
+    ## save
+    if ( opt$is_mtx ) {
+        ##
+        filename <- write.mtx(rpkm,filename=gsub(".gz$","",opt$out),gzip=TRUE)
+    } else {
+        write.tsv(rpkm,file=opt$out,rownames.label="Feature")
+        filename <- opt$out
+    }
+    pinfo("Saved ",filename)      
+    q(status=0)
 }
 
 if ( opt$metric == "uq-fpkm" || opt$metric=="fpkm-uq" ) {
@@ -201,31 +208,36 @@ if ( opt$metric == "uq-fpkm" || opt$metric=="fpkm-uq" ) {
     if ( is.vector(norm) ) {
         norm.vals <- data.frame(cbind(names(norm.vals),norm.vals),check.names=F)
         colnames(norm.vals) <- append(capitalize(opt$feature),"Lib")
+    } 
+    ## save
+    if ( opt$is_mtx ) {
+        ##
+        filename <- write.mtx(norm.vals,filename=gsub(".gz$","",opt$out),gzip=TRUE)
     } else {
-        norm.vals <- data.frame(cbind(rownames(norm.vals),norm.vals),check.names=F)
-        colnames(norm.vals) <- append(capitalize(opt$feature),colnames(norm.vals)[-1])
+        write.tsv(norm.vals,file=opt$out,rownames.label="Gene")
+        filename <- opt$out
     }
-    # save
-    write.tsv(norm.vals,file=opt$out)
-    pinfo("Saved ",opt$out)
+    pinfo("Saved ",filename)  
     q(status=0)
 }
 
 
 if ( opt$metric == "tpm" ) {
-  tpm <- countstable2tpm(table,lengths[[opt$feature]])
-  if ( is.vector(tpm) ) {
-    tpm <- data.frame(cbind(names(tpm),tpm),check.names=F)
-    colnames(tpm) <- append(capitalize(opt$feature),"Lib")
-  } else {
-    tpm <- data.frame(cbind(rownames(tpm),tpm),check.names=F)
-    colnames(tpm) <- append(capitalize(opt$feature),colnames(tpm)[-1])
-  }
-
-  # save
-  write.tsv(tpm,file=opt$out)
-  pinfo("Saved ",opt$out)
-  q(status=0)
+    tpm <- countstable2tpm(table,lengths[[opt$feature]])
+    if ( is.vector(tpm) ) {
+        tpm <- data.frame(cbind(names(tpm),tpm),check.names=F)
+        colnames(tpm) <- append(capitalize(opt$feature),"Lib")
+    }     
+    ## save
+    if ( opt$is_mtx ) {
+        ##
+      filename <- write.mtx(tpm,filename=gsub(".gz$","",opt$out),gzip=TRUE)
+    } else {
+        write.tsv(tpm,file=opt$out,rownames.label="Feature")
+        filename <- opt$out
+    }
+    pinfo("Saved ",filename)      
+    q(status=0)
 }
 
 q(status=0)
