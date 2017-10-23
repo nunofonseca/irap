@@ -112,7 +112,8 @@ not_pair2=$(if $(call pair2_1,$(1),$(2)),,$(if $(call pair2_2,$(1),$(2)),,$(if $
 pair2_1=$(filter $(subst _2.fastq,_1.fastq,$(1)),$(2))
 pair2_2=$(filter $(subst _R2_001.fastq,_R1_001.fastq,$(1)),$(2))
 pair2_3=$(filter $(subst _read2_,_read1_,$(1)),$(2))
-pair2_4=$(filter $(subst _2_sequence,_1_sequence,$(1)),$(2))
+pair2_4=$(filter $(subst _I1_001.fastq,_R1_001.fastq,$(1)),$(2))
+#pair2_4=$(filter $(subst _2_sequence,_1_sequence,$(1)),$(2))
 pair2_5=$(filter $(subst .fastq2,.fastq1,$(1)),$(2))
 pair2_6=$(filter $(subst _2.fq,_1.fq,$(1)),$(2))
 pair2_7=$(filter $(subst .2.fastq,.1.fastq,$(1)),$(2))
@@ -143,7 +144,10 @@ all: $(files.info)
 	@echo se=$(strip $(call se.libs,$(files.info)))
 
 # add some extra file name formats...
-%_R1_001.fastq.info: %_R1_001.fastq  %_R2_001.fastq
+%_R1_001.fastq.gz.info: %_R1_001.fastq.gz  %_R2_001.fastq.gz %_I1_001.fastq.gz
+	fastq_info.sh $< $*_R2_001.fastq.gz > $@.tmp && mv $@.tmp $@
+
+%_R1_001.fastq.gz.info: %_R1_001.fastq.gz  %_R2_001.fastq.gz
 	fastq_info.sh $^  > $@.tmp && mv $@.tmp $@
 
 # dynamically generate the rules...thank you to who named the files this way! 
