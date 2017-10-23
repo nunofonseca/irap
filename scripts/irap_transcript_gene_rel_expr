@@ -37,8 +37,8 @@ library(parallel)
 
 pdebug.enabled <- FALSE
 #######################
-usage <- "irap_transcript_gene_rel_expr --tsv file --map gene2transcript [options]"
-filenames <- c("tsv_file","mapping_file") ;#filenames that must exist (if defined)
+usage <- "irap_transcript_gene_rel_expr --ifile file --map gene2transcript [options]"
+filenames <- c("ifile","mapping_file") ;#filenames that must exist (if defined)
 option_list <- list(
   make_option(c("-i", "--tsv_file"), type="character", dest="tsv_file", default=NULL,help="TSV file name with the quantification by transcript"),
   make_option(c("-m", "--mapping_file"), type="character", dest="mapping_file", default=NULL,help="TSV file name with the  mapping between transcripts and genes."),
@@ -52,13 +52,13 @@ option_list <- list(
 
 # check multiple options values
 multiple.options = list( )
-mandatory <- c("tsv_file","mapping_file","out")
+mandatory <- c("ifile","mapping_file","out")
 opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
 
 pdebug.enabled <- opt$debug
 #pdebug(opt)
   
-pdebug("TSVFILE=",opt$tsv_file)
+pdebug("TSVFILE=",opt$ifile)
 pdebug("MAPPINGFILE=",opt$mapping_file)
 
 
@@ -87,9 +87,15 @@ options(mc.cores=num.cores)
 
 ###############################################
 
-# load TSV
-# TODO: trap and report errors
-data <- quant.load(opt$tsv_file)
+## load expression
+## TODO: trap and report errors
+pinfo("Loading ",opt$ifile)
+if ( opt$is_mtx ) {
+    data <- mtx.load(opt$ifile)
+} else {
+    data <- quant.load(opt$ifile)
+}
+pinfo("Loading ",opt$ifile," done.")
 
 print(head(data))
 # load mapping
@@ -184,26 +190,84 @@ transcript.rel.expression<- function(expr.vals.by.trans,map.gene2trans,min.fold.
         rel.expr.vals.by.trans[gene.transcripts] <- get.rel.trans.expr(g,gene.trans.expr)
         cat(".")
     }
+
     return(rel.expr.vals.by.trans)
 }
 
 get.rel.expr <- function(trans.quant.matrix,map.gene2trans) {
-#trans.quant.matrix <- data
+    ##trans.quant.matrix <- data
     libs <- colnames(trans.quant.matrix)
     set.names <- function(v,vnames) { names(v) <- vnames; return(v) }
-    y <- as.list(trans.quant.matrix)
-    y <- lapply(y,set.names,rownames(trans.quant.matrix))
-    #expr.vals.by.trans <- y[[1]]
-    x <- mclapply(y,FUN=transcript.rel.expression,map.gene2trans,mc.allow.recursive=FALSE)
-    #save.image(file=paste0(opt$out,".Rdata"))
-    doms <- data.frame(x)
-    colnames(doms) <- libs
-    return(doms)
-}
+    type <- typeof(trans.quant.matrix)
+    if ( type=="list" ) {
+        y <- as.list(trans.quant.matrix)
+        y <- lapply(y,set.names,rownames(trans.quant.matrix))
+        x <- mclapply(y,FUN=transcript.rel.expression,map.gene2trans,mc.allow.recursive=FALSE)
+        doms <- data.frame(x)
+        colnames(doms) <- libs
+    } else {
+        ## Matrix
+        library("Matrix.utils")
+        ##trans.quant.matrix <- data
+        map2g <- map.gene2trans$gene
+        names(map2g) <- map.gene2trans$trans
+        ## filter the matrix
+        sel.trans <- which(rownames(trans.quant.matrix)%in%names(map2g))
+        tmp <- trans.quant.matrix[sel.trans,,drop=FALSE]
+        trans.quant.matrix <- tmp
+        map2g <- map2g[names(map2g)%in%rownames(trans.quant.matrix)]
+        ## note: tot.gene is a matrix
+        tot.gene <- aggregate.Matrix(trans.quant.matrix[names(map2g),],map2g,fun='sum')
+        ## not memory efficient ...        
+        tot.trans <- tot.gene[map2g,,drop=FALSE]
+        rownames(tot.trans) <- names(map2g)
+        sum(duplicated(rownames(tot.trans)))
+        tot.trans[tot.trans==0,] <- 1
+        tot.trans <- 1/tot.trans
+        sum(tot.trans==0)
+        x <- trans.quant.matrix[rownames(tot.trans),,drop=FALSE]*tot.trans
+        tot.trans <- NULL
+        trans.quant.matrix <- drop0(x)
+        ## head(x)
+        ## i <- 1
+        ## trans.names <- rownames(trans.quant.matrix)
+        ## while ( i < nrow(trans.quant.matrix) ) {
+        ##     sel <- map2g[trans.names[i]]
+        ##     t <- 1/tot.gene[sel,]
+        ##     t[tot.gene[sel,]==0] <- 0
+        ##     trans.quant.matrix[i,] <-trans.quant.matrix[i,]*t            
+        ##     if ( i%%1000 == 0 ) cat(".")
+        ##     i <- i+1
+        ## }
 
+        ##g<-rownames(tot.gene)[1]
+        ## for ( g in rownames(tot.gene) ) {
+        ##     gene.transcripts <- names(map2g)[map2g==g]
+        ##     t <- 1/tot.gene[g,]
+        ##     t[tot.gene[g,]==0] <- 0
+        ##     trans.quant.matrix[gene.transcripts,] <-trans.quant.matrix[gene.transcripts,]*t
+            
+        ##     cat(".")
+        ## }
+        cat("\n")
+        doms <- trans.quant.matrix
+    }
+    return(doms)
+
+}
+#map.gene2trans <- mapping
+#save.image("debug.Rdata")
+#load("debug.Rdata")
 rel.expr <- get.rel.expr(data,mapping)
-save(rel.expr,mapping,file=paste0(opt$out,".Rdata"))
-write.tsv(rel.expr,file=opt$out,rownames.label="Gene")
+save(rel.expr,mapping,file=paste0(opt$out,".Rds"))
+if ( opt$is_mtx ) {
+    ##
+    filename <- write.mtx(rel.expr,filename=gsub(".gz$","",opt$out),gzip=TRUE)
+} else {
+    write.tsv(rel.expr,file=opt$out,rownames.label="Gene")
+    filename <- opt$out
+}
+pinfo("Saved ",filename)  
 quit(save="no",status=0)
 
 
