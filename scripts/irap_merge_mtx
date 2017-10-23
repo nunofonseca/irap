@@ -1,0 +1,174 @@
+#!/usr/bin/env Rscript
+#; -*- mode: R;-*-
+# =========================================================
+# Copyright 2012-2017,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+# =========================================================
+suppressPackageStartupMessages(library("optparse"))
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+# specify our desired options in a list
+#
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+pdebug.enabled <- FALSE
+
+#######################
+usage <- "irap_merge_mtx --out mtx_filename_prefix [options]"
+option_list <- list(
+    make_option(c("-o","--out"),type="character",default=NULL,help="Output mtx file"),
+    make_option(c("--in"),type="character",dest="mtx_files",default=NULL,help="mtx files (file names should be separated by comma)"),
+    make_option(c("-l", "--all_feat"), type="character", dest="all_feat_file", default=NULL, help="filename of a TSV file containing all features names (in the first column)."),
+    make_option(c("-n", "--all_feat_col"), type="numeric", dest="all_feat_col", default=1, help="column in the file passed in --all_feat with the feature names."),
+    make_option(c("--basename_header"),action="store_true",dest="basename_header",default=FALSE,help="keep only the basename in the column name."),
+    make_option(c("--exclude_irap_suffix"),action="store_true",dest="exclude_irap_suffix",default=FALSE,help="Exclude irap suffix from the name."),
+    make_option(c("--add_header"),action="store_true",dest="add_header",default=FALSE,help=""),
+    make_option(c("--dirname_header"),action="store_true",dest="dirname_header",default=FALSE,help="keep only the dirname in the column name."),
+    make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode")
+)
+
+
+# 
+mandatory <- c("out","mtx_files")
+filenames <- c("all_feat_file")
+
+#
+args <- importArgsfromStdin()
+opt <- myParseArgs(usage = usage,option_list=option_list,filenames.exist=filenames,
+                   mandatory=mandatory,args=args)
+
+pdebug.enabled <- opt$debug
+pdebug.save.state("irap_merge_mtx","p0")
+
+pinfo("Parameters parsed.")
+
+all.feat <- NULL
+if ( !is.null(opt$all_feat_file) ) {
+    pinfo("Reading ",opt$all_feat_file," ...")
+    all.feat <- as.character(unique(read.table(opt$all_feat_file,header=T,sep="\t")[,opt$all_feat_col]))
+    pinfo("Reading ",opt$all_feat_file," ...done.")
+    pinfo("Expected ",length(all.feat)," unique genes/transcripts")
+}
+
+
+out.table <- NULL
+
+files <- unlist(strsplit(opt$mtx_files,"[ \t\n,;]+"))
+nfiles <- length(files)
+pinfo("Merging ",nfiles," mtx files")
+ctr <- 0
+#files <- c("/home/nf/Research/Projects/WIP/EREAP/irap_tests/test_files/sparse1.mtx.gz","/home/nf/Research/Projects/WIP/EREAP/irap_tests/test_files/sparse2.mtx.gz")
+#f <- files[1]
+#print(files)
+for ( f in files ) {
+    ctr <- ctr+1
+    done <- round(ctr/nfiles*100,2)
+    pinfo("Processing ",ctr," ",done,"%:",f,".")
+    if ( ! file.exists(f) ) {
+        perror("File not found ",f)
+        q(status=1)
+    }
+    x <- mtx.load(f)
+    #dim(x)
+    if ( is.null(x) ) {
+        perror("Error loading ",f)
+        q(status=1)
+    }
+    if ( opt$add_header ) {
+        if ( ncol(x)!=1 ) {
+            perror("Error: expected 1 column (got ",ncol(f),") in file ",f)
+            q(status=1)
+        }
+        label <- f
+        if ( opt$basename_header) {
+            label <- basename(label)
+        } else {
+            if ( opt$dirname_header) {
+        label <- dirname(label)
+            }
+        }
+        if ( opt$exclude_irap_suffix ) {
+            label <- gsub(".(se|pe).(gene|exon|transcrip).*.(tsv|mtx).*","",label)
+        }
+        colnames(x)[1] <- label
+    }
+    
+
+    ##   if (opt$rows_not_sorted) {
+    ##        x <- x[order(rownames(x)),]
+    ##    }
+    if ( !is.null(all.feat) ) {
+        ##
+        miss.rows<-all.feat[!all.feat %in% rownames(x)]
+        if (length(miss.rows)>0) {
+            new.dim<-c(length(miss.rows),ncol(x))
+            xx<-Matrix(0,nrow=new.dim[1],ncol=new.dim[2])
+            rownames(xx)<-miss.rows
+            colnames(xx)<-colnames(x)
+            x<-rbind(x,xx)
+            xx <- NULL
+        }
+    }
+    #print(dim(x))
+    ## 
+    x <- x[sort(rownames(x)),,drop=FALSE]
+    ## 
+    if ( is.null(out.table) ) {
+        out.table <- x
+    } else {
+        ## merge
+        if ( is.null(all.feat) ) {
+            if (nrow(out.table)!=nrow(x)) {
+                perror("Matrices should have the same number of rows" )
+                q(status=1)
+            }
+        }
+        shared.cols <- intersect(colnames(out.table),colnames(x))
+        if ( length(shared.cols) >0 ) {
+
+            pinfo("Repeated columns found (" ,length(shared.cols),")" )
+            perror("Not supporting this for now" )
+            q(status=1)
+            im <- out.table[,shared.cols,drop=FALSE]+x[,shared.cols,drop=FALSE]
+            out.table <- cbind(cbind(out.table[,!colnames(out.table)%in%shared.cols,drop=FALSE],
+                               x[,!colnames(x)%in%shared.cols,drop=FALSE]),im)
+        } else {
+            out.table <- cbind(out.table,x)
+        }
+        
+    }
+}
+
+
+if ( opt$add_header && opt$has_no_header ) {
+  opt$has_no_header=FALSE
+}
+write.mtx(out.table,filename=opt$out,gzip=TRUE)
+pinfo("all done.")
+q(status=0)
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  IRAP.DIR="/home/nf/Research/Projects/WIP/EREAP/irap/"
+  Sys.setenv(IRAP_DIR=IRAP.DIR)
+}
+setwd("/home/nf/Research/Projects/WIP/EREAP/irap_tests")
