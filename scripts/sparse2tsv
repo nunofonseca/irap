@@ -68,15 +68,17 @@ if ( !is.null(opt$all_feat_file) ) {
 }
 library(data.table)
 pinfo("Reading ",opt$stsv_file," ...")
-x <- fread(opt$stsv_file,header=TRUE,sep="\t",check.names=FALSE,data.table=FALSE)
+x <- fread(opt$stsv_file,header=TRUE,sep="\t",check.names=FALSE,data.table=TRUE)
+print(object_size(x))
 pinfo("Reading ",opt$stsv_file," ... done.")
 pinfo(paste(dim(x),collapse=","))
 print(head(x))
 if(ncol(x)==4) {
     ## merge col 2 and 3
     pinfo("Merging column 2 and 3...")
-    x[,2] <- paste(x[,2],"::",x[,3],sep="")
+    z <- paste(x[,2],"::",x[,3],sep="")
     x <- x[,-3]
+    x[,2] <- z
     pinfo("Merging column 2 and 3...done.")
 }
 if(ncol(x)==2) {
@@ -85,13 +87,25 @@ if(ncol(x)==2) {
     ##nx <- x[unique(x[,1]),2,drop=FALSE]
     rownames(nx) <- as.character(x[,1])
 } else {
-    nr <- length(unique(x[,1]))
-    nc <- length(unique(x[,2]))
-    nx <- matrix(0,nrow=nr,ncol=nc,dimnames=list(unique(x[,1]),unique(x[,2])))
-    crow <- nc
-    while ( crow > 0 ) {
-        nx[as.character(x[crow,1]),as.character(x[crow,2])] <- x[crow,3]
-        crow <-crow-1
+    feats <- unique(x[[colnames(x)[1]]])
+    cols <- unique(x[[colnames(x)[2]]])
+    nr <- length(feats)
+    nc <- length(cols)
+#    nx <- big.matrix(nrow=nr,ncol=nc,type="integer",init=0,
+#                     dimnames=list(feats,cols))
+
+    pinfo("#rows:",nr,"   #cols:",nc)
+    c1 <- colnames(x)[1]
+    c2 <- colnames(x)[2]
+    c3 <- colnames(x)[3]
+    nx <- matrix(0,nrow=nr,ncol=nc,dimnames=list(feats,cols))
+  
+    crow <- 1
+    while ( crow < nc ) {
+        d <- x[crow]
+        nx[as.character(d[1]),as.character(d[2])] <- d[3]
+        print(crow)
+        crow <-crow+1
     }
 }
 ## filter columns
