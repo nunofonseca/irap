@@ -32,9 +32,9 @@ get_bam_tag=$(if $(filter $(1),gene),GX,TX)
 # salmon+umi
 # salmon - generate BAM
 # UMI - count transcripts
-ifeq (salmon_umi,$(quant_method))
-salmon_quant_params+=--writeMappings=<outfile> 
-endif
+#ifeq (salmon_umi,$(quant_method))
+#salmon_quant_params+=--writeMappings=<outfile> 
+#endif
 
 
 ## Kallisto+UMI
@@ -83,13 +83,13 @@ ifeq (umis,$(quant_method))
 # $4 - column in the reference file (mapTrans2gene) with all genes/transcripts
 define make-umis-rule=
 # 
-$(call lib2quant_folder,$(1))$(2).$(3)s.raw.$(quant_method).tsv: $(call lib2bam_folder,$(1))$(2).hits.bam  $$(mapTrans2gene) 
+$(call lib2quant_folder,$(1))$(2).$(3)s.raw.$(quant_method).mtx: $(call lib2bam_folder,$(1))$(2).hits.bam  $$(mapTrans2gene) 
 	mkdir -p $$(@D) && \
-	time umis tagcount $$(umis_params) --parse_tags --gene_tags $$< /dev/stdout | tr "," "\t" > $$@.tmp   && \
-	add_missing_features --sort --tsv $$@.tmp --all_feat $$(mapTrans2gene) --all_feat_col $(4) --out $$@.tmp2 &&\
+	time umis tagcount $$(umis_params) --sparse --parse_tags --gene_tags $$< $$@.tmp   && \
 	mv $$@.tmp2 $$@
-
 endef
+#	time umis tagcount $$(umis_params) --sparse --parse_tags --gene_tags $$< /dev/stdout | tr "," "\t" > $$@.tmp   && \
+#	add_missing_features --sort --tsv $$@.tmp --all_feat $$(mapTrans2gene) --all_feat_col $(4) --out $$@.tmp2 &&\
 
 # gene level quantification
 $(foreach l,$(se),$(eval $(call make-umis-rule,$(l),$(l).se,gene,1)))	
@@ -100,8 +100,8 @@ $(call p_error,Unable to get transcript level quantification while using "umis".
 endif
 
 # Generate a single matrix
-$(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).tsv)
-	( $(call pass_args_stdin,irap_merge_tsv.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
+$(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).mtx: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).mtx) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).mtx)
+	( $(call pass_args_stdin,irap_merge_mtx.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
 
 
 endif
@@ -119,14 +119,13 @@ ifeq (umi_count,$(quant_method))
 # $3 - gene|transcript
 # $4 - column in the reference file (mapTrans2gene) with all genes/transcripts
 define make-iumi-count-rule=
-$(call lib2quant_folder,$(1))$(2).$(3)s.raw.$(quant_method).tsv: $(call lib2bam_folder,$(1))$(2).hits.bam  $$(mapTrans2gene) $($(1)_known_umi_file)
+$(call lib2quant_folder,$(1))$(2).$(3)s.raw.$(quant_method).mtx.gz: $(call lib2bam_folder,$(1))$(2).hits.bam  $$(mapTrans2gene) $($(1)_known_umi_file) $($(1)_known_cells_file)
 	mkdir -p $$(@D) && \
-	time bam_umi_count --bam $$< --ucounts $$@.sparse.tsv $$(bam_umi_count_params) $(if $($(1)_known_umi_file),--known_umi $($(1)_known_umi_file),) --tag $(call get_bam_tag,$(3)) $$(bam_umi_count_params)  && \
-	sparse2tsv --sort --stsv $$@.sparse.tsv --out $$@.tmp --non_zero_rows $$(sc_non_zero_rows) --all_feat $$(mapTrans2gene) --all_feat_col $(4)  && \
-	rm -f $$@.sparse.tsv &&\
-	mv $$@.tmp $$@
-
+	time bam_umi_count --bam $$< --ucounts $$@.tmp $$(bam_umi_count_params) $(if $($(1)_known_umi_file),--known_umi $($(1)_known_umi_file),) $(if $($(1)_known_cells_file),--known_cells $($(1)_known_cells_file),) --tag $(call get_bam_tag,$(3)) $$(bam_umi_count_params) --tag_counts_MM && \
+	mv $$@.tmp_rows.gz $$@_rows.gz && mv $$@.tmp_cols $$@_cols.gz && mv $$@.tmp.gz $$@
 endef
+#	sparse2tsv --sort --stsv $$@.sparse.tsv --out $$@.tmp --non_zero_rows $$(sc_non_zero_rows) --all_feat $$(mapTrans2gene) --all_feat_col $(4)  && \
+#	gzip $$@.sparse.mtx &&\
 # irap_sc conf=conf/sc/10x_v2_pbmc.conf stage3  mapper=bowtie2 quant_method=irap_umi_count se=SE1
 
 #irap_sc conf=conf/sc/10x_v2_pbmc.conf stage2  mapper=bowtie2 stage3 quant_method=irap_umi_count
@@ -140,13 +139,13 @@ $(foreach l,$(se),$(eval $(call make-iumi-count-rule,$(l),$(l).se,transcript,2))
 $(foreach l,$(pe),$(eval $(call make-iumi-count-rule,$(l),$(l).pe,transcript,2)))
 
 ## 
-$(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).tsv)
-	( $(call pass_args_stdin,irap_merge_tsv.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
+$(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).mtx: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).mtx.gz) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).mtx.gz)
+	( $(call pass_args_stdin,irap_merge_mtx.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
 endif
 
 # Generate a single matrix
-$(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).tsv)
-	( $(call pass_args_stdin,irap_merge_tsv.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
+$(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).mtx.gz: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).mtx.gz) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).mtx.gz)
+	( $(call pass_args_stdin,irap_merge_mtx.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
 
 endif
 ## umi_count
