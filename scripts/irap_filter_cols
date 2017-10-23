@@ -16,17 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
 #
-#
-#    $Id: irap.txt Nuno Fonseca Sun Jan 13 14:02:59 2013$
 # =========================================================
-args <- commandArgs(trailingOnly=TRUE)
-
-usage<-"irap_filter_cols matrix qc_res out_file\n";
-if (length(args)!=3) {
-  cat("ERROR!");
-  cat(usage);
-  q(status=1);
-}
+##args <- commandArgs(trailingOnly=TRUE)
 
 IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
 if ( IRAP.DIR == "" ) {
@@ -35,14 +26,30 @@ if ( IRAP.DIR == "" ) {
 }
 source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
 
-mat.file <- args[1]
-qc.file <- args[2]
-out.file <- args[3]
+debug.enabled <- TRUE
+#######################
+usage <- "irap_filter_cols --mat file --qc file --out out_file_prefix [options]"
+filenames <- c("ifile","qfile","ofile")
 
-##
-#qc.file <- "/home/nf/Research/Projects/WIP/EREAP/irap_tests/test_sc/kallisto/umi_count/genes.raw.umi_count.qc.tsv"
-#mat.file <- "/home/nf/Research/Projects/WIP/EREAP/irap_tests/test_sc/kallisto/umi_count/genes.raw.umi_count.tsv"
-#out.file <- "lixo"
+option_list <- list(
+    make_option(c("-i", "--in"), type="character", dest="ifile", help="TSV file name with the matrix with the counts per cell by gene/transcript."),
+    make_option(c("--mtx"), action="store_true",default=FALSE,dest="is_mtx",help="The input file is in Matrix Market format. Default is TSV format."),
+    make_option(c("--tsv"), action="store_true",default=FALSE,dest="is_mtx",help="The input file is in Matrix Market format. Default is TSV format."),
+    make_option(c("-q", "--qc"), type="character", dest="qfile", help="TSV file name with the matrix with the Qc per  column"),
+    make_option(c("-o", "--out"), dest="ofile", type="character",default=NULL,help="Output file name prefix."),
+    make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode")
+)
+
+multiple.options <- NULL
+mandatory <- c("ifile","qfile","ofile")
+
+#pinfo("saved")
+opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
+
+mat.file <- opt$ifile
+qc.file <- opt$qfile
+out.file <- opt$ofile
+
 
 library(data.table)
 #
@@ -77,7 +84,7 @@ if (sum(failed)==length(failed) ) {
     q(status=1)
 }
 
-if (sum(failed)==0 ) {
+if (sum(failed)==0 && ! opt$is_mtx ) {    
     ## speedup - just copy
     pinfo("No changes to input matrix...copying it")
     cmd <- paste0("cp ",mat.file," ", out.file)
@@ -86,23 +93,30 @@ if (sum(failed)==0 ) {
     q(status=0)
 }
 
+if ( ! opt$is_mtx ) {
 ## this may be optimized in the future
-cols <- colnames(qload.tsv(mat.file,header=TRUE,nrows=1))
-both <- intersect(cols[-1],col.names)
-if ( length(both)!=length(col.names) ) {
-    perror("Mismatch in the cell/sample names between the two input samples")
-    q(status=1)
+    cols <- colnames(qload.tsv(mat.file,header=TRUE,nrows=1))
+    both <- intersect(cols[-1],col.names)
+    if ( length(both)!=length(col.names) ) {
+        perror("Mismatch in the cell/sample names between the two input samples")
+        q(status=1)
+    }
+    ##
+    drop <- which(cols%in%names(failed[failed]))
+    cmd <- paste0("cut --complement --fields ",paste(drop,sep=",",collapse=",")," ",mat.file," > ",out.file)
+    pinfo("Running ",cmd)
+    system(cmd)
+} else {
+    ## mtx
+    ## load the tsv/sparse matrix
+    pinfo("Loading ",opt$ifile)
+    table <- mtx.load(opt$ifile)
+    cols <- colnames(table)
+    both <- intersect(cols,col.names)
+    keep <- which(!cols%in%names(failed[failed]))
+    table <- table[,keep,drop=FALSE]
+    write.mtx(table,filename=opt$ofile,gzip=TRUE)
+    
 }
-
-##
-drop <- which(cols%in%names(failed[failed]))
-
-#drop
-## support gzip files?
-
-cmd <- paste0("cut --complement --fields ",paste(drop,sep=",",collapse=",")," ",mat.file," > ",out.file)
-pinfo("Running ",cmd)
-system(cmd)
-
 pinfo("Filtering complete.")
 q(status=0)
