@@ -27,15 +27,40 @@ if ( IRAP.DIR == "" ) {
 
 source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
 pdebug.enabled <- TRUE
+suppressPackageStartupMessages(library("optparse"))
+
+#######################
+usage <- "libTSVAggrTransByGene --ifile file --out out_file_prefix [options]"
+filenames <- c("ifile","mapping_file")
+
+option_list <- list(
+    make_option(c("-i", "--ifile"), type="character", dest="ifile", help="TSV file name with the matrix with the counts per cell by gene/transcript."),
+    make_option(c("--mtx"), action="store_true",default=FALSE,dest="is_mtx",help="The input file is in Matrix Market format. Default is TSV format."),
+    make_option(c("--tsv"), action="store_false",default=FALSE,dest="is_mtx",help="The input file is in Matrix Market format. Default is TSV format."),
+    make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name prefix."),
+    make_option(c("-m", "--mapping_file"), type="character", dest="mapping_file", default=NULL,help="TSV file name with the  mapping between transcripts and genes."),
+    make_option(c("--trans_col"), type="numeric",default=2,help="Column with the transcript ids [default %default]."),
+    make_option(c("--gene_col"), type="numeric",default=1,help="Column with the gene ids [default %default]."),  
+    make_option(c("--exit_on_error"),action="store_true",dest="exit.on.error",default=FALSE,help="Exit when an inconsistency is found between the expression matrix and the file with the lengths. by default it will emit an warning and try to continue."),
+    make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode")
+)
+
+multiple.options <- NULL
+mandatory <- c("ifile","mapping_file","out")
+
+#pinfo("saved")
+opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
+
+pdebug.save.state("libTSVAggrTransByGene","p0")
+##args <- commandArgs(trailingOnly=TRUE)
+library(Matrix)
+library(Matrix.utils)
 
 
-args <- commandArgs(trailingOnly=TRUE)
-
-exit.on.error <- ""
-tsv.file <- args[1]
-g2t.file<- args[2]
-out.file <- args[3]
-exit.on.error <- args[4]
+tsv.file <- opt$ifile
+g2t.file<- opt$mapping_file
+out.file <- opt$out
+exit.on.error <- opt$exit.on.error
 
 if ( is.na(exit.on.error) || is.null(exit.on.error) || exit.on.error=="1" ) {
     # default: TRUE
@@ -43,61 +68,84 @@ if ( is.na(exit.on.error) || is.null(exit.on.error) || exit.on.error=="1" ) {
 } else {
     exit.on.error <- FALSE
 }
-# TODO validate arguments
-if ( is.na(out.file)) {
-  cat("ERROR!\n usage: tsvAggrTransByGene TSVfile mapGene2Trans outfile [exit_on_error@{0,1}]\n")
-  q(status=1) 		
-} 
+
 #tsv.file <- "test3_ens78/none/kallisto//PE1.transcripts.raw.kallisto.tsv"
 #gtf.file <- "/home/nf/Research/Projects/WIP/EREAP/irap_tests/data/reference/homo_sapiens/chr19_ens78.gtf"
 #g2t.file<-"test3_ens78/data/mapTrans2Gene.tsv"
+pinfo("Loading ",opt$ifile)
+if ( opt$is_mtx ) {
+    table <- mtx.load(opt$ifile)
+    if (is.null(table)) q(status=1)
+} else {
+    table <- quant.load(opt$ifile)
+}
+pinfo("Loading ",opt$ifile," done.")
 
-# read matrix (TSV)
-tsv.mat<-read.table(tsv.file,sep="\t",header=F)
-colnames(tsv.mat) <- c("transcript_id","val")
-tsv.mat$transcript_id<-gsub("\\|.*","",as.character(tsv.mat$transcript_id))
-print(head(tsv.mat))
 # in gencode the transcript id will also include other information 
+rownames(table)<-gsub("\\|.*","",rownames(table))
+
 pinfo("expression loaded")
-# read gtf file
+
+
 pinfo("Loading mapping")
 g2t.map <- read.table(g2t.file,sep="\t",header=T)
-
+g2t.map <- g2t.map[,c(opt$gene_col,opt$trans_col)]
+colnames(g2t.map) <- c("gene_id","transcript_id")
+# remove duplicate entries (due to exons)
+g2t <- g2t.map[!duplicated(g2t.map$transcript_id),c("gene_id","transcript_id")]
 ## ensembl workaround
 ## sometime after version 80 Ensembl decided to use transcript ids
 ## in the cdna file different from the transcripts ids found in the GTF!?
-if ( sum(grepl(".",tsv.mat$transcript_id,fixed=TRUE))==nrow(tsv.mat) && sum(grepl(".",as.character(g2t.map$transcript_id),fixed=TRUE))==0 ) {
+if ( sum(grepl(".",rownames(table),fixed=TRUE))==nrow(table) && sum(grepl(".",as.character(g2t.map$transcript_id),fixed=TRUE))==0 ) {
     pinfo("Applying Ensembl workaround")
-    tsv.mat$transcript_id <- gsub("\\.[0-9]+","",tsv.mat$transcript_id)
-    print(head(tsv.mat))
+    rownames(table) <- gsub("\\.[0-9]+","",rownames(table))
+    print(head(table))
+}
+##print(head(table))
+## trans2gene
+t2g <- g2t$gene_id
+names(t2g) <- g2t$transcript_id
+
+pdebug.save.state("libTSVAggrTransByGene","p1")
+
+## check
+if ( sum(g2t$transcript_id%in%rownames(table))==0 ) {
+    perror("Transcript ids in the mapping file not found in the rownames of the given matrix")
+    q(status=1)
+}
+## missing transcript in the maping
+miss <- !(rownames(table)%in%g2t$transcript_id)
+n.miss <- sum(miss)
+if ( n.miss > 0 ) {
+    perror(n.miss," transcripts not in the mapping file")
+    if (opt$exit.on.error) q(status=2)
+    table <- table[!miss,,drop=FALSE]
+}
+pinfo("Aggregating ",nrow(table)," transcripts...")
+## we do not expect all transcript in the mapping file to be in the matrix so avoid the test
+## XXXXX
+
+pdebug.save.state("libTSVAggrTransByGene","p3")
+## start working with Matrix
+if (opt$is_mtx) {
+    new.mat <-aggregate.Matrix(table, groupings=t2g[rownames(table)], fun="sum")
+} else {
+    new.mat <-aggregate(table, by=list(t2g[rownames(table)]), FUN="sum")
 }
 
-# remove duplicate entries (due to exons)
-g2t <- g2t.map[!duplicated(g2t.map$transcript_id),c("gene_id","transcript_id")]
-#head(g2t)
-# merge the two matrices
-new.mat<-merge(tsv.mat,g2t,by.x=colnames(tsv.mat)[1],by.y="transcript_id",all.x=TRUE,sort=F)
-new.mat <- new.mat[new.mat$transcript_id %in% as.character(g2t$transcript_id),,drop=FALSE]  
-gene.not.found <- unique(new.mat[is.na(new.mat$gene_id),"transcript_id"])
-if ( length(gene.not.found) > 0) {
-  perror("Gene not found for ",length(gene.not.found)," transcripts")
-  print(head(as.character(gene.not.found)))
-  if (exit.on.error) q(status=1)
+## TODO: check the col names
+## save file
+if ( opt$is_mtx ) {
+    ##
+    filename <- write.mtx(new.mat,filename=gsub(".gz$","",opt$out),gzip=TRUE)
+} else {
+    ## this is probably not 100% ok...
+    df <- data.frame(new.mat)
+    if ( ncol(df)==2 && colnames(df)[2]=="V2" ) { col.names=FALSE } else { col.names=TRUE }
+    write.table(df,file=out.file,row.names=F,sep="\t",quote=FALSE,col.names=col.names)
+    filename <- out.file
 }
-#print(head(new.mat))
-#nrow(new.mat)
-# aggregate!
-cols2aggr <- colnames(new.mat)[! colnames(new.mat) %in% c(colnames(new.mat)[1],"gene_id","transcript_id")]
-a<-aggregate(new.mat[,cols2aggr], by=list(gene_id=new.mat$gene_id), "sum")
-
-# save file
-df <- data.frame(a)
-df <- df[,append("gene_id","x")]
-#head(df)
-
-#colnames(df) <- append("GENE",cols2aggr)
-write.table(df[,c("gene_id","x")],file=out.file,row.names=F,sep="\t",quote=FALSE,col.names=F)
-  
+pinfo("Saved ",filename)  
 q(status=0)
 
 
