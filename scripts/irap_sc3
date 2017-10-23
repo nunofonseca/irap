@@ -35,13 +35,13 @@ if ( IRAP.DIR == "" ) {
 source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
 pdebug.enabled <- TRUE
 #######################
-usage <- "irap_sc3 --in file --out out_file_prefix [options]"
+usage <- "irap_sc3 --ifile file --out out_file_prefix [options]"
 filenames <- c("ifile","lengths")
 
 option_list <- list(
     make_option(c("-i", "--ifile"), type="character", dest="ifile", help="TSV file name with the matrix with the counts per cell by gene/transcript."),
     make_option(c("--mtx"), action="store_true",default=FALSE,dest="is_mtx",help="The input file is in Matrix Market format. Default is TSV format."),
-    make_option(c("--tsv"), action="store_false",default=FALSE,dest="is_mtx",help="The input file is in Matrix Market format. Default is TSV format."),
+    make_option(c("--tsv"), action="store_false",default=FALSE,dest="is_mtx",help="The input file is in TSV format (default)."),
     make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name prefix."),
     make_option(c("-m", "--min_clusters"), type="numeric",default=1,help="Minimum number of clusters."),
     make_option(c("-M", "--max_clusters"), type="numeric",default=9,help="Maximum number of clusters."),
@@ -123,6 +123,14 @@ myRunTSNE <- function (object, reduction.use = "pca", cells.use = NULL, dims.use
 ## head(sc_example_counts)
 ## head(table)
 ##
+if ( opt$min_clusters<1 ) {
+    perror("Invalid --min_cluster value:",opt$min_clusters)
+    q(status=1)
+}
+if ( opt$max_clusters<opt$min_clusters ) {
+    perror("Invalid --max_cluster value:",opt$max_clusters)
+    q(status=1)
+}
 pinfo("Loading ",opt$ifile)
 if ( opt$is_mtx ) {
     table <- mtx.load(opt$ifile)
