@@ -1080,7 +1080,7 @@ STAGE3_S_TARGETS+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.trans
 STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.riu.$(quant_method).irap.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.riu.$(quant_method).irap.tsv) 
 
 # include the raw counts
-STAGE3_OUT_FILES+= $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).irap.tsv  $(name)/$(mapper)/$(quant_method)/transcripts.riu.$(quant_method).irap.tsv 
+STAGE3_OUT_FILES+= $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv  $(name)/$(mapper)/$(quant_method)/transcripts.riu.$(quant_method).irap.tsv 
 
 
 # useful functions
