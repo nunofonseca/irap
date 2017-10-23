@@ -125,6 +125,7 @@ def_index1?=undef
 def_index2?=undef
 def_index3?=undef
 def_known_umi_file?=
+def_known_cells_file?=
 
 barcode_min_qual?=10
 # ****************
@@ -580,7 +581,7 @@ ifdef se
  $(foreach l,$(se),$(call check_se_libname_ok,$(l)))
  $(foreach l,$(se),$(call check_param_ok,$(l)_rs))
  $(foreach l,$(se),$(call check_param_ok,$(l)_qual))
- $(foreach l,$(se),$(foreach bc,known_umi_file index1 index2 index3 umi_read umi_offset umi_size cell_read cell_offset cell_size sample_read sample_offset sample_size read1_offset read2_offset read1_size read2_size,$(eval $(l)_$(bc)=$(call check_bc_value_ok,$(l),$(bc)))))
+ $(foreach l,$(se),$(foreach bc,known_umi_file known_cells_file index1 index2 index3 umi_read umi_offset umi_size cell_read cell_offset cell_size sample_read sample_offset sample_size read1_offset read2_offset read1_size read2_size,$(eval $(l)_$(bc)=$(call check_bc_value_ok,$(l),$(bc)))))
  ifile_given=1
 endif
 
@@ -747,12 +748,12 @@ cell_filt_max_ERCC?=0.8  # maximum percentage of expression that may be atribute
 # pre-blacklisted cells
 cell_filt_controls?=   # file with the a known list of cells that should not be used in downstream analysis
 
-cell_filt_outliers?=y   # filter outliers based on the total number of counts (y|n)
+cell_filt_outliers?=y   # filter outliers based on the total number of counts/expr (y|n)
 ## Exclude outliers based on the 5*median absolute difference (like scater).
 
 cell_filt_min_expression?=1
 
-cell_filt_min_cell_expr?=50000 # minimum number of counts per cell
+cell_filt_min_cell_expr?=1000 # minimum number of counts per cell
 
 ########################
 ## Clustering
@@ -761,12 +762,28 @@ min_clusters?=2
 max_clusters?=2
 clustering_method:=sc3
 
+
 # Optional two column tsv file with cell annotations 
 # cells_samples_annotation=
 #
 
 # not used yet
 # valid_clustering_methods=sc3
+
+
+# dge files will be in mtx (MM) format
+ifeq ($(quant_method),umi_count)
+expr_format=mtx
+expr_ext=mtx.gz
+else
+ifeq ($(quant_method),umis)
+expr_format=mtx
+expr_ext=mtx
+else
+expr_format=tsv
+expr_ext=tsv
+endif
+endif
 
 #********
 # Threads
@@ -1530,6 +1547,7 @@ $(call get_param_value_pair,umi_read=,$(subst read,,$($(1)_umi_read))) $(call ge
 $(call get_param_value_pair,cell_read=,$(subst read,,$($(1)_cell_read))) $(call get_param_value_pair,cell_size=,$($(1)_cell_size))  $(call get_param_value_pair,cell_offset=,$($(1)_cell_offset)) \
 $(call get_param_value_pair,sample_read=,$(subst read,,$($(1)_sample_read))) $(call get_param_value_pair,sample_size=,$($(1)_sample_size))  $(call get_param_value_pair,sample_offset=,$($(1)_sample_offset)) \
  $(call get_param_value_pair,known_umi_file=,$($(1)_known_umi_file)) \
+ $(call get_param_value_pair,known_cells_file=,$($(1)_known_cells_file)) \
  $(call get_param_value_pair,index1=,$(notdir $($(1)_index1))) \
  $(call get_param_value_pair,index2=,$(notdir $($(1)_index2))) \
  $(call get_param_value_pair,index3=,$(notdir $($(1)_index3))) \
@@ -2028,7 +2046,7 @@ else
 ###################################
 # quantification enabled
 ###################################
-$(quant_method)_quant_files=$(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv $(call transcripts_quant_file)  $(call exons_quant_file) 
+$(quant_method)_quant_files=$(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).$(expr_ext) $(call transcripts_quant_file)  $(call exons_quant_file) 
 
 STAGE3_S_TARGETS+=$(call genes_quant_files) $(call transcripts_quant_files)  $(call exons_quant_files)
 
