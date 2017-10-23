@@ -476,7 +476,7 @@ counts2RPKMs <- function(count.matrix,annot.table=NULL) {
 # TUQ=True then it returns UQ-FPKM = UQ(FPKM) 
 # UQ=TUR then it returns FPKM-UQ (as described in PCAWG)
 countstable2rpkms <- function(table,lens,mass.labels=NULL,exitonerror=TRUE,UQ=FALSE,TUQ=FALSE) {
-  # check if there missing features
+    ## check if there missing features
     missing.feat <- (!rownames(table) %in% names(lens))
     
     if ( sum(missing.feat) ) {
@@ -1176,23 +1176,29 @@ fix.cufflinks.fpkms <- function(t,id.col=1,value.col=2) {
 
 #######################################################
 #
-write.tsv <- function(x,file,header=TRUE,rownames.label=NULL,fix=TRUE) {
-  #
-  if (!is.null(x)) {
-    if (!is.matrix(x)) {
-      x <- as.matrix(x)
+write.tsv <- function(x,file,header=TRUE,rownames.label=NULL,fix=TRUE,gzip=FALSE) {
+    ##
+    if (!is.null(x)) {
+        if (!is.matrix(x)) {
+            x <- as.matrix(x)
+        }
+        if (fix) {
+            x <- apply(x,c(1,2),gsub,pattern="'",replacement="")
+        }
+        if ( !is.null(rownames.label) ) {
+            y <- cbind(rownames(x),x)
+            colnames(y) <- append(rownames.label,colnames(x))
+            x <- y
+        }
     }
-    if (fix) {
-      x <- apply(x,c(1,2),gsub,pattern="'",replacement="")
+    if ( gzip ) {
+        con=gzfile(file,"w+")
+    } else {
+        con=file(file,"w+")
     }
-    if ( !is.null(rownames.label) ) {
-      y <- cbind(rownames(x),x)
-      colnames(y) <- append(rownames.label,colnames(x))
-      x <- y
-    }
-  }
-  write.table(x,file,sep="\t",row.names=F,col.names=header,quote=F)
-  invisible(1)
+    write.table(x,con,sep="\t",row.names=F,col.names=header,quote=F)
+    tryCatch(close(con),error=function(x) return(NULL))
+    invisible(1)
 }
 
 read.tsv <- function(file,header=T) {
@@ -1447,6 +1453,96 @@ qload.tsv <- function(f,header=NULL,comment.char="",nrows=-1L) {
     tryCatch(tsv.data <- read.table(f,sep = "\t", header=header, comment.char=comment.char, quote = "\"", nrows=nrows, check.names=FALSE),error=function(x) NULL)
   return(tsv.data)
 }
+
+## Load/save sparse matrix in Matrix Market  format (math.nist.gov/MatrixMarket/formats.htm)
+## returns NULL in case of failure
+mtx.load <- function(f,rows.file=NULL, cols.file=NULL,col.suffix="_cols",row.suffix="_rows") {
+    ##
+    library(Matrix)
+    ## handle gziped files
+    if ( sum(grep(".gz$",f)) ) {
+        con <- gzfile(f,"r")
+        col.suffix <- paste0(col.suffix,".gz")
+        row.suffix <- paste0(row.suffix,".gz")
+    } else {
+        con <- file(f,"r")
+    }
+    ## if the main file is compressed then the other two should also be
+    if (is.null(rows.file))
+        rows.file <- paste0(gsub(".gz$","",f),row.suffix)
+    if (is.null(cols.file))
+        cols.file <- paste0(gsub(".gz$","",f),col.suffix)
+
+    for (f1 in c(f, rows.file, cols.file) ) {
+        if ( ! file.exists(f1) ) {
+            pwarning("File ", f1, " not found");
+            return(NULL)
+        }
+    }
+    pinfo("Loading ",f)
+    mtx <- readMM(con)
+    pinfo("Read (rows, cols) :",paste(dim(mtx),collapse=","))
+    pinfo("Loading ",f,"...done.")
+    tryCatch(close(con),error=function(x) return(NULL))
+    ## read the extra files
+    rows.m <- qload.tsv(rows.file,header=FALSE)
+    if ( ncol(rows.m) > 2 ) {
+        perror("More than 2 columns found in ", rows.file," (expecting one or two columns)")
+        return(NULL)
+    }
+    rownames(mtx) <- as.character(rows.m[,ncol(rows.m)])
+    rows.m <- NULL
+    cols.m <- qload.tsv(cols.file,header=FALSE)
+    if ( ncol(cols.m) > 2 ) {
+        perror("More than 2 columns found in ", cols.file," (expecting one or two columns)")
+        return(NULL)
+    }
+    colnames(mtx) <- as.character(cols.m[,ncol(cols.m)])
+    cols.m <- NULL
+    ##head(mtx)    
+    return(mtx)    
+}
+##
+## Write a mtx file
+write.mtx <- function(mtx,filename,
+                      cols.filename=NULL,
+                      rows.filename=NULL,
+                      gzip=FALSE) {
+    if (is.null(cols.filename)) {
+        cols.filename <- paste0(filename,"_cols");
+    }
+    if (is.null(rows.filename)) {
+        rows.filename <- paste0(filename,"_rows");
+    }
+    if (gzip) {
+        #filename <- paste0(filename,".gz")
+        rows.filename <- gsub(".gz$","",rows.filename)
+        rows.filename <- paste0(rows.filename,".gz")
+        cols.filename <- gsub(".gz$","",cols.filename)
+        cols.filename <- paste0(cols.filename,".gz")
+    } else {
+        file.con <- filename
+    }
+    ##str(file.con)
+    library(Matrix)
+    pinfo("Writing to ",filename)
+    writeMM(mtx,filename)
+    if (gzip) system(paste0("gzip -f ",filename))
+    tryCatch(close(file.con),error=function(x) return(NULL))
+    pinfo("Writing to ",rows.filename)
+    write.tsv(data.frame(list(ids=seq(1,nrow(mtx)),lab=rownames(mtx))),header=FALSE,rownames.label=NULL,fix=FALSE,gzip=gzip,file=rows.filename)
+    pinfo("Writing to ",cols.filename)
+    write.tsv(data.frame(list(ids=seq(1,ncol(mtx)),lab=colnames(mtx))),header=FALSE,rownames.label=NULL,fix=FALSE,gzip=gzip,file=cols.filename)
+    if (gzip)
+        filename <- paste0(filename,".gz")
+    return(filename)
+}
+
+## convert a matrix into a MM (matrix Market object)
+mat2mtx <- function(mat,...) {
+    library(Matrix)
+    return(Matrix(data=mat,...))
+} 
 
 # load a file with a quant. matrix
 # returns NULL in case of failure
