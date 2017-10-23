@@ -30,7 +30,7 @@ $(mapTrans2gene): $(gtf_file_abspath)
 	genMapTrans2Gene -i $< -o $@.tmp -c $(max_threads) && mv $@.tmp $@
 
 ## Output files produced
-STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).tsv) 
+STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).$(expr_format)) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).$(expr_format)) 
 
 ## Quantification statistics
 a_quant_qc_stats:=
@@ -42,7 +42,7 @@ ifeq ($(transcript_quant),y)
 quant_qc_statst:= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).transcripts.raw.$(quant_method).quant_qc.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).quant_qc.tsv)
 a_quant_qc_stats+= $(quant_qc_statst)
 
-STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).tsv) 
+STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).$(expr_format)) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).$(expr_format)) 
 endif
 
 ifeq ($(exon_quant),y)
@@ -1076,19 +1076,18 @@ ifeq ($(transcript_quant),y)
 SETUP_DATA_FILES+=$(mapTrans2gene)
 
 
+$(name)/$(mapper)/$(quant_method)/%.transcripts.riu.$(quant_method).irap.$(expr_ext): $(name)/$(mapper)/$(quant_method)/%.transcripts.raw.$(quant_method).$(expr_ext) $(mapTrans2gene)
+	irap_transcript_gene_rel_expr --ifile $< --$(expr_format) --map $(mapTrans2gene) --cores $(max_threads)  --gene_col 1 --trans_col 2  --out $@ || (rm -f $@ && exit 1)
 
-$(name)/$(mapper)/$(quant_method)/%.transcripts.riu.$(quant_method).irap.tsv: $(name)/$(mapper)/$(quant_method)/%.transcripts.raw.$(quant_method).tsv $(mapTrans2gene)
-	irap_transcript_gene_rel_expr --tsv $<  --map $(mapTrans2gene) --cores $(max_threads)  --gene_col 1 --trans_col 2  --out $@.tmp && mv $@.tmp $@	
+$(name)/$(mapper)/$(quant_method)/transcripts.riu.$(quant_method).irap.$(expr_ext): $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.riu.$(quant_method).irap.$(expr_ext)) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.riu.$(quant_method).irap.$(expr_ext))
+	( $(call pass_args_stdin,irap_merge_$(expr_format).sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/$(quant_method)/transcripts.riu.$(quant_method).irap.tsv: $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.riu.$(quant_method).irap.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.riu.$(quant_method).irap.tsv)
-	( $(call pass_args_stdin,irap_merge_tsv.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
-
-$(name)/$(mapper)/$(quant_method)/%.transcripts.dt.$(quant_method).irap.tsv: $(name)/$(mapper)/$(quant_method)/%.transcripts.riu.$(quant_method).irap.tsv  $(mapTrans2gene)
-	irap_riu2dominant --fc $(dt_fc) -i $< --map $(mapTrans2gene) --cores $(max_threads) --gene_col 1 --trans_col 2  --out $@.tmp && mv $@.tmp $@
+$(name)/$(mapper)/$(quant_method)/%.transcripts.dt.$(quant_method).irap.$(expr_ext): $(name)/$(mapper)/$(quant_method)/%.transcripts.riu.$(quant_method).irap.$(expr_ext)  $(mapTrans2gene)
+	irap_riu2dominant --fc $(dt_fc) -i $< --$(expr_format) --map $(mapTrans2gene) --cores $(max_threads) --gene_col 1 --trans_col 2  --out $@ || (rm -f $@ && exit 1)
 
 # dominant transcript
-$(name)/$(mapper)/$(quant_method)/transcripts.dt.$(quant_method).irap.tsv:$(name)/$(mapper)/$(quant_method)/transcripts.riu.$(quant_method).irap.tsv $(mapTrans2gene)
-	irap_riu2dominant --fc $(dt_fc) -i $< --map $(mapTrans2gene) --cores $(max_threads) --gene_col 1 --trans_col 2  --out $@.tmp && mv $@.tmp $@
+$(name)/$(mapper)/$(quant_method)/transcripts.dt.$(quant_method).irap.$(expr_ext):$(name)/$(mapper)/$(quant_method)/transcripts.riu.$(quant_method).irap.$(expr_ext) $(mapTrans2gene)
+	irap_riu2dominant --fc $(dt_fc) -i $< --$(expr_format) --$(expr_format) --map $(mapTrans2gene) --cores $(max_threads) --gene_col 1 --trans_col 2  --out $@ || (rm -f $@ && exit 1)
 
 
 
@@ -1105,19 +1104,19 @@ STAGE3_S_TARGETS+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.trans
 
 
 # riu files are always produced
-STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.riu.$(quant_method).irap.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.riu.$(quant_method).irap.tsv) 
+STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.riu.$(quant_method).irap.$(expr_ext)) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.riu.$(quant_method).irap.$(expr_ext)) 
 
 # include the raw counts
-STAGE3_S_OFILES+= $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).irap.tsv  $(name)/$(mapper)/$(quant_method)/transcripts.riu.$(quant_method).irap.tsv 
+STAGE3_S_OFILES+= $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).$(expr_ext)  $(name)/$(mapper)/$(quant_method)/transcripts.riu.$(quant_method).irap.$(expr_ext)
 
 
 # useful functions
 define transcripts_quant_file=
-$(if $(filter y,$(transcript_quant)),$(name)/$(mapper)/$(quant_method)/transcripts.$(trans_file_target).$(quant_method).irap.tsv $(name)/$(mapper)/$(quant_method)/transcripts.$(trans_file_target).$(quant_method).irap.tsv,)
+$(if $(filter y,$(transcript_quant)),$(name)/$(mapper)/$(quant_method)/transcripts.$(trans_file_target).$(quant_method).irap.$(expr_ext) $(name)/$(mapper)/$(quant_method)/transcripts.$(trans_file_target).$(quant_method).irap.$(expr_ext),)
 endef
 
 define transcripts_quant_files=
-$(if $(filter y,$(transcript_quant)),$(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.$(trans_file_target).$(quant_method).irap.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.$(trans_file_target).$(quant_method).irap.tsv),)
+$(if $(filter y,$(transcript_quant)),$(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.$(trans_file_target).$(quant_method).irap.$(expr_ext)) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.$(trans_file_target).$(quant_method).irap.$(expr_ext)),)
 endef
 
 
@@ -1126,9 +1125,9 @@ endef
 # Atlas specific - get fpkms and tpms
 ifdef atlas_run
 # 
-STAGE3_S_TARGETS+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.fpkm.$(quant_method).irap.tsv $(call lib2quant_folder,$(p))$(p).pe.transcripts.tpm.$(quant_method).irap.tsv) $(foreach s,$(se),  $(call lib2quant_folder,$(s))$(s).se.transcripts.fpkm.$(quant_method).irap.tsv $(call lib2quant_folder,$(s))$(s).se.transcripts.tpm.$(quant_method).irap.tsv)
+STAGE3_S_TARGETS+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.fpkm.$(quant_method).irap.$(expr_ext) $(call lib2quant_folder,$(p))$(p).pe.transcripts.tpm.$(quant_method).irap.$(expr_ext)) $(foreach s,$(se),  $(call lib2quant_folder,$(s))$(s).se.transcripts.fpkm.$(quant_method).irap.$(expr_ext) $(call lib2quant_folder,$(s))$(s).se.transcripts.tpm.$(quant_method).irap.$(expr_ext))
 # include fpkm/TPMs 
-STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.fpkm.$(quant_method).irap.tsv $(call lib2quant_folder,$(p))$(p).pe.transcripts.tpm.$(quant_method).irap.tsv) $(foreach s,$(se),  $(call lib2quant_folder,$(s))$(s).se.transcripts.fpkm.$(quant_method).irap.tsv $(call lib2quant_folder,$(s))$(s).se.transcripts.tpm.$(quant_method).irap.tsv)
+STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.fpkm.$(quant_method).irap.$(expr_ext) $(call lib2quant_folder,$(p))$(p).pe.transcripts.tpm.$(quant_method).irap.$(expr_ext)) $(foreach s,$(se),  $(call lib2quant_folder,$(s))$(s).se.transcripts.fpkm.$(quant_method).irap.$(expr_ext) $(call lib2quant_folder,$(s))$(s).se.transcripts.tpm.$(quant_method).irap.$(expr_ext))
 endif
 
 else
@@ -1142,14 +1141,14 @@ endif
 
 ##################################
 ## collect QC stats
-$(name)/$(mapper)/$(quant_method)/%.genes.raw.$(quant_method).quant_qc.tsv: $(name)/$(mapper)/$(quant_method)/%.genes.raw.$(quant_method).tsv
-	irap_quant_qc --tsv $< --feature gene --metric raw --gtf $(gtf_file_abspath) --out $@.tmp && mv $@.tmp $@
+$(name)/$(mapper)/$(quant_method)/%.genes.raw.$(quant_method).quant_qc.tsv: $(name)/$(mapper)/$(quant_method)/%.genes.raw.$(quant_method).$(expr_ext)
+	irap_quant_qc --ifile $<  --feature gene --$(expr_format) --metric raw --gtf $(gtf_file_abspath) --out $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/$(quant_method)/%.exons.raw.$(exon_quant_method).quant_qc.tsv: $(name)/$(mapper)/$(quant_method)/%.exons.raw.$(exon_quant_method).tsv
-	irap_quant_qc --tsv $< --feature exon --metric raw --gtf $(gtf_file_abspath) --out $@.tmp && mv $@.tmp $@
+$(name)/$(mapper)/$(quant_method)/%.exons.raw.$(exon_quant_method).quant_qc.tsv: $(name)/$(mapper)/$(quant_method)/%.exons.raw.$(exon_quant_method).$(expr_ext)
+	irap_quant_qc --ifile $< --feature exon --metric raw --$(expr_format) --gtf $(gtf_file_abspath) --out $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/$(quant_method)/%.transcripts.raw.$(quant_method).quant_qc.tsv: $(name)/$(mapper)/$(quant_method)/%.transcripts.raw.$(quant_method).tsv
-	irap_quant_qc --tsv $< --feature transcript --metric raw --gtf $(gtf_file_abspath) --out $@.tmp && mv $@.tmp $@
+$(name)/$(mapper)/$(quant_method)/%.transcripts.raw.$(quant_method).quant_qc.tsv: $(name)/$(mapper)/$(quant_method)/%.transcripts.raw.$(quant_method).$(expr_ext)
+	irap_quant_qc --ifle $< --feature transcript --$(expr_format) --metric raw --gtf $(gtf_file_abspath) --out $@.tmp && mv $@.tmp $@
 
 #####################################
 ##
