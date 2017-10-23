@@ -36,11 +36,13 @@ source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
 pdebug.enabled <- TRUE
 #######################
 usage <- "irap_cell_qc --tsv file --out out_file_prefix [options]"
-filenames <- c("tsv_file","controls_file")
+filenames <- c("ifile","controls_file")
 
 ## 
 option_list <- list(
-    make_option(c("-i", "--tsv"), type="character", dest="tsv_file", help="TSV file name with the matrix with the counts per cell by gene/transcript."),
+    make_option(c("-i", "--in"), type="character", dest="ifile", help="TSV/MTX file name with the matrix with the counts per cell by gene/transcript."),
+    make_option(c("--mtx"), action="store_true",default=FALSE,dest="is_mtx",help="The input file is in Matrix Market format. Default is TSV format."),
+    make_option(c("--tsv"), action="store_true",default=FALSE,dest="is_mtx",help="The input file is in Matrix Market format. Default is TSV format."),
     make_option(c("-c", "--controls"), type="character", default=NULL,dest="controls_file", help="File with a known list of cells that should be discarded."),
     make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name prefix."),
     make_option(c("-f", "--min_features"), type="numeric",default=0,help="Minimum number of features expressed. (as a percentage of the total number of features)"),
@@ -58,7 +60,7 @@ option_list <- list(
 ##  metric=c('rpkm','tpm','fpkm','fpkm-uq','uq-fpkm')
 ##  )
 multiple.options <- NULL
-mandatory <- c("tsv_file","out")
+mandatory <- c("ifile","out")
 
 #pinfo("saved")
 opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
@@ -88,9 +90,14 @@ if ( opt$min_counts<0 ) {
     quit(status=1)
 }
 ##
-pinfo("Loading ",opt$tsv_file)
-table <- quant.load(opt$tsv_file)
-pinfo("Loading ",opt$tsv_file," done.")
+pinfo("Loading ",opt$ifile)
+##
+if ( opt$is_mtx ) {
+    table <- mtx.load(opt$ifile)
+} else {
+    table <- quant.load(opt$ifile)
+}
+pinfo("Loading ",opt$ifile," done.")
 
 pdebug.save.state("irap_cell_qc","p1")
 suppressPackageStartupMessages(library(scater))
@@ -146,8 +153,8 @@ min.counts <- pData(sceset)$total_counts
 names(min.counts) <- rownames(pData(sceset)$total_counts)
 min.counts.status <- min.counts
 min.counts.status[min.counts.status<=opt$min_counts]<- "FAIL"
-min.counts.status[min.counts.status>opt$min_counts] <- "PASS"
-
+min.counts.status[min.counts.status!="FAIL"] <- "PASS"
+table(min.counts.status)
 
 ## generate a single matrix
 df <- data.frame(list(controls=control.status,
@@ -174,6 +181,7 @@ if (num.failed>0) {
 }
 
 pinfo("Saving to ",opt$out)
+## opt$is_mtx 
 write.tsv(df,file=opt$out,header=T)
 
 ## save a few summary stats
