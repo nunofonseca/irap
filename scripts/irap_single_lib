@@ -580,6 +580,15 @@ else
 		perror "Generation of CRAM file failed"
 		exit 1
 	    fi
+	    # 2017-09-28
+	    # Check if cram is ok
+	    pinfo "Comparing CRAM to BAM..."
+	    cram_n=$(samtools view -c  $odir/$f1_bn.cram)
+	    bam_n=$(samtools view -c  $odir/$f1_bn.bam)
+	    if [ $cram_n  -ne $bam_n ]; then
+		perror "Generation of CRAM file failed (number of entries in BAM and CRAM differ - $bam_n!=$cram_n)"
+		exit 1
+	    fi	    		 
 	    pinfo "CRAMMING...done."
 	    
 	    mv $odir/$f1_bn.cram $CRAM_FILE
