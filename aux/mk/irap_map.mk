@@ -1081,9 +1081,6 @@ define run_kallisto_map=
 	mv $(call lib2bam_folder,$(1))$(1)/$(1).bam $(3)	
 endef
 
-
-
-
 ########################################################################
 ifeq ($(mapper),tophat2)
 define tophat2_index_filenames=
