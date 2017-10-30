@@ -1479,10 +1479,8 @@ mtx.load <- function(f,rows.file=NULL, cols.file=NULL,col.suffix="_cols",row.suf
             return(NULL)
         }
     }
-    pinfo("Loading ",f)
     mtx <- readMM(con)
-    pinfo("Read (rows, cols) :",paste(dim(mtx),collapse=","))
-    pinfo("Loading ",f,"...done.")
+    pinfo("Read ",f,"(rows, cols) :",paste(dim(mtx),collapse=","))
     tryCatch(close(con),error=function(x) return(NULL))
     ## read the extra files
     rows.m <- qload.tsv(rows.file,header=FALSE)
@@ -1508,11 +1506,15 @@ write.mtx <- function(mtx,filename,
                       cols.filename=NULL,
                       rows.filename=NULL,
                       gzip=FALSE) {
+    fname.pref <- filename
+    if (gzip) {
+        fname.pref <- gsub(".gz$","",filename)
+    }
     if (is.null(cols.filename)) {
-        cols.filename <- paste0(filename,"_cols");
+        cols.filename <- paste0(fname.pref,"_cols");
     }
     if (is.null(rows.filename)) {
-        rows.filename <- paste0(filename,"_rows");
+        rows.filename <- paste0(fname.pref,"_rows");
     }
     if (gzip) {
         #filename <- paste0(filename,".gz")
@@ -1525,16 +1527,21 @@ write.mtx <- function(mtx,filename,
     }
     ##str(file.con)
     library(Matrix)
-    pinfo("Writing to ",filename)
-    writeMM(mtx,filename)
-    if (gzip) system(paste0("gzip -f ",filename))
+    
+    pinfo("Writing to ",fname.pref)
+    writeMM(mtx,fname.pref)
+    if (gzip) {
+        system(paste0("gzip -f ",fname.pref))
+        pinfo("File compressed ",filename)
+        ##system(paste0("mv ",fname.pref,".gz ",filename))        
+    }
     tryCatch(close(file.con),error=function(x) return(NULL))
     pinfo("Writing to ",rows.filename)
     write.tsv(data.frame(list(ids=seq(1,nrow(mtx)),lab=rownames(mtx))),header=FALSE,rownames.label=NULL,fix=FALSE,gzip=gzip,file=rows.filename)
     pinfo("Writing to ",cols.filename)
     write.tsv(data.frame(list(ids=seq(1,ncol(mtx)),lab=colnames(mtx))),header=FALSE,rownames.label=NULL,fix=FALSE,gzip=gzip,file=cols.filename)
-    if (gzip)
-        filename <- paste0(filename,".gz")
+    #if (gzip)
+    #    filename <- paste0(filename,".gz")
     return(filename)
 }
 
