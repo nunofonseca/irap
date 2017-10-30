@@ -215,82 +215,82 @@ license=This pipeline is distributed  under the terms of the GNU General Public 
 ################################################################################
 # Default values
 ################################################################################
-def_gse_tool=none
+def_gse_tool?=none
 
 # max. memory (in MB)
-def_max_mem=6000
+def_max_mem?=6000
 
 #Contamination file
-def_cont_index=$(data_dir)/contamination/e_coli
+def_cont_index?=$(data_dir)/contamination/e_coli
 
 #Default number of threads to run on a computer farm
-def_max_threads=1
+def_max_threads?=1
 
 #Minimal base quality accepted
-def_min_read_quality=10
+def_min_read_quality?=10
 
 # Trim poly-A/T? y|n
-def_trim_poly_at=n
+def_trim_poly_at?=n
 
 # minimum poly-at length
 # by default, if a read has at least 10 consecutive A or T in the edges then it will be trimmed. This option is only used if trim_poly_at is set to y
-def_trim_poly_at_len=10
+def_trim_poly_at_len?=10
 
 #Trim all reads to the minimum read size after quality trimming - y/n
-def_trim_reads=y
+def_trim_reads?=y
 
 # none is being kept for backwards compatibility
 # Quality filtering - on/report/off/none (alias: qc)
-def_qual_filtering=on
+def_qual_filtering?=on
 
 # Mapper to use in QC contamination check 
-def_cont_mapper=bowtie
+def_cont_mapper?=bowtie
 
 #Software for mapping (reads -> genome/transcriptome)
-def_mapper=tophat2
-def_mapper_splicing=yes
+def_mapper?=tophat2
+def_mapper_splicing?=yes
 
 #Software for differential expression
-def_de_method=none
+def_de_method?=none
 
 #Is the experiment designed to compare the results of different mappers? yes|no => undef conditions|contrasts
-def_mapper_comparison=no
+def_mapper_comparison?=no
 
 # default method to count reads mapped to features (genes, exons, ...)
-def_quant_method=htseq2
+def_quant_method?=htseq2
 
 # default method to normalize the expression values
-def_quant_norm_method=none
+def_quant_norm_method?=none
 
 # default tool to compute the normalized expression values
-def_quant_norm_tool=none
+def_quant_norm_tool?=none
 
 # produce quantification per exon? default is gene level or transcript level depending on the method used
-def_exon_quant=n
-def_transcript_quant=n
+def_exon_quant?=n
+def_transcript_quant?=n
 
 # maximum number of hits reported by the mapper
-def_max_hits=10
+def_max_hits?=10
 
 # fix NH flags in bam files
-def_fix_NH=y
+def_fix_NH?=y
 
 # use only a subset of the genes in the DE analysis (y|n)
-def_de_annot_genes_only=n
+def_de_annot_genes_only?=n
 
 # Htseq - produce a sam file with annotations?y/n
-htseq_sam_output_def=n
+htseq_sam_output_def?=n
 
 # Dominant transcript fold-change - no (n) to disables it
 # only used if transcript quantification is y
-dt_fc=2
+dt_fc?=2
 
 # DE
-def_de_pvalue_cutoff=0.05
-def_de_num_genes_per_table=300
+def_de_pvalue_cutoff?=0.05
+def_de_num_genes_per_table?=300
 
 #def_annot_tsv=auto
-def_annot_tsv=off
+def_annot_tsv?=off
 
 CSS_FILE?=irap.css
 
@@ -768,20 +768,20 @@ clustering_method:=sc3
 #
 
 # not used yet
-# valid_clustering_methods=sc3
+# valid_clustering_methods=sc3 none
 
 
 # dge files will be in mtx (MM) format
 ifeq ($(quant_method),umi_count)
-expr_format=mtx
-expr_ext=mtx.gz
+expr_format?=mtx
+expr_ext?=mtx.gz
 else
 ifeq ($(quant_method),umis)
-expr_format=mtx
-expr_ext=mtx
+expr_format?=mtx
+expr_ext?=mtx
 else
-expr_format=tsv
-expr_ext=tsv
+expr_format?=tsv
+expr_ext?=tsv
 endif
 endif
 
@@ -954,6 +954,8 @@ ifndef exon_quant_method
 exon_quant_method=dexseq
 endif
 
+
+## use a method that supports transcript quantification
 ifndef transcript_quant
 transcript_quant=$(def_transcript_quant)
 ifneq (,$(filter $(quant_method),$(TRANS_QUANT_METHODS)))
@@ -962,7 +964,12 @@ override transcript_quant:=y
 endif
 endif
 
-
+## a transcript quantification method may be used but we do not care
+## about the transcript expression - just flag this to skip a few
+## steps
+ifeq ($(transcript_quant),y)
+transcript_expr?=y
+endif
 
 $(info *	exon_quant=$(exon_quant))
 ifeq ($(exon_quant),y)
@@ -1662,7 +1669,7 @@ endef
 
 # TSV (with feature value) is converted to bedGraph (http://genome.ucsc.edu/goldenPath/help/bedgraph.html)
 # bedGraph generated is sorted
-%.bedGraph: %.tsv $(gff3_file_abspath).csv $(name)/data/$(reference_basename).chr_sizes.txt
+%.bedGraph: %.$(expr_ext) $(gff3_file_abspath).csv $(name)/data/$(reference_basename).chr_sizes.txt
 	tsv2bed.R $<  $(call quant_levelFromFilename,$*) $(gff3_file_abspath).csv $(name)/data/$(reference_basename).chr_sizes.txt | \
 	sort -k1,1 -k2,2n | \
 	bedtools merge -scores mean -i - > $@.tmp &&\
@@ -1889,14 +1896,14 @@ do_qc: $(STAGE1_OUT_FILES)
 # Preprocessing of the input files (.fastq/.bam), QC, filtering
 
 define make-pe-qc-rule=
-$(info $(call lib2filt_folder,$(1))$(1)_1.f.fastq.gz $(call lib2filt_folder,$(1))$(1)_2.f.fastq.gz: $(raw_data_dir)$($(1)_dir)/$(notdir $(word 1,$($(1))))  $(raw_data_dir)$($(1)_dir)/$(notdir $(word 2,$($(1)))))
+##$(info $(call lib2filt_folder,$(1))$(1)_1.f.fastq.gz $(call lib2filt_folder,$(1))$(1)_2.f.fastq.gz: $(raw_data_dir)$($(1)_dir)/$(notdir $(word 1,$($(1))))  $(raw_data_dir)$($(1)_dir)/$(notdir $(word 2,$($(1)))))
 $(call lib2filt_folder,$(1))$(1)_1.f.fastq.gz $(call lib2filt_folder,$(1))$(1)_2.f.fastq.gz: $(raw_data_dir)$($(1)_dir)/$(notdir $(word 1,$($(1))))  $(raw_data_dir)$($(1)_dir)/$(notdir $(word 2,$($(1))))
 	$$(call p_info,Filtering $(call fix_libname,$(1)))
 	$$(call do_quality_filtering_and_report,$(call fix_libname,$(1)),$(raw_data_dir)$($(1)_dir),$$(@D),) || (rm -f $$@ && exit 1)
 endef
 
 define make-se-qc-rule=
-$(info $(call lib2filt_folder,$(1))$(1).f.fastq.gz: $(raw_data_dir)$($(1)_dir)/$(notdir $($(1))))
+##$(info $(call lib2filt_folder,$(1))$(1).f.fastq.gz: $(raw_data_dir)$($(1)_dir)/$(notdir $($(1))))
 $(call lib2filt_folder,$(1))$(1).f.fastq.gz: $(raw_data_dir)$($(1)_dir)/$(notdir $($(1)))
 	$$(call p_info,Filtering $(call fix_libname,$(1)))
 	$$(call do_quality_filtering_and_report,$(1),$(raw_data_dir)$($(1)_dir),$$(@D),) || (rm -f $$@ && exit 1)
@@ -2009,15 +2016,15 @@ $(name)/data/%_int.f.fastq: $(name)/data/%_1.f.fastq $(name)/data/%_2.f.fastq
 ################################################################################
 
 define genes_quant_files=
-$(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).tsv)
+$(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).$(expr_ext)) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).$(expr_ext))
 endef
 
 define exons_quant_file=
-$(if $(filter y,$(exon_quant)),$(name)/$(mapper)/$(quant_method)/exons.raw.$(exon_quant_method).tsv,)
+$(if $(filter y,$(exon_quant)),$(name)/$(mapper)/$(quant_method)/exons.raw.$(exon_quant_method).$(expr_ext),)
 endef
 
 define exons_quant_files=
-$(if $(filter y,$(exon_quant)),$(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.exons.raw.$(exon_quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.exons.raw.$(exon_quant_method).tsv),)
+$(if $(filter y,$(exon_quant)),$(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.exons.raw.$(exon_quant_method).$(expr_ext)) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.exons.raw.$(exon_quant_method).$(expr_ext)),)
 endef
 
 
@@ -2228,7 +2235,7 @@ stage3a: setup $(quant_method)_quant
 stage3as: setup quantification_s
 #stage3b: setup stage3a
 # deprecated
-stage3b: setup $(shell rm -f $(name)/$(mapper)/$(quant_method)/rawcounts.$(quant_method).tsv) stage3a
+stage3b: setup $(shell rm -f $(name)/$(mapper)/$(quant_method)/rawcounts.$(quant_method).$(expr_ext)) stage3a
 stage4: setup $(STAGE4_OUT_FILES)
 stage5: setup $(STAGE5_OUT_FILES)
 
@@ -2273,7 +2280,7 @@ $(foreach f,$(1), $(if $(call is_empty_file,$(f)),,$(f)))
 endef
 
 define stage3_tracks_targets=
-$(subst .tsv,.tsv.tracks,$(call exclude_empty,$(STAGE3_TSV_FILES)))
+$(subst .$(expr_ext),.$(expr_ext).tracks,$(call exclude_empty,$(STAGE3_TSV_FILES)))
 endef
 
 stage3_tracks: $(call stage3_tracks_targets)
@@ -2282,7 +2289,7 @@ stage3_tracks: $(call stage3_tracks_targets)
 stage3_upload_tracks: $(subst .tracks,.tracks.uploaded,$(stage3_tracks_targets))
 	$(call p_info,[DONE] Uploaded stage 3 tracks)
 
-stage4_tracks_targets=$(subst .tsv,.tsv.tracks,$(STAGE4_OUT_FILES))
+stage4_tracks_targets=$(subst .$(expr_ext),.$(expr_ext).tracks,$(STAGE4_OUT_FILES))
 
 stage4_tracks: $(stage4_tracks_targets)
 	$(call p_info,[DONE] Generated stage 4 tracks)
