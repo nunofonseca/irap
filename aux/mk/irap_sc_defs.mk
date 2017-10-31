@@ -47,7 +47,7 @@ def_sample_read=index2
 def_sample_offset=0
 def_sample_size=8
 ## not 100% sure that the file is correct
-def_known_umi_file=$(IRAP_DIR)/data/10x/737K-august-2016.txt.gz
+def_known_umi_file=$(IRAP_DIR)/data/10x/737K-august-2016.txt
 endif
 
 # files obtained from the 10x website
@@ -72,7 +72,7 @@ def_sample_size=8
 
 ## not 100% sure that the file is the correct one for 10xv1
 def_known_umi_file=
-def_known_cells_file=$(IRAP_DIR)/data/10x/737K-april-2016.txt.gz
+def_known_cells_file=$(IRAP_DIR)/data/10x/737K-april-2016.txt
 
 $(info set 10x_v1p)
 endif
@@ -95,6 +95,10 @@ def_cell_size=16
 def_sample_read=index2
 def_sample_offset=0
 def_sample_size=8
+
+## not 100% sure that the file is the correct one for 10xv1
+def_known_cells_file=$(IRAP_DIR)/data/10x/737K-august-2016.txt
+
 endif
 
 
