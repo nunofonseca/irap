@@ -25,26 +25,33 @@
 ##
 ifeq ($(rnaseq_type),sc)
 
+clustering_files=
+all_clustering_files=
+ifneq ($(clustering_method),none)
 # always based on gene expression
-clustering_files=$(name)/$(mapper)/$(quant_method)/$(clustering_method)/genes.raw.filtered.$(quant_method).irap.clusters.tsv
-ifeq ($(transcript_quant),y)
+clustering_files=$(name)/$(mapper)/$(quant_method)/$(clustering_method)/genes.raw.filtered.$(quant_method).clusters.tsv
+ifeq ($(transcript_expr),y)
 # if transcript quantification is available then also generate clusters based on transcript quantification
-clustering_files+=$(name)/$(mapper)/$(quant_method)/$(clustering_method)/transcripts.raw.filtered.$(quant_method).irap.clusters.tsv
+clustering_files+=$(name)/$(mapper)/$(quant_method)/$(clustering_method)/transcripts.raw.filtered.$(quant_method).clusters.tsv
+endif
 endif
 
-all_clustering_files=
+
+
 
 # generate the QC files
 clustering: $(clustering_files)
 
 
+## SC3 rules
 # also generates _marker_genes.tsv for each k
 # and multiple files with the coordinates of TSNe based on different perplexity values - tsne_perp_PERP_VAL.tsv
-$(name)/$(mapper)/$(quant_method)/sc3/genes.raw.filtered.$(quant_method).irap.clusters.tsv: $(name)/$(mapper)/$(quant_method)/genes.raw.filtered.$(quant_method).irap.tsv 
-	irap_sc3 --tsv $< --out $(name)/$(mapper)/$(quant_method)/sc3/genes.raw.$(quant_method).qc --min_clusters $(min_clusters) --max_clusters $(max_clusters) --max_threads $(max_threads) && mv $(name)/$(mapper)/$(quant_method)/sc3/genes.raw.$(quant_method).qc_clusters.tsv $@
+$(name)/$(mapper)/$(quant_method)/sc3/genes.raw.filtered.$(quant_method).clusters.tsv: $(name)/$(mapper)/$(quant_method)/genes.raw.filtered.$(quant_method).$(expr_ext) 
+	irap_sc3 -i $< --$(expr_format) --out $(name)/$(mapper)/$(quant_method)/sc3/genes.raw.filtered.$(quant_method).irap --min_clusters $(min_clusters) --max_clusters $(max_clusters) --max_threads $(max_threads) && mv  $(name)/$(mapper)/$(quant_method)/sc3/genes.raw.$(quant_method).irap_clusters.tsv $@
 
-$(name)/$(mapper)/$(quant_method)/sc3/transcripts.raw.filtered.$(quant_method).irap.clusters.tsv: $(name)/$(mapper)/$(quant_method)/transcripts.raw.filtered.$(quant_method).irap.tsv 
-	irap_sc3 --tsv $< --out $(name)/$(mapper)/$(quant_method)/sc3/transcripts.raw.$(quant_method).qc --min_clusters $(min_clusters) --max_clusters $(max_clusters) --max_threads $(max_threads) && mv $(name)/$(mapper)/$(quant_method)/sc3/transcripts.raw.$(quant_method).qc_clusters.tsv $@
+$(name)/$(mapper)/$(quant_method)/sc3/transcripts.raw.filtered.$(quant_method).clusters.tsv: $(name)/$(mapper)/$(quant_method)/transcripts.raw.filtered.$(quant_method).$(expr_ext) 
+	irap_sc3 -i $< --$(expr_format) --out $(name)/$(mapper)/$(quant_method)/sc3/transcripts.raw.$(quant_method).irap --min_clusters $(min_clusters) --max_clusters $(max_clusters) --max_threads $(max_threads) && mv $(name)/$(mapper)/$(quant_method)/sc3/transcripts.raw.$(quant_method).irap_clusters.tsv $@
+
 
 # STAGE4_OFILES+=
 # STAGE4_TARGETS+=

@@ -30,7 +30,7 @@ $(mapTrans2gene): $(gtf_file_abspath)
 	genMapTrans2Gene -i $< -o $@.tmp -c $(max_threads) && mv $@.tmp $@
 
 ## Output files produced
-STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).$(expr_format)) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).$(expr_format)) 
+STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).$(expr_ext)) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).$(expr_ext)) 
 
 ## Quantification statistics
 a_quant_qc_stats:=
@@ -38,11 +38,11 @@ quant_qc_stats:=$(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.genes.ra
 
 a_quant_qc_stats+= $(quant_qc_stats)
 
-ifeq ($(transcript_quant),y)
+ifeq ($(transcript_expr),y)
 quant_qc_statst:= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).transcripts.raw.$(quant_method).quant_qc.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).quant_qc.tsv)
 a_quant_qc_stats+= $(quant_qc_statst)
 
-STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).$(expr_format)) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).$(expr_format)) 
+STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).$(expr_ext)) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).$(expr_ext)) 
 endif
 
 ifeq ($(exon_quant),y)
@@ -1079,35 +1079,51 @@ SETUP_DATA_FILES+=$(mapTrans2gene)
 $(name)/$(mapper)/$(quant_method)/%.transcripts.riu.$(quant_method).irap.$(expr_ext): $(name)/$(mapper)/$(quant_method)/%.transcripts.raw.$(quant_method).$(expr_ext) $(mapTrans2gene)
 	irap_transcript_gene_rel_expr --ifile $< --$(expr_format) --map $(mapTrans2gene) --cores $(max_threads)  --gene_col 1 --trans_col 2  --out $@ || (rm -f $@ && exit 1)
 
-$(name)/$(mapper)/$(quant_method)/transcripts.riu.$(quant_method).irap.$(expr_ext): $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.riu.$(quant_method).irap.$(expr_ext)) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.riu.$(quant_method).irap.$(expr_ext))
-	( $(call pass_args_stdin,irap_merge_$(expr_format).sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
+$(name)/$(mapper)/$(quant_method)/transcripts.riu.$(quant_method).irap.tsv: $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.riu.$(quant_method).irap.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.riu.$(quant_method).irap.tsv)
+	( $(call pass_args_stdin,irap_merge_tsv.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/$(quant_method)/transcripts.riu.$(quant_method).irap.mtx.gz: $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.riu.$(quant_method).irap.mtx.gz) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.riu.$(quant_method).irap.mtx.gz)
+	( $(call pass_args_stdin,irap_merge_mtx,$@,-o $@ --in $^) ) || ( rm -f $@ || exit 1 )
+
 
 $(name)/$(mapper)/$(quant_method)/%.transcripts.dt.$(quant_method).irap.$(expr_ext): $(name)/$(mapper)/$(quant_method)/%.transcripts.riu.$(quant_method).irap.$(expr_ext)  $(mapTrans2gene)
 	irap_riu2dominant --fc $(dt_fc) -i $< --$(expr_format) --map $(mapTrans2gene) --cores $(max_threads) --gene_col 1 --trans_col 2  --out $@ || (rm -f $@ && exit 1)
 
 # dominant transcript
 $(name)/$(mapper)/$(quant_method)/transcripts.dt.$(quant_method).irap.$(expr_ext):$(name)/$(mapper)/$(quant_method)/transcripts.riu.$(quant_method).irap.$(expr_ext) $(mapTrans2gene)
-	irap_riu2dominant --fc $(dt_fc) -i $< --$(expr_format) --$(expr_format) --map $(mapTrans2gene) --cores $(max_threads) --gene_col 1 --trans_col 2  --out $@ || (rm -f $@ && exit 1)
+	irap_riu2dominant --fc $(dt_fc) -i $<  --$(expr_format) --map $(mapTrans2gene) --cores $(max_threads) --gene_col 1 --trans_col 2  --out $@ || (rm -f $@ && exit 1)
 
+# include the raw counts
+ifeq ($(transcript_expr),n)
 
+define transcripts_quant_file=
+endef
+define transcripts_quant_files=
+endef
+else
+
+STAGE3_S_OFILES+= $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).$(expr_ext)
 
 # do not get the dominant transcript
 ifeq ($(dt_fc),n)
+
 trans_file_target=riu
 else
 trans_file_target=dt
-STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.dt.$(quant_method).irap.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.dt.$(quant_method).irap.tsv)
+# include riu files are part of the set of files produced in stage3 
+STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.riu.$(quant_method).irap.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.riu.$(quant_method).irap.tsv)
 endif
 
 
-STAGE3_S_TARGETS+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.$(trans_file_target).$(quant_method).irap.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.$(trans_file_target).$(quant_method).irap.tsv) 
+STAGE3_S_TARGETS+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.$(trans_file_target).$(quant_method).irap.$(expr_ext)) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.$(trans_file_target).$(quant_method).irap.$(expr_ext)) 
 
 
 # riu files are always produced
 STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.riu.$(quant_method).irap.$(expr_ext)) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.riu.$(quant_method).irap.$(expr_ext)) 
 
+
 # include the raw counts
-STAGE3_S_OFILES+= $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).$(expr_ext)  $(name)/$(mapper)/$(quant_method)/transcripts.riu.$(quant_method).irap.$(expr_ext)
+STAGE3_S_OFILES+= $(name)/$(mapper)/$(quant_method)/transcripts.riu.$(quant_method).irap.$(expr_ext)
 
 
 # useful functions
@@ -1130,6 +1146,7 @@ STAGE3_S_TARGETS+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.trans
 STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.fpkm.$(quant_method).irap.$(expr_ext) $(call lib2quant_folder,$(p))$(p).pe.transcripts.tpm.$(quant_method).irap.$(expr_ext)) $(foreach s,$(se),  $(call lib2quant_folder,$(s))$(s).se.transcripts.fpkm.$(quant_method).irap.$(expr_ext) $(call lib2quant_folder,$(s))$(s).se.transcripts.tpm.$(quant_method).irap.$(expr_ext))
 endif
 
+endif
 else
 # no transcript quantification
 define transcripts_quant_file=
