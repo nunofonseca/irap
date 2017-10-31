@@ -1046,6 +1046,7 @@ endef
 # Kallisto
 kallisto_index_params?=
 kallisto_map_params?=
+# TODO: use $(max_threads) when supported by kallisto with --pseudobam
 kallisto_map_params+= --threads 1 --pseudobam
 
 define kallisto_index_filename=

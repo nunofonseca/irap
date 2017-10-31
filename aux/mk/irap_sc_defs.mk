@@ -13,6 +13,8 @@ def_umi_size=8
 def_cell_read=index1
 def_cell_offset=0
 def_cell_size=12
+barcode_post_process_bam=y
+
 endif
 
 ###############################
@@ -30,6 +32,7 @@ cell_filt_min_features?=0.3
 cell_filt_max_ERCC?=0.75
 cell_filt_outliers?=y
 qc?=report
+barcode_post_process_bam=y
 endef
 
 
