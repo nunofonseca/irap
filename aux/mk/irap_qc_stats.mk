@@ -18,7 +18,6 @@
 # along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-#    $Id: 0.1.3 Nuno Fonseca Wed Dec 26 16:16:19 2012$
 # =========================================================
 
 # QC statistics

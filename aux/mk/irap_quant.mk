@@ -30,11 +30,11 @@ $(mapTrans2gene): $(gtf_file_abspath)
 	genMapTrans2Gene -i $< -o $@.tmp -c $(max_threads) && mv $@.tmp $@
 
 ## Output files produced
-STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).$(expr_format)) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).$(expr_format)) 
+STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).$(expr_ext)) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).$(expr_ext)) 
 
 ifeq ($(transcript_quant),y)
 
-STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).$(expr_format)) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).$(expr_format)) 
+STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).$(expr_ext)) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).$(expr_ext)) 
 endif
 
 ifeq ($(exon_quant),y)
@@ -1076,24 +1076,36 @@ $(name)/$(mapper)/$(quant_method)/%.transcripts.dt.$(quant_method).irap.$(expr_e
 
 # dominant transcript
 $(name)/$(mapper)/$(quant_method)/transcripts.dt.$(quant_method).irap.$(expr_ext):$(name)/$(mapper)/$(quant_method)/transcripts.riu.$(quant_method).irap.$(expr_ext) $(mapTrans2gene)
-	irap_riu2dominant --fc $(dt_fc) -i $< --$(expr_format) --$(expr_format) --map $(mapTrans2gene) --cores $(max_threads) --gene_col 1 --trans_col 2  --out $@ || (rm -f $@ && exit 1)
+	irap_riu2dominant --fc $(dt_fc) -i $<  --$(expr_format) --map $(mapTrans2gene) --cores $(max_threads) --gene_col 1 --trans_col 2  --out $@ || (rm -f $@ && exit 1)
 
+# include the raw counts
+ifeq ($(transcript_expr),n)
 
+define transcripts_quant_file=
+endef
+define transcripts_quant_files=
+endef
+else
+
+STAGE3_S_OFILES+= $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).$(expr_ext)
 
 # do not get the dominant transcript
 ifeq ($(dt_fc),n)
+
 trans_file_target=riu
 else
 trans_file_target=dt
-STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.dt.$(quant_method).irap.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.dt.$(quant_method).irap.tsv)
+# include riu files are part of the set of files produced in stage3 
+STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.riu.$(quant_method).irap.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.riu.$(quant_method).irap.tsv)
 endif
 
 
-STAGE3_S_TARGETS+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.$(trans_file_target).$(quant_method).irap.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.$(trans_file_target).$(quant_method).irap.tsv) 
+STAGE3_S_TARGETS+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.$(trans_file_target).$(quant_method).irap.$(expr_ext)) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.$(trans_file_target).$(quant_method).irap.$(expr_ext)) 
 
 
 # riu files are always produced
 STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.riu.$(quant_method).irap.$(expr_ext)) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.riu.$(quant_method).irap.$(expr_ext)) 
+
 
 # include the raw counts
 STAGE3_OUT_FILES+= $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv  $(name)/$(mapper)/$(quant_method)/transcripts.riu.$(quant_method).irap.tsv 
@@ -1119,6 +1131,7 @@ STAGE3_S_TARGETS+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.trans
 STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.fpkm.$(quant_method).irap.$(expr_ext) $(call lib2quant_folder,$(p))$(p).pe.transcripts.tpm.$(quant_method).irap.$(expr_ext)) $(foreach s,$(se),  $(call lib2quant_folder,$(s))$(s).se.transcripts.fpkm.$(quant_method).irap.$(expr_ext) $(call lib2quant_folder,$(s))$(s).se.transcripts.tpm.$(quant_method).irap.$(expr_ext))
 endif
 
+endif
 else
 # no transcript quantification
 define transcripts_quant_file=

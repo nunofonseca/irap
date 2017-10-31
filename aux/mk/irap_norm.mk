@@ -70,43 +70,18 @@ $(name)/$(mapper)/$(quant_method)/%.exons.fpkm.$(exon_quant_method).irap.tsv: $(
 
 # TODO: uncomment to unable TPM normalization for Atlas
 ifdef atlas_run
-norm_files1=$(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.genes.fpkm.$(quant_method).irap.tsv $(call lib2quant_folder,$(p))$(p).pe.genes.tpm.$(quant_method).irap.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.fpkm.$(quant_method).irap.tsv $(call lib2quant_folder,$(s))$(s).se.genes.tpm.$(quant_method).irap.tsv)
+norm_files1=$(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.genes.fpkm.$(quant_method).irap.$(expr_ext) $(call lib2quant_folder,$(p))$(p).pe.genes.tpm.$(quant_method).irap.$(expr_ext)) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.fpkm.$(quant_method).irap.$(expr_ext) $(call lib2quant_folder,$(s))$(s).se.genes.tpm.$(quant_method).irap.$(expr_ext))
 STAGE3_S_TARGETS+=$(norm_files1)
 STAGE3_S_OFILES+=$(norm_files1)
 
 
 ifeq ($(exon_quant),y)
-norm_files2=$(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.exons.fpkm.$(exon_quant_method).irap.tsv $(call lib2quant_folder,$(p))$(p).pe.exons.tpm.$(exon_quant_method).irap.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.exons.fpkm.$(exon_quant_method).irap.tsv $(call lib2quant_folder,$(s))$(s).se.exons.tpm.$(exon_quant_method).irap.tsv)
+norm_files2=$(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.exons.fpkm.$(exon_quant_method).irap.$(expr_ext) $(call lib2quant_folder,$(p))$(p).pe.exons.tpm.$(exon_quant_method).irap.$(expr_ext)) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.exons.fpkm.$(exon_quant_method).irap.$(expr_ext) $(call lib2quant_folder,$(s))$(s).se.exons.tpm.$(exon_quant_method).irap.$(expr_ext))
 STAGE3_S_TARGETS+=$(norm_files2)
 STAGE3_S_OFILES+=$(norm_files2)
 endif
 endif
 
-#####################
-# 
-# TPM
-$(name)/$(mapper)/$(quant_method)/genes.tpm.$(quant_method).irap.tsv: $(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv $(feat_length)
-	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature gene --metric tpm --out $@.tmp && mv $@.tmp $@	
-
-ifeq ($(exon_quant),y)
-$(name)/$(mapper)/$(quant_method)/exons.tpm.$(exon_quant_method).irap.tsv: $(name)/$(mapper)/$(quant_method)/exons.raw.$(exon_quant_method).tsv $(feat_length)
-	irap_raw2metric --tsv $<  --lengths $(exon_length) --feature exon --metric tpm --out $@.tmp && mv $@.tmp $@	
-endif
-
-$(name)/$(mapper)/$(quant_method)/transcripts.tpm.$(quant_method).irap.tsv: $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv $(feat_length)
-	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature transcript --metric tpm --out $@.tmp && mv $@.tmp $@	
-
-
-# per library
-$(name)/$(mapper)/$(quant_method)/%.genes.tpm.$(quant_method).irap.tsv: $(name)/$(mapper)/$(quant_method)/%.genes.raw.$(quant_method).tsv
-	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature gene --metric tpm --out $@.tmp && mv $@.tmp $@	
-
-$(name)/$(mapper)/$(quant_method)/%.transcripts.tpm.$(quant_method).irap.tsv: $(name)/$(mapper)/$(quant_method)/%.transcripts.raw.$(quant_method).tsv
-	irap_raw2metric --tsv $<  --lengths $(feat_length) --feature transcript --metric tpm --out $@.tmp && mv $@.tmp $@	
-
-
-$(name)/$(mapper)/$(quant_method)/%.exons.tpm.$(exon_quant_method).irap.tsv: $(name)/$(mapper)/$(quant_method)/%.exons.raw.$(exon_quant_method).tsv
-	irap_raw2metric --tsv $<  --lengths $(exon_length) --feature exon --metric tpm --out $@.tmp && mv $@.tmp $@	
 
 #########
 # DEseq - normalize by library size
@@ -124,16 +99,6 @@ $(name)/$(mapper)/$(quant_method)/exons.deseq_nlib.$(exon_quant_method).irap.tsv
 	irap_deseq_norm $<  > $@.tmp && mv $@.tmp $@
 endif
 
-##################################
-# tpm
-#$(name)/$(mapper)/$(quant_method)/exons.tpm.$(exon_quant_method).irap.tsv:
-#	$(call p_error, Under implementation)
-
-#$(name)/$(mapper)/$(quant_method)/genes.tpm.$(quant_method).irap.tsv:
-#	$(call p_error, Under implementation)
-
-#$(name)/$(mapper)/$(quant_method)/transcripts.tpm.$(quant_method).irap.tsv:
-#	$(call p_error, Under implementation)
 
 #################################################################
 # Disabled: just copy the file with the raw quantification values
@@ -161,7 +126,7 @@ ofiles1=$(foreach m,$(quant_norm_method),$(foreach p,$(pe), $(call lib2quant_fol
 STAGE3_S_OFILES+= $(ofiles1)
 nofiles=$(ofiles1)
 
-ifeq ($(transcript_quant),y)
+ifeq ($(transcript_expr),y)
 nquant_files+=$(foreach m,$(quant_norm_method),$(name)/$(mapper)/$(quant_method)/transcripts.$(m).$(quant_method).$(quant_norm_tool).tsv)
 nofiles2=$(foreach m,$(quant_norm_method),$(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.$(m).$(quant_method).$(quant_norm_tool).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.$(m).$(quant_method).$(quant_norm_tool).tsv))
 STAGE3_S_OFILES+= $(nofiles2)
