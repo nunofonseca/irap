@@ -1,6 +1,8 @@
 #!/usr/bin/env Rscript
 # =========================================================
 #
+# Copyright 2012-2017,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
 # This file is part of iRAP.
 #
 # This is free software: you can redistribute it and/or modify
@@ -17,7 +19,7 @@
 # along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
 #
 # =========================================================
-##args <- commandArgs(trailingOnly=TRUE)
+suppressPackageStartupMessages(library("optparse"))
 
 IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
 if ( IRAP.DIR == "" ) {
@@ -28,14 +30,13 @@ source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
 
 debug.enabled <- TRUE
 #######################
-usage <- "irap_filter_cols --mat file --qc file --out out_file_prefix [options]"
-filenames <- c("ifile","qfile","ofile")
-
+usage <- "irap_filter_cols --ifile file --qc file --out out_file_prefix [options]"
+filenames <- c("ifile","qfile")
 option_list <- list(
-    make_option(c("-i", "--in"), type="character", dest="ifile", help="TSV file name with the matrix with the counts per cell by gene/transcript."),
+    make_option(c("-i", "--ifile"), type="character", dest="ifile", help="File name with the matrix with the counts per cell by gene/transcript."),
     make_option(c("--mtx"), action="store_true",default=FALSE,dest="is_mtx",help="The input file is in Matrix Market format. Default is TSV format."),
     make_option(c("--tsv"), action="store_true",default=FALSE,dest="is_mtx",help="The input file is in Matrix Market format. Default is TSV format."),
-    make_option(c("-q", "--qc"), type="character", dest="qfile", help="TSV file name with the matrix with the Qc per  column"),
+    make_option(c("-q", "--qc"), type="character", dest="qfile", help="TSV file name with the matrix with the QC per  column"),
     make_option(c("-o", "--out"), dest="ofile", type="character",default=NULL,help="Output file name prefix."),
     make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode")
 )
@@ -43,7 +44,6 @@ option_list <- list(
 multiple.options <- NULL
 mandatory <- c("ifile","qfile","ofile")
 
-#pinfo("saved")
 opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
 
 mat.file <- opt$ifile
@@ -109,7 +109,7 @@ if ( ! opt$is_mtx ) {
 } else {
     ## mtx
     ## load the tsv/sparse matrix
-    pinfo("Loading ",opt$ifile)
+    pinfo("Loading mtx ",opt$ifile)
     table <- mtx.load(opt$ifile)
     cols <- colnames(table)
     both <- intersect(cols,col.names)
