@@ -46,6 +46,7 @@ irap_path:=$(shell dirname `which irap`)
 
 #####################################################################
 # default settings
+override de_method=none
 override rnaseq_type:=sc
 sc_protocol?=10x_v2
 quant_method?=umi_count
