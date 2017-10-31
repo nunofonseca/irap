@@ -45,11 +45,18 @@ irap_path:=$(shell dirname `which irap`)
 
 
 #####################################################################
-#
+# default settings
 override rnaseq_type:=sc
 sc_protocol?=10x_v2
 quant_method?=umi_count
 
+expr_format=mtx
+expr_ext=mtx.gz
+
+dt_fc=n
+
+## disable transcript expression by default
+transcript_expr=n
 
 # rsem_params+= --single-cell-prior
 #####################################################################
