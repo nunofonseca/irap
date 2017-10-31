@@ -99,14 +99,14 @@ if ( opt$is_mtx ) {
 }
 pinfo("Loading ",opt$ifile," done.")
 
-print(head(data))
+
 # load mapping
 mapping.data<- read.tsv(opt$mapping_file)
 # filter
 #mapping.data<-mapping.data[mapping.data$source=="protein_coding",]
 mapping <- unique(mapping.data[,c(opt$trans_col,opt$gene_col)])
 colnames(mapping) <- c("trans","gene")
-print(head(mapping))
+#print(head(mapping))
 pinfo("Data loaded")
 
 # remove NAs
@@ -251,16 +251,15 @@ get.rel.expr <- function(trans.quant.matrix,map.gene2trans) {
             
         ##     cat(".")
         ## }
-        cat("\n")
         doms <- trans.quant.matrix
     }
     return(doms)
 
 }
-#map.gene2trans <- mapping
-#save.image("debug.Rdata")
-#load("debug.Rdata")
+##
+pinfo("Computing relative isoform usage...")
 rel.expr <- get.rel.expr(data,mapping)
+pinfo("Computing relative isoform usage...done.")
 save(rel.expr,mapping,file=paste0(opt$out,".Rds"))
 if ( opt$is_mtx ) {
     ##
