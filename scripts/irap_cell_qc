@@ -49,6 +49,7 @@ option_list <- list(
     make_option(c("-m", "--min_counts"), type="numeric",default=0,dest="min_counts",help="Minimum number of counts."),
     make_option(c("-g", "--max_ERCC"), type="numeric",default=0.7,help="Maximum percentage of expression that may be assigned to ERCC spkeins."),
     make_option(c("-e", "--filt_outliers"), action="store_true",default=FALSE,dest="outliers",help="Detect outliers based on the median absolute difference (like scater)."),
+    make_option(c("-M", "--filt_outliers_mad"), type="numeric",default=5,dest="mad",help="Median absolute deviation used to determine the outilers (default %default)."),
     make_option(c("-n", "--min_expression"), type="numeric",default=0,help="the minium expression level to consider a feature expressed."),
     make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode")
 )
@@ -97,6 +98,10 @@ if ( opt$is_mtx ) {
 } else {
     table <- quant.load(opt$ifile)
 }
+if (is.null(table)) {
+    perror("Error loading ",opt$ifile)
+    q(status=1)
+}
 pinfo("Loading ",opt$ifile," done.")
 
 pdebug.save.state("irap_cell_qc","p1")
@@ -116,7 +121,6 @@ if (length(ercc.feat)>0 ) {
 sceset <- newSCESet(countData = table,lowerDetectionLimit=opt$min_expression)
 ## QC 
 sceset <- calculateQCMetrics(sceset,feature_controls=list(ERCC=ercc.feat))
-
 
 ## Features (genes/transcripts) expressed
 perc.feat.expressed <- 1-pData(sceset)$pct_dropout/100
@@ -141,12 +145,18 @@ if (!is.null(opt$controls_file) ) {
     control.status[control.status%in%x] <- "FAIL"    
 } 
 
-# outliers
-outlier <- isOutlier(pData(sceset)$total_counts, nmads = 5)
-names(outlier) <- rownames(pData(sceset))
-outlier.status <- outlier
-outlier.status[outlier.status] <- "FAIL"
-outlier.status[!outlier] <- "PASS"
+## outliers
+if ( opt$outliers) {
+    outlier <- isOutlier(pData(sceset)$total_counts, nmads = opt$mad)
+    names(outlier) <- rownames(pData(sceset))
+    outlier.status <- outlier
+    outlier.status[outlier] <- "FAIL"
+    outlier.status[!outlier] <- "PASS"
+} else {
+    outlier.status <- rownames(pData(sceset))
+    names(outlier.status) <- rownames(pData(sceset))
+    outlier.status[names(outlier.status)] <- "PASS"
+}
 
 ## total number of expression
 min.counts <- pData(sceset)$total_counts
