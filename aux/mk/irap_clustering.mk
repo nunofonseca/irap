@@ -47,10 +47,10 @@ clustering: $(clustering_files)
 # also generates _marker_genes.tsv for each k
 # and multiple files with the coordinates of TSNe based on different perplexity values - tsne_perp_PERP_VAL.tsv
 $(name)/$(mapper)/$(quant_method)/sc3/genes.raw.filtered.$(quant_method).clusters.tsv: $(name)/$(mapper)/$(quant_method)/genes.raw.filtered.$(quant_method).$(expr_ext) 
-	irap_sc3 -i $< --$(expr_format) --out $(name)/$(mapper)/$(quant_method)/sc3/genes.raw.filtered.$(quant_method).irap --min_clusters $(min_clusters) --max_clusters $(max_clusters) --max_threads $(max_threads) && mv  $(name)/$(mapper)/$(quant_method)/sc3/genes.raw.$(quant_method).irap_clusters.tsv $@
+	mkdir -p $(@D) && irap_sc3 -i $< --$(expr_format) --out $(name)/$(mapper)/$(quant_method)/sc3/genes.raw.filtered.$(quant_method).irap --min_clusters $(min_clusters) --max_clusters $(max_clusters) --max_threads $(max_threads) && mv  $(name)/$(mapper)/$(quant_method)/sc3/genes.raw.$(quant_method).irap_clusters.tsv $@
 
 $(name)/$(mapper)/$(quant_method)/sc3/transcripts.raw.filtered.$(quant_method).clusters.tsv: $(name)/$(mapper)/$(quant_method)/transcripts.raw.filtered.$(quant_method).$(expr_ext) 
-	irap_sc3 -i $< --$(expr_format) --out $(name)/$(mapper)/$(quant_method)/sc3/transcripts.raw.$(quant_method).irap --min_clusters $(min_clusters) --max_clusters $(max_clusters) --max_threads $(max_threads) && mv $(name)/$(mapper)/$(quant_method)/sc3/transcripts.raw.$(quant_method).irap_clusters.tsv $@
+	mkdir -p $(@D) &&  irap_sc3 -i $< --$(expr_format) --out $(name)/$(mapper)/$(quant_method)/sc3/transcripts.raw.$(quant_method).irap --min_clusters $(min_clusters) --max_clusters $(max_clusters) --max_threads $(max_threads) && mv $(name)/$(mapper)/$(quant_method)/sc3/transcripts.raw.$(quant_method).irap_clusters.tsv $@
 
 
 # STAGE4_OFILES+=
