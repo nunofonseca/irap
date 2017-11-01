@@ -182,10 +182,10 @@ if (opt$auto_k) {
 ## 
 sceset <- sc3(sceset, ks = seq(k.range[1],k.range[2]), biology = TRUE, n_cores=opt$max_threads,k_estimator=TRUE)
 
+pdebug.save.state("irap_sc3","p1")
 #sc3_plot_cluster_stability(sceset, k = sel.k)
 #sc3_plot_markers(sceset, k = sel.k)
 ##data.frame containing the marker genes, corresponding cluster indexes and adjusted p-values##
-
 #sc3_plot_consensus(sceset,k=sel.k)
 #sc3_plot_cluster_stability(sceset,k=max(ks))
 
@@ -193,11 +193,12 @@ sceset <- sc3(sceset, ks = seq(k.range[1],k.range[2]), biology = TRUE, n_cores=o
 ## single matrix with all clusters
 pinfo("Preparing to save clusters table")
 l <- matrix(nrow=0,ncol=ncol(table))
+colnames(l) <- colnames(table)
 #l <- as.matrix(table[NULL,,drop=FALSE])
 for (k in seq(k.range[1],k.range[2])) {
     p_data <- pData(sceset)
     label <- paste0("sc3_",k,"_clusters")
-    pData(sceset)[,label]
+    ##pData(sceset)[,label]
     clus <- p_data[,label]
     names(clus) <- rownames(p_data)
     l <- rbind(l,clus[colnames(l)])
@@ -220,13 +221,14 @@ l <- matrix(nrow=0,ncol=ncol(table))
 for (k in seq(k.range[1],k.range[2])) {
     p_data <- pData(sceset)
     label <- paste0("sc3_",k,"_clusters")
-    pData(sceset)[,label]
+    ##pData(sceset)[,label]
     clus <- p_data[,label]
     names(clus) <- rownames(p_data)
     l <- cbind(l,clus[colnames(l)])
 }
 l <- as.data.frame(cbind(K=seq(k.range[1],k.range[2]),l))
 
+## TODO: parameter
 p.val.cutoff <- 0.01
 auroc.cutoff <- 0.95
 
@@ -252,35 +254,6 @@ for (k in seq(k.range[1],k.range[2])) {
     write.table(clean.sel,file=ofile,sep="\t",row.names=FALSE,col.names=TRUE,quote=FALSE)
     pinfo("Created ",ofile)
 }
-
-pinfo("Generating TSNEs...")
-## TSNE coordinates? or run Seurat?
-library(Seurat)
-nbt <- CreateSeuratObject(raw.data=table,project="irap",min.cells = 3,min.genes = 1000,is.expr=1)
-
-## log normalize
-nbt <- NormalizeData(object = nbt)
-## Scales and centers gene expression
-nbt <- ScaleData(object = nbt)
-nbt <- FindVariableGenes(object = nbt, mean.function = ExpMean, dispersion.function = LogVMR, 
-                         x.low.cutoff = 0.0125, x.high.cutoff = 3, y.cutoff = 0.5)
-nbt <- RunPCA(object = nbt, pc.genes = nbt@var.genes, do.print = FALSE, pcs.print = 1:5)
-
-library(Rtsne)
-perp.values <- c(1, 5,10,15,20)
-for (p in perp.values) {
-    pinfo("TSNE: perplexity ",p)
-    nbt.res <- myRunTSNE(object = nbt, dims.use = 1:20,  do.fast = TRUE,perplexity=10)
-    ofile <- paste0(out.prefix,"_tsne_perp_",p,".tsv")
-    write.table(nbt.res$tsne,file=ofile,row.names=FALSE,quote=FALSE)
-    pinfo("Created ",ofile)
-    par(bty="l",mar=c(4,4,1,8))
-    plot(nbt.res$tsne)
-}
-
-##col=ai.col.t[rownames(nbt.res$tsne)],pch=ai.pch[rownames(nbt.res$tsne)]
-##plot(nbt.res$tsne,col=ai.col.t[rownames(nbt.res$tsne)],pch=ai.pch[rownames(nbt.res$tsne)])
-
-
+pinfo("All done")
 q(status=0)
 
