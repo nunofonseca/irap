@@ -755,6 +755,7 @@ cell_filt_min_expression?=1
 
 cell_filt_min_cell_expr?=1000 # minimum number of counts per cell
 
+sc_quant_viz?=tsne
 ########################
 ## Clustering
 ## Only used in sc mode
@@ -1502,6 +1503,7 @@ include $(irap_path)/../aux/mk/irap_fusion.mk
 # QC - single cell
 include $(irap_path)/../aux/mk/irap_sc_qc.mk
 include $(irap_path)/../aux/mk/irap_clustering.mk
+include $(irap_path)/../aux/mk/irap_sc_vis.mk
 
 
 ifdef irap_devel
