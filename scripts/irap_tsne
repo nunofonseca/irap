@@ -1,0 +1,185 @@
+#!/usr/bin/env Rscript
+#; -*- mode: R;-*-
+# =========================================================
+# Copyright 2012-2017,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+# =========================================================
+
+###############################################################
+suppressPackageStartupMessages(library("optparse"))
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+#
+# specify our desired options in a list
+#
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+pdebug.enabled <- TRUE
+#######################
+usage <- "irap_tsne --ifile file --out out_file_prefix [options]"
+filenames <- c("ifile","lengths")
+
+option_list <- list(
+    make_option(c("-i", "--ifile"), type="character", dest="ifile", help="TSV file name with the matrix with the counts per cell by gene/transcript."),
+    make_option(c("--mtx"), action="store_true",default=FALSE,dest="is_mtx",help="The input file is in Matrix Market format. Default is TSV format."),
+    make_option(c("--tsv"), action="store_false",default=FALSE,dest="is_mtx",help="The input file is in TSV format (default)."),
+    make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name prefix."),
+    make_option(c("-c", "--max_threads"), type="numeric",default=1,help="Maximum number of threads that may be used."),
+    make_option(c("-C", "--min_cells"), type="numeric",default=1,dest="min.cells",help="Filter genes based on the number of cells where it is expressed."),
+    make_option(c("-G", "--min_genes"), type="numeric",default=1,dest="min.genes",help="Filter cells based on the number of genes expressed."),
+    make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode")
+)
+
+multiple.options <- NULL
+mandatory <- c("ifile","out")
+
+#pinfo("saved")
+opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
+
+##suppressPackageStartupMessages(library(SC3))
+##suppressPackageStartupMessages(library(scater))
+
+out.prefix <- opt$out
+pdebug.enabled <- opt$debug
+
+#
+pdebug.save.state("irap_tsne","p0")
+
+myRunTSNE <- function (object, reduction.use = "pca", cells.use = NULL, dims.use = 1:5, 
+    genes.use = NULL, seed.use = 1, do.fast = TRUE, add.iter = 0, 
+    dim.embed = 2, distance.matrix = NULL, ...) 
+{
+    if (!is.null(x = distance.matrix)) {
+        genes.use <- rownames(x = object@data)
+    }
+    if (is.null(x = genes.use)) {
+        data.use <- GetDimReduction(object = object, reduction.type = reduction.use, 
+            slot = "cell.embeddings")[, dims.use]
+    }
+    if (!is.null(x = genes.use)) {
+        data.use <- t(PrepDR(object = object, genes.use = genes.use))
+    }
+    set.seed(seed = seed.use)
+    if (do.fast) {
+        if (is.null(x = distance.matrix)) {
+            data.tsne <- Rtsne(X = as.matrix(x = data.use), dims = dim.embed, 
+                ...)
+        }
+        else {
+            data.tsne <- Rtsne(X = as.matrix(x = distance.matrix), 
+                dims = dim.embed, is_distance = TRUE)
+        }
+        data.tsne <- data.tsne$Y
+    }
+    else {
+        data.tsne <- tsne(X = data.use, k = dim.embed, ...)
+    }
+    if (add.iter > 0) {
+        data.tsne <- tsne(x = data.use, initial_config = as.matrix(x = data.tsne), 
+            max_iter = add.iter, ...)
+    }
+    colnames(x = data.tsne) <- paste0("tSNE_", 1:ncol(x = data.tsne))
+    rownames(x = data.tsne) <- rownames(x = data.use)
+    object <- SetDimReduction(object = object, reduction.type = "tsne", 
+        slot = "cell.embeddings", new.data = data.tsne)
+    object <- SetDimReduction(object = object, reduction.type = "tsne", 
+        slot = "key", new.data = "tSNE_")
+    parameters.to.store <- as.list(environment(), all = TRUE)[names(formals("RunTSNE"))]
+    return(list(obj=object,tsne=data.tsne,data.used=data.use))
+}
+
+pinfo("Loading ",opt$ifile)
+if ( opt$is_mtx ) {
+    table <- mtx.load(opt$ifile)
+} else {
+    table <- quant.load(opt$ifile)
+}
+pinfo("Loading ",opt$ifile," done.")
+
+##  pinfo("Saved ",opt$out)
+if (ncol(table)<=3) {
+    perror("Number of samples/cells too small (",ncol(table),")")
+    q(status=1)
+}
+
+pinfo("Generating TSNEs...")
+## TSNE coordinates? or run Seurat?
+library(Seurat)
+min.cells <- opt$min.cells
+min.genes <- opt$min.genes
+pinfo("Expression object...")
+nbt <- CreateSeuratObject(raw.data=table,project="irap",min.cells = min.cells,min.genes = min.genes)
+##,do.center=T,do.scale=T,normalization.method="LogNormalize")
+##, total.expr = 1e4
+
+x <- dim(GetAssayData(nbt))
+pinfo(" # Cells/assays ",x[2])
+pinfo(" # genes ",x[1])
+if ( ncol(GetAssayData(nbt))<2 ) {
+    perror("Unable to continue - Number of cells/assays after QC is below 3")
+    q(status=1)
+}
+
+## QC filtering has been done before
+
+## log normalize
+pinfo("Log normalize...")
+nbt <- NormalizeData(object = nbt)
+
+
+##print(head(nbt))
+## Scales and centers gene expression
+pinfo("Scaling...")
+nbt <- ScaleData(object = nbt)
+##nbt <- ScaleData(object = nbt,genes.use=rownames(table),data.use=table)
+#str(nbt)
+pinfo("Looking for variable genes...")
+nbt <- FindVariableGenes(object = nbt, mean.function = ExpMean, dispersion.function = LogVMR, 
+                         x.low.cutoff = 0.0125, x.high.cutoff = 3, y.cutoff = 0.5)
+
+if (length(nbt@var.genes)<=30) {
+    nbt@var.genes <- rownames(GetAssayData(nbt))
+}
+pinfo("PCA...")
+nbt <- RunPCA(object = nbt, pc.genes = nbt@var.genes, do.print = FALSE, pcs.print = 1:5)
+
+## TODO: include the cell names in the TSNE
+library(Rtsne)
+perp.values <- c(1, 5, 10, 15, 20)
+for (p in perp.values) {
+    pinfo("TSNE: perplexity ",p)
+    nbt.res <- myRunTSNE(object = nbt, dims.use = 1:20,  do.fast = TRUE,perplexity=10)
+    ofile <- paste0(out.prefix,"_tsne_perp_",p,".tsv")
+    write.table(nbt.res$tsne,file=ofile,row.names=FALSE,quote=FALSE)
+    pinfo("Created ",ofile)
+    ## also generate the png
+    ofile2 <- paste0(ofile,".png")
+    png(ofile2,height=1000,width=1000)
+    par(bty="l",mar=c(4,4,1,8))
+    plot(nbt.res$tsne)    
+    dev.off()
+    pinfo("Created ",ofile2)
+}
+
+
+q(status=0)
+
