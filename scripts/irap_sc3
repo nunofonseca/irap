@@ -217,16 +217,16 @@ pinfo("Created ",ofile)
 ## Marker genes for each cluster
 ## gene x #clusters
 pinfo("Preparing to save marker genes")
-l <- matrix(nrow=0,ncol=ncol(table))
-for (k in seq(k.range[1],k.range[2])) {
-    p_data <- pData(sceset)
-    label <- paste0("sc3_",k,"_clusters")
-    ##pData(sceset)[,label]
-    clus <- p_data[,label]
-    names(clus) <- rownames(p_data)
-    l <- cbind(l,clus[colnames(l)])
-}
-l <- as.data.frame(cbind(K=seq(k.range[1],k.range[2]),l))
+## l <- matrix(nrow=0,ncol=ncol(table))
+## for (k in seq(k.range[1],k.range[2])) {
+##     p_data <- pData(sceset)
+##     label <- paste0("sc3_",k,"_clusters")
+##     ##pData(sceset)[,label]
+##     clus <- p_data[,label]
+##     names(clus) <- rownames(p_data)
+##     l <- cbind(l,clus[colnames(l)])
+## }
+## l <- as.data.frame(cbind(K=seq(k.range[1],k.range[2]),l))
 
 ## TODO: parameter
 p.val.cutoff <- 0.01
@@ -241,7 +241,7 @@ for (k in seq(k.range[1],k.range[2])) {
     pval.col <- paste0("sc3_",k,"_markers_padj")
     auroc.col <- paste0("sc3_",k,"_markers_auroc")
     #genes2keep <- sel[,pval.col]<=p.val.cutoff & sel[,auroc.col]>=auroc.cutoff
-    sel2 <- sel[,c(label,pval.col,auroc.col)]
+    sel2 <- sel[,c(label,pval.col,auroc.col),drop=FALSE]
     sel2$feat <- rownames(sel2)
     # arrange column names
     colnames(sel2) <- gsub("sc3_.*_markers_","",colnames(sel2))
