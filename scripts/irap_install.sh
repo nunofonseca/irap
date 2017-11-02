@@ -110,6 +110,7 @@ function download2cache {
 	FILE=${p}_FILE
 	pinfo "Downloading ($p)  ${!URL}"
 	download_software $p
+	echo ====== ${!FILE}
 	if [ ! -e ${!FILE} ]; then
 	    echo "Failed downloading $p ${!URL}" > /dev/stderr
 	    exit 1
@@ -422,18 +423,18 @@ FASTQC_FILE=fastqc_v${FASTQC_VERSION}.zip
 FASTQC_URL=http://www.bioinformatics.babraham.ac.uk/projects/fastqc/$FASTQC_FILE
 
 # 1.12.0
-JBROWSE_VERSION=1.7.5
-JBROWSE_FILE=download.php?id=35
+OLD_JBROWSE_VERSION=1.7.5
+OLD_JBROWSE_FILE=download.php?id=35
+OLD_JBROWSE_URL=http://jbrowse.org/wordpress/wp-content/plugins/download-monitor/download.php?id=35
+OLD_JBROWSE_EXTRA_UTILS="hgGcPercent bedGraphToBigWig wigCorrelate bigWigInfo bigWigSummary faToNib faToTwoBit hgWiggle bigWigMerge"
+OLD_JBROWSE_EXTRA_UTILSURL=http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/
+
+# 1.12.0 -- 85
+JBROWSE_VERSION=1.12.3
+JBROWSE_FILE=download.php?id=109
 JBROWSE_URL=http://jbrowse.org/wordpress/wp-content/plugins/download-monitor/$JBROWSE_FILE
 JBROWSE_EXTRA_UTILS="hgGcPercent bedGraphToBigWig wigCorrelate bigWigInfo bigWigSummary faToNib faToTwoBit hgWiggle bigWigMerge"
 JBROWSE_EXTRA_UTILSURL=http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/
-
-# 1.12.0 -- 85
-NEW_JBROWSE_VERSION=1.12.3
-NEW_JBROWSE_FILE=download.php?id=109
-NEW_JBROWSE_URL=http://jbrowse.org/wordpress/wp-content/plugins/download-monitor/$NEW_JBROWSE_FILE
-NEW_JBROWSE_EXTRA_UTILS="hgGcPercent bedGraphToBigWig wigCorrelate bigWigInfo bigWigSummary faToNib faToTwoBit hgWiggle bigWigMerge"
-NEW_JBROWSE_EXTRA_UTILSURL=http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/
 
 # 2.10.8 osa does not work with 2.10.9 up to 2.11
 # 2.10.8 ---> 4.2.2
@@ -450,7 +451,7 @@ PICARD_FILE=picard-tools-$PICARD_VERSION.zip
 PICARD_URL=http://sourceforge.net/projects/picard/files/picard-tools/$PICARD_VERSION/$PICARD_FILE/download
 
 
-fastq_utils_VERSION=0.12.7
+fastq_utils_VERSION=0.13.7
 fastq_utils_FILE=$fastq_utils_VERSION.tar.gz
 fastq_utils_URL=https://github.com/nunofonseca/fastq_utils/archive/$fastq_utils_FILE
 
@@ -473,8 +474,8 @@ function download_software {
 	soap_splice ) download $SOAPsplice_URL;;
 	soap2 ) download $SOAP2_URL;download http://soap.genomics.org.cn/down/soap2sam.tar.gz;;
 	SOAP2 ) download $SOAP2_URL;download http://soap.genomics.org.cn/down/soap2sam.tar.gz;;
-	OLD_JBROWSE ) download $JBROWSE_URL $JBROWSE_FILE; for f in $JBROWSE_EXTRA_UTILS; do  download $JBROWSE_EXTRA_UTILSURL/$f $f; done ;;
-	JBROWSE ) download $NEW_JBROWSE_URL $NEW_JBROWSE_FILE; for f in $NEW_JBROWSE_EXTRA_UTILS; do  download $NEW_JBROWSE_EXTRA_UTILSURL/$f $f; done ;;
+	OLD_JBROWSE ) download $OLD_JBROWSE_URL $OLD_JBROWSE_FILE; for f in $OLD_JBROWSE_EXTRA_UTILS; do  download $OLD_JBROWSE_EXTRA_UTILSURL/$f $f; done ;;
+	JBROWSE ) download $JBROWSE_URL $JBROWSE_FILE; for f in $JBROWSE_EXTRA_UTILS; do  download $JBROWSE_EXTRA_UTILSURL/$f $f; done ;;
 	* ) url=${name}_URL; file=${name}_FILE; download ${!url} ${!file};;
     esac
 }
