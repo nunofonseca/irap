@@ -100,12 +100,12 @@ valid_combination([Map,QR,QNT,QN,DE,GSE,Stranded,sc,'smart-seq2']):-
     %%de(DE,qr(QR),_),
     gse(GSE,de(DE),_).
 
-valid_combination([Map,QR,QNT,QN,DE,GSE,Stranded,sc,SC_PROT]):-
+valid_combination([Map,QR,QNT,_QN,DE,GSE,Stranded,sc,SC_PROT]):-
     (SC_PROT=='smart-seq2'->fail;true),
     m(Map,_,_,S1),
     sc_mapper(Map),
     qr_sc(QR,m(Map),_,S2),
-    valid_norm_selection(QR,QNT,QN),
+    QNT==none,
     !,
     (Stranded==yes->(Map==none->true;S1==stranded,stranded_ok(Stranded,S2));true),
     DE==none,
