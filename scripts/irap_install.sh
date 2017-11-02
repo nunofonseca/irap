@@ -110,7 +110,7 @@ function download2cache {
 	FILE=${p}_FILE
 	pinfo "Downloading ($p)  ${!URL}"
 	download_software $p
-	echo ====== ${!FILE}
+
 	if [ ! -e ${!FILE} ]; then
 	    echo "Failed downloading $p ${!URL}" > /dev/stderr
 	    exit 1
