@@ -169,7 +169,10 @@ for (p in perp.values) {
     pinfo("TSNE: perplexity ",p)
     nbt.res <- myRunTSNE(object = nbt, dims.use = 1:20,  do.fast = TRUE,perplexity=10)
     ofile <- paste0(out.prefix,"_tsne_perp_",p,".tsv")
-    write.table(nbt.res$tsne,file=ofile,row.names=FALSE,quote=FALSE)
+    tosave <- nbt.res$tsne
+    tosave <- cbind(tosave,Label=rownames(nbt.res$tsne))
+    print(head(tosave))
+    write.table(tosave,file=ofile,row.names=FALSE,quote=FALSE)
     pinfo("Created ",ofile)
     ## also generate the png
     ofile2 <- paste0(ofile,".png")
