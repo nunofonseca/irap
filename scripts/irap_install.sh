@@ -1552,8 +1552,9 @@ function fastq_utils_install {
     tar xzvf $fastq_utils_FILE
     pushd fastq_utils-${fastq_utils_VERSION}
     CFLAGS_noboost=$(get_CFLAGS_woBOOST)
-    CFLAGS=$CFLAGS_noboost ./install_deps.sh
-    CFLAGS=$CFLAGS_noboost make install
+    ##CFLAGS=$CFLAGS_noboost ./install_deps.sh
+    CFLAGS=  ./install_deps.sh
+    make install
     cp bin/fast* bin/bam*  $BIN_DIR
     popd
     pinfo "Compiling and installing fastq_utils processing programs...done."
