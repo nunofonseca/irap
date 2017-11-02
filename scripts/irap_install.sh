@@ -18,7 +18,6 @@
 # along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-#   $Id: 0.1.3 Nuno Fonseca Fri Dec 21 17:18:21 2012$
 # =========================================================
 install=all
 IRAP_DIR1=
@@ -1030,6 +1029,7 @@ function deps_install {
     vcftools_install
     python_packages_install
     ucsc_utils_install
+    fastq_utils_install
     #picard_install
     pinfo "Installing dependencies...done."
 }
@@ -1717,7 +1717,7 @@ function core_install {
     #############
     # fastq utils
     # Fastq processing utilities
-    fastq_utils_install
+    #fastq_utils_install
     pushd $SRC_DIR/src/bamutils
     make -B
     cp bam_pe_insert bam_fix_NH bam_fix_se_flag bam_tophat2_fix bamRindex $BIN_DIR
