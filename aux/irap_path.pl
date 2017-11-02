@@ -92,7 +92,7 @@ valid_combination([Map,QR,QNT,QN,DE,GSE,Stranded,blk,_]):-
 valid_combination([Map,QR,QNT,QN,DE,GSE,Stranded,sc,'smart-seq2']):-
     m(Map,_,_,S1),
     sc_mapper(Map),
-    qr_sc(QR,m(Map),_,S2),
+    qr(QR,m(Map),_,S2),
     valid_norm_selection(QR,QNT,QN),
     !,
     (Stranded==yes->(Map==none->true;S1==stranded,stranded_ok(Stranded,S2));true),
