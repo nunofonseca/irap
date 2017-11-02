@@ -44,10 +44,9 @@ endif
 sc_visualization: $(sc_visualization_files)
 
 ## TSNE
-# also generates _marker_genes.tsv for each k
-# and multiple files with the coordinates of TSNe based on different perplexity values - tsne_perp_PERP_VAL.tsv
+# multiple files with the coordinates of TSNe based on different perplexity values - tsne_perp_PERP_VAL.tsv
 %.tsne.tsv: %.$(expr_ext) 
-	irap_tsne -i $< --$(expr_format) --out $@ --max_threads $(max_threads) || ( rm -f $@* && exit 1)
+	irap_tsne -i $< --$(expr_format) --out $@ --max_threads $(max_threads) && cp $@_tsne_perp_10.tsv $@ || ( rm -f $@* && exit 1)
 
 
 
