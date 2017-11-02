@@ -106,11 +106,14 @@ endif
 
 
 
-# smart-seq
-ifeq ($(sc_protocol),smart-seq)
+# smart-seq2
+ifeq ($(sc_protocol),smart-seq2)
 mapper?=none
 quant_method?=kallisto
 #trim_poly_at?=y
 #trim_poly_at_len=8
 qc?=on
+
+expr_format=tsv
+expr_ext=tsv
 endif
