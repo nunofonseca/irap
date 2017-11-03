@@ -39,7 +39,7 @@ fi
 FEATURE=`$CAT $f1 | head -n 1 | cut -f 1|grep -i -E "(Gene|Exon|Transcript|Feature)"`
 HAS_HEADER=yes
 if [ "$FEATURE-" == "-" ]; then
-    FEATURE="Gene"
+    FEATURE="Feature"
     HAS_HEADER=no
 fi
 #echo $FEATURE >&2
@@ -54,7 +54,7 @@ fi
 NCOLS=`$CAT $f1 | head -n 1| tr "\t" "\n" | wc -l`
 #echo "NCOLS=$NCOLS|"
 
-if [ "$NCOLS-" != "2" ] || [ $HAS_HEADER == "yes" ]; then
+if [ "$NCOLS-" != "2-" ] || [ $HAS_HEADER == "yes" ]; then
     KEEP_COL_NAME=yes
 else
     KEEP_COL_NAME=no
