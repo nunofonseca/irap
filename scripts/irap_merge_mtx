@@ -77,7 +77,8 @@ nfiles <- length(files)
 pinfo("Merging ",nfiles," mtx files")
 ctr <- 0
 #files <- c("/home/nf/Research/Projects/WIP/EREAP/irap_tests/test_files/sparse1.mtx.gz","/home/nf/Research/Projects/WIP/EREAP/irap_tests/test_files/sparse2.mtx.gz")
-#f <- files[1]
+                                        #f <- files[1]
+#f <- files[2]
 #print(files)
 for ( f in files ) {
     ctr <- ctr+1
@@ -112,7 +113,6 @@ for ( f in files ) {
         colnames(x)[1] <- label
     }
     
-
     ##   if (opt$rows_not_sorted) {
     ##        x <- x[order(rownames(x)),]
     ##    }
@@ -144,17 +144,19 @@ for ( f in files ) {
         }
         shared.cols <- intersect(colnames(out.table),colnames(x))
         if ( length(shared.cols) >0 ) {
-
-            pinfo("Repeated columns found (" ,length(shared.cols),")" )
-            perror("Not supporting this for now" )
-            q(status=1)
-            im <- out.table[,shared.cols,drop=FALSE]+x[,shared.cols,drop=FALSE]
-            out.table <- cbind(cbind(out.table[,!colnames(out.table)%in%shared.cols,drop=FALSE],
-                               x[,!colnames(x)%in%shared.cols,drop=FALSE]),im)
-        } else {
-            out.table <- cbind(out.table,x)
-        }
-        
+            pwarning("repeated columns found (" ,length(shared.cols),")" )
+            ## assuming that these are replicates
+            ##perror("Not supporting this for now" )
+            ##q(status=1)
+            pinfo("aggregating columns common between files")
+            ##print(head(out.table[,shared.cols[c(1,2)]]))
+            ##print(head(x[,shared.cols[c(1,2)]]))
+            im <- out.table[,shared.cols,drop=FALSE]+x[rownames(out.table),shared.cols,drop=FALSE]
+            ##print(head(im[,shared.cols[c(1,2)]]))
+            out.table[,shared.cols,drop=FALSE] <- im
+            x <- x[,!colnames(x)%in%shared.cols,drop=FALSE]
+        } 
+        out.table <- cbind(out.table,x)
     }
 }
 
