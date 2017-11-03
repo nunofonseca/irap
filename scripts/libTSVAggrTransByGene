@@ -51,16 +51,18 @@ mandatory <- c("ifile","mapping_file","out")
 #pinfo("saved")
 opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
 
+pdebug.enabled <- opt$debug
+tsv.file <- opt$ifile
+g2t.file<- opt$mapping_file
+out.file <- opt$out
+exit.on.error <- opt$exit.on.error
+
 pdebug.save.state("libTSVAggrTransByGene","p0")
 ##args <- commandArgs(trailingOnly=TRUE)
 library(Matrix)
 library(Matrix.utils)
 
 
-tsv.file <- opt$ifile
-g2t.file<- opt$mapping_file
-out.file <- opt$out
-exit.on.error <- opt$exit.on.error
 
 if ( is.na(exit.on.error) || is.null(exit.on.error) || exit.on.error=="1" ) {
     # default: TRUE
@@ -80,11 +82,9 @@ if ( opt$is_mtx ) {
     table <- quant.load(opt$ifile)
 }
 pinfo("Loading ",opt$ifile," done.")
-
 # in gencode the transcript id will also include other information 
 rownames(table)<-gsub("\\|.*","",rownames(table))
-
-pinfo("expression loaded")
+pinfo("Expression loaded")
 
 
 pinfo("Loading mapping")
