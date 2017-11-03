@@ -951,7 +951,7 @@ $(call lib2quant_folder,$(1))$(2).transcripts.tpm.kallisto.kallisto.tsv: $(call 
 
 
 $(call lib2quant_folder,$(1))$(2).genes.raw.kallisto.tsv: $(call lib2quant_folder,$(1))$(2).transcripts.raw.kallisto.tsv $(mapTrans2gene)
-	libTSVAggrTransByGene $$< $(mapTrans2gene) $$@.tmp && mv  $$@.tmp $$@
+	libTSVAggrTransByGene -i $$<  -m $(mapTrans2gene) -o $$@.tmp && mv  $$@.tmp $$@
 
 
 endef
@@ -1050,7 +1050,7 @@ $(call lib2quant_folder,$(1))$(2).transcripts.tpm.salmon.salmon.tsv: $(call lib2
 
 
 $(call lib2quant_folder,$(1))$(2).genes.raw.salmon.tsv: $(call lib2quant_folder,$(1))$(2).transcripts.raw.salmon.tsv $(mapTrans2gene)
-	libTSVAggrTransByGene $$< $(mapTrans2gene) $$@.tmp && mv  $$@.tmp $$@
+	libTSVAggrTransByGene -i $$< -m $(mapTrans2gene) -o $$@.tmp && mv  $$@.tmp $$@
 
 endef
 
@@ -1083,7 +1083,7 @@ $(name)/$(mapper)/$(quant_method)/transcripts.riu.$(quant_method).irap.tsv: $(fo
 	( $(call pass_args_stdin,irap_merge_tsv.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
 
 $(name)/$(mapper)/$(quant_method)/transcripts.riu.$(quant_method).irap.mtx.gz: $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.riu.$(quant_method).irap.mtx.gz) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.riu.$(quant_method).irap.mtx.gz)
-	( $(call pass_args_stdin,irap_merge_mtx,$@,-o $@ --in $^) ) || ( rm -f $@ || exit 1 )
+	( $(call pass_args_stdin,irap_merge_mtx,$@,-o $@ --in "$^") ) || ( rm -f $@ || exit 1 )
 
 
 $(name)/$(mapper)/$(quant_method)/%.transcripts.dt.$(quant_method).irap.$(expr_ext): $(name)/$(mapper)/$(quant_method)/%.transcripts.riu.$(quant_method).irap.$(expr_ext)  $(mapTrans2gene)
