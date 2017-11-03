@@ -940,7 +940,7 @@ $(call lib2quant_folder,$(1))$(2).transcripts.tpm.kallisto.kallisto.tsv: $(call 
 
 
 $(call lib2quant_folder,$(1))$(2).genes.raw.kallisto.tsv: $(call lib2quant_folder,$(1))$(2).transcripts.raw.kallisto.tsv $(mapTrans2gene)
-	libTSVAggrTransByGene $$< $(mapTrans2gene) $$@.tmp && mv  $$@.tmp $$@
+	libTSVAggrTransByGene -i $$<  -m $(mapTrans2gene) -o $$@.tmp && mv  $$@.tmp $$@
 
 
 endef
@@ -1039,7 +1039,7 @@ $(call lib2quant_folder,$(1))$(2).transcripts.tpm.salmon.salmon.tsv: $(call lib2
 
 
 $(call lib2quant_folder,$(1))$(2).genes.raw.salmon.tsv: $(call lib2quant_folder,$(1))$(2).transcripts.raw.salmon.tsv $(mapTrans2gene)
-	libTSVAggrTransByGene $$< $(mapTrans2gene) $$@.tmp && mv  $$@.tmp $$@
+	libTSVAggrTransByGene -i $$< -m $(mapTrans2gene) -o $$@.tmp && mv  $$@.tmp $$@
 
 endef
 
