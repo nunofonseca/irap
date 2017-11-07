@@ -1557,11 +1557,13 @@ mat2mtx <- function(mat,...) {
 quant.load <- function(f,clean.cuff=FALSE) {
   tsv.data <- NULL
 
-  tsv.data <- qload.tsv(f,header=FALSE)
+  tsv.data <- qload.tsv(f,header=FALSE,nrow=1)
   if ( !is.null(tsv.data) && ncol(tsv.data)>1 ) {
     if ( sum(grepl("(Gene|Exon|Transcript|ID|feature)",tsv.data[1,1],ignore.case=T))!=0 || tsv.data[1,1]=="") {
       # reload to include the header
       tsv.data <- qload.tsv(f,header=TRUE)
+    } else {
+      tsv.data <- qload.tsv(f,header=FALSE)
     }
   }
   if(is.null(tsv.data)) return(NULL);
