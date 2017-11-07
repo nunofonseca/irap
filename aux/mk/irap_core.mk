@@ -750,6 +750,7 @@ cell_filt_controls?=   # file with the a known list of cells that should not be 
 
 cell_filt_outliers?=y   # filter outliers based on the total number of counts/expr (y|n)
 ## Exclude outliers based on the 5*median absolute difference (like scater).
+cell_outliers_mad=5
 
 cell_filt_min_expression?=1
 
