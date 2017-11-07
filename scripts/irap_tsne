@@ -167,7 +167,7 @@ library(Rtsne)
 perp.values <- c(1, 5, 10, 15, 20)
 for (p in perp.values) {
     pinfo("TSNE: perplexity ",p)
-    nbt.res <- myRunTSNE(object = nbt, dims.use = 1:20,  do.fast = TRUE,perplexity=10)
+    nbt.res <- myRunTSNE(object = nbt, dims.use = 1:20,  do.fast = TRUE,perplexity=p)
     ofile <- paste0(out.prefix,"_tsne_perp_",p,".tsv")
     tosave <- nbt.res$tsne
     tosave <- cbind(tosave,Label=rownames(nbt.res$tsne))
