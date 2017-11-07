@@ -35,7 +35,7 @@ filenames <- c("ifile","qfile")
 option_list <- list(
     make_option(c("-i", "--ifile"), type="character", dest="ifile", help="File name with the matrix with the counts per cell by gene/transcript."),
     make_option(c("--mtx"), action="store_true",default=FALSE,dest="is_mtx",help="The input file is in Matrix Market format. Default is TSV format."),
-    make_option(c("--tsv"), action="store_true",default=FALSE,dest="is_mtx",help="The input file is in Matrix Market format. Default is TSV format."),
+    make_option(c("--tsv"), action="store_false",default=FALSE,dest="is_mtx",help="The input file is in Matrix Market format. Default is TSV format."),
     make_option(c("-q", "--qc"), type="character", dest="qfile", help="TSV file name with the matrix with the QC per  column"),
     make_option(c("-o", "--out"), dest="ofile", type="character",default=NULL,help="Output file name prefix."),
     make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode")
