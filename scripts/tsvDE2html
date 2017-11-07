@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 # =========================================================
-# Copyright 2012-2016,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+# Copyright 2012-2017,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
 #
 # This file is part of iRAP.
 #
@@ -18,7 +18,6 @@
 # along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-#    $Id: 0.1.1$
 # =========================================================
 
 ###############################################################
@@ -478,9 +477,6 @@ gen.page <- function (o.html.file) {
 
 
 pdebug.save.state("tsvDE2html2","p3")
-
-
-
 filt.name <- "All"
 o.html.file <-paste(opt$out,".html",sep="")
 file.prefix <- opt$out
@@ -522,9 +518,9 @@ tsvDE2html.debug <- function(rdata.obj) {
 }
 IRAP.DIR=getwd()
 if ( IRAP.DIR == "" ) {
-  IRAP.DIR="/home/nf/Research/Projects/WIP/EREAP/ereap_install"
+  IRAP.DIR="/home/nf/Research/Projects/WIP/irap"
   Sys.setenv(IRAP_DIR=IRAP.DIR)
 }
 tsvDE2html.debug("tsvDE2html2.Rdata")
 
-
+load("/home/nf/Research/Projects/WIP/irap/tsvDE2html.Rdata")
