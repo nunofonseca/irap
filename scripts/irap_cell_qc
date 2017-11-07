@@ -42,15 +42,15 @@ filenames <- c("ifile","controls_file")
 option_list <- list(
     make_option(c("-i", "--in"), type="character", dest="ifile", help="TSV/MTX file name with the matrix with the counts per cell by gene/transcript."),
     make_option(c("--mtx"), action="store_true",default=FALSE,dest="is_mtx",help="The input file is in Matrix Market format. Default is TSV format."),
-    make_option(c("--tsv"), action="store_true",default=FALSE,dest="is_mtx",help="The input file is in Matrix Market format. Default is TSV format."),
-    make_option(c("-c", "--controls"), type="character", default=NULL,dest="controls_file", help="File with a known list of cells that should be discarded."),
+    make_option(c("--tsv"), action="store_false",default=FALSE,dest="is_mtx",help="The input file is in Matrix Market format. Default is TSV format."),
+    make_option(c("-c", "--blacklist"), type="character", default=NULL,dest="blacklist_file", help="File with a known list of cells that should be discarded."),
     make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name prefix."),
-    make_option(c("-f", "--min_features"), type="numeric",default=0,help="Minimum number of features expressed. (as a percentage of the total number of features)"),
-    make_option(c("-m", "--min_counts"), type="numeric",default=0,dest="min_counts",help="Minimum number of counts."),
-    make_option(c("-g", "--max_ERCC"), type="numeric",default=0.7,help="Maximum percentage of expression that may be assigned to ERCC spkeins."),
+    make_option(c("-f", "--min_features"), type="numeric",default=5,help="Minimum number of features expressed. (as a percentage of the total number of features - [0,100])"),
+    make_option(c("-m", "--min_counts"), type="numeric",default=1000,dest="min_counts",help="Minimum number of counts per cell."),
+    make_option(c("-g", "--max_ERCC"), type="numeric",default=70,help="Maximum percentage of expression ([0-100]) that may be assigned to ERCC spkeins [default %default]."),
     make_option(c("-e", "--filt_outliers"), action="store_true",default=FALSE,dest="outliers",help="Detect outliers based on the median absolute difference (like scater)."),
     make_option(c("-M", "--filt_outliers_mad"), type="numeric",default=5,dest="mad",help="Median absolute deviation used to determine the outilers (default %default)."),
-    make_option(c("-n", "--min_expression"), type="numeric",default=0,help="the minium expression level to consider a feature expressed."),
+    make_option(c("-n", "--min_expression"), type="numeric",default=1,help="the minium expression level to consider a feature expressed."),
     make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode")
 )
 
@@ -70,15 +70,15 @@ pdebug.enabled <- opt$debug
 
 #
 pdebug.save.state("irap_cell_qc","p0")
+library(Matrix)
 
-
-if ( opt$min_features<0 || opt$min_features>1 ) {
-    perror("--min_feature value should be in the range of [0,1]")
+if ( opt$min_features<0 || opt$min_features>100 ) {
+    perror("--min_feature value should be in the range of [0,100]")
     quit(status=1)
 }
 
-if ( opt$max_ERCC<0 || opt$max_ERCC>1 ) {
-    perror("--max_ERCC value should be in the range of [0,1]")
+if ( opt$max_ERCC<0 || opt$max_ERCC>100 ) {
+    perror("--max_ERCC value should be in the range of [0,100]")
     quit(status=1)
 }
 
@@ -96,7 +96,10 @@ pinfo("Loading ",opt$ifile)
 if ( opt$is_mtx ) {
     table <- mtx.load(opt$ifile)
 } else {
-    table <- quant.load(opt$ifile)
+    table1 <- as.matrix(quant.load(opt$ifile))
+    ## convert to sparse matrix
+    table <- Matrix(data=table1)
+    table1 <- NULL
 }
 if (is.null(table)) {
     perror("Error loading ",opt$ifile)
@@ -104,68 +107,98 @@ if (is.null(table)) {
 }
 pinfo("Loading ",opt$ifile," done.")
 
+
 pdebug.save.state("irap_cell_qc","p1")
+
+
 suppressPackageStartupMessages(library(scater))
 
 ##
-ercc.feat <- grep("ERCC-*",rownames(table),ignore.case=TRUE)
+ercc.feat <- grep("ERCC-*",rownames(table),ignore.case=TRUE,value=TRUE)
+
 ## include MT genes too?
 if (length(ercc.feat)>0 ) {
     pinfo("Found ",length(ercc.feat)," ERCC genes")
-    if ( sum(rowSums(table[ercc.feat,])>0) == 0 ) {
+    if ( sum(Matrix::rowSums(table[ercc.feat,,drop=FALSE],na.rm=T)>0) == 0 ) {
         pinfo("ERCC without expression, ignoring it for QC")
         ercc.feat <- NULL
     }
 }
+## QC
+pinfo("Calculating QC metrics...")
+lowerDetectionLimit <- opt$min_expression
+message("Minimum (feature) expression: ",lowerDetectionLimit)
+expressed <- table>=lowerDetectionLimit
+## a gene should be expressed in more than 1 cell/sample or 1% of the samples
+cut.off <- max(c(1,0.001*ncol(expressed)))
+genes.expressed <- Matrix::rowSums(expressed,na.rm=TRUE)>cut.off
+genes.expressed <- names(genes.expressed[genes.expressed])
+message("Genes expressed (",cut.off," cols): ",length(genes.expressed))
+## genes with some expression
+pinfo("Filtering matrix to include only expressed genes...")
+expressed.filt <- expressed[genes.expressed,,drop=FALSE]
+pinfo("Filtering matrix to include only expressed genes...done.")
 
-sceset <- newSCESet(countData = table,lowerDetectionLimit=opt$min_expression)
-## QC 
-sceset <- calculateQCMetrics(sceset,feature_controls=list(ERCC=ercc.feat))
-
-## Features (genes/transcripts) expressed
-perc.feat.expressed <- 1-pData(sceset)$pct_dropout/100
-names(perc.feat.expressed) <- rownames(pData(sceset))
+pinfo("Features expressed per cell - minimum number of features:",opt$min_features)
+perc.feat.expressed <- round(Matrix::colSums(expressed.filt)*100.0/nrow(expressed.filt),0)
 perc.feat.expressed.status <- perc.feat.expressed
 perc.feat.expressed.status[perc.feat.expressed>=opt$min_features] <- "PASS"
 perc.feat.expressed.status[perc.feat.expressed<opt$min_features] <- "FAIL"
+print(summary(perc.feat.expressed))
+
+tot.expr <- Matrix::colSums(table[genes.expressed,,drop=FALSE],na.rm=TRUE)
 
 ## ERCCs
-max.ercc <- pData(sceset)$pct_exprs_feature_controls_ERCC/100
-names(max.ercc) <- rownames(pData(sceset)$pct_exprs_feature_controls_ERCC)
-max.ercc.status <- max.ercc
-max.ercc.status[max.ercc.status>opt$max_ERCC] <- "FAIL"
-max.ercc.status[max.ercc.status!="FAIL"] <- "PASS"
+if ( ! is.null(ercc.feat) ) {
+    pinfo("Percentage of expression of control genes - max. expression:",opt$max_ERCC)
+    tot.ercc.expr <- Matrix::colSums(table[ercc.feat,,drop=FALSE],na.rm=TRUE)
+    pct.ercc.expr <- round(tot.ercc.expr/tot.expr*100,0)
+    print(summary(pct.ercc.expr))
+    max.ercc.status <- pct.ercc.expr
+    max.ercc.status[max.ercc.status>opt$max_ERCC] <- "FAIL"
+    max.ercc.status[max.ercc.status!="FAIL"] <- "PASS"
+} else {
+    pct.ercc.expr <- rep(0,length(tot.expr))
+    tot.ercc.expr <- rep(0,length(tot.expr))
+    max.ercc.status <- rep("PASS",length(tot.expr))
+}
 
-control.status <- rownames(pData(sceset))
-names(control.status) <- rownames(pData(sceset))
-control.status[names(control.status)] <- "PASS"
+pinfo("Excluding cells in blacklist:",opt$blacklist_file)
+control.status <- rep("PASS",length(tot.expr))
+
 ## blacklisted
-if (!is.null(opt$controls_file) ) {
-    x <- as.character(read.table(controls.file,header=FALSE,col.names=c("Cells"))[,1])  
-    control.status[control.status%in%x] <- "FAIL"    
+if (!is.null(opt$blacklist_file) ) {
+    x <- as.character(read.table(blacklist_file,header=FALSE,col.names=c("Cells"))[,1])  
+    control.status[control.status%in%x] <- "FAIL"
+    x <- NULL
 } 
 
+
 ## outliers
+
 if ( opt$outliers) {
-    outlier <- isOutlier(pData(sceset)$total_counts, nmads = opt$mad)
-    names(outlier) <- rownames(pData(sceset))
+    pinfo("Outliers - nmads=",opt$mad)
+    outlier <- isOutlier(tot.expr, nmads = opt$mad)
     outlier.status <- outlier
     outlier.status[outlier] <- "FAIL"
     outlier.status[!outlier] <- "PASS"
 } else {
-    outlier.status <- rownames(pData(sceset))
-    names(outlier.status) <- rownames(pData(sceset))
+    pinfo("Outliers - disabled")
+    outlier <- rep("PASS",times=length(tot.expr))
+    names(outlier) <- names(tot.expr)
+    outlier.status <- outlier
     outlier.status[names(outlier.status)] <- "PASS"
 }
 
+
 ## total number of expression
-min.counts <- pData(sceset)$total_counts
-names(min.counts) <- rownames(pData(sceset)$total_counts)
-min.counts.status <- min.counts
+pinfo("Total expression per cell - min. counts: ",opt$min_counts)
+min.counts.status <- tot.expr
 min.counts.status[min.counts.status<=opt$min_counts]<- "FAIL"
 min.counts.status[min.counts.status!="FAIL"] <- "PASS"
-table(min.counts.status)
+print(summary(tot.expr))
 
+pinfo("Preparing summary table")
 ## generate a single matrix
 df <- data.frame(list(controls=control.status,
                       outlier=outlier.status,
@@ -205,7 +238,24 @@ sum.stats <- c(x,det[-length(det)])
 sum.stats.m <- sum.stats
 dim(sum.stats.m) <- c(1,length(sum.stats))
 colnames(sum.stats.m) <- names(sum.stats)
-write.tsv(sum.stats.m,file=paste0(opt$out,".stats.tsv"),header=T)
+ofile2 <- paste0(opt$out,".summary.tsv")
+pinfo("Saving ",ofile2)
+write.tsv(sum.stats.m,file=ofile2,header=T)
+## detailed stats at cell level
+sum.stats.m <- NULL
+
+
+ofile2 <- paste0(opt$out,".stats.tsv")
+x <- list(
+    "Cells/Samples"=colnames(table),
+    "Tot.Expr"=tot.expr,
+    "Tot.Ctr.expr"=tot.ercc.expr,
+    "Pct.Ctr.expr"=pct.ercc.expr,
+    "Pct.Feat.expr"=perc.feat.expressed,
+    "Expr.outlier"=outlier,
+    "Status"=df$Overall)
+pinfo("Saving ",ofile2)
+write.tsv(data.frame(x),file=ofile2,header=T)
 
 pdebug.save.state("irap_cell_qc","pf")
 q(status=0)
