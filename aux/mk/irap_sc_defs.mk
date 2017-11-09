@@ -28,8 +28,8 @@ define set_10x_params=
 mapper?=kallisto
 umi_quant?=umi_count
 sc_non_zero_rows?=1
-cell_filt_min_features?=0.3
-cell_filt_max_ERCC?=0.75
+cell_filt_min_features?=30
+cell_filt_max_ERCC?=75
 cell_filt_outliers?=y
 qc?=report
 # include GX and TX and other tags in the BAM files
@@ -76,7 +76,7 @@ def_sample_size=8
 
 ## not 100% sure that the file is the correct one for 10xv1
 def_known_umi_file=
-def_known_cells_file=$(IRAP_DIR)/data/10x/737K-april-2016.txt
+def_known_cells_file=$(IRAP_DIR)/data/10x/737K-april-2014_rc.txt
 
 $(info set 10x_v1p)
 endif
