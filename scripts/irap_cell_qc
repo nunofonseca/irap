@@ -47,7 +47,7 @@ option_list <- list(
     make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name prefix."),
     make_option(c("-f", "--min_features"), type="numeric",default=5,help="Minimum number of features expressed. (as a percentage of the total number of features - [0,100])"),
     make_option(c("-m", "--min_counts"), type="numeric",default=1000,dest="min_counts",help="Minimum number of counts per cell."),
-    make_option(c("-g", "--max_ERCC"), type="numeric",default=70,help="Maximum percentage of expression ([0-100]) that may be assigned to ERCC spkeins [default %default]."),
+    make_option(c("-g", "--max_ERCC"), type="numeric",default=70,help="Maximum percentage of expression ([0-100]) that may be assigned to ERCC spkeins. 0 disables the filter. [default %default]."),
     make_option(c("-e", "--filt_outliers"), action="store_true",default=FALSE,dest="outliers",help="Detect outliers based on the median absolute difference (like scater)."),
     make_option(c("-M", "--filt_outliers_mad"), type="numeric",default=5,dest="mad",help="Median absolute deviation used to determine the outilers (default %default)."),
     make_option(c("-n", "--min_expression"), type="numeric",default=1,help="the minium expression level to consider a feature expressed."),
@@ -149,7 +149,7 @@ print(summary(perc.feat.expressed))
 tot.expr <- Matrix::colSums(table[genes.expressed,,drop=FALSE],na.rm=TRUE)
 
 ## ERCCs
-if ( ! is.null(ercc.feat) ) {
+if ( ! is.null(ercc.feat) && opt$max_ERCC>0 ) {
     pinfo("Percentage of expression of control genes - max. expression:",opt$max_ERCC)
     tot.ercc.expr <- Matrix::colSums(table[ercc.feat,,drop=FALSE],na.rm=TRUE)
     pct.ercc.expr <- round(tot.ercc.expr/tot.expr*100,0)
