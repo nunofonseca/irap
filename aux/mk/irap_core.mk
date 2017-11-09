@@ -738,6 +738,8 @@ bam_umi_count_params?=--min_reads 0 --multi_mapped
 ## --uniq_mapped --multi_mapped
 umis_params?=--cb_cutoff 2
 
+## use sample barcodes if available (y|n)
+sc_use_sample_barcode?=n
 
 ########################
 ## single cell filtering
@@ -772,6 +774,13 @@ clustering_method:=sc3
 # not used yet
 # valid_clustering_methods=sc3 none
 
+
+ifeq ($(sc_use_sample_barcode),y)
+ifeq ($(quant_method),umis)
+$(error umis does not use sample barcodes. sc_use_sample_barcode is set to $(sc_use_sample_barcode))
+endif
+bam_umi_count_params+= --ignore_sample
+endif
 
 # dge files will be in mtx (MM) format
 ifeq ($(quant_method),umi_count)
