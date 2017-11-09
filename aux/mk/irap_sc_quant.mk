@@ -147,7 +147,7 @@ endif
 
 # Generate a single matrix
 $(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).mtx.gz: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).mtx.gz) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).mtx.gz) 
-	( $(call pass_args_stdin,irap_merge_mtx,$@, -o $@ --all_feat_col 1 --all_feat_file $(mapTrans2gene) --in "$^") ) || ( rm -f $@ && exit 1)
+	( $(call pass_args_stdin,irap_merge_mtx,$@, -o $@ --all_feat_col 1 --all_feat $(mapTrans2gene) --in "$^") ) || ( rm -f $@ && exit 1)
 
 
 endif
