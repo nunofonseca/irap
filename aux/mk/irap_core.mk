@@ -738,7 +738,7 @@ bam_umi_count_params?=--min_reads 0 --multi_mapped
 ## --uniq_mapped --multi_mapped
 umis_params?=--cb_cutoff 2
 
-## use sample barcodes if available (y|n)
+## use sample barcodes... if available (y|n)
 sc_use_sample_barcode?=n
 
 ########################
