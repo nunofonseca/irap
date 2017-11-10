@@ -129,11 +129,11 @@ pinfo("Calculating QC metrics...")
 lowerDetectionLimit <- opt$min_expression
 message("Minimum (feature) expression: ",lowerDetectionLimit)
 expressed <- table>=lowerDetectionLimit
-## a gene should be expressed in more than 1 cell/sample or 1% of the samples
-cut.off <- max(c(1,0.001*ncol(expressed)))
+## a gene should be expressed in more than 1 cell/sample
+cut.off <- 1
 genes.expressed <- Matrix::rowSums(expressed,na.rm=TRUE)>cut.off
 genes.expressed <- names(genes.expressed[genes.expressed])
-message("Genes expressed (",cut.off," cols): ",length(genes.expressed))
+message("Genes expressed ( in at least ",cut.off," cells/samples): ",length(genes.expressed))
 ## genes with some expression
 pinfo("Filtering matrix to include only expressed genes...")
 expressed.filt <- expressed[genes.expressed,,drop=FALSE]
