@@ -581,7 +581,7 @@ ifdef se
  $(foreach l,$(se),$(call check_se_libname_ok,$(l)))
  $(foreach l,$(se),$(call check_param_ok,$(l)_rs))
  $(foreach l,$(se),$(call check_param_ok,$(l)_qual))
- $(foreach l,$(se),$(foreach bc,known_umi_file known_cells_file index1 index2 index3 umi_read umi_offset umi_size cell_read cell_offset cell_size sample_read sample_offset sample_size read1_offset read2_offset read1_size read2_size,$(eval $(l)_$(bc)=$(call check_bc_value_ok,$(l),$(bc)))))
+ $(foreach l,$(se),$(foreach bc,known_umi_file known_cells_file index1 index2 index3 umi_read umi_offset umi_size cell_read cell_offset cell_size sample_read sample_offset sample_size read1_offset read2_offset read1_size read2_size sample_name,$(eval $(l)_$(bc)=$(call check_bc_value_ok,$(l),$(bc)))))
  ifile_given=1
 endif
 
@@ -620,7 +620,7 @@ ifdef pe
  $(foreach l,$(pe),$(call check_param_ok,$(l)_rs))
  $(foreach l,$(pe),$(call check_param_ok,$(l)_qual))
  $(foreach l,$(pe),$(call set_rs_list,$(l)_rs))
- $(foreach l,$(pe),$(foreach bc,umi_read umi_offset umi_size cell_read cell_offset cell_size sample_read sample_offset sample_size read1_offset read2_offset read1_size read2_size,$(eval $(l)_$(bc)=$(call check_bc_value_ok,$(l),$(bc)))))
+ $(foreach l,$(pe),$(foreach bc,umi_read umi_offset umi_size cell_read cell_offset cell_size sample_read sample_offset sample_size read1_offset read2_offset read1_size read2_size sample_name,$(eval $(l)_$(bc)=$(call check_bc_value_ok,$(l),$(bc)))))
  #$(foreach l,$(pe),$(call check_param_ok,$(l)_mp))
  ifile_given=1
 endif
@@ -779,6 +779,7 @@ ifeq ($(sc_use_sample_barcode),y)
 ifeq ($(quant_method),umis)
 $(error umis does not use sample barcodes. sc_use_sample_barcode is set to $(sc_use_sample_barcode))
 endif
+else
 bam_umi_count_params+= --ignore_sample
 endif
 

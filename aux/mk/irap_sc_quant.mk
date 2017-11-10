@@ -86,7 +86,7 @@ define make-umis-rule=
 $(call lib2quant_folder,$(1))$(2).$(3)s.raw.$(quant_method).mtx.gz: $(call lib2bam_folder,$(1))$(2).hits.bam  $$(mapTrans2gene) 
 	mkdir -p $$(@D) && \
 	time umis tagcount $$(umis_params) --sparse --parse_tags --gene_tags $$< $$@.tmp   && \
-	gzip -f -c $$@.tmp.colnames > $$(subst .gz,,$$@)_cols.gz && \
+	$(if $($(1)_sample_name),sed "s/$$$$/$($(1)_sample_name)/" $$@.tmp.colnames,cat $$@.tmp.colnames) | gzip -f -c -  > $$(subst .gz,,$$@)_cols.gz && \
 	gzip -f -c $$@.tmp.rownames > $$(subst .gz,,$$@)_rows.gz && \
 	gzip -f -c $$@.tmp > $$@ && \
 	rm -f $$@.tmp.* || ( rm -f $$@* && exit 1)
@@ -123,8 +123,8 @@ ifeq (umi_count,$(quant_method))
 # $4 - column in the reference file (mapTrans2gene) with all genes/transcripts
 define make-iumi-count-rule=
 $(call lib2quant_folder,$(1))$(2).$(3)s.raw.$(quant_method).mtx.gz: $(call lib2bam_folder,$(1))$(2).hits.bam  $$(mapTrans2gene) $($(1)_known_umi_file) $($(1)_known_cells_file)
-	mkdir -p $$(@D) && \ sc_use_sample_barcode
-	time bam_umi_count --bam $$< --ucounts $(call lib2quant_folder,$(1))$(2).$(3)s.raw.$(quant_method).mtx $$(bam_umi_count_params) $(if $($(1)_known_umi_file),--known_umi $($(1)_known_umi_file),) $(if $($(1)_known_cells_file),--known_cells $($(1)_known_cells_file),) --tag $(call get_bam_tag,$(3))  --ucounts_MM && gzip -f $(call lib2quant_folder,$(1))$(2).$(3)s.raw.$(quant_method).mtx_{rows,cols} && gzip -f $(call lib2quant_folder,$(1))$(2).$(3)s.raw.$(quant_method).mtx || ( rm -f $$@ && exit 1)
+	mkdir -p $$(@D) && \
+	time bam_umi_count --bam $$< --ucounts $(call lib2quant_folder,$(1))$(2).$(3)s.raw.$(quant_method).mtx $$(bam_umi_count_params) $(if $($(1)_known_umi_file),--known_umi $($(1)_known_umi_file),) $(if $($(1)_known_cells_file),--known_cells $($(1)_known_cells_file),) --tag $(call get_bam_tag,$(3))  --ucounts_MM $(if $($(1)_sample_name),--cell_suffix "-$($(1)_sample_name)",) && gzip -f $(call lib2quant_folder,$(1))$(2).$(3)s.raw.$(quant_method).mtx_{rows,cols} && gzip -f $(call lib2quant_folder,$(1))$(2).$(3)s.raw.$(quant_method).mtx || ( rm -f $$@ && exit 1)
 endef
 #	sparse2tsv --sort --stsv $$@.sparse.tsv --out $$@.tmp --non_zero_rows $$(sc_non_zero_rows) --all_feat $$(mapTrans2gene) --all_feat_col $(4)  && \
 #	gzip $$@.sparse.mtx &&\
