@@ -36,10 +36,10 @@ cell_qc: $(cell_qc_files)
 irap_cell_qc_params=$(if $(cell_filt_controls),--controls "$(cell_filt_controls)") --min_features $(cell_filt_min_features) $(if $(subst y,,$(cell_filt_outliers)),,--filt_outliers) --max_ERCC $(cell_filt_max_ERCC) --min_counts $(cell_filt_min_cell_expr) --min_expression $(cell_filt_min_expression)  -M $(cell_outliers_mad)
 
 $(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).qc.tsv: $(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).$(expr_ext) $(cell_filt_controls)
-	irap_cell_qc --$(expr_format) -i $< --out $@.tmp $(irap_cell_qc_params) && mv $@.tmp $@
+	irap_cell_qc --$(expr_format) -i $< --out $@ $(irap_cell_qc_params) || (rm -f $@* && exit 1)
 
 $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).qc.tsv: $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).$(expr_ext) $(cell_filt_controls)
-	irap_cell_qc --$(expr_format) -i $< --out $@.tmp $(irap_cell_qc_params) && mv $@.tmp $@
+	irap_cell_qc --$(expr_format) -i $< --out $@ $(irap_cell_qc_params) || (rm -f $@* && exit 1)
 
 
 ## out files
