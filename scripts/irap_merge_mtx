@@ -144,7 +144,7 @@ for ( f in files ) {
         }
         shared.cols <- intersect(colnames(out.table),colnames(x))
         if ( length(shared.cols) >0 ) {
-            pwarning("repeated columns found (" ,length(shared.cols),")" )
+            pwarning("columns shared (" ,length(shared.cols),")" )
             ## assuming that these are replicates
             ##perror("Not supporting this for now" )
             ##q(status=1)
