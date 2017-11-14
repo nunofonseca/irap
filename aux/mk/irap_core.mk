@@ -734,7 +734,17 @@ sc_non_zero_rows=1
 ## increasing this filter can make the intermidiate files smaller but there is no track of the cells lost
 
 ## parameters passed to bam_umi_count (umi_count quant. option)
-bam_umi_count_params?=--min_reads 0 --multi_mapped
+bam_umi_count_params?=--min_reads 1 --multi_mapped --min_umis 1
+
+## may be used by different methods
+## currently only bam_umi_count takes advantage of the following options (to reduce memory usage)
+## max. number of cell barcodes
+sc_max_cells=800000
+## max. number of features quantified (if protein coding only genes are considered then this value can be reduced)
+sc_max_features=80000
+## average number of features expected to be expressed per cell
+feat_cell=5000
+
 ## --uniq_mapped --multi_mapped
 umis_params?=--cb_cutoff 2
 
@@ -743,7 +753,7 @@ sc_use_sample_barcode?=n
 
 ########################
 ## single cell filtering
-cell_filt_min_features?=0.35   # minimum number of features expressed as a percentage of the total number of features
+cell_filt_min_features?=0.15   # minimum number of features expressed as a percentage of the total number of features
 
 cell_filt_max_ERCC?=0.8  # maximum percentage of expression that may be atributed to ERCC spike-ins
 
@@ -782,6 +792,8 @@ endif
 else
 bam_umi_count_params+= --ignore_sample
 endif
+
+
 
 # dge files will be in mtx (MM) format
 ifeq ($(quant_method),umi_count)
