@@ -117,6 +117,7 @@ def_cell_size?=0
 def_sample_read?=undef
 def_sample_offset?=0
 def_sample_size?=0
+def_sample_name?=
 def_read1_offset?=0
 def_read1_size?=-1
 def_read2_offset?=0
