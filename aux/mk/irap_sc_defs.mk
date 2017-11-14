@@ -35,12 +35,12 @@ qc?=report
 # include GX and TX and other tags in the BAM files
 barcode_post_process_bam=y
 #
-sc_max_cells=800000
+sc_max_cells?=750000
 ## max. number of features quantified (if protein coding only genes are considered then this value can be reduced)
 ## settings for human
-sc_max_features=40000
+sc_max_features?=40000
 ## average number of features expected to be expressed per cell
-feat_cell=5000
+feat_cell?=5000
 bam_umi_count_params?=--min_reads 1 --min_umis 1
 
 endef
@@ -61,6 +61,7 @@ def_sample_offset=0
 def_sample_size=8
 ## not 100% sure that the file is correct
 def_known_umi_file=$(IRAP_DIR)/data/10x/737K-august-2016.txt
+$(info set 10x_v1)
 endif
 
 # files obtained from the 10x website
