@@ -744,7 +744,7 @@ sc_max_cells=800000
 ## max. number of features quantified (if protein coding only genes are considered then this value can be reduced)
 sc_max_features=80000
 ## average number of features expected to be expressed per cell
-feat_cell=5000
+sc_feat_cell=5000
 
 ## --uniq_mapped --multi_mapped
 umis_params?=--cb_cutoff 2
