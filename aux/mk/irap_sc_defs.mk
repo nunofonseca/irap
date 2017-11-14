@@ -34,6 +34,15 @@ cell_filt_outliers?=y
 qc?=report
 # include GX and TX and other tags in the BAM files
 barcode_post_process_bam=y
+#
+sc_max_cells=800000
+## max. number of features quantified (if protein coding only genes are considered then this value can be reduced)
+## settings for human
+sc_max_features=40000
+## average number of features expected to be expressed per cell
+feat_cell=5000
+bam_umi_count_params?=--min_reads 1 --min_umis 1
+
 endef
 
 
