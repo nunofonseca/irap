@@ -118,8 +118,9 @@ process.cmdline.args <- function(cmd) {
 }
 
 ####################################################
-# Given the map of a file to a group and a vector with colnames
-# produce the vector with the respective group names
+## Given the map of a file to a group and a vector with colnames
+## produce the vector with the respective group names
+## change to one liner ...
 map.conds2cols <- function(label2group,cols) {
   conds <- cols
   i <- 1
@@ -192,7 +193,7 @@ filter.read.counts.table <- function(data,opt) {
   if (opt$min_count>0) {
     pinfo("Filtering out genes with low counts (<=",opt$min_count,")...")
     rows.sel <- apply(data,1,max)>opt$min_count ;# filter out the rows with the maximum number of reads under the given threshold
-    data.f <- data[rows.sel,]
+    data.f <- data.f[rows.sel,]
     pinfo("Filtering out genes with low counts (<=",opt$min_count,")...done.")
   }
   if(opt$only.annot.genes) {
