@@ -55,8 +55,8 @@ pdebug.save.state("irap_DE_edgeR","2")
 data.f <- filter.read.counts.table(data,opt)
 data.f <- handle.tech.replicates(data.f,opt)
 
-data.f <- apply(data.f,2,round,0)
-storage.mode(data.f) <- "integer"
+#data.f <- apply(data.f,2,round,0)
+#storage.mode(data.f) <- "integer"
 
 #head(data.f[,unlist(opt$label2group)])
 opt$conds <- map.conds2cols(label2group=opt$label2group,cols=colnames(data.f))
