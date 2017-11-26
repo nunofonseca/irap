@@ -172,7 +172,7 @@ for (p in perp.values) {
     tosave <- nbt.res$tsne
     tosave <- cbind(tosave,Label=rownames(nbt.res$tsne))
     print(head(tosave))
-    write.table(tosave,file=ofile,row.names=FALSE,quote=FALSE)
+    write.table(tosave,file=ofile,row.names=FALSE,quote=FALSE,sep="\t")
     pinfo("Created ",ofile)
     ## also generate the png
     ofile2 <- paste0(ofile,".png")
