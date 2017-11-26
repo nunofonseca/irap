@@ -35,8 +35,7 @@ irap_menu_css_file <- paste(IRAP.DIR,"/aux/css/menu.css",sep="")
 irap.css <- "irap.css"
 ############################################################
 # Useful functions
-pinfo <- function(...) {
-    
+pinfo <- function(...) {   
     cat(paste0("[INFO ",format(Sys.time(), format="%d/%m-%H:%M"),"] ",...,"\n"))
 }
 
@@ -1338,18 +1337,6 @@ merge.matrices <- function(matrices) {
       }
     }
   aggr.table
-}
-
-# Given the map of a file to a group and a vector with colnames
-# produce the vector with the respective group names
-map.conds2cols <- function(label2group,cols) {
-  deseq.conds <- cols
-  i <- 1
-  for (c in cols) {    
-    deseq.conds[i] <- label2group[[deseq.conds[i]]]
-    i <- i+1
-  }
-  deseq.conds
 }
 
 
