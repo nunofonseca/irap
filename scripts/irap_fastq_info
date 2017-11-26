@@ -68,7 +68,7 @@ endef
 file_exists=$(if  $(realpath $(1)),,$(call p_error,$(1) not found))
 
 
-version=0.8.5p4
+version=0.8.5p5
 
 pname=irap_fastq_info
 
