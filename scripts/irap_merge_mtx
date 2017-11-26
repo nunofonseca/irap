@@ -143,6 +143,12 @@ for ( f in files ) {
             }
         }
         shared.cols <- intersect(colnames(out.table),colnames(x))
+        ## do not consider empty columns
+        cs <- colSums(x[,shared.cols,drop=FALSE])
+        ## remove the shared cols with no values
+        x <- x[,!colnames(x)%in%names(cs[cs==0]),drop=FALSE]
+        shared.cols <- intersect(colnames(out.table),colnames(x))
+        
         if ( length(shared.cols) >0 ) {
             pwarning("columns shared (" ,length(shared.cols),")" )
             ## assuming that these are replicates
