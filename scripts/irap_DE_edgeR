@@ -54,7 +54,12 @@ pdebug.save.state("irap_DE_edgeR","2")
 
 data.f <- filter.read.counts.table(data,opt)
 data.f <- handle.tech.replicates(data.f,opt)
-opt$conds <- map.conds2cols(opt$label2group,colnames(data.f))
+
+data.f <- apply(data.f,2,round,0)
+storage.mode(data.f) <- "integer"
+
+#head(data.f[,unlist(opt$label2group)])
+opt$conds <- map.conds2cols(label2group=opt$label2group,cols=colnames(data.f))
 
 ############
 library(edgeR)
@@ -162,9 +167,11 @@ irap_DE_edger_debug <- function(rdata.obj) {
   source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
   library(edgeR)
 }
+
 IRAP.DIR=getwd()
 Sys.setenv(IRAP_DIR=IRAP.DIR)
-rdata.obj="irap_DE_edger.Rdata"
-irap_DE_edger_debug("irap_DE_edger.Rdata")
+rdata.obj="irap_DE_edgeR.Rdata"
+load(rdata.obj)
+irap_DE_edger_debug("irap_DE_edgeR.Rdata")
 
   
