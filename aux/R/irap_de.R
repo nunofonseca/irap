@@ -118,8 +118,9 @@ process.cmdline.args <- function(cmd) {
 }
 
 ####################################################
-# Given the map of a file to a group and a vector with colnames
-# produce the vector with the respective group names
+## Given the map of a file to a group and a vector with colnames
+## produce the vector with the respective group names
+## change to one liner ...
 map.conds2cols <- function(label2group,cols) {
   conds <- cols
   i <- 1
@@ -127,6 +128,7 @@ map.conds2cols <- function(label2group,cols) {
     conds[i] <- label2group[[conds[i]]]
     i <- i+1
   }
+  names(conds) <- cols
   conds
 }
 # Handle technical replicates by merging
@@ -188,16 +190,16 @@ filter.read.counts.table <- function(data,opt) {
     q(status=1)
   }
   cols.names <- cols.names[!is.na(match(cols.names,cols.used))]
-  data.f <- data.f[,cols.names]
+  data.f <- data.f[,cols.names,drop=FALSE]
   if (opt$min_count>0) {
     pinfo("Filtering out genes with low counts (<=",opt$min_count,")...")
     rows.sel <- apply(data,1,max)>opt$min_count ;# filter out the rows with the maximum number of reads under the given threshold
-    data.f <- data[rows.sel,]
+    data.f <- data.f[rows.sel,,drop=FALSE]
     pinfo("Filtering out genes with low counts (<=",opt$min_count,")...done.")
   }
   if(opt$only.annot.genes) {
     pinfo("Filtering out genes not in annotation file...")
-    data.f <- data.f[rownames(data.f) %in% opt$annot$ID,]
+    data.f <- data.f[rownames(data.f) %in% opt$annot$ID,,drop=FALSE]
     pinfo("Filtering out genes not in annotation file...done.")
   }
   data.f
