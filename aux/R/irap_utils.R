@@ -36,7 +36,7 @@ irap.css <- "irap.css"
 ############################################################
 # Useful functions
 pinfo <- function(...) {
-  cat(paste0("[INFO] ",...,"\n"))
+    cat(paste0("[INFO ",format(Sys.time(), format="%d/%m-%H:%M"),"] ",...,"\n"))
 }
 
 pwarning <- function(...) {
