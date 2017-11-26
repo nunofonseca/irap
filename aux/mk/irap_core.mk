@@ -433,11 +433,35 @@ $(call file_exists,$(gtf_file_dir)/$(gtf_file))
 # irap's gtf file
 # lgtf_file_dir:=
 
+
+# cDNA file
+ifndef cdna_file
+ cdna_file?=$(subst .dna.fa,.cdna.all.fa,$(reference))
+ ifeq ($(cdna_file),$(reference))
+   cdna_file=$(subst .fa,.cdna.all.fa,$(reference))
+ endif
+endif
+cdna_dir:=$(abspath $(data_dir)/reference/$(species))
+cdna_file_abspath=$(abspath $(cdna_dir)/$(cdna_file))
+cdna_file_fasta_abspath=$(abspath $(cdna_dir)/$(subst .gz,,$(cdna_file)))
+
+#$(info *       CDNA = $(cdna_file))
+# TODO: only report an error if the file is really needed
+#$(call file_exists,$(cdna_dir)/$(cdna_file))
+
+
+#trans_file?=$(abspath $(data_dir)/reference/$(species)/$(shell echo $(reference)|sed "s/.dna.fa/.trans.fa/" | sed "s/.gz//"))
+user_trans_abspath?=$(cdna_file_abspath)
+
+
+#$(call file_exists,$(trans_file))
+
+
 # ************
 # spikein data
 ifdef spikein_fasta
 ifeq ($(spikein_fasta),ERCC)
-override spikein_fasta:=$(data_dir)/ercc/ercc.fasta.gz
+override spikein_fasta:=$(data_dir)/ercc/ercc.fasta
 spikein_fasta_abspath:=$(abspath $(spikein_fasta))
 else
 spikein_fasta_abspath:=$(abspath $(spikein_fasta))
@@ -463,7 +487,10 @@ override reference_abspath:=$(new_spike_ref_prefix).fa
 reference_prefix=$(reference_abspath)
 
 reference_basename=$(notdir $(reference_abspath))
-#
+
+## transcripts
+override trans_abspath=$(dir $(user_trans_abspath))/$(patsubst %.fasta,%.$(spikein_fasta_prefix),$(patsubst %.fa,%.fasta,$(subst .gz,,$(notdir $(user_trans_abspath))))).fa
+
 gtf_file_dir:=$(name)/data
 user_gtf_abspath:=$(gtf_file_abspath)
 gtf_file_abspath:=$(name)/data/$(subst .fasta,,$(spikein_fasta_prefix)).$(subst .gz,,$(notdir $(user_gtf_abspath)))
@@ -480,6 +507,8 @@ endif
 $(info * Currently spikein data is not explored when performing differential expression analysis)
 endif
 
+trans_abspath?=$(cdna_file_abspath)
+$(info *       Transcripts = $(trans_abspath))
 
 # ****************
 # single cell
@@ -512,28 +541,6 @@ $(info *       gff3_file  = $(gff3_file_abspath))
 feat_mapping_file?=$(subst .gz,,$(subst .gtf,.mapping.Rdata,$(gtf_file_abspath)))
 
 #**********
-# cDNA file
-ifndef cdna_file
- cdna_file?=$(subst .dna.fa,.cdna.all.fa,$(reference))
- ifeq ($(cdna_file),$(reference))
-   cdna_file=$(subst .fa,.cdna.all.fa,$(reference))
- endif
-endif
-cdna_dir:=$(abspath $(data_dir)/reference/$(species))
-cdna_file_abspath=$(abspath $(cdna_dir)/$(cdna_file))
-cdna_file_fasta_abspath=$(abspath $(cdna_dir)/$(subst .gz,,$(cdna_file)))
-
-#$(info *       CDNA = $(cdna_file))
-# TODO: only report an error if the file is really needed
-#$(call file_exists,$(cdna_dir)/$(cdna_file))
-
-
-#trans_file?=$(abspath $(data_dir)/reference/$(species)/$(shell echo $(reference)|sed "s/.dna.fa/.trans.fa/" | sed "s/.gz//"))
-trans_file?=$(cdna_file_abspath)
-$(info *       Transcripts = $(trans_file))
-#$(call file_exists,$(trans_file))
-
-
 refgeneclass_file=$(subst .gz,,$(gtf_file_abspath)).gene_class.txt
 refgeneannot_file=$(subst .gtf,,$(subst .gz,,$(gtf_file_abspath))).gene_annot.tsv
 
@@ -905,7 +912,11 @@ $(info *	mapper=$(mapper))
 # gems
 SUPPORTED_MAPPERS=tophat1 tophat2 smalt gsnap soapsplice bwa1 bwa2 bowtie1 bowtie2 gem star osa mapsplice hisat2
 ifeq ($(rnaseq_type),sc)
-SUPPORTED_MAPPERS+= kallisto 
+SUPPORTED_MAPPERS+= kallisto
+ifeq ($(mapper),kallisto)
+# aligns to the transcriptome
+mapper_splicing=no
+endif
 endif
 
 ifeq (,$(filter $(mapper),none $(SUPPORTED_MAPPERS)))
@@ -1155,7 +1166,7 @@ endif
 
 
 ifeq ($(mapper_splicing),no)
- files_indexed=$(trans_file)
+ files_indexed=$(trans_abspath)
 else
 # word 1 = reference 
  files_indexed=$(reference_prefix) $(gtf_file_abspath)
@@ -1227,17 +1238,17 @@ endif
 barcode_post_process_bam?=n
 $(info *	barcode_post_process_bam=$(barcode_post_process_bam))
 
-# 1 - lib
-# 2 - in bam
-# 3 - out bam
+
+# 1 - in bam
+# 2 - out bam
 ifeq ($(barcode_post_process_bam),y)
 ## alignments to the genome
 define do_post_process_bam_cmd=
-bam_add_tags  --inbam $(2) --outbam - | bam_annotate.sh -b - -e $(name)/data/$(reference_basename).exons.bed   -i $(name)/data/$(reference_basename).introns.bed  -g $(name)/data/$(reference_basename).genes.bed6 -t $(name)/data/$(reference_basename).transcripts.bed6 > $(3).tmp && mv $(3).tmp $(3)
+bam_add_tags  --inbam $(1) --outbam - | bam_annotate.sh -b - -e $(name)/data/$(reference_basename).exons.bed   -i $(name)/data/$(reference_basename).introns.bed  -g $(name)/data/$(reference_basename).genes.bed6 -t $(name)/data/$(reference_basename).transcripts.bed6 > $(2).tmp && mv $(2).tmp $(2)
 endef
 ## Alignments to the transcriptome - assumes that the chr/seq contains the transcript ID
 define do_post_process_trans_bam_cmd=
-bam_add_tags --tx_2_gx $(mapTrans2gene) --tx  --inbam $(2) --outbam - > $(3).tmp && mv $(3).tmp $(3)
+bam_add_tags --tx_2_gx $(mapTrans2gene) --tx  --inbam $(1) --outbam - > $(2).tmp && mv $(2).tmp $(2)
 endef
 
 else
@@ -1630,8 +1641,11 @@ endef
 
 
 ifdef spikein_data
+$(trans_abspath): $(subst .gz,,$(user_trans_abspath)) $(subst .gz,,$(spikein_fasta_abspath))
+	cat $^ > $@.tmp && mv $@.tmp $@
 
-$(reference_abspath): $(user_reference_abspath) $(spikein_fasta_abspath)
+
+$(reference_abspath): $(subst .gz,,$(user_reference_abspath)) $(subst .gz,,$(spikein_fasta_abspath))
 	cat $^ > $@.tmp && mv $@.tmp $@
 
 $(spikein_gtf_file): $(spikein_fasta_abspath) 

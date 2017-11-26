@@ -889,7 +889,7 @@ $(warning kallisto does not need the reads to be aligned)
 endif
 
 # transcripts
-$(call file_exists,$(trans_file))
+$(call file_exists,$(user_trans_abspath))
 
 
 # Note: currently if kallisto is ran in quant mode no bam file is kept
@@ -899,14 +899,14 @@ kallisto_quant_params?=
 
 
 #
-kallisto_index_name=$(trans_file)_kallisto/kallisto_index
-kallisto_index=$(trans_file)_kallisto/kallisto_index.irap
+kallisto_index_name=$(trans_abspath)_kallisto/kallisto_index
+kallisto_index=$(trans_abspath)_kallisto/kallisto_index.irap
 
 # Add the reference preparation to STAGE0
 SETUP_DATA_FILES+=$(kallisto_index)
 
 # code now in irap_map.mk
-$(kallisto_index): $(trans_file)
+$(kallisto_index): $(trans_abspath)
 	$(call run_kallisto_index)
 
 
@@ -973,7 +973,7 @@ $(warning salmon does not need the reads to be aligned)
 endif
 
 # transcripts
-$(call file_exists,$(trans_file))
+$(call file_exists,$(user_trans_abspath))
 
 # K - minimum matching
 # the user should adjust the K to 1/3 of the read length
@@ -987,14 +987,14 @@ salmon_quant_params=
 endif
 
 
-salmon_index_name=$(trans_file)_salmon/salmon_index
-salmon_index=$(trans_file)_salmon/salmon_index.irap
+salmon_index_name=$(trans_abspath)_salmon/salmon_index
+salmon_index=$(trans_abspath)_salmon/salmon_index.irap
 
 # Add the reference preparation to STAGE0
 SETUP_DATA_FILES+=$(salmon_index)
 
 
-$(salmon_index): $(trans_file)
+$(salmon_index): $(trans_abspath)
 	$(call run_salmon_index)
 ##	mkdir -p $(@D) && irap_w
 ##	mkdir -p $(@D) && irap_wrapper.sh salmon salmon index $(salmon_index_params) -i $(salmon_index_name) -t $< && touch $@
