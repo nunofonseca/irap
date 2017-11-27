@@ -24,7 +24,7 @@ install=all
 IRAP_DIR1=
 SRC_DIR=
 
-IRAP_VERSION=0.8.5p5
+IRAP_VERSION=0.8.5p4
 
 
 #
@@ -736,7 +736,7 @@ function mappers_install {
    soap2_install
 #   gem2_install
    gsnap_install 
-   osa_install
+   ## osa_install
    star_install
    pinfo "To install MapSplice run: irap_install.sh -s . -x mapsplice"
    pinfo "To install GEM run: irap_install.sh -s . -x gem"
@@ -1538,7 +1538,7 @@ function quant_install {
     stringtie_install
     rsem_install
     kallisto_install
-    fusionmap_install
+    ##fusionmap_install
     salmon_install
     #isoem_install
     #sailfish_install
