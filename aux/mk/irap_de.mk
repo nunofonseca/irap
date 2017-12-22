@@ -112,6 +112,14 @@ define run_voom=
 irap_DE_voom --tsv $(1) --min $(de_min_count) --contrasts "$(call get_contrast_def,$(2))" --labels "$(call get_contrast_labels,$(2))" --out $(3) $(call get_de_annot) $(call get_de_annot_genes_only) $(if $(technical.replicates),--tech-rep "$(technical.replicates)") --feature $(4)
 endef
 
+#************
+# EBSeq
+#************
+
+define run_ebseq=
+irap_DE_ebseq --tsv $(1) --min $(de_min_count) --contrasts "$(call get_contrast_def,$(2))" --labels "$(call get_contrast_labels,$(2))" --out $(3) $(call get_de_annot) $(call get_de_annot_genes_only) $(if $(technical.replicates),--tech-rep "$(technical.replicates)") $(if $(4), --feature $(4) --g2t $(mapTrans2gene))
+endef
+
 ################################################################################
 # Differential Analysis
 ################################################################################
@@ -191,6 +199,13 @@ $(name)/$(mapper)/$(quant_method)/voom/%.genes_de.tsv $(name)/$(mapper)/$(quant_
 
 $(name)/$(mapper)/$(quant_method)/voom/%.transcripts_de.tsv $(name)/$(mapper)/$(quant_method)/voom/%.transcripts_de.Rdata: $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv $(annot_tsv) 
 	$(call run_voom,$<,$*,$(@D)/$*.voom,transcript) && mv $(@D)/$*.voom/de.tsv $(@D)/$*.transcripts_de.tsv && mv $(@D)/$*.voom/de.Rdata $(@D)/$*.transcripts_de.Rdata
+
+# ebseq
+$(name)/$(mapper)/$(quant_method)/ebseq/%.genes_de.tsv $(name)/$(mapper)/$(quant_method)/ebseq/%.genes_de.Rdata: $(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv $(annot_tsv)  
+	$(call run_ebseq,$<,$*,$(@D)/$*.ebseq) && mv $(@D)/$*.ebseq/de.tsv $(@D)/$*.genes_de.tsv && mv $(@D)/$*.ebseq/de.Rdata $(@D)/$*.genes_de.Rdata
+
+$(name)/$(mapper)/$(quant_method)/ebseq/%.transcripts_de.tsv $(name)/$(mapper)/$(quant_method)/ebseq/%.transcripts_de.Rdata: $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv $(annot_tsv)  $(mapTrans2gene)
+	$(call run_ebseq,$<,$*,$(@D)/$*.ebseq,transcript) && mv $(@D)/$*.ebseq/de.tsv $(@D)/$*.transcripts_de.tsv && mv $(@D)/$*.ebseq/de.Rdata $(@D)/$*.transcripts_de.Rdata
 
 
 # BAYSEQ

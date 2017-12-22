@@ -1,0 +1,177 @@
+#!/usr/bin/env Rscript
+#; -*- mode: R;-*-
+# =========================================================
+#
+# Copyright 2012-2017,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+# =========================================================
+
+suppressPackageStartupMessages(library("optparse"))
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+
+# specify our desired options in a list
+#
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+source(paste(IRAP.DIR,"aux/R","irap_de.R",sep="/"))
+
+cmd <- "irap_DE_ebseq"
+pwarning("ebseq support: Under development!!!!!!!")
+opt <- process.cmdline.args(cmd)
+pinfo("Parameters parsed.")
+###
+if ( length(opt$labels.v) > 2 ) {
+  perror("irap_DE_ebseq only supports pairwise comparisons!");
+  q(status=2);
+}
+
+# *************************************
+system(paste("mkdir -p ",opt$out));
+data <- quant.load(opt$tsv_file)
+## debug
+pdebug.save.state("irap_DE_ebseq","2")
+# filter the set of genes based on the given options (e.g., minimum number of reads)
+
+data.f <- filter.read.counts.table(data,opt)
+data.f <- handle.tech.replicates(data.f,opt)
+
+#data.f <- apply(data.f,2,round,0)
+#storage.mode(data.f) <- "integer"
+
+#head(data.f[,unlist(opt$label2group)])
+opt$conds <- map.conds2cols(label2group=opt$label2group,cols=colnames(data.f))
+
+############
+library(EBSeq)
+
+Mat <- data.matrix(data.f)
+#
+Conds <- as.factor(opt$conds)
+
+## Start with common, then trended, then tagwise.
+if (min(table(opt$conds))<=1) {
+    ## No replicates
+    perror("Unable to estimate dispersion without replicates!")
+    q(status=2)
+}
+
+## Number of transcripts per gene
+opt$ngVector <- NULL
+if ( opt$feature == "transcript" ) {
+    if ( is.null(opt$mapping) ) stop("missing g2t parameter")
+    opt$ngVector <- table(opt$mapping$gene)
+    pinfo("Transcripts per gene:")
+    print(summary(as.numeric(opt$ngVector)))
+    t2g <- opt$mapping$gene
+    names(t2g) <- opt$mapping$trans
+    x <- opt$ngVector[t2g]
+    names(x) <- names(t2g)
+    opt$ngVector <- GetNg(IsoformName=opt$mapping$trans,GeneName=opt$mapping$gene,TrunThre=3)    
+}
+
+## library size factors
+Sizes <- MedianNorm(Mat)
+
+## Normalized (for the Rdata object)
+NormMat <- GetNormalizedMat(Mat, Sizes)
+
+##
+pdebug.save.state("irap_DE_ebseq","3")
+
+## Number of iterations. The default value is 5. Users should always
+## check the convergency by looking at the Alpha and Beta in output. If
+## the hyper-parameter estimations are not converged in 5 iterations,
+## larger number is suggested.
+maxrounds <- c(5,10,20,30,50)
+
+EBres <- NULL
+for (rounds in maxrounds) {
+    pinfo("Running EBTest (maxrounds=",rounds,")... ")
+    EBres <- NULL
+    res <- try({EBres <- EBTest(Data = Mat, NgVector = opt$ngVector$IsoformNgTrun, Conditions = Conds, sizeFactors = Sizes, maxround = rounds)})
+    if(class(res) == "try-error") { stop("Failure while running EBSeq") }
+    ## we require changes less than 10^-3 to declare convergence.
+    xa <- as.numeric(tail(EBres$Alpha,n=2))
+    xa <- abs(xa[1]-xa[2])
+    ##xp <- as.numeric(tail(EBres$P,n=2))
+    ##xp <- abs(xp[1]-xp[2])
+    xb <- as.numeric(rowSums(tail(EBres$P,n=2)))
+    xb <- abs(xb[1]-xb[2])
+
+    if ( xa<10^-3 && xb<10^-3 ) break
+    pinfo("Alpha diff=",xa)
+    pinfo("Beta diff=",xb)
+    ##pinfo("P diff=",xp)
+}
+pinfo("EBTest: maxrounds=",rounds)
+
+eede <- as.data.frame(GetPPMat(EBres))
+fc <- PostFC(EBres)
+id <- rownames(eede)
+df <- cbind(id,eede, fc$RealFC[id],unlist(EBres$MeanList)[id],unlist(EBres$C1Mean)[id], unlist(EBres$C2Mean)[id])
+colnames(df) <- c("id","PPEE", "PPDE", "foldChange","baseMean","baseMeanA","baseMeanB")
+df$log2FoldChange <- log2(df$foldChange)
+## try to keep the same column names
+df$pvalue <- 1-df$PPDE
+## apply the alpha as is according to the vignete
+df$padj <- df$pvalue
+
+df <- df[,c("id","baseMean","baseMeanA","baseMeanB","foldChange","log2FoldChange","PPEE","PPDE","pvalue","padj")]
+head(df)
+summary(df$pvalue)
+##Status: Each transcript will be assigned with one of the following
+## values: "DE", "EE", "Filtered: Low Expression", "Filtered:
+## Fold Change" and "Filtered: Fold Change Ratio".  Transcripts
+## are following the same order as in the input matrix.
+## annotate the gene list
+res <- df
+if (  opt$feature=="gene" && !is.null(opt$annotation) && !is.na(opt$annotation)) {
+   res.annot <- res[order(res$pval),];
+   match.v  <- match(res.annot$id,opt$annot[,1]);
+   res.annot <- cbind(res.annot,opt$annot[match.v,])
+} else {
+   res.annot <- res;
+}
+
+res.annot <- res.annot[order(res.annot$padj),];
+
+save.de2tsv(res.annot,ofile.prefix=opt$out)
+# save the objects
+save(opt,res.annot,EBres,Conds,Sizes,file=paste(opt$out,"de.Rdata",sep="/"))
+quit(save="no",status=0)
+
+######################################
+irap_DE_ebseq_debug <- function(rdata.obj) {
+  load(rdata.obj,envir=.GlobalEnv)
+  pdebug.rdata()
+  source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+  library(EBSeq)
+}
+
+IRAP.DIR=getwd()
+Sys.setenv(IRAP_DIR=IRAP.DIR)
+rdata.obj="irap_DE_ebseq.Rdata"
+load(rdata.obj)
+irap_DE_ebseq_debug("irap_DE_ebseq.Rdata")
+
+  

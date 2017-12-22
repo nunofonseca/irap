@@ -90,6 +90,7 @@ de_deseq2=DESeq2
 de_dexseq=DEXSeq
 de_bayseq=baySeq
 de_voom=baySeq
+de_ebseq=EBSeq
 
 # GSE
 gse_piano=piano
@@ -244,6 +245,10 @@ DESeq_analysis="Differential gene expression"
 DESeq2_citation=Anders, Love MI, Huber W and Anders S (2014). "Moderated estimation of fold change and dispersion for RNA-seq data with DESeq2." Genome Biology, 15, pp. 550.
 DESeq2_bibtex=deseq2.bib
 DESeq2_analysis="Differential gene expression"
+
+EBSeq_citation=Leng, N., J.A. Dawson, J.A. Thomson, V. Ruotti, A.I. Rissman, B.M.G. Smits, J.D. Haag, M.N. Gould, R.M. Stewart, and C. Kendziorski. EBSeq: An empirical Bayes hierarchical model for inference in RNA-seq experiments, Bioinformatics, 2013.
+EBSeq_bibtex=ebseq.bib
+EBSeq_analysis="Differential gene and transcript expression"
 
 ####
 edgeR_citation=Robinson, Mark D., Davis J. McCarthy, and Gordon K. Smyth. "edgeR: a Bioconductor package for differential expression analysis of digital gene expression data." Bioinformatics 26, no. 1 (2010): 139-140.
