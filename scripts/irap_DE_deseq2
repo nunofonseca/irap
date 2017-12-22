@@ -142,7 +142,7 @@ pinfo("Note: the log2FoldChange column contains 'shrunken' log2 foldchange. See 
 res<-as.data.frame(res[order(res$padj),,drop=FALSE])
 
 ## annotate the gene list
-if ( !is.null(opt$annotation) && !is.na(opt$annotation)) {
+if (  opt$feature=="gene" && !is.null(opt$annotation) && !is.na(opt$annotation)) {
    res.annot <- res[order(res$pval),];
    match.v  <- match(res.annot$id,opt$annot[,1]);
    res.annot <- cbind(res.annot,opt$annot[match.v,])

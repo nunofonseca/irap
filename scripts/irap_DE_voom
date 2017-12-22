@@ -90,7 +90,7 @@ de.df$pvalue <- de.df$P.Value
 de.df$padj <- de.df$adj.P.Val
 pinfo("Annotating DE list...")
 ## annotate the gene list
-if (!is.null(opt$annotation) && !is.na(opt$annotation) && nrow(de.df)>0) {
+if (  opt$feature=="gene" && !is.null(opt$annotation) && !is.na(opt$annotation) && nrow(de.df)>0) {
   de.annot <- de.df[order(de.df$pval),,drop=FALSE];
   match.v  <- match(de.annot$ID,opt$annot[,1]);
   # add assert?

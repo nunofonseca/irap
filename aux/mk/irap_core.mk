@@ -56,6 +56,10 @@ endif
 file_exists=$(if  $(realpath $(1)),,$(call p_error,$(1) not found))
 file_exists_ce=$(if  $(realpath $(1)),,$(call p_error,$(1) - $(2)))
 
+must_exist=$(if  $(realpath $(1)),,$(1))
+
+
+
 #  check if a variable  $(1) is defined - return the variable name if it is defined or empty otherwise
 is_defined=$(if $(subst undefined,,$(origin $(1))),$(1),)
 
@@ -216,6 +220,8 @@ license=This pipeline is distributed  under the terms of the GNU General Public 
 ################################################################################
 # Default values
 ################################################################################
+transcript_de_method?=none
+
 def_gse_tool?=none
 
 # max. memory (in MB)
@@ -258,7 +264,7 @@ def_de_method?=none
 def_mapper_comparison?=no
 
 # default method to count reads mapped to features (genes, exons, ...)
-def_quant_method?=htseq2
+quant_method?=htseq2
 
 # default method to normalize the expression values
 def_quant_norm_method?=none
@@ -628,7 +634,7 @@ ifdef pe
  $(foreach l,$(pe),$(call check_param_ok,$(l)_rs))
  $(foreach l,$(pe),$(call check_param_ok,$(l)_qual))
  $(foreach l,$(pe),$(call set_rs_list,$(l)_rs))
- $(foreach l,$(pe),$(foreach bc,umi_read umi_offset umi_size cell_read cell_offset cell_size sample_read sample_offset sample_size read1_offset read2_offset read1_size read2_size sample_name,$(eval $(l)_$(bc)=$(call check_bc_value_ok,$(l),$(bc)))))
+ $(foreach l,$(pe),$(foreach bc,known_umi_file known_cells_file index1 index2 index3 umi_read umi_offset umi_size cell_read cell_offset cell_size sample_read sample_offset sample_size read1_offset read2_offset read1_size read2_size sample_name,$(eval $(l)_$(bc)=$(call check_bc_value_ok,$(l),$(bc)))))
  #$(foreach l,$(pe),$(call check_param_ok,$(l)_mp))
  ifile_given=1
 endif
@@ -777,6 +783,12 @@ cell_filt_min_expression?=1
 cell_filt_min_cell_expr?=1000 # minimum number of counts per cell
 
 sc_quant_viz?=tsne
+
+## tsne plot parameters
+# filter genes based on the number of cells where they are expressed
+tsne_min_cells?=1
+# filter cells based on the number of genes expressed
+tsne_min_genes?=1
 ########################
 ## Clustering
 ## Only used in sc mode
@@ -792,16 +804,14 @@ clustering_method:=sc3
 # not used yet
 # valid_clustering_methods=sc3 none
 
-
 ifeq ($(sc_use_sample_barcode),y)
+
 ifeq ($(quant_method),umis)
 $(error umis does not use sample barcodes. sc_use_sample_barcode is set to $(sc_use_sample_barcode))
 endif
 else
 bam_umi_count_params+= --ignore_sample
 endif
-
-
 
 # dge files will be in mtx (MM) format
 ifeq ($(quant_method),umi_count)
@@ -928,20 +938,7 @@ mapper:=$(strip $(mapper))
 #***************************
 # Quantification/Transcr. assembly program
 #***************************
-# Note: only reference based assemblers should be supported
-# assembler (deprecated)
-ifdef quant_method
-undefine assembler
-endif
 
-ifdef assembler
-ifndef quant_method
-quant_method=$(assembler)
-endif
-ifndef quant_norm_tool
-quant_norm_tool=$(assembler)
-endif
-endif
 
 ifndef quant_norm_method
 # ifndef quant_method
@@ -1000,11 +997,18 @@ override transcript_quant:=y
 endif
 endif
 
+ifneq ($(transcript_de_method),none)
+ifeq ($(transcript_quant),n)
+$(info Enabling transcript_quant since DE transcript is expression is set to y)
+override transcript_quant:=y
+endif
+endif
 ## a transcript quantification method may be used but we do not care
 ## about the transcript expression - just flag this to skip a few
 ## steps
+transcript_expr?=n
 ifeq ($(transcript_quant),y)
-transcript_expr?=y
+override transcript_expr=y
 endif
 
 $(info *	exon_quant=$(exon_quant))
@@ -1093,7 +1097,7 @@ endif
 $(info *	mapper_splicing=$(mapper_splicing))
 
 #********************
-# DE
+# Gene level DE
 #********************
 ifndef de_method
 ifdef compare
@@ -1148,6 +1152,40 @@ endif
 
 #$(info annot_tsv=$(annot_tsv))
 
+# used by de_seq, edger, voom
+de_min_count?=0
+
+#********************
+# Transcript level DE
+#********************
+# by default transcript DE is disabled
+
+
+# reuse the gene level quantification methods...far from ideal
+# Add sleuth, EBSeq?
+SUPPORTED_TRANSCRIPT_DE_METHODS=edger voom deseq2 cuffdiff1 cuffdiff2
+
+ifeq (,$(filter $(transcript_de_method),none $(SUPPORTED_TRANSCRIPT_DE_METHODS)))
+$(call p_info,[ERROR] transcript_de_method)
+$(error $(transcript_de_method) not supported)
+endif
+
+$(info *	transcript_de_method=$(transcript_de_method))
+
+ifndef transcript_de_pvalue_cutoff=
+ transcript_de_pvalue_cutoff=$(def_de_pvalue_cutoff)
+endif
+$(info *	transcript_de_pvalue_cutoff=$(transcript_de_pvalue_cutoff))
+
+ifndef de_num_transcripts_per_table
+de_num_transcripts_per_table=$(def_de_num_transcripts_per_table)
+endif
+
+ifndef de_annot_transcripts_only
+de_annot_transcripts_only=$(def_de_annot_transcripts_only)
+endif
+
+transcript_de_min_count?=10
 ###############################################
 # isl enabled -> stage3 targets=stage4
 ifeq ($(isl_mode),y)
@@ -1476,6 +1514,7 @@ endef
 
 ################################################################################
 # Files produced at each stage
+CLEAN_UP_TARGETS=
 SETUP_DATA_FILES=
 STAGE3_OUT_FILES=
 STAGE2_OUT_FILES=
@@ -1550,8 +1589,8 @@ include $(irap_path)/../aux/mk/irap_junction.mk
 endif
 
 # Check if the options provided are valid
-ifeq (invalid,$(shell irap_paths $(mapper) $(quant_method) $(quant_norm_tool) $(quant_norm_method) $(de_method) $(gse_tool) $(has_stranded_data) $(rnaseq_type) $(sc_protocol)))
-  $(error invalid combination mapper:$(mapper) -> quant_method:$(quant_method) -> quant_norm method:$(quant_norm_method) quant_norm_tool:$(quant_norm_tool) -> de_method:$(de_method) rnaseq_type:$(rnaseq_type) sc_protocol:$(sc_protocol) for the given data)
+ifeq (invalid,$(shell irap_paths $(mapper) $(quant_method) $(quant_norm_tool) $(quant_norm_method) $(de_method) $(transcript_de_method) $(gse_tool) $(has_stranded_data) $(rnaseq_type) $(sc_protocol)))
+  $(error invalid combination mapper:$(mapper) -> quant_method:$(quant_method) -> quant_norm method:$(quant_norm_method) quant_norm_tool:$(quant_norm_tool) -> de_method:$(de_method) transcriptDE:$(transcript_de_method) rnaseq_type:$(rnaseq_type) sc_protocol:$(sc_protocol) for the given data)
 endif
 
 $(info *========================================================)
@@ -1599,15 +1638,6 @@ $(call get_param_value_pair,sample_read=,$(subst read,,$($(1)_sample_read))) $(c
  $(call get_param_value_pair,read1_size=,$($(1)_read1_size)) $(call get_param_value_pair,read2_size=,$($(1)_read2_size))
 endef
 
-# 1 - libname
-# 2 - input folder
-# 3 - output folder
-# 4 - extra options
-#s
-define do_quality_filtering_and_report=
-	irap_fastq_qc $(read_qual_filter_common_params) input_dir=$(2) read_size=$($(1)_rs)   qual=$($(1)_qual) f="$(notdir $($(1)))" out_prefix=$(1) is_pe=$(call is_pe_lib,$(1)) out_dir=$(3)  $(4) $(call get_opt_barcode_params,$(1))
-endef
-#	irap_fastq_qc $(read_qual_filter_common_params) data_dir=$(raw_data_dir)$($(1)_dir) read_size=$($(1)_rs)   qual=$($(1)_qual) f="$($(1))" out_prefix=$(1) is_pe=$(#call is_pe_lib,$(1)) out_dir=$(name)/data/$($(1)_dir)  $(2)
 # report_dir=$(name)/report/riq/$($(1)_dir)
 
 define not_empty=
@@ -1912,56 +1942,19 @@ $(name)/$(mapper)/$(quant_method)/$(de_method)/:
 
 
 ################################################################################
-# Read Filtering
+# Initial fastq QC
 ################################################################################
-# reuse the data filtered between experiments?
-phony_targets+= qc quality_filtering_and_report clean_quality_filtering_and_report_cleanup
-
-ifdef min_read_len
-	read_qual_filter_common_params+=min_len=$(min_read_len)
-endif
-
 # alias: stage1=qc=quality_filtering_and_report
 qc: quality_filtering_and_report 
 
-# TODO: improve robustness (no filtered reads)
+phony_targets+= qc quality_filtering_and_report
+# 
 # TODO:	signature=filtering parameters (if they are the same then avoid recomputation between experiments)  minlen=$(min_read_len) min_qual=$(min_qual) qual_perc=$(min_qu
 quality_filtering_and_report: setup	$(STAGE1_OUT_FILES)
 	$(call p_info,[DONE] Quality filtering)
 
 phony_targets+= do_qc
 do_qc: $(STAGE1_OUT_FILES)
-
-####################################################################
-# Preprocessing of the input files (.fastq/.bam), QC, filtering
-
-define make-pe-qc-rule=
-##$(info $(call lib2filt_folder,$(1))$(1)_1.f.fastq.gz $(call lib2filt_folder,$(1))$(1)_2.f.fastq.gz: $(raw_data_dir)$($(1)_dir)/$(notdir $(word 1,$($(1))))  $(raw_data_dir)$($(1)_dir)/$(notdir $(word 2,$($(1)))))
-$(call lib2filt_folder,$(1))$(1)_1.f.fastq.gz $(call lib2filt_folder,$(1))$(1)_2.f.fastq.gz: $(raw_data_dir)$($(1)_dir)/$(notdir $(word 1,$($(1))))  $(raw_data_dir)$($(1)_dir)/$(notdir $(word 2,$($(1))))
-	$$(call p_info,Filtering $(call fix_libname,$(1)))
-	$$(call do_quality_filtering_and_report,$(call fix_libname,$(1)),$(raw_data_dir)$($(1)_dir),$$(@D),) || (rm -f $$@ && exit 1)
-endef
-
-define make-se-qc-rule=
-##$(info $(call lib2filt_folder,$(1))$(1).f.fastq.gz: $(raw_data_dir)$($(1)_dir)/$(notdir $($(1))))
-$(call lib2filt_folder,$(1))$(1).f.fastq.gz: $(raw_data_dir)$($(1)_dir)/$(notdir $($(1)))
-	$$(call p_info,Filtering $(call fix_libname,$(1)))
-	$$(call do_quality_filtering_and_report,$(1),$(raw_data_dir)$($(1)_dir),$$(@D),) || (rm -f $$@ && exit 1)
-
-endef
-$(foreach l,$(se),$(eval $(call make-se-qc-rule,$(l))))
-# rules for PE libraries
-$(foreach l,$(pe),$(eval $(call make-pe-qc-rule,$(l))))
-
-
-# Cleanup
-clean_quality_filtering_and_report_cleanup:
-	$(foreach p,$(se) $(pe),$(call do_quality_filtering_and_report,$(p),$(raw_data_dir)$($(p)_dir)/,$(dir $(call lib2filt_folder,$(p))),clean))
-
-
-# TODO: deprecated
-print_qc_dirs_files:
-	echo	$(foreach l,$(se) $(pe),$(name)/report/riq/$($(l)_dir) )
 
 ################################################################################
 # Mapping
@@ -2241,7 +2234,8 @@ print_stage5_files:
 ## Cleanup
 phony_targets+= clean full_clean clean_data_files
 
-clean: clean_quality_filtering_and_report_cleanup 
+
+clean: $(CLEANUP_TARGETS)
 
 full_clean: clean_data_files
 	rm -fr $(name)/

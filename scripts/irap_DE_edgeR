@@ -86,7 +86,7 @@ if (min(table(opt$conds))>1) {
   res <- try({d <- estimateGLMTrendedDisp(d, design) })
   if(class(res) == "try-error") { warning("Couldn't estimate trended dispersion: using common dispersion to estimate tagwise.") }
   pinfo("Estimating trended dispersion...done.")
-  pinfo("Estimating tagwise/gene dispersion... ")
+  pinfo("Estimating tagwise/feature dispersion... ")
   res <- try({d <- estimateGLMTagwiseDisp(d, design) }) #this is only possible with replicates
   if(class(res) == "try-error") { warning("Couldn't estimate tagwise dispersion.") }
   pinfo("Estimating tagwise dispersion...done")
@@ -136,7 +136,7 @@ de$id <- rownames(de)
 de <- de[,c("id","baseMeanA","baseMeanB","logFC","logCPM","LR","PValue","padj")]
 
 ## annotate the gene list
-if ( !is.null(opt$annotation) && !is.null(opt$annotation)) {
+if ( opt$feature=="gene" && !is.null(opt$annotation) && !is.null(opt$annotation)) {
    de.annot <- de[order(de$PValue),];
    match.v  <- match(de.annot$id,opt$annot[,1]);
    de.annot <- cbind(de.annot,opt$annot[match.v,])

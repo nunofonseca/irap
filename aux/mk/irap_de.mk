@@ -21,9 +21,9 @@
 #    $Id: 0.1.3 Nuno Fonseca Wed Dec 26 16:16:19 2012$
 # =========================================================
 
-#************
-# DE
-#************
+#**************
+# Gene level DE
+#**************
 de_targets=
 
 ifneq (none,$(de_method))
@@ -39,11 +39,25 @@ de_files:
 DE: stage3 $(de_targets)
 	$(call p_info,[DONE] Differential analysis)
 
-########################################
-# used by de_seq, edger, voom
-ifndef de_min_count
-de_min_count=0
+#*********************
+# Transcript level DE
+#*********************
+trans_de_targets=
+
+ifneq (none,$(transcript_de_method))
+trans_de_targets+=$(foreach cont,$(contrasts),$(name)/$(mapper)/$(quant_method)/$(transcript_de_method)/$(cont).transcripts_de.tsv)
+STAGE4_OUT_FILES+=$(trans_de_targets)
 endif
+
+phony_targets+= transcript_de_files
+
+transcript_de_files:
+	echo $(trans_de_targets)
+
+trans_DE: stage3 $(trans_de_targets)
+	$(call p_info,[DONE] Differential (transcript) analysis)
+
+########################################
 
 # % == cond
 #1=contrast
@@ -60,8 +74,9 @@ endef
 # 1=counts file
 # 2=contrast
 # 3=de tsv file
+# 4=feature type
 define run_deseq=
-irap_DE_deseq --tsv $(1) --min $(de_min_count) --contrasts "$(call get_contrast_def,$(2))" --labels "$(call get_contrast_labels,$(2))" --out $(3) $(call get_de_annot) $(call get_de_annot_genes_only) $(if $(technical.replicates),--tech-rep "$(technical.replicates)")
+irap_DE_deseq --tsv $(1) --min $(de_min_count) --contrasts "$(call get_contrast_def,$(2))" --labels "$(call get_contrast_labels,$(2))" --out $(3) $(call get_de_annot) $(call get_de_annot_genes_only) $(if $(technical.replicates),--tech-rep "$(technical.replicates)") --feature $(4)
 endef
 
 #************
@@ -70,6 +85,7 @@ endef
 # 1=counts file
 # 2=contrast
 # 3=de tsv file
+# 4=feature type
 # TODO: include support for technical replicates
 ifndef deseq2_params
 deseq2_params=--independent-filtering
@@ -77,7 +93,7 @@ endif
 #
 
 define run_deseq2=
-irap_DE_deseq2 --tsv $(1) --min $(de_min_count) --contrasts "$(call get_contrast_def,$(2))" --labels "$(call get_contrast_labels,$(2))" $(deseq2_params) --out $(3) $(call get_de_annot) $(call get_de_annot_genes_only) $(if $(technical.replicates),--tech-rep "$(technical.replicates)")
+irap_DE_deseq2 --tsv $(1) --min $(de_min_count) --contrasts "$(call get_contrast_def,$(2))" --labels "$(call get_contrast_labels,$(2))" $(deseq2_params) --out $(3) $(call get_de_annot) $(call get_de_annot_genes_only) $(if $(technical.replicates),--tech-rep "$(technical.replicates)") --feature $(4)
 endef
 
 #************
@@ -85,7 +101,7 @@ endef
 #************
 
 define run_edger=
-irap_DE_edgeR --tsv $(1) --min $(de_min_count) --contrasts "$(call get_contrast_def,$(2))" --labels "$(call get_contrast_labels,$(2))" --out $(3) $(call get_de_annot) $(call get_de_annot_genes_only) $(if $(technical.replicates),--tech-rep "$(technical.replicates)")
+irap_DE_edgeR --tsv $(1) --min $(de_min_count) --contrasts "$(call get_contrast_def,$(2))" --labels "$(call get_contrast_labels,$(2))" --out $(3) $(call get_de_annot) $(call get_de_annot_genes_only) $(if $(technical.replicates),--tech-rep "$(technical.replicates)") --feature $(4)
 endef
 
 #************
@@ -93,7 +109,7 @@ endef
 #************
 
 define run_voom=
-irap_DE_voom --tsv $(1) --min $(de_min_count) --contrasts "$(call get_contrast_def,$(2))" --labels "$(call get_contrast_labels,$(2))" --out $(3) $(call get_de_annot) $(call get_de_annot_genes_only) $(if $(technical.replicates),--tech-rep "$(technical.replicates)")
+irap_DE_voom --tsv $(1) --min $(de_min_count) --contrasts "$(call get_contrast_def,$(2))" --labels "$(call get_contrast_labels,$(2))" --out $(3) $(call get_de_annot) $(call get_de_annot_genes_only) $(if $(technical.replicates),--tech-rep "$(technical.replicates)") --feature $(4)
 endef
 
 ################################################################################
@@ -143,26 +159,39 @@ $(name)/$(mapper)/$(quant_method)/cuffdiff2_nd/%.cuffdiff2_nd $(name)/$(mapper)/
 	$(call run_cuffdiff,cufflinks2,cuffdiff --no-update-check -u -o $(name)/$(mapper)/$(quant_method)/cuffdiff2_nd/$*.$(de_method).tmp -b $(reference_abspath) -p $(max_threads)  $(gtf_file_abspath)  $(call get_contrast_bam_files,$*)) && mv $(name)/$(mapper)/$(quant_method)/cuffdiff2_nd/$*.$(de_method).tmp $(name)/$(mapper)/$(quant_method)/cuffdiff2_nd/$*.$(de_method)
 
 ###############
-# gene level DE
+# DE
 
 # DESEQ
 $(name)/$(mapper)/$(quant_method)/deseq/%.genes_de.tsv $(name)/$(mapper)/$(quant_method)/deseq/%.genes_de.Rdata: $(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv $(annot_tsv) 
-	$(call run_deseq,$<,$*,$(@D)/$*.deseq) && mv $(@D)/$*.deseq/de.tsv $(@D)/$*.genes_de.tsv && mv $(@D)/$*.deseq/de.Rdata $(@D)/$*.genes_de.Rdata
+	$(call run_deseq,$<,$*,$(@D)/$*.deseq,gene) && mv $(@D)/$*.deseq/de.tsv $(@D)/$*.genes_de.tsv && mv $(@D)/$*.deseq/de.Rdata $(@D)/$*.genes_de.Rdata
+
+$(name)/$(mapper)/$(quant_method)/deseq/%.transcripts_de.tsv $(name)/$(mapper)/$(quant_method)/deseq/%.transcripts_de.Rdata: $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv $(annot_tsv) 
+	$(call run_deseq,$<,$*,$(@D)/$*.deseq,transcript) && mv $(@D)/$*.deseq/de.tsv $(@D)/$*.transcripts_de.tsv && mv $(@D)/$*.deseq/de.Rdata $(@D)/$*.transcripts_de.Rdata
 
 #ex. irap_DE_deseq matrix_file.tsv  "colnameA,colnameB,colnameC;colnameD,colnameF" "grouplabel1,grouplabel2" oprefix [annot.file.tsv] [tech.replicates.def]
 
 # DESEQ2
 $(name)/$(mapper)/$(quant_method)/deseq2/%.genes_de.tsv $(name)/$(mapper)/$(quant_method)/deseq2/%.genes_de.Rdata: $(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv $(annot_tsv) 
-	$(call run_deseq2,$<,$*,$(@D)/$*.deseq2) && mv $(@D)/$*.deseq2/de.tsv $(@D)/$*.genes_de.tsv && mv $(@D)/$*.deseq2/de.Rdata $(@D)/$*.genes_de.Rdata
+	$(call run_deseq2,$<,$*,$(@D)/$*.deseq2,gene) && mv $(@D)/$*.deseq2/de.tsv $(@D)/$*.genes_de.tsv && mv $(@D)/$*.deseq2/de.Rdata $(@D)/$*.genes_de.Rdata
+
+$(name)/$(mapper)/$(quant_method)/deseq2/%.transcripts_de.tsv $(name)/$(mapper)/$(quant_method)/deseq2/%.transcripts_de.Rdata: $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv $(annot_tsv) 
+	$(call run_deseq2,$<,$*,$(@D)/$*.deseq2,transcript) && mv $(@D)/$*.deseq2/de.tsv $(@D)/$*.transcripts_de.tsv && mv $(@D)/$*.deseq2/de.Rdata $(@D)/$*.transcripts_de.Rdata
 
 
 # EDGER
 $(name)/$(mapper)/$(quant_method)/edger/%.genes_de.tsv $(name)/$(mapper)/$(quant_method)/edger/%.genes_de.Rdata: $(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv $(annot_tsv) 
-	$(call run_edger,$<,$*,$(@D)/$*.edger) && mv $(@D)/$*.edger/de.tsv $(@D)/$*.genes_de.tsv && mv $(@D)/$*.edger/de.Rdata $(@D)/$*.genes_de.Rdata
+	$(call run_edger,$<,$*,$(@D)/$*.edger,gene) && mv $(@D)/$*.edger/de.tsv $(@D)/$*.genes_de.tsv && mv $(@D)/$*.edger/de.Rdata $(@D)/$*.genes_de.Rdata
+
+$(name)/$(mapper)/$(quant_method)/edger/%.transcripts_de.tsv $(name)/$(mapper)/$(quant_method)/edger/%.transcripts_de.Rdata: $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv $(annot_tsv) 
+	$(call run_edger,$<,$*,$(@D)/$*.edger,transcript) && mv $(@D)/$*.edger/de.tsv $(@D)/$*.transcripts_de.tsv && mv $(@D)/$*.edger/de.Rdata $(@D)/$*.transcripts_de.Rdata
 
 # VOOM
 $(name)/$(mapper)/$(quant_method)/voom/%.genes_de.tsv $(name)/$(mapper)/$(quant_method)/voom/%.genes_de.Rdata: $(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv $(annot_tsv) 
-	$(call run_voom,$<,$*,$(@D)/$*.voom) && mv $(@D)/$*.voom/de.tsv $(@D)/$*.genes_de.tsv && mv $(@D)/$*.voom/de.Rdata $(@D)/$*.genes_de.Rdata
+	$(call run_voom,$<,$*,$(@D)/$*.voom,gene) && mv $(@D)/$*.voom/de.tsv $(@D)/$*.genes_de.tsv && mv $(@D)/$*.voom/de.Rdata $(@D)/$*.genes_de.Rdata
+
+$(name)/$(mapper)/$(quant_method)/voom/%.transcripts_de.tsv $(name)/$(mapper)/$(quant_method)/voom/%.transcripts_de.Rdata: $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv $(annot_tsv) 
+	$(call run_voom,$<,$*,$(@D)/$*.voom,transcript) && mv $(@D)/$*.voom/de.tsv $(@D)/$*.transcripts_de.tsv && mv $(@D)/$*.voom/de.Rdata $(@D)/$*.transcripts_de.Rdata
+
 
 # BAYSEQ
 $(name)/$(mapper)/$(quant_method)/bayseq/%.genes_de.tsv: 
