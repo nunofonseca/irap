@@ -23,9 +23,8 @@
 #
 process.cmdline.args <- function(cmd) {
   args <- commandArgs(trailingOnly=TRUE)
-  pdebug.save.state("irap_DE","0")
-  
-  usage <- paste(cmd," --tsv file --min min.reads --contrasts contrast.def --labels label1;label2;... --annotation tsv.file [--annot-genes-only] --out outprefix",sep="")
+    
+  usage <- paste(cmd," --tsv file --min min.reads --contrasts contrast.def --labels label1;label2;... --annotation tsv.file [--annot-genes-only --feat gene|transcript] --out outprefix ",sep="")
   option_list <- list(
     make_option(c("--independent-filtering"),action="store_true",dest="indfilter",default=FALSE,help="Use independent filtering (DESeq2 only) [default %default]"),
     make_option(c("-m", "--min"), type="character", dest="min_count", default=NULL,help="exclude genes with counts < min"),
@@ -34,6 +33,7 @@ process.cmdline.args <- function(cmd) {
     make_option(c("--labels"), type="character", dest="labels", default=NULL,help="labels/contrasts names/aka factor values"),
     make_option(c("-a", "--annotation"), type="character",default=NULL,help="Annotation file (TSV format)"), 
     make_option(c("--annot-genes-only"), action="store_true",default=FALSE,dest="only.annot.genes",help="Only use genes in the DE analysis that appear in the annot. file."),
+    make_option(c("--feature"), type="character",default="gene",dest="feature",help="Type of feature: gene, transcript (default %default%)."),
     make_option(c("--out"), type="character", dest="out", default=NULL,help="Output file prefix"),
     make_option(c("-i", "--tsv"), type="character", dest="tsv_file", default=NULL,help="TSV file name"),
     make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode")
