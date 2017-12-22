@@ -75,49 +75,6 @@ pdebug.save.state("irap_sc3","p0")
 ## data("sc_example_cell_info")
 ## sc_example_cell_info
 
-myRunTSNE <- function (object, reduction.use = "pca", cells.use = NULL, dims.use = 1:5, 
-    genes.use = NULL, seed.use = 1, do.fast = TRUE, add.iter = 0, 
-    dim.embed = 2, distance.matrix = NULL, ...) 
-{
-    if (!is.null(x = distance.matrix)) {
-        genes.use <- rownames(x = object@data)
-    }
-    if (is.null(x = genes.use)) {
-        data.use <- GetDimReduction(object = object, reduction.type = reduction.use, 
-            slot = "cell.embeddings")[, dims.use]
-    }
-    if (!is.null(x = genes.use)) {
-        data.use <- t(PrepDR(object = object, genes.use = genes.use))
-    }
-    set.seed(seed = seed.use)
-    if (do.fast) {
-        if (is.null(x = distance.matrix)) {
-            data.tsne <- Rtsne(X = as.matrix(x = data.use), dims = dim.embed, 
-                ...)
-        }
-        else {
-            data.tsne <- Rtsne(X = as.matrix(x = distance.matrix), 
-                dims = dim.embed, is_distance = TRUE)
-        }
-        data.tsne <- data.tsne$Y
-    }
-    else {
-        data.tsne <- tsne(X = data.use, k = dim.embed, ...)
-    }
-    if (add.iter > 0) {
-        data.tsne <- tsne(x = data.use, initial_config = as.matrix(x = data.tsne), 
-            max_iter = add.iter, ...)
-    }
-    colnames(x = data.tsne) <- paste0("tSNE_", 1:ncol(x = data.tsne))
-    rownames(x = data.tsne) <- rownames(x = data.use)
-    object <- SetDimReduction(object = object, reduction.type = "tsne", 
-        slot = "cell.embeddings", new.data = data.tsne)
-    object <- SetDimReduction(object = object, reduction.type = "tsne", 
-        slot = "key", new.data = "tSNE_")
-    parameters.to.store <- as.list(environment(), all = TRUE)[names(formals("RunTSNE"))]
-    return(list(obj=object,tsne=data.tsne,data.used=data.use))
-}
-
 
 
 ## head(sc_example_counts)
@@ -139,80 +96,85 @@ if ( opt$is_mtx ) {
 }
 pinfo("Loading ",opt$ifile," done.")
 
-if ( ncol(table)<=2 ) {
+do.clustering <- TRUE
+
+if ( is.null(table) ) 
+    do.clustering <- FALSE
+else if ( ncol(table)<=3 ) 
+    do.clustering <- FALSE
+
+if (!do.clustering) {
     perror("Insufficient samples/cells to cluster")
-    q(status=1)
-}
-
-#source("http://bioconductor.org/biocLite.R")
-#biocLite("SC3",suppressUpdates=TRUE)
-
-## save
-##  write.tsv(tpm,file=opt$out)
-##  pinfo("Saved ",opt$out)
-if (ncol(table)<=3) {
-    perror("Number of samples/cells too small (",ncol(table),")")
-    q(status=1)
-}
-sceset <- newSCESet(countData = table)
-sceset <- calculateQCMetrics(sceset)
-
-##    plotPCA(sceset)
-
-#####################################################
-## Tracy-Widom theory on random matrices to estimate
-## $ k_estimation - which should be the default value of K
-if (opt$auto_k) {
-    sceset <- sc3_estimate_k(sceset)
-    sel.k <- sceset@sc3$k_estimation
-    pinfo("Automatically selected K = ",sel.k)
-    clusters2test <- round(abs(opt$max_clusters-opt$min_clusters)/2,0)
-    k.range <- c(max(2,sel.k-clusters2test),max(2,sel.k+clusters2test))
-    pinfo("Checking clusters in the range ",k.range[1]," to ", k.range[2])
+    clusters.m <- matrix(ncol=0,nrow=0)
+    ##q(status=1)
 } else {
-    sceset <- sc3_estimate_k(sceset)
-    sel.k <- sceset@sc3$k_estimation
-    clusters2test <- round(abs(opt$max_clusters-opt$min_clusters)/2,0)
-    min.k <- max(2,opt$min_clusters)
-    k.range <- c(min.k,max(min.k,opt$max_clusters))
-    pinfo("Checking clusters in the range ",k.range[1]," to ", k.range[2])
 
+    ##source("http://bioconductor.org/biocLite.R")
+    ##biocLite("SC3",suppressUpdates=TRUE)
+
+    sceset <- newSCESet(countData = table)
+    sceset <- calculateQCMetrics(sceset)
+    ##    plotPCA(sceset)
+
+    #####################################################
+    ## Tracy-Widom theory on random matrices to estimate
+    ## $ k_estimation - which should be the default value of K
+    if (opt$auto_k) {
+        sceset <- sc3_estimate_k(sceset)
+        sel.k <- sceset@sc3$k_estimation
+        pinfo("Automatically selected K = ",sel.k)
+        clusters2test <- round(abs(opt$max_clusters-opt$min_clusters)/2,0)
+        k.range <- c(max(2,sel.k-clusters2test),max(2,sel.k+clusters2test))
+        pinfo("Checking clusters in the range ",k.range[1]," to ", k.range[2])
+    } else {
+        sceset <- sc3_estimate_k(sceset)
+        sel.k <- sceset@sc3$k_estimation
+        clusters2test <- round(abs(opt$max_clusters-opt$min_clusters)/2,0)
+        min.k <- max(2,opt$min_clusters)
+        k.range <- c(min.k,max(min.k,opt$max_clusters))
+        pinfo("Checking clusters in the range ",k.range[1]," to ", k.range[2])
+        
+    }
+    
+    sceset <- sc3(sceset, ks = seq(k.range[1],k.range[2]), biology = TRUE, n_cores=opt$max_threads,k_estimator=TRUE)
+
+    pdebug.save.state("irap_sc3","p1")
+    ##sc3_plot_cluster_stability(sceset, k = sel.k)
+    ##sc3_plot_markers(sceset, k = sel.k)
+    ##data.frame containing the marker genes, corresponding cluster indexes and adjusted p-values##
+    ##sc3_plot_consensus(sceset,k=sel.k)
+    ##sc3_plot_cluster_stability(sceset,k=max(ks))
+
+    #######################################
+    ## single matrix with all clusters
+    pinfo("Preparing to save clusters table")
+    l <- matrix(nrow=0,ncol=ncol(table))
+    colnames(l) <- colnames(table)
+    ##l <- as.matrix(table[NULL,,drop=FALSE])
+    for (k in seq(k.range[1],k.range[2])) {
+        p_data <- pData(sceset)
+        label <- paste0("sc3_",k,"_clusters")
+        ##pData(sceset)[,label]
+        clus <- p_data[,label]
+        names(clus) <- rownames(p_data)
+        l <- rbind(l,clus[colnames(l)])
+    }
+
+    l <- as.data.frame(cbind(K=seq(k.range[1],k.range[2]),l))
+    sel.K <- l$K==sel.k
+    l <- cbind(sel.K,l)
+    clusters.m <- l
 }
 
-## 
-sceset <- sc3(sceset, ks = seq(k.range[1],k.range[2]), biology = TRUE, n_cores=opt$max_threads,k_estimator=TRUE)
-
-pdebug.save.state("irap_sc3","p1")
-#sc3_plot_cluster_stability(sceset, k = sel.k)
-#sc3_plot_markers(sceset, k = sel.k)
-##data.frame containing the marker genes, corresponding cluster indexes and adjusted p-values##
-#sc3_plot_consensus(sceset,k=sel.k)
-#sc3_plot_cluster_stability(sceset,k=max(ks))
-
-#######################################
-## single matrix with all clusters
-pinfo("Preparing to save clusters table")
-l <- matrix(nrow=0,ncol=ncol(table))
-colnames(l) <- colnames(table)
-#l <- as.matrix(table[NULL,,drop=FALSE])
-for (k in seq(k.range[1],k.range[2])) {
-    p_data <- pData(sceset)
-    label <- paste0("sc3_",k,"_clusters")
-    ##pData(sceset)[,label]
-    clus <- p_data[,label]
-    names(clus) <- rownames(p_data)
-    l <- rbind(l,clus[colnames(l)])
-}
-
-l <- as.data.frame(cbind(K=seq(k.range[1],k.range[2]),l))
-sel.K <- l$K==sel.k
-l <- cbind(sel.K,l)
-clusters.m <- l
 ## save the cluster(s)
 ofile <- paste0(out.prefix,"_clusters.tsv")
 write.table(clusters.m,file=ofile,sep="\t",row.names=FALSE,col.names=TRUE,quote=FALSE)
 pinfo("Created ",ofile)
 
+if (nrow(clusters.m)==0) {
+    pwarning("No clusters generated.")
+    q(status=0)
+}
 ##########################################
 ## Marker genes for each cluster
 ## gene x #clusters
