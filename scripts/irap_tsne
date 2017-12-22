@@ -71,9 +71,12 @@ myRunTSNE <- function (object, reduction.use = "pca", cells.use = NULL, dims.use
     if (!is.null(x = distance.matrix)) {
         genes.use <- rownames(x = object@data)
     }
+    ## fix dims.use
+    max.dim <- ncol(nbt@dr$pca@cell.embeddings)
+    dims.use <- min(dims.use):min(max.dim,max(dims.use))
     if (is.null(x = genes.use)) {
         data.use <- GetDimReduction(object = object, reduction.type = reduction.use, 
-            slot = "cell.embeddings")[, dims.use]
+                                    slot = "cell.embeddings")[, dims.use]
     }
     if (!is.null(x = genes.use)) {
         data.use <- t(PrepDR(object = object, genes.use = genes.use))
@@ -116,11 +119,12 @@ if ( opt$is_mtx ) {
 pinfo("Loading ",opt$ifile," done.")
 
 ##  pinfo("Saved ",opt$out)
-if (ncol(table)<=3) {
+if ( is.null(table) || ncol(table)<=3) {
     perror("Number of samples/cells too small (",ncol(table),")")
     q(status=1)
 }
 
+pdebug.save.state("irap_tsne","p1")
 pinfo("Generating TSNEs...")
 ## TSNE coordinates? or run Seurat?
 library(Seurat)
@@ -134,7 +138,8 @@ nbt <- CreateSeuratObject(raw.data=table,project="irap",min.cells = min.cells,mi
 x <- dim(GetAssayData(nbt))
 pinfo(" # Cells/assays ",x[2])
 pinfo(" # genes ",x[1])
-if ( ncol(GetAssayData(nbt))<2 ) {
+
+if ( is.null(nbt) || ncol(GetAssayData(nbt))<2 ) {
     perror("Unable to continue - Number of cells/assays after QC is below 3")
     q(status=1)
 }
@@ -165,6 +170,7 @@ nbt <- RunPCA(object = nbt, pc.genes = nbt@var.genes, do.print = FALSE, pcs.prin
 ## TODO: include the cell names in the TSNE
 library(Rtsne)
 perp.values <- c(1, 5, 10, 15, 20)
+#object<-nbt
 for (p in perp.values) {
     pinfo("TSNE: perplexity ",p)
     nbt.res <- myRunTSNE(object = nbt, dims.use = 1:30,  do.fast = TRUE,perplexity=p)
@@ -184,5 +190,7 @@ for (p in perp.values) {
 }
 
 
-q(status=0)
 
+q(status=0)
+setwd("/home/nf/Research/Projects/WIP/EREAP/irap_tests")
+load("irap_tsne.Rdata")
