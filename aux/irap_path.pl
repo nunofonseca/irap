@@ -36,27 +36,27 @@ handle_args([File]):-!,
 		     start_graph(File).
 
 handle_args([M,Q,NT,NM,D]):-!,
-    (valid_combination([M,Q,NT,NM,D,none,no,blk,none])->
+    (valid_combination([M,Q,NT,NM,D,none,none,no,blk,none])->
      format("valid~n",[])
     ;
      format("invalid~n",[])
     ).
-handle_args([M,Q,NT,NM,D,G]):-!,
-    (valid_combination([M,Q,NT,NM,D,G,no,blk,none])->
-     format("valid~n",[])
-    ;
-     format("invalid~n",[])
-    ).
-
-handle_args([M,Q,NT,NM,D,G,StrandedData]):-!,
-    (valid_combination([M,Q,NT,NM,D,G,StrandedData,blk,none])->
+handle_args([M,Q,NT,NM,D,TD,G]):-!,
+    (valid_combination([M,Q,NT,NM,D,TD,G,no,blk,none])->
      format("valid~n",[])
     ;
      format("invalid~n",[])
     ).
 
-handle_args([M,Q,NT,NM,D,G,StrandedData,Blk_SC,SC_Prot]):-!,
-    (valid_combination([M,Q,NT,NM,D,G,StrandedData,Blk_SC,SC_Prot])->
+handle_args([M,Q,NT,NM,D,TD,G,StrandedData]):-!,
+    (valid_combination([M,Q,NT,NM,D,TD,G,StrandedData,blk,none])->
+     format("valid~n",[])
+    ;
+     format("invalid~n",[])
+    ).
+
+handle_args([M,Q,NT,NM,D,TD,G,StrandedData,Blk_SC,SC_Prot]):-!,
+    (valid_combination([M,Q,NT,NM,D,TD,G,StrandedData,Blk_SC,SC_Prot])->
      format("valid~n",[])
     ;
      format("invalid~n",[])
@@ -64,7 +64,7 @@ handle_args([M,Q,NT,NM,D,G,StrandedData,Blk_SC,SC_Prot]):-!,
 
 
 handle_args(_):-
-    format("ERROR! usage: irap_paths [ FILENAME | Mapper Quant Norm DE | Mapper Quant NormTool NormMethod DE GSE StrandedData@{yes,no} blk|sc sc_protocol]~n",[]).
+    format("ERROR! usage: irap_paths [ FILENAME | Mapper Quant Norm DE | Mapper Quant NormTool NormMethod DE TDE GSE StrandedData@{yes,no} blk|sc sc_protocol]~n",[]).
 
 
 %% mappers supported for single cell
@@ -79,17 +79,18 @@ sc_mapper(kallisto).
 
 %%sc_mappers(rapmap).
 
-valid_combination([Map,QR,QNT,QN,DE,GSE,Stranded,blk,_]):-
+valid_combination([Map,QR,QNT,QN,DE,TDE,GSE,Stranded,blk,_]):-
     m(Map,_,_,S1),
     qr(QR,m(Map),_,S2),
     valid_norm_selection(QR,QNT,QN),
     !,
     (Stranded==yes->(Map==none->true;S1==stranded,stranded_ok(Stranded,S2));true),
     de(DE,qr(QR),_),
+    tde(TDE,qr(QR),_),
     gse(GSE,de(DE),_).
 
 %% smart-seq2 - has UMIs => subset of quantification methods and no fpkm
-valid_combination([Map,QR,QNT,QN,DE,GSE,Stranded,sc,'smart-seq2']):-
+valid_combination([Map,QR,QNT,QN,DE,TDE,GSE,Stranded,sc,'smart-seq2']):-
     m(Map,_,_,S1),
     sc_mapper(Map),
     qr(QR,m(Map),_,S2),
@@ -97,10 +98,11 @@ valid_combination([Map,QR,QNT,QN,DE,GSE,Stranded,sc,'smart-seq2']):-
     !,
     (Stranded==yes->(Map==none->true;S1==stranded,stranded_ok(Stranded,S2));true),
     DE==none,
+    TDE==none,
     %%de(DE,qr(QR),_),
     gse(GSE,de(DE),_).
 
-valid_combination([Map,QR,QNT,_QN,DE,GSE,Stranded,sc,SC_PROT]):-
+valid_combination([Map,QR,QNT,_QN,TDE,DE,GSE,Stranded,sc,SC_PROT]):-
     (SC_PROT=='smart-seq2'->fail;true),
     m(Map,_,_,S1),
     sc_mapper(Map),
@@ -109,6 +111,7 @@ valid_combination([Map,QR,QNT,_QN,DE,GSE,Stranded,sc,SC_PROT]):-
     !,
     (Stranded==yes->(Map==none->true;S1==stranded,stranded_ok(Stranded,S2));true),
     DE==none,
+    TDE==none,
     %%de(DE,qr(QR),_),
     gse(GSE,de(DE),_).
 
@@ -310,8 +313,9 @@ m('kallisto',_,'',_).
 m('none',_,'',_).
 
 all_mappers(X):-all(M,m(M,_,_,_),X).
-all_quant([htseq1,htseq2,basic,flux_cap,cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,nurd,stringtie,stringtie_nd,rsem,kallisto,salmon,umi_count]).
+all_quant([htseq1,htseq2,basic,flux_cap,cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,nurd,stringtie,stringtie_nd,rsem,kallisto,salmon,umi_count,umis]).
 all_quant_norm([flux_cap,cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,none,deseq,stringtie,stringtie_nd,rsem,irap]).
+all_tquant([cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,nurd,stringtie,stringtie_nd,rsem,kallisto,umi_count]).
 all_de([deseq,edger,voom,cuffdiff1,cuffdiff2,cuffdiff1_nd,cuffdiff2_nd,deseq2,none]).
 
 %% bulk rna
@@ -358,6 +362,11 @@ qn(deseq,qr(QR),_,_):-member(QR,[stringtie,flux_cap,basic,htseq1,htseq2]).
 qn(deseq2,qr(QR),_,_):-member(QR,[stringtie,flux_cap,basic,htseq1,htseq2]).
 qn(none,qr(_),_,_).
 
+tde(deseq2,qr(QR),_):-all_tquant(ALL_QN),member(QR,ALL_QN).
+tde(edger,qr(QR),_):-all_tquant(ALL_QN),member(QR,ALL_QN).
+tde(voom,qr(QR),_):-all_tquant(ALL_QN),member(QR,ALL_QN).
+tde(sleuth,qr(QR),_):-member(QR,[kallisto]).
+tde(none,qr(_),_).
 
 de(deseq,qr(QR),_):-all_quant(ALL_QN),member(QR,ALL_QN).
 de(deseq2,qr(QR),_):-all_quant(ALL_QN),member(QR,ALL_QN).
@@ -368,6 +377,7 @@ de(cuffdiff1,qr(QR),_):-member(QR,[cufflinks1,cufflinks2]).
 de(cuffdiff2,qr(QR),_):-member(QR,[cufflinks1,cufflinks2]).
 de(cuffdiff1_nd,qr(QR),_):-member(QR,[cufflinks1_nd,cufflinks2_nd]).
 de(cuffdiff2_nd,qr(QR),_):-member(QR,[cufflinks1_nd,cufflinks2_nd]).
+de(sleuth,qr(QR),_):-member(QR,[kallisto]).
 de(none,qr(_),_).
 %de(edger,(qr(QR),_),_):-member(QR,[htseq1,htseq2,basic,flux_cap]).
 
