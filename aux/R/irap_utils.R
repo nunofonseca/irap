@@ -1467,7 +1467,12 @@ mtx.load <- function(f,rows.file=NULL, cols.file=NULL,col.suffix="_cols",row.suf
             return(NULL)
         }
     }
-    mtx <- readMM(con)
+    mtx <- NULL
+    tryCatch(mtx <- readMM(con),error=function(x) return(NULL))
+    if (is.null(mtx)) {
+        pwarning("Got an empty matrix while reading ",f)
+        return(NULL)
+    }
     pinfo("Read ",f,"(rows, cols) :",paste(dim(mtx),collapse=","))
     tryCatch(close(con),error=function(x) return(NULL))
     ## read the extra files
@@ -1525,9 +1530,17 @@ write.mtx <- function(mtx,filename,
     }
     tryCatch(close(file.con),error=function(x) return(NULL))
     pinfo("Writing to ",rows.filename)
-    write.tsv(data.frame(list(ids=seq(1,nrow(mtx)),lab=rownames(mtx))),header=FALSE,rownames.label=NULL,fix=FALSE,gzip=gzip,file=rows.filename)
+    if ( nrow(mtx) > 0 ) 
+        m1 <- data.frame(list(ids=seq(1,nrow(mtx)),lab=rownames(mtx)))
+    else
+        m1 <- data.frame(nrow=0,ncol=0)
+    write.tsv(m1,header=FALSE,rownames.label=NULL,fix=FALSE,gzip=gzip,file=rows.filename)
     pinfo("Writing to ",cols.filename)
-    write.tsv(data.frame(list(ids=seq(1,ncol(mtx)),lab=colnames(mtx))),header=FALSE,rownames.label=NULL,fix=FALSE,gzip=gzip,file=cols.filename)
+    if ( ncol(mtx) > 0 )
+        m1 <- data.frame(list(ids=seq(1,ncol(mtx)),lab=colnames(mtx)))
+    else
+        m1 <- data.frame(nrow=0,ncol=0)
+    write.tsv(m1,header=FALSE,rownames.label=NULL,fix=FALSE,gzip=gzip,file=cols.filename)
     #if (gzip)
     #    filename <- paste0(filename,".gz")
     return(filename)
