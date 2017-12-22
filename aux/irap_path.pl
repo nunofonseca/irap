@@ -316,7 +316,7 @@ all_mappers(X):-all(M,m(M,_,_,_),X).
 all_quant([htseq1,htseq2,basic,flux_cap,cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,nurd,stringtie,stringtie_nd,rsem,kallisto,salmon,umi_count,umis]).
 all_quant_norm([flux_cap,cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,none,deseq,stringtie,stringtie_nd,rsem,irap]).
 all_tquant([cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,nurd,stringtie,stringtie_nd,rsem,kallisto,umi_count]).
-all_de([deseq,edger,voom,cuffdiff1,cuffdiff2,cuffdiff1_nd,cuffdiff2_nd,deseq2,none]).
+all_de([deseq,edger,voom,cuffdiff1,cuffdiff2,cuffdiff1_nd,cuffdiff2_nd,deseq2,ebseq,none]).
 
 %% bulk rna
 qr('htseq1',m(M),'Only requires the NH flag defined',stranded):-m(M,_,_,_S),not M==none.
@@ -365,6 +365,7 @@ qn(none,qr(_),_,_).
 tde(deseq2,qr(QR),_):-all_tquant(ALL_QN),member(QR,ALL_QN).
 tde(edger,qr(QR),_):-all_tquant(ALL_QN),member(QR,ALL_QN).
 tde(voom,qr(QR),_):-all_tquant(ALL_QN),member(QR,ALL_QN).
+tde(ebseq,qr(QR),_):-all_tquant(ALL_QN),member(QR,ALL_QN).
 tde(sleuth,qr(QR),_):-member(QR,[kallisto]).
 tde(none,qr(_),_).
 
@@ -372,6 +373,7 @@ de(deseq,qr(QR),_):-all_quant(ALL_QN),member(QR,ALL_QN).
 de(deseq2,qr(QR),_):-all_quant(ALL_QN),member(QR,ALL_QN).
 de(edger,qr(QR),_):-all_quant(ALL_QN),member(QR,ALL_QN).
 de(voom,qr(QR),_):-all_quant(ALL_QN),member(QR,ALL_QN).
+de(ebseq,qr(QR),_):-all_quant(ALL_QN),member(QR,ALL_QN).
 %de(bayseq,(qr(QR),qn(QN)),_):-member(QR,[htseq1,htseq2,basic,flux_cap]),member(QN,[deseq,flux_cap,none]).
 de(cuffdiff1,qr(QR),_):-member(QR,[cufflinks1,cufflinks2]).
 de(cuffdiff2,qr(QR),_):-member(QR,[cufflinks1,cufflinks2]).

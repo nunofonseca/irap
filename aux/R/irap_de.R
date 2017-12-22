@@ -24,7 +24,7 @@
 process.cmdline.args <- function(cmd) {
   args <- commandArgs(trailingOnly=TRUE)
     
-  usage <- paste(cmd," --tsv file --min min.reads --contrasts contrast.def --labels label1;label2;... --annotation tsv.file [--annot-genes-only --feat gene|transcript] --out outprefix ",sep="")
+  usage <- paste(cmd," --tsv file --min min.reads --contrasts contrast.def --labels label1;label2;... --annotation tsv.file [--annot-genes-only --feat gene|transcript --g2t gene2transcript.tsv] --out outprefix ",sep="")
   option_list <- list(
     make_option(c("--independent-filtering"),action="store_true",dest="indfilter",default=FALSE,help="Use independent filtering (DESeq2 only) [default %default]"),
     make_option(c("-m", "--min"), type="character", dest="min_count", default=NULL,help="exclude genes with counts < min"),
@@ -35,13 +35,17 @@ process.cmdline.args <- function(cmd) {
     make_option(c("--annot-genes-only"), action="store_true",default=FALSE,dest="only.annot.genes",help="Only use genes in the DE analysis that appear in the annot. file."),
     make_option(c("--feature"), type="character",default="gene",dest="feature",help="Type of feature: gene, transcript (default %default%)."),
     make_option(c("--out"), type="character", dest="out", default=NULL,help="Output file prefix"),
+    make_option(c("--g2t"), type="character", dest="g2t_file", default=NULL,help="Mapping between gene and transcripts (TSV file). Needed by some transcript differential expression methods."),
+    make_option(c("--trans_col"), type="numeric",default=2,help="Column in the mapping file with the transcript ids [default %default]."),
+  make_option(c("--gene_col"), type="numeric",default=1,help="Column in the mapping file with the gene ids[default %default]."),
+
     make_option(c("-i", "--tsv"), type="character", dest="tsv_file", default=NULL,help="TSV file name"),
     make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode")
   )
 
   # check multiple options values
-  filenames <- c("tsv_file")
-  multiple.options = list()
+  filenames <- c("tsv_file","g2t_file")
+  multiple.options = list(feature=c("gene","transcript"))
   mandatory <- c("tsv_file","out","labels","contrasts")
   opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
 
@@ -106,13 +110,22 @@ process.cmdline.args <- function(cmd) {
     }
     
   }
-  
+  opt$mapping <- NULL
+  if (!is.null(opt$g2t_file) ) {
+      pinfo("Reading ",opt$g2t_file)
+      mapping.data <- read.tsv(opt$g2t_file)
+      pinfo("Reading complete.")
+      ## TODO: validate values
+      opt$mapping <- unique(mapping.data[,c(opt$trans_col,opt$gene_col)])
+      colnames(opt$mapping) <- c("trans","gene")
+  }
   ######################
   pinfo(" Matrix/counts=",opt$tsv_file)
   pinfo(" min_count=",opt$min_count)
-  pinfo(" Labels=",opt$labels.v)
-  pinfo(" Contrasts=",opt$contrast.l)
+  pinfo(" Labels=",paste(opt$labels.v,collapse=","))
+  pinfo(" Contrasts=",paste(opt$contrast.l,collapse=","))
   pinfo(" Output prefix=",opt$out)
+  pinfo(" Feature=",opt$feature)
   ############################
   opt
 }

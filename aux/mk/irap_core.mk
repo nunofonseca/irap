@@ -1017,6 +1017,9 @@ $(info *	exon_quant_method=$(exon_quant_method))
 endif
 $(info *	transcript_quant=$(transcript_quant))
 
+## Needed for transcript quantification
+mapTrans2gene=$(name)/data/$(gtf_file_basename).mapTrans2Gene.tsv
+
 
 #####################
 # Exon quantification
@@ -1109,7 +1112,7 @@ ifndef de_method
  de_method=$(def_de_method)
 endif
 
-SUPPORTED_DE_METHODS=cuffdiff1 cuffdiff2 cuffdiff1_nd cuffdiff2_nd deseq edger voom deseq2
+SUPPORTED_DE_METHODS=cuffdiff1 cuffdiff2 cuffdiff1_nd cuffdiff2_nd deseq edger voom deseq2 ebseq
 ifeq (,$(filter $(de_method),none $(SUPPORTED_DE_METHODS)))
 $(call p_info,[ERROR] de_method)
 $(error $(de_method) not supported)
@@ -1160,10 +1163,8 @@ de_min_count?=0
 #********************
 # by default transcript DE is disabled
 
-
-# reuse the gene level quantification methods...far from ideal
-# Add sleuth, EBSeq?
-SUPPORTED_TRANSCRIPT_DE_METHODS=edger voom deseq2 cuffdiff1 cuffdiff2
+# reuse some gene level quantification methods...not ideal
+SUPPORTED_TRANSCRIPT_DE_METHODS=edger voom deseq2 cuffdiff1 cuffdiff2 ebseq
 
 ifeq (,$(filter $(transcript_de_method),none $(SUPPORTED_TRANSCRIPT_DE_METHODS)))
 $(call p_info,[ERROR] transcript_de_method)
