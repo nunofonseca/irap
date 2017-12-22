@@ -18,9 +18,11 @@
 # along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-#    $Id: 0.1.3 Nuno Fonseca Fri Dec 21 11:56:56 2012$
 # =========================================================
 # Rules for creating the reports
+#
+# REPORT_TARGETS_X will contain the different taregts to create - X is the lsf_level where they are created
+#
 
 BROWSER_DIR=jbrowse
 
@@ -228,8 +230,6 @@ ifdef reuse_menu
 IRAP_REPORT_MAIN_OPTIONS += --reuse-menu
 endif
 
-must_exist=$(if  $(realpath $(1)),,$(1))
-
 
 clean_report: 
 	@find $(name)/report/mapping/ $(name)/report/quant/ $(name)/report/de/  -maxdepth 1 -type f -exec rm -f {} \; 
@@ -265,14 +265,6 @@ $(name)/report/irap.css: $(PATH2CSS_FILE)
 $(name)/report/menu.css: $(IRAP_DIR)/aux/css/menu.css
 	cp -f $< $@
 
-#############################
-# a single file with the mapping stats
-$(name)/report/libs_qc.tsv: $(name)/$(mapper)/stats_raw.tsv $(name)/$(mapper)/stats_perc.tsv  $(name)/$(mapper)/featstats_raw.tsv $(name)/$(mapper)/featstats_perc.tsv  $(name)/$(mapper)/genestats_raw.tsv 
-	irap_append2tsv --in "$(name)/$(mapper)/stats_raw.tsv $(name)/$(mapper)/featstats_raw.tsv $(name)/$(mapper)/genestats_raw.tsv" --exclude_aggr  --cols_not_sorted --out $@.1.tmp &&\
-	irap_append2tsv --in "$(name)/$(mapper)/stats_perc.tsv $(name)/$(mapper)/featstats_perc.tsv $(name)/$(mapper)/genestats_perc.tsv" --exclude_aggr --add_row_suffix "_perc" --cols_not_sorted --out $@.2.tmp && \
-	irap_append2tsv --in "$@.1.tmp $@.2.tmp" --exclude_aggr --transpose --out $@.tmp && mv $@.tmp $@ &&\
-	rm -f $@.1.tmp $@.2.tmp
-
 
 #############################
 # QC
@@ -282,14 +274,6 @@ qc_html_files=$(name)/report/qc.html
 
 qc_report: $(qc_html_files)
 
-# qc=none|on|off
-ifeq ($(qc),none)
-$(name)/report/qc.html $(name)/report/qc.tsv: 
-
-else
-$(name)/report/qc.html $(name)/report/qc.tsv: $(conf) $(call must_exist,$(name)/data/)  $(name)/report/fastq_qc_report.tsv
-	irap_report_qc $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(name)/report || ( rm -f $@ && exit 1)
-endif
 
 ###############################
 # deprecated!
@@ -316,44 +300,6 @@ $(name)/report/fastqc_report.tsv:  $(foreach p,$(pe),$(name)/report/riq/raw_data
 
 # Keep the FASTQC report of the data used in the analysis: based on the initial raw data if QC is disabled or based on the filtered QC file
 
-ifeq ($(qc),none)
-# empty file
-FASTQC_REPORT_FILES=
-$(name)/report/fastq_qc_report.tsv:
-	touch $@
-
-else
-FASTQC_REPORT_FILES=$(foreach p,$(pe),$(name)/report/riq/$($(p)_dir)raw_data/$(p)_1.f.fastqc.tsv $(name)/report/riq/$($(p)_dir)raw_data/$(p)_2.f.fastqc.tsv) $(foreach p,$(se),$(name)/report/riq/$($(p)_dir)raw_data/$(p).f.fastqc.tsv)
-
-ifeq  ($(qc),off)
-#FASTQC_REPORT_FILES=$(foreach p,$(pe),$(name)/report/riq/$($(p)_dir)/$(call get_fastq_prefix,$(p),pe)_1.fastqc.tsv $(name)/report/riq/$($(p)_dir)$(call get_fastq_prefix,$(p),pe)_2.fastqc.tsv) $(foreach p,$(se),$(name)/report/riq/$($(p)_dir)$(call get_fastq_prefix,$(p),se).fastqc.tsv)
-
-$(name)/report/fastq_qc_report.tsv:  $(FASTQC_REPORT_FILES)
-	$(call pass_args_stdin,irap_merge2tsv,$@.tmp, --in='$(subst $(space),;,$^)'  --out $@.tmp) && mv $@.tmp $@
-
-%.fastqc.tsv: %.fastqc.zip
-	irap_fastqc2tsv $< > $@.tmp && mv $@.tmp $@
-
-
-else
-
-
-$(name)/report/fastq_qc_report.tsv:  $(FASTQC_REPORT_FILES)
-	$(call pass_args_stdin,irap_merge2tsv,$@.tmp, --in='$(subst $(space),;,$^)'  --out $@.tmp) && mv $@.tmp $@
-
-# SE
-%.f.fastqc.tsv: %.f.fastqc.zip
-	irap_fastqc2tsv $< | sed "1s/.f$$//" > $@.tmp && mv $@.tmp $@
-
-# PE
-%_1.f.fastqc.tsv: %_1.f.fastqc.zip 
-	irap_fastqc2tsv $< | sed "1s/.f$$//" > $@.tmp && mv $@.tmp $@
-
-%_2.f.fastqc.tsv: %_2.f.fastqc.zip 
-	irap_fastqc2tsv $< | sed "1s/.f$$//" > $@.tmp && mv $@.tmp $@
-
-endif
-endif
 
 #############################
 # TODO: info.html
