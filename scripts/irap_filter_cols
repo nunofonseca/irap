@@ -80,8 +80,8 @@ failed <- outcome=="FAIL"
 pinfo("Removing ",sum(failed), " cells/samples from ",mat.file)
 
 if (sum(failed)==length(failed) ) {
-    perror("All cells/samples excluded")
-    q(status=1)
+    pwarning("All cells/samples excluded")
+##    q(status=1)
 }
 
 if (sum(failed)==0 && ! opt$is_mtx ) {    
