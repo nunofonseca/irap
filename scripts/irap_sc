@@ -45,7 +45,7 @@ irap_path:=$(shell dirname `which irap`)
 
 
 #####################################################################
-# default settings
+# default settings for sc-RNA-seq
 override de_method=none
 override rnaseq_type:=sc
 sc_protocol?=10x_v2
