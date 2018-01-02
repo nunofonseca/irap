@@ -1,0 +1,79 @@
+#!/usr/bin/env Rscript
+#; -*- mode: R;-*-
+# =========================================================
+# Copyright 2012-2018,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+# =========================================================
+suppressPackageStartupMessages(library("optparse"))
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+# specify our desired options in a list
+#
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+pdebug.enabled <- FALSE
+
+#######################
+usage <- "irap_tsv2mtx --tsv tsv_file --out mtx_filename_prefix"
+option_list <- list(
+    make_option(c("-o","--out"),type="character",default=NULL,help="Output mtx file"),
+    make_option(c("--tsv"),type="character",dest="tsv_file",default=NULL,help="tsv file"),
+    make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode")
+)
+
+
+# 
+mandatory <- c("out","tsv_file")
+filenames <- c("tsv_file")
+
+#
+args <- importArgsfromStdin()
+opt <- myParseArgs(usage = usage,option_list=option_list,filenames.exist=filenames,
+                   mandatory=mandatory,args=args)
+
+pdebug.enabled <- opt$debug
+pdebug.save.state("irap_tsv2mtx","p0")
+
+pinfo("Parameters parsed.")
+
+out.table <- NULL
+
+x <- quant.load(opt$tsv_file)
+if ( is.null(x) ) {
+    perror("Error loading ",f)
+    q(status=1)
+}
+##library(Matrix)
+
+xs <- mat2mtx(as.matrix(x),sparse=TRUE)
+write.mtx(xs,filename=opt$out,gzip=TRUE)
+pinfo("all done.")
+
+q(status=0)
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  IRAP.DIR="/home/nf/Research/Projects/WIP/EREAP/irap/"
+  Sys.setenv(IRAP_DIR=IRAP.DIR)
+}
+setwd("/home/nf/Research/Projects/WIP/EREAP/irap_tests")
+load("irap_tsv2mtx.Rdata")
