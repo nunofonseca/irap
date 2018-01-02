@@ -1,0 +1,136 @@
+#!/usr/bin/env Rscript
+#; -*- mode: R;-*-
+# =========================================================
+# Copyright 2012-2018,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#    $Id: 0.1.1$
+# =========================================================
+
+###############################################################
+suppressPackageStartupMessages(library("optparse"))
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+#
+# specify our desired options in a list
+#
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+pdebug.enabled <- TRUE
+#######################
+usage <- "irap_quant_qc --in file [options]"
+filenames <- c("tsv_file","gtf_file")
+
+option_list <- list(
+    make_option(c("-f", "--feature"), type="character", dest="feature", default="gene",help="Feature (gene,transcript,exon)"),
+    make_option(c("--mtx"), action="store_false",default=FALSE,dest="is_mtx",help="The input file is in Matrix Market format. Default is TSV format."),
+    make_option(c("--tsv"), action="store_true",default=FALSE,dest="is_mtx",help="The input file is in TSV format (default)."),
+    make_option(c("-i", "--ifile"), type="character", dest="ifile", help="file name with the matrix with the counts per gene/transcript."),
+    make_option(c("-g", "--gtf"), type="character", dest="gtf_file", default=NULL, help="GTF file name"),
+    make_option(c("-m", "--metric"), type="character", dest="metric", default="rpkm", help="Normalization metric (rpkm/fpkm,tpm,fpkm-uq,uq-fpkm) [default %default]"),
+    make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
+    make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name prefix. A file will be created (column 1 - variable2, column 2 - values).")
+)
+
+## TODO: this variable is shared between irap_raw2metric and irap_quant_qc -> move to another file
+## check multiple options values
+multiple.options = list(
+    feature=c('gene','exon','transcript'),
+    metric=c('raw','rpkm','tpm','fpkm','fpkm-uq','uq-fpkm')
+)
+mandatory <- c("ifile","out","gtf_file")
+
+#pinfo("saved")
+opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
+
+##
+pdebug.save.state("irap_quant_qc","p0")
+
+##
+pinfo("Loading ",opt$ifile)
+if ( opt$is_mtx ) {
+    table <- mtx.load(opt$ifile)
+} else {
+    table <- quant.load(opt$ifile)
+}
+pinfo("Loading ",opt$ifile," done.")
+
+print(head(table))
+## matrix may contain a single column with values
+if ( ncol(table)!=1 ) {
+    cat("ERROR: ",opt$ifile," should contain a two column matrix\n")
+    q(status=1)
+}
+
+## load gtf if provided
+gtf.table <- NULL
+feature.label <- paste(opt$feature,"_id",sep="")
+pinfo("feature: ",opt$feature)
+
+gtf.table <- load.gtf(opt$gtf_file,selected.attr=c(feature.label,"biotype"))
+pinfo("GTF file loaded: ",opt$gtf," ",nrow(gtf.table)," entries")
+
+
+pdebug("data loaded")
+pdebug.save.state("irap_raw2metric","p1")
+## consistency checks
+
+#print(head(gtf.table))
+stats <- list()
+## Total expression (read counts/FPKM,TPM,...)
+stats[paste0(opt$feature,"s ",opt$metric," sum")] <- round(sum(table[,1]),2)
+## number of genes
+stats[paste0(opt$feature,"s ",opt$metric," >0")] <- sum(table[,1]>0)
+stats[paste0(opt$feature,"s ",opt$metric," >1")] <- sum(table[,1]>1)
+stats[paste0(opt$feature,"s ",opt$metric," >5")] <- sum(table[,1]>5)
+## coding
+pc.genes <- unique(as.character(gtf.table[gtf.table$biotype=="protein_coding",feature.label]))
+pc.genes <- pc.genes[pc.genes%in%rownames(table)]
+
+print(head(pc.genes))
+stats[paste0(opt$feature,"s ",opt$metric," protein_coding >0")] <- sum(table[pc.genes,1]>0)
+stats[paste0(opt$feature,"s ",opt$metric," protein_coding >1")] <- sum(table[pc.genes,1]>1)
+stats[paste0(opt$feature,"s ",opt$metric," protein_coding >5")] <- sum(table[pc.genes,1]>5)
+
+##
+rRNA.genes <- unique(as.character(gtf.table[gtf.table$biotype=="rRNA",feature.label]))
+rRNA.genes <- rRNA.genes[rRNA.genes%in%rownames(table)]
+stats[paste0(opt$feature,"s ",opt$metric," rRNA >0")] <- sum(table[rRNA.genes,1]>0)
+stats[paste0(opt$feature,"s ",opt$metric," rRNA >1")] <- sum(table[rRNA.genes,1]>1)
+stats[paste0(opt$feature,"s ",opt$metric," rRNA >5")] <- sum(table[rRNA.genes,1]>5)
+
+
+stats.df <- t(data.frame(stats,check.names=FALSE))
+stats.df <- cbind(names(stats),stats.df)
+
+if (colnames(table)[1]!="V2" ) {
+    colnames(stats.df) <- c("Feature",colnames(table))
+    header=TRUE
+} else {
+    header=FALSE
+}
+
+##
+write.table(stats.df,file=opt$out,quote=F,sep="\t",row.names=FALSE,col.names=header)
+pinfo("Saved ",opt$out)
+q(status=0)
+
+
