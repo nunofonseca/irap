@@ -36,6 +36,7 @@ process.cmdline.args <- function(cmd) {
     make_option(c("--feature"), type="character",default="gene",dest="feature",help="Type of feature: gene, transcript (default %default%)."),
     make_option(c("--out"), type="character", dest="out", default=NULL,help="Output file prefix"),
     make_option(c("--g2t"), type="character", dest="g2t_file", default=NULL,help="Mapping between gene and transcripts (TSV file). Needed by some transcript differential expression methods."),
+    make_option(c("--gff"), type="character", dest="gff_file", default=NULL,help="gff file needed by dexseq"),
     make_option(c("--trans_col"), type="numeric",default=2,help="Column in the mapping file with the transcript ids [default %default]."),
   make_option(c("--gene_col"), type="numeric",default=1,help="Column in the mapping file with the gene ids[default %default]."),
 
@@ -44,8 +45,8 @@ process.cmdline.args <- function(cmd) {
   )
 
   # check multiple options values
-  filenames <- c("tsv_file","g2t_file")
-  multiple.options = list(feature=c("gene","transcript"))
+  filenames <- c("tsv_file","g2t_file","gff_file")
+  multiple.options = list(feature=c("gene","transcript","exon"))
   mandatory <- c("tsv_file","out","labels","contrasts")
   opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
 
@@ -119,6 +120,14 @@ process.cmdline.args <- function(cmd) {
       opt$mapping <- unique(mapping.data[,c(opt$trans_col,opt$gene_col)])
       colnames(opt$mapping) <- c("trans","gene")
   }
+
+  opt$gff <- NULL
+  if (!is.null(opt$gff_file) ) {
+      pinfo("Reading ",opt$gff_file)
+      opt$gff <- load.gff3(opt$gff_file)
+      pinfo("Reading complete.")
+  }
+
   ######################
   pinfo(" Matrix/counts=",opt$tsv_file)
   pinfo(" min_count=",opt$min_count)
