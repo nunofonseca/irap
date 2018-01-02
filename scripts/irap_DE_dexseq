@@ -1,0 +1,161 @@
+#!/usr/bin/env Rscript
+#; -*- mode: R;-*-
+# =========================================================
+#
+# Copyright 2012-2018,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+
+###############################################################
+suppressPackageStartupMessages(library("optparse"))
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+#
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+source(paste(IRAP.DIR,"aux/R","irap_de.R",sep="/"))
+
+cmd <- "irap_DE_dexseq"
+opt <- process.cmdline.args(cmd)
+pinfo("Parameters parsed.")
+
+if ( length(opt$labels.v) > 2 ) {
+  perror("irap_DE_dexseq only supports pairwise comparisons!");
+  q(status=2);
+}
+system(paste("mkdir -p ",opt$out));
+data <- quant.load(opt$tsv_file)
+## debug
+pdebug.save.state("irap_DE_dexseq","1")
+## 
+data.f <- filter.read.counts.table(data,opt)
+if ( nrow(data.f)==0 ) {
+    perror("Empty count matrix after applying the filter(s)")
+    q(status=2)
+}
+
+data.f <- handle.tech.replicates(data.f,opt)
+
+data.f <- apply(data.f,2,round,0)
+storage.mode(data.f) <- "integer"
+##print(storage.mode(data.f))
+#
+opt$conds <- map.conds2cols(opt$label2group,colnames(data.f))
+colData <- data.frame(Contrast=opt$conds)
+rownames(colData) <- colnames(data.f)
+## untreated or control should be first (use the labels...)
+# opt$labels.v[1] should appear first
+i1 <- which(colData$Contrast==opt$labels.v[1])
+i2 <- which(colData$Contrast!=opt$labels.v[1])
+colData <- rbind(colData[i1,,drop=FALSE],colData[i2,,drop=FALSE])
+opt$conds
+#########################
+suppressPackageStartupMessages(library(DEXSeq))
+#Note:counts of technical replicates  have to be summed up into a single column
+
+sampleTable = data.frame(
+    row.names = names(opt$conds),
+    condition = opt$conds)
+
+#colData
+pinfo("Generating DEXSeq Dataset")
+dxd <- DEXSeqDataSet(countData=as.matrix(data.f[,rownames(colData)]),
+                     sampleTable,
+                     featureID=gsub(".*:","",rownames(data.f)),
+                     groupID=gsub(":.*","",rownames(data.f)))
+
+
+pinfo("Running DEXSeq")
+
+##
+pinfo("Running DEXSeq: estimating size factors")
+dxd <- estimateSizeFactors(dxd)
+
+##
+pinfo("Running DEXSeq: estimating dispersions")
+dxd <- estimateDispersions(dxd)
+
+pinfo("Running DEXSeq: testing for DEU")
+dxd <- testForDEU(dxd)
+
+##
+pinfo("Running DEXSeq: estimating foldchange")
+dxd <- estimateExonFoldChanges(dxd,fitExpToVar="condition")
+
+pdebug.save.state("irap_DE_dexseq","2")
+
+##
+pinfo("Collecting results...")
+res <- DEXSeqResults(dxd)
+
+id <- rownames(res)
+x <- data.frame(list(
+    id=id,
+    geneid=res$groupID,
+    pvalue=res$pvalue,
+    padj=res$padj,
+    baseMean=res$exonBaseMean,
+    baseMeanA=res$C1,
+    baseMeanB=res$C2,
+    dispersion=res$dispersion,
+    stat=res$stat,
+    log2FoldChange=res$log2fold_C2_C1))
+
+x$foldChange <- 2^x$log2FoldChange
+res <- x
+x <- NULL
+pinfo("OK")
+
+#print(colnames(res))
+res <- res[,c("id","baseMean","baseMeanA","baseMeanB","foldChange","log2FoldChange","dispersion","stat","pvalue","padj","geneid")]
+colnames(res)[9] <- "pval"
+
+# sort
+res<-as.data.frame(res[order(res$padj),,drop=FALSE])
+
+## annotate the gene list
+if ( !is.null(opt$annotation) && !is.na(opt$annotation)) {
+   res.annot <- res[order(res$pval),];
+   match.v  <- match(res.annot$geneid,opt$annot[,1]);
+   res.annot <- cbind(res.annot,opt$annot[match.v,])
+} else {
+   res.annot <- res;
+}
+
+res.annot <- res.annot[order(res.annot$padj),];
+
+save.de2tsv(res.annot,ofile.prefix=opt$out)
+# save the objects
+save(opt,res.annot,dxd,data,data.f,file=paste(opt$out,"de.Rdata",sep="/"))
+quit(save="no",status=0)
+
+######################################
+irap_DE_dexseq_debug <- function(rdata.obj) {
+  load(rdata.obj,envir=.GlobalEnv)
+  pdebug.rdata()
+  source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+  library(Dexseq)
+}
+IRAP.DIR="/home/nf/Research/Projects/WIP/EREAP/irap"
+IRAP.DIR=getwd()
+Sys.setenv(IRAP_DIR=IRAP.DIR)
+rdata.obj="irap_DE_dexseq.Rdata"
+irap_DE_dexseq_debug("irap_DE_dexseq.Rdata")
