@@ -513,7 +513,7 @@ export PYTHONPATH=\$IRAP_DIR/lib64/$python_dir/site-packages:\$IRAP_DIR/lib/$pyt
 # in order to use iRAP with the LSF job scheduler
 # note: memory values are in MB 
 #export IRAP_LSF_GROUP=/irap
-#export QUEUE=research-rh6
+#export QUEUE=research-rh7
 export MEM=10000
 export THREADS=8
 #export JOB_MEM_INCR 8000
