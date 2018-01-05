@@ -1,5 +1,5 @@
 # =========================================================
-# Copyright 2012-2017,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+# Copyright 2012-2018,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
 #
 # This file is part of iRAP.
 #
@@ -221,6 +221,7 @@ license=This pipeline is distributed  under the terms of the GNU General Public 
 # Default values
 ################################################################################
 transcript_de_method?=none
+exon_de_method?=none
 
 def_gse_tool?=none
 
@@ -436,6 +437,8 @@ gtf_file_basename:=$(notdir $(gtf_file_abspath))
 $(info *       gtf_file  = $(gtf_file))
 $(call file_exists,$(gtf_file_dir)/$(gtf_file))
 
+DEXSEQ_GFF:=$(gtf_file_abspath).DEXSeq.gff
+
 # irap's gtf file
 # lgtf_file_dir:=
 
@@ -503,6 +506,7 @@ gtf_file_abspath:=$(name)/data/$(subst .fasta,,$(spikein_fasta_prefix)).$(subst 
 spikein_gtf_file:=$(patsubst %.fasta,%.gtf,$(spikein_fasta_abspath))
 override gtf_file:=$(notdir $(gtf_file_abspath))
 
+
 ## concentration (TSV file)
 ifndef spikein_concentration
 spikein_concentration=
@@ -515,6 +519,8 @@ endif
 
 trans_abspath?=$(cdna_file_abspath)
 $(info *       Transcripts = $(trans_abspath))
+
+
 
 # ****************
 # single cell
@@ -1187,6 +1193,34 @@ de_annot_transcripts_only=$(def_de_annot_transcripts_only)
 endif
 
 transcript_de_min_count?=10
+
+
+#********************************
+# by default exon DE is disabled
+SUPPORTED_EXON_DE_METHODS=dexseq
+
+ifeq (,$(filter $(exon_de_method),none $(SUPPORTED_EXON_DE_METHODS)))
+$(call p_info,[ERROR] exon_de_method)
+$(error $(exon_de_method) not supported)
+endif
+
+$(info *	exon_de_method=$(exon_de_method))
+
+ifndef exon_de_pvalue_cutoff=
+exon_de_pvalue_cutoff=$(def_de_pvalue_cutoff)
+endif
+$(info *	exon_de_pvalue_cutoff=$(exon_de_pvalue_cutoff))
+
+ifndef de_num_exons_per_table
+de_num_exons_per_table=$(def_de_num_exons_per_table)
+endif
+
+ifndef de_annot_exons_only
+de_annot_exons_only=$(def_de_annot_exons_only)
+endif
+
+exon_de_min_count?=10
+
 ###############################################
 # isl enabled -> stage3 targets=stage4
 ifeq ($(isl_mode),y)
@@ -1512,15 +1546,27 @@ define list_cached_vars=
 	$(foreach var,$(cached_vars) cached_vars, echo $(var)=$(strip $(call cached_var,$(var)));)
 endef
 
+################################################################################
+# Minimum set of targets for each stage
+STAGE0_TARGETS=
+STAGE1_TARGETS=
+STAGE2_TARGETS=
+STAGE3_TARGETS=
+STAGE4_TARGETS=
+STAGE5_TARGETS=
 
 ################################################################################
 # Files produced at each stage
 CLEAN_UP_TARGETS=
+BOOTSTRAP_TARGETS=
+# stage0
 SETUP_DATA_FILES=
-STAGE3_OUT_FILES=
+STAGE1_OUT_FILES=
 STAGE2_OUT_FILES=
+STAGE3_OUT_FILES=
 STAGE4_OUT_FILES=
 STAGE5_OUT_FILES=
+
 
 # STAGE3 library level targets
 STAGE3_S_TARGETS=
@@ -1528,11 +1574,11 @@ STAGE3_S_TARGETS=
 STAGE3_S_OFILES=
 
 ##
-STAGE1_OUT_FILES=$(foreach p,$(se),$(call lib2filt_folder,$(p))$(p).f.fastq.gz) $(foreach p,$(pe),$(call lib2filt_folder,$(p))$(p)_1.f.fastq.gz)
+#STAGE1_OUT_FILES+=$(foreach p,$(se),$(call lib2filt_folder,$(p))$(p).f.fastq.gz) $(foreach p,$(pe),$(call lib2filt_folder,$(p))$(p)_1.f.fastq.gz)
 
 ifneq ($(mapper),none)
 
-STAGE2_OUT_FILES=$(foreach p,$(pe), $(call lib2bam_folder,$(p))$(p).pe.hits.bam) $(foreach s,$(se), $(call lib2bam_folder,$(s))$(s).se.hits.bam)
+
 
 STAGE2BYNAME_OUT_FILES=$(foreach p,$(pe), $(call lib2bam_folder,$(p))$(p).pe.hits.byname.bam) $(foreach s,$(se), $(call lib2bam_folder,$(s))$(s).se.hits.byname.bam)
 
@@ -1590,8 +1636,8 @@ include $(irap_path)/../aux/mk/irap_junction.mk
 endif
 
 # Check if the options provided are valid
-ifeq (invalid,$(shell irap_paths $(mapper) $(quant_method) $(quant_norm_tool) $(quant_norm_method) $(de_method) $(transcript_de_method) $(gse_tool) $(has_stranded_data) $(rnaseq_type) $(sc_protocol)))
-  $(error invalid combination mapper:$(mapper) -> quant_method:$(quant_method) -> quant_norm method:$(quant_norm_method) quant_norm_tool:$(quant_norm_tool) -> de_method:$(de_method) transcriptDE:$(transcript_de_method) rnaseq_type:$(rnaseq_type) sc_protocol:$(sc_protocol) for the given data)
+ifeq (invalid,$(shell irap_paths $(mapper) $(quant_method) $(quant_norm_tool) $(quant_norm_method) $(de_method) $(transcript_de_method) $(exon_de_method) $(gse_tool) $(has_stranded_data) $(rnaseq_type) $(sc_protocol)))
+  $(error invalid combination mapper:$(mapper) -> quant_method:$(quant_method) -> quant_norm method:$(quant_norm_method) quant_norm_tool:$(quant_norm_tool) -> de_method:$(de_method) transcriptDE:$(transcript_de_method) exonDE:$(exon_de_method) rnaseq_type:$(rnaseq_type) sc_protocol:$(sc_protocol) for the given data)
 endif
 
 $(info *========================================================)
@@ -1760,6 +1806,9 @@ endef
 # rename does not work on some distros :(
 #	rename $*.mapping.tmp $*.mapping $*.mapping.*
 
+################################################################################
+# Does nothing...for now
+quickcheck:
 
 ################################################################################
 # stage 0 - setup/initialization
@@ -1770,7 +1819,9 @@ phony_targets+= setup setup_files
 ################################################################################
 # Setup initial files
 # file with the length of the features (gene, isoform, exon)
-SETUP_DATA_FILES+= setup_data_files2 $(name)/data/$(gtf_file_basename).gene_class.txt $(index_files) $(gtf_file_abspath).checked  $(gtf_file_abspath).exon_id.gtf $(juncs_file_abspath)   $(annot_tsv)  $(name)/data/$(reference_basename).introns.bed  $(name)/data/$(reference_basename).genes.bed6 $(name)/data/$(reference_basename).transcripts.bed6
+BOOTSTRAP_TARGETS+= setup_dirs $(trans_abspath) $(gtf_file_abspath) $(reference_abspath) $(gff3_file_abspath).filt.gff3 $(gtf_file_abspath).exon_id.gtf $(gtf_file_abspath).checked
+
+SETUP_DATA_FILES+= setup_data_files2 $(name)/data/$(gtf_file_basename).gene_class.txt $(index_files)   $(gtf_file_abspath).exon_id.gtf $(juncs_file_abspath)   $(annot_tsv)  $(name)/data/$(reference_basename).introns.bed  $(name)/data/$(reference_basename).genes.bed6 $(name)/data/$(reference_basename).transcripts.bed6
 
 setup_data_files2: $(gff3_file_abspath).filt.gff3 $(name)/data/$(reference_basename).$(gtf_file_basename).data_info.tsv 
 #phony_targets+=setup_data_files2
@@ -1784,6 +1835,11 @@ setup_files: $(SETUP_DATA_FILES)
 
 print_stage0_files: setup_dirs
 	echo $(SETUP_DATA_FILES)
+
+print_stage1_files:
+	echo $(STAGE1_OUT_FILES)
+
+###############################################################
 
 ifneq ($(mapper),none)
 # index the reference
@@ -1895,7 +1951,9 @@ $(name)/data/$(gtf_file_basename).lengths.Rdata: $(gtf_file_abspath).lengths.Rda
 
 precious_targets+=$(name)/data/$(gtf_file_basename).lengths.Rdata
 
-$(gtf_file_abspath).DEXSeq.gff.lengths.Rdata: $(gtf_file_abspath).DEXSeq.gff
+
+
+$(DEXSEQ_GFF).lengths.Rdata: $(DEXSEQ_GFF)
 	irap_DexSeqExonLen --gff $< -o $@.tmp --cores $(max_threads) && mv $@.tmp.Rdata $@
 
 # sleep to ensure that the file will not have the same timestamp
@@ -1913,6 +1971,8 @@ phony_targets+= setup_dirs
 
 setup_dirs: $(tmp_dir) $(name)/report/riq/ $(if $(mapper),$(name)/$(mapper)/) $(name)/data/  $(if $(quant_method),$(name)/$(mapper)/$(quant_method)/)  $(if $(de_method),$(name)/$(mapper)/$(quant_method)/$(de_method)/) $(name)/data/pre
 	$(call p_info,[DONE] Directory structure created)
+
+bootstrap: $(BOOTSTRAP_TARGETS)
 
 $(tmp_dir):
 	mkdir -p $@
@@ -1973,19 +2033,32 @@ mapping: stage1 $(name)/$(mapper)/ $(mapper)_mapping
 print_stage2_files:
 	echo $(STAGE2_OUT_FILES)
 
+
 #*************
 # Generic rule
 #*************
 #####################
 phony_targets+= $(mapper)_mapping mapping stage2_tracks
 
+outbams=
 ifeq ($(mapper),none)
 $(mapper)_mapping: 
 else
-$(mapper)_mapping: $(index_files) $(STAGE2_OUT_FILES)
+
+outbams=$(foreach p,$(pe), $(call lib2bam_folder,$(p))$(p).pe.hits.bam) $(foreach s,$(se), $(call lib2bam_folder,$(s))$(s).se.hits.bam)
+STAGE2_OUT_FILES+=$(outbams)
+STAGE2_TARGETS+=$(outbams)
+
+$(mapper)_mapping: $(index_files) $(outbams)
+
 endif
 
-stage2_tracks_targets=$(call rep_browse,$(subst .bam,.bam.tracks,$(STAGE2_OUT_FILES)))	
+# stage2_tracks_targets is empty if report generation is disabled
+stage2_tracks_targets=$(call rep_browse,$(subst .bam,.bam.tracks,$(outbams)))	
+
+STAGE3_OUT_FILES+=$(stage2_tracks_targets)
+STAGE3_TARGETS+=$(stage2_tracks_targets)
+
 
 stage2_tracks: $(stage2_tracks_targets)
 	$(call p_info,[DONE] Generated stage 2 tracks)
@@ -2045,71 +2118,6 @@ $(name)/data/%_int.f.fastq: $(name)/data/%_1.f.fastq $(name)/data/%_2.f.fastq
 
 %.$(mapper).index: %.fa
 
-################################################################################
-# Quantification
-################################################################################
-
-define genes_quant_files=
-$(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).$(expr_ext)) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).$(expr_ext))
-endef
-
-define exons_quant_file=
-$(if $(filter y,$(exon_quant)),$(name)/$(mapper)/$(quant_method)/exons.raw.$(exon_quant_method).$(expr_ext),)
-endef
-
-define exons_quant_files=
-$(if $(filter y,$(exon_quant)),$(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.exons.raw.$(exon_quant_method).$(expr_ext)) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.exons.raw.$(exon_quant_method).$(expr_ext)),)
-endef
-
-
-define exons_quant_norm=
-$(if $(filter y,$(exon_quant)),$(1),)
-endef
-
-#$(if $(filter y,$(transcript_quant)),$(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv,)
-
-define transcripts_quant_norm=
-$(if $(filter y,$(transcript_quant)),$(1),)
-endef
-
-
-
-# Note
-# The quantification may be produced at the level of genes, exons  or transcripts/isoforms
-ifeq ($(quant_method),none) 
-quantification:
-	$(call p_info,[DISABLED] Assembly and quantification)
-$(quant_method)_quant_files=
-$(quant_method)_quant:
-quantification_s:
-
-else
-###################################
-# quantification enabled
-###################################
-$(quant_method)_quant_files=$(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).$(expr_ext) $(call transcripts_quant_file)  $(call exons_quant_file) 
-
-STAGE3_S_TARGETS+=$(call genes_quant_files) $(call transcripts_quant_files)  $(call exons_quant_files)
-
-
-# Raw  + Normalized 
-quantification: norm_quant $(quant_method)_quant 
-	$(call p_info,[DONE] Assembly and quantification)
-
-$(quant_method)_quant: mapping $($(quant_method)_quant_files)
-# do not create the final matrix file (used by lsf wrapper)
-quantification_s: $(STAGE3_S_TARGETS)
-
-# $(STAGE3_S_TARGETS)
-print_stage3_s_targets: 
-	echo $(STAGE3_S_TARGETS)
-
-###################################
-# quantification enabled/end
-###################################
-endif
-phony_targets+= quantification $(quant_method)_quant quantification_s
-STAGE3_OUT_FILES+=$($(quant_method)_quant_files) 
 
 
 #*****************
@@ -2197,12 +2205,10 @@ $(name)/$(mapper)/scripture/genes.raw.scripture.tsv: $(name)/$(mapper)/scripture
 # STAGE 3
 ################################################################################
 
+
 STAGE3_TSV_FILES+=$(call exons_quant_files)\
 	       $(call transcripts_quant_files)\
 	       $(call genes_quant_files)
-
-##################
-#
 
 print_stage3_files:
 	echo $(sort $(STAGE3_OUT_FILES))
@@ -2210,20 +2216,33 @@ print_stage3_files:
 print_stage3_s_files:
 	echo $(sort $(STAGE3_S_OFILES))
 
+print_stage3_targets:
+	echo $(sort $(STAGE3_TARGETS))
 
+print_stage3_s_targets: 
+	echo $(STAGE3_S_TARGETS)
 
 ################################################################################
 # Stage 4
 ################################################################################
 
-phony_targets+= print_stage4_files
+phony_targets+= print_stage4_files print_stage4_targets
 
 print_stage4_files:
 	echo $(STAGE4_OUT_FILES)
+print_stage4_targets:
+	echo $(STAGE4_TARGETS)
 
-phony_targets+= print_stage5_files
+################################################################################
+# Stage 5
+################################################################################
+
+phony_targets+= print_stage5_files  print_stage5_targets
 print_stage5_files:
 	echo $(STAGE5_OUT_FILES)
+
+print_stage5_targets:
+	echo $(STAGE5_TARGETS)
 
 #############################################################
 # GSE
@@ -2363,6 +2382,53 @@ phony_targets+= save_cache
 save_cache: 
 	($(call list_cached_vars)) > $(cached_vars_file).tmp && mv $(cached_vars_file).tmp $(cached_vars_file)
 
+
+######################################
+## lsf
+## targets are placed into bins/waves
+
+phony_targets+= run_wave_0 run_wave_1 run_wave_2 run_wave_3 run_wave_4 run_wave_5 run_wave3_s
+
+# Note
+# targets variables should contain the name of targets that may be created in parallel without conflicts from the previous wave
+# 
+WAVE0_TARGETS=$(SETUP_DATA_FILES)
+WAVE1_TARGETS=$(STAGE1_TARGETS)
+WAVE2_TARGETS=$(STAGE2_TARGETS)
+WAVE3_TARGETS=$(STAGE3_TARGETS)
+WAVE3_s_TARGETS=$(STAGE3_S_TARGETS)
+WAVE4_TARGETS=$(STAGE4_TARGETS)
+WAVE5_TARGETS=$(STAGE5_TARGETS)
+
+run_bootstrap: $(BOOTSTRAP_TARGETS)
+run_wave_0: $(WAVE0_TARGETS)
+run_wave_1: $(WAVE1_TARGETS)
+run_wave_2: $(WAVE2_TARGETS)
+run_wave_3: $(WAVE3_TARGETS)
+run_wave_3_s: $(WAVE3_s_TARGETS)
+run_wave_4: $(WAVE4_TARGETS)
+run_wave_5: $(WAVE5_TARGETS)
+
+print_wave0_targets:
+	echo $(sort $(WAVE0_TARGETS))
+
+print_wave1_targets:
+	echo $(sort $(WAVE1_TARGETS))
+
+print_wave2_targets:
+	echo $(sort $(WAVE2_TARGETS))
+
+print_wave3_targets:
+	echo $(sort $(WAVE3_TARGETS))
+
+print_wave3_s_targets:
+	echo $(sort $(WAVE3_s_TARGETS))
+
+print_wave4_targets:
+	echo $(sort $(WAVE4_TARGETS))
+
+print_wave5_targets:
+	echo $(sort $(WAVE5_TARGETS))
 ###################################################
 # FORCE the program to run even if files haven't changed
 FORCE:
