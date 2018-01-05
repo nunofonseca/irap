@@ -1,5 +1,5 @@
 % =========================================================
-% Copyright 2012-2017,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+% Copyright 2012-2018,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
 %
 % This file is part of iRAP.
 %
@@ -36,35 +36,36 @@ handle_args([File]):-!,
 		     start_graph(File).
 
 handle_args([M,Q,NT,NM,D]):-!,
-    (valid_combination([M,Q,NT,NM,D,none,none,no,blk,none])->
+    (valid_combination([M,Q,NT,NM,D,none,none,none,no,blk,none])->
      format("valid~n",[])
     ;
      format("invalid~n",[])
     ).
-handle_args([M,Q,NT,NM,D,TD,G]):-!,
-    (valid_combination([M,Q,NT,NM,D,TD,G,no,blk,none])->
-     format("valid~n",[])
-    ;
-     format("invalid~n",[])
-    ).
-
-handle_args([M,Q,NT,NM,D,TD,G,StrandedData]):-!,
-    (valid_combination([M,Q,NT,NM,D,TD,G,StrandedData,blk,none])->
+handle_args([M,Q,NT,NM,D,TD,ED,G]):-!,
+    (valid_combination([M,Q,NT,NM,D,TD,ED,G,no,blk,none])->
      format("valid~n",[])
     ;
      format("invalid~n",[])
     ).
 
-handle_args([M,Q,NT,NM,D,TD,G,StrandedData,Blk_SC,SC_Prot]):-!,
-    (valid_combination([M,Q,NT,NM,D,TD,G,StrandedData,Blk_SC,SC_Prot])->
+handle_args([M,Q,NT,NM,D,TD,ED,G,StrandedData]):-!,
+    (valid_combination([M,Q,NT,NM,D,TD,ED,G,StrandedData,blk,none])->
      format("valid~n",[])
     ;
      format("invalid~n",[])
     ).
 
+handle_args([M,Q,NT,NM,D,TD,ED,G,StrandedData,Blk_SC,SC_Prot]):-!,
+    (valid_combination([M,Q,NT,NM,D,TD,ED,G,StrandedData,Blk_SC,SC_Prot])->
+     format("valid~n",[])
+    ;
+     format("invalid~n",[])
+    ).
 
+%% TDE - transcript DE
+%% EDE - exon DE
 handle_args(_):-
-    format("ERROR! usage: irap_paths [ FILENAME | Mapper Quant Norm DE | Mapper Quant NormTool NormMethod DE TDE GSE StrandedData@{yes,no} blk|sc sc_protocol]~n",[]).
+    format("ERROR! usage: irap_paths [ FILENAME | Mapper Quant Norm DE | Mapper Quant NormTool NormMethod DE TDE EDE GSE StrandedData@{yes,no} blk|sc sc_protocol]~n",[]).
 
 
 %% mappers supported for single cell
@@ -79,7 +80,7 @@ sc_mapper(kallisto).
 
 %%sc_mappers(rapmap).
 
-valid_combination([Map,QR,QNT,QN,DE,TDE,GSE,Stranded,blk,_]):-
+valid_combination([Map,QR,QNT,QN,DE,TDE,EDE,GSE,Stranded,blk,_]):-
     m(Map,_,_,S1),
     qr(QR,m(Map),_,S2),
     valid_norm_selection(QR,QNT,QN),
@@ -87,10 +88,11 @@ valid_combination([Map,QR,QNT,QN,DE,TDE,GSE,Stranded,blk,_]):-
     (Stranded==yes->(Map==none->true;S1==stranded,stranded_ok(Stranded,S2));true),
     de(DE,qr(QR),_),
     tde(TDE,qr(QR),_),
+    ede(EDE,qr(QR),_),
     gse(GSE,de(DE),_).
 
 %% smart-seq2 - has UMIs => subset of quantification methods and no fpkm
-valid_combination([Map,QR,QNT,QN,DE,TDE,GSE,Stranded,sc,'smart-seq2']):-
+valid_combination([Map,QR,QNT,QN,DE,TDE,EDE,GSE,Stranded,sc,'smart-seq2']):-
     m(Map,_,_,S1),
     sc_mapper(Map),
     qr(QR,m(Map),_,S2),
@@ -99,10 +101,11 @@ valid_combination([Map,QR,QNT,QN,DE,TDE,GSE,Stranded,sc,'smart-seq2']):-
     (Stranded==yes->(Map==none->true;S1==stranded,stranded_ok(Stranded,S2));true),
     DE==none,
     TDE==none,
+    EDE==none,
     %%de(DE,qr(QR),_),
     gse(GSE,de(DE),_).
 
-valid_combination([Map,QR,QNT,_QN,TDE,DE,GSE,Stranded,sc,SC_PROT]):-
+valid_combination([Map,QR,QNT,_QN,DE,TDE,EDE,GSE,Stranded,sc,SC_PROT]):-
     (SC_PROT=='smart-seq2'->fail;true),
     m(Map,_,_,S1),
     sc_mapper(Map),
@@ -112,6 +115,7 @@ valid_combination([Map,QR,QNT,_QN,TDE,DE,GSE,Stranded,sc,SC_PROT]):-
     (Stranded==yes->(Map==none->true;S1==stranded,stranded_ok(Stranded,S2));true),
     DE==none,
     TDE==none,
+    EDE==none,
     %%de(DE,qr(QR),_),
     gse(GSE,de(DE),_).
 
@@ -317,6 +321,7 @@ all_quant([htseq1,htseq2,basic,flux_cap,cufflinks1,cufflinks2,cufflinks1_nd,cuff
 all_quant_norm([flux_cap,cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,none,deseq,stringtie,stringtie_nd,rsem,irap]).
 all_tquant([cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,nurd,stringtie,stringtie_nd,rsem,kallisto,umi_count]).
 all_de([deseq,edger,voom,cuffdiff1,cuffdiff2,cuffdiff1_nd,cuffdiff2_nd,deseq2,ebseq,none]).
+all_ede([dexseq]).
 
 %% bulk rna
 qr('htseq1',m(M),'Only requires the NH flag defined',stranded):-m(M,_,_,_S),not M==none.
@@ -369,6 +374,9 @@ tde(ebseq,qr(QR),_):-all_tquant(ALL_QN),member(QR,ALL_QN).
 tde(sleuth,qr(QR),_):-member(QR,[kallisto]).
 tde(none,qr(_),_).
 
+ede(dexseq,qr(QR),_):-member(QR,[htseq1,htseq2]).
+ede(none,qr(_),_).
+
 de(deseq,qr(QR),_):-all_quant(ALL_QN),member(QR,ALL_QN).
 de(deseq2,qr(QR),_):-all_quant(ALL_QN),member(QR,ALL_QN).
 de(edger,qr(QR),_):-all_quant(ALL_QN),member(QR,ALL_QN).
@@ -382,8 +390,6 @@ de(cuffdiff2_nd,qr(QR),_):-member(QR,[cufflinks1_nd,cufflinks2_nd]).
 de(sleuth,qr(QR),_):-member(QR,[kallisto]).
 de(none,qr(_),_).
 %de(edger,(qr(QR),_),_):-member(QR,[htseq1,htseq2,basic,flux_cap]).
-
-
 
 gse(none,_,_).
 gse(piano,de(DE),_):- all_de(ALL_DE),member(DE,ALL_DE).
