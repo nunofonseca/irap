@@ -1,5 +1,5 @@
 # =========================================================
-# Copyright 2012-2017,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+# Copyright 2012-2018,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
 #
 # This file is part of iRAP.
 #
@@ -17,7 +17,6 @@
 # along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-#    $Id: 0.1.3 Nuno Fonseca Wed Dec 26 16:20:16 2012$
 # =========================================================
 # Shared code by all *_lsf scripts
 
@@ -138,6 +137,8 @@ if [ "$name-" = "-" ]; then
 	exit 1
 fi
 
+# cur_targets
+CUR_TARGETS=
 # cur_stage
 CUR_STAGE=
 
@@ -178,235 +179,77 @@ function get_cached_value {
     echo $val
 }
 
+function get_targets_4_level {
+    level=$1
+    if [ "$level-" == "-" ]; then
+	echo "ERROR: Internal error in get_targets_4_level"
+	exit 1
+    fi
+    targets=`$cmd conf=$conf $IRAP_PARAMS print_wave${level}_targets|tail -n 1`
+    echo $targets
+}
+
 _INIT_SUSP_JOB=
 function irap_init_job {
- #############
- # Submit jobs
- p_info " * Initialization "
- # save variables
- $cmd conf=$conf $IRAP_PARAMS save_cache
+    # #############
+    ## Submit jobs
+    p_info " * Initialization "
+    # save variables
+    $cmd conf=$conf $IRAP_PARAMS save_cache
 
- #load the file with the variables already computed
- export IRAP_PARAMS="$IRAP_PARAMS use_cached_vars=y"
- p_info " * Starting initial job"
- CUR_STAGE=stage0
- submit_job "${jobname_prefix}i" $cmd conf=$conf setup_dirs $IRAP_PARAMS
- stop_job  "${jobname_prefix}i"
- _INIT_SUSP_JOB=${jobname_prefix}i
- p_info " * First job suspended until all jobs are submitted."
- echo "${jobname_prefix}i"
+    ##load the file with the variables already computed
+    export IRAP_PARAMS="$IRAP_PARAMS use_cached_vars=y"
+    p_info " * Starting initial job"
+    CUR_STAGE=stage0
+    submit_job "${jobname_prefix}i" $cmd conf=$conf bootstrap $IRAP_PARAMS -j $THREADS
+    stop_job  "${jobname_prefix}i"
+    _INIT_SUSP_JOB=${jobname_prefix}i
+    CUR_TARGETS=bootstrap
+    p_info " * First job suspended until all jobs are submitted."
+    echo "${jobname_prefix}i"
 }
 
-function stage0_jobs {
+
+function submit_jobs4stage {
     waitfor=$1
-    stage0_targets=`$cmd conf=$conf $IRAP_PARAMS print_stage0_files|tail -n 1`
-    $cmd conf=$conf $IRAP_PARAMS $stage0_targets -n -q
-    if [ $? -eq 0 ]; then
-	echo $waitfor
-    else
-	let i=1
-	p_info "* Stage 0..." 
-	for f in $stage0_targets; do    
-	    submit_job "${jobname_prefix}0[$i]"  -w "ended($waitfor)" $cmd conf=$conf  $IRAP_PARAMS $f
-	    let i=$i+1
-	done
-	p_info "* Stage 0...$i jobs" 
-	echo "${jobname_prefix}0*"
-    fi
-}
-
-function stage1_jobs {    
-    waitfor=$1
-
-    declare -i s1=0
-    declare -i s2=0
-
-    # Paired end files
-    CUR_STAGE=stage1
-    p_info "* Step&1 (PE)"
-    for p in $pe ; do 
-	let s1=s1+1
-	p_info "Lib (PE): $p"
-	CUR_STAGE=stage1 submit_job "${jobname_prefix}s1[${s1}]" -w "ended($waitfor)" "$cmd conf=$conf  pe=$p se=  $IRAP_PARAMS stage1"
-    done
-    # Single end files
-    echo "***********************************************"
-    echo "*Step1&2 (SE)"
-    for f in $se ; do
-	let s1=s1+1
-	p_info "Lib (SE): $f"
-	CUR_STAGE=stage1 submit_job "${jobname_prefix}s1[$s1]" -w  "ended($waitfor)"  "$cmd conf=$conf stage1 pe=  se=$f  $IRAP_PARAMS"
-    done
-    echo "${jobname_prefix}s1*"
-}
-
-# run stage1&2
-function stage12_jobs {    
-    waitfor=$1
-    declare -i s1=0
-    declare -i s2=0
-    # Paired end files
-    p_info "* Step&21 (PE)"
-    for p in $pe ; do 
-	let s1=s1+1
-	let s2=s2+1
-	p_info "Lib (PE): $p"
-	CUR_STAGE=stage12 submit_job "${jobname_prefix}s12[${s1}]" -w "ended($waitfor)" "$cmd conf=$conf  pe=$p se=  $IRAP_PARAMS stage1 stage2"
-    done
-
-    # Single end files
-    echo "***********************************************"
-    echo "*Step1&2 (SE)"
-    for f in $se ; do
-	let s2=s2+1
-	let s1=s1+1
-	p_info "Lib (SE): $f"
-	CUR_STAGE=stage12 submit_job "${jobname_prefix}s12[${s1}]" -w "ended($waitfor)" "$cmd conf=$conf  pe= se=$f  $IRAP_PARAMS stage1"
-    done
-    echo "${jobname_prefix}s12*"
-}
-
-# run stage1&2&3
-function stage123_jobs {    
-    waitfor=$1
-    declare -i s1=0
-    # Paired end files
-    p_info "* Step 1,2, and 3 (PE)"
-    for p in $pe ; do 
-	p_info "Lib (PE): $p"
-	$cmd conf=$conf  pe=$p se=  $IRAP_PARAMS stage1 stage2 stage3as -n -q
-	if [ $? -ne 0 ]; then
-	    let s1=s1+1
-	    CUR_STAGE=stage123 submit_job "${jobname_prefix}s123[${s1}]" -w "ended($waitfor)" "$cmd conf=$conf  pe=$p se=  $IRAP_PARAMS stage1 stage2 stage3as"
-	fi
-    done
-
-    # Single end files
-    echo "***********************************************"
-    CUR_STAGE=stage123
-    p_info "* Step 1,2, and 3 (SE)"
-    for f in $se ; do
-	p_info "Lib (SE): $f"
-	$cmd conf=$conf  se=$f pe=  $IRAP_PARAMS stage1 stage2 stage3as -n -q
-	if [ $? -ne 0 ]; then
-	    let s1=s1+1
-	    CUR_STAGE=stage123 submit_job "${jobname_prefix}s123[${s1}]" -w "ended($waitfor)" "$cmd conf=$conf  pe= se=$f  $IRAP_PARAMS stage1 stage2 stage3as"
-	fi
-    done
-    if [ "$s1" == "0" ]; then
-	echo $waitfor
-    else
-	echo "${jobname_prefix}s123*"
-    fi
-}
-
-# run stage3 - Normalization/merging
-function stage3_jobs {    
-    waitfor=$1
-    WAIT_FOR_IDS=  
-    CUR_STAGE=stage3 
-
-    p_info "Stage3"
-    $cmd conf=$conf  $IRAP_PARAMS stage3 -n -q
-    if [ $? -ne 0 ]; then    
-	submit_job "${jobname_prefix}q"  -w "ended($waitfor)"  "$cmd conf=$conf  $IRAP_PARAMS stage3"
-	echo "${jobname_prefix}q"
-    else
-	echo $waitfor
-    fi
-}
-
-function stage4_jobs {
-    waitfor=$1
-    targets=`$cmd conf=$conf $IRAP_PARAMS print_stage4_files|tail -n 1`
+    level=$2
+    targets=`get_targets_4_level $level`
     if [ "$targets-" == "-" ]; then
 	DEPS=$1
     else
-	DEPS="${jobname_prefix}4*" 
-	let i=1
-	p_info "* Stage 4..." 
-	for f in $targets; do    
-	    submit_job "${jobname_prefix}4[$i]"  -w "ended($waitfor)" $cmd conf=$conf  $IRAP_PARAMS $f
-	    let i=$i+1
-	done
-	p_info "* Stage 4...$i jobs" 
+	p_info "* Checking current status..."
+	$cmd conf=$conf $IRAP_PARAMS run_wave_$level -n -q
+	let ret=$?
+	if [ $ret -eq 0 ]; then
+	    p_info "Skipping submission of jobs in level $level - all done"
+	    DEPS=$1
+	    
+	else
+	    DEPS="${jobname_prefix}${level}*" 
+	    let i=1
+	    p_info "* Stage ${level}..." 
+	    for f in $targets; do    
+		submit_job "${jobname_prefix}${level}[$i]"  -w "ended($waitfor)" $cmd conf=$conf  $IRAP_PARAMS $f
+		let i=$i+1
+	    done
+	    p_info "* Stage ${level}...$i jobs"
+	    CUR_TARGETS=$targets
+	fi
     fi
     echo $DEPS
 }
 
-function stage5_jobs {
-    waitfor=$1
-    targets=`$cmd conf=$conf $IRAP_PARAMS print_stage5_files|tail -n 1`
-    if [ "$targets-" == "-" ]; then
-	DEPS=$1
-    else
-	DEPS="${jobname_prefix}5*" 
-	let i=1
-	p_info "* Stage 5..." 
-	for f in $targets; do    
-	    submit_job "${jobname_prefix}5[$i]"  -w "ended($waitfor)" $cmd conf=$conf  $IRAP_PARAMS $f
-	    let i=$i+1
-	done
-	p_info "* Stage 5...$i jobs" 
-    fi
-    echo $DEPS
-}
-
-# function DE_jobs {
-#     #####
-#     # DE
-#     waitfor=$1
-#     CUR_STAGE=DE
-#     de_ofiles=`$cmd conf=$conf de_files $IRAP_PARAMS|tail -n 1`
-#     let s2=1
-#     for f in $de_ofiles; do
-# 	let s2=s2+1
-# 	p_info "DE: $f"
-# 	submit_job "${jobname_prefix}de[$s2]"  `check_dependency $waitfor`  "$cmd conf=$conf  $IRAP_PARAMS $f"
-#     done
-#     if [ "$de_ofiles-" = "-" ]; then
-# 	DEP=$waitfor
-#     else
-# 	DEP=${jobname_prefix}de
-#     fi
-#     echo $DEP
-# }
-
-# function GSA_jobs {
-#     waitfor=$1
-#     ######
-#     # GSA
-#     CUR_STAGE=GSA
-#     DEP=$waitfor
-#     de_ofiles=`$cmd conf=$conf de_files $IRAP_PARAMS|tail -n 1`
-#     if [ "$de_ofiles-" != "-" ]; then
-#         #####
-#         # GSA
-# 	gse_ofiles=`irap conf=$conf $IRAP_PARAMS GSE_files|tail -n 1`
-# 	let s2=1
-# 	for f in $gse_ofiles; do
-# 	    let s2=s2+1
-# 	    p_info "GSE: $f"
-# 	    submit_job "${jobname_prefix}gse[$s2]" `check_dependency $waitfor`  "irap conf=$conf  $IRAP_PARAMS $f"
-# 	done
-# 	if [ "$gse_ofiles-" != "-" ]; then
-# 	    DEP=${jobname_prefix}gse
-# 	else
-# 	    DEP=$waitfor
-# 	fi    
-#     fi
-#     echo $DEP
-# }
 
 function final_job {
     CUR_STAGE=
     waitfor=$1
     susp_job=$2
+    level=$3
     #########################################
     # To finalize, run the whole pipeline
     # If everything went ok then nothing should be done
     # otherwise it should fail and an email will be sent
-    CUR_STAGE=  submit_job "${jobname_prefix}f" `check_dependency $waitfor`   "$cmd conf=$conf  $IRAP_PARAMS -n -q"
+    CUR_STAGE=  submit_job "${jobname_prefix}f" `check_dependency $waitfor`   "$cmd conf=$conf run_wave_$level $IRAP_PARAMS -n -q"
     
     # send an email to the user
     CUR_STAGE=  submit_job_status "${jobname_prefix}f"
@@ -416,6 +259,7 @@ function final_job {
     echo JOBS=$LOG_DIR/${jobname_prefix}*.out
     echo JOBNAME=${jobname_prefix}f
 }
+
 
 ##########################################################
 # Report
