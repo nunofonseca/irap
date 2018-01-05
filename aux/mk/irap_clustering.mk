@@ -1,6 +1,6 @@
 #; -*- mode: Makefile;-*-
 # =========================================================
-# Copyright 2012-2017,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+# Copyright 2012-2018,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
 #
 # This file is part of iRAP.
 #
@@ -53,8 +53,8 @@ $(name)/$(mapper)/$(quant_method)/sc3/transcripts.raw.filtered.$(quant_method).c
 	mkdir -p $(@D) &&  irap_sc3 -i $< --$(expr_format) --out $(name)/$(mapper)/$(quant_method)/sc3/transcripts.raw.$(quant_method).irap --min_clusters $(min_clusters) --max_clusters $(max_clusters) --max_threads $(max_threads)  || ( rm -f $@* && exit 1)
 
 
-# STAGE4_OFILES+=
-# STAGE4_TARGETS+=
+STAGE5_OUTFILES+=$(clustering_files)
+STAGE5_TARGETS+=$(clustering_files)
 
 
 endif
