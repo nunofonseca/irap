@@ -1,6 +1,6 @@
 #; -*- mode: Makefile;-*-
 # =========================================================
-# Copyright 2012-2017,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+# Copyright 2012-2018,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
 #
 # This file is part of iRAP.
 #
@@ -61,6 +61,7 @@ $(name)/$(mapper)/$(quant_method)/transcripts.raw.filtered.$(quant_method).$(exp
 
 # STAGE4_OFILES+=
 # STAGE4_TARGETS+=
-
+STAGE4_OUTFILES+=$(filtered_expr_matrices) $(cell_qc_files)
+STAGE4_TARGETS+=$(filtered_expr_matrices)
 
 endif
