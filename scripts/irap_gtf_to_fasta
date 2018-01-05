@@ -1,0 +1,124 @@
+#!/usr/bin/env perl
+# =========================================================
+# Copyright 2012-2018,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+# =========================================================
+use Bio::SeqIO;
+use Bio::Perl;
+use Getopt::Long;
+use strict;
+
+
+sub byebye {
+    my ($msg) = @_;
+    print STDERR $msg;
+    exit(1);
+}
+
+my $usage="irap_gtf_to_fasta --gtf gtf_file --genome fasta_file [--types transcript_types] --out out_fasta_file";
+
+my $gtf_file = "";
+my $fasta_file = "";
+# types of transcripts to keep (if more than one then separate them by |
+my $ttypes = "protein_coding";;
+my $out_file = "";
+GetOptions ("gtf|g=s"   => \$gtf_file,      # string
+	    "types|t=s"   => \$ttypes,      # string
+	    "out|o=s"   => \$out_file,      # string
+	    "genome|f=s"   => \$fasta_file)      # string	    
+  or byebye("Error:".$usage."\n");
+
+# TODO: check values
+byebye("Error:".$usage."\n") if ($gtf_file eq "" || $ttypes eq "" || $out_file eq "" || $fasta_file eq "\n" );
+
+byebye("Error:".$gtf_file." not found.\n") if ! -e $gtf_file;
+byebye("Error:".$fasta_file." not found.\n") if ! -e $fasta_file;
+
+print "gtf=$gtf_file\n";
+print "fasta=$fasta_file\n";
+print "types=$ttypes\n";
+print "out=$out_file\n";
+## check if gtf_to_fasta is in the path
+
+my $tmp_gtf=$out_file.".tmp.gtf";
+my $tmp_out1=$out_file.".tmp1";
+my $tmp_out2=$out_file.".tmp2";
+
+## GTF should have the transcript_biotype otherwise there is nothing to do...
+my $cmd = "head -n 100 $gtf_file | grep -i -E 'transcript_(bio)?type\\\s' | wc -l" ;
+my $has_tb=`$cmd`;
+chomp($has_tb);
+byebye "Error: 'transcript_biotype' or 'transcript_type' not found in $gtf_file\n" if $has_tb eq "0";
+##
+print "Creating temporary gtf...\n";
+my $cmd = "grep -i -E 'transcript_(bio)?type\\\s\\\"?(".$ttypes.")\\\"?;' $gtf_file > $tmp_gtf" ;
+system($cmd) == 0
+    or byebye "$cmd failed: $?";
+print "Creating temporary gtf...done.\n";
+
+print "Loading temporary GTF...\n";
+## load the mapping between the transcripts and the strand
+open(GTF,$tmp_gtf) || byebye "Could not open $tmp_gtf";
+my %trans2strand;
+while(<GTF>){
+    my @line = split(/\t/,$_);
+    my $s1=$line[8];
+    $s1=~ s/.*transcript_id\s"?//g;
+    $s1=~ s/"?;.*//g;
+    chomp($s1);
+    $trans2strand{$s1} = "".$line[6]; 
+}
+print "Transcripts loaded:".(scalar keys %trans2strand)."\ndone.\n";
+
+print "Creating fasta (1/2)...\n";
+
+my $cmd2="set -o pipefail; tophat2_gtf_to_fasta $tmp_gtf $fasta_file /dev/stdout|tail -n +2| sed -E  's/^>([a-zA-Z0-9|]+)\\s/>/;s/\\s.*//' > $tmp_out1";
+#print $cmd2;
+system($cmd2) == 0
+    or byebye "$cmd2 failed: $?";
+
+    
+print "Fixing strandenes (2/2)...\n";
+my $seq_in  = Bio::SeqIO->new( -format => 'fasta',
+			       -file => $tmp_out1);
+
+my $seq_out = Bio::SeqIO->new('-file' => ">$tmp_out2",
+			      '-format' =>"fasta");
+
+# write each entry in the input file to the output file
+while (my $inseq = $seq_in->next_seq) {
+    my $id=$inseq->id();
+    my $strand=$trans2strand{$id};
+    next if ( $strand eq "" );
+    ##print STDERR "ssss=$strand=\n";
+    if ( $strand eq "-" ) {
+	my $inseq2=$inseq->revcom();
+	$seq_out->write_seq($inseq2);
+    } else {
+	$seq_out->write_seq($inseq);
+    }
+}
+
+$seq_out->close;
+
+print "Creating final file $out_file...\n";
+system("mv $tmp_out2 $out_file");
+##system("rm -f $tmp_out2 $tmp_out1");
+print "All done.\n";
+exit(0);

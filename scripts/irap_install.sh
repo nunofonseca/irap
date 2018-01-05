@@ -596,6 +596,7 @@ function tophat2_install {
     pushd `echo $tophat2_FILE|sed "s/.tar.gz//"`
     install_binary $MAPPER . \*
     cp $IRAP_DIR/bin/tophat2/bin/gtf_juncs $IRAP_DIR/bin/tophat2_gtf_juncs
+    cp $IRAP_DIR/bin/tophat2/bin/gtf_to_fasta $IRAP_DIR/bin/tophat2_gtf_to_fasta
     pinfo "$MAPPER installation complete."    
     popd
 }
