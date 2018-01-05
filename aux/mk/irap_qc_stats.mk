@@ -1,6 +1,6 @@
 #; -*- mode: Makefile;-*-
 # =========================================================
-# Copyright 2012-2017,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+# Copyright 2012-2018,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
 #
 # This file is part of iRAP.
 #
@@ -69,6 +69,11 @@ $(foreach l,$(se),$(eval $(call make-se-qc-rule,$(l))))
 $(foreach l,$(pe),$(eval $(call make-pe-qc-rule,$(l))))
 
 
+qc_files=$(foreach p,$(se),$(call lib2filt_folder,$(p))$(p).f.fastq.gz) $(foreach p,$(pe),$(call lib2filt_folder,$(p))$(p)_1.f.fastq.gz)
+STAGE1_OUT_FILES+=$(qc_files)
+STAGE1_TARGETS+=$(qc_files)
+
+
 CLEANUP_TARGETS+= clean_quality_filtering_and_report
 phony_targets+= clean_quality_filtering_and_report
 # Cleanup
@@ -91,6 +96,10 @@ $(name)/report/libs_qc.tsv: $(name)/$(mapper)/stats_raw.tsv $(name)/$(mapper)/st
 	irap_append2tsv --in "$@.1.tmp $@.2.tmp" --exclude_aggr --transpose --out $@.tmp && mv $@.tmp $@ &&\
 	rm -f $@.1.tmp $@.2.tmp
 
+#
+STAGE4_OUT_FILES+=$(name)/report/libs_qc.tsv
+STAGE4_TARGETS+=$(name)/report/libs_qc.tsv
+
 # qc=none|on|off
 ifeq ($(qc),none)
 $(name)/report/qc.html $(name)/report/qc.tsv: 
@@ -99,6 +108,9 @@ else
 $(name)/report/qc.html $(name)/report/qc.tsv: $(conf) $(call must_exist,$(name)/data/)  $(name)/report/fastq_qc_report.tsv
 	irap_report_qc $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(name)/report || ( rm -f $@ && exit 1)
 endif
+
+STAGE2_OUT_FILES+=$(name)/report/qc.tsv
+STAGE2_TARGETS+=$(name)/report/qc.tsv
 
 ifeq ($(qc),none)
 # empty file
@@ -109,6 +121,10 @@ $(name)/report/fastq_qc_report.tsv:
 else
 FASTQC_REPORT_FILES=$(foreach p,$(pe),$(name)/report/riq/$($(p)_dir)raw_data/$(p)_1.f.fastqc.tsv $(name)/report/riq/$($(p)_dir)raw_data/$(p)_2.f.fastqc.tsv) $(foreach p,$(se),$(name)/report/riq/$($(p)_dir)raw_data/$(p).f.fastqc.tsv)
 
+
+STAGE2_OUT_FILES+=$(name)/report/fastq_qc_report.tsv
+STAGE2_TARGETS+=$(name)/report/fastq_qc_report.tsv
+
 ifeq  ($(qc),off)
 #FASTQC_REPORT_FILES=$(foreach p,$(pe),$(name)/report/riq/$($(p)_dir)/$(call get_fastq_prefix,$(p),pe)_1.fastqc.tsv $(name)/report/riq/$($(p)_dir)$(call get_fastq_prefix,$(p),pe)_2.fastqc.tsv) $(foreach p,$(se),$(name)/report/riq/$($(p)_dir)$(call get_fastq_prefix,$(p),se).fastqc.tsv)
 
@@ -117,7 +133,6 @@ $(name)/report/fastq_qc_report.tsv:  $(FASTQC_REPORT_FILES)
 
 %.fastqc.tsv: %.fastqc.zip
 	irap_fastqc2tsv $< > $@.tmp && mv $@.tmp $@
-
 
 else
 
