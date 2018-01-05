@@ -1,5 +1,5 @@
 # =========================================================
-# Copyright 2012-2018,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+# Copyright 2012-2017,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
 #
 # This file is part of iRAP.
 #
@@ -17,9 +17,11 @@
 # along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
+#    $Id: 0.1.3 Nuno Fonseca Wed Dec 26 16:20:16 2012$
 # =========================================================
 
 
+#source $IRAP_DIR/aux/sh/irap_fun.sh
 
 if [ "$QUEUE-" = "-" ]; then
     #QUEUE="research-rh6"
@@ -44,9 +46,6 @@ fi
 LOG_DIR=$log_dir/$jobname_prefix
 mkdir -p $LOG_DIR
 
-if [ "$DEBUG-" == "-" ]; then
-    DEBUG=0
-fi
 # Check JOB_MAX_MEM
 if [ "$JOB_MAX_MEM-" != "-" ]; then 
   if [ "$JOB_MEM_INCR-" == "-" ]; then
@@ -57,21 +56,18 @@ fi
 
 function check_dependency {
     jobname=$1
-    if [ "$DEBUG-" == "0-" ]; then
-	sleep 1
-	FOR_RUNNING=`bjobs -a -J $jobname|grep JOBID| wc -l`
-	if [ $FOR_RUNNING == 0 ]; then
-	    echo ''
-	else
-	    echo "-w ended(\"$jobname\")"
-	fi
-    else
+    sleep 1
+    FOR_RUNNING=`bjobs -a -J $jobname|grep JOBID| wc -l`
+    if [ $FOR_RUNNING == 0 ]; then
 	echo ''
-    fi    
+    else
+	echo "-w ended(\"$jobname\")"
+    fi
+    
 }
 
 function stop_job {
-    if [ "$DEBUG-" != "0-" ]; then
+    if [ "$DEBUG-" == "1-" ]; then
 	echo "stop/suspend job $1"
     else
 	bstop -J $1
@@ -79,7 +75,7 @@ function stop_job {
 }
 
 function resume_job {
-    if [ "$DEBUG-" != "0-" ]; then
+    if [ "$DEBUG-" == "1-" ]; then
 	echo "resume job $1"
     else
 	bresume -J $1
@@ -89,30 +85,21 @@ function resume_job {
 function submit_job_status {
     jobname=$1
     WAITFOR=
-    if [ "$DEBUG-" != "0-" ]; then
+    if [ "$DEBUG-" = "1-" ]; then
         ECHO=echo
     else
 	JOB_ID=`bjobs -a -J $jobname| tail -n 1|sed -E "s/([0-9]*).*/\1/"`
 	WAITFOR=`check_dependency $jobname`
 	ECHO= 
     fi
-    ret=
     #p_info "WAITFOR (id)=$JOB_ID $jobname   $WAITFOR"
     # in spite of the checks, the job may have finished before lunching the new one, hence catch the error and submit a new one if an error occurs
-    if [ "$DEBUG-" == "2-" ]; then	
-	$ECHO $IRAP_PAR_CMD -n -q 
-	ret=$?
-    else
-	$ECHO bsub $IRAP_LSF_PARAMS -M 1000 -R "select[mem>=1000]  rusage[mem=1000]" -q $QUEUE  -J "${jobname}n" $WAITFOR  irap_lsf_job_status.sh $jobname $JOB_ID  `get_maxmem $MEM` $LOG_DIR  $IRAP_PAR_CMD	
-	ret=$?
-    fi
+    $ECHO bsub $IRAP_LSF_PARAMS -M 1000 -R "select[mem>=1000]  rusage[mem=1000]" -q $QUEUE  -J "${jobname}n" $WAITFOR  irap_lsf_job_status.sh $jobname $JOB_ID  `get_maxmem $MEM` $LOG_DIR  $IRAP_PAR_CMD
     #2> /dev/null
-    if [ "$DEBUG-" == "0-" ]; then
-	if [ $ret != 0 ]; then
+    if [ $? != 0 ]; then
 	p_info "$jobname not  found...probably it has already finished"
 	WAITFOR=
 	$ECHO bsub $IRAP_LSF_PARAMS -M 1000 -R "select[mem>=1000]  rusage[mem=1000]" -q $QUEUE  -J "${jobname}n" $WAITFOR  irap_lsf_job_status.sh $jobname $JOB_ID `get_maxmem $MEM` $LOG_DIR $IRAP_PAR_CMD 
-	fi
     fi
 }
 
@@ -125,7 +112,7 @@ function submit_job {
     shift
     cmd2e=$*
     #echo "$jobname: $* max_threads=$THREADS  data_dir=$DATA_DIR/data" 
-    if [ "$DEBUG-" != "0-" ]; then
+    if [ "$DEBUG-" = "1-" ]; then
         ECHO=echo
     else
 	ECHO=
@@ -143,13 +130,9 @@ function submit_job {
     #########################################################
     #-R  "span[ptile=$THREADS]"
     MAX_MEM=`get_maxmem $MEM`
-    if [ "$DEBUG-" == "2-" ]; then
-	$ECHO $cmd2e max_threads=$THREADS  data_dir=$DATA_DIR max_mem=$MEM
+    if [ "$WAIT_FOR_IDS-" != "-" ]; then
+	$ECHO bsub $IRAP_LSF_PARAMS -q $QUEUE -n $THREADS -R "span[hosts=1]"  -M $MAX_MEM -R "select[mem>=$MEM] rusage[mem=$MEM]"  -w "$WAIT_FOR_IDS"  -cwd `pwd` -o "`get_path2logfile`/$jobname-%J.out" -e "`get_path2logfile`/$jobname-%J.err" -J $jobname  $cmd2e max_threads=$THREADS  data_dir=$DATA_DIR max_mem=$MEM
     else
-	if [ "$WAIT_FOR_IDS-" != "-" ]; then
-	    $ECHO bsub $IRAP_LSF_PARAMS -q $QUEUE -n $THREADS -R "span[hosts=1]"  -M $MAX_MEM -R "select[mem>=$MEM] rusage[mem=$MEM]"  -w "$WAIT_FOR_IDS"  -cwd `pwd` -o "`get_path2logfile`/$jobname-%J.out" -e "`get_path2logfile`/$jobname-%J.err" -J $jobname  $cmd2e max_threads=$THREADS  data_dir=$DATA_DIR max_mem=$MEM
-	else
-	    $ECHO bsub $IRAP_LSF_PARAMS -q $QUEUE  $GROUP -n $THREADS -R "span[hosts=1]"  -M $MAX_MEM -R "select[mem>=$MEM]  rusage[mem=$MEM]"   -cwd `pwd` -o "`get_path2logfile`/$jobname-%J.out" -e "`get_path2logfile`/$jobname-%J.err" -J $jobname  $cmd2e max_threads=$THREADS  data_dir=$DATA_DIR max_mem=$MEM
-	fi
+	$ECHO bsub $IRAP_LSF_PARAMS -q $QUEUE  $GROUP -n $THREADS -R "span[hosts=1]"  -M $MAX_MEM -R "select[mem>=$MEM]  rusage[mem=$MEM]"   -cwd `pwd` -o "`get_path2logfile`/$jobname-%J.out" -e "`get_path2logfile`/$jobname-%J.err" -J $jobname  $cmd2e max_threads=$THREADS  data_dir=$DATA_DIR max_mem=$MEM	
     fi
 }

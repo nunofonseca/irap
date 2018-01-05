@@ -1,5 +1,5 @@
 # =========================================================
-# Copyright 2012-2018,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+# Copyright 2012-2017,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
 #
 # This file is part of iRAP.
 #
@@ -221,7 +221,6 @@ license=This pipeline is distributed  under the terms of the GNU General Public 
 # Default values
 ################################################################################
 transcript_de_method?=none
-exon_de_method?=none
 
 def_gse_tool?=none
 
@@ -437,8 +436,6 @@ gtf_file_basename:=$(notdir $(gtf_file_abspath))
 $(info *       gtf_file  = $(gtf_file))
 $(call file_exists,$(gtf_file_dir)/$(gtf_file))
 
-DEXSEQ_GFF:=$(gtf_file_abspath).DEXSeq.gff
-
 # irap's gtf file
 # lgtf_file_dir:=
 
@@ -506,7 +503,6 @@ gtf_file_abspath:=$(name)/data/$(subst .fasta,,$(spikein_fasta_prefix)).$(subst 
 spikein_gtf_file:=$(patsubst %.fasta,%.gtf,$(spikein_fasta_abspath))
 override gtf_file:=$(notdir $(gtf_file_abspath))
 
-
 ## concentration (TSV file)
 ifndef spikein_concentration
 spikein_concentration=
@@ -519,8 +515,6 @@ endif
 
 trans_abspath?=$(cdna_file_abspath)
 $(info *       Transcripts = $(trans_abspath))
-
-
 
 # ****************
 # single cell
@@ -1193,34 +1187,6 @@ de_annot_transcripts_only=$(def_de_annot_transcripts_only)
 endif
 
 transcript_de_min_count?=10
-
-
-#********************************
-# by default exon DE is disabled
-SUPPORTED_EXON_DE_METHODS=dexseq
-
-ifeq (,$(filter $(exon_de_method),none $(SUPPORTED_EXON_DE_METHODS)))
-$(call p_info,[ERROR] exon_de_method)
-$(error $(exon_de_method) not supported)
-endif
-
-$(info *	exon_de_method=$(exon_de_method))
-
-ifndef exon_de_pvalue_cutoff=
-exon_de_pvalue_cutoff=$(def_de_pvalue_cutoff)
-endif
-$(info *	exon_de_pvalue_cutoff=$(exon_de_pvalue_cutoff))
-
-ifndef de_num_exons_per_table
-de_num_exons_per_table=$(def_de_num_exons_per_table)
-endif
-
-ifndef de_annot_exons_only
-de_annot_exons_only=$(def_de_annot_exons_only)
-endif
-
-exon_de_min_count?=10
-
 ###############################################
 # isl enabled -> stage3 targets=stage4
 ifeq ($(isl_mode),y)
@@ -1624,8 +1590,8 @@ include $(irap_path)/../aux/mk/irap_junction.mk
 endif
 
 # Check if the options provided are valid
-ifeq (invalid,$(shell irap_paths $(mapper) $(quant_method) $(quant_norm_tool) $(quant_norm_method) $(de_method) $(transcript_de_method) $(exon_de_method) $(gse_tool) $(has_stranded_data) $(rnaseq_type) $(sc_protocol)))
-  $(error invalid combination mapper:$(mapper) -> quant_method:$(quant_method) -> quant_norm method:$(quant_norm_method) quant_norm_tool:$(quant_norm_tool) -> de_method:$(de_method) transcriptDE:$(transcript_de_method) exonDE:$(exon_de_method) rnaseq_type:$(rnaseq_type) sc_protocol:$(sc_protocol) for the given data)
+ifeq (invalid,$(shell irap_paths $(mapper) $(quant_method) $(quant_norm_tool) $(quant_norm_method) $(de_method) $(transcript_de_method) $(gse_tool) $(has_stranded_data) $(rnaseq_type) $(sc_protocol)))
+  $(error invalid combination mapper:$(mapper) -> quant_method:$(quant_method) -> quant_norm method:$(quant_norm_method) quant_norm_tool:$(quant_norm_tool) -> de_method:$(de_method) transcriptDE:$(transcript_de_method) rnaseq_type:$(rnaseq_type) sc_protocol:$(sc_protocol) for the given data)
 endif
 
 $(info *========================================================)
@@ -1929,9 +1895,7 @@ $(name)/data/$(gtf_file_basename).lengths.Rdata: $(gtf_file_abspath).lengths.Rda
 
 precious_targets+=$(name)/data/$(gtf_file_basename).lengths.Rdata
 
-
-
-$(DEXSEQ_GFF).lengths.Rdata: $(DEXSEQ_GFF)
+$(gtf_file_abspath).DEXSeq.gff.lengths.Rdata: $(gtf_file_abspath).DEXSeq.gff
 	irap_DexSeqExonLen --gff $< -o $@.tmp --cores $(max_threads) && mv $@.tmp.Rdata $@
 
 # sleep to ensure that the file will not have the same timestamp

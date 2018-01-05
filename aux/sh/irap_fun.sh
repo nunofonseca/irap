@@ -1,5 +1,5 @@
 # =========================================================
-# Copyright 2012-2018,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+# Copyright 2012-2017,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
 #
 # This file is part of iRAP.
 #
@@ -180,21 +180,21 @@ function get_cached_value {
 
 _INIT_SUSP_JOB=
 function irap_init_job {
-    # #############
-    ## Submit jobs
-    p_info " * Initialization "
-    # save variables
-    $cmd conf=$conf $IRAP_PARAMS save_cache
+ #############
+ # Submit jobs
+ p_info " * Initialization "
+ # save variables
+ $cmd conf=$conf $IRAP_PARAMS save_cache
 
-    ##load the file with the variables already computed
-    export IRAP_PARAMS="$IRAP_PARAMS use_cached_vars=y"
-    p_info " * Starting initial job"
-    CUR_STAGE=stage0
-    submit_job "${jobname_prefix}i" $cmd conf=$conf setup_dirs $IRAP_PARAMS
-    stop_job  "${jobname_prefix}i"
-    _INIT_SUSP_JOB=${jobname_prefix}i
-    p_info " * First job suspended until all jobs are submitted."
-    echo "${jobname_prefix}i"
+ #load the file with the variables already computed
+ export IRAP_PARAMS="$IRAP_PARAMS use_cached_vars=y"
+ p_info " * Starting initial job"
+ CUR_STAGE=stage0
+ submit_job "${jobname_prefix}i" $cmd conf=$conf setup_dirs $IRAP_PARAMS
+ stop_job  "${jobname_prefix}i"
+ _INIT_SUSP_JOB=${jobname_prefix}i
+ p_info " * First job suspended until all jobs are submitted."
+ echo "${jobname_prefix}i"
 }
 
 function stage0_jobs {
