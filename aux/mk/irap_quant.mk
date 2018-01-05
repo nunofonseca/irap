@@ -1,6 +1,6 @@
 #; -*- mode: Makefile;-*-
 # =========================================================
-# Copyright 2012-2018,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+# Copyright 2012-2017,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
 #
 # This file is part of iRAP.
 #
@@ -22,6 +22,9 @@
 
 ## Notes:
 ## 1 - Always produce gene expression quantification
+
+## Needed for transcript quantification
+mapTrans2gene=$(name)/data/$(gtf_file_basename).mapTrans2Gene.tsv
 
 $(mapTrans2gene): $(gtf_file_abspath)
 	genMapTrans2Gene -i $< -o $@.tmp -c $(max_threads) && mv $@.tmp $@
@@ -747,7 +750,6 @@ ifndef dexseq_index_params
 dexseq_prepare_annotation_params=
 endif
 #dexseq_prepare_annotation_params=-r yes
-
 ################################
 # if PE then add option -p yes
 # sam/bam (-f bam) file needs to be sorted by read name or chr (-r name)
@@ -756,14 +758,15 @@ endif
 # 2 - output
 # 3 - lib
 # 4 - gtf
-define run_dexseq_quant=
-samtools view -F 4 $(1) | python $(IRAP_DIR)/Rlibs/DEXSeq/python_scripts/dexseq_count.py  $(dexseq_params) $(if $(call is_pe_lib,$(3)),-p yes) $(call htseq_strand_params,$(3)) $(4) - $(2).tmp && \
-grep -E "(_ambiguous|_empty|_lowaqual|_notaligned)" $(2).tmp > $(2).stats && \
-grep -v -E "(_ambiguous|_empty|_lowaqual|_notaligned)" $(2).tmp > $(2).tmp2 && \
-mv $(2).tmp2 $(2) && rm -f $(2).tmp
+define run_dexseq=
+	samtools view -F 4 $(1) | python $(IRAP_DIR)/Rlibs/DEXSeq/python_scripts/dexseq_count.py  $(dexseq_params) $(if $(call is_pe_lib,$(3)),-p yes) $(call htseq_strand_params,$(3)) $(4) - $(2).tmp && \
+	grep -E "(_ambiguous|_empty|_lowaqual|_notaligned)" $(2).tmp > $(2).stats && \
+	grep -v -E "(_ambiguous|_empty|_lowaqual|_notaligned)" $(2).tmp > $(2).tmp2 && \
+	mv $(2).tmp2 $(2) && rm -f $(2).tmp
 endef
 
-$(DEXSEQ_GFF): $(gtf_file_abspath)
+
+%.gtf.DEXSeq.gff: %.gtf
 	python $(IRAP_DIR)/Rlibs/DEXSeq/python_scripts/dexseq_prepare_annotation.py $(dexseq_prepare_annotation_params)  $< $@.tmp && mv $@.tmp $@
 
 ifeq ($(strip $(exon_quant)),y)
@@ -776,17 +779,18 @@ SETUP_DATA_FILES+=$(exon_length)
 ## htseq bam file needs to be sorted by name
 # $1 - lib
 # $2 - bam file prefix (includes .se|.pe)
+# $3 - gtf file
 define make-dexseq-quant-rule=
-$(call lib2quant_folder,$(1))$(2).exons.raw.dexseq.tsv: $(call lib2bam_folder,$(1))$(2).hits.byname.bam  $$(DEXSEQ_GFF)
-	mkdir -p $$(@D) && $$(call run_dexseq_quant,$$<,$$@,$(1),$$(DEXSEQ_GFF))
-
+$(call lib2quant_folder,$(1))$(2).exons.raw.dexseq.tsv: $(call lib2bam_folder,$(1))$(2).hits.byname.bam $(3)
+	mkdir -p $$(@D) && $$(call run_dexseq,$$<,$$@,$(1),$(3))
 endef
 
 $(name)/$(mapper)/$(quant_method)/exons.raw.dexseq.tsv: $(foreach p, $(pe),$(call lib2quant_folder,$(p))$(p).pe.exons.raw.$(exon_quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.exons.raw.$(exon_quant_method).tsv)
 	( $(call pass_args_stdin,irap_merge_tsv.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
 
-$(foreach l,$(se),$(eval $(call make-dexseq-quant-rule,$(l),$(l).se)))
-$(foreach l,$(pe),$(eval $(call make-dexseq-quant-rule,$(l),$(l).pe)))
+
+$(foreach l,$(se),$(eval $(call make-dexseq-quant-rule,$(l),$(l).se, $(gtf_file_abspath).DEXSeq.gff)))	
+$(foreach l,$(pe),$(eval $(call make-dexseq-quant-rule,$(l),$(l).pe, $(gtf_file_abspath).DEXSeq.gff)))
 
 endif
 endif
