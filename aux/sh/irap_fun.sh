@@ -222,8 +222,7 @@ function submit_jobs4stage {
 	let ret=$?
 	if [ $ret -eq 0 ]; then
 	    p_info "Skipping submission of jobs in level $level - all done"
-	    DEPS=$1
-	    
+	    DEPS=$1	    
 	else
 	    DEPS="${jobname_prefix}${level}*" 
 	    let i=1
@@ -249,7 +248,13 @@ function final_job {
     # To finalize, run the whole pipeline
     # If everything went ok then nothing should be done
     # otherwise it should fail and an email will be sent
-    CUR_STAGE=  submit_job "${jobname_prefix}f" `check_dependency $waitfor`   "$cmd conf=$conf run_wave_$level $IRAP_PARAMS -n -q"
+    all_levels=run_wave_b
+    let cur_level=0
+    while [ $cur_level -le $level ]; do
+	all_levels="$all_levels run_wave_${cur_level}"
+	let cur_level=cur_level+1
+    done
+    CUR_STAGE=  submit_job "${jobname_prefix}f" `check_dependency $waitfor`   "$cmd conf=$conf $all_levels $IRAP_PARAMS -n -q"
     
     # send an email to the user
     CUR_STAGE=  submit_job_status "${jobname_prefix}f"
