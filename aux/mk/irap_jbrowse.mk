@@ -18,7 +18,6 @@
 # along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-#    $Id: irap.txt Nuno Fonseca Sun Jan 13 14:02:59 2013$
 # =========================================================
 # Include Jbrowse in the report for visualizing data in the genome
 
@@ -183,7 +182,7 @@ endef
 jbrowser_stage3_targets: 
 	echo $(stage3_tracks_targets)
 
-$(info $(name)/$(mapper)/$(quant_method)/%.tsv.tracks: $(name)/$(mapper)/$(quant_method)/%.bw $(name)/$(mapper)/$(quant_method)/%.bedGraph)
+$(call p_debug,$(name)/$(mapper)/$(quant_method)/%.tsv.tracks: $(name)/$(mapper)/$(quant_method)/%.bw $(name)/$(mapper)/$(quant_method)/%.bedGraph)
 $(name)/$(mapper)/$(quant_method)/%.tsv.tracks: $(name)/$(mapper)/$(quant_method)/%.bw $(name)/$(mapper)/$(quant_method)/%.bedGraph
 	touch $@
 

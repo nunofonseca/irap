@@ -279,20 +279,20 @@ qc_report: $(qc_html_files)
 # deprecated!
 # fastqc is always executed
 # merge into a single file the statistics collected from the BAMs 
-%.fastq_report.tsv: %.fastqc.zip
-	unzip -p $< $*_fastqc/summary.txt | awk  -F"\t"  '{print $2"\t"$1}' > $@.tmp && \
-	unzip -p $< $*_fastqc/fastqc_data.txt  | grep "Total Sequences" >> $@.tmp && \
-	mv $@.tmp $@
+# %.fastq_report.tsv: %.fastqc.zip
+# 	unzip -p $< $*_fastqc/summary.txt | awk  -F"\t"  '{print $2"\t"$1}' > $@.tmp && \
+# 	unzip -p $< $*_fastqc/fastqc_data.txt  | grep "Total Sequences" >> $@.tmp && \
+# 	mv $@.tmp $@
 
-# deprecated
-%.fastq_report.tsv: %_fastqc/summary.txt
-	awk  -F"\t"  '{print $2"\t"$1}' $<  > $@.tmp && \
-	grep "Total Sequences" $< >> $@.tmp && \
-	mv $@.tmp $@
+# # deprecated
+# %.fastq_report.tsv: %_fastqc/summary.txt
+# 	awk  -F"\t"  '{print $2"\t"$1}' $<  > $@.tmp && \
+# 	grep "Total Sequences" $< >> $@.tmp && \
+# 	mv $@.tmp $@
 
-# deprecated
-$(name)/report/fastqc_report.tsv:  $(foreach p,$(pe),$(name)/report/riq/raw_data/$($(p)_dir)$(p).fastq_report.tsv)
-	$(call pass_args_stdin,irap_mergetsv,$@.tmp, --files="$<") && mv $@.tmp $@
+# # deprecated
+# $(name)/report/fastqc_report.tsv:  $(foreach p,$(pe),$(name)/report/riq/raw_data/$($(p)_dir)$(p).fastq_report.tsv)
+# 	$(call pass_args_stdin,irap_mergetsv,$@.tmp, --files="$<") && mv $@.tmp $@
 
 ##########
 # new code
@@ -338,19 +338,19 @@ print_mapping_dirs:
 mapping_report: report_setup $(call mapping_report_targets)
 
 
-# files required for producing the mapping report
-MAPPING_REPORT_PRE_STATS=$(foreach m,$(call mapping_dirs),  $(foreach p,$(pe),$(m)/$($(p)_dir)$(p).pe.hits.bam.stats $(m)/$($(p)_dir)$(p).pe.hits.bam.stats.csv $(m)/$($(p)_dir)$(p).pe.hits.bam.gene.stats) $(foreach s,$(se),$(m)/$($(s)_dir)$(s).se.hits.bam.stats.csv $(m)/$($(s)_dir)$(s).se.hits.bam.gene.stats $(m)/$($(s)_dir)$(s).se.hits.bam.stats)) $(FASTQC_REPORT_FILES)
+# # files required for producing the mapping report
+# MAPPING_REPORT_PRE_STATS=$(foreach m,$(call mapping_dirs),  $(foreach p,$(pe),$(m)/$($(p)_dir)$(p).pe.hits.bam.stats $(m)/$($(p)_dir)$(p).pe.hits.bam.stats.csv $(m)/$($(p)_dir)$(p).pe.hits.bam.gene.stats) $(foreach s,$(se),$(m)/$($(s)_dir)$(s).se.hits.bam.stats.csv $(m)/$($(s)_dir)$(s).se.hits.bam.gene.stats $(m)/$($(s)_dir)$(s).se.hits.bam.stats)) $(FASTQC_REPORT_FILES)
 
-# merge into a single file the statistics collected from the BAMs 
-$(name)/%/stats_raw.tsv $(name)/%/stats_perc.tsv:  $(foreach p,$(pe),$(name)/%/$($(p)_dir)$(p).pe.hits.bam.stats.csv) $(foreach s,$(se),$(name)/%/$($(s)_dir)$(s).se.hits.bam.stats.csv)
-	$(call pass_args_stdin,irap_bams2tsv,$(name)/$*/stats_raw.tsv, --pe "$(call remove_spaces,$(foreach p,$(pe),;$(name)/$*/$($(p)_dir)$(p).pe.hits.bam))" --se "$(call remove_spaces,$(foreach s,$(se),;$(name)/$*/$($(s)_dir)$(s).se.hits.bam))"  --pe_labels "$(call remove_spaces,$(foreach p,$(pe),;$(p)))" --se_labels "$(call remove_spaces,$(foreach s,$(se),;$(s)))" --out $(name)/$*/$*) && mv $(name)/$*/$*_mapping_stats_raw.tsv $(name)/$*/stats_raw.tsv && mv $(name)/$*/$*_mapping_stats_perc.tsv $(name)/$*/stats_perc.tsv
+# # merge into a single file the statistics collected from the BAMs 
+# $(name)/%/stats_raw.tsv $(name)/%/stats_perc.tsv:  $(foreach p,$(pe),$(name)/%/$($(p)_dir)$(p).pe.hits.bam.stats.csv) $(foreach s,$(se),$(name)/%/$($(s)_dir)$(s).se.hits.bam.stats.csv)
+# 	$(call pass_args_stdin,irap_bams2tsv,$(name)/$*/stats_raw.tsv, --pe "$(call remove_spaces,$(foreach p,$(pe),;$(name)/$*/$($(p)_dir)$(p).pe.hits.bam))" --se "$(call remove_spaces,$(foreach s,$(se),;$(name)/$*/$($(s)_dir)$(s).se.hits.bam))"  --pe_labels "$(call remove_spaces,$(foreach p,$(pe),;$(p)))" --se_labels "$(call remove_spaces,$(foreach s,$(se),;$(s)))" --out $(name)/$*/$*) && mv $(name)/$*/$*_mapping_stats_raw.tsv $(name)/$*/stats_raw.tsv && mv $(name)/$*/$*_mapping_stats_perc.tsv $(name)/$*/stats_perc.tsv
 
-#
-$(name)/%/featstats_raw.tsv $(name)/%/featstats_perc.tsv:  $(foreach p,$(pe),$(name)/%/$($(p)_dir)$(p).pe.hits.bam.stats) $(foreach s,$(se),$(name)/%/$($(s)_dir)$(s).se.hits.bam.stats)
-	$(call pass_args_stdin,merge_featstats,$(name)/$*/featstats_raw.tsv, --header --stats "$(call remove_spaces,$(foreach p,$(pe),;$(name)/$*/$($(p)_dir)$(p).pe.hits.bam.stats))$(call remove_spaces,$(foreach p,$(se),;$(name)/$*/$($(p)_dir)$(p).se.hits.bam.stats))"  --labels "$(call remove_spaces,$(foreach p,$(pe) $(se),;$(p)))"  --out $(name)/$*/$*.tmp) && mv $(name)/$*/$*.tmp_featstats_raw.tsv $(name)/$*/featstats_raw.tsv && mv $(name)/$*/$*.tmp_featstats_perc.tsv $(name)/$*/featstats_perc.tsv
+# #
+# $(name)/%/featstats_raw.tsv $(name)/%/featstats_perc.tsv:  $(foreach p,$(pe),$(name)/%/$($(p)_dir)$(p).pe.hits.bam.stats) $(foreach s,$(se),$(name)/%/$($(s)_dir)$(s).se.hits.bam.stats)
+# 	$(call pass_args_stdin,merge_featstats,$(name)/$*/featstats_raw.tsv, --header --stats "$(call remove_spaces,$(foreach p,$(pe),;$(name)/$*/$($(p)_dir)$(p).pe.hits.bam.stats))$(call remove_spaces,$(foreach p,$(se),;$(name)/$*/$($(p)_dir)$(p).se.hits.bam.stats))"  --labels "$(call remove_spaces,$(foreach p,$(pe) $(se),;$(p)))"  --out $(name)/$*/$*.tmp) && mv $(name)/$*/$*.tmp_featstats_raw.tsv $(name)/$*/featstats_raw.tsv && mv $(name)/$*/$*.tmp_featstats_perc.tsv $(name)/$*/featstats_perc.tsv
 
-$(name)/%/genestats_raw.tsv $(name)/%/genestats_perc.tsv:  $(foreach p,$(pe),$(name)/%/$($(p)_dir)$(p).pe.hits.bam.gene.stats) $(foreach s,$(se),$(name)/%/$($(s)_dir)$(s).se.hits.bam.gene.stats)
-	$(call pass_args_stdin,merge_featstats,$(name)/$*/genestats_raw.tsv, --stats "$(call remove_spaces,$(foreach p,$(pe),;$(name)/$*/$($(p)_dir)$(p).pe.hits.bam.gene.stats))$(call remove_spaces,$(foreach p,$(se),;$(name)/$*/$($(p)_dir)$(p).se.hits.bam.gene.stats))"  --labels "$(call remove_spaces,$(foreach p,$(pe) $(se),;$(p)))"  --out $(name)/$*/$*.gtmp) && mv $(name)/$*/$*.gtmp_featstats_raw.tsv $(name)/$*/genestats_raw.tsv && mv $(name)/$*/$*.gtmp_featstats_perc.tsv $(name)/$*/genestats_perc.tsv
+# $(name)/%/genestats_raw.tsv $(name)/%/genestats_perc.tsv:  $(foreach p,$(pe),$(name)/%/$($(p)_dir)$(p).pe.hits.bam.gene.stats) $(foreach s,$(se),$(name)/%/$($(s)_dir)$(s).se.hits.bam.gene.stats)
+# 	$(call pass_args_stdin,merge_featstats,$(name)/$*/genestats_raw.tsv, --stats "$(call remove_spaces,$(foreach p,$(pe),;$(name)/$*/$($(p)_dir)$(p).pe.hits.bam.gene.stats))$(call remove_spaces,$(foreach p,$(se),;$(name)/$*/$($(p)_dir)$(p).se.hits.bam.gene.stats))"  --labels "$(call remove_spaces,$(foreach p,$(pe) $(se),;$(p)))"  --out $(name)/$*/$*.gtmp) && mv $(name)/$*/$*.gtmp_featstats_raw.tsv $(name)/$*/genestats_raw.tsv && mv $(name)/$*/$*.gtmp_featstats_perc.tsv $(name)/$*/genestats_perc.tsv
 
 # 
 print_mapping_report_req: $(foreach m,$(mapping_dirs),$(name)/report/mapping/$(m).html_req)
@@ -371,53 +371,53 @@ $(name)/report/mapping/%.html: $(name)/%/  $(conf) $(call must_exist,$(name)/rep
 
 ################
 
-# statistics per bam file
-%.bam.gff3: %.bam $(gff3_file_abspath).filt.gff3 $(name)/data/$(reference_basename).chr_sizes.sorted.txt
-	bedtools coverage -counts -sorted  -a $(gff3_file_abspath).filt.gff3 -b $< -g  $(name)/data/$(reference_basename).chr_sizes.sorted.txt > $@.tmp  &&\
-	mv $@.tmp $@
+# # statistics per bam file
+# %.bam.gff3: %.bam $(gff3_file_abspath).filt.gff3 $(name)/data/$(reference_basename).chr_sizes.sorted.txt
+# 	bedtools coverage -counts -sorted  -a $(gff3_file_abspath).filt.gff3 -b $< -g  $(name)/data/$(reference_basename).chr_sizes.sorted.txt > $@.tmp  &&\
+# 	mv $@.tmp $@
 
-%.bam.stats: %.bam.gff3 
-	mapping_feature_stats --in $< --out $@.tmp -c "`basename $*`" && mv $@.tmp $@
+# %.bam.stats: %.bam.gff3 
+# 	mapping_feature_stats --in $< --out $@.tmp -c "`basename $*`" && mv $@.tmp $@
 
-%.bam.stats.csv: %.bam 
-	irapBAM2stats bam=$<
+# %.bam.stats.csv: %.bam 
+# 	irapBAM2stats bam=$<
 
-%.bam.gene.stats: %.bam $(name)/data/$(reference_basename).exons.bed $(name)/data/$(reference_basename).introns.bed $(name)/data/$(reference_basename).chr_sizes.sorted.txt
-	echo -n "Exons	" > $@.tmp &&\
-	bedtools intersect -sorted -g $(name)/data/$(reference_basename).chr_sizes.sorted.txt -abam $<  -b $(name)/data/$(reference_basename).exons.bed |samtools view -c - >> $@.tmp && echo >> $@ &&\
-	echo -n "Introns	" >> $@.tmp &&\
-	bedtools intersect -sorted -g $(name)/data/$(reference_basename).chr_sizes.sorted.txt -abam $<  -b $(name)/data/$(reference_basename).introns.bed |samtools view -c - >> $@.tmp && echo >> $@ && \
-	expr `wc -l $@.tmp | cut -f 1 -d\ ` == 2 && \
-	mv $@.tmp $@
+# %.bam.gene.stats: %.bam $(name)/data/$(reference_basename).exons.bed $(name)/data/$(reference_basename).introns.bed $(name)/data/$(reference_basename).chr_sizes.sorted.txt
+# 	echo -n "Exons	" > $@.tmp &&\
+# 	bedtools intersect -sorted -g $(name)/data/$(reference_basename).chr_sizes.sorted.txt -abam $<  -b $(name)/data/$(reference_basename).exons.bed |samtools view -c - >> $@.tmp && echo >> $@ &&\
+# 	echo -n "Introns	" >> $@.tmp &&\
+# 	bedtools intersect -sorted -g $(name)/data/$(reference_basename).chr_sizes.sorted.txt -abam $<  -b $(name)/data/$(reference_basename).introns.bed |samtools view -c - >> $@.tmp && echo >> $@ && \
+# 	expr `wc -l $@.tmp | cut -f 1 -d\ ` == 2 && \
+# 	mv $@.tmp $@
 
-# bed files required to get some extra stats
-# exons.bed
-$(name)/data/$(reference_basename).exons.bed: $(gff3_file_abspath).filt.gff3 $(name)/data/$(reference_basename).chr_sizes.sorted.bed
-	cat $< | awk 'BEGIN{OFS="\t";} $$3=="exon" {print $$1,$$4,$$5,$$6,$$6,$$7}' | sort -u| bedtools sort -i /dev/stdin > $@.tmp.bed && \
-	bedtools merge -i $@.tmp.bed | bedtools sort -faidx $(name)/data/$(reference_basename).chr_sizes.sorted.bed -i /dev/stdin > $@.tmp && \
-	mv $@.tmp $@ && rm -f $@.tmp.bed
+# # bed files required to get some extra stats
+# # exons.bed
+# $(name)/data/$(reference_basename).exons.bed: $(gff3_file_abspath).filt.gff3 $(name)/data/$(reference_basename).chr_sizes.sorted.bed
+# 	cat $< | awk 'BEGIN{OFS="\t";} $$3=="exon" {print $$1,$$4,$$5,$$6,$$6,$$7}' | sort -u| bedtools sort -i /dev/stdin > $@.tmp.bed && \
+# 	bedtools merge -i $@.tmp.bed | bedtools sort -faidx $(name)/data/$(reference_basename).chr_sizes.sorted.bed -i /dev/stdin > $@.tmp && \
+# 	mv $@.tmp $@ && rm -f $@.tmp.bed
 
-# genes.bed
-$(name)/data/$(reference_basename).genes.bed: $(gff3_file_abspath).filt.gff3 $(name)/data/$(reference_basename).chr_sizes.sorted.bed
-	cat $< | awk 'BEGIN{OFS="\t";} $$3=="gene" {print $$1,$$4,$$5}' |  sort -u| bedtools sort -i /dev/stdin > $@.tmp.bed &&\
-	bedtools merge -i $@.tmp.bed  | bedtools sort -faidx $(name)/data/$(reference_basename).chr_sizes.sorted.bed -i /dev/stdin  > $@.tmp && \
-	mv $@.tmp $@ && rm -f $@.tmp.bed
+# # genes.bed
+# $(name)/data/$(reference_basename).genes.bed: $(gff3_file_abspath).filt.gff3 $(name)/data/$(reference_basename).chr_sizes.sorted.bed
+# 	cat $< | awk 'BEGIN{OFS="\t";} $$3=="gene" {print $$1,$$4,$$5}' |  sort -u| bedtools sort -i /dev/stdin > $@.tmp.bed &&\
+# 	bedtools merge -i $@.tmp.bed  | bedtools sort -faidx $(name)/data/$(reference_basename).chr_sizes.sorted.bed -i /dev/stdin  > $@.tmp && \
+# 	mv $@.tmp $@ && rm -f $@.tmp.bed
 
-# 
-$(name)/data/$(reference_basename).genes.bed6: $(gtf_file_abspath)
-	sed -E 's/[^\t]*gene_id "([^;]+)".*$$/\1/' $< | awk 'BEGIN{OFS="\t";} $$3=="exon" {print $$1,$$4,$$5,$$9,$$6,$$7}' |  sort -u| bedtools sort -i /dev/stdin > $@.tmp.bed &&\
-	mv $@.tmp.bed $@ && rm -f $@.tmp.bed
-
-
-# introns
-$(name)/data/$(reference_basename).introns.bed: $(name)/data/$(reference_basename).genes.bed $(name)/data/$(reference_basename).exons.bed
-	bedtools subtract -sorted -a $< -b $(name)/data/$(reference_basename).exons.bed > $@.tmp && if [ `wc -l $@.tmp |cut -f 1 -d\ ` == 0 ]; then echo -e 'dummy_entry\t1\t1' > $@.tmp; fi && mv $@.tmp $@
+# # 
+# $(name)/data/$(reference_basename).genes.bed6: $(gtf_file_abspath)
+# 	sed -E 's/[^\t]*gene_id "([^;]+)".*$$/\1/' $< | awk 'BEGIN{OFS="\t";} $$3=="exon" {print $$1,$$4,$$5,$$9,$$6,$$7}' |  sort -u| bedtools sort -i /dev/stdin > $@.tmp.bed &&\
+# 	mv $@.tmp.bed $@ && rm -f $@.tmp.bed
 
 
-## transcripts
-$(name)/data/$(reference_basename).transcripts.bed6:  $(gtf_file_abspath)
-	grep -E "(exon)" $< | sed -E 's/[^\t]*transcript_id "([^;]+)".*$$/\1/'|awk 'BEGIN{OFS="\t";} {print $$1,$$4,$$5,$$9,$$6,$$7}' |  sort -u| bedtools sort -i /dev/stdin > $@.tmp.bed &&\
-	mv $@.tmp.bed $@ && rm -f $@.tmp.bed
+# # introns
+# $(name)/data/$(reference_basename).introns.bed: $(name)/data/$(reference_basename).genes.bed $(name)/data/$(reference_basename).exons.bed
+# 	bedtools subtract -sorted -a $< -b $(name)/data/$(reference_basename).exons.bed > $@.tmp && if [ `wc -l $@.tmp |cut -f 1 -d\ ` == 0 ]; then echo -e 'dummy_entry\t1\t1' > $@.tmp; fi && mv $@.tmp $@
+
+
+# ## transcripts
+# $(name)/data/$(reference_basename).transcripts.bed6:  $(gtf_file_abspath)
+# 	grep -E "(exon)" $< | sed -E 's/[^\t]*transcript_id "([^;]+)".*$$/\1/'|awk 'BEGIN{OFS="\t";} {print $$1,$$4,$$5,$$9,$$6,$$7}' |  sort -u| bedtools sort -i /dev/stdin > $@.tmp.bed &&\
+# 	mv $@.tmp.bed $@ && rm -f $@.tmp.bed
 
 # M
 # 

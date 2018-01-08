@@ -81,7 +81,8 @@ ifeq ($(indel_snp_calling_method),samtools)
 
 indel_snp_calling_setup: $(snp_dir) $(reference_abspath).fai
 
-SETUP_DATA_FILES+=indel_snp_calling_setup
+SETUP_DATA_FILES+=$(reference_abspath).fai
+BOOTSTRAP_TARGETS+=$(snp_dir)
 
 bcftools_cmd=bcftools
 
@@ -99,11 +100,13 @@ indel_snp_calling_setup:
 snp_indel_calling_stage: 
 
 else
-BCF_FILES=$(subst /$(mapper)/,/$(mapper)/snp/,$(subst .hits.bam,.$(indel_snp_calling_method).bcf,$(STAGE2_OUT_FILES)))
-VCF_FILES=$(subst .bcf,.vcf.gz,$(BCF_FILES))
+BCF_FILES:=$(subst /$(mapper)/,/$(mapper)/snp/,$(subst .hits.bam,.$(indel_snp_calling_method).bcf,(filter %.bam,$(STAGE2_OUT_FILES))))
+VCF_FILES:=$(subst .bcf,.vcf.gz,$(BCF_FILES))
 
 snp_indel_calling_stage: indel_snp_calling_setup $(VCF_FILES)
 
+WAVE3_TARGETS+=$(VCF_FILES)
+STAGE3_OUT_FILES+=$(VCF_FILES)
 
 define make-snp-rule=
 $(call lib2snp_folder,$(1))$(2).$(indel_snp_calling_method).bcf: $(call lib2bam_folder,$(1))$(2).hits.bam 

@@ -33,12 +33,12 @@ SHELL=bash
 
 # Information messages
 define p_info=
-$(info $(shell date "+%H:%M:%S %d/%m/%Y * ") $(1))
+$(info * $(shell date "+%H:%M:%S %d/%m/%Y") : $(1))
 endef
 
 # Error messages
 define p_error=
-$(info $(shell date "+%H:%M:%S %d/%m/%Y") * ERROR: $(1)) && $(error Fatal error: $(1))
+$(info * $(shell date "+%H:%M:%S %d/%m/%Y") : ERROR: $(1)) && $(error Fatal error: $(1))
 endef
 
 # check if the parameter has a value - prints an error if not
@@ -190,9 +190,10 @@ rnaseq_type?=blk
 sc_protocol?=none
 
 ifndef debug	
- debug=1
+debug=0
 p_debug=
 else
+override debug:=1
 p_debug=$(info DEBUG:$(1))
 endif
 
@@ -418,7 +419,7 @@ endif
 reference_dir:=$(abspath $(data_dir)/reference/$(species))
 reference_abspath:=$(abspath $(reference_dir)/$(subst .gz,,$(reference)))
 reference_prefix:=$(reference_abspath)
-reference_basename=$(notdir $(reference_abspath))
+reference_basename:=$(notdir $(reference_abspath))
 # remove .gz if the file is gziped...the creation of the uncompress file is automatic
 
 $(info *	reference=$(reference))
@@ -451,8 +452,8 @@ ifndef cdna_file
  endif
 endif
 cdna_dir:=$(abspath $(data_dir)/reference/$(species))
-cdna_file_abspath=$(abspath $(cdna_dir)/$(cdna_file))
-cdna_file_fasta_abspath=$(abspath $(cdna_dir)/$(subst .gz,,$(cdna_file)))
+cdna_file_abspath:=$(abspath $(cdna_dir)/$(cdna_file))
+cdna_file_fasta_abspath:=$(abspath $(cdna_dir)/$(subst .gz,,$(cdna_file)))
 
 ##
 user_trans_biotypes?="protein_coding|IG_([a-zA-Z0-9]+)_gene|TR_([a-zA-Z0-9]+)_gene"
@@ -460,11 +461,11 @@ user_trans_biotypes?="protein_coding|IG_([a-zA-Z0-9]+)_gene|TR_([a-zA-Z0-9]+)_ge
 # default: backwards compatibility
 user_trans?=cdna
 ifeq ($(user_trans),cdna)
-user_trans_abspath=$(cdna_file_abspath)
+user_trans_abspath:=$(cdna_file_abspath)
 else
-user_trans_abspath=$(subst .fa,.irap.fa,$(cdna_file_abspath))
+user_trans_abspath:=$(subst .fa,.irap.fa,$(cdna_file_abspath))
 endif
-$(info $(user_trans_abspath))
+# $(info *  $(user_trans_abspath))
 
 #$(call file_exists,$(trans_file))
 
@@ -493,7 +494,7 @@ override spikein_fasta_abspath:=$(subst .gz,,$(spikein_fasta_abspath))
 reference_dir:=$(name)/data
 user_reference_abspath:=$(reference_abspath)
 # newref: ref_prefix.spikein_prefix.fasta
-spikein_fasta_prefix=$(patsubst %.fa,,$(patsubst %.fa,%,$(patsubst %.gz,%,$(notdir $(spikein_fasta)))))
+spikein_fasta_prefix:=$(patsubst %.fa,,$(patsubst %.fa,%,$(patsubst %.gz,%,$(notdir $(spikein_fasta)))))
 new_spike_ref_prefix:=$(dir $(reference_abspath))/$(patsubst %.fasta,%.$(spikein_fasta_prefix),$(patsubst %.fa,%.fasta,$(subst .gz,,$(reference))))
 override reference_abspath:=$(new_spike_ref_prefix).fa
 reference_prefix=$(reference_abspath)
@@ -501,7 +502,7 @@ reference_prefix=$(reference_abspath)
 reference_basename=$(notdir $(reference_abspath))
 
 ## transcripts
-override trans_abspath=$(dir $(user_trans_abspath))/$(patsubst %.fasta,%.$(spikein_fasta_prefix),$(patsubst %.fa,%.fasta,$(subst .gz,,$(notdir $(user_trans_abspath))))).fa
+override trans_abspath:=$(dir $(user_trans_abspath))/$(patsubst %.fasta,%.$(spikein_fasta_prefix),$(patsubst %.fa,%.fasta,$(subst .gz,,$(notdir $(user_trans_abspath))))).fa
 
 gtf_file_dir:=$(name)/data
 user_gtf_abspath:=$(gtf_file_abspath)
@@ -584,13 +585,13 @@ endif
 
 #
 ifdef skip_lib_validation
-$(info "Skipping validation of se and pe")
+$(info * "Skipping validation of se and pe")
 override se:=
 override pe:=
 else
 ifdef se
  $(info *	se=$(se))
- all_se_files=$(foreach l,$(se),$($(l)))
+ all_se_files:=$(foreach l,$(se),$($(l)))
  #$(foreach l,$(se),$(info $(l)=$($(l)))) 
  # check if fastq file is in a different directory
  $(foreach l,$(se),$(eval $(l)_dir=$(call check_libdir_ok,$(l))))
@@ -614,7 +615,7 @@ endif
 # 
 # A=""
 ifdef pe
- all_pe_files=$(foreach l,$(pe),$($(l)))
+ all_pe_files:=$(foreach l,$(pe),$($(l)))
  map=$(foreach a,$(2),$(abspath $(call $(1),$(a))))
  deref=$($1)
  fastq_files?=$(call map, deref, $(pe))
@@ -649,9 +650,9 @@ ifdef pe
  ifile_given=1
 endif
 
-all_fq_files=$(all_pe_files) $(all_se_files)
-nfqfiles=$(words $(all_fq_files))
-nfqfilesu=$(words $(sort $(all_fq_files)))
+all_fq_files:=$(all_pe_files) $(all_se_files)
+nfqfiles:=$(words $(all_fq_files))
+nfqfilesu:=$(words $(sort $(all_fq_files)))
 
 ifneq ($(nfqfiles),$(nfqfilesu))
 $(call p_error,Some of the libraries provided in se and/or pe have the same filename)
@@ -1002,14 +1003,14 @@ endif
 ifndef transcript_quant
 transcript_quant=$(def_transcript_quant)
 ifneq (,$(filter $(quant_method),$(TRANS_QUANT_METHODS)))
-$(info Enabling transcript_quant since  $(quant_method) supports it by default)
+$(info * Enabling transcript_quant since  $(quant_method) supports it by default)
 override transcript_quant:=y
 endif
 endif
 
 ifneq ($(transcript_de_method),none)
 ifeq ($(transcript_quant),n)
-$(info Enabling transcript_quant since DE transcript is expression is set to y)
+$(info * Enabling transcript_quant since DE transcript is expression is set to y)
 override transcript_quant:=y
 endif
 endif
@@ -1571,11 +1572,27 @@ STAGE3_OUT_FILES=
 STAGE4_OUT_FILES=
 STAGE5_OUT_FILES=
 
+################################################################################
+# wave* are used with a job scheduler in a HPC (the current code -
+# irap_lsf - is for LSF)
 
+WAVEB_TARGETS?=
+WAVE0_TARGETS?=
+WAVE1_TARGETS?=
+# BAM+basic stats
+WAVE2_TARGETS?=
+# $(STAGE3_TARGETS)
+WAVE3_TARGETS?=
+WAVE3_s_TARGETS?=
+WAVE4_TARGETS?=
+WAVE5_TARGETS?=
+WAVE6_TARGETS?=
+
+################################################################################
 # STAGE3 library level targets
-STAGE3_S_TARGETS=
+STAGE3_S_TARGETS?=
 # STAGE3 library level output files
-STAGE3_S_OFILES=
+STAGE3_S_OFILES?=
 
 ##
 #STAGE1_OUT_FILES+=$(foreach p,$(se),$(call lib2filt_folder,$(p))$(p).f.fastq.gz) $(foreach p,$(pe),$(call lib2filt_folder,$(p))$(p)_1.f.fastq.gz)
@@ -1584,7 +1601,7 @@ ifneq ($(mapper),none)
 
 
 
-STAGE2BYNAME_OUT_FILES=$(foreach p,$(pe), $(call lib2bam_folder,$(p))$(p).pe.hits.byname.bam) $(foreach s,$(se), $(call lib2bam_folder,$(s))$(s).se.hits.byname.bam)
+STAGE2BYNAME_OUT_FILES:=$(foreach p,$(pe), $(call lib2bam_folder,$(p))$(p).pe.hits.byname.bam) $(foreach s,$(se), $(call lib2bam_folder,$(s))$(s).se.hits.byname.bam)
 
 else
 
@@ -1594,6 +1611,8 @@ STAGE2BYNAME_OUT_FILES=
 endif
 
 bam_files=$(STAGE2_OUT_FILES)
+
+
 
 
 ################################################################################
@@ -1648,7 +1667,7 @@ $(info *========================================================)
 
 #################################################################################
 ifneq ($(mapper),none)
-index_files=$(call $(mapper)_index_filenames,$(word 1,$(files_indexed)),$(word 1,$(files_indexed)))
+index_files:=$(call $(mapper)_index_filenames,$(word 1,$(files_indexed)),$(word 1,$(files_indexed)))
 else
 index_files=
 endif
@@ -1656,9 +1675,11 @@ endif
 #*********************
 # print all variables
 ifdef debug
-$(info DEBUG)
+ifeq ($(debug),1) 
+$(info * DEBUG)
 VARS2PRINT=reference_prefix gtf_file_abspath index_files files_indexed feat_mapping_file
 $(foreach v,$(VARS2PRINT),$(info $v=$($v)))
+endif
 endif
 $(call p_info,[DONE] Initialization)
 
@@ -1719,6 +1740,9 @@ endef
 
 %.gtf: %.gtf.gz
 	gunzip -c $< > $@.tmp && mv $@.tmp $@
+
+$(reference_prefix).fa: $(reference_prefix)
+	ln -s `basename $<`  $@
 
 ifeq ($(user_trans),auto)
 $(user_trans_abspath): $(gtf_file_abspath) $(reference_abspath)
@@ -1827,11 +1851,15 @@ phony_targets+= setup setup_files
 ################################################################################
 # Setup initial files
 # file with the length of the features (gene, isoform, exon)
-BOOTSTRAP_TARGETS+= setup_dirs $(trans_abspath) $(gtf_file_abspath) $(reference_abspath) $(gff3_file_abspath).filt.gff3 $(gtf_file_abspath).exon_id.gtf $(gtf_file_abspath).checked
+BOOTSTRAP_TARGETS+= setup_dirs $(trans_abspath) $(gtf_file_abspath).checked  $(gff3_file_abspath).filt.gff3   
 
-SETUP_DATA_FILES+= setup_data_files2 $(name)/data/$(gtf_file_basename).gene_class.txt $(index_files)   $(gtf_file_abspath).exon_id.gtf $(juncs_file_abspath)   $(annot_tsv)  $(name)/data/$(reference_basename).introns.bed  $(name)/data/$(reference_basename).genes.bed6 $(name)/data/$(reference_basename).transcripts.bed6
+SETUP_DATA_FILES+= setup_data_files2 $(name)/data/$(gtf_file_basename).gene_class.txt $(index_files)   $(gtf_file_abspath).exon_id.gtf $(juncs_file_abspath)   $(annot_tsv)  $(name)/data/$(reference_basename).introns.bed  $(name)/data/$(reference_basename).genes.bed6 $(name)/data/$(reference_basename).transcripts.bed6 $(name)/data/$(reference_basename).genes.bed $(name)/data/$(reference_basename).exons.bed  
 
-setup_data_files2: $(gff3_file_abspath).filt.gff3 $(name)/data/$(reference_basename).$(gtf_file_basename).data_info.tsv 
+WAVE0_TARGETS+= $(name)/data/$(gtf_file_basename).gene_class.txt $(index_files)   $(gtf_file_abspath).exon_id.gtf $(juncs_file_abspath)   $(annot_tsv)  $(name)/data/$(reference_basename).introns.bed  $(name)/data/$(reference_basename).genes.bed6 $(name)/data/$(reference_basename).transcripts.bed6  
+
+WAVE1_TARGETS+= setup_data_files2
+
+setup_data_files2: $(name)/data/$(reference_basename).$(gtf_file_basename).data_info.tsv 
 #phony_targets+=setup_data_files2
 
 # TODO: move $(name)/data/$(reference_basename).chr_sizes.sorted.txt to $(name)/data/$(reference_basename).chr_sizes.txt
@@ -2053,20 +2081,21 @@ ifeq ($(mapper),none)
 $(mapper)_mapping: 
 else
 
-outbams=$(foreach p,$(pe), $(call lib2bam_folder,$(p))$(p).pe.hits.bam) $(foreach s,$(se), $(call lib2bam_folder,$(s))$(s).se.hits.bam)
+outbams:=$(foreach p,$(pe), $(call lib2bam_folder,$(p))$(p).pe.hits.bam) $(foreach s,$(se), $(call lib2bam_folder,$(s))$(s).se.hits.bam)
 STAGE2_OUT_FILES+=$(outbams)
 STAGE2_TARGETS+=$(outbams)
 
+WAVE2_TARGETS+=$(outbams)
 $(mapper)_mapping: $(index_files) $(outbams)
 
 endif
 
 # stage2_tracks_targets is empty if report generation is disabled
-stage2_tracks_targets=$(call rep_browse,$(subst .bam,.bam.tracks,$(outbams)))	
+stage2_tracks_targets:=$(call rep_browse,$(subst .bam,.bam.tracks,$(outbams)))	
 
 STAGE3_OUT_FILES+=$(stage2_tracks_targets)
 STAGE3_TARGETS+=$(stage2_tracks_targets)
-
+WAVE3_TARGETS+=$(stage2_tracks_targets)
 
 stage2_tracks: $(stage2_tracks_targets)
 	$(call p_info,[DONE] Generated stage 2 tracks)
@@ -2392,23 +2421,27 @@ save_cache:
 
 
 ######################################
-## lsf
+## job scheduler
 ## targets are placed into bins/waves
 
-phony_targets+= run_wave_0 run_wave_1 run_wave_2 run_wave_3 run_wave_4 run_wave_5 run_wave3_s
+phony_targets+= run_wave_b run_wave_0 run_wave_1 run_wave_2 run_wave_3 run_wave_4 run_wave_5 run_wave3_s run_wave_6
 
 # Note
-# targets variables should contain the name of targets that may be created in parallel without conflicts from the previous wave
-# 
-WAVE0_TARGETS=$(SETUP_DATA_FILES)
-WAVE1_TARGETS=$(STAGE1_TARGETS)
-WAVE2_TARGETS=$(STAGE2_TARGETS)
-WAVE3_TARGETS=$(STAGE3_TARGETS)
-WAVE3_s_TARGETS=$(STAGE3_S_TARGETS)
-WAVE4_TARGETS=$(STAGE4_TARGETS)
-WAVE5_TARGETS=$(STAGE5_TARGETS)
+# targets variables should contain the name of targets that may be run in parallel 
+# Up to 
+WAVEB_TARGETS+=$(BOOTSTRAP_TARGETS)
+WAVE0_TARGETS+=
+WAVE1_TARGETS+=$(STAGE1_TARGETS)
+# BAM+basic stats
+WAVE2_TARGETS+=
+# $(STAGE3_TARGETS)
+WAVE3_TARGETS+=
+WAVE3_s_TARGETS+=
+WAVE4_TARGETS+=
+WAVE5_TARGETS+=
+WAVE6_TARGETS+=
 
-run_bootstrap: $(BOOTSTRAP_TARGETS)
+run_wave_b: $(WAVEB_TARGETS)
 run_wave_0: $(WAVE0_TARGETS)
 run_wave_1: $(WAVE1_TARGETS)
 run_wave_2: $(WAVE2_TARGETS)
@@ -2416,27 +2449,34 @@ run_wave_3: $(WAVE3_TARGETS)
 run_wave_3_s: $(WAVE3_s_TARGETS)
 run_wave_4: $(WAVE4_TARGETS)
 run_wave_5: $(WAVE5_TARGETS)
+run_wave_6: $(WAVE6_TARGETS)
 
-print_wave0_targets:
+print_wave_b_targets:
+	echo $(sort $(WAVEB_TARGETS))
+
+print_wave_0_targets:
 	echo $(sort $(WAVE0_TARGETS))
 
-print_wave1_targets:
+print_wave_1_targets:
 	echo $(sort $(WAVE1_TARGETS))
 
-print_wave2_targets:
+print_wave_2_targets:
 	echo $(sort $(WAVE2_TARGETS))
 
-print_wave3_targets:
+print_wave_3_targets:
 	echo $(sort $(WAVE3_TARGETS))
 
-print_wave3_s_targets:
+print_wave_3_s_targets:
 	echo $(sort $(WAVE3_s_TARGETS))
 
-print_wave4_targets:
+print_wave_4_targets:
 	echo $(sort $(WAVE4_TARGETS))
 
-print_wave5_targets:
+print_wave_5_targets:
 	echo $(sort $(WAVE5_TARGETS))
+
+print_wave_6_targets:
+	echo $(sort $(WAVE6_TARGETS))
 ###################################################
 # FORCE the program to run even if files haven't changed
 FORCE:

@@ -56,5 +56,7 @@ $(name)/$(mapper)/$(quant_method)/sc3/transcripts.raw.filtered.$(quant_method).c
 STAGE5_OUTFILES+=$(clustering_files)
 STAGE5_TARGETS+=$(clustering_files)
 
+WAVE5_TARGETS+=$(clustering_files)
+
 
 endif

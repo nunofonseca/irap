@@ -167,21 +167,22 @@ $(name)/report/$(mapper)/$(quant_method)/$(de_method)/%.gse.$(gse_tool).$(gse_me
 
 
 ############
-GSE_OUT_FILES=
 
 ifneq (none,$(gse_tool))
-GSE_OUT_FILES+=$(subst _de.tsv,.gse.$(gse_tool).$(gse_method).go.tsv,$(STAGE4_OUT_FILES)) $(subst _de.tsv,.gse.$(gse_tool).$(gse_method).kegg.tsv,$(STAGE4_OUT_FILES))
+GSE_OUT_FILES:=$(subst _de.tsv,.gse.$(gse_tool).$(gse_method).go.tsv,$(filter %_de.tsv,$(STAGE4_OUT_FILES))) $(subst _de.tsv,.gse.$(gse_tool).$(gse_method).kegg.tsv,$(filter %_de.tsv,$(STAGE4_OUT_FILES)))
 
 GSE: DE $(GSE_OUT_FILES)
 	$(call p_info,[DONE] GSE analysis)
 
 else
+GSE_OUT_FILES=
 
 GSE: 
 
 endif
 
 STAGE5_OUT_FILES+=$(GSE_OUT_FILES)
+WAVE5_TARGETS+=$(GSE_OUT_FILES)
 
 GSE_files:
 	echo $(GSE_OUT_FILES)
