@@ -182,10 +182,10 @@ function get_cached_value {
 function get_targets_4_level {
     level=$1
     if [ "$level-" == "-" ]; then
-	echo "ERROR: Internal error in get_targets_4_level"
+	echo "ERROR: Internal error in get_targets_4_level $level"
 	exit 1
     fi
-    targets=`$cmd conf=$conf $IRAP_PARAMS print_wave${level}_targets|tail -n 1`
+    targets=`$cmd conf=$conf $IRAP_PARAMS print_wave_${level}_targets|tail -n 1`
     echo $targets
 }
 

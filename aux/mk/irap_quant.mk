@@ -27,11 +27,13 @@ $(mapTrans2gene): $(gtf_file_abspath)
 	genMapTrans2Gene -i $< -o $@.tmp -c $(max_threads) && mv $@.tmp $@
 
 ## Output files produced
-STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).$(expr_ext)) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).$(expr_ext)) 
+STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).$(expr_ext)) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).$(expr_ext))
+
 
 ## Quantification statistics
 a_quant_qc_stats:=
 quant_qc_stats:=$(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).quant_qc.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).quant_qc.tsv)
+WAVE3_s_TARGETS+=$(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).quant_qc.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).quant_qc.tsv)
 
 a_quant_qc_stats+= $(quant_qc_stats)
 
@@ -39,6 +41,7 @@ ifeq ($(transcript_expr),y)
 quant_qc_statst:= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).transcripts.raw.$(quant_method).quant_qc.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).quant_qc.tsv)
 a_quant_qc_stats+= $(quant_qc_statst)
 
+WAVE3_s_TARGETS+=$(quant_qc_statst)
 STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).$(expr_ext)) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).$(expr_ext)) 
 endif
 
@@ -46,6 +49,7 @@ ifeq ($(exon_quant),y)
 quant_qc_statse:= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).exons.raw.$(exon_quant_method).quant_qc.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.exons.raw.$(exon_quant_method).quant_qc.tsv)
 a_quant_qc_stats+= $(quant_qc_statse)
 
+WAVE3_s_TARGETS+=$(quant_qc_statste)
 STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.exons.raw.$(exon_quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.exons.raw.$(exon_quant_method).tsv) 
 endif
 
@@ -896,7 +900,7 @@ $(warning kallisto does not need the reads to be aligned)
 endif
 
 # transcripts
-$(call file_exists,$(user_trans_abspath))
+#$(call file_exists,$(user_trans_abspath))
 
 
 # Note: currently if kallisto is ran in quant mode no bam file is kept
@@ -980,7 +984,7 @@ $(warning salmon does not need the reads to be aligned)
 endif
 
 # transcripts
-$(call file_exists,$(user_trans_abspath))
+#$(call file_exists,$(user_trans_abspath))
 
 # K - minimum matching
 # the user should adjust the K to 1/3 of the read length
@@ -1169,10 +1173,9 @@ ifeq ($(isl_mode),y)
 STAGE3_S_TARGETS+= $(a_quant_qc_stats)
 STAGE3_S_OFILES+= $(a_quant_qc_stats)
 else
-STAGE4_TARGETS+=$(a_quant_qc_stats) 
+STAGE4_TARGETS+=$(a_quant_qc_stats)
 STAGE4_OUT_FILES+=$(a_quant_qc_stats) 
 endif
-
 
 
 ###################
@@ -1220,6 +1223,7 @@ $(quant_method)_quant_files=$(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_
 
 STAGE3_S_TARGETS+=$(call genes_quant_files) $(call transcripts_quant_files)  $(call exons_quant_files)
 
+WAVE3_TARGETS+=$(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).$(expr_ext)
 
 # Raw  + Normalized 
 quantification: norm_quant $(quant_method)_quant 

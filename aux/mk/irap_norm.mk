@@ -166,6 +166,7 @@ endif
 
 
 STAGE4_OUT_FILES+= $(nquant_files) 
+WAVE4_TARGETS+=$(nquant_files)
 
 phony_targets+= norm_quant
 norm_quant: $(quant_method)_quant $(nquant_files)

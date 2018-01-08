@@ -115,7 +115,9 @@ stop_now 3 $wfb $wf3
 wf4=`submit_jobs4stage $wf3 4|tail -n 1`
 stop_now 4 $wfb $wf4
 wf5=`submit_jobs4stage $wf4 5 |tail -n 1`
+stop_now 4 $wfb $wf5
+wf6=`submit_jobs4stage $wf5 6 |tail -n 1`
 
-final_job $wf5 $wf1 5
+final_job $wf6 $wf1 6
 exit
 

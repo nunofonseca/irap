@@ -241,10 +241,10 @@ define run_tophat1_index=
         $(call run_bowtie1_index,$(1),$(1))
 endef
 
+#	if [ ! -h $(reference_prefix).fa ] ; then  ln -s `basename $(reference_prefix)` $(reference_prefix).fa; fi && \
 # generate the transcriptome once (v.2.0.10 or above)\
 #	
 define run_tophat2_index=
-	if [ ! -h $(reference_prefix).fa ] ; then  ln -s `basename $(reference_prefix)` $(reference_prefix).fa; fi && \
         $(call run_bowtie2_index,$(1),$(1)) 
 endef
 
@@ -271,12 +271,11 @@ define tophat2_trans_index_filename_old=
 	$(subst .fa,,$(1))_th2_trans
 endef
 
-
+#	if [ ! -h $(reference_prefix).fa ] ; then  ln -s `basename $(reference_prefix)`  $(reference_prefix).fa; fi
 # Warning: tophat does not like reads with different sizes in the same file
 # splice mismatches -m0 (0-2)"
 # --transcriptome-index
 define tophat_setup_dirs=
-	if [ ! -h $(reference_prefix).fa ] ; then  ln -s `basename $(reference_prefix)`  $(reference_prefix).fa; fi
 	if [ ! -e $(call lib2bam_folder,$(1))$(1)/tmp ] ; then mkdir -p $(call lib2bam_folder,$(1))$(1)/tmp; fi
 endef
 
@@ -337,7 +336,7 @@ endef
 
 # override: the reads need to be trimmed when hisat2 is used 
 ifeq ($(mapper),hisat2)
-$(info WARNING: HISAT2 support is still under development)	
+$(info * WARNING: HISAT2 support is still under development)	
 endif
 
 

@@ -18,7 +18,6 @@
 # along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-#    $Id: 0.1.3 Nuno Fonseca Wed Dec 26 16:16:19 2012$
 # =========================================================
 
 #**************
@@ -29,6 +28,7 @@ de_targets=
 ifneq (none,$(de_method))
 de_targets+=$(foreach cont,$(contrasts),$(name)/$(mapper)/$(quant_method)/$(de_method)/$(cont).genes_de.tsv)
 STAGE4_OUT_FILES+=$(de_targets)
+WAVE4_TARGETS+=$(de_targets)
 endif
 
 phony_targets+= de_files DE
@@ -66,7 +66,7 @@ ifneq (none,$(exon_de_method))
 exon_de_targets+=$(foreach cont,$(contrasts),$(name)/$(mapper)/$(quant_method)/$(exon_de_method)/$(cont).exons_de.tsv)
 STAGE4_OUT_FILES+=$(exon_de_targets)
 endif
-$(info exon_de_targets=$(exon_de_targets))
+$(call p_debug,exon_de_targets=$(exon_de_targets))
 
 exon_de_files:
 	echo $(exon_de_targets)

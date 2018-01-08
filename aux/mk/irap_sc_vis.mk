@@ -50,4 +50,5 @@ sc_visualization: $(sc_visualization_files)
 STAGE5_OUTFILES+=$(sc_visualization_files)
 STAGE5_TARGETS+=$(sc_visualization_files)
 
+WAVE6_TARGETS+=$(sc_visualization_files)
 endif
