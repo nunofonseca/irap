@@ -555,7 +555,7 @@ $(info *       gff3_file  = $(gff3_file_abspath))
 
 
 # mapping (exon/transcript to gene) file obtained from the gtf file
-feat_mapping_file?=$(subst .gz,,$(subst .gtf,.mapping.Rdata,$(gtf_file_abspath)))
+feat_mapping_files?=$(subst .gz,,$(subst .gtf,.mapping_trans.tsv,$(gtf_file_abspath))) $(subst .gz,,$(subst .gtf,.mapping_exons.tsv,$(gtf_file_abspath)))
 
 #**********
 refgeneclass_file=$(subst .gz,,$(gtf_file_abspath)).gene_class.txt
@@ -582,6 +582,9 @@ ifeq ($(TARGETS),stage0_fix)
 skip_lib_validation=no
 endif
 
+ifdef do_stage0_only
+skip_lib_validation=no
+endif
 
 #
 ifdef skip_lib_validation
@@ -654,6 +657,7 @@ all_fq_files:=$(all_pe_files) $(all_se_files)
 nfqfiles:=$(words $(all_fq_files))
 nfqfilesu:=$(words $(sort $(all_fq_files)))
 
+ifndef skip_lib_validation
 ifneq ($(nfqfiles),$(nfqfilesu))
 $(call p_error,Some of the libraries provided in se and/or pe have the same filename)
 endif
@@ -665,6 +669,7 @@ endif
 endif
 # endif  ($(MAKECMDGOALS),stage0)
 
+endif
 
 #***********
 # Contrasts
@@ -1677,7 +1682,7 @@ endif
 ifdef debug
 ifeq ($(debug),1) 
 $(info * DEBUG)
-VARS2PRINT=reference_prefix gtf_file_abspath index_files files_indexed feat_mapping_file
+VARS2PRINT=reference_prefix gtf_file_abspath index_files files_indexed feat_mapping_files
 $(foreach v,$(VARS2PRINT),$(info $v=$($v)))
 endif
 endif
@@ -1710,7 +1715,6 @@ $(call get_param_value_pair,sample_read=,$(subst read,,$($(1)_sample_read))) $(c
  $(call get_param_value_pair,read1_size=,$($(1)_read1_size)) $(call get_param_value_pair,read2_size=,$($(1)_read2_size))
 endef
 
-# report_dir=$(name)/report/riq/$($(1)_dir)
 
 define not_empty=
 	$(if $(call file_exists,$(1),),$(call p_error,File $(1) not found))
@@ -1824,16 +1828,23 @@ endef
 	bedtools merge -scores mean -i - > $@.tmp &&\
 	mv $@.tmp $@
 
-# give an error
+# fail if file needs to be generated
 %.cdna.fa:
 	$(call p_error,Missing cdna file $@)
 
 # feat_mapping_file
-%.mapping.Rdata %.mapping_exons.tsv %.mapping_trans.tsv: %.gtf
-	irap_gtf2mapping --gtf $(gtf_file_abspath) --out $*.mapping.tmp --cores $(max_threads) && \
-	mv $*.mapping.tmp.Rdata $*.mapping.Rdata && \
-	mv $*.mapping.tmp_exons.tsv $*.mapping_exons.tsv && \
-	mv $*.mapping.tmp_trans.tsv $*.mapping_trans.tsv 
+# %.mapping.Rdata %.mapping_exons.tsv %.mapping_trans.tsv: %.gtf
+# 	irap_gtf2mapping --gtf $(gtf_file_abspath) --out $*.mapping.tmp --cores $(max_threads) && \
+# 	mv $*.mapping.tmp.Rdata $*.mapping.Rdata && \
+# 	mv $*.mapping.tmp_exons.tsv $*.mapping_exons.tsv && \
+# 	mv $*.mapping.tmp_trans.tsv $*.mapping_trans.tsv 
+
+%.mapping_trans.tsv: %.gtf
+	irap_gtf2mapping.pl --gtf $< --feature transcript > $@.tmp && mv $@.tmp $@
+
+%.mapping_exons.tsv: %.gtf
+	irap_gtf2mapping.pl --gtf $< --feature exon > $@.tmp && mv $@.tmp $@
+
 
 # rename does not work on some distros :(
 #	rename $*.mapping.tmp $*.mapping $*.mapping.*
@@ -1853,13 +1864,14 @@ phony_targets+= setup setup_files
 # file with the length of the features (gene, isoform, exon)
 BOOTSTRAP_TARGETS+= setup_dirs $(trans_abspath) $(gtf_file_abspath).checked  $(gff3_file_abspath).filt.gff3   
 
-SETUP_DATA_FILES+= setup_data_files2 $(name)/data/$(gtf_file_basename).gene_class.txt $(index_files)   $(gtf_file_abspath).exon_id.gtf $(juncs_file_abspath)   $(annot_tsv)  $(name)/data/$(reference_basename).introns.bed  $(name)/data/$(reference_basename).genes.bed6 $(name)/data/$(reference_basename).transcripts.bed6 $(name)/data/$(reference_basename).genes.bed $(name)/data/$(reference_basename).exons.bed  
+SETUP_DATA_FILES+= setup_data_files2 $(name)/data/$(gtf_file_basename).gene_class.txt $(index_files)   $(gtf_file_abspath).exon_id.gtf $(juncs_file_abspath)   $(annot_tsv)  $(name)/data/$(reference_basename).introns.bed  $(name)/data/$(reference_basename).genes.bed6 $(name)/data/$(reference_basename).transcripts.bed6 $(name)/data/$(reference_basename).genes.bed $(name)/data/$(reference_basename).exons.bed $(feat_mapping_files) 
 
-WAVE0_TARGETS+= $(name)/data/$(gtf_file_basename).gene_class.txt $(index_files)   $(gtf_file_abspath).exon_id.gtf $(juncs_file_abspath)   $(annot_tsv)  $(name)/data/$(reference_basename).introns.bed  $(name)/data/$(reference_basename).genes.bed6 $(name)/data/$(reference_basename).transcripts.bed6  
+WAVE0_TARGETS+= $(name)/data/$(gtf_file_basename).gene_class.txt $(index_files)   $(gtf_file_abspath).exon_id.gtf $(juncs_file_abspath)   $(annot_tsv)  $(name)/data/$(reference_basename).introns.bed  $(name)/data/$(reference_basename).genes.bed6 $(name)/data/$(reference_basename).transcripts.bed6  $(feat_mapping_files)
 
-WAVE1_TARGETS+= setup_data_files2
+setup2_files:=$(name)/data/$(reference_basename).$(gtf_file_basename).data_info.tsv 
+WAVE1_TARGETS+= $(setup2_files) 
 
-setup_data_files2: $(name)/data/$(reference_basename).$(gtf_file_basename).data_info.tsv 
+setup_data_files2: $(setup2_files) 
 #phony_targets+=setup_data_files2
 
 # TODO: move $(name)/data/$(reference_basename).chr_sizes.sorted.txt to $(name)/data/$(reference_basename).chr_sizes.txt
@@ -2005,7 +2017,7 @@ $(name)/data/$(gtf_file_basename).dexseq.lengths.Rdata: $(gtf_file_abspath).DEXS
 # Setup directory structure
 phony_targets+= setup_dirs
 
-setup_dirs: $(tmp_dir) $(name)/report/riq/ $(if $(mapper),$(name)/$(mapper)/) $(name)/data/  $(if $(quant_method),$(name)/$(mapper)/$(quant_method)/)  $(if $(de_method),$(name)/$(mapper)/$(quant_method)/$(de_method)/) $(name)/data/pre
+setup_dirs: $(tmp_dir)  $(if $(mapper),$(name)/$(mapper)/) $(name)/data/  $(if $(quant_method),$(name)/$(mapper)/$(quant_method)/)  $(if $(de_method),$(name)/$(mapper)/$(quant_method)/$(de_method)/) $(name)/data/pre
 	$(call p_info,[DONE] Directory structure created)
 
 bootstrap: $(BOOTSTRAP_TARGETS)
@@ -2024,8 +2036,8 @@ $(name)/data/:
 $(name)/data/pre:
 	mkdir -p $@
 
-$(name)/report/riq/:
-	mkdir -p $@
+#$(name)/report/riq/:
+#	mkdir -p $@
 
 $(name)/$(mapper)/:
 	mkdir -p $@
