@@ -37,11 +37,13 @@ library(parallel)
 pdebug.enabled <- FALSE
 #######################
 usage <- "irap_riu2dominant --tsv riu.tsv --map gene2transcript -fc fold-change [options]"
-filenames <- c("tsv_file","mapping_file") ;#filenames that must exist (if defined)
+filenames <- c("ifile","mapping_file") ;#filenames that must exist (if defined)
 option_list <- list(
   make_option(c("--fc"), type="numeric",default=2,help="Fold-change [default %default]."),
-  make_option(c("-i", "--tsv_file"), type="character", dest="tsv_file", default=NULL,help="TSV file name with the relative isoform usage (riu)."),
+  make_option(c("-i", "--tsv_file"), type="character", dest="ifile", default=NULL,help="TSV file name with the relative isoform usage (riu)."),
   make_option(c("-m", "--mapping_file"), type="character", dest="mapping_file", default=NULL,help="TSV file name with the  mapping between transcripts and genes."),
+  make_option(c("--mtx"), action="store_true",default=FALSE,dest="is_mtx",help="The input file is in Matrix Market format. Default is TSV format."),
+  make_option(c("--tsv"), action="store_false",default=FALSE,dest="is_mtx",help="The input file is in TSV forma (default)."),
   make_option(c("--trans_col"), type="numeric",default=1,help="Column in the mapping file with the transcript ids [default %default]."),
   make_option(c("--gene_col"), type="numeric",default=2,help="Column in the mapping file with the gene ids[default %default]."),
   make_option(c("-c", "--cores"), type="numeric",default=1,dest="num_cores",help="Number of cores to use ([default %default])"),
@@ -51,7 +53,7 @@ option_list <- list(
 
 # check multiple options values
 multiple.options = list( )
-mandatory <- c("tsv_file","mapping_file","out")
+mandatory <- c("ifile","mapping_file","out")
 opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
 
 pdebug.enabled <- opt$debug
@@ -59,7 +61,7 @@ pdebug.enabled <- opt$debug
   
 opt$fc <- as.numeric(opt$fc)
 
-pdebug("TSVFILE=",opt$tsv_file)
+pdebug("IFILE=",opt$ifile)
 pdebug("MAPPINGFILE=",opt$mapping_file)
 pdebug("fc=",opt$fc)
 
@@ -88,12 +90,21 @@ options(cores=num.cores)
 options(mc.cores=num.cores)
 
 # TODO : comment
-save.image("test.Rdata")
+##save.image("test.Rdata")
 ###############################################
 
 # load TSV
 # TODO: trap and report errors
-data <- quant.load(opt$tsv_file)
+#data <- quant.load(opt$tsv_file)
+pinfo("Loading ",opt$ifile)
+if ( opt$is_mtx ) {
+    ## do not take advantage of mtx for now
+    data <- as.data.frame(mtx.load(opt$ifile))
+} else {
+    data <- quant.load(opt$ifile)
+}
+pinfo("Loading ",opt$ifile," done.")
+
 
 # load mapping
 mapping.data<- read.tsv(opt$mapping_file)
