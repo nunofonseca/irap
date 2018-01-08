@@ -38,17 +38,19 @@ function usage {
     echo "irap_lsf [-s -l level] irap options"
 }
 ###################################
-level=5
+level=6
 irap_cmd=irap
 DEBUG=0
+stage0_only=n
 
 # DEBUG=1 - prints all lsf commands
 # DEBUG=2 - prints all irap commands
 
-while getopts "l:sdD"  Option; do
+while getopts "l:sdD0"  Option; do
     case $Option in
 	s ) irap_cmd=irap_sc;;
         l ) level=$OPTARG;;
+	0 ) stage0_only=y;;  
 	d ) DEBUG=1;;
 	D ) DEBUG=2;;
 	h) usage; exit;;
@@ -59,7 +61,6 @@ shift $((OPTIND-1))
 if [ "$DEBUG-" != "0-" ]; then
     echo "DEBUG enabled ($DEBUG)"
 fi
-echo $*
 
 
 ###################################
@@ -68,6 +69,11 @@ LSF_CMD=irap_lsf
 source $IRAP_DIR/aux/sh/irap_fun.sh
 source $IRAP_DIR/aux/sh/lsf_shared_code.sh
 cmd="$irap_cmd "
+
+if [ "$stage0_only-" == "y-" ]; then
+    IRAP_PARAMS="$IRAP_PARAMS do_stage0_only=1"
+    level=2
+fi
 
 wave=$level
 set +e
@@ -118,6 +124,6 @@ wf5=`submit_jobs4stage $wf4 5 |tail -n 1`
 stop_now 4 $wfb $wf5
 wf6=`submit_jobs4stage $wf5 6 |tail -n 1`
 
-final_job $wf6 $wf1 6
+final_job $wf6 $wf0 6
 exit
 
