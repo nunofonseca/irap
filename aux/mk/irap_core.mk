@@ -494,7 +494,7 @@ override spikein_fasta_abspath:=$(subst .gz,,$(spikein_fasta_abspath))
 reference_dir:=$(name)/data
 user_reference_abspath:=$(reference_abspath)
 # newref: ref_prefix.spikein_prefix.fasta
-spikein_fasta_prefix:=$(patsubst %.fa,,$(patsubst %.fa,%,$(patsubst %.gz,%,$(notdir $(spikein_fasta)))))
+spikein_fasta_prefix:=$(patsubst %.fa,%,$(patsubst %.fasta,%,$(patsubst %.gz,%,$(notdir $(spikein_fasta)))))
 new_spike_ref_prefix:=$(dir $(reference_abspath))/$(patsubst %.fasta,%.$(spikein_fasta_prefix),$(patsubst %.fa,%.fasta,$(subst .gz,,$(reference))))
 override reference_abspath:=$(new_spike_ref_prefix).fa
 reference_prefix=$(reference_abspath)
