@@ -1867,10 +1867,10 @@ BOOTSTRAP_TARGETS+= setup_dirs $(trans_abspath) $(gtf_file_abspath).checked  $(g
 
 SETUP_DATA_FILES+= setup_data_files2 $(name)/data/$(gtf_file_basename).gene_class.txt $(index_files)   $(gtf_file_abspath).exon_id.gtf $(juncs_file_abspath)   $(annot_tsv)  $(name)/data/$(reference_basename).introns.bed  $(name)/data/$(reference_basename).genes.bed6 $(name)/data/$(reference_basename).transcripts.bed6 $(name)/data/$(reference_basename).genes.bed $(name)/data/$(reference_basename).exons.bed $(feat_mapping_files) 
 
-WAVE0_TARGETS+= $(name)/data/$(gtf_file_basename).gene_class.txt $(index_files)   $(gtf_file_abspath).exon_id.gtf $(juncs_file_abspath)   $(annot_tsv)  $(name)/data/$(reference_basename).introns.bed  $(name)/data/$(reference_basename).genes.bed6 $(name)/data/$(reference_basename).transcripts.bed6  $(feat_mapping_files)
+WAVE0_TARGETS+= $(name)/data/$(gtf_file_basename).gene_class.txt $(word 1,$(index_files))   $(gtf_file_abspath).exon_id.gtf $(juncs_file_abspath)   $(annot_tsv)  $(name)/data/$(reference_basename).introns.bed  $(name)/data/$(reference_basename).genes.bed6 $(name)/data/$(reference_basename).transcripts.bed6  $(feat_mapping_files)
 
 setup2_files:=$(name)/data/$(reference_basename).$(gtf_file_basename).data_info.tsv 
-WAVE1_TARGETS+= $(setup2_files) 
+WAVE1_TARGETS+= $(setup2_files)  $(word 2,$(index_files))
 
 setup_data_files2: $(setup2_files) 
 #phony_targets+=setup_data_files2
