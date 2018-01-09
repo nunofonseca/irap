@@ -555,7 +555,8 @@ $(info *       gff3_file  = $(gff3_file_abspath))
 
 
 # mapping (exon/transcript to gene) file obtained from the gtf file
-feat_mapping_files?=$(subst .gz,,$(subst .gtf,.mapping_trans.tsv,$(gtf_file_abspath))) $(subst .gz,,$(subst .gtf,.mapping_exons.tsv,$(gtf_file_abspath)))
+trans2gene_mapping_file:=$(subst .gz,,$(subst .gtf,.mapping_trans.tsv,$(gtf_file_abspath)))
+feat_mapping_files?=$(trans2gene_mapping_file) $(subst .gz,,$(subst .gtf,.mapping_exons.tsv,$(gtf_file_abspath)))
 
 #**********
 refgeneclass_file=$(subst .gz,,$(gtf_file_abspath)).gene_class.txt
