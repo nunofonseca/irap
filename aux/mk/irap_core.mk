@@ -1862,7 +1862,7 @@ phony_targets+= setup setup_files
 ################################################################################
 # Setup initial files
 # file with the length of the features (gene, isoform, exon)
-BOOTSTRAP_TARGETS+= setup_dirs $(trans_abspath) $(gtf_file_abspath).checked  $(gff3_file_abspath).filt.gff3   
+BOOTSTRAP_TARGETS+= setup_dirs $(trans_abspath) $(gtf_file_abspath).checked  $(gff3_file_abspath).filt.gff3   $(name)/version
 
 SETUP_DATA_FILES+= setup_data_files2 $(name)/data/$(gtf_file_basename).gene_class.txt $(index_files)   $(gtf_file_abspath).exon_id.gtf $(juncs_file_abspath)   $(annot_tsv)  $(name)/data/$(reference_basename).introns.bed  $(name)/data/$(reference_basename).genes.bed6 $(name)/data/$(reference_basename).transcripts.bed6 $(name)/data/$(reference_basename).genes.bed $(name)/data/$(reference_basename).exons.bed $(feat_mapping_files) 
 
@@ -1879,7 +1879,7 @@ setup_data_files2: $(setup2_files)
 # $(name)/data/introns.bed -> $(name)/data/genes.bed $(name)/data/exons.bed 
 # $(gff3_file_abspath).csv -> $(gff3_file_abspath) 
 
-setup_files: $(SETUP_DATA_FILES)
+setup_files: $(SETUP_DATA_FILES)  $(BOOTSTRAP_TARGETS)
 
 print_stage0_files: setup_dirs
 	echo $(SETUP_DATA_FILES)
@@ -2490,8 +2490,12 @@ print_wave_5_targets:
 print_wave_6_targets:
 	echo $(sort $(WAVE6_TARGETS))
 ###################################################
+# Keep the versions used in the top level folder
+$(name)/version: $(IRAP_DIR)/version
+	touch $@ && cat $@ $(IRAP_DIR)/version |sort -u > $@.tmp && mv $@.tmp $@
+###################################################
 # FORCE the program to run even if files haven't changed
-FORCE:
+FORCE: 
 
 #PHONY: performance improvement. Tell MAKE that those targets don't generate any files. 
 .PHONY:  $(phony_targets)
