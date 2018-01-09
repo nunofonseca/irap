@@ -108,13 +108,13 @@ osa_aln_options?=
 # endif
 
 define run_bowtie1_index=
-	irap_map.sh bowtie1  bowtie-build --offrate 3 $(1) $(1)
+	irap_map.sh bowtie1  bowtie-build --offrate 3 $(1) $(1:%.fa=%)
 endef
 
 #
 # same arguments used for *_index
 define bowtie1_index_filename=
-$(2).1.ebwt
+$(2:%.fa=%).1.ebwt
 endef
 
 # -v <int>           report end-to-end hits w/ <=v mismatches; ignore qualities
@@ -155,22 +155,23 @@ endef
 # endif
 bowtie2_index_params=$(bowtie2_index_options) --threads $(max_threads)
 
+# 1 - fasta
 define run_bowtie2_index=
-	irap_map.sh bowtie2  bowtie2-build --offrate 3 $(bowtie2_index_params) $(1) $(1) 
+	irap_map.sh bowtie2  bowtie2-build --offrate 3 $(bowtie2_index_params) $(1) $(1:%.fa=%)
 endef
 
 # same arguments used for *_index
-ifdef big_genome
+#ifdef big_genome
 # ensure that bowtie2 will build a large index
 bowtie2_index_params+= --large-index
 define bowtie2_index_filename=
-$(2).1.bt2l 
+$(2:%.fa=%).1.bt2l 
 endef
-else
-define bowtie2_index_filename=
-$(2).1.bt2
-endef
-endif
+#else
+#define bowtie2_index_filename=
+#$(2).1.bt2
+#endef
+#endif
 
 define bowtie2_file_params=
 	$(if $(findstring $(1),$(pe)), $(call bowtie_ins_sd_params,$(1)) -1 $(word 1,$(2)) -2 $(word 2,$(2)), $(call tophat_qual_option,$($(1)_qual)) -U $(2))
@@ -210,6 +211,8 @@ ifeq ($(mapper),tophat2)
 	trim_reads=y
 endif
 
+
+
 min_intron_len?=6
 tophat1_map_params= --min-intron-length $(min_intron_len) $(tophat1_map_options) --no-sort-bam
 tophat2_map_params= --max-multihits $(max_hits) --no-coverage-search --min-intron-length $(min_intron_len) $(tophat2_map_options) --no-sort-bam
@@ -238,14 +241,13 @@ define tophat_ins_sd_params=
 endef
 
 define run_tophat1_index=
-        $(call run_bowtie1_index,$(1),$(1))
+        $(call run_bowtie1_index,$(1),$(1:%.fa=%))
 endef
 
-#	if [ ! -h $(reference_prefix).fa ] ; then  ln -s `basename $(reference_prefix)` $(reference_prefix).fa; fi && \
-# generate the transcriptome once (v.2.0.10 or above)\
-#	
+# generate the transcriptome once (v.2.0.10 or above)
+# 1 - fasta file to be indexed
 define run_tophat2_index=
-        $(call run_bowtie2_index,$(1),$(1)) 
+        $(call run_bowtie2_index,$(1),$(1:%.fa=%)) 
 endef
 
 define run_tophat2_index_annot=
@@ -255,23 +257,21 @@ define run_tophat2_index_annot=
 	mv $(call tophat2_trans_index_filename,$(1),$(1)).tmp $(call tophat2_trans_index_filename,$(1),$(1))
 endef
 
+tophat_reference_prefix:=$(reference_prefix:%.fa=%)
+
 # same arguments used for *_index
 define tophat1_index_filename=
-	$(call bowtie1_index_filename,$(1),$(1))
+	$(call bowtie1_index_filename,$(1),$(1:%.fa=%))
 endef
 define tophat2_index_filename=
-	$(call bowtie2_index_filename,$(1),$(1))
+	$(call bowtie2_index_filename,$(1),$(1:%.fa=%))
 endef
 
+# combine the gtf and genome reference filenames
 define tophat2_trans_index_filename=
 	$(subst .fa,,$(1))_$(subst .gtf,,$(notdir $(gtf_file_abspath)))_th2_trans
 endef
 
-define tophat2_trans_index_filename_old=
-	$(subst .fa,,$(1))_th2_trans
-endef
-
-#	if [ ! -h $(reference_prefix).fa ] ; then  ln -s `basename $(reference_prefix)`  $(reference_prefix).fa; fi
 # Warning: tophat does not like reads with different sizes in the same file
 # splice mismatches -m0 (0-2)"
 # --transcriptome-index
@@ -279,7 +279,7 @@ define tophat_setup_dirs=
 	if [ ! -e $(call lib2bam_folder,$(1))$(1)/tmp ] ; then mkdir -p $(call lib2bam_folder,$(1))$(1)/tmp; fi
 endef
 
-tophat_reference_prefix=$(reference_prefix)
+
 
 # cuffdiff complains about the order..
 define run_tophat1_map=
