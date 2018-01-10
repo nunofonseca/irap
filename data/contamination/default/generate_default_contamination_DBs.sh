@@ -40,12 +40,12 @@ function gen_multi_species_DB {
 	## add the group (fasta file prefix) to the seq name
 	zcat $f | sed "s/^>/>$no_suffix:/" >> combined.fa
     done
-    irap_add2contaminationDB -n $name -f combined.fa
+    irap_add2contaminationDB -n $name -f combined.fa -d ..
     rm -f combined.fa
     echo "IRAP: cont_index=$name"
 }
 ## DB1 - bact/ecoli
-gen_multi_species_DB  ecoli ecoli.fa.gz phiX174.fa.gz
+gen_multi_species_DB  e_coli ecoli.fa.gz phiX174.fa.gz
 
 ## DB2 - bact_fungi_viral
 gen_multi_species_DB ecoli_fungi_viral ecoli.fa.gz viral.fa.gz fungi.fa.gz phiX174.fa.gz
