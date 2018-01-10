@@ -40,7 +40,7 @@ function gen_multi_species_DB {
 	## add the group (fasta file prefix) to the seq name
 	zcat $f | sed "s/^>/>$no_suffix:/" >> combined.fa
     done
-    irap_add2contaminationDB -n $name -f combined.fa -d ..
+    irap_add2contaminationDB -n $name -f combined.fa -d .. -m bowtie2
     rm -f combined.fa
     echo "IRAP: cont_index=$name"
 }
