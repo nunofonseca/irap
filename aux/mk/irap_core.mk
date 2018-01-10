@@ -66,6 +66,8 @@ is_defined=$(if $(subst undefined,,$(origin $(1))),$(1),)
 
 ###################################################################
 # Variables
+data_dir?=$(IRAP_DIR)/data
+
 ifdef def_lib_dir
 override def_lib_dir:=$(patsubst %/,%,$(def_lib_dir))/
 endif
