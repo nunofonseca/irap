@@ -22,8 +22,6 @@ exec make  -Rf "$0"  ${1+"$@"}
 # along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-#    $Id: scripts/irap Nuno Fonseca Wed Jan 2 10:26:31 2013$
-# =========================================================
 ###########################################################
 #.SECONDARY: 
 .ONESHELL:
@@ -124,7 +122,7 @@ def_contamination_mismatches=3
 def_max_n=0
 
 # default mapper
-def_mapper=bowtie
+def_mapper=bowtie2
 # Extra options that may be passed to the mapper
 mapper_extra_options?=
 # 
@@ -818,6 +816,9 @@ all: setup0 stage0 stage1 stage2 stage3 stage3 stage4  stage6
 
 stage1: $(subst .fastq.gz,.filter1.fastq.gz,$(ORIGFILES)) 
 
+
+qc_stage1?=y
+ifeq ($(qc_stage1),y)
 ####################################################################################
 # -p Minimum percent of bases that must have min_qual
 ifeq ($(trim),y)
@@ -842,6 +843,12 @@ filter1_cmd=fastq_quality_filter  -v -Q $(qual) -p $(qual_perc) -q $(min_qual) |
 	( fastq_not_empty $@.tmp || (echo "ERROR: no reads pass the quality thresholds ($<)" && exit 1 )) &&\
 	mv $@.tmp $@
 
+else
+
+%.filter1.fastq.gz: %.pre.fastq.gz
+	rm -f $@ && ln -s $< $@
+
+endif
 
 ################################################################
 # STAGE 2 - CHECK FOR CONTAMINATION

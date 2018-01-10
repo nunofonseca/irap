@@ -253,7 +253,7 @@ def_trim_reads?=y
 def_qual_filtering?=on
 
 # Mapper to use in QC contamination check 
-def_cont_mapper?=bowtie
+def_cont_mapper?=bowtie2
 
 #Software for mapping (reads -> genome/transcriptome)
 def_mapper?=tophat2
@@ -892,11 +892,12 @@ ifeq (,$(filter $(qc),$(qc_modes)))
 $(call p_info,[ERROR] Invalid qc/qual_filtering value)
 endif
 
+##############
+# Fine tune QC
 
-ifndef trim_reads
- trim_reads=$(def_trim_reads)
-endif
-
+# enable disable first QC stage (poly-AT and quality based trimming and filtering)
+# qc_stage1=y|n
+qc_stage1?=y
 
 # Trim poly-A/T? y|n
 trim_poly_at?=$(def_trim_poly_at)
@@ -904,6 +905,9 @@ trim_poly_at?=$(def_trim_poly_at)
 # by default, if a read has at least 10 consecutive A or T in the edges then it will be trimmed. This option is only used if trim_poly_at is set to y
 trim_poly_at_len?=$(def_trim_poly_at_len)
 
+ifndef trim_reads
+ trim_reads=$(def_trim_reads)
+endif
 
 #*************
 # Min. quality
@@ -918,12 +922,16 @@ ifndef min_read_quality
  min_read_quality=$(def_min_read_quality)
 endif
 
+
 # Maximum (percentage) of uncalled bases acceptable in a read
+# max_n=100 disables the filtering
 max_n?=0
 
 #*******************
 # Contamination file
-#*******************
+
+# disable contamination index
+# cont_index=no
 ifndef cont_index
  cont_index=$(def_cont_index)
 endif
@@ -1693,7 +1701,7 @@ $(call p_info,[DONE] Initialization)
 ###################
 # Quality Filtering
 ###################
-read_qual_filter_common_params=tmp_dir=$(tmp_dir)  threads=$(max_threads)  qual_filtering=$(qual_filtering)  min_qual=$(min_read_quality) trim=$(trim_reads) cont_index=$(cont_index) mapper=$(cont_mapper) max_n=$(max_n) max_mem=$(max_mem) poly_at_len=$(trim_poly_at_len) trim_poly_at=$(trim_poly_at)
+read_qual_filter_common_params=tmp_dir=$(tmp_dir)  threads=$(max_threads)  qual_filtering=$(qual_filtering)  min_qual=$(min_read_quality) trim=$(trim_reads) cont_index=$(cont_index) mapper=$(cont_mapper) max_n=$(max_n) max_mem=$(max_mem) poly_at_len=$(trim_poly_at_len) trim_poly_at=$(trim_poly_at) qc_stage1=$(qc_stage1)
 
 # get a param value pair iff the value passed is not empty and not undef
 # 1 - param name
