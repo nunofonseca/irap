@@ -124,7 +124,7 @@ def_max_n=0
 # default mapper
 def_mapper=bowtie2
 # Extra options that may be passed to the mapper
-mapper_extra_options?=
+mapper_extra_options?=--very-fast
 # 
 ifdef run_tests
 undefine run_tests
@@ -869,7 +869,7 @@ else
 # check for contamination
 ifeq ($(mapper),bowtie)
 %.filter2.fastq.gz: %.filter1.fastq.gz
-	$(mapper_path) --sam -p $(threads) -v $(contamination_mismatches) -q $(mapper_extra_options) --phred$(qual)-quals  --un $@.tmp   $(cont_index)  <(zcat $<) | samtools view -b - > $*.cont.bam.tmp && \
+	$(mapper_path) --sam -p $(threads) -v $(contamination_mismatches) -q $(mapper_extra_options) --phred$(qual)-quals  --un $@.tmp   $(cont_index)  <(zcat $<) | samtools view -b -F 4 -  > $*.cont.bam.tmp && \
 	( fastq_not_empty $@.tmp || (echo "ERROR: no reads pass the contamination filter ($<)" && exit 1 )) && \
 	gzip $@.tmp && \
 	mv $*.cont.bam.tmp $*.cont.bam && mv $@.tmp.gz $@
@@ -877,7 +877,7 @@ endif
 
 ifeq ($(mapper),bowtie2)
 %.filter2.fastq.gz: %.filter1.fastq.gz
-	$(mapper_path) -p $(threads)   $(mapper_extra_options) --un $@.tmp  --fast-local  --phred$(qual) -x $(cont_index) -U <(zcat $<)   -S /dev/stdout  | samtools view -b - > $*.cont.bam.tmp && \
+	$(mapper_path) -p $(threads)   $(mapper_extra_options) --un $@.tmp  --fast-local  --phred$(qual) -x $(cont_index) -U <(zcat $<)   -S /dev/stdout  | samtools view -b -F 4 - > $*.cont.bam.tmp && \
 	( fastq_not_empty $@.tmp || (echo "ERROR: no reads pass the contamination filter ($<)" && exit 1 )) &&\
 	gzip $@.tmp && mv $*.cont.bam.tmp $*.cont.bam && mv $@.tmp.gz $@
 endif
