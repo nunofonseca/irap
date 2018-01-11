@@ -1805,16 +1805,16 @@ endif
 
 # sort a bam file by name and index
 %.byname.bam: %.bam
-	rm -f $*.byname.tmp.{0,1,2,3,4,5,6,7,8,9}*.bam && samtools sort -n -m $(SAMTOOLS_SORT_MEM) -T $*.byname.tmp -o $*.byname.tmp.bam $< && mv $*.byname.tmp.bam $@ 
+	rm -f $*.byname.tmp.{0,1,2,3,4,5,6,7,8,9}*.bam && samtools sort --threads $(max_threads) -n -m $(SAMTOOLS_SORT_MEM) -T $*.byname.tmp -o $*.byname.tmp.bam $< && mv $*.byname.tmp.bam $@ 
 
 # index a bam file
 %.bam.bai: %.bam
-	samtools index $<
+	samtools index -@ $(max_threads) $<
 # samtools 1.1 does not support the second argument :(
 #	samtools index $< $@.tmp && mv $@.tmp $@
 
 %.cram: %.bam
-	samtools view -C -T $(reference_abspath) $< > $@.tmp && mv $@.tmp $@
+	samtools view --threads $(max_threads) -C -T $(reference_abspath) $< > $@.tmp && mv $@.tmp $@
 
 #
 # bigWig from bed 
@@ -2244,11 +2244,11 @@ $(name)/$(mapper)/scripture/%.pe.scripture.tsv: $(name)/$(mapper)/%.pe.hits.bam 
 
 
 $(name)/$(mapper)/$(quant_method)/alignments.bam: $(foreach p,$(pe),$(name)/$(mapper)/$(p).pe.hits.byname.bam) $(foreach s,$(se),$(name)/$(mapper)/$(s).se.hits.byname.bam)
-	$(call samcat,$^) | samtools sort -m $(SAMTOOLS_SORT_MEM) -T $@.sorted -o $@.sorted.bam -  && mv  $@.sorted.bam $@  && samtools index $@
+	$(call samcat,$^) | samtools sort --threads $(max_threads) -m $(SAMTOOLS_SORT_MEM) -T $@.sorted -o $@.sorted.bam -  && mv  $@.sorted.bam $@  && samtools index $@
 
 
 $(name)/$(mapper)/$(quant_method)/alignments.bam.paired.bam: $(foreach p,$(pe),$(name)/$(mapper)/$(p).pe.hits.byname.bam)
-	$(call samcat,$^) | samtools sort  -m $(SAMTOOLS_SORT_MEM) -T $@.tmp -o $@.tmp.bam -  && mv $@.tmp.bam $@ && samtools index $@
+	$(call samcat,$^) | samtools sort  --threads $(max_threads) -m $(SAMTOOLS_SORT_MEM) -T $@.tmp -o $@.tmp.bam -  && mv $@.tmp.bam $@ && samtools index $@
 
 #
 #A 2-column tab separated file containing the chromosome name and size for the organism.
