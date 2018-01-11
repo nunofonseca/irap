@@ -604,8 +604,8 @@ else
 	    # 2017-09-28
 	    # Check if cram is ok
 	    pinfo "Comparing CRAM to BAM..."
-	    cram_n=$(samtools view -c  $odir/$f1_bn.cram)
-	    bam_n=$(samtools view -c  $odir/$f1_bn.bam)
+	    cram_n=$(samtools view --threads $threads -c  $odir/$f1_bn.cram)
+	    bam_n=$(samtools view --threads $threads -c  $odir/$f1_bn.bam)
 	    if [ $cram_n  -ne $bam_n ]; then
 		perror "Generation of CRAM file failed (number of entries in BAM and CRAM differ - $bam_n!=$cram_n)"
 		exit 1

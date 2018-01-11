@@ -371,54 +371,6 @@ $(name)/report/mapping/%.html: $(name)/%/  $(conf) $(call must_exist,$(name)/rep
 
 ################
 
-# # statistics per bam file
-# %.bam.gff3: %.bam $(gff3_file_abspath).filt.gff3 $(name)/data/$(reference_basename).chr_sizes.sorted.txt
-# 	bedtools coverage -counts -sorted  -a $(gff3_file_abspath).filt.gff3 -b $< -g  $(name)/data/$(reference_basename).chr_sizes.sorted.txt > $@.tmp  &&\
-# 	mv $@.tmp $@
-
-# %.bam.stats: %.bam.gff3 
-# 	mapping_feature_stats --in $< --out $@.tmp -c "`basename $*`" && mv $@.tmp $@
-
-# %.bam.stats.csv: %.bam 
-# 	irapBAM2stats bam=$<
-
-# %.bam.gene.stats: %.bam $(name)/data/$(reference_basename).exons.bed $(name)/data/$(reference_basename).introns.bed $(name)/data/$(reference_basename).chr_sizes.sorted.txt
-# 	echo -n "Exons	" > $@.tmp &&\
-# 	bedtools intersect -sorted -g $(name)/data/$(reference_basename).chr_sizes.sorted.txt -abam $<  -b $(name)/data/$(reference_basename).exons.bed |samtools view -c - >> $@.tmp && echo >> $@ &&\
-# 	echo -n "Introns	" >> $@.tmp &&\
-# 	bedtools intersect -sorted -g $(name)/data/$(reference_basename).chr_sizes.sorted.txt -abam $<  -b $(name)/data/$(reference_basename).introns.bed |samtools view -c - >> $@.tmp && echo >> $@ && \
-# 	expr `wc -l $@.tmp | cut -f 1 -d\ ` == 2 && \
-# 	mv $@.tmp $@
-
-# # bed files required to get some extra stats
-# # exons.bed
-# $(name)/data/$(reference_basename).exons.bed: $(gff3_file_abspath).filt.gff3 $(name)/data/$(reference_basename).chr_sizes.sorted.bed
-# 	cat $< | awk 'BEGIN{OFS="\t";} $$3=="exon" {print $$1,$$4,$$5,$$6,$$6,$$7}' | sort -u| bedtools sort -i /dev/stdin > $@.tmp.bed && \
-# 	bedtools merge -i $@.tmp.bed | bedtools sort -faidx $(name)/data/$(reference_basename).chr_sizes.sorted.bed -i /dev/stdin > $@.tmp && \
-# 	mv $@.tmp $@ && rm -f $@.tmp.bed
-
-# # genes.bed
-# $(name)/data/$(reference_basename).genes.bed: $(gff3_file_abspath).filt.gff3 $(name)/data/$(reference_basename).chr_sizes.sorted.bed
-# 	cat $< | awk 'BEGIN{OFS="\t";} $$3=="gene" {print $$1,$$4,$$5}' |  sort -u| bedtools sort -i /dev/stdin > $@.tmp.bed &&\
-# 	bedtools merge -i $@.tmp.bed  | bedtools sort -faidx $(name)/data/$(reference_basename).chr_sizes.sorted.bed -i /dev/stdin  > $@.tmp && \
-# 	mv $@.tmp $@ && rm -f $@.tmp.bed
-
-# # 
-# $(name)/data/$(reference_basename).genes.bed6: $(gtf_file_abspath)
-# 	sed -E 's/[^\t]*gene_id "([^;]+)".*$$/\1/' $< | awk 'BEGIN{OFS="\t";} $$3=="exon" {print $$1,$$4,$$5,$$9,$$6,$$7}' |  sort -u| bedtools sort -i /dev/stdin > $@.tmp.bed &&\
-# 	mv $@.tmp.bed $@ && rm -f $@.tmp.bed
-
-
-# # introns
-# $(name)/data/$(reference_basename).introns.bed: $(name)/data/$(reference_basename).genes.bed $(name)/data/$(reference_basename).exons.bed
-# 	bedtools subtract -sorted -a $< -b $(name)/data/$(reference_basename).exons.bed > $@.tmp && if [ `wc -l $@.tmp |cut -f 1 -d\ ` == 0 ]; then echo -e 'dummy_entry\t1\t1' > $@.tmp; fi && mv $@.tmp $@
-
-
-# ## transcripts
-# $(name)/data/$(reference_basename).transcripts.bed6:  $(gtf_file_abspath)
-# 	grep -E "(exon)" $< | sed -E 's/[^\t]*transcript_id "([^;]+)".*$$/\1/'|awk 'BEGIN{OFS="\t";} {print $$1,$$4,$$5,$$9,$$6,$$7}' |  sort -u| bedtools sort -i /dev/stdin > $@.tmp.bed &&\
-# 	mv $@.tmp.bed $@ && rm -f $@.tmp.bed
-
 # M
 # 
 define only_existing_files=
