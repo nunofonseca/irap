@@ -259,6 +259,10 @@ toplevel_output_folder=$(out_dir)
 $(shell mkdir -p $(toplevel_output_folder))
 $(info * toplevel_output_folder=$(toplevel_output_folder))
 
+
+STAGE6_TARGETS=
+STAGE2_TARGETS=
+
 #First target, so default one being run: run all the filtering steps.
 #Unless specified in argument, this will be run 
 go: all
@@ -856,8 +860,8 @@ endif
 # Output: filtered fastq file (*.filter2.fastq)
 # Filter: E.coli contamination - remove any E.coli contaminated reads
 
-#Paired end reads
-stage2: $(subst .fastq.gz,.filter2.fastq.gz,$(ORIGFILES)) 
+#
+STAGE2_TARGETS=$(subst .fastq.gz,.filter2.fastq.gz,$(ORIGFILES)) 
 
 #If NO test for contamination
 # Generate the files *filter2
@@ -866,9 +870,16 @@ ifeq ($(cont_index),no)
 %.filter2.fastq.gz: %.filter1.fastq.gz
 	rm -f $@ && ln -s $< $@
 else
+# contamination stats
+%.cont.stats.tsv: %.cont.bam %.f.csv
+	irap_cont_stats.R --bam $< --reads `cut -f 2 $*.f.csv -d,` --out $@.tmp && mv $@.tmp $@
+
+STAGE6_TARGETS+=$(subst .fastq.gz,.cont.stats.tsv,$(ORIGFILES)) 
+
+# TODO: if PE then align the two reads
 # check for contamination
 ifeq ($(mapper),bowtie)
-%.filter2.fastq.gz: %.filter1.fastq.gz
+%.filter2.fastq.gz %.cont.bam: %.filter1.fastq.gz
 	$(mapper_path) --sam -p $(threads) -v $(contamination_mismatches) -q $(mapper_extra_options) --phred$(qual)-quals  --un $@.tmp   $(cont_index)  <(zcat $<) | samtools view -b -F 4 -  > $*.cont.bam.tmp && \
 	( fastq_not_empty $@.tmp || (echo "ERROR: no reads pass the contamination filter ($<)" && exit 1 )) && \
 	gzip $@.tmp && \
@@ -876,13 +887,16 @@ ifeq ($(mapper),bowtie)
 endif
 
 ifeq ($(mapper),bowtie2)
-%.filter2.fastq.gz: %.filter1.fastq.gz
+%.filter2.fastq.gz %.cont.bam: %.filter1.fastq.gz
 	$(mapper_path) -p $(threads)   $(mapper_extra_options) --un $@.tmp  --fast-local  --phred$(qual) -x $(cont_index) -U <(zcat $<)   -S /dev/stdout  | samtools view -b -F 4 - > $*.cont.bam.tmp && \
 	( fastq_not_empty $@.tmp || (echo "ERROR: no reads pass the contamination filter ($<)" && exit 1 )) &&\
 	gzip $@.tmp && mv $*.cont.bam.tmp $*.cont.bam && mv $@.tmp.gz $@
 endif
 
 endif
+
+
+stage2: $(STAGE2_TARGETS)
 
 
 ################################################################
@@ -928,8 +942,8 @@ endif
 
 ################################################################
 # STAGE 6 
-
-stage6:	$(OUT_FASTQ_FILES) $(subst .fastq.gz,.csv,$(OUT_FASTQ_FILES))  $(subst .fastq.gz,.fastqc.tsv,$(OUT_FASTQ_FILES)) 
+STAGE6_TARGETS+=$(OUT_FASTQ_FILES) $(subst .fastq.gz,.csv,$(OUT_FASTQ_FILES))  $(subst .fastq.gz,.fastqc.tsv,$(OUT_FASTQ_FILES)) 
+stage6:	$(STAGE6_TARGETS)
 
 #$(info debug  	$(OUT_FASTQ_FILES) $(subst .fastq.gz,.csv,$(OUT_FASTQ_FILES))  $(subst .fastq.gz,.fastqc.tsv,$(OUT_FASTQ_FILES)) )
 ifeq ($(pe_data),1)
