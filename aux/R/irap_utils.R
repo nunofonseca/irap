@@ -125,48 +125,48 @@ load.gtf <- function(gtf.file,feature=NULL,selected.attr=NULL,gtf.format="auto")
   cnames <- formats.cols$gtf
   colnames(gtf)<-cnames[0:ncol(gtf)]
 
-  if (!is.null(feature)) {
-    gtf<- gtf[gtf$feature %in% feature,,drop=FALSE]
-  }
-  gtf$attributes <- as.character(gtf$attributes)
   # detect format
   if ( gtf.format=="auto" ) {
-    if (sum(grepl("level",head(gtf$attributes,50))) >0) {
-      gtf.format <- "gencode"
-    } else {
-      gtf.format <- "ensembl"
-    }
-    cat("GTF attributes ",gtf.format,"\n")
+      if (sum(grepl("level",as.character(head(gtf$attributes,50)))) >0) {
+          gtf.format <- "gencode"
+      } else {
+          gtf.format <- "ensembl"
+      }
+      cat("GTF attributes ",gtf.format,"\n")
   }
+
+  if ( !is.null(feature) ) {
+      if ( feature=="gene" && gtf.format=="ensembl" ) {
+          feature <- "CDS"
+      }
+      if ( feature=="transcript" && gtf.format=="ensembl" ) {
+          feature <- "CDS"
+      }
+  }
+  
+  if (!is.null(feature) ) {
+      if ( length(feature) > 1 )
+          gtf<- gtf[gtf$feature %in% feature,,drop=FALSE]
+      else
+          gtf<- gtf[gtf$feature==feature,,drop=FALSE]
+  }
+  gtf$attributes <- as.character(gtf$attributes)
   gtf.attributes.names<-attributes.cols[[gtf.format]]
 
   if ( !is.null(selected.attr) ) {
-      selected.attr.i <- append(selected.attr,"gene_biotype")
+      selected.attr.i <- unique(append(selected.attr,"gene_biotype"))
       gtf.attributes.names<- gtf.attributes.names[gtf.attributes.names %in% selected.attr.i]
   }
 
   num.attr <- length(gtf.attributes.names)
-  attr2vec <- function(s,gtf.attributes.names) {
-    a<-strsplit(mytrim(s),split=";([ ]?)+")
-    var.value <- function(s) {
-      rm <- regexec(pattern="^([^ ]+) (.+)$",s)
-      a2 <- regmatches(s,rm)
-      return(a2[[1]][-1])
-    }
-    a2 <- unlist(lapply(a[[1]],var.value))
-    #a2 <- unlist(strsplit(a[[1]]," ",fixed=T))
-    m <- matrix(a2,nrow=2,byrow=F)
-    x <- m[2,,drop=FALSE]
-    names(x) <- m[1,]
-    r <- rep(NA,num.attr)
-    names(r) <- gtf.attributes.names
-    attr.int <- names(x)[names(x)%in% gtf.attributes.names]
-    r[attr.int] <- x[attr.int]
-    r <- gsub("^\"","",gsub("\"$","",r))
-    return(r)
+  attr <- list()
+  for (att in gtf.attributes.names) {
+      print(att)
+      re.str <- paste0('^.*\\s?',att,'\\s\\"?([^;\\"]+)\\"?;.*')
+      attr[[att]] <- gsub(re.str,"\\1",gtf$attributes)
+      print(head(attr[[att]]))
   }
-  attr <- mclapply(gtf$attributes,attr2vec,gtf.attributes.names)
-  print(length(attr))
+
   if ( length(attr)!=0 ) {
   #attr2vec(gtf$attributes[1])
     vals<-matrix(unlist(attr),ncol=length(gtf.attributes.names),byrow=T)
