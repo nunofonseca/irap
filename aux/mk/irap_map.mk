@@ -415,7 +415,7 @@ hisat2_reference_prefix=$(reference_prefix)
 define run_hisat2_map=
         $(call hisat2_setup_dirs,$(1)) && \
 	irap_map.sh HISAT2 hisat2  -p $(max_threads)   $(hisat2_map_params) $(if $($(1)_rgid),--rg-id "$($(1)_rgid)")  $(call runtime_splicing_params,$(hisat2_reference_prefix),$(3))   $(hisat2_reference_prefix) $(call hisat2_file_params,$(1),$(2)) -S $(call lib2bam_folder,$(1))$(1)/$(1).tmp.sam &&\
-	samtools view -T $(reference_abspath)  -bS  $(call lib2bam_folder,$(1))$(1)/$(1).tmp.sam >  $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam  && \
+	samtools view --threads $(max_threads) -T $(reference_abspath)  -bS  $(call lib2bam_folder,$(1))$(1)/$(1).tmp.sam >  $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam  && \
 	rm -f  $(call lib2bam_folder,$(1))$(1)/$(1).tmp.sam && \
 	samtools sort --threads $(max_threads) -m $(SAMTOOLS_SORT_MEM) -T $(call lib2bam_folder,$(1))$(1)/$(1) -o $(call lib2bam_folder,$(1))$(1)/$(1).bam $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam   &&\
 	rm -f $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam &&\
