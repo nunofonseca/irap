@@ -1154,7 +1154,7 @@ $(name)/$(mapper)/$(quant_method)/%.exons.raw.$(exon_quant_method).quant_qc.tsv:
 	irap_quant_qc --ifile $< --feature exon --metric raw --$(expr_format) --gtf $(gtf_file_abspath) --out $@.tmp && mv $@.tmp $@
 
 $(name)/$(mapper)/$(quant_method)/%.transcripts.raw.$(quant_method).quant_qc.tsv: $(name)/$(mapper)/$(quant_method)/%.transcripts.raw.$(quant_method).$(expr_ext)
-	irap_quant_qc --ifle $< --feature transcript --$(expr_format) --metric raw --gtf $(gtf_file_abspath) --out $@.tmp && mv $@.tmp $@
+	irap_quant_qc --ifile $< --feature transcript --$(expr_format) --metric raw --gtf $(gtf_file_abspath) --out $@.tmp && mv $@.tmp $@
 
 #####################################
 ## ISL specific
