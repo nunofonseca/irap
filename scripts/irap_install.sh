@@ -283,8 +283,8 @@ SAMTOOLS_VERSION=0.1.19
 SAMTOOLS_FILE=samtools-$SAMTOOLS_VERSION.tar.bz2
 SAMTOOLS_URL=http://sourceforge.net/projects/samtools/files/samtools/$SAMTOOLS_VERSION/$SAMTOOLS_FILE
 
-# new samtools: 1.3-> 1.5
-SAMTOOLS1_VERSION=1.5
+# new samtools: 1.3-> 1.6
+SAMTOOLS1_VERSION=1.6
 SAMTOOLS1_FILE=samtools-$SAMTOOLS1_VERSION.tar.bz2
 SAMTOOLS1_URL=http://sourceforge.net/projects/samtools/files/samtools/$SAMTOOLS1_VERSION/$SAMTOOLS1_FILE
 
@@ -1067,8 +1067,8 @@ function samtools1_install {
     make prefix=$IRAP_DIR install
     mkdir -p $INC_DIR/bam
     cp *.h $INC_DIR/bam
-    mkdir  -p $INC_DIR/bam/htslib-1.5
-    cp htslib-1.5/*.h $INC_DIR/bam/htslib-1.5
+    mkdir  -p $INC_DIR/bam/htslib-1.6
+    cp htslib-1.6/*.h $INC_DIR/bam/htslib-1.6
     cp libbam.a $INC_DIR/bam
     #
     pwd
