@@ -296,6 +296,10 @@ htseq_sam_output_def?=n
 # only used if transcript quantification is y
 dt_fc?=2
 
+# Relative isoform usage?
+# if df_fc is different than 0 then Riu files are generated
+gen_riu?=n
+
 # DE
 def_de_pvalue_cutoff?=0.05
 def_de_num_genes_per_table?=300
@@ -1049,6 +1053,17 @@ $(info *	transcript_quant=$(transcript_quant))
 ## Needed for transcript quantification
 mapTrans2gene=$(name)/data/$(gtf_file_basename).mapTrans2Gene.tsv
 
+ifeq ($(transcript_quant),y)
+ifneq ($(dt_fc),n)
+override gen_riu:=n
+endif
+endif
+
+# disable dt and riu since the code still does not support mtx files efficiently
+ifeq ($(expr_ext),mtx)
+override gen_riu:=n
+override dt_fc:=n
+endif
 
 #####################
 # Exon quantification
