@@ -64,5 +64,5 @@ $(name)/$(mapper)/$(quant_method)/transcripts.raw.filtered.$(quant_method).$(exp
 STAGE4_OUTFILES+=$(filtered_expr_matrices) $(cell_qc_files)
 STAGE4_TARGETS+=$(filtered_expr_matrices)
 
-WAVE4_TARGETS+=$(cell_qc_files)
+WAVE5_TARGETS+=$(cell_qc_files)
 endif
