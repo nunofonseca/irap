@@ -18,7 +18,6 @@
 # along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-#    $Id: 0.1.3 Nuno Fonseca Wed Dec 26 16:16:19 2012$
 # =========================================================
 
 #************
@@ -182,7 +181,7 @@ GSE:
 endif
 
 STAGE5_OUT_FILES+=$(GSE_OUT_FILES)
-WAVE5_TARGETS+=$(GSE_OUT_FILES)
+WAVE6_TARGETS+=$(GSE_OUT_FILES)
 
 GSE_files:
 	echo $(GSE_OUT_FILES)
