@@ -95,8 +95,12 @@ $(name)/$(mapper)/libs_qc.tsv: $(name)/$(mapper)/stats_raw.tsv $(name)/$(mapper)
 	rm -f $@.1.tmp $@.2.tmp
 
 
-MAPPING_REPORT_PRE_STATS:=$(foreach s,$(se),$(call lib2bam_folder,$(s))$(s).se.hits.bam.stats.csv $(call lib2bam_folder,$(s))$(s).se.hits.bam.stats $(call lib2bam_folder,$(s))$(s).se.hits.bam.gene.stats) $(foreach s,$(pe),$(call lib2bam_folder,$(s))$(s).pe.hits.bam.stats.csv $(call lib2bam_folder,$(s))$(s).pe.hits.bam.stats $(call lib2bam_folder,$(s))$(s).pe.hits.bam.gene.stats)
+MAPPING_REPORT_PRE_STATS:=$(foreach s,$(se),$(call lib2bam_folder,$(s))$(s).se.hits.bam.stats.csv) $(foreach s,$(pe),$(call lib2bam_folder,$(s))$(s).pe.hits.bam.stats.csv   )
 
+## the reference in the BAMs generated with kallisto is not the genome
+ifneq ($(mapper),kallisto)
+MAPPING_REPORT_PRE_STATS+=$(foreach s,$(se), $(call lib2bam_folder,$(s))$(s).se.hits.bam.gene.stats  $(call lib2bam_folder,$(s))$(s).se.hits.bam.stats) $(foreach s,$(pe), $(call lib2bam_folder,$(s))$(s).pe.hits.bam.gene.stats $(call lib2bam_folder,$(s))$(s).pe.hits.bam.stats)
+endif	
 
 WAVE3_s_TARGETS+=$(MAPPING_REPORT_PRE_STATS)
 WAVE3_TARGETS+=$(name)/$(mapper)/libs_qc.tsv
