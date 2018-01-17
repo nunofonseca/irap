@@ -761,6 +761,8 @@ endif
 ################################################################
 ## single cell specific parameters
 
+CELL_TAG?=CR
+
 ## Simple cell filter
 ## Cells with less or equal than $(sc_non_zero_rows) are discarded
 sc_non_zero_rows=1
@@ -1314,7 +1316,15 @@ max_mem_gb:=$(shell expr $(max_mem) \/ 1000)
 
 # samtools 1.x
 ifndef SAMTOOLS_SORT_MEM
- SAMTOOLS_SORT_MEM:=$(shell bash -c "expr $(max_mem_gb) \* 75 \/ 100")G
+ SAMTOOLS_SORT_MEM:=$(shell bash -c "expr $(max_mem_gb) \* 75 \/ 100 \/ $(max_threads)")G
+endif
+
+
+# convert Gb to Mb - smatools sort controls better the memory usage with M
+MIN_MEM?=1
+ifndef SAMTOOLS_SORT_MEM_MT
+ SAMTOOLS_SORT_MEM_MT:=$(shell echo "($(max_mem_gb)-$(MIN_MEM))*0.5/($(max_threads)*1.33)*1000000000" | bc )
+#shell bash -c "expr \( $(max_mem_gb) - $(MIN_MEM) \) \* 50 \/ 100 \/ $(max_threads) ")
 endif
 
 
@@ -1615,19 +1625,20 @@ STAGE3_S_OFILES?=
 
 ifneq ($(mapper),none)
 
-
-
-STAGE2BYNAME_OUT_FILES:=$(foreach p,$(pe), $(call lib2bam_folder,$(p))$(p).pe.hits.byname.bam) $(foreach s,$(se), $(call lib2bam_folder,$(s))$(s).se.hits.byname.bam)
+bam_files:=$(foreach p,$(pe), $(call lib2bam_folder,$(p))$(p).pe.hits.byname.bam) $(foreach s,$(se), $(call lib2bam_folder,$(s))$(s).se.hits.bam)
+STAGE2BYNAME_OUT_FILES:=$(subst .hits.bam,.hits.byname.bam,$(bam_files))
 
 else
 
+bam_files=
 STAGE2_OUT_FILES=
 STAGE2BYNAME_OUT_FILES=
 
 endif
 
-bam_files=$(STAGE2_OUT_FILES)
-
+ifeq (umi_count,$(quant_method))
+WAVE3_p_TARGETS+=$(subst .hits.bam,.hits.bytag_$(CELL_TAG).bam,$(bam_files))
+endif
 
 
 
@@ -1805,7 +1816,18 @@ endif
 
 # sort a bam file by name and index
 %.byname.bam: %.bam
-	rm -f $*.byname.tmp.{0,1,2,3,4,5,6,7,8,9}*.bam && samtools sort --threads $(max_threads) -n -m $(SAMTOOLS_SORT_MEM) -T $*.byname.tmp -o $*.byname.tmp.bam $< && mv $*.byname.tmp.bam $@ 
+	rm -f $*.byname.tmp.{0,1,2,3,4,5,6,7,8,9}*.bam && samtools sort  -n -m $(SAMTOOLS_SORT_MEM) -T $*.byname.tmp -o $*.byname.tmp.bam $< && mv $*.byname.tmp.bam $@ 
+
+# 1 - tag
+define make-sort-bam-by-tag-rule=
+# sort a bam file by a tag
+%.bytag_$(1).bam: %.bam
+	mkdir -p $$* && rm -f $$*/* && \
+	samtools sort --thread $$(max_threads) -T $$*/ -m $$(SAMTOOLS_SORT_MEM_MT) -t $(1) $$< -o $$@.tmp && mv $$@.tmp $$@
+endef
+# rules to sort a bam file by the CB or CR tags
+$(foreach tag,CR CB,$(eval $(call make-sort-bam-by-tag-rule,$(tag))))
+
 
 # index a bam file
 %.bam.bai: %.bam
@@ -1934,7 +1956,6 @@ $(gff3_file_abspath): $(gtf_file_abspath)
 # Filter the gff3 file to contain only the chr that are in the fasta file
 # use the faidx file to ensure that the ordering is the same
 $(gff3_file_abspath).filt.gff3: $(gff3_file_abspath) $(name)/data/$(reference_basename).chr_sizes.sorted.bed 
-#$(name)/data/$(reference_basename).chr_sizes.sorted.txt
 	bedtools intersect -wa -a $(gff3_file_abspath) -b $(name)/data/$(reference_basename).chr_sizes.sorted.bed  > $@.tmp &&  bedtools sort -faidx $(name)/data/$(reference_basename).chr_sizes.sorted.bed  -i $@.tmp > $@.tmp2 && mv $@.tmp2 $@ && rm -f $@.tmp
 
 
@@ -2244,11 +2265,11 @@ $(name)/$(mapper)/scripture/%.pe.scripture.tsv: $(name)/$(mapper)/%.pe.hits.bam 
 
 
 $(name)/$(mapper)/$(quant_method)/alignments.bam: $(foreach p,$(pe),$(name)/$(mapper)/$(p).pe.hits.byname.bam) $(foreach s,$(se),$(name)/$(mapper)/$(s).se.hits.byname.bam)
-	$(call samcat,$^) | samtools sort --threads $(max_threads) -m $(SAMTOOLS_SORT_MEM) -T $@.sorted -o $@.sorted.bam -  && mv  $@.sorted.bam $@  && samtools index $@
+	$(call samcat,$^) | samtools sort -m $(SAMTOOLS_SORT_MEM) -T $@.sorted -o $@.sorted.bam -  && mv  $@.sorted.bam $@  && samtools index $@
 
 
 $(name)/$(mapper)/$(quant_method)/alignments.bam.paired.bam: $(foreach p,$(pe),$(name)/$(mapper)/$(p).pe.hits.byname.bam)
-	$(call samcat,$^) | samtools sort  --threads $(max_threads) -m $(SAMTOOLS_SORT_MEM) -T $@.tmp -o $@.tmp.bam -  && mv $@.tmp.bam $@ && samtools index $@
+	$(call samcat,$^) | samtools sort  -m $(SAMTOOLS_SORT_MEM) -T $@.tmp -o $@.tmp.bam -  && mv $@.tmp.bam $@ && samtools index $@
 
 #
 #A 2-column tab separated file containing the chromosome name and size for the organism.
@@ -2447,7 +2468,7 @@ save_cache:
 ## job scheduler
 ## targets are placed into bins/waves
 
-phony_targets+= run_wave_b run_wave_0 run_wave_1 run_wave_2 run_wave_3 run_wave_4 run_wave_5 run_wave3_s run_wave_6
+phony_targets+= run_wave_b run_wave_0 run_wave_1 run_wave_2 run_wave_3 run_wave_4 run_wave_5 run_wave3_s run_wave3_p run_wave_6 run_wave_7
 
 # Note
 # targets variables should contain the name of targets that may be run in parallel 
@@ -2459,10 +2480,14 @@ WAVE1_TARGETS+=$(STAGE1_TARGETS)
 WAVE2_TARGETS+=
 # $(STAGE3_TARGETS)
 WAVE3_TARGETS+=
+# targets that should be complete before running stage3
+# e.g., post alignment (sorting bams)
+WAVE3_p_TARGETS+=
 WAVE3_s_TARGETS+=
 WAVE4_TARGETS+=
 WAVE5_TARGETS+=
 WAVE6_TARGETS+=
+WAVE7_TARGETS+=
 
 run_wave_b: $(WAVEB_TARGETS)
 run_wave_0: $(WAVE0_TARGETS)
@@ -2470,9 +2495,11 @@ run_wave_1: $(WAVE1_TARGETS)
 run_wave_2: $(WAVE2_TARGETS)
 run_wave_3: $(WAVE3_TARGETS)
 run_wave_3_s: $(WAVE3_s_TARGETS)
+run_wave_3_p: $(WAVE3_p_TARGETS)
 run_wave_4: $(WAVE4_TARGETS)
 run_wave_5: $(WAVE5_TARGETS)
 run_wave_6: $(WAVE6_TARGETS)
+run_wave_7: $(WAVE7_TARGETS)
 
 print_wave_b_targets:
 	echo $(sort $(WAVEB_TARGETS))
@@ -2492,6 +2519,9 @@ print_wave_3_targets:
 print_wave_3_s_targets:
 	echo $(sort $(WAVE3_s_TARGETS))
 
+print_wave_3_p_targets:
+	echo $(sort $(WAVE3_p_TARGETS))
+
 print_wave_4_targets:
 	echo $(sort $(WAVE4_TARGETS))
 
@@ -2500,6 +2530,10 @@ print_wave_5_targets:
 
 print_wave_6_targets:
 	echo $(sort $(WAVE6_TARGETS))
+
+print_wave_7_targets:
+	echo $(sort $(WAVE7_TARGETS))
+
 ###################################################
 # Keep the versions used in the top level folder
 $(name)/version: $(IRAP_DIR)/version
