@@ -1100,18 +1100,19 @@ $(name)/$(mapper)/$(quant_method)/transcripts.dt.$(quant_method).irap.$(expr_ext
 
 # include the raw counts
 ifeq ($(transcript_expr),n)
-
 define transcripts_quant_file=
 endef
 define transcripts_quant_files=
 endef
+
 else
 
 STAGE3_S_OFILES+= $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).$(expr_ext)
 
+ifeq ($(gen_riu),y)
+
 # do not get the dominant transcript
 ifeq ($(dt_fc),n)
-
 trans_file_target=riu
 else
 trans_file_target=dt
@@ -1140,8 +1141,13 @@ define transcripts_quant_files=
 $(if $(filter y,$(transcript_quant)),$(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.$(trans_file_target).$(quant_method).irap.$(expr_ext)) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.$(trans_file_target).$(quant_method).irap.$(expr_ext)),)
 endef
 
-
-#STAGE3_S_TARGETS+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).tsv)
+# gen_riu
+else
+define transcripts_quant_file=
+endef
+define transcripts_quant_files=
+endef
+endif
 
 # Atlas specific - get fpkms and tpms
 ifdef atlas_run
@@ -1151,6 +1157,7 @@ STAGE3_S_TARGETS+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.trans
 STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.fpkm.$(quant_method).irap.$(expr_ext) $(call lib2quant_folder,$(p))$(p).pe.transcripts.tpm.$(quant_method).irap.$(expr_ext)) $(foreach s,$(se),  $(call lib2quant_folder,$(s))$(s).se.transcripts.fpkm.$(quant_method).irap.$(expr_ext) $(call lib2quant_folder,$(s))$(s).se.transcripts.tpm.$(quant_method).irap.$(expr_ext))
 endif
 
+# transcript_expr
 endif
 else
 # no transcript quantification
@@ -1159,6 +1166,7 @@ endef
 define transcripts_quant_files=
 endef
 endif
+
 
 
 ##################################
