@@ -98,10 +98,12 @@ pinfo("Loading ",opt$ifile," done.")
 
 do.clustering <- TRUE
 
-if ( is.null(table) ) 
+if ( is.null(table) )  {
     do.clustering <- FALSE
-else if ( ncol(table)<=3 ) 
-    do.clustering <- FALSE
+} else {
+    if ( ncol(table)<=3 ) 
+        do.clustering <- FALSE
+}
 
 if (!do.clustering) {
     perror("Insufficient samples/cells to cluster")
@@ -179,16 +181,6 @@ if (nrow(clusters.m)==0) {
 ## Marker genes for each cluster
 ## gene x #clusters
 pinfo("Preparing to save marker genes")
-## l <- matrix(nrow=0,ncol=ncol(table))
-## for (k in seq(k.range[1],k.range[2])) {
-##     p_data <- pData(sceset)
-##     label <- paste0("sc3_",k,"_clusters")
-##     ##pData(sceset)[,label]
-##     clus <- p_data[,label]
-##     names(clus) <- rownames(p_data)
-##     l <- cbind(l,clus[colnames(l)])
-## }
-## l <- as.data.frame(cbind(K=seq(k.range[1],k.range[2]),l))
 
 ## TODO: parameter
 p.val.cutoff <- 0.01
