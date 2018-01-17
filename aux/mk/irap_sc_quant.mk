@@ -116,14 +116,17 @@ endif
 #*****************
 
 ifeq (umi_count,$(quant_method))
+
+#WAVE3_p_TARGETS+=$(subst .hits.bam,.hits.bytag_$(CELL_TAG).bam,$(WAVE2_TARGETS))
+
+
 # $1 - lib
 # $2 - bam file prefix (includes .se|.pe)
 # $3 - gene|transcript
 # $4 - column in the reference file (mapTrans2gene) with all genes/transcripts
 define make-iumi-count-rule=
-$(call lib2quant_folder,$(1))$(2).$(3)s.raw.$(quant_method).mtx.gz: $(call lib2bam_folder,$(1))$(2).hits.bam  $$(mapTrans2gene) $($(1)_known_umi_file) $($(1)_known_cells_file)
-	mkdir -p $$(@D) && \
-	time bam_umi_count --bam $$< --ucounts $(call lib2quant_folder,$(1))$(2).$(3)s.raw.$(quant_method).mtx --rcounts $(call lib2quant_folder,$(1))$(2).$(3)s.raw.$(quant_method).reads.mtx $$(bam_umi_count_params) $(if $($(1)_known_umi_file),--known_umi $($(1)_known_umi_file),) $(if $($(1)_known_cells_file),--known_cells $($(1)_known_cells_file),) --tag $(call get_bam_tag,$(3))  $(if $($(1)_sample_name),--cell_suffix "-$($(1)_sample_name)",) --max_cells $(sc_max_cells) --max_feat $(sc_max_features) --feat_cell $(sc_feat_cell) && gzip -f $(call lib2quant_folder,$(1))$(2).$(3)s.raw.$(quant_method).mtx_{rows,cols} && gzip -f $(call lib2quant_folder,$(1))$(2).$(3)s.raw.$(quant_method).mtx || ( rm -f $$@ && exit 1)
+$(call lib2quant_folder,$(1))$(2).$(3)s.raw.$(quant_method).mtx.gz: $(call lib2bam_folder,$(1))$(2).hits.bytag_$(CELL_TAG).bam  $$(mapTrans2gene) $($(1)_known_umi_file) $($(1)_known_cells_file)
+	time bam_umi_count --sorted_by_cell --cell_tag $(CELL_TAG) --bam $$< --ucounts $(call lib2quant_folder,$(1))$(2).$(3)s.raw.$(quant_method).mtx --rcounts $(call lib2quant_folder,$(1))$(2).$(3)s.raw.$(quant_method).reads.mtx $$(bam_umi_count_params) $(if $($(1)_known_umi_file),--known_umi $($(1)_known_umi_file),) $(if $($(1)_known_cells_file),--known_cells $($(1)_known_cells_file),) --tag $(call get_bam_tag,$(3))  $(if $($(1)_sample_name),--cell_suffix "-$($(1)_sample_name)",) --max_cells $(sc_max_cells) --max_feat $(sc_max_features) --feat_cell $(sc_feat_cell) && gzip -f $(call lib2quant_folder,$(1))$(2).$(3)s.raw.$(quant_method).mtx_{rows,cols} && gzip -f $(call lib2quant_folder,$(1))$(2).$(3)s.raw.$(quant_method).mtx || ( rm -f $$@ && exit 1)
 endef
 
 # irap_sc conf=conf/sc/10x_v2_pbmc.conf stage3  mapper=bowtie2 quant_method=irap_umi_count se=SE1
