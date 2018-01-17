@@ -28,7 +28,7 @@ de_targets=
 ifneq (none,$(de_method))
 de_targets+=$(foreach cont,$(contrasts),$(name)/$(mapper)/$(quant_method)/$(de_method)/$(cont).genes_de.tsv)
 STAGE4_OUT_FILES+=$(de_targets)
-WAVE4_TARGETS+=$(de_targets)
+WAVE5_TARGETS+=$(de_targets)
 endif
 
 phony_targets+= de_files DE
