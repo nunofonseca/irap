@@ -103,27 +103,19 @@ wf1=`submit_jobs4stage $wf0 1|tail -n 1`
 stop_now 1 $wfb $wf1
 wf2=`submit_jobs4stage $wf1 2|tail -n 1`
 stop_now 2 $wfb $wf2
-# if [ "$level-" == "1-" ]; then
-#     wf3=`stage1_jobs $wf2|tail -n 1`
-#     stop_now 1  $wf1 $wf3
-# else
-#     if [ "$level-" == "2-" ]; then
-# 	wf3=`stage12_jobs $wf2|tail -n 1`
-# 	stop_now 2  $wf1 $wf3
-#     else
-# 	wf3=`stage123_jobs $wf2|tail -n 1`
-#     fi
-# fi
 
-wf3s=`submit_jobs4stage $wf2 3_s|tail -n 1`
+wf3p=`submit_jobs4stage $wf2 3_p|tail -n 1`
+wf3s=`submit_jobs4stage $wf3p 3_s|tail -n 1`
 wf3=`submit_jobs4stage $wf3s 3|tail -n 1`
 stop_now 3 $wfb $wf3
 wf4=`submit_jobs4stage $wf3 4|tail -n 1`
 stop_now 4 $wfb $wf4
 wf5=`submit_jobs4stage $wf4 5 |tail -n 1`
-stop_now 4 $wfb $wf5
+stop_now 5 $wfb $wf5
 wf6=`submit_jobs4stage $wf5 6 |tail -n 1`
+stop_now 6 $wfb $wf6
+wf7=`submit_jobs4stage $wf6 7 |tail -n 1`
 
-final_job $wf6 $wf0 6
+final_job $wf7 $wf0 7
 exit
 
