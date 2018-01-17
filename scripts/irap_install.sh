@@ -293,8 +293,8 @@ VCFTOOLS_FILE=vcftools-$VCFTOOLS_VERSION.tar.gz
 VCFTOOLS_URL=https://github.com/vcftools/vcftools/releases/download/v$VCFTOOLS_VERSION/$VCFTOOLS_FILE
 
 
-# 1.3->1.5
-BCFTOOLS_VERSION=1.5
+# 1.3->1.6
+BCFTOOLS_VERSION=1.6
 BCFTOOLS_FILE=bcftools-$BCFTOOLS_VERSION.tar.bz2
 BCFTOOLS_URL=https://github.com/samtools/bcftools/releases/download/$BCFTOOLS_VERSION/$BCFTOOLS_FILE
 
