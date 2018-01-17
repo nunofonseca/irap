@@ -24,8 +24,8 @@ define bam_fix_nh=
 $(if $(subst y,,$(fix_NH)),mv $(1) $(2),bam_fix_NH $(1) $(2))
 endef
 
-ifndef SAMTOOLS_SORT_MEM
-SAMTOOLS_SORT_MEM=5000000000
+ifndef SAMTOOLS_SORT_MEM_MT
+SAMTOOLS_SORT_MEM_MT=5000000000
 endif
 
 run_picard=java -jar $(abspath  $(irap_path)/../bin/picard-tools/$(1).jar)
@@ -140,7 +140,7 @@ define run_bowtie1_map=
 	irap_map.sh  bowtie1 bowtie  $(bowtie1_map_params) $(subst .1.ebwt,,$(index_files)) $(call bowtie1_file_params,$(1),$(2))  | \
 	samtools view -T $(reference_abspath) -F 0xC -bS - > $(3).tmp.bam && \
 	$(call bam_fix_nh,$(3).tmp.bam,-) | \
-	samtools sort --threads $(max_threads) -m $(SAMTOOLS_SORT_MEM) -T $(3).tmp -o $(3).tmp.bam - && \
+	samtools sort --threads $(max_threads) -m $(SAMTOOLS_SORT_MEM_MT) -T $(3).tmp -o $(3).tmp.bam - && \
 	$(call do_post_process_bam_cmd,$(3).tmp.bam,$(3).tmp.bam)  && \
 	rm -f $(3).tmp2.bam && \
 	mv $(3).tmp.bam $(3)
@@ -182,7 +182,7 @@ define run_bowtie2_map=
 	irap_map.sh  bowtie2 bowtie2  $(bowtie2_map_params)  $(if $($(1)_rgid),--rg-id "$($(1)_rgid)",) -x $(subst .1.bt2,,$(index_files)) $(call bowtie2_file_params,$(1),$(2))  | \
 	samtools view -T $(reference_abspath) -F 0xC -bS - > $(3).tmp.bam && \
 	$(call bam_fix_nh,$(3).tmp.bam,-) | \
-	samtools sort --threads $(max_threads) -m $(SAMTOOLS_SORT_MEM) -T $(3).tmp -o $(3).tmp.bam -  && \
+	samtools sort --threads $(max_threads) -m $(SAMTOOLS_SORT_MEM_MT) -T $(3).tmp -o $(3).tmp.bam -  && \
 	$(call do_post_process_bam_cmd,$(3).tmp.bam,$(3).tmp.bam)  && \
 	$(call bam_rehead,$(3).tmp.bam,$(1)) && \
 	rm -f $(3).tmp2.bam && \
@@ -286,7 +286,7 @@ define run_tophat1_map=
 	irap_map.sh tophat1 tophat  -p $(max_threads) $(call tophat_seglength_option,$($(1)_rs),$(1)) $(call tophat_qual_option,$($(1)_qual)) $(call tophat_strand_params,$(1)) $(tophat1_map_params) $(call tophat_ins_sd_params,$(1)) --no-sort-bam  $(if $($(1)_rgid),--rg-id "$($(1)_rgid)" --rg-sample "$($(1)_rgid)") -G $(gtf_file_abspath) --tmp-dir $(call lib2bam_folder,$(1))$(1)/tmp -o $(call lib2bam_folder,$(1))$(1)	 $(tophat_reference_prefix) $(2) &&\
 	irap_bam_fixSQ_order $(call lib2bam_folder,$(1))$(1)/accepted_hits.bam $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam && \
 	rm -f $(call lib2bam_folder,$(1))$(1)/$(1).0{0,1,2,3,4,5,6,7,8,9}*.bam && \
-	samtools sort --threads $(max_threads) -m $(SAMTOOLS_SORT_MEM) -T $(call lib2bam_folder,$(1))$(1)/$(1) -o $(call lib2bam_folder,$(1))$(1)/$(1).bam $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam  && \
+	samtools sort --threads $(max_threads) -m $(SAMTOOLS_SORT_MEM_MT) -T $(call lib2bam_folder,$(1))$(1)/$(1) -o $(call lib2bam_folder,$(1))$(1)/$(1).bam $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam  && \
 	rm -f $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam  && \
 	$(call do_post_process_bam_cmd,$(call lib2bam_folder,$(1))$(1)/$(1).bam,$(call lib2bam_folder,$(1))$(1)/$(1).bam)  && \
 	$(call bam_rehead,$(call lib2bam_folder,$(1))$(1)/$(1).bam,$(1)) && \
@@ -309,7 +309,7 @@ define run_tophat2_map=
 	bam_tophat2_fix - - > $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam && \
 	irap_bam_fixSQ_order $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam $(call lib2bam_folder,$(1))$(1)/$(1).tmp2.bam && \
 	rm -f $(call lib2bam_folder,$(1))$(1)/$(1).0{0,1,2,3,4,5,6,7,8,9}*.bam && \
-	samtools sort --threads $(max_threads) -m $(SAMTOOLS_SORT_MEM) -T $(call lib2bam_folder,$(1))$(1)/$(1) -o $(call lib2bam_folder,$(1))$(1)/$(1).bam  $(call lib2bam_folder,$(1))$(1)/$(1).tmp2.bam  &&\
+	samtools sort --threads $(max_threads) -m $(SAMTOOLS_SORT_MEM_MT) -T $(call lib2bam_folder,$(1))$(1)/$(1) -o $(call lib2bam_folder,$(1))$(1)/$(1).bam  $(call lib2bam_folder,$(1))$(1)/$(1).tmp2.bam  &&\
 	rm -f $(call lib2bam_folder,$(1))$(1)/$(1).tmp2.bam  && \
 	$(call do_post_process_bam_cmd,$(call lib2bam_folder,$(1))$(1)/$(1).bam,$(call lib2bam_folder,$(1))$(1)/$(1).bam)  && \
 	$(call bam_rehead,$(call lib2bam_folder,$(1))$(1)/$(1).bam,$(1)) && \
@@ -415,9 +415,9 @@ hisat2_reference_prefix=$(reference_prefix)
 define run_hisat2_map=
         $(call hisat2_setup_dirs,$(1)) && \
 	irap_map.sh HISAT2 hisat2  -p $(max_threads)   $(hisat2_map_params) $(if $($(1)_rgid),--rg-id "$($(1)_rgid)")  $(call runtime_splicing_params,$(hisat2_reference_prefix),$(3))   $(hisat2_reference_prefix) $(call hisat2_file_params,$(1),$(2)) -S $(call lib2bam_folder,$(1))$(1)/$(1).tmp.sam &&\
-	samtools view --threads $(max_threads) -T $(reference_abspath)  -bS  $(call lib2bam_folder,$(1))$(1)/$(1).tmp.sam >  $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam  && \
+	samtools view --threads $(max_threads) -t $(reference_abspath).chr_sizes.sorted.txt  -bS  $(call lib2bam_folder,$(1))$(1)/$(1).tmp.sam >  $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam  && \
 	rm -f  $(call lib2bam_folder,$(1))$(1)/$(1).tmp.sam && \
-	samtools sort --threads $(max_threads) -m $(SAMTOOLS_SORT_MEM) -T $(call lib2bam_folder,$(1))$(1)/$(1) -o $(call lib2bam_folder,$(1))$(1)/$(1).bam $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam   &&\
+	samtools sort --threads $(max_threads) -m $(SAMTOOLS_SORT_MEM_MT) -T $(call lib2bam_folder,$(1))$(1)/$(1) -o $(call lib2bam_folder,$(1))$(1)/$(1).bam $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam   &&\
 	rm -f $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam &&\
 	$(call do_post_process_bam_cmd,$(call lib2bam_folder,$(1))$(1)/$(1).bam,$(call lib2bam_folder,$(1))$(1)/$(1).bam)  && \
 	$(call bam_rehead,$(call lib2bam_folder,$(1))$(1)/$(1).bam,$(1)) && \
@@ -458,7 +458,7 @@ define run_smalt_map=
 	irap_map.sh smalt smalt_x86_64 map $(smalt_map_params) $(call smalt_ins_param,$(1)) -o $(3).unsrt.sam $(index_files) $(2) && \
 	samtools view -T $(reference_abspath) -bS $(3).unsrt.sam > $(3).tmp.bam  && \
 	$(call bam_fix_nh,$(3).tmp.bam,$(3).unsrt.bam) && \
-	samtools sort --threads $(max_threads) -m $(SAMTOOLS_SORT_MEM) -T $(3).tmp2 -o $(3).tmp2.bam $(3).unsrt.bam  && \
+	samtools sort --threads $(max_threads) -m $(SAMTOOLS_SORT_MEM_MT) -T $(3).tmp2 -o $(3).tmp2.bam $(3).unsrt.bam  && \
 	rm -f $(3).tmp.bam $(3).unsrt.* && \
 	mv $(3).tmp2.bam $(3)
 endef
@@ -499,7 +499,7 @@ endef
 define run_gsnap_map=
 	irap_map.sh gsnap gsnap $(gsnap_map_params) $(if $($(1)_rgid),--read-group-id $($(1)_rgid),)  $(call gsnap_ins_param,$(1)) --gunzip  -D $(reference_dir) -d `basename $(index_files)|sed "s/.index//"` $(2)  | samtools view -T $(reference_abspath) -bS - > $(3).tmp.bam &&
 	irap_bam_fixSQ_order $(3).tmp.bam $(3).tmp2.bam &&\
-	samtools sort --threads $(max_threads) -m $(SAMTOOLS_SORT_MEM) -T $(3).tmp -o $(3).tmp.bam  $(3).tmp2.bam  && \
+	samtools sort --threads $(max_threads) -m $(SAMTOOLS_SORT_MEM_MT) -T $(3).tmp -o $(3).tmp.bam  $(3).tmp2.bam  && \
 	rm -f $(3).tmp2.bam && \
 	$(call do_post_process_bam_cmd,$(3).tmp.bam,$(3).tmp.bam)  && \
 	$(call bam_rehead,$(3).tmp.bam,$(1)) && \
@@ -554,7 +554,7 @@ define run_soapsplice_map=
 	$(call bam_fix_nh,$(3).unsrt.bam,$(3).unsrt2.bam) && rm -f $(3).unsrt.* && \
 	echo "@HD	VN:1.0	SO:coordinate" > $(3).tmp.H && \
 	samtools view -H  $(3).unsrt2.bam >> $(3).tmp.H && \
-	samtools reheader $(3).tmp.H $(3).unsrt2.bam | samtools sort -m $(SAMTOOLS_SORT_MEM) -T $(3).tmp -o $(3).tmp.bam  -  && \
+	samtools reheader $(3).tmp.H $(3).unsrt2.bam | samtools sort -m $(SAMTOOLS_SORT_MEM_MT) -T $(3).tmp -o $(3).tmp.bam  -  && \
 	rm -f $(3).tmp.H  $(3).unsrt2.bam && \
 	$(call bam_rehead,$(3).tmp.bam,$(1)) && \
 	mv $(3).tmp.bam $(3)
@@ -592,7 +592,7 @@ define run_bwa1_map=
 	$(if $(findstring $(1),$(pe)),$(call bwa1_map_pe,$(1),$(2),$(3)),$(call bwa1_map_se,$(1),$(2),$(3))) &&\
 	samtools view -T $(reference_abspath) -bS $(3).sam > $(3).tmp.bam &&\
 	$(call bam_fix_nh,$(3).tmp.bam,-) | \
-	samtools sort --threads $(max_threads) -m $(SAMTOOLS_SORT_MEM) -T $(3).tmp  -o $(3).tmp.bam - && \
+	samtools sort --threads $(max_threads) -m $(SAMTOOLS_SORT_MEM_MT) -T $(3).tmp  -o $(3).tmp.bam - && \
 	mv $(3).tmp.bam $(3)
 endef
 
@@ -615,7 +615,7 @@ define run_bwa2_map=
 	irap_map.sh bwa bwa bwasw $(bwa2_map_params)  $(subst .amb,,$(index_files)) $(2) | \
 	samtools view -T $(reference_abspath) -bS - > $(3).tmp.bam &&\
 	$(call bam_fix_nh,$(3).tmp.bam,-)  | \
-	samtools sort --threads $(max_threads) -m $(SAMTOOLS_SORT_MEM) -T $(3).tmp -o $(3).tmp.bam -  && \
+	samtools sort --threads $(max_threads) -m $(SAMTOOLS_SORT_MEM_MT) -T $(3).tmp -o $(3).tmp.bam -  && \
 	rm -f $(3).tmp2.bam && \
 	mv $(3).tmp.bam $(3)
 endef
@@ -686,7 +686,7 @@ define run_gem_map=
 	 irap_map.sh GEM  gem-2-sam -i $(3).gem.map -I $(index_files) --emit-correct-flags -T $(max_threads) $(call gem2sam_pairing_param,$(1)) $(call gem_qual_option,$($(1)_qual)) $(if $($(1)_rgid),--read-group  "ID=$($(1)_rgid)",)  -o /dev/fd/1 | sed  -e 's/\([a-zA-Z0-9]\+\) dna/\1/g'   | \
 	 samtools  view -T $(reference_abspath) -bS - > $(3).tmp2.bam &&\
 	 bam_fix_se_flag $(3).tmp2.bam - | \
-	 samtools sort --threads $(max_threads)  -m $(SAMTOOLS_SORT_MEM) -T $(3).tmp  -o $(3).tmp.bam -   && \
+	 samtools sort --threads $(max_threads)  -m $(SAMTOOLS_SORT_MEM_MT) -T $(3).tmp  -o $(3).tmp.bam -   && \
 	 $(call bam_rehead,$(3).tmp.bam,$(1)) && \
 	 mv $(3).tmp.bam $(3) && rm -rf $(3).tmp2* $(3).tmp.*
 endef
@@ -721,7 +721,7 @@ define run_gems_map=
 	 irap_map.sh GEM  gem-2-sam -i $(3).gems.map -I $(index_files) --emit-correct-flags -T $(max_threads) $(call gem2sam_pairing_param,$(1)) $(call gem_qual_option,$($(1)_qual)) -o /dev/fd/1 | sed  -e 's/\([a-zA-Z0-9]\+\) dna/\1/g'   | \
 	 samtools  view -T $(reference_abspath) -bS - > $(3).tmp2.bam &&\
 	 bam_fix_se_flag $(3).tmp2.bam - | \
-	 samtools sort --threads $(max_threads) -m $(SAMTOOLS_SORT_MEM) -T $(3).tmp  -o $(3).tmp.bam  -    && \
+	 samtools sort --threads $(max_threads) -m $(SAMTOOLS_SORT_MEM_MT) -T $(3).tmp  -o $(3).tmp.bam  -    && \
 	 mv $(3).tmp.bam $(3) && rm -rf $(3).tmp2* $(3).tmp.*
 
 endef
@@ -874,7 +874,7 @@ define run_star_map=
 	$(if $(filter-out n,$(transcript_quant)), --quantMode TranscriptomeSAM, )  &&\
 	irap_bam_fixSQ_order $(call lib2bam_folder,$(1))$(1)Aligned.out.bam $(call lib2bam_folder,$(1))$(1)Aligned.out2.bam && mv $(call lib2bam_folder,$(1))$(1)Aligned.out2.bam $(call lib2bam_folder,$(1))$(1)Aligned.out.bam && \
 	bam_fix_se_flag $(call lib2bam_folder,$(1))$(1)Aligned.out.bam - | \
-	samtools sort --threads $(max_threads) -m $(SAMTOOLS_SORT_MEM) -T  $(call lib2bam_folder,$(1))$(1).tmp  -o $(call lib2bam_folder,$(1))$(1).tmp.bam -  && \
+	samtools sort --threads $(max_threads) -m $(SAMTOOLS_SORT_MEM_MT) -T  $(call lib2bam_folder,$(1))$(1).tmp  -o $(call lib2bam_folder,$(1))$(1).tmp.bam -  && \
 	$(call bam_rehead,$(call lib2bam_folder,$(1))$(1).tmp.bam,$(1)) && \
 	$(if $(filter-out n,$(transcript_quant)),mv $(call lib2bam_folder,$(1))$(1)Aligned.toTranscriptome.out.bam $(3).trans.bam && $(call do_post_process_bam_cmd,$(3).trans.bam,$(3).trans.bam),true) &&\
 	$(call do_post_process_bam_cmd,$(call lib2bam_folder,$(1))$(1).tmp.bam,$(call lib2bam_folder,$(1))$(1).tmp.bam)  && \
@@ -962,7 +962,7 @@ define run_osa_map=
 	$(call osa_conf_file,$(1),$(2),`dirname $(3)`/$(1)_tmp) > $(3).conf && \
 	irap_map.sh osa osa.exe -alignrna $(word 1,$(files_indexed)).osa/ $(call osa_ref_lib_name,$(word 1,$(files_indexed))) \
 	$(call osa_gene_model_name) $(3).conf && \
-	samtools sort --threads $(max_threads) -m $(SAMTOOLS_SORT_MEM) -T $(3).tmp -o $(3).tmp.bam `dirname $(3)`/$(if $(findstring $(1),$(pe)),$(1)_f.bam,$(1).f.bam)  &&\
+	samtools sort --threads $(max_threads) -m $(SAMTOOLS_SORT_MEM_MT) -T $(3).tmp -o $(3).tmp.bam `dirname $(3)`/$(if $(findstring $(1),$(pe)),$(1)_f.bam,$(1).f.bam)  &&\
 	$(call bam_rehead,$(3).tmp.bam,$(1)) && \
 	mv $(3).tmp.bam $(3) && rm -f `dirname $(3)`/$(1)_f.bam  && rm -f $(3).conf
 endef
@@ -1029,7 +1029,7 @@ define run_mapsplice_map=
 	 irap_map.sh mapsplice python $(IRAP_DIR)/bin/mapsplice/mapsplice.py  $(mapsplice_map_params) --threads	 $(max_threads) --bam -o  $(call lib2bam_folder,$(1))$(1) --chromosome-dir $(call mapsplice_index_dir,$(word 1,$(files_indexed)))/seqs --bowtie-index  $(call mapsplice_index_prefix,$(word 1,$(files_indexed))) $(call mapsplice_file_params,$(1),$(2)) &&\
 	samtools fixmate  $(call lib2bam_folder,$(1))$(1)/alignments.bam $(3).fix.bam && \
 	$(call bam_fix_nh,$(3).fix.bam,-) | \
-	samtools sort --threads $(max_threads) -m $(SAMTOOLS_SORT_MEM) -T $(3).tmp -o $(3).tmp.bam -  && \
+	samtools sort --threads $(max_threads) -m $(SAMTOOLS_SORT_MEM_MT) -T $(3).tmp -o $(3).tmp.bam -  && \
 	$(call bam_rehead,$(3).tmp.bam,$(1)) && \
 	mv $(3).tmp.bam $(3) && rm -f $(3).fix.bam
 endef
@@ -1070,7 +1070,7 @@ define run_kallisto_map=
 	irap_wrapper.sh kallisto kallisto pseudo $(if $(call is_pe_lib,$(1)),,--single -l $($(1)_rs) -s 1)  $(call kallisto_strand_params,$(1))  $(kallisto_map_params) -i $(call kallisto_index_prefix) -o $(dir $(call lib2bam_folder,$(1))$(1)) $(2)  | \
 	samtools view -b - > $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam && \
 	$(call do_post_process_trans_bam_cmd,$(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam, $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam) &&\
-	samtools sort --threads $(max_threads) -m $(SAMTOOLS_SORT_MEM) -T $(call lib2bam_folder,$(1))$(1)/$(1) -o $(call lib2bam_folder,$(1))$(1)/$(1).bam $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam && \
+	samtools sort --threads $(max_threads) -m $(SAMTOOLS_SORT_MEM_MT) -T $(call lib2bam_folder,$(1))$(1)/$(1) -o $(call lib2bam_folder,$(1))$(1)/$(1).bam $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam && \
 	$(call bam_rehead,$(call lib2bam_folder,$(1))$(1)/$(1).bam,$(1)) && \
 	mv $(call lib2bam_folder,$(1))$(1)/$(1).bam $(3)	
 endef
