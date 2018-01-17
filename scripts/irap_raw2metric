@@ -38,7 +38,7 @@ usage <- "irap_raw2metric --tsv file --lengths lengths.Rdata [options]"
 filenames <- c("ifile","lengths")
 
 option_list <- list(
-  make_option(c("-f", "--feature"), type="character", dest="feature", default="gene",help="Feature (gene,transcript,exon-)"),
+  make_option(c("-f", "--feature"), type="character", dest="feature", default="gene",help="Feature (gene,transcript,exon)"),
   make_option(c("-m", "--metric"), type="character", dest="metric", default="rpkm", help="Normalization metric (rpkm/fpkm,tpm,fpkm-uq,uq-fpkm) [default %default]"),
   make_option(c("-i", "--ifile"), type="character", dest="ifile", help="TSV file name with the matrix with the counts per gene/transcript."),
   make_option(c("-g", "--gtf"), type="character", dest="gtf_file", default=NULL, help="GTF file name"),
