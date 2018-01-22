@@ -61,6 +61,7 @@ dt_fc=n
 
 ## disable transcript expression by default
 transcript_expr=n
+transcript_quant?=n
 
 # rsem_params+= --single-cell-prior
 #####################################################################
