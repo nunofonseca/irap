@@ -450,7 +450,7 @@ PICARD_FILE=picard-tools-$PICARD_VERSION.zip
 PICARD_URL=http://sourceforge.net/projects/picard/files/picard-tools/$PICARD_VERSION/$PICARD_FILE/download
 
 
-fastq_utils_VERSION=0.13.7
+fastq_utils_VERSION=0.14.4
 fastq_utils_FILE=$fastq_utils_VERSION.tar.gz
 fastq_utils_URL=https://github.com/nunofonseca/fastq_utils/archive/$fastq_utils_FILE
 
@@ -1572,6 +1572,8 @@ function umis_install {
     pushd umis-master
     pip install  --prefix $IRAP_DIR .
     popd
+    # temporary fix
+    sed -i "s/'UM'/'QX'/" $IRAP_DIR/lib64/python2.7/site-packages/umis/umis.py
     pinfo "Compiling and installing umis...done."
 }
 
