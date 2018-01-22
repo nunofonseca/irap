@@ -1,1 +1,1 @@
-docker/iRAP.docker
+docker/ubuntu_16.04/Dockerfile
