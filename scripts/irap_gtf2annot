@@ -40,7 +40,7 @@ library(parallel)
 #######################
 usage <- "irap_gtf2annot --species species --gtf file [-o outfile] [--rdata -r]"
 option_list <- list(
-  make_option(c("-o", "--out"),type="character",dest="out_file",default="",help="Output file [default %default]"),
+  make_option(c("-o", "--out"),type="character",dest="out",default=NULL,help="Output file [default %default]"),
   make_option(c("-s", "--species"),type="character",dest="species",default=NA,help="Species [default %default]"),
   make_option(c("-c", "--cores"), type="character",default="2",dest="num_cores",help="Number of cores to use ([default %default])"),
   make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
@@ -52,7 +52,7 @@ type <- "gene"
 filenames <- c("gtf_file") ;#filenames that must exist (if defined)
 # check multiple options values
 multiple.options = list()
-mandatory <- c("gtf_file")
+mandatory <- c("gtf_file","out")
 opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
 
 tryCatch(num.cores <- as.integer(as.numeric(opt$num_cores)),warning=
@@ -94,6 +94,7 @@ if ( nrow(gtf.table) ==0 ) {
   perror("No genes found in GTF file ",opt$gtf," !")
   q(status=1)
 }
+opt$out_file <- opt$out
 # check if the gene ids are unique
 gene.ids <- unique(gtf.table$"gene_id")
 pinfo("N. genes=",length(gene.ids))
@@ -206,10 +207,10 @@ pdebug.save.state("irap_gtf2annot","p3")
 
 cols <- c("ID","Name","locus","source","lname","GO","GOterm","KEGG","biotype")
 if(opt$out_file=="") {
-  ret <- write.tsv(file=stdout(),x=r.table[,cols])
+  ret <- write.tsv(file=stdout(),x=r.table[,cols,drop=FALSE])
 } else {
   pdebug("saving to file...",opt$out_file)
-  ret <- write.tsv(file=opt$out_file,x=r.table[,cols])
+  ret <- write.tsv(file=opt$out_file,x=r.table[,cols,drop=FALSE])
   gene.annot <- r.table[,cols]
   if ( opt$gen_rdata)
     save(gene.annot,file=paste(opt$out_file,".Rdata",sep=""))
