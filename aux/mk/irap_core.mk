@@ -775,6 +775,8 @@ sc_non_zero_rows=1
 ## parameters passed to bam_umi_count (umi_count quant. option)
 bam_umi_count_params?=--min_reads 1 --multi_mapped --min_umis 1
 
+#
+
 ## may be used by different methods
 ## currently only bam_umi_count takes advantage of the following options (to reduce memory usage)
 ## max. number of cell barcodes
@@ -997,7 +999,7 @@ endif
 SUPPORTED_QUANT_METHODS=basic htseq1 htseq2 cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd scripture flux_cap nurd stringtie stringtie_nd rsem kallisto salmon umi_count umis 
 
 # methods that produce transcript level quantification by default
-TRANS_QUANT_METHODS=flux_cap cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd nurd stringtie stringtie_nd rsem kallisto salmon umi_count bitseq
+TRANS_QUANT_METHODS=flux_cap cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd nurd stringtie stringtie_nd rsem kallisto salmon umi_count bitseq 
 #umi_count kallisto_umi 
 # umis?
 
@@ -1331,14 +1333,14 @@ max_mem_gb:=$(shell expr $(max_mem) \/ 1000)
 
 # samtools 1.x
 ifndef SAMTOOLS_SORT_MEM
- SAMTOOLS_SORT_MEM:=$(shell bash -c "expr $(max_mem_gb) \* 75 \/ 100 \/ $(max_threads)")G
+ SAMTOOLS_SORT_MEM:=$(shell bash -c "expr $(max_mem_gb) \* 90 \/ 100 \/ $(max_threads)")G
 endif
 
 
 # convert Gb to Mb - smatools sort controls better the memory usage with M
 MIN_MEM?=1
 ifndef SAMTOOLS_SORT_MEM_MT
- SAMTOOLS_SORT_MEM_MT:=$(shell echo "($(max_mem_gb)-$(MIN_MEM))*0.5/($(max_threads)*1.33)*1000000000" | bc )
+ SAMTOOLS_SORT_MEM_MT:=$(shell echo "($(max_mem_gb)-$(MIN_MEM))*0.95/$(max_threads)*1000000000" | bc )
 #shell bash -c "expr \( $(max_mem_gb) - $(MIN_MEM) \) \* 50 \/ 100 \/ $(max_threads) ")
 endif
 
