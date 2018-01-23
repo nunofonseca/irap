@@ -1153,17 +1153,6 @@ endif
 
 
 
-##################################
-## collect QC stats
-$(name)/$(mapper)/$(quant_method)/%.genes.raw.$(quant_method).quant_qc.tsv: $(name)/$(mapper)/$(quant_method)/%.genes.raw.$(quant_method).$(expr_ext)
-	irap_quant_qc --ifile $<  --feature gene --$(expr_format) --metric raw --gtf $(gtf_file_abspath) --out $@.tmp && mv $@.tmp $@
-
-$(name)/$(mapper)/$(quant_method)/%.exons.raw.$(exon_quant_method).quant_qc.tsv: $(name)/$(mapper)/$(quant_method)/%.exons.raw.$(exon_quant_method).$(expr_ext)
-	irap_quant_qc --ifile $< --feature exon --metric raw --$(expr_format) --gtf $(gtf_file_abspath) --out $@.tmp && mv $@.tmp $@
-
-$(name)/$(mapper)/$(quant_method)/%.transcripts.raw.$(quant_method).quant_qc.tsv: $(name)/$(mapper)/$(quant_method)/%.transcripts.raw.$(quant_method).$(expr_ext)
-	irap_quant_qc --ifile $< --feature transcript --$(expr_format) --metric raw --gtf $(gtf_file_abspath) --out $@.tmp && mv $@.tmp $@
-
 #####################################
 ## ISL specific
 ifeq ($(isl_mode),y)
@@ -1236,7 +1225,22 @@ quantification_s: $(STAGE3_S_TARGETS)
 # quantification enabled/end
 ###################################
 endif
-
+##################################
+## collect QC stats
 phony_targets+= quantification $(quant_method)_quant quantification_s
 
 STAGE3_OUT_FILES+=$($(quant_method)_quant_files) 
+
+$(name)/$(mapper)/$(quant_method)/%.genes.raw.$(quant_method).quant_qc.tsv: $(name)/$(mapper)/$(quant_method)/%.genes.raw.$(quant_method).$(expr_ext)
+	irap_quant_qc --ifile $<  --feature gene --$(expr_format) --metric raw --gtf $(gtf_file_abspath) --out $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/$(quant_method)/%.exons.raw.$(exon_quant_method).quant_qc.tsv: $(name)/$(mapper)/$(quant_method)/%.exons.raw.$(exon_quant_method).$(expr_ext)
+	irap_quant_qc --ifile $< --feature exon --metric raw --$(expr_format) --gtf $(gtf_file_abspath) --out $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/$(quant_method)/%.transcripts.raw.$(quant_method).quant_qc.tsv: $(name)/$(mapper)/$(quant_method)/%.transcripts.raw.$(quant_method).$(expr_ext)
+	irap_quant_qc --ifile $< --feature transcript --$(expr_format) --metric raw --gtf $(gtf_file_abspath) --out $@.tmp && mv $@.tmp $@
+
+$(info >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<)
+$(info $(name)/$(mapper)/$(quant_method)/%.transcripts.raw.$(quant_method).quant_qc.tsv: $(name)/$(mapper)/$(quant_method)/%.transcripts.raw.$(quant_method).$(expr_ext))
+
+
