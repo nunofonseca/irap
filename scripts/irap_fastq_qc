@@ -123,8 +123,7 @@ def_max_n=0
 
 # default mapper
 def_mapper=bowtie2
-# Extra options that may be passed to the mapper
-mapper_extra_options?=--very-fast
+
 # 
 ifdef run_tests
 undefine run_tests
@@ -203,6 +202,13 @@ endif
 endif
 else
 mapper=$(def_mapper)
+endif
+
+ifndef mapper_extra_options
+# Extra options that may be passed to the mapper
+ifeq ($(mapper),bowtie2)
+mapper_extra_options?=--very-fast
+endif
 endif
 
 ##Check mandatory parameters
