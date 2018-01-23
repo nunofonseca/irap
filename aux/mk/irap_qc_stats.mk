@@ -94,8 +94,9 @@ $(name)/$(mapper)/libs_qc.tsv: $(name)/$(mapper)/stats_raw.tsv $(name)/$(mapper)
 	irap_append2tsv --in "$@.1.tmp $@.2.tmp" --exclude_aggr --transpose --out $@.tmp && mv $@.tmp $@ &&\
 	rm -f $@.1.tmp $@.2.tmp
 
-
+ifneq ($(mapper),none)
 MAPPING_REPORT_PRE_STATS:=$(foreach s,$(se),$(call lib2bam_folder,$(s))$(s).se.hits.bam.stats.csv) $(foreach s,$(pe),$(call lib2bam_folder,$(s))$(s).pe.hits.bam.stats.csv   )
+endif
 
 ## the reference in the BAMs generated with kallisto is not the genome
 ifneq ($(mapper),kallisto)
@@ -103,7 +104,9 @@ MAPPING_REPORT_PRE_STATS+=$(foreach s,$(se), $(call lib2bam_folder,$(s))$(s).se.
 endif	
 
 WAVE3_s_TARGETS+=$(MAPPING_REPORT_PRE_STATS)
+ifneq ($(mapper),none)
 WAVE3_TARGETS+=$(name)/$(mapper)/libs_qc.tsv
+endif
 WAVE4_TARGETS+=
 
 # merge into a single file the statistics collected from the BAMs 
@@ -169,9 +172,10 @@ $(name)/data/$(reference_basename).transcripts.bed6:  $(gtf_file_abspath)
 
 
 #
+ifneq ($(mapper),none)
 STAGE4_OUT_FILES+=$(name)/$(mapper)/libs_qc.tsv
 STAGE4_TARGETS+=$(name)/$(mapper)/libs_qc.tsv
-
+endif
 ######################################################################
 
 

@@ -1051,6 +1051,7 @@ ifeq ($(exon_quant),y)
 $(info *	exon_quant_method=$(exon_quant_method))
 endif
 $(info *	transcript_quant=$(transcript_quant))
+$(info *	transcript_expr=$(transcript_expr))
 
 ## Needed for transcript quantification
 mapTrans2gene=$(name)/data/$(gtf_file_basename).mapTrans2Gene.tsv

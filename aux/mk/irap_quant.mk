@@ -38,12 +38,12 @@ STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.genes.
 ## Quantification statistics
 a_quant_qc_stats:=
 quant_qc_stats:=$(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).quant_qc.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).quant_qc.tsv)
-WAVE3_s_TARGETS+=$(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).quant_qc.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).quant_qc.tsv)
+WAVE3_s_TARGETS+=$(quant_qc_stats)
 
 a_quant_qc_stats+= $(quant_qc_stats)
 
 ifeq ($(transcript_expr),y)
-quant_qc_statst:= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).transcripts.raw.$(quant_method).quant_qc.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).quant_qc.tsv)
+quant_qc_statst:= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).quant_qc.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).quant_qc.tsv)
 a_quant_qc_stats+= $(quant_qc_statst)
 
 WAVE3_s_TARGETS+=$(quant_qc_statst)
@@ -51,7 +51,7 @@ STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transc
 endif
 
 ifeq ($(exon_quant),y)
-quant_qc_statse:= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).exons.raw.$(exon_quant_method).quant_qc.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.exons.raw.$(exon_quant_method).quant_qc.tsv)
+quant_qc_statse:= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.exons.raw.$(exon_quant_method).quant_qc.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.exons.raw.$(exon_quant_method).quant_qc.tsv)
 a_quant_qc_stats+= $(quant_qc_statse)
 
 WAVE3_s_TARGETS+=$(quant_qc_statste)
@@ -1169,17 +1169,6 @@ endif
 
 
 
-##################################
-## collect QC stats
-$(name)/$(mapper)/$(quant_method)/%.genes.raw.$(quant_method).quant_qc.tsv: $(name)/$(mapper)/$(quant_method)/%.genes.raw.$(quant_method).$(expr_ext)
-	irap_quant_qc --ifile $<  --feature gene --$(expr_format) --metric raw --gtf $(gtf_file_abspath) --out $@.tmp && mv $@.tmp $@
-
-$(name)/$(mapper)/$(quant_method)/%.exons.raw.$(exon_quant_method).quant_qc.tsv: $(name)/$(mapper)/$(quant_method)/%.exons.raw.$(exon_quant_method).$(expr_ext)
-	irap_quant_qc --ifile $< --feature exon --metric raw --$(expr_format) --gtf $(gtf_file_abspath) --out $@.tmp && mv $@.tmp $@
-
-$(name)/$(mapper)/$(quant_method)/%.transcripts.raw.$(quant_method).quant_qc.tsv: $(name)/$(mapper)/$(quant_method)/%.transcripts.raw.$(quant_method).$(expr_ext)
-	irap_quant_qc --ifile $< --feature transcript --$(expr_format) --metric raw --gtf $(gtf_file_abspath) --out $@.tmp && mv $@.tmp $@
-
 #####################################
 ## ISL specific
 ifeq ($(isl_mode),y)
@@ -1252,7 +1241,22 @@ quantification_s: $(STAGE3_S_TARGETS)
 # quantification enabled/end
 ###################################
 endif
-
+##################################
+## collect QC stats
 phony_targets+= quantification $(quant_method)_quant quantification_s
 
 STAGE3_OUT_FILES+=$($(quant_method)_quant_files) 
+
+$(name)/$(mapper)/$(quant_method)/%.genes.raw.$(quant_method).quant_qc.tsv: $(name)/$(mapper)/$(quant_method)/%.genes.raw.$(quant_method).$(expr_ext)
+	irap_quant_qc --ifile $<  --feature gene --$(expr_format) --metric raw --gtf $(gtf_file_abspath) --out $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/$(quant_method)/%.exons.raw.$(exon_quant_method).quant_qc.tsv: $(name)/$(mapper)/$(quant_method)/%.exons.raw.$(exon_quant_method).$(expr_ext)
+	irap_quant_qc --ifile $< --feature exon --metric raw --$(expr_format) --gtf $(gtf_file_abspath) --out $@.tmp && mv $@.tmp $@
+
+$(name)/$(mapper)/$(quant_method)/%.transcripts.raw.$(quant_method).quant_qc.tsv: $(name)/$(mapper)/$(quant_method)/%.transcripts.raw.$(quant_method).$(expr_ext)
+	irap_quant_qc --ifile $< --feature transcript --$(expr_format) --metric raw --gtf $(gtf_file_abspath) --out $@.tmp && mv $@.tmp $@
+
+$(info >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<)
+$(info $(name)/$(mapper)/$(quant_method)/%.transcripts.raw.$(quant_method).quant_qc.tsv: $(name)/$(mapper)/$(quant_method)/%.transcripts.raw.$(quant_method).$(expr_ext))
+
+
