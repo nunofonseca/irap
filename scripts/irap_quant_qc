@@ -53,7 +53,7 @@ multiple.options = list(
     feature=c('gene','exon','transcript')
 )
 mandatory <- c("ifile","out","gtf_file")
-##load("/home/nf/EBI_SHARE_nf/storage3/EA/sc/mus_musculus/E-MTAB-6339/irap_quant_qc.Rdata")
+#load("/home/nf/Research/Projects/WIP/EREAP/irap_tests/irap_quant_qc.Rdata")
 #pinfo("saved")
 opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
 
@@ -107,20 +107,26 @@ pc.genes <- unique(as.character(gtf.table[gtf.table$biotype=="protein_coding",fe
 pc.genes <- pc.genes[pc.genes%in%rownames(table)]
 
 table2 <- table[pc.genes,,drop=FALSE]
+if ( nrow(table2)==0 ) {
+    table2 <- rbind(table2,rep(0,ncol(table2)))
+}
 stats[[paste0(opt$feature,"s ",opt$metric," protein_coding sum")]] <- round(colSums(table2),2)
 stats[[paste0(opt$feature,"s ",opt$metric," protein_coding >0")]] <- colSums(table2>0)
 
-stats[[paste0(opt$feature,"s ",opt$metric," protein_coding >1")]] <- colSums(table>1)
-stats[[paste0(opt$feature,"s ",opt$metric," protein_coding >5")]] <- colSums(table>5)
+stats[[paste0(opt$feature,"s ",opt$metric," protein_coding >1")]] <- colSums(table2>1)
+stats[[paste0(opt$feature,"s ",opt$metric," protein_coding >5")]] <- colSums(table2>5)
 
 pinfo("rRNA genes")
 ##
 rRNA.genes <- unique(as.character(gtf.table[gtf.table$biotype=="rRNA",feature.label]))
 rRNA.genes <- rRNA.genes[rRNA.genes%in%rownames(table)]
 table2 <- table[rRNA.genes,,drop=FALSE]
+if ( nrow(table2)==0 ) {
+    table2 <- rbind(table2,rep(0,ncol(table2)))
+}
 stats[[paste0(opt$feature,"s ",opt$metric," rRNA sum")]] <- round(colSums(table2),2)
-stats[[paste0(opt$feature,"s ",opt$metric," rRNA >0")]] <- colSums(table>0)
-stats[[paste0(opt$feature,"s ",opt$metric," rRNA >1")]] <- colSums(table>1)
+stats[[paste0(opt$feature,"s ",opt$metric," rRNA >0")]] <- colSums(table2>0)
+stats[[paste0(opt$feature,"s ",opt$metric," rRNA >1")]] <- colSums(table2>1)
 stats[[paste0(opt$feature,"s ",opt$metric," rRNA >5")]] <- colSums(table2>5)
 
 stats.df <- t(data.frame(stats,check.names=FALSE))
