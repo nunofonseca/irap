@@ -58,7 +58,7 @@ pdebug.enabled <- opt$debug
 
 
 ## Stats from the BAM
-p <- pinfo("Generating ",opt$out,".tsv")
+pinfo("Generating ",opt$out,".tsv")
 cmd <- paste0("samtools view ",opt$bam_file," |cut -f 3|sort |uniq -c|awk 'BEGIN {OFS=\"\t\";} {print $2,$1;}' > ",opt$out,".tmp")
 status <- system(cmd)
 if ( status != 0 ) {
@@ -66,6 +66,7 @@ if ( status != 0 ) {
 }
 
 ## generic stats
+pinfo("irapBAM2stats bam=",opt$bam_file)
 cmd <- paste0("irapBAM2stats bam=",opt$bam_file)
 status <- system(cmd)
 if ( status != 0 ) {
@@ -74,23 +75,27 @@ if ( status != 0 ) {
 
 
 # read the tables
-x <- read.table(paste0(opt$out,".tmp"),sep="\t")
-x$class <- gsub(":.*","",x$V1)
-y <- aggregate(x$V2,by=list(class=x$class),FUN=sum)
+x <- read.tsv(paste0(opt$out,".tmp"),header=FALSE)
 
-# read the tables
-z <- read.table(paste0(opt$bam_file,".stats.csv"),sep=",")
-z <- rbind(z,c("ReadsUnmapped",opt$reads))
-y$class <- paste("class:",y$class,sep="")
-x$class <-  paste("species:",x$V1,sep="")
-x <- x[,c("class","V2")]
+if ( !is.null(x) ) {
+    x$class <- gsub(":.*","",x$V1)
+    y <- aggregate(x$V2,by=list(class=x$class),FUN=sum)
 
-colnames(z) <- c("label","N")
-colnames(y) <- c("label","N")
-colnames(x) <- c("label","N")
-z <- rbind(z,y)
-z <- rbind(z,x)
-
+    ## read the tables
+    z <- read.table(paste0(opt$bam_file,".stats.csv"),sep=",")
+    z <- rbind(z,c("ReadsUnmapped",opt$reads))
+    y$class <- paste("class:",y$class,sep="")
+    x$class <-  paste("species:",x$V1,sep="")
+    x <- x[,c("class","V2")]
+    
+    colnames(z) <- c("label","N")
+    colnames(y) <- c("label","N")
+    colnames(x) <- c("label","N")
+    z <- rbind(z,y)
+    z <- rbind(z,x)
+} else {
+    z <- NULL
+}
 status=system(paste0("rm ",opt$out,".tmp "))
 pinfo("Creating ",opt$out,"...")
 write.tsv(z,opt$out,header=T)
