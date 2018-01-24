@@ -43,7 +43,7 @@ endif
 
 ifeq ($(exon_quant),y)
 
-WAVE3_s_TARGETS+=$(quant_qc_statste)
+WAVE3_s_TARGETS+=$(quant_qc_statse)
 STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.exons.raw.$(exon_quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.exons.raw.$(exon_quant_method).tsv) 
 endif
 
