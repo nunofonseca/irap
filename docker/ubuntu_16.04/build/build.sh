@@ -3,11 +3,6 @@
 set -eux
 
 IRAP_OPT=$1
-UBUNTU_VER=`lsb_release -cs`
-
-echo "deb http://cran.rstudio.com/bin/linux/ubuntu $UBUNTU_VER/" >> /etc/apt/sources.list
-gpg --keyserver keyserver.ubuntu.com --recv-key E084DAB9
-gpg -a --export E084DAB9 | apt-key add -
 
 apt-get update
 apt-get install -yq --no-install-recommends build-essential
@@ -42,11 +37,21 @@ apt-get install -yq --no-install-recommends graphviz
 apt-get install -yq --no-install-recommends unzip
 apt-get install -yq --no-install-recommends libpcre3-dev
 apt-get install -yq --no-install-recommends libssl-dev
-apt-get install -yq r-base r-base-dev
+apt-get install -yq --no-install-recommends lsb-release
+apt-get install -yq --no-install-recommends curl
+
+# install R
+UBUNTU_VER=`lsb_release -cs`
+
+echo "deb http://cran.rstudio.com/bin/linux/ubuntu $UBUNTU_VER/" >> /etc/apt/sources.list
+gpg --keyserver keyserver.ubuntu.com --recv-key E084DAB9
+gpg -a --export E084DAB9 | apt-key add -
+apt-get install -yq --no-install-recommends r-base r-base-dev
+
 apt-get clean
 
 curl -sSL https://github.com/nunofonseca/irap/archive/v0.8.5.p8.tar.gz > irap.tar.gz
 tar xzf irap.tar.gz
 ./irap-0.8.5.p8/scripts/irap_install.sh -a $IRAP_OPT -s irap-0.8.5.p8
 # clean??
-rm -r irap-0.8.5.p8 irap.tar.gz
+rm -r irap-0.8.5.p8 irap.tar.gz $IRAP_OPT/tmp .cpan*

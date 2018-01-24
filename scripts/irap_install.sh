@@ -119,38 +119,37 @@ function download2cache {
 }
 
 function check_dependencies {
-    DEVEL_LIBRARIES_REQUIRED="zlib-devel python-devel bzip2-devel python readline-devel libgfortran gcc-gfortran gcc-c++ libX11-devel libXt-devel numpy gd-devel libxml2-devel libxml2 libpng libcurl-devel expat-devel  libpangocairo bison gettext-devel  sqlite-devel sqlite [db-devel|db4-devel|libdb-devel] R"
-    MISSING=0
-    pinfo "If installation fails then please check if the following libraries are installed:"
-    pinfo "$DEVEL_LIBRARIES_REQUIRED"
-    # Binaries that should be available
-    # make is required to...compile make
-    BINARIES="java python gcc g++ gfortran curl-config git which make bzip2 unzip bash R"
-    pinfo "Checking dependencies..."
-    for bin in $BINARIES; do
-	PATH2BIN=`which $bin 2> /dev/null`
-	if [ "$PATH2BIN-" == "-" ]; then
-	    pinfo " $bin not found!"
-	    #
-	    if [ "$bin" == "R" ]; then
+  DEVEL_LIBRARIES_REQUIRED="zlib-devel python-devel bzip2-devel python readline-devel libgfortran gcc-gfortran gcc-c++ libX11-devel libXt-devel numpy gd-devel libxml2-devel libxml2 libpng libcurl-devel expat-devel  libpangocairo bison gettext-devel  sqlite-devel sqlite [db-devel|db4-devel|libdb-devel] R"
+  MISSING=0
+  pinfo "If installation fails then please check if the following libraries are installed:"
+  pinfo "$DEVEL_LIBRARIES_REQUIRED"
+  # Binaries that should be available
+  # make is required to...compile make
+  BINARIES="java python gcc g++ gfortran curl-config git which make bzip2 unzip bash R"
+  pinfo "Checking dependencies..."
+  for bin in $BINARIES; do
+    PATH2BIN=`which $bin 2> /dev/null`
+    if [ "$PATH2BIN-" == "-" ]; then
+      pinfo " $bin not found!"
+      #
+      if [ "$bin" == "R" ]; then
         if [ "$INSTALL_R3-" == "n-" ]; then
-		pinfo "WARNING:Please install the R package (and update all packages) or run irap_install.sh with -R to install R (version 3.2 or above)"
+          pinfo "WARNING:Please install the R package (and update all packages) or run irap_install.sh with -R to install R (version 3.2 or above)"
         else
           pinfo "R will be installed."
         fi
-	    else
-		MISSING=1
-	    fi
-	else
-	    pinfo " $bin found: $PATH2BIN"
-	fi
-    done
-    pinfo "Checking dependencies...done."
-    if [ $MISSING == 1 ]; then
-	pinfo "ERROR: Unable to proceed"
-	exit 1
+      else
+        MISSING=1
+      fi
+    else
+      pinfo " $bin found: $PATH2BIN"
     fi
-
+  done
+  pinfo "Checking dependencies...done."
+  if [ $MISSING == 1 ]; then
+    pinfo "ERROR: Unable to proceed"
+    exit 1
+  fi
 }
 #################################
 # VERSIONS, SRC file and URL
