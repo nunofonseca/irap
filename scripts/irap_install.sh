@@ -13,7 +13,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
 #
@@ -39,7 +39,7 @@ function usage {
     echo " -s dir : toplevel irap clone directory";
     echo " -c dir : install/update IRAP core files only to directory 'dir'. If dir is not given the value of IRAP_DIR will be used (if available).";
     echo " -a dir : install/update all files (core and 3rd party software) to directory 'dir' (default)";
-    echo " -l dir : lightweight/minimal installation of iRAP (a minimum set of tools will be installed).";    
+    echo " -l dir : lightweight/minimal installation of iRAP (a minimum set of tools will be installed).";
     echo " -u : update IRAP_core files (alias to -c $IRAP_DIR).";
     echo " -m : update mappers.";
     echo " -r : update R packages.";
@@ -65,7 +65,7 @@ function check_for_irap_env {
 	exit 1
     fi
     # check if IRAP_DIR is in the path
-    IP="$IRAP_DIR/scripts" 
+    IP="$IRAP_DIR/scripts"
     if [[ ":$PATH:" != *":$IP:"* ]]; then
 	echo "ERROR: IRAP_DIR ($IP) not in PATH."
 	exit 1
@@ -75,18 +75,18 @@ function check_for_irap_env {
 function download {
     FILE2DOWNLOAD=$1
     FILE2=$2
-    
+
     if [ "$FILE2-" == "-" ]; then
-	FILE2=`basename $FILE2DOWNLOAD`
+        FILE2=`basename $FILE2DOWNLOAD`
     fi
-    
-    if [ "$USE_CACHE-" == "y-" ]; then
+
+    if [ "$USE_CACHE-" == "y-" ] && [ -f $SRC_DIR/download/$FILE2 ]; then
 	# avoid copying
 	rm -f $FILE2
 	ln -s $SRC_DIR/download/$FILE2 .
     else
 	set +e
-	if [ $OS == "linux" ]; then	    
+	if [ $OS == "linux" ]; then
 	    wget  --no-check-certificate -c -nc -L "$FILE2DOWNLOAD" -O $FILE2
 	else
 	    curl $FILE2DOWNLOAD
@@ -119,34 +119,37 @@ function download2cache {
 }
 
 function check_dependencies {
-    DEVEL_LIBRARIES_REQUIRED="zlib-devel python-devel bzip2-devel python readline-devel libgfortran gcc-gfortran gcc-c++ libX11-devel libXt-devel numpy gd-devel libxml2-devel libxml2 libpng libcurl-devel expat-devel  libpangocairo bison gettext-devel  sqlite-devel sqlite [db-devel|db4-devel|libdb-devel] R"
-    MISSING=0
-    pinfo "If installation fails then please check if the following libraries are installed:"
-    pinfo "$DEVEL_LIBRARIES_REQUIRED"
-    # Binaries that should be available
-    # make is required to...compile make
-    BINARIES="java python gcc g++ gfortran curl-config git which make bzip2 unzip bash R"
-    pinfo "Checking dependencies..."
-    for bin in $BINARIES; do
-	PATH2BIN=`which $bin 2> /dev/null`
-	if [ "$PATH2BIN-" == "-" ]; then
-	    pinfo " $bin not found!"
-	    #
-	    if [ "$bin" == "R" ]; then
-		pinfo "WARNING:Please install the R package (and update all packages) or run irap_install.sh with -R to install R (version 3.2 or above)"
-	    else
-		MISSING=1
-	    fi
-	else
-	    pinfo " $bin found: $PATH2BIN"
-	fi
-    done
-    pinfo "Checking dependencies...done."
-    if [ $MISSING == 1 ]; then
-	pinfo "ERROR: Unable to proceed"
-	exit 1
+  DEVEL_LIBRARIES_REQUIRED="zlib-devel python-devel bzip2-devel python readline-devel libgfortran gcc-gfortran gcc-c++ libX11-devel libXt-devel numpy gd-devel libxml2-devel libxml2 libpng libcurl-devel expat-devel  libpangocairo bison gettext-devel  sqlite-devel sqlite [db-devel|db4-devel|libdb-devel] R"
+  MISSING=0
+  pinfo "If installation fails then please check if the following libraries are installed:"
+  pinfo "$DEVEL_LIBRARIES_REQUIRED"
+  # Binaries that should be available
+  # make is required to...compile make
+  BINARIES="java python gcc g++ gfortran curl-config git which make bzip2 unzip bash R"
+  pinfo "Checking dependencies..."
+  for bin in $BINARIES; do
+    PATH2BIN=`which $bin 2> /dev/null`
+    if [ "$PATH2BIN-" == "-" ]; then
+      pinfo " $bin not found!"
+      #
+      if [ "$bin" == "R" ]; then
+        if [ "$INSTALL_R3-" == "n-" ]; then
+          pinfo "WARNING:Please install the R package (and update all packages) or run irap_install.sh with -R to install R (version 3.2 or above)"
+        else
+          pinfo "R will be installed."
+        fi
+      else
+        MISSING=1
+      fi
+    else
+      pinfo " $bin found: $PATH2BIN"
     fi
-
+  done
+  pinfo "Checking dependencies...done."
+  if [ $MISSING == 1 ]; then
+    pinfo "ERROR: Unable to proceed"
+    exit 1
+  fi
 }
 #################################
 # VERSIONS, SRC file and URL
@@ -190,7 +193,7 @@ tophat2_FILE=tophat-${tophat2_VERSION}.Linux_x86_64.tar.gz
 #tophat2_URL=http://tophat.cbcb.umd.edu/downloads/$tophat2_FILE
 tophat2_URL=http://ccb.jhu.edu/software/tophat/downloads/$tophat2_FILE
 
-# 
+#
 HISAT2_VERSION=2.0.5
 HISAT2_FILE=hisat2-${HISAT2_VERSION}-Linux_x86_64.zip
 HISAT2_URL=ftp://ftp.ccb.jhu.edu/pub/infphilo/hisat2/downloads/$HISAT2_FILE
@@ -213,7 +216,7 @@ STAR_VERSION=2.5.0c
 STAR_FILE=${STAR_VERSION}.tar.gz
 STAR_URL=https://github.com/alexdobin/STAR/archive/$STAR_FILE
 
-# 
+#
 #GSNAP_VERSION=2013-11-27->gmap-gsnap-2015-12-31.v3.tar.gz
 GSNAP_VERSION=2015-12-31
 GSNAP_FILE=gmap-gsnap-${GSNAP_VERSION}.v3.tar.gz
@@ -241,7 +244,7 @@ RUBY_VERSION=1.9.3-p484
 RUBY_FILE=ruby-${RUBY_VERSION}.tar.gz
 RUBY_URL=http://ftp.ruby-lang.org/pub/ruby/1.9/$RUBY_FILE
 
-# 
+#
 #PERL_VERSION=5.20.1 -> 5.22.1
 PERL_VERSION=5.20.3
 PERL_FILE=perl-$PERL_VERSION.tar.gz
@@ -252,21 +255,22 @@ BOOST_VERSION=1.55.0
 BOOST_FILE=boost_`echo $BOOST_VERSION|sed "s/\./_/g"`.tar.bz2
 BOOST_URL=http://sourceforge.net/projects/boost/files/boost/$BOOST_VERSION/$BOOST_FILE
 
-gnuplot_VERSION=4.6.4   
+gnuplot_VERSION=4.6.4
 gnuplot_FILE=gnuplot-$gnuplot_VERSION.tar.gz
 gnuplot_URL=http://sourceforge.net/projects/gnuplot/files/gnuplot/$gnuplot_VERSION/$gnuplot_FILE
 
 # deprecated
 R2_VERSION=2.15.2
-R2_FILE=R-${R2_VERSION}.tar.gz 
+R2_FILE=R-${R2_VERSION}.tar.gz
 R2_URL=http://cran.r-project.org/src/base/R-2/$R2_FILE
 
-# 
-R3_VERSION=3.2.5
-R3_FILE=R-${R3_VERSION}.tar.gz 
+#
+R3_VERSION=3.4.3  # package 'spData' is not available to R-3.2.5, hence the lateest version.
+# Found out that Ubuntu has problems compiling
+R3_FILE=R-${R3_VERSION}.tar.gz
 R3_URL=http://cran.r-project.org/src/base/R-3/$R3_FILE
 
-# 
+#
 SAMTOOLS_VERSION=0.1.18
 SAMTOOLS_FILE=samtools-$SAMTOOLS_VERSION.tar.bz2
 SAMTOOLS_URL=http://sourceforge.net/projects/samtools/files/samtools/$SAMTOOLS_VERSION/$SAMTOOLS_FILE
@@ -317,7 +321,7 @@ cufflinks2_URL=http://cufflinks.cbcb.umd.edu/downloads/$cufflinks2_FILE
 #IReckon_URL=http://compbio.cs.toronto.edu/ireckon/$IReckon_FILE
 
 #SAVANT_VERSION=2.0.3
-#SAVANT_FILE=Savant-${SAVANT_VERSION}-Linux-x86_64-Install 
+#SAVANT_FILE=Savant-${SAVANT_VERSION}-Linux-x86_64-Install
 #SAVANT_URL=http://genomesavant.com/savant/dist/v`echo $SAVANT_VERSION|sed "s/./_/g"`/$SAVANT_FILE
 
 # new: 0.7.5 - now in github
@@ -377,7 +381,7 @@ FUSIONMAP_URL=http://omicsoft.com/fusionmap/Software/$FUSIONMAP_FILE
 
 
 SCRIPTURE_VERSION=beta2
-SCRIPTURE_FILE=scripture-${SCRIPTURE_VERSION}.jar 
+SCRIPTURE_FILE=scripture-${SCRIPTURE_VERSION}.jar
 SCRIPTURE_URL=ftp://ftp.broadinstitute.org/pub/papers/lincRNA/$SCRIPTURE_FILE
 
 IGV_VERSION=2.1.24
@@ -415,10 +419,10 @@ NEW_JBROWSE_EXTRA_UTILSURL=http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64
 # 2.10.8 osa does not work with 2.10.9 up to 2.11
 # 2.10.8 ---> 4.2.2
 MONO_VERSION=2.10.8
-MONO_FILE=mono-${MONO_VERSION}.tar.bz2    
+MONO_FILE=mono-${MONO_VERSION}.tar.bz2
 #MONO_VERSION=4.2.2
-#MONO_FILE=mono-${MONO_VERSION}.tar.bz2    
-#MONO_FILE=mono-${MONO_VERSION}.30.tar.bz2    
+#MONO_FILE=mono-${MONO_VERSION}.tar.bz2
+#MONO_FILE=mono-${MONO_VERSION}.30.tar.bz2
 MONO_URL=http://download.mono-project.com/sources/mono/$MONO_FILE
 
 
@@ -443,7 +447,7 @@ function download_software {
 }
 
 # install all program files (binaries, libraries,...) in a folder of the bin directory
-# 
+#
 function install_binary {
     PROGNAME=$1
     SRCDIR=$2
@@ -452,7 +456,7 @@ function install_binary {
     FILES=$*
 
     pushd $SRCDIR
-    mkdir -p $TDIR    
+    mkdir -p $TDIR
     chmod +x $FILES
     cp -rf $FILES $TDIR
     popd
@@ -471,7 +475,7 @@ export PERL5LIB=\$IRAP_DIR/perl/lib/perl5:\$IRAP_DIR/lib/perl5:\$IRAP_DIR/lib/pe
 export PYTHONUSERBASE=\$IRAP_DIR/python
 # Adjust to your needs and uncomment the following lines
 # in order to use iRAP with the LSF job scheduler
-# note: memory values are in MB 
+# note: memory values are in MB
 #export IRAP_LSF_GROUP=/irap
 #export QUEUE=research-rh6
 export MEM=10000
@@ -514,7 +518,7 @@ function bowtie1_install {
     #make clean
     #make -j 4 all
     FILES="bowtie bowtie-*"
-    install_binary $MAPPER . $FILES 
+    install_binary $MAPPER . $FILES
     install_binary $MAPPER scripts \*
     pinfo "$MAPPER installation complete."
     popd
@@ -530,7 +534,7 @@ function bowtie2_install {
     #make clean
     #make -j $J all
     FILES="bowtie2 bowtie2-build* bowtie2-inspect* bowtie2-align*"
-    install_binary $MAPPER . $FILES 
+    install_binary $MAPPER . $FILES
     install_binary $MAPPER scripts \*
     pinfo "$MAPPER installation complete."
     popd
@@ -544,7 +548,7 @@ function tophat1_install {
     mkdir -p $BIN_DIR/tophat1
     pushd `echo $tophat1_FILE|sed "s/.tar.gz//"`
     install_binary $MAPPER . \*
-    pinfo "$MAPPER installation complete."    
+    pinfo "$MAPPER installation complete."
     popd
 }
 
@@ -556,7 +560,7 @@ function tophat2_install {
     pushd `echo $tophat2_FILE|sed "s/.tar.gz//"`
     install_binary $MAPPER . \*
     cp $IRAP_DIR/bin/tophat2/bin/gtf_juncs $IRAP_DIR/bin/tophat2_gtf_juncs
-    pinfo "$MAPPER installation complete."    
+    pinfo "$MAPPER installation complete."
     popd
 }
 
@@ -568,7 +572,7 @@ function hisat2_install {
     pushd `echo $HISAT2_FILE|sed "s/.Linux.*//"`
     install_binary $MAPPER . \*
     cp -rf scripts/* $IRAP_DIR/bin/$MAPPER/bin
-    pinfo "$MAPPER installation complete."    
+    pinfo "$MAPPER installation complete."
     popd
 }
 
@@ -580,19 +584,19 @@ function smalt_install {
     tar xzvf $SMALT_FILE
     pushd `echo $SMALT_FILE|sed "s/.tgz//"`
     install_binary $MAPPER .  smalt_x86_64
-    pinfo "$MAPPER installation complete."    
+    pinfo "$MAPPER installation complete."
     popd
 }
 
 function soap_splice_install {
     MAPPER=soap_splice
-    SRCDIR=$2    
+    SRCDIR=$2
     pinfo "Starting $MAPPER binary installation..."
     download_software $MAPPER
     tar xzvf $SOAPsplice_FILE
     pushd `echo $SOAPsplice_FILE|sed "s/.tar.gz//"`
     install_binary $MAPPER bin  \*
-    pinfo "$MAPPER installation complete."    
+    pinfo "$MAPPER installation complete."
     popd
 }
 
@@ -609,7 +613,7 @@ function soap2_install {
     chmod +x soap2sam.pl
     sed "s.^#\!/usr/bin/perl.*.#\!$ENV_FP perl." -i soap2sam.pl
     cp soap2sam.pl $BIN_DIR
-    pinfo "$MAPPER installation complete."    
+    pinfo "$MAPPER installation complete."
 }
 
 function gem_install {
@@ -622,7 +626,7 @@ function gem_install {
     pushd `echo $GEM_FILE|sed "s/.tbz2//"`
     install_binary $MAPPER bin \*
 #    sed -i "s/^#!/.*ruby/#!$ENV_FP ruby/" $BIN_DIR/$MAPPER/bin/gem*
-    pinfo "$MAPPER  installation complete."    
+    pinfo "$MAPPER  installation complete."
     popd
 }
 
@@ -634,14 +638,14 @@ function gem2_install {
     # do not install gemtools - only the gem binaries
     tar xjvf $GEM_FILE
     install_binary $MAPPER . gem-* gtf* splits* compute* transcri*
-    pinfo "$MAPPER  installation complete."    
+    pinfo "$MAPPER  installation complete."
     popd
 }
 
 function star_install {
     MAPPER=star
     pinfo  "Starting $MAPPER binary installation..."
-    download_software $MAPPER    
+    download_software $MAPPER
     #gunzip -c $STAR_FILE > $EXECF
     tar xzvf $STAR_FILE
     pushd STAR-$STAR_VERSION
@@ -651,7 +655,7 @@ function star_install {
     cp bin/Linux_x86_64_static/STAR $BIN_DIR/star/bin/STAR
 #    cp STARstatic $BIN_DIR/star/bin/star
 #    cp STARstatic $BIN_DIR/star/bin/
-    pinfo "$MAPPER installation complete."    
+    pinfo "$MAPPER installation complete."
     popd
 }
 
@@ -667,7 +671,7 @@ function gsnap_install {
     make clean
     make -j $J
     make install
-    pinfo "$MAPPER installation complete."    
+    pinfo "$MAPPER installation complete."
     popd
 }
 
@@ -680,7 +684,7 @@ function bwa_install {
     make clean
     make -j $J
     install_binary $MAPPER . bwa
-    pinfo "$MAPPER installation complete."    
+    pinfo "$MAPPER installation complete."
     popd
 }
 
@@ -690,7 +694,7 @@ function osa_install {
     MAPPER=osa
     pinfo "Starting $MAPPER binary installation..."
     OLD_PATH=$PATH
-    OLD_LD_LIBRARY_PATH=$LD_LIBRARY_PATH	
+    OLD_LD_LIBRARY_PATH=$LD_LIBRARY_PATH
     if [ $INSTALL_GCC != "n" ]; then
 	gcc4_install
 	export PATH=$IRAP_DIR/gcc/bin:$PATH
@@ -702,9 +706,9 @@ function osa_install {
     pushd OSAv$osa_VERSION
     install_binary $MAPPER . \*
     PATH=$PATH
-    LD_LIBRARY_PATH=$LD_LIBRARY_PATH	
+    LD_LIBRARY_PATH=$LD_LIBRARY_PATH
     popd
-    pinfo "$MAPPER installation complete."    
+    pinfo "$MAPPER installation complete."
 }
 
 function mapsplice_install {
@@ -721,7 +725,7 @@ function mapsplice_install {
     install_binary $MAPPER bin \*
     cp mapsplice.py $BIN_DIR/$MAPPER/
     popd
-    pinfo "$MAPPER installation complete."    
+    pinfo "$MAPPER installation complete."
 }
 
 function mappers_install {
@@ -735,7 +739,7 @@ function mappers_install {
    soap_splice_install
    soap2_install
 #   gem2_install
-   gsnap_install 
+   gsnap_install
    ## osa_install
    star_install
    pinfo "To install MapSplice run: irap_install.sh -s . -x mapsplice"
@@ -746,7 +750,7 @@ function mappers_install {
 
 ########################
 function embam_install {
-        
+
     R=$1
     if [ "$R-" == "-" ];  then
 	R=$IRAP_DIR/bin/R
@@ -774,7 +778,7 @@ function make_install {
     download_software MAKE
     tar xzvf $MAKE_FILE
     pushd `echo $MAKE_FILE|sed "s/.tar.gz//"`
-    ./configure 
+    ./configure
     make -j $J
     cp make $IRAP_DIR/bin
     popd
@@ -800,9 +804,9 @@ function gcc4_install {
     popd
     pinfo "Installing gcc 4.8.5...done."
 }
- 
+
 ######################################################
-# 
+#
 function mono_install {
     pinfo "Installing mono..."
     download_software MONO
@@ -811,12 +815,12 @@ function mono_install {
     ./configure --with-large-heap=yes --prefix=$IRAP_DIR
     make
     make install
-    popd    
+    popd
     pinfo "Installing mono...done."
 }
-    
+
 ######################################################
-# Ruby    
+# Ruby
 # Programming language (mmseq includes several scripts in ruby)
 function ruby_install {
     pinfo "Installing ruby..."
@@ -825,13 +829,13 @@ function ruby_install {
     tar xzvf $RUBY_FILE
     pushd ruby-${RUBY_VERSION}
     ./configure --prefix=$IRAP_DIR
-    make 
+    make
     make install
     popd
     pinfo "Installing ruby...done."
 }
 ######################################################
-# Perl 
+# Perl
 # To ensure that there are no version issues...
 function perl_install {
     pinfo "Installing perl..."
@@ -853,7 +857,7 @@ function perl_install {
     set +e
     make test
     set -e
-    make install 
+    make install
     popd
     pinfo "Installing perl...done."
 }
@@ -897,8 +901,8 @@ function R2_install {
     export R_LIBS=
     export R_LIBS_USER=$IRAP_DIR/Rlibs
     # assume that makeinfo is installed - configure does not work on 5.2
-    #sed -i "s/r_cv_prog_makeinfo_v4=no/r_cv_prog_makeinfo_v4=yes/" configure  
-    CFLAGS_noboost=`echo $CFLAGS|sed -E "s|\-I[^ ]*boost||g"`    
+    #sed -i "s/r_cv_prog_makeinfo_v4=no/r_cv_prog_makeinfo_v4=yes/" configure
+    CFLAGS_noboost=`echo $CFLAGS|sed -E "s|\-I[^ ]*boost||g"`
     # clean up - delete packages previously installed
     rm -rf $IRAP_DIR/Rlibs/*
     CFLAGS=$CFLAGS_noboost $SPECIAL_SH_TO_USE ./configure --prefix=$IRAP_DIR
@@ -919,7 +923,7 @@ function R_install {
     pushd R-${R3_VERSION}
     export R_LIBS=
     export R_LIBS_USER=$IRAP_DIR/Rlibs3
-    CFLAGS_noboost=`echo $CFLAGS|sed -E "s|\-I[^ ]*boost||g"`    
+    CFLAGS_noboost=`echo $CFLAGS|sed -E "s|\-I[^ ]*boost||g"`
     CFLAGS=$CFLAGS_noboost $SPECIAL_SH_TO_USE ./configure --prefix=$IRAP_DIR
     make clean
     make -j $J
@@ -946,7 +950,7 @@ function R_install {
 }
 
 ######################################################
-# Yap 
+# Yap
 function YAP_install {
     pinfo "Installing YAP..."
     if [ $USE_CACHE == "y" ]; then
@@ -1037,7 +1041,7 @@ function samtools1_install {
     tar xjvf $BCFTOOLS_FILE
     pushd bcftools-${BCFTOOLS_VERSION}
     sed -i -E "s|^prefix\s*=.*|prefix=$IRAP_DIR|"  Makefile
-    make -j $J 
+    make -j $J
     make install
     popd
     popd
@@ -1053,7 +1057,7 @@ function vcftools_install {
     make -j $J prefix=$IRAP_DIR
     make prefix=$IRAP_DIR install
     popd
-    pinfo "Downloading, compiling, and installing VCFTOOLS...done."       
+    pinfo "Downloading, compiling, and installing VCFTOOLS...done."
 }
 
 ######################################################
@@ -1064,7 +1068,7 @@ function zlib_install {
     tar xvzf $ZLIB_FILE
     pushd zlib-${ZLIB_VERSION}
     ./configure --prefix $IRAP_DIR
-    make 
+    make
     make install
     popd
     pinfo "Downloading, compiling, and installing zlib...done."
@@ -1108,9 +1112,9 @@ function perl_cpan_install {
 	pinfo "Skipping CPAN initialization (you may enable it by doing export INIT_CPAN=yes)"
     fi
     # if myConfig.pm existed the previous command would not change it therefore force its creation
-    ( echo mkmyconfig; ) | perl -MCPAN -e shell 
-    ( echo o conf init urllist;echo y;echo o conf commit;) | perl -MCPAN -e shell 
-#    (echo o conf init urllist;echo y;echo 3;echo 31; echo 1 2 3 4 5 6;echo o conf commit;) | perl -MCPAN -e shell 
+    ( echo mkmyconfig; ) | perl -MCPAN -e shell
+    ( echo o conf init urllist;echo y;echo o conf commit;) | perl -MCPAN -e shell
+#    (echo o conf init urllist;echo y;echo 3;echo 31; echo 1 2 3 4 5 6;echo o conf commit;) | perl -MCPAN -e shell
     pinfo "Initializing CPAN...done."
     pinfo "Configuring CPAN..."
     # extra configuration
@@ -1126,21 +1130,21 @@ o conf build_requires_install_policy yes
 o conf commit
 q
 EOF
-# 
+#
     # upgrade cpan
-    #cpan autobundle    
+    #cpan autobundle
     set +e
     cpan  -f -i App::cpanminus
     cpanm -l $IRAP_DIR -n -f -i YAML   < /dev/null
     #cpanm -f -i Test::More@0.99 < /dev/null
-    cpanm -l $IRAP_DIR  -n -i -f ExtUtils::MakeMaker  < /dev/null 
+    cpanm -l $IRAP_DIR  -n -i -f ExtUtils::MakeMaker  < /dev/null
     # perhaps install the latest perl?
-    cpan -f -u 
+    cpan -f -u
     # don't test
     #cpanm -n -i  Bundle::CPAN
     cpanm $IRAP_DIR  -f -n -i  CPAN < /dev/null
     set -e
-    # set permissions 
+    # set permissions
     chmod +w $IRAP_DIR/bin/*
     pinfo "Configuring CPAN...done."
     touch $IRAP_DIR/.cpan.irap.done
@@ -1150,10 +1154,10 @@ EOF
 function perl_bundle_install {
 
     perl_cpan_install
-	
+
     pinfo "Installing perl bundle..."
     mkdir -p ~/.cpan/Bundle
-    # cpan -a 
+    # cpan -a
     mv $SRC_DIR/aux/irap.pm  ~/.cpan/Bundle
     cpan Bundle::irap < /dev/null
     pinfo "Installing perl bundle...done."
@@ -1165,16 +1169,16 @@ function perl_packages_install {
     #
     # ensure that make is in path
     export PATH=$IRAP_DIR/bin:$PATH
-    
+
     # TODO: do it only once
     perl_cpan_install
     pinfo "Installing perl packages..."
     #  required by iRAP core: Bio::SeqIO
     cpanm -l $IRAP_DIR  --force -n http://www.cpan.org/authors/id/L/LE/LEONT/Module-Build-0.40_11.tar.gz
     cpanm -l $IRAP_DIR -f -n  Bio::SeqIO
-    #cpan -fi CJFIELDS/BioPerl-1.6.1.tar.gz  
+    #cpan -fi CJFIELDS/BioPerl-1.6.1.tar.gz
     # for jbrowse see jbrowse install
-    #cpanm -fi CJFIELDS/BioPerl-1.6.924.tar.gz 
+    #cpanm -fi CJFIELDS/BioPerl-1.6.924.tar.gz
     #popd
     pinfo "Installing perl packages...done."
 }
@@ -1184,13 +1188,13 @@ function perl_packages_jbrowse_install {
     #
     # ensure that make is in path
     export PATH=$IRAP_DIR/bin:$PATH
-    
+
     # TODO: do it only once
     perl_cpan_install
-    
+
     pinfo "Installing perl packages for jbrowse..."
     #    Test::Requisites
-    PACKAGES="Algorithm::Munkres     Array::Compare    Math::Random    Sort::Naturally    Sub::Install Sub::Uplevel     Params::Util    List::MoreUtils    Math::Round    DB_File    Test     Test::Fatal    Test::Run    Test::NoWarnings  Test::Exception  Error    XML::Parser    XML::Simple    XML::SAX    XML::SAX::Writer    XML::Writer JSON Hash::Merge  Devel::Size  PerlIO::locale Compress::Raw::Zlib Locale::Maketext::Lexicon Build Module::CoreList ExtUtils::MakeMaker"    
+    PACKAGES="Algorithm::Munkres     Array::Compare    Math::Random    Sort::Naturally    Sub::Install Sub::Uplevel     Params::Util    List::MoreUtils    Math::Round    DB_File    Test     Test::Fatal    Test::Run    Test::NoWarnings  Test::Exception  Error    XML::Parser    XML::Simple    XML::SAX    XML::SAX::Writer    XML::Writer JSON Hash::Merge  Devel::Size  PerlIO::locale Compress::Raw::Zlib Locale::Maketext::Lexicon Build Module::CoreList ExtUtils::MakeMaker"
 
     set +e
     for p in $PACKAGES; do
@@ -1200,7 +1204,7 @@ function perl_packages_jbrowse_install {
     set -e
     # the tests fail...
     cpanm -l $IRAP_DIR -n  -i Heap::Simple::Perl
-    # 
+    #
     cpanm -l $IRAP_DIR -n  -i L/LD/LDS/GD-2.50.tar.gz
     # SAMTOOLS needs to be recompiled :(
     mkdir -p $IRAP_DIR/tmp
@@ -1210,8 +1214,8 @@ function perl_packages_jbrowse_install {
     #svn export https://samtools.svn.sourceforge.net/svnroot/samtools/tags/samtools-0.1.7/;
     perl -i -pe 's/^CFLAGS=\s*/CFLAGS=-fPIC / unless /\b-fPIC\b/' samtools-${SAMTOOLS_VERSION}/Makefile;
     make -C samtools-${SAMTOOLS_VERSION} -j3 lib;
-    export SAMTOOLS="$PWD/samtools-${SAMTOOLS_VERSION}";    
-    #cpanm -fi CJFIELDS/BioPerl-1.6.924.tar.gz 
+    export SAMTOOLS="$PWD/samtools-${SAMTOOLS_VERSION}";
+    #cpanm -fi CJFIELDS/BioPerl-1.6.924.tar.gz
 
     popd
     pinfo "Installing perl packages for jbrowse...done."
@@ -1287,7 +1291,7 @@ species2db<-matrix(c('org.Ag.eg.db','Anopheles',
 'org.Xl.eg.db','Xenopus'),byrow=T,ncol=2)
 colnames(species2db)<-c("db","species")
 for (p in species2db[,'db']) {
-  biocLite(p,ask=FALSE,  suppressUpdates=TRUE)                     
+  biocLite(p,ask=FALSE,  suppressUpdates=TRUE)
 }
 
 q()
@@ -1298,7 +1302,7 @@ EOF
     #pinfo "installing EMBAM...done."
     pinfo "Installing R packages...done."
 }
-# 
+#
 # requires libcurl installed in the system
 
 function R_packages_install {
@@ -1341,7 +1345,7 @@ function cufflinks1_install {
 ######################################################
 # Cufflinks2
 function cufflinks2_install {
-# Short reads - Transcript assembly, abundance and differential expression estimations     
+# Short reads - Transcript assembly, abundance and differential expression estimations
     pinfo "Downloading and installing CuffLinks 2..."
     download_software cufflinks2
     tar xzvf $cufflinks2_FILE
@@ -1359,7 +1363,7 @@ function bitseq_install {
     tar xzvf $BitSeq_FILE
     pushd BitSeq-$BitSeq_VERSION
     make
-    #PROGS=`grep "^PROGRAMS =" Makefile| cut -f 2 -d=`     
+    #PROGS=`grep "^PROGRAMS =" Makefile| cut -f 2 -d=`
     mkdir -p $IRAP_DIR/bin/bitseq/bin
     find .  -maxdepth 1 -executable -type f -exec  mv {}  $IRAP_DIR/bin/bitseq/bin \; ;
     popd
@@ -1428,7 +1432,7 @@ function isoem_install {
     cp bin/* $IRAP_DIR/bin
     cp lib/* $IRAP_DIR/lib
     popd
-    pinfo "IsoEM installation complete."    
+    pinfo "IsoEM installation complete."
 }
 
 ######################################################
@@ -1448,7 +1452,7 @@ function sailfish_install {
     mv bin/* $IRAP_DIR/bin/Sailfish/bin
     mv lib/* $IRAP_DIR/bin/Sailfish/lib
     popd
-    pinfo "Sailfish installation complete."    
+    pinfo "Sailfish installation complete."
 }
 
 
@@ -1463,7 +1467,7 @@ function rsem_install {
     mkdir -p $IRAP_DIR/bin/rsem/bin
     cp rsem* extract-* convert-* $IRAP_DIR/bin/rsem/bin
     popd
-    pinfo "rsem installation complete."    
+    pinfo "rsem installation complete."
 }
 
 
@@ -1477,7 +1481,7 @@ function kallisto_install {
     mkdir -p $IRAP_DIR/bin/kallisto/bin
     cp kallisto $IRAP_DIR/bin/kallisto/bin
     popd
-    pinfo "kallisto installation complete."    
+    pinfo "kallisto installation complete."
 }
 
 # salmon
@@ -1490,7 +1494,7 @@ function salmon_install {
     cp bin/* $IRAP_DIR/bin/salmon/bin
     cp lib/* $IRAP_DIR/bin/salmon/lib
     popd
-    pinfo "salmon installation complete."    
+    pinfo "salmon installation complete."
 }
 
 
@@ -1506,20 +1510,20 @@ function scripture_install {
 java -Xmx8000m -jar \$IRAP_DIR/bin/scripture.jar \$*
 EOF
     chmod +x $IRAP_DIR/scripts/scripture
-    
+
 # scripture requires IGVTools
-# IGV 2.1 requires Java 6 or greater. 
+# IGV 2.1 requires Java 6 or greater.
     download_software IGV
     unzip $IGV_FILE
     cp IGV_$IGV_VERSION/* $IRAP_DIR/bin/
     chmod +x $IRAP_DIR/bin/igv*
     rm -rf IGV_$IGV_VERSION $IGV.zip
-    
+
     cat <<EOF > $IRAP_DIR/bin/igv.sh
 #!$ENV_FP bash
 java -Dapple.laf.useScreenMenuBar=true -Xmx750m -jar $IRAP_DIR/bin/igv.jar $*
 EOF
-    
+
     IGVTOOLS=igvtools_nogenomes_$IGV_TOOLS_VERSION
     download_software IGV_TOOLS
     unzip $IGV_TOOLS_FILE
@@ -1548,7 +1552,7 @@ function quant_install {
 
 ######################################################
 # Fastq QC
-function fastq_qc_install { 
+function fastq_qc_install {
     ###############
     # Fastx toolkit
     # Collection of command line tools for Short-Reads FASTA/FASTQ files preprocessing.
@@ -1557,7 +1561,7 @@ function fastq_qc_install {
     tar xvjf $FASTX_FILE
     mv bin/* $BIN_DIR
     pinfo "Downloading and installing FASTX toolkit...done."
-    
+
     ########
     # fastqc
     # Quality control tool for high throughput sequence data
@@ -1596,8 +1600,8 @@ function core_install {
 	if [ ! -e $IRAP_DIR/scripts ]; then
 	    mkdir -p $IRAP_DIR/scripts
 	fi
-	cp -r $SRC_DIR/scripts/* $IRAP_DIR/scripts	
-	# install should always be ran from the source 
+	cp -r $SRC_DIR/scripts/* $IRAP_DIR/scripts
+	# install should always be ran from the source
 	chmod -x $IRAP_DIR/scripts/irap_install.sh
 	# update the env path
 	if [ "$DEF_ENV" != "$ENV_FP" ]; then
@@ -1659,12 +1663,12 @@ function jbrowse_install {
     #
     download_software SAMTOOLS
     tar xvjf $SAMTOOLS_FILE
-    export SAMTOOLS="$PWD/samtools-${SAMTOOLS_VERSION}";    
+    export SAMTOOLS="$PWD/samtools-${SAMTOOLS_VERSION}";
     #svn export https://samtools.svn.sourceforge.net/svnroot/samtools/tags/samtools-0.1.7/;
     perl -i -pe 's/^CFLAGS=\s*/CFLAGS=-fPIC / unless /\b-fPIC\b/' samtools-${SAMTOOLS_VERSION}/Makefile;
     make -C samtools-${SAMTOOLS_VERSION} -j3 lib;
     ln -s samtools-${SAMTOOLS_VERSION} samtools
-    # It is necessary to clean .cpan 
+    # It is necessary to clean .cpan
     # yes, weird!
     rm -rf $IRAP_DIR/.cpan.bak2
     if [ -e ~/.cpan ]; then
@@ -1674,7 +1678,7 @@ function jbrowse_install {
     #Installing /home/nf/perl5/lib/perl5/x86_64-linux/auto/DBI/DBI.so
 
     #unset INSTALL_BASE
-    cpanm -l $IRAP_DIR --notest -f local::lib < /dev/null    
+    cpanm -l $IRAP_DIR --notest -f local::lib < /dev/null
     set +e
     cpanm -v --notest -l $IRAP_DIR --installdeps . < /dev/null;
     cpanm -v --notest -l $IRAP_DIR --installdeps . < /dev/null;
@@ -1689,20 +1693,20 @@ function jbrowse_install {
     pinfo "Uncompressing and installing jbrowse...compiling wig2png"
     pushd src/wig2png
     ./configure
-    make    
+    make
     popd
     pinfo "Uncompressing and installing jbrowse...compiling wig2png (done)"
     ./setup.sh < /dev/null
-    make 
+    make
     pinfo "Uncompressing and installing jbrowse...copying binaries and libs "
-    cp -rf src $IRAP_DIR    
+    cp -rf src $IRAP_DIR
     #cp -rf extlib $IRAP_DIR
     # fix permissions
     chmod 755 bin/*
-    cp bin/* $IRAP_DIR/bin 
-    echo `pwd`   
+    cp bin/* $IRAP_DIR/bin
+    echo `pwd`
     chmod 755 blib/script/*
-    cp blib/script/* $IRAP_DIR/bin    
+    cp blib/script/* $IRAP_DIR/bin
     #cp -rf blib $IRAP_DIR
     pinfo "Uncompressing and installing jbrowse...copying binaries and libs (done)"
     pinfo "Uncompressing and installing jbrowse... downloading and installing extra programs"
@@ -1714,7 +1718,7 @@ function jbrowse_install {
 	cp $f $IRAP_DIR/bin
 	pinfo "Uncompressing and installing jbrowse... downloading and installing extra programs (done)"
     done
-    pinfo "Uncompressing and installing jbrowse... downloading and installing extra programs (done)"    
+    pinfo "Uncompressing and installing jbrowse... downloading and installing extra programs (done)"
     popd
     pinfo "jbrowse installation complete."
 }
@@ -1723,7 +1727,7 @@ function new_jbrowse_install {
     download_software NEW_JBROWSE
     mv $NEW_JBROWSE_FILE $IRAP_DIR/aux/latest_jbrowse.zip
     unzip $IRAP_DIR/aux/latest_jbrowse.zip
-    # 
+    #
     pinfo "Uncompressing and installing jbrowse..."
     pushd JBrowse-*
     sed -i "s|-l extlib/| -l $IRAP_DIR|" setup.sh
@@ -1734,42 +1738,42 @@ function new_jbrowse_install {
     #
     download_software SAMTOOLS
     tar xvjf $SAMTOOLS_FILE
-    export SAMTOOLS="$PWD/samtools-${SAMTOOLS_VERSION}";    
+    export SAMTOOLS="$PWD/samtools-${SAMTOOLS_VERSION}";
     #svn export https://samtools.svn.sourceforge.net/svnroot/samtools/tags/samtools-0.1.7/;
     perl -i -pe 's/^CFLAGS=\s*/CFLAGS=-fPIC / unless /\b-fPIC\b/' samtools-${SAMTOOLS_VERSION}/Makefile;
     make -C samtools-${SAMTOOLS_VERSION} -j3 lib;
     ln -s samtools-${SAMTOOLS_VERSION} samtools
-    # It is necessary to clean .cpan 
+    # It is necessary to clean .cpan
     # yes, weird!
     rm -rf $IRAP_DIR/.cpan.bak2
     mv ~/.cpan $IRAP_DIR/.cpan.bak2
     #unset INSTALL_BASE
-    cpanm -f -l $IRAP_DIR local::lib < /dev/null    
+    cpanm -f -l $IRAP_DIR local::lib < /dev/null
     set +e
     # cpanm -v --notest -l $IRAP_DIR --installdeps . < /dev/null;
     cpanm -f -v -l $IRAP_DIR --installdeps . < /dev/null;
     set -e
     rm -rf ~/.cpan
-    mv $IRAP_DIR/.cpan.bak2 ~/.cpan 
+    mv $IRAP_DIR/.cpan.bak2 ~/.cpan
     # cpanm -v --notest -l $IRAP_DIR --installdeps . < /dev/null;
     pinfo "Uncompressing and installing jbrowse...extra PERL packages (done)"
     pinfo "Uncompressing and installing jbrowse...compiling wig2png"
     pushd src/wig2png
     ./configure
-    make    
+    make
     popd
     pinfo "Uncompressing and installing jbrowse...compiling wig2png (done)"
     ./setup.sh < /dev/null
-    make 
+    make
     pinfo "Uncompressing and installing jbrowse...copying binaries and libs "
-    cp -rf src $IRAP_DIR    
+    cp -rf src $IRAP_DIR
     #cp -rf extlib $IRAP_DIR
     # fix permissions
     chmod 755 bin/*
-    cp bin/* $IRAP_DIR/bin 
-    echo `pwd`   
+    cp bin/* $IRAP_DIR/bin
+    echo `pwd`
     chmod 755 blib/script/*
-    cp blib/script/* $IRAP_DIR/bin    
+    cp blib/script/* $IRAP_DIR/bin
     #cp -rf blib $IRAP_DIR
     pinfo "Uncompressing and installing jbrowse...copying binaries and libs (done)"
     pinfo "Uncompressing and installing jbrowse... downloading and installing extra programs"
@@ -1781,7 +1785,7 @@ function new_jbrowse_install {
 	cp $f $IRAP_DIR/bin
 	pinfo "Uncompressing and installing jbrowse... downloading and installing extra programs (done)"
     done
-    pinfo "Uncompressing and installing jbrowse... downloading and installing extra programs (done)"    
+    pinfo "Uncompressing and installing jbrowse... downloading and installing extra programs (done)"
     popd
     pinfo "jbrowse installation complete."
 }
@@ -1822,13 +1826,13 @@ fi
 #Requirements:
 # - iReckon works on linux. You need to have at least java-1.6 and the latest version of BWA installed and added to the PATH.
 # - For large datasets and genomes, anticipate an important memory cost and running time (It is usually around 16G and 24 hours on 8 processors for human RNA-Seq with 60M read pairs).
-#   The working directory (output directory) should have enough memory space (>100Go for the previous example). 
-java -Xmx${MEM}M  -jar $IRAP_DIR/bin/IReckon-1.0.6.jar $* 
+#   The working directory (output directory) should have enough memory space (>100Go for the previous example).
+java -Xmx${MEM}M  -jar $IRAP_DIR/bin/IReckon-1.0.6.jar $*
 EOF
     chmod +x $IRAP_DIR/bin/ireckon
     mv IReckon-$IReckon_VERSION.jar $IRAP_DIR/bin/ireckon
     rm -f $IRAP_DIR/bin/ireckon/bwa
-    ln -s  $IRAP_DIR/bin/bwa/bin/bwa  $IRAP_DIR/bin/ireckon/ 
+    ln -s  $IRAP_DIR/bin/bwa/bin/bwa  $IRAP_DIR/bin/ireckon/
     # deps
     download_software SAVANT
     chmod +x $SAVANT_FILE
@@ -1857,7 +1861,7 @@ EOF
 #      soap_fusion_VERSION=1.1
 #      download ftp://public.genomics.org.cn/BGI/soap/Soapfusion/SOAPfusion_all_in_one_package.zip
 #     unzip SOAPfusion_all_in_one_package.zip
-#     pinfo "$MAPPER installation complete."    
+#     pinfo "$MAPPER installation complete."
 #}
 
 function NURD_install {
@@ -1869,7 +1873,7 @@ function NURD_install {
     make
     cp NURD $IRAP_DIR/bin
     popd
-    pinfo "NURD installation complete."    
+    pinfo "NURD installation complete."
 }
 
 
@@ -1883,14 +1887,14 @@ function fusionmap_install {
     pushd FusionMap_$FUSIONMAP_VERSION
     cp bin/* $IRAP_DIR/bin
     popd
-    pinfo "FusionMap installation complete."    
+    pinfo "FusionMap installation complete."
 }
 #FusionMap: detecting fusion genes from next-generation sequencing data at base-pair resolution Huanying Ge; Kejun Liu; Todd Juan; Fang Fang; Matthew Newman; Wolfgang Hoeck Bioinformatics (2011) 27 (14): 1922-1928. doi: 10.1093/bioinformatics/btr310
 
 #      soap_fusion_VERSION=1.1
 #      download ftp://public.genomics.org.cn/BGI/soap/Soapfusion/SOAPfusion_all_in_one_package.zip
 #     unzip SOAPfusion_all_in_one_package.zip
-#     pinfo "$MAPPER installation complete."    
+#     pinfo "$MAPPER installation complete."
 #}
 
 # python packages
@@ -1916,11 +1920,11 @@ function python_packages_install {
 	wget --no-check-certificate https://bootstrap.pypa.io/get-pip.py
 	python get-pip.py --user
 	PATH2PIP=$IRAP_DIR/python/bin/pip
-	pinfo "PIP installation complete."    
+	pinfo "PIP installation complete."
     else
 	pinfo "pip already installed"
     fi
-    $PATH2PIP install pysam==0.8.4 --user    
+    $PATH2PIP install pysam==0.8.4 --user
     export CFLAGS=$CFLAGS_bak
     pinfo "python packages installed"
 }
@@ -1939,7 +1943,7 @@ function numpy_install {
 function miso_install {
     pinfo "Installing miso..."
     # deps problems
-    
+
     download http://sourceforge.net/projects/scipy/files/scipy/0.11.0/scipy-0.11.0.tar.gz
     tar xzvf scipy-0.11.0.tar.gz
     pushd scipy-0.11.0
@@ -1955,11 +1959,11 @@ function miso_install {
     popd
 
     download https://nodeload.github.com/yarden/MISO/legacy.zip/fastmiso
-    unzip fastmiso  
+    unzip fastmiso
     pushd yarden-MISO-*
     python setup.py build
     python setup.py install   --user
-    pinfo "RSEM installation complete."    
+    pinfo "RSEM installation complete."
 }
 
 PICARD_VERSION=1.119
@@ -1972,7 +1976,7 @@ function picard_install {
     unzip $PICARD_FILE
     mkdir -p $BIN_DIR/picard-tools
     mv picard-tools-$PICARD_VERSION/* $BIN_DIR/picard-tools
-    pinfo "Picard installed"    
+    pinfo "Picard installed"
 }
 
 ###############################
@@ -2020,12 +2024,12 @@ fi
 if [ "$IRAP_DIR-" = "-" ]; then
     echo ERROR: IRAP directory not defined. > /dev/stderr
     usage
-    exit 1    
+    exit 1
 fi
 
 if [ "$SRC_DIR-" = "-" ]; then
     usage
-    exit 1    
+    exit 1
 fi
 
 if [ "`uname 2>/dev/null`-" = "Linux-" ]; then
@@ -2036,7 +2040,7 @@ else
     pinfo " WARNING: This script will install binaries for Linux."
 fi
 
-# 
+#
 pinfo "iRAP $IRAP_VERSION"
 # Check if env is available
 DEF_ENV="/usr/bin/env"
@@ -2233,7 +2237,7 @@ if [ "$install" == "minimal" ]; then
     star_install
     htseq_install
     cufflinks2_install
-   
+
    pinfo "WARNING: You chose to install the minimal installation of iRAP. Only the following tools will be available: bowtie1, bowtie2, tophat2, star, cufflinks2 "
 
 else
@@ -2251,4 +2255,3 @@ data_install
 pinfo "Installation complete."
 pinfo "Log saved to $logfile"
 exit 0
-
