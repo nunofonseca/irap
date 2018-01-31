@@ -59,22 +59,22 @@ endif
 # 
 # deseq_min_reads:=5
 # Note: counts of technical replicates  have to be summed up into a single column
-$(name)/$(mapper)/$(quant_method)/genes.deseq_nlib.$(quant_method).irap.tsv: $(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv
+$(quant_toplevel_folder)/genes.deseq_nlib.$(quant_method).irap.tsv: $(quant_toplevel_folder)/genes.raw.$(quant_method).tsv
 	irap_deseq_norm $<  > $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/$(quant_method)/transcripts.deseq_nlib.$(quant_method).irap.tsv: $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv
+$(quant_toplevel_folder)/transcripts.deseq_nlib.$(quant_method).irap.tsv: $(quant_toplevel_folder)/transcripts.raw.$(quant_method).tsv
 	irap_deseq_norm $<  > $@.tmp && mv $@.tmp $@
 
 ifeq ($(exon_quant),y)
-$(name)/$(mapper)/$(quant_method)/exons.deseq_nlib.$(exon_quant_method).irap.tsv: $(name)/$(mapper)/$(quant_method)/exons.raw.$(exon_quant_method).tsv
+$(quant_toplevel_folder)/exons.deseq_nlib.$(exon_quant_method).irap.tsv: $(quant_toplevel_folder)/exons.raw.$(exon_quant_method).tsv
 	irap_deseq_norm $<  > $@.tmp && mv $@.tmp $@
 endif
 
 
 #################################################################
 # Disabled: just copy the file with the raw quantification values
-# $(name)/$(mapper)/$(quant_method)/%.raw.$(quant_method).tsv 
-$(name)/$(mapper)/$(quant_method)/%.nlib.none.tsv: 
+# $(quant_toplevel_folder)/%.raw.$(quant_method).tsv 
+$(quant_toplevel_folder)/%.nlib.none.tsv: 
 	$(call p_info,Quantification normalization disabled. Please set the quant_norm_method parameter if you do not want this behavior.)
 	@$(call empty_file,$@)
 
@@ -86,7 +86,7 @@ ifneq ($(quant_method),none)
 ifneq ($(quant_norm_tool),none)
 ifneq ($(quant_norm_method),none)
 
-nquant_files=$(foreach m,$(quant_norm_method),$(name)/$(mapper)/$(quant_method)/genes.$(m).$(quant_method).$(quant_norm_tool).tsv)
+nquant_files=$(foreach m,$(quant_norm_method),$(quant_toplevel_folder)/genes.$(m).$(quant_method).$(quant_norm_tool).tsv)
 
 
 ofiles1=$(foreach m,$(quant_norm_method),$(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.genes.$(m).$(quant_method).$(quant_norm_tool).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.$(m).$(quant_method).$(quant_norm_tool).tsv))
@@ -94,14 +94,14 @@ STAGE3_S_OFILES+= $(ofiles1)
 nofiles=$(ofiles1)
 
 ifeq ($(transcript_expr),y)
-nquant_files+=$(foreach m,$(quant_norm_method),$(name)/$(mapper)/$(quant_method)/transcripts.$(m).$(quant_method).$(quant_norm_tool).tsv)
+nquant_files+=$(foreach m,$(quant_norm_method),$(quant_toplevel_folder)/transcripts.$(m).$(quant_method).$(quant_norm_tool).tsv)
 ofiles2=$(foreach m,$(quant_norm_method),$(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.$(m).$(quant_method).$(quant_norm_tool).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.$(m).$(quant_method).$(quant_norm_tool).tsv))
 STAGE3_S_OFILES+= $(ofiles2)
 nofiles+=$(ofiles2)
 endif
 
 ifeq ($(exon_quant),y)
-nquant_files+=$(foreach m,$(quant_norm_method),$(name)/$(mapper)/$(quant_method)/exons.$(m).$(exon_quant_method).$(quant_norm_tool).tsv)
+nquant_files+=$(foreach m,$(quant_norm_method),$(quant_toplevel_folder)/exons.$(m).$(exon_quant_method).$(quant_norm_tool).tsv)
 ofiles3=$(foreach m,$(quant_norm_method),$(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.exons.$(m).$(exon_quant_method).$(quant_norm_tool).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.exons.$(m).$(exon_quant_method).$(quant_norm_tool).tsv))
 STAGE3_S_OFILES+= $(ofiles3)
 nofiles+=$(ofiles3)
@@ -114,37 +114,37 @@ endif
 ## $(2) = quant_norm_tool
 ## Note: this is a bit inconsistent now since quant_norm_tools will generate tsv files
 define make-norm-rules=
-$(name)/$(mapper)/$(quant_method)/%.genes.$(1).$(quant_method).$(2).quant_qc.tsv: $(name)/$(mapper)/$(quant_method)/%.genes.$(1).$(quant_method).$(2).$(expr_ext)
+$(quant_toplevel_folder)/%.genes.$(1).$(quant_method).$(2).quant_qc.tsv: $(quant_toplevel_folder)/%.genes.$(1).$(quant_method).$(2).$(expr_ext)
 	irap_quant_qc --ifile $$< --feature gene --metric $(1)  --$(expr_format) --gtf $$(gtf_file_abspath) --out $$@ || (rm -f $$@ && exit 1)
 
-$(name)/$(mapper)/$(quant_method)/%.exons.$(1).$(exon_quant_method).$(2).quant_qc.tsv: $(name)/$(mapper)/$(quant_method)/%.exons.$(1).$(exon_quant_method).$(2).$(expr_ext)
+$(quant_toplevel_folder)/%.exons.$(1).$(exon_quant_method).$(2).quant_qc.tsv: $(quant_toplevel_folder)/%.exons.$(1).$(exon_quant_method).$(2).$(expr_ext)
 	irap_quant_qc --ifile $$< --feature exon --metric $(1)  --$(expr_format) --gtf $$(gtf_file_abspath) --out $$@  || (rm -f $$@ && exit 1)
 
-$(name)/$(mapper)/$(quant_method)/%.transcripts.$(1).$(quant_method).$(2).quant_qc.tsv: $(name)/$(mapper)/$(quant_method)/%.transcripts.$(1).$(quant_method).$(2).$(expr_ext)
+$(quant_toplevel_folder)/%.transcripts.$(1).$(quant_method).$(2).quant_qc.tsv: $(quant_toplevel_folder)/%.transcripts.$(1).$(quant_method).$(2).$(expr_ext)
 	irap_quant_qc --ifile $$< --feature transcript --metric $(1)  --$(expr_format) --gtf $$(gtf_file_abspath) --out $$@ || (rm -f $$@ && exit 1)
 
 
-$(name)/$(mapper)/$(quant_method)/genes.$(1).$(quant_method).irap.$(expr_ext): $(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).$(expr_ext) $(feat_length)
+$(quant_toplevel_folder)/genes.$(1).$(quant_method).irap.$(expr_ext): $(quant_toplevel_folder)/genes.raw.$(quant_method).$(expr_ext) $(feat_length)
 	irap_raw2metric --ifile $$<  --lengths $(feat_length)   --$(expr_format) --feature gene --metric $(1) --out $$@  || (rm -f $$@ && exit 1)
 
 ifeq ($(exon_quant),y)
-$(name)/$(mapper)/$(quant_method)/exons.$(1).$(exon_quant_method).irap.$(expr_ext): $(name)/$(mapper)/$(quant_method)/exons.raw.$(exon_quant_method).$(expr_ext) $(feat_length)
+$(quant_toplevel_folder)/exons.$(1).$(exon_quant_method).irap.$(expr_ext): $(quant_toplevel_folder)/exons.raw.$(exon_quant_method).$(expr_ext) $(feat_length)
 	irap_raw2metric --ifile $$<  --lengths $(exon_length) --feature exon  --$(expr_format) --metric $(1) --out $$@  || (rm -f $$@ && exit 1)
 endif
 
-$(name)/$(mapper)/$(quant_method)/transcripts.$(1).$(quant_method).irap.$(expr_ext): $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).$(expr_ext) $(feat_length)
+$(quant_toplevel_folder)/transcripts.$(1).$(quant_method).irap.$(expr_ext): $(quant_toplevel_folder)/transcripts.raw.$(quant_method).$(expr_ext) $(feat_length)
 	irap_raw2metric --ifile $$<  --lengths $(feat_length)  --$(expr_format) --feature transcript --metric $(1) --out $$@  || (rm -f $$@ && exit 1)
 
 
 # per library
-$(name)/$(mapper)/$(quant_method)/%.genes.$(1).$(quant_method).irap.$(expr_ext): $(name)/$(mapper)/$(quant_method)/%.genes.raw.$(quant_method).$(expr_ext) $(feat_length)
+$(quant_toplevel_folder)/%.genes.$(1).$(quant_method).irap.$(expr_ext): $(quant_toplevel_folder)/%.genes.raw.$(quant_method).$(expr_ext) $(feat_length)
 	irap_raw2metric --ifile $$<   --$(expr_format) --lengths $(feat_length) --feature gene --metric $(1) --out $$@ || (rm -f $$@ && exit 1)
 
-$(name)/$(mapper)/$(quant_method)/%.transcripts.$(1).$(quant_method).irap.$(expr_ext): $(name)/$(mapper)/$(quant_method)/%.transcripts.raw.$(quant_method).$(expr_ext)
+$(quant_toplevel_folder)/%.transcripts.$(1).$(quant_method).irap.$(expr_ext): $(quant_toplevel_folder)/%.transcripts.raw.$(quant_method).$(expr_ext)
 	irap_raw2metric --ifile $$<  --lengths $(feat_length)  --$(expr_format) --feature transcript --metric $(1) --out $$@.tmp || (rm -f $$@ && exit 1)
 
 
-$(name)/$(mapper)/$(quant_method)/%.exons.$(1).$(exon_quant_method).irap.$(expr_ext): $(name)/$(mapper)/$(quant_method)/%.exons.raw.$(exon_quant_method).$(expr_ext)
+$(quant_toplevel_folder)/%.exons.$(1).$(exon_quant_method).irap.$(expr_ext): $(quant_toplevel_folder)/%.exons.raw.$(exon_quant_method).$(expr_ext)
 	irap_raw2metric --ifile $$<  --lengths $(exon_length) --$(expr_format) --feature exon --metric $(1) --out $$@ || (rm -f $$@ && exit 1)
 
 endef

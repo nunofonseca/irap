@@ -26,7 +26,7 @@
 de_targets=
 
 ifneq (none,$(de_method))
-de_targets+=$(foreach cont,$(contrasts),$(name)/$(mapper)/$(quant_method)/$(de_method)/$(cont).genes_de.tsv)
+de_targets+=$(foreach cont,$(contrasts),$(de_toplevel_folder)/$(cont).genes_de.tsv)
 STAGE4_OUT_FILES+=$(de_targets)
 WAVE5_TARGETS+=$(de_targets)
 endif
@@ -45,7 +45,7 @@ DE: stage3 $(de_targets)
 trans_de_targets=
 
 ifneq (none,$(transcript_de_method))
-trans_de_targets+=$(foreach cont,$(contrasts),$(name)/$(mapper)/$(quant_method)/$(transcript_de_method)/$(cont).transcripts_de.tsv)
+trans_de_targets+=$(foreach cont,$(contrasts),$(tde_toplevel_folder)/$(cont).transcripts_de.tsv)
 STAGE4_OUT_FILES+=$(trans_de_targets)
 endif
 
@@ -63,7 +63,7 @@ trans_DE: stage3 $(trans_de_targets)
 exon_de_targets=
 
 ifneq (none,$(exon_de_method))
-exon_de_targets+=$(foreach cont,$(contrasts),$(name)/$(mapper)/$(quant_method)/$(exon_de_method)/$(cont).exons_de.tsv)
+exon_de_targets+=$(foreach cont,$(contrasts),$(ede_toplevel_folder)/$(cont).exons_de.tsv)
 STAGE4_OUT_FILES+=$(exon_de_targets)
 endif
 $(call p_debug,exon_de_targets=$(exon_de_targets))
@@ -151,96 +151,95 @@ endef
 ################################################################################
 # Differential Analysis
 ################################################################################
-
 # Cuffdiff
-$(name)/$(mapper)/$(quant_method)/cuffdiff1/%.genes_de.tsv: $(name)/$(mapper)/$(quant_method)/$(de_method)/%.$(de_method)/gene_exp.diff
+$(de_toplevel_folder1)/cuffdiff1/%.genes_de.tsv: $(de_toplevel_folder1)/$(de_method)/%.$(de_method)/gene_exp.diff
 	cp $< $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/$(quant_method)/cuffdiff2/%.genes_de.tsv: $(name)/$(mapper)/$(quant_method)/$(de_method)/%.$(de_method)/gene_exp.diff
+$(de_toplevel_folder1)/cuffdiff2/%.genes_de.tsv: $(de_toplevel_folder1)/$(de_method)/%.$(de_method)/gene_exp.diff
 	cp $< $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/$(quant_method)/cuffdiff1_nd/%.genes_de.tsv: $(name)/$(mapper)/$(quant_method)/$(de_method)/%.$(de_method)/gene_exp.diff
+$(de_toplevel_folder1)/cuffdiff1_nd/%.genes_de.tsv: $(de_toplevel_folder1)/$(de_method)/%.$(de_method)/gene_exp.diff
 	cp $< $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/$(quant_method)/cuffdiff2_nd/%.genes_de.tsv: $(name)/$(mapper)/$(quant_method)/$(de_method)/%.$(de_method)/gene_exp.diff
+$(de_toplevel_folder1)/cuffdiff2_nd/%.genes_de.tsv: $(de_toplevel_folder1)/$(de_method)/%.$(de_method)/gene_exp.diff
 	cp $< $@.tmp && mv $@.tmp $@
 
 #
-$(name)/$(mapper)/$(quant_method)/cuffdiff1/%.transcripts_de.tsv: $(name)/$(mapper)/$(quant_method)/$(de_method)/%.$(de_method)/isoform_exp.diff
+$(tde_toplevel_folder1)/cuffdiff1/%.transcripts_de.tsv: $(de_toplevel_folder1)/$(de_method)/%.$(de_method)/isoform_exp.diff
 	cp $< $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/$(quant_method)/cuffdiff2/%_transcripts.de.tsv: $(name)/$(mapper)/$(quant_method)/$(de_method)/%.$(de_method)/isoform_exp.diff
+$(tde_toplevel_folder1)/cuffdiff2/%_transcripts.de.tsv: $(de_toplevel_folder1)/$(de_method)/%.$(de_method)/isoform_exp.diff
 	cp $< $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/$(quant_method)/cuffdiff1_nd/%_transcripts.de.tsv: $(name)/$(mapper)/$(quant_method)/$(de_method)/%.$(de_method)/isoform_exp.diff
+$(tde_toplevel_folder1)/cuffdiff1_nd/%_transcripts.de.tsv: $(de_toplevel_folder1)/$(de_method)/%.$(de_method)/isoform_exp.diff
 	cp $< $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/$(quant_method)/cuffdiff2_nd/%_transcripts.de.tsv: $(name)/$(mapper)/$(quant_method)/$(de_method)/%.$(de_method)/isoform_exp.diff
+$(tde_toplevel_folder1)/cuffdiff2_nd/%_transcripts.de.tsv: $(de_toplevel_folder1)/$(de_method)/%.$(de_method)/isoform_exp.diff
 	cp $< $@.tmp && mv $@.tmp $@
 
 # b) Differential analysis with gene and transcript discovery
-$(name)/$(mapper)/$(quant_method)/cuffdiff1/%.cuffdiff1 $(name)/$(mapper)/$(quant_method)/cuffdiff1/%.cuffdiff1/gene_exp.diff $(name)/$(mapper)/$(quant_method)/cuffdiff1/%.cuffdiff1/isorform_exp.diff: $(reference_abspath)   $(name)/$(mapper)/$(quant_method)/$(name).merged.gtf
-	$(call run_cuffdiff,cufflinks1,cuffdiff --no-update-check -u -o $(name)/$(mapper)/$(quant_method)/cuffdiff1/$*.$(de_method).tmp -b $(reference_abspath) -p $(max_threads)  $(name)/$(mapper)/$(quant_method)/$(name).merged.gtf  $(call get_contrast_bam_files,$*)) && mv $(name)/$(mapper)/$(quant_method)/cuffdiff1/$*.$(de_method).tmp $(name)/$(mapper)/$(quant_method)/cuffdiff1/$*.$(de_method)
+$(de_toplevel_folder1)/cuffdiff1/%.cuffdiff1 $(de_toplevel_folder1)/cuffdiff1/%.cuffdiff1/gene_exp.diff $(de_toplevel_folder1)/cuffdiff1/%.cuffdiff1/isorform_exp.diff: $(reference_abspath)   $(de_toplevel_folder1)/$(name).merged.gtf
+	$(call run_cuffdiff,cufflinks1,cuffdiff --no-update-check -u -o $(de_toplevel_folder1)/cuffdiff1/$*.$(de_method).tmp -b $(reference_abspath) -p $(max_threads)  $(de_toplevel_folder1)/$(name).merged.gtf  $(call get_contrast_bam_files,$*)) && mv $(de_toplevel_folder1)/cuffdiff1/$*.$(de_method).tmp $(de_toplevel_folder1)/cuffdiff1/$*.$(de_method)
 
 
-$(name)/$(mapper)/$(quant_method)/cuffdiff2/%.cuffdiff2 $(name)/$(mapper)/$(quant_method)/cuffdiff2/%.cuffdiff2/gene_exp.diff $(name)/$(mapper)/$(quant_method)/cuffdiff2/%.cuffdiff2/isoform_exp.diff: $(reference_abspath)   $(name)/$(mapper)/$(quant_method)/$(name).merged.gtf
-	$(call run_cuffdiff,cufflinks2,cuffdiff --no-update-check -u -o $(name)/$(mapper)/$(quant_method)/cuffdiff2/$*.$(de_method).tmp -b $(reference_abspath) -p $(max_threads)  $(name)/$(mapper)/$(quant_method)/$(name).merged.gtf  $(call get_contrast_bam_files,$*)) && mv $(name)/$(mapper)/$(quant_method)/cuffdiff2/$*.$(de_method).tmp $(name)/$(mapper)/$(quant_method)/cuffdiff2/$*.$(de_method)
+$(de_toplevel_folder1)/cuffdiff2/%.cuffdiff2 $(de_toplevel_folder1)/cuffdiff2/%.cuffdiff2/gene_exp.diff $(de_toplevel_folder1)/cuffdiff2/%.cuffdiff2/isoform_exp.diff: $(reference_abspath)   $(de_toplevel_folder1)/$(name).merged.gtf
+	$(call run_cuffdiff,cufflinks2,cuffdiff --no-update-check -u -o $(de_toplevel_folder1)/cuffdiff2/$*.$(de_method).tmp -b $(reference_abspath) -p $(max_threads)  $(de_toplevel_folder1)/$(name).merged.gtf  $(call get_contrast_bam_files,$*)) && mv $(de_toplevel_folder1)/cuffdiff2/$*.$(de_method).tmp $(de_toplevel_folder1)/cuffdiff2/$*.$(de_method)
 
 # a) Differential analysis without gene and transcript discovery  (use gtf from annotation)
-$(name)/$(mapper)/$(quant_method)/cuffdiff1_nd/%.cuffdiff1_nd $(name)/$(mapper)/$(quant_method)/cuffdiff1_nd/%.cuffdiff1_nd/gene_exp.diff $(name)/$(mapper)/$(quant_method)/cuffdiff1_nd/%.cuffdiff1_nd/isoform_exp.diff: $(reference_abspath)  $(gtf_file_abspath)
-	$(call run_cuffdiff,cufflinks1,cuffdiff --no-update-check -u -o $(name)/$(mapper)/$(quant_method)/cuffdiff1_nd/$*.$(de_method).tmp -b $(reference_abspath) -p $(max_threads)  $(gtf_file_abspath)  $(call get_contrast_bam_files,$*)) && mv $(name)/$(mapper)/$(quant_method)/cuffdiff1_nd/$*.$(de_method).tmp $(name)/$(mapper)/$(quant_method)/cuffdiff1_nd/$*.$(de_method)
+$(de_toplevel_folder1)/cuffdiff1_nd/%.cuffdiff1_nd $(de_toplevel_folder1)/cuffdiff1_nd/%.cuffdiff1_nd/gene_exp.diff $(de_toplevel_folder1)/cuffdiff1_nd/%.cuffdiff1_nd/isoform_exp.diff: $(reference_abspath)  $(gtf_file_abspath)
+	$(call run_cuffdiff,cufflinks1,cuffdiff --no-update-check -u -o $(de_toplevel_folder1)/cuffdiff1_nd/$*.$(de_method).tmp -b $(reference_abspath) -p $(max_threads)  $(gtf_file_abspath)  $(call get_contrast_bam_files,$*)) && mv $(de_toplevel_folder1)/cuffdiff1_nd/$*.$(de_method).tmp $(de_toplevel_folder1)/cuffdiff1_nd/$*.$(de_method)
 
-# $(name)/$(mapper)/$(quant_method)/$(name).merged.gtf
-$(name)/$(mapper)/$(quant_method)/cuffdiff2_nd/%.cuffdiff2_nd $(name)/$(mapper)/$(quant_method)/cuffdiff2_nd/%.cuffdiff2_nd/gene_exp.diff $(name)/$(mapper)/$(quant_method)/cuffdiff2_nd/%.cuffdiff2_nd/isoform_exp.diff: $(reference_abspath)  $(gtf_file_abspath)
-	$(call run_cuffdiff,cufflinks2,cuffdiff --no-update-check -u -o $(name)/$(mapper)/$(quant_method)/cuffdiff2_nd/$*.$(de_method).tmp -b $(reference_abspath) -p $(max_threads)  $(gtf_file_abspath)  $(call get_contrast_bam_files,$*)) && mv $(name)/$(mapper)/$(quant_method)/cuffdiff2_nd/$*.$(de_method).tmp $(name)/$(mapper)/$(quant_method)/cuffdiff2_nd/$*.$(de_method)
+# $(de_toplevel_folder1)/$(name).merged.gtf
+$(de_toplevel_folder1)/cuffdiff2_nd/%.cuffdiff2_nd $(de_toplevel_folder1)/cuffdiff2_nd/%.cuffdiff2_nd/gene_exp.diff $(de_toplevel_folder1)/cuffdiff2_nd/%.cuffdiff2_nd/isoform_exp.diff: $(reference_abspath)  $(gtf_file_abspath)
+	$(call run_cuffdiff,cufflinks2,cuffdiff --no-update-check -u -o $(de_toplevel_folder1)/cuffdiff2_nd/$*.$(de_method).tmp -b $(reference_abspath) -p $(max_threads)  $(gtf_file_abspath)  $(call get_contrast_bam_files,$*)) && mv $(de_toplevel_folder1)/cuffdiff2_nd/$*.$(de_method).tmp $(de_toplevel_folder1)/cuffdiff2_nd/$*.$(de_method)
 
 ###############
 # DE
 
 # DESEQ
-$(name)/$(mapper)/$(quant_method)/deseq/%.genes_de.tsv $(name)/$(mapper)/$(quant_method)/deseq/%.genes_de.Rdata: $(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv $(annot_tsv) 
+$(de_toplevel_folder1)/deseq/%.genes_de.tsv $(de_toplevel_folder1)/deseq/%.genes_de.Rdata: $(quant_toplevel_folder)/genes.raw.$(quant_method).tsv $(annot_tsv) 
 	$(call run_deseq,$<,$*,$(@D)/$*.deseq,) && mv $(@D)/$*.deseq/de.tsv $(@D)/$*.genes_de.tsv && mv $(@D)/$*.deseq/de.Rdata $(@D)/$*.genes_de.Rdata
 
-$(name)/$(mapper)/$(quant_method)/deseq/%.transcripts_de.tsv $(name)/$(mapper)/$(quant_method)/deseq/%.transcripts_de.Rdata: $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv $(annot_tsv) 
+$(tde_toplevel_folder1)/deseq/%.transcripts_de.tsv $(tde_toplevel_folder1)/deseq/%.transcripts_de.Rdata: $(quant_toplevel_folder)/transcripts.raw.$(quant_method).tsv $(annot_tsv) 
 	$(call run_deseq,$<,$*,$(@D)/$*.deseq,transcript) && mv $(@D)/$*.deseq/de.tsv $(@D)/$*.transcripts_de.tsv && mv $(@D)/$*.deseq/de.Rdata $(@D)/$*.transcripts_de.Rdata
 
 #ex. irap_DE_deseq matrix_file.tsv  "colnameA,colnameB,colnameC;colnameD,colnameF" "grouplabel1,grouplabel2" oprefix [annot.file.tsv] [tech.replicates.def]
 
 # DESEQ2
-$(name)/$(mapper)/$(quant_method)/deseq2/%.genes_de.tsv $(name)/$(mapper)/$(quant_method)/deseq2/%.genes_de.Rdata: $(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv $(annot_tsv) 
+$(de_toplevel_folder1)/deseq2/%.genes_de.tsv $(de_toplevel_folder1)/deseq2/%.genes_de.Rdata: $(quant_toplevel_folder)/genes.raw.$(quant_method).tsv $(annot_tsv) 
 	$(call run_deseq2,$<,$*,$(@D)/$*.deseq2,) && mv $(@D)/$*.deseq2/de.tsv $(@D)/$*.genes_de.tsv && mv $(@D)/$*.deseq2/de.Rdata $(@D)/$*.genes_de.Rdata
 
-$(name)/$(mapper)/$(quant_method)/deseq2/%.transcripts_de.tsv $(name)/$(mapper)/$(quant_method)/deseq2/%.transcripts_de.Rdata: $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv $(annot_tsv) 
+$(tde_toplevel_folder1)/deseq2/%.transcripts_de.tsv $(tde_toplevel_folder1)/deseq2/%.transcripts_de.Rdata: $(quant_toplevel_folder)/transcripts.raw.$(quant_method).tsv $(annot_tsv) 
 	$(call run_deseq2,$<,$*,$(@D)/$*.deseq2,transcript) && mv $(@D)/$*.deseq2/de.tsv $(@D)/$*.transcripts_de.tsv && mv $(@D)/$*.deseq2/de.Rdata $(@D)/$*.transcripts_de.Rdata
 
 
 # EDGER
-$(name)/$(mapper)/$(quant_method)/edger/%.genes_de.tsv $(name)/$(mapper)/$(quant_method)/edger/%.genes_de.Rdata: $(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv $(annot_tsv) 
+$(de_toplevel_folder1)/edger/%.genes_de.tsv $(de_toplevel_folder1)/edger/%.genes_de.Rdata: $(quant_toplevel_folder)/genes.raw.$(quant_method).tsv $(annot_tsv) 
 	$(call run_edger,$<,$*,$(@D)/$*.edger,) && mv $(@D)/$*.edger/de.tsv $(@D)/$*.genes_de.tsv && mv $(@D)/$*.edger/de.Rdata $(@D)/$*.genes_de.Rdata
 
-$(name)/$(mapper)/$(quant_method)/edger/%.transcripts_de.tsv $(name)/$(mapper)/$(quant_method)/edger/%.transcripts_de.Rdata: $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv $(annot_tsv) 
+$(tde_toplevel_folder1)/edger/%.transcripts_de.tsv $(tde_toplevel_folder1)/edger/%.transcripts_de.Rdata: $(quant_toplevel_folder1)/transcripts.raw.$(quant_method).tsv $(annot_tsv) 
 	$(call run_edger,$<,$*,$(@D)/$*.edger,transcript) && mv $(@D)/$*.edger/de.tsv $(@D)/$*.transcripts_de.tsv && mv $(@D)/$*.edger/de.Rdata $(@D)/$*.transcripts_de.Rdata
 
 # VOOM
-$(name)/$(mapper)/$(quant_method)/voom/%.genes_de.tsv $(name)/$(mapper)/$(quant_method)/voom/%.genes_de.Rdata: $(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv $(annot_tsv) 
+$(de_toplevel_folder1)/voom/%.genes_de.tsv $(de_toplevel_folder1)/voom/%.genes_de.Rdata: $(quant_toplevel_folder)/genes.raw.$(quant_method).tsv $(annot_tsv) 
 	$(call run_voom,$<,$*,$(@D)/$*.voom,) && mv $(@D)/$*.voom/de.tsv $(@D)/$*.genes_de.tsv && mv $(@D)/$*.voom/de.Rdata $(@D)/$*.genes_de.Rdata
 
-$(name)/$(mapper)/$(quant_method)/voom/%.transcripts_de.tsv $(name)/$(mapper)/$(quant_method)/voom/%.transcripts_de.Rdata: $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv $(annot_tsv) 
+$(tde_toplevel_folder1)/voom/%.transcripts_de.tsv $(tde_toplevel_folder1)/voom/%.transcripts_de.Rdata: $(quant_toplevel_folder)/transcripts.raw.$(quant_method).tsv $(annot_tsv) 
 	$(call run_voom,$<,$*,$(@D)/$*.voom,transcript) && mv $(@D)/$*.voom/de.tsv $(@D)/$*.transcripts_de.tsv && mv $(@D)/$*.voom/de.Rdata $(@D)/$*.transcripts_de.Rdata
 
 # ebseq
-$(name)/$(mapper)/$(quant_method)/ebseq/%.genes_de.tsv $(name)/$(mapper)/$(quant_method)/ebseq/%.genes_de.Rdata: $(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv $(annot_tsv)  
+$(de_toplevel_folder1)/ebseq/%.genes_de.tsv $(de_toplevel_folder1)/ebseq/%.genes_de.Rdata: $(quant_toplevel_folder)/genes.raw.$(quant_method).tsv $(annot_tsv)  
 	$(call run_ebseq,$<,$*,$(@D)/$*.ebseq) && mv $(@D)/$*.ebseq/de.tsv $(@D)/$*.genes_de.tsv && mv $(@D)/$*.ebseq/de.Rdata $(@D)/$*.genes_de.Rdata
 
-$(name)/$(mapper)/$(quant_method)/ebseq/%.transcripts_de.tsv $(name)/$(mapper)/$(quant_method)/ebseq/%.transcripts_de.Rdata: $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv $(annot_tsv)  $(mapTrans2gene)
+$(tde_toplevel_folder1)/ebseq/%.transcripts_de.tsv $(tde_toplevel_folder1)/ebseq/%.transcripts_de.Rdata: $(quant_toplevel_folder)/transcripts.raw.$(quant_method).tsv $(annot_tsv)  $(mapTrans2gene)
 	$(call run_ebseq,$<,$*,$(@D)/$*.ebseq,transcript) && mv $(@D)/$*.ebseq/de.tsv $(@D)/$*.transcripts_de.tsv && mv $(@D)/$*.ebseq/de.Rdata $(@D)/$*.transcripts_de.Rdata
 
 
 # dexseq
-$(name)/$(mapper)/$(quant_method)/dexseq/%.exons_de.tsv $(name)/$(mapper)/$(quant_method)/dexseq/%.exons_de.Rdata: $(name)/$(mapper)/$(quant_method)/exons.raw.$(exon_quant_method).tsv $(DEXSEQ_GFF)
+$(ede_toplevel_folder1)/dexseq/%.exons_de.tsv $(ede_toplevel_folder1)/dexseq/%.exons_de.Rdata: $(quant_toplevel_folder)/exons.raw.$(exon_quant_method).tsv $(DEXSEQ_GFF)
 	$(call run_dexseq,$<,$*,$(@D)/$*.dexseq,exon) && mv $(@D)/$*.dexseq/de.tsv $(@D)/$*.exons_de.tsv && mv $(@D)/$*.dexseq/de.Rdata $(@D)/$*.exons_de.Rdata
 
 
 # BAYSEQ
-$(name)/$(mapper)/$(quant_method)/bayseq/%.genes_de.tsv: 
+$(de_toplevel_folder1)/bayseq/%.genes_de.tsv: 
 	echo TODO:RUN_Bayseq_FOR_DE

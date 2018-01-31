@@ -34,7 +34,7 @@
 define do_quality_filtering_and_report=
 	irap_fastq_qc $(read_qual_filter_common_params) input_dir=$(2) read_size=$($(1)_rs)   qual=$($(1)_qual) f="$(notdir $($(1)))" out_prefix=$(1) is_pe=$(call is_pe_lib,$(1)) out_dir=$(3)  $(4) $(call get_opt_barcode_params,$(1))
 endef
-#	irap_fastq_qc $(read_qual_filter_common_params) data_dir=$(raw_data_dir)$($(1)_dir) read_size=$($(1)_rs)   qual=$($(1)_qual) f="$($(1))" out_prefix=$(1) is_pe=$(#call is_pe_lib,$(1)) out_dir=$(name)/data/$($(1)_dir)  $(2)
+#	irap_fastq_qc $(read_qual_filter_common_params) data_dir=$(raw_data_dir)$($(1)_dir) read_size=$($(1)_rs)   qual=$($(1)_qual) f="$($(1))" out_prefix=$(1) is_pe=$(#call is_pe_lib,$(1)) out_dir=$(auxdata_toplevel_folder)/$($(1)_dir)  $(2)
 
 
 ################################################################################
@@ -81,16 +81,11 @@ clean_quality_filtering_and_report:
 	$(foreach p,$(se) $(pe),$(call do_quality_filtering_and_report,$(p),$(raw_data_dir)$($(p)_dir)/,$(dir $(call lib2filt_folder,$(p))),clean))
 
 
-# TODO: deprecated/rm
-#print_qc_dirs_files:
-#	echo	$(foreach l,$(se) $(pe),$(name)/report/riq/$($(l)_dir) )
-
-
 #########################################################################
 # a single file with the mapping stats
-$(name)/$(mapper)/libs_qc.tsv: $(name)/$(mapper)/stats_raw.tsv $(name)/$(mapper)/stats_perc.tsv  $(name)/$(mapper)/featstats_raw.tsv   $(name)/$(mapper)/genestats_raw.tsv 
-	irap_append2tsv --in "$(name)/$(mapper)/stats_raw.tsv $(name)/$(mapper)/featstats_raw.tsv $(name)/$(mapper)/genestats_raw.tsv" --exclude_aggr  --cols_not_sorted --out $@.1.tmp &&\
-	irap_append2tsv --in "$(name)/$(mapper)/stats_perc.tsv $(name)/$(mapper)/featstats_perc.tsv $(name)/$(mapper)/genestats_perc.tsv" --exclude_aggr --add_row_suffix "_perc" --cols_not_sorted --out $@.2.tmp && \
+$(mapper_toplevel_folder)/libs_qc.tsv: $(mapper_toplevel_folder)/stats_raw.tsv $(mapper_toplevel_folder)/stats_perc.tsv  $(mapper_toplevel_folder)/featstats_raw.tsv   $(mapper_toplevel_folder)/genestats_raw.tsv 
+	irap_append2tsv --in "$(mapper_toplevel_folder)/stats_raw.tsv $(mapper_toplevel_folder)/featstats_raw.tsv $(mapper_toplevel_folder)/genestats_raw.tsv" --exclude_aggr  --cols_not_sorted --out $@.1.tmp &&\
+	irap_append2tsv --in "$(mapper_toplevel_folder)/stats_perc.tsv $(mapper_toplevel_folder)/featstats_perc.tsv $(mapper_toplevel_folder)/genestats_perc.tsv" --exclude_aggr --add_row_suffix "_perc" --cols_not_sorted --out $@.2.tmp && \
 	irap_append2tsv --in "$@.1.tmp $@.2.tmp" --exclude_aggr --transpose --out $@.tmp && mv $@.tmp $@ &&\
 	rm -f $@.1.tmp $@.2.tmp
 
@@ -105,26 +100,26 @@ endif
 
 WAVE3_s_TARGETS+=$(MAPPING_REPORT_PRE_STATS)
 ifneq ($(mapper),none)
-WAVE3_TARGETS+=$(name)/$(mapper)/libs_qc.tsv
+WAVE3_TARGETS+=$(mapper_toplevel_folder)/libs_qc.tsv
 endif
 WAVE4_TARGETS+=
 
 # merge into a single file the statistics collected from the BAMs 
-$(name)/$(mapper)/stats_raw.tsv $(name)/$(mapper)/stats_perc.tsv: $(foreach s,$(se),$(call lib2bam_folder,$(s))$(s).se.hits.bam) $(foreach p,$(pe),$(call lib2bam_folder,$(p))$(p).pe.hits.bam)
-	$(call pass_args_stdin,irap_bams2tsv,$(name)/$(mapper)/stats_raw.tsv, --pe "$(call remove_spaces,$(foreach p,$(pe),;$(call lib2bam_folder,$(p))$(p).pe.hits.bam))" --se "$(call remove_spaces,$(foreach s,$(se),;$(call lib2bam_folder,$(s))$(s).se.hits.bam))"  --pe_labels "$(call remove_spaces,$(foreach p,$(pe),;$(p)))" --se_labels "$(call remove_spaces,$(foreach s,$(se),;$(s)))" --out $(name)/$(mapper)/$(mapper)) && mv $(name)/$(mapper)/$(mapper)_mapping_stats_raw.tsv $(name)/$(mapper)/stats_raw.tsv && mv $(name)/$(mapper)/$(mapper)_mapping_stats_perc.tsv $(name)/$(mapper)/stats_perc.tsv
+$(mapper_toplevel_folder)/stats_raw.tsv $(mapper_toplevel_folder)/stats_perc.tsv: $(foreach s,$(se),$(call lib2bam_folder,$(s))$(s).se.hits.bam) $(foreach p,$(pe),$(call lib2bam_folder,$(p))$(p).pe.hits.bam)
+	$(call pass_args_stdin,irap_bams2tsv,$(mapper_toplevel_folder)/stats_raw.tsv, --pe "$(call remove_spaces,$(foreach p,$(pe),;$(call lib2bam_folder,$(p))$(p).pe.hits.bam))" --se "$(call remove_spaces,$(foreach s,$(se),;$(call lib2bam_folder,$(s))$(s).se.hits.bam))"  --pe_labels "$(call remove_spaces,$(foreach p,$(pe),;$(p)))" --se_labels "$(call remove_spaces,$(foreach s,$(se),;$(s)))" --out $(mapper_toplevel_folder)/$(mapper)) && mv $(mapper_toplevel_folder)/$(mapper)_mapping_stats_raw.tsv $(mapper_toplevel_folder)/stats_raw.tsv && mv $(mapper_toplevel_folder)/$(mapper)_mapping_stats_perc.tsv $(mapper_toplevel_folder)/stats_perc.tsv
 
 #
-$(name)/$(mapper)/featstats_raw.tsv $(name)/$(mapper)/featstats_perc.tsv:  $(foreach s,$(se),$(call lib2bam_folder,$(s))$(s).se.hits.bam.stats) $(foreach p,$(pe),$(call lib2bam_folder,$(p))$(p).pe.hits.bam.stats)
-	$(call pass_args_stdin,merge_featstats,$(name)/$(mapper)/featstats_raw.tsv, --header --stats "$(call remove_spaces,$(foreach p,$(pe),;$(call lib2bam_folder,$(p))$(p).pe.hits.bam.stats))$(call remove_spaces, $(foreach s,$(se),;$(call lib2bam_folder,$(s))$(s).se.hits.bam.stats))"  --labels "$(call remove_spaces,$(foreach p,$(pe) $(se),;$(p)))"  --out $(name)/$(mapper)/$(mapper).ftmp) && mv $(name)/$(mapper)/$(mapper).ftmp_featstats_raw.tsv $(name)/$(mapper)/featstats_raw.tsv && mv $(name)/$(mapper)/$(mapper).ftmp_featstats_perc.tsv $(name)/$(mapper)/featstats_perc.tsv
+$(mapper_toplevel_folder)/featstats_raw.tsv $(mapper_toplevel_folder)/featstats_perc.tsv:  $(foreach s,$(se),$(call lib2bam_folder,$(s))$(s).se.hits.bam.stats) $(foreach p,$(pe),$(call lib2bam_folder,$(p))$(p).pe.hits.bam.stats)
+	$(call pass_args_stdin,merge_featstats,$(mapper_toplevel_folder)/featstats_raw.tsv, --header --stats "$(call remove_spaces,$(foreach p,$(pe),;$(call lib2bam_folder,$(p))$(p).pe.hits.bam.stats))$(call remove_spaces, $(foreach s,$(se),;$(call lib2bam_folder,$(s))$(s).se.hits.bam.stats))"  --labels "$(call remove_spaces,$(foreach p,$(pe) $(se),;$(p)))"  --out $(mapper_toplevel_folder)/$(mapper).ftmp) && mv $(mapper_toplevel_folder)/$(mapper).ftmp_featstats_raw.tsv $(mapper_toplevel_folder)/featstats_raw.tsv && mv $(mapper_toplevel_folder)/$(mapper).ftmp_featstats_perc.tsv $(mapper_toplevel_folder)/featstats_perc.tsv
 
-$(name)/$(mapper)/genestats_raw.tsv $(name)/$(mapper)/genestats_perc.tsv:   $(foreach s,$(se),$(call lib2bam_folder,$(s))$(s).se.hits.bam.gene.stats) $(foreach p,$(pe),$(call lib2bam_folder,$(p))$(p).pe.hits.bam.gene.stats)
-	$(call pass_args_stdin,merge_featstats,$(name)/$(mapper)/genestats_raw.tsv, --stats "$(call remove_spaces,$(foreach p,$(pe),;$(call lib2bam_folder,$(p))$(p).pe.hits.bam.gene.stats))$(call remove_spaces,$(foreach p,$(se),;$(call lib2bam_folder,$(p))$(p).se.hits.bam.gene.stats))"  --labels "$(call remove_spaces,$(foreach p,$(pe) $(se),;$(p)))"  --out $(name)/$(mapper)/$(mapper).gtmp) && mv $(name)/$(mapper)/$(mapper).gtmp_featstats_perc.tsv $(name)/$(mapper)/genestats_perc.tsv && mv $(name)/$(mapper)/$(mapper).gtmp_featstats_raw.tsv $(name)/$(mapper)/genestats_raw.tsv 
+$(mapper_toplevel_folder)/genestats_raw.tsv $(mapper_toplevel_folder)/genestats_perc.tsv:   $(foreach s,$(se),$(call lib2bam_folder,$(s))$(s).se.hits.bam.gene.stats) $(foreach p,$(pe),$(call lib2bam_folder,$(p))$(p).pe.hits.bam.gene.stats)
+	$(call pass_args_stdin,merge_featstats,$(mapper_toplevel_folder)/genestats_raw.tsv, --stats "$(call remove_spaces,$(foreach p,$(pe),;$(call lib2bam_folder,$(p))$(p).pe.hits.bam.gene.stats))$(call remove_spaces,$(foreach p,$(se),;$(call lib2bam_folder,$(p))$(p).se.hits.bam.gene.stats))"  --labels "$(call remove_spaces,$(foreach p,$(pe) $(se),;$(p)))"  --out $(mapper_toplevel_folder)/$(mapper).gtmp) && mv $(mapper_toplevel_folder)/$(mapper).gtmp_featstats_perc.tsv $(mapper_toplevel_folder)/genestats_perc.tsv && mv $(mapper_toplevel_folder)/$(mapper).gtmp_featstats_raw.tsv $(mapper_toplevel_folder)/genestats_raw.tsv 
 
 ################
 
 # statistics per bam file
-%.bam.gff3: %.bam $(gff3_file_abspath).filt.gff3 $(name)/data/$(reference_basename).chr_sizes.sorted.txt
-	bedtools coverage -counts -sorted  -a $(gff3_file_abspath).filt.gff3 -b $< -g  $(name)/data/$(reference_basename).chr_sizes.sorted.txt > $@.tmp  &&\
+%.bam.gff3: %.bam $(gff3_file_abspath).filt.gff3 $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.sorted.txt
+	bedtools coverage -counts -sorted  -a $(gff3_file_abspath).filt.gff3 -b $< -g  $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.sorted.txt > $@.tmp  &&\
 	mv $@.tmp $@
 
 %.bam.stats: %.bam.gff3 
@@ -133,106 +128,92 @@ $(name)/$(mapper)/genestats_raw.tsv $(name)/$(mapper)/genestats_perc.tsv:   $(fo
 %.bam.stats.csv: %.bam 
 	irapBAM2stats bam=$< || ( rm -f $@ && exit 1)
 
-%.bam.gene.stats: %.bam $(name)/data/$(reference_basename).exons.bed $(name)/data/$(reference_basename).introns.bed $(name)/data/$(reference_basename).chr_sizes.sorted.txt
+%.bam.gene.stats: %.bam $(auxdata_toplevel_folder)/$(reference_basename).exons.bed $(auxdata_toplevel_folder)/$(reference_basename).introns.bed $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.sorted.txt
 	echo -n "Exons	" > $@.tmp &&\
-	bedtools intersect -sorted -g $(name)/data/$(reference_basename).chr_sizes.sorted.txt -abam $<  -b $(name)/data/$(reference_basename).exons.bed |samtools view -c - >> $@.tmp && echo >> $@ &&\
+	bedtools intersect -sorted -g $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.sorted.txt -abam $<  -b $(auxdata_toplevel_folder)/$(reference_basename).exons.bed |samtools view -c - >> $@.tmp && echo >> $@ &&\
 	echo -n "Introns	" >> $@.tmp &&\
-	bedtools intersect -sorted -g $(name)/data/$(reference_basename).chr_sizes.sorted.txt -abam $<  -b $(name)/data/$(reference_basename).introns.bed |samtools view -c - >> $@.tmp && echo >> $@ && \
+	bedtools intersect -sorted -g $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.sorted.txt -abam $<  -b $(auxdata_toplevel_folder)/$(reference_basename).introns.bed |samtools view -c - >> $@.tmp && echo >> $@ && \
 	expr `wc -l $@.tmp | cut -f 1 -d\ ` == 2 && \
 	mv $@.tmp $@
 
 # bed files required to get some extra stats
 # exons.bed
-$(name)/data/$(reference_basename).exons.bed: $(gff3_file_abspath).filt.gff3 $(name)/data/$(reference_basename).chr_sizes.sorted.bed
+$(auxdata_toplevel_folder)/$(reference_basename).exons.bed: $(gff3_file_abspath).filt.gff3 $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.sorted.bed
 	cat $< | awk 'BEGIN{OFS="\t";} $$3=="exon" {print $$1,$$4,$$5,$$6,$$6,$$7}' | sort -u| bedtools sort -i /dev/stdin > $@.tmp.bed && \
-	bedtools merge -i $@.tmp.bed | bedtools sort -faidx $(name)/data/$(reference_basename).chr_sizes.sorted.bed -i /dev/stdin > $@.tmp && \
+	bedtools merge -i $@.tmp.bed | bedtools sort -faidx $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.sorted.bed -i /dev/stdin > $@.tmp && \
 	mv $@.tmp $@ && rm -f $@.tmp.bed
 
 # genes.bed
-$(name)/data/$(reference_basename).genes.bed: $(gff3_file_abspath).filt.gff3 $(name)/data/$(reference_basename).chr_sizes.sorted.bed
+$(auxdata_toplevel_folder)/$(reference_basename).genes.bed: $(gff3_file_abspath).filt.gff3 $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.sorted.bed
 	cat $< | awk 'BEGIN{OFS="\t";} $$3=="gene" {print $$1,$$4,$$5}' |  sort -u| bedtools sort -i /dev/stdin > $@.tmp.bed &&\
-	bedtools merge -i $@.tmp.bed  | bedtools sort -faidx $(name)/data/$(reference_basename).chr_sizes.sorted.bed -i /dev/stdin  > $@.tmp && \
+	bedtools merge -i $@.tmp.bed  | bedtools sort -faidx $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.sorted.bed -i /dev/stdin  > $@.tmp && \
 	mv $@.tmp $@ && rm -f $@.tmp.bed
 
 # 
-$(name)/data/$(reference_basename).genes.bed6: $(gtf_file_abspath)
+$(auxdata_toplevel_folder)/$(reference_basename).genes.bed6: $(gtf_file_abspath)
 	sed -E 's/[^\t]*gene_id "([^;]+)".*$$/\1/' $< | awk 'BEGIN{OFS="\t";} $$3=="exon" {print $$1,$$4,$$5,$$9,$$6,$$7}' |  sort -u| bedtools sort -i /dev/stdin > $@.tmp.bed &&\
 	mv $@.tmp.bed $@ && rm -f $@.tmp.bed
 
 
 # introns
-$(name)/data/$(reference_basename).introns.bed: $(name)/data/$(reference_basename).genes.bed $(name)/data/$(reference_basename).exons.bed
-	bedtools subtract -sorted -a $< -b $(name)/data/$(reference_basename).exons.bed > $@.tmp && if [ `wc -l $@.tmp |cut -f 1 -d\ ` == 0 ]; then echo -e 'dummy_entry\t1\t1' > $@.tmp; fi && mv $@.tmp $@
+$(auxdata_toplevel_folder)/$(reference_basename).introns.bed: $(auxdata_toplevel_folder)/$(reference_basename).genes.bed $(auxdata_toplevel_folder)/$(reference_basename).exons.bed
+	bedtools subtract -sorted -a $< -b $(auxdata_toplevel_folder)/$(reference_basename).exons.bed > $@.tmp && if [ `wc -l $@.tmp |cut -f 1 -d\ ` == 0 ]; then echo -e 'dummy_entry\t1\t1' > $@.tmp; fi && mv $@.tmp $@
 
 
 ## transcripts
-$(name)/data/$(reference_basename).transcripts.bed6:  $(gtf_file_abspath)
+$(auxdata_toplevel_folder)/$(reference_basename).transcripts.bed6:  $(gtf_file_abspath)
 	grep -E "(exon)" $< | sed -E 's/[^\t]*transcript_id "([^;]+)".*$$/\1/'|awk 'BEGIN{OFS="\t";} {print $$1,$$4,$$5,$$9,$$6,$$7}' |  sort -u| bedtools sort -i /dev/stdin > $@.tmp.bed &&\
 	mv $@.tmp.bed $@ && rm -f $@.tmp.bed
 
 
 #
 ifneq ($(mapper),none)
-STAGE4_OUT_FILES+=$(name)/$(mapper)/libs_qc.tsv
-STAGE4_TARGETS+=$(name)/$(mapper)/libs_qc.tsv
+STAGE4_OUT_FILES+=$(mapper_toplevel_folder)/libs_qc.tsv
+STAGE4_TARGETS+=$(mapper_toplevel_folder))/libs_qc.tsv
 endif
 ######################################################################
 
 
 ######################################################################
 # qc=none|on|off
-ifeq ($(qc),none)
-$(name)/report/qc.html $(name)/report/qc.tsv: 
+ifeq ($(qc),off)
+$(qc_toplevel_folder)/qc.html $(qc_toplevel_folder)/qc.tsv: 
 
-else
-$(name)/report/qc.html $(name)/report/qc.tsv: $(conf) $(call must_exist,$(name)/data/)  $(name)/report/fastq_qc_report.tsv
-	irap_report_qc $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(name)/report || ( rm -f $@ && exit 1)
-endif
-
-STAGE2_OUT_FILES+=$(name)/report/qc.tsv
-STAGE2_TARGETS+=$(name)/report/qc.tsv
-
-ifeq ($(qc),none)
 # empty file
 FASTQC_REPORT_FILES=
-$(name)/report/fastq_qc_report.tsv:
+$(qc_toplevel_folder)/fastq_qc_report.tsv:
 	touch $@
 
+## end qc=off
 else
+## qc=on |report
+$(qc_toplevel_folder)/qc.html $(qc_toplevel_folder)/qc.tsv: $(conf) $(call must_exist,$(auxdata_toplevel_folder)/)  $(qc_toplevel_folder)/fastq_qc_report.tsv
+	irap_report_qc $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(qc_toplevel_folder)  --css $(qc2report_folder)/$(CSS_FILE) || ( rm -f $@ && exit 1)
+endif
+
+STAGE2_OUT_FILES+=$(qc_toplevel_folder)/qc.tsv
+STAGE2_TARGETS+=$(qc_toplevel_folder)/qc.tsv
 
 FASTQC_REPORT_FILES:=$(foreach p,$(se),$(call lib2filt_folder,$(p))$(p).f.fastqc.tsv) $(foreach p,$(pe),$(call lib2filt_folder,$(p))$(p)_1.f.fastqc.tsv)
 
 
-STAGE2_OUT_FILES+=$(name)/report/fastq_qc_report.tsv
-STAGE2_TARGETS+=$(name)/report/fastq_qc_report.tsv
+STAGE2_OUT_FILES+=$(qc_toplevel_folder)/fastq_qc_report.tsv
+STAGE2_TARGETS+=$(qc_toplevel_folder)/fastq_qc_report.tsv
 
-ifeq  ($(qc),off)
-#FASTQC_REPORT_FILES=$(foreach p,$(pe),$(name)/report/riq/$($(p)_dir)/$(call get_fastq_prefix,$(p),pe)_1.fastqc.tsv $(name)/report/riq/$($(p)_dir)$(call get_fastq_prefix,$(p),pe)_2.fastqc.tsv) $(foreach p,$(se),$(name)/report/riq/$($(p)_dir)$(call get_fastq_prefix,$(p),se).fastqc.tsv)
-
-$(name)/report/fastq_qc_report.tsv:  $(FASTQC_REPORT_FILES)
+ifeq  ($(qc),report)
+## nothing to do
+FASTQC_REPORT_FILES:=$(foreach p,$(pe),$(qc_toplevel_folder)/$($(p)_dir)/$(p)_1.f.fastqc.tsv $(qc_toplevel_folder)/$($(p)_dir)/$(p)_2.f.fastqc.tsv) $(foreach p,$(se),$(qc_toplevel_folder)/$($(p)_dir)$(p).f.fastqc.tsv)
+$(info $(FASTQC_REPORT_FILES))
+$(qc_toplevel_folder)/fastq_qc_report.tsv:  $(FASTQC_REPORT_FILES)
 	$(call pass_args_stdin,irap_merge2tsv,$@.tmp, --in='$(subst $(space),;,$^)'  --out $@.tmp) && mv $@.tmp $@
-
-%.fastqc.tsv: %.fastqc.zip
-	irap_fastqc2tsv $< > $@.tmp && mv $@.tmp $@
 
 else
-
-
-$(name)/report/fastq_qc_report.tsv:  $(FASTQC_REPORT_FILES)
+ifeq ($(qc),on)
+$(qc_toplevel_folder)/fastq_qc_report.tsv:  $(FASTQC_REPORT_FILES)
 	$(call pass_args_stdin,irap_merge2tsv,$@.tmp, --in='$(subst $(space),;,$^)'  --out $@.tmp) && mv $@.tmp $@
 
-# SE
-%.f.fastqc.tsv: %.f.fastqc.zip
-	irap_fastqc2tsv $< | sed "1s/.f$$//" > $@.tmp && mv $@.tmp $@
-
-# PE
-%_1.f.fastqc.tsv: %_1.f.fastqc.zip 
-	irap_fastqc2tsv $< | sed "1s/.f$$//" > $@.tmp && mv $@.tmp $@
-
-%_2.f.fastqc.tsv: %_2.f.fastqc.zip 
-	irap_fastqc2tsv $< | sed "1s/.f$$//" > $@.tmp && mv $@.tmp $@
-
 endif
+## qc=on |report
 endif
 
 

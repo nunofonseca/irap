@@ -33,12 +33,12 @@ SHELL=bash
 
 # Information messages
 define p_info=
-$(info * $(shell date "+%H:%M:%S %d/%m/%Y") : $(1))
+$(info * $(shell date "+%d/%m/%Y %H:%M:%S") : $(1))
 endef
 
 # Error messages
 define p_error=
-$(info * $(shell date "+%H:%M:%S %d/%m/%Y") : ERROR: $(1)) && $(error Fatal error: $(1))
+$(info * $(shell date "+%d/%m/%Y %H:%M:%S") : ERROR: $(1)) && $(error Fatal error: $(1))
 endef
 
 # check if the parameter has a value - prints an error if not
@@ -135,18 +135,30 @@ def_known_umi_file?=
 def_known_cells_file?=
 
 barcode_min_qual?=10
-# ****************
-# Paths
+
+#######################
+# subfolder names
+qc_label?=.
+quant_label?=.
+mapper_label?=.
+de_label?=.
+
+#######################
+# only method for now
+qc_method:=irap_qc
+
+########################
+# path functions - 1=lib
 # get the path for a filtered fastq file
-lib2filt_folder=$(name)/data/qc/$($(1)_dir)
+lib2filt_folder=$(qc_toplevel_folder)/$($(1)_dir)
 # get the path for a bam file
-lib2bam_folder=$(name)/$(mapper)/$($(1)_dir)
+lib2bam_folder=$(mapper_toplevel_folder)/$($(1)_dir)
 #
-lib2snp_folder=$(name)/$(mapper)/$($(1)_dir)
+lib2snp_folder=$(snp_toplevel_folder)/$($(1)_dir)
 #
-lib2quant_folder=$(name)/$(mapper)/$(quant_method)/$($(1)_dir)
+lib2quant_folder=$(quant_toplevel_folder)/$($(1)_dir)
 #
-lib2fusion_folder=$(name)/$(mapper)/$(fusion_method)/$($(1)_dir)
+lib2fusion_folder=$(fusion_toplevel_folder)/$($(1)_dir)
 
 # check if a parameter is defined
 check_param_ok=$(if $(call is_defined,$(strip $(1))),$(info *	$(1)=$($(1))),$(error * Missing -$(1)-))
@@ -154,7 +166,6 @@ check_param_ok=$(if $(call is_defined,$(strip $(1))),$(info *	$(1)=$($(1))),$(er
 # check  contrast name
 # 1 - param 2-param_name
 check_name=$(if $(shell echo $(1)|sed "s/[0-9]*//g"),,$(error * Invalid $(2) $(1)))
-
 
 # the library name should be different from the prefix of the fastq files
 # ex. of an invalid library name: lib1=lib1.fastq
@@ -250,8 +261,8 @@ def_trim_poly_at_len?=10
 #Trim all reads to the minimum read size after quality trimming - y/n
 def_trim_reads?=y
 
-# none is being kept for backwards compatibility
-# Quality filtering - on/report/off/none (alias: qc)
+# none is being kept for backwards compatibility  (alias: qc)
+# Quality filtering - on/off/report
 def_qual_filtering?=on
 
 # Mapper to use in QC contamination check 
@@ -309,6 +320,9 @@ def_annot_tsv?=off
 
 CSS_FILE?=irap.css
 
+gen_html_report=y
+GEN_REPORT_QC_ONLY=
+
 ###########
 ## Internal 
 isl_mode?=n
@@ -348,6 +362,7 @@ ifdef lib_info
 endif
 
 
+
 ###############################################
 # Load some definitions
 include $(irap_path)/../aux/mk/irap_sc_defs.mk
@@ -369,7 +384,9 @@ else
  $(info *	name=$(name))
 endif
 
-
+## Toplevel paths
+auxdata_toplevel_folder:=$(name)/data
+report_toplevel_folder:=$(name)/report
 
 #************************
 # data_dir Data directory (directory where the data is expected to be)
@@ -469,7 +486,8 @@ user_trans?=cdna
 ifeq ($(user_trans),cdna)
 user_trans_abspath:=$(cdna_file_abspath)
 else
-user_trans_abspath:=$(subst .fa,.irap.fa,$(cdna_file_abspath))
+user_trans_abspath:=
+#$(subst .fa,.irap.fa,$(cdna_file_abspath))
 endif
 # $(info *  $(user_trans_abspath))
 
@@ -497,7 +515,7 @@ $(call file_exists,$(spikein_fasta_abspath))
 override spikein_fasta_abspath:=$(subst .gz,,$(spikein_fasta_abspath))
 # gtf and fasta files
 # new reference file cannot be shared across experiments
-reference_dir:=$(name)/data
+reference_dir:=$(auxdata_toplevel_folder)
 user_reference_abspath:=$(reference_abspath)
 # newref: ref_prefix.spikein_prefix.fasta
 spikein_fasta_prefix:=$(patsubst %.fa,%,$(patsubst %.fasta,%,$(patsubst %.gz,%,$(notdir $(spikein_fasta)))))
@@ -510,9 +528,9 @@ reference_basename=$(notdir $(reference_abspath))
 ## transcripts
 override trans_abspath:=$(dir $(user_trans_abspath))/$(patsubst %.fasta,%.$(spikein_fasta_prefix),$(patsubst %.fa,%.fasta,$(subst .gz,,$(notdir $(user_trans_abspath))))).fa
 
-gtf_file_dir:=$(name)/data
+gtf_file_dir:=$(auxdata_toplevel_folder)
 user_gtf_abspath:=$(gtf_file_abspath)
-gtf_file_abspath:=$(name)/data/$(subst .fasta,,$(spikein_fasta_prefix)).$(subst .gz,,$(notdir $(user_gtf_abspath)))
+gtf_file_abspath:=$(auxdata_toplevel_folder)/$(subst .fasta,,$(spikein_fasta_prefix)).$(subst .gz,,$(notdir $(user_gtf_abspath)))
 spikein_gtf_file:=$(patsubst %.fasta,%.gtf,$(spikein_fasta_abspath))
 override gtf_file:=$(notdir $(gtf_file_abspath))
 
@@ -551,7 +569,7 @@ juncs_file:=$(notdir $(juncs_file_abspath))
 
 ifndef gff3_file
 # GFF3 file obtained from the gtf file
-gff3_file_abspath:=$(name)/data/$(patsubst %.gtf,%.gff3,$(subst .gz,,$(gtf_file)))
+gff3_file_abspath:=$(auxdata_toplevel_folder)/$(patsubst %.gtf,%.gff3,$(subst .gz,,$(gtf_file)))
 else
 gff3_file_abspath:=$(subst .gz,,$(gff3_file))
 endif
@@ -878,7 +896,7 @@ $(info *	tmp_dir=$(tmp_dir) (temporary directory))
 #******************
 # on|off|report=none(deprecated)
 ifdef qc
- qual_filtering=$(qc)
+qual_filtering:=$(qc)
 endif
 
 ifndef qual_filtering
@@ -898,10 +916,9 @@ endif
 # report - just collect QC stats
 # off - skip filtering and collection of QC stats
 qc_modes=on off report
-ifeq (,$(filter $(qc),$(qc_modes)))
-$(call p_info,[ERROR] Invalid qc/qual_filtering value)
+ifeq ($(qc_modes),$(filter-out $(qc),$(qc_modes)))
+$(call p_error,Invalid qc/qual_filtering value)
 endif
-
 ##############
 # Fine tune QC
 
@@ -996,7 +1013,7 @@ ifndef quant_method
  quant_method:=$(def_quant_method)
 endif
 
-SUPPORTED_QUANT_METHODS=basic htseq1 htseq2 cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd scripture flux_cap nurd stringtie stringtie_nd rsem kallisto salmon umi_count umis 
+SUPPORTED_QUANT_METHODS=basic htseq1 htseq2 cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd  flux_cap nurd stringtie stringtie_nd rsem kallisto salmon umi_count umis 
 
 # methods that produce transcript level quantification by default
 TRANS_QUANT_METHODS=flux_cap cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd nurd stringtie stringtie_nd rsem kallisto salmon umi_count bitseq 
@@ -1054,7 +1071,7 @@ $(info *	transcript_quant=$(transcript_quant))
 $(info *	transcript_expr=$(transcript_expr))
 
 ## Needed for transcript quantification
-mapTrans2gene=$(name)/data/$(gtf_file_basename).mapTrans2Gene.tsv
+mapTrans2gene=$(auxdata_toplevel_folder)/$(gtf_file_basename).mapTrans2Gene.tsv
 
 ifeq ($(transcript_quant),y)
 ifneq ($(dt_fc),n)
@@ -1187,12 +1204,12 @@ annot_tsv=$(def_annot_tsv)
 endif
 
 ifeq (auto,$(annot_tsv)) 
-annot_tsv=$(name)/data/$(reference_basename).gene.annot.tsv
+annot_tsv=$(auxdata_toplevel_folder)/$(reference_basename).gene.annot.tsv
 endif
 
 
 ifeq (off,$(annot_tsv)) 
-override annot_tsv:=$(name)/data/empty.gene.annot.tsv
+override annot_tsv:=$(auxdata_toplevel_folder)/empty.gene.annot.tsv
 endif
 
 
@@ -1347,11 +1364,11 @@ endif
 
 
 ifndef feat_length
-feat_length=$(name)/data/$(gtf_file_basename).lengths.Rdata
+feat_length=$(auxdata_toplevel_folder)/$(gtf_file_basename).lengths.Rdata
 endif
 
 ifndef exon_length
-exon_length=$(name)/data/$(gtf_file_basename).lengths.Rdata
+exon_length=$(auxdata_toplevel_folder)/$(gtf_file_basename).lengths.Rdata
 endif
 
 
@@ -1366,7 +1383,7 @@ $(info *	barcode_post_process_bam=$(barcode_post_process_bam))
 ifeq ($(barcode_post_process_bam),y)
 ## alignments to the genome
 define do_post_process_bam_cmd=
-bam_add_tags  --inbam $(1) --outbam - | bam_annotate.sh -b - -e $(name)/data/$(reference_basename).exons.bed   -i $(name)/data/$(reference_basename).introns.bed  -g $(name)/data/$(reference_basename).genes.bed6 -t $(name)/data/$(reference_basename).transcripts.bed6 > $(2).tmp && mv $(2).tmp $(2)
+bam_add_tags  --inbam $(1) --outbam - | bam_annotate.sh -b - -e $(auxdata_toplevel_folder)/$(reference_basename).exons.bed   -i $(auxdata_toplevel_folder)/$(reference_basename).introns.bed  -g $(auxdata_toplevel_folder)/$(reference_basename).genes.bed6 -t $(auxdata_toplevel_folder)/$(reference_basename).transcripts.bed6 > $(2).tmp && mv $(2).tmp $(2)
 endef
 ## Alignments to the transcriptome - assumes that the chr/seq contains the transcript ID
 define do_post_process_trans_bam_cmd=
@@ -1411,6 +1428,27 @@ $(1) $(3)
 endef
 
 endif
+
+
+# *****************************************************
+# Paths
+qc_toplevel_folder1:=$(subst /.,,$(name)/$(qc_label))
+qc_toplevel_folder:=$(qc_toplevel_folder1)/$(qc_method)
+
+mapper_toplevel_folder1:=$(subst /.,,$(qc_toplevel_folder)/$(mapper_label))
+mapper_toplevel_folder:=$(mapper_toplevel_folder1)/$(mapper)
+
+quant_toplevel_folder1:=$(subst /.,,$(mapper_toplevel_folder)/$(quant_label))
+quant_toplevel_folder:=$(quant_toplevel_folder1)/$(quant_method)
+
+de_toplevel_folder1:=$(subst /.,,$(quant_toplevel_folder)/$(de_label))
+de_toplevel_folder:=$(de_toplevel_folder1)/$(de_method)
+
+tde_toplevel_folder1:=$(de_toplevel_folder1)
+tde_toplevel_folder:=$(tde_toplevel_folder1)/$(transcript_de_method)
+
+ede_toplevel_folder1:=$(de_toplevel_folder1)
+ede_toplevel_folder:=$(ede_toplevel_folder1)/$(exon_de_method)
 
 ################################################################################
 # Make stuff
@@ -1694,6 +1732,8 @@ include $(irap_path)/../aux/mk/irap_sc_qc.mk
 include $(irap_path)/../aux/mk/irap_clustering.mk
 include $(irap_path)/../aux/mk/irap_sc_vis.mk
 
+#
+include $(irap_path)/../aux/mk/irap_status.mk
 
 ifdef irap_devel
 $(call p_info,Loading code under development)
@@ -1709,7 +1749,27 @@ ifeq (invalid,$(shell irap_paths $(mapper) $(quant_method) $(quant_norm_tool) $(
 endif
 
 $(info *========================================================)
-
+pprint_path=$(subst /./,/,$(1))
+$(info * Files/folders: )
+$(info ** Top level folder: $(name))
+$(info ** Aux data: $(auxdata_toplevel_folder))
+$(info ** QC for input files: $(call pprint_path,$(qc_toplevel_folder)))
+ifneq ($(mapper),none)
+$(info ** Alignment files: $(call pprint_path,$(mapper_toplevel_folder)))
+endif
+ifneq ($(quant_method),none)
+$(info ** Quantification matrices: $(call pprint_path,$(quant_toplevel_folder)))
+endif
+ifneq ($(de_method),none)
+$(info ** Gene level DE: $(call pprint_path,$(de_toplevel_folder)))
+endif
+ifneq ($(transcript_de_method),none)
+$(info ** Transcript level DE: $(call pprint_path,$(tde_toplevel_folder)))
+endif
+ifneq ($(transcript_de_method),none)
+$(info ** Exon level DE: $(call pprint_path,$(ede_toplevel_folder)))
+endif
+$(info --------------------------------------------------------)
 #################################################################################
 ifneq ($(mapper),none)
 index_files:=$(call $(mapper)_index_filenames,$(word 1,$(files_indexed)),$(word 1,$(files_indexed)))
@@ -1824,8 +1884,8 @@ endif
 %.gtf.bed: %.gtf
 	gtf2bed.pl $< > $@
 
-%.bam.bedGraph: %.bam $(name)/data/$(reference_basename).chr_sizes.txt
-	bedtools  genomecov -ibam $< -bg -g $(name)/data/$(reference_basename).chr_sizes.txt > $@.tmp && mv $@.tmp $@
+%.bam.bedGraph: %.bam $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.txt
+	bedtools  genomecov -ibam $< -bg -g $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.txt > $@.tmp && mv $@.tmp $@
 
 # gtf file with exon_id attribute
 %.gtf.exon_id.gtf: %.gtf %.gtf.checked
@@ -1859,13 +1919,13 @@ $(foreach tag,CR CB,$(eval $(call make-sort-bam-by-tag-rule,$(tag))))
 #
 # bigWig from bed 
 # bed file needs to be sorted and converted to bedGraph
-%.bw: %.bed $(name)/data/$(reference_basename).chr_sizes.txt
+%.bw: %.bed $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.txt
 	tail -n +2 $< | cut -f 1,2,3,5 | sort -k1,1 -k2,2n  > $<.sorted.bed && \
-	bedGraphToBigWig $<.sorted.bed $(name)/data/$(reference_basename).chr_sizes.txt $@.tmp && mv $@.tmp $@
+	bedGraphToBigWig $<.sorted.bed $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.txt $@.tmp && mv $@.tmp $@
 
 # bigwig from bedgraph
-%.bw: %.bedGraph $(name)/data/$(reference_basename).chr_sizes.txt
-	bedGraphToBigWig $< $(name)/data/$(reference_basename).chr_sizes.txt $@.tmp && mv $@.tmp $@
+%.bw: %.bedGraph $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.txt
+	bedGraphToBigWig $< $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.txt $@.tmp && mv $@.tmp $@
 
 define quant_levelFromFilename=
 $(if $(findstring exons,$(1)),exon,$(if $(findstring genes,$(1)),gene,mRNA))
@@ -1873,8 +1933,8 @@ endef
 
 # TSV (with feature value) is converted to bedGraph (http://genome.ucsc.edu/goldenPath/help/bedgraph.html)
 # bedGraph generated is sorted
-%.bedGraph: %.$(expr_ext) $(gff3_file_abspath).csv $(name)/data/$(reference_basename).chr_sizes.txt
-	tsv2bed.R $<  $(call quant_levelFromFilename,$*) $(gff3_file_abspath).csv $(name)/data/$(reference_basename).chr_sizes.txt | \
+%.bedGraph: %.$(expr_ext) $(gff3_file_abspath).csv $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.txt
+	tsv2bed.R $<  $(call quant_levelFromFilename,$*) $(gff3_file_abspath).csv $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.txt | \
 	sort -k1,1 -k2,2n | \
 	bedtools merge -scores mean -i - > $@.tmp &&\
 	mv $@.tmp $@
@@ -1882,13 +1942,6 @@ endef
 # fail if file needs to be generated
 %.cdna.fa:
 	$(call p_error,Missing cdna file $@)
-
-# feat_mapping_file
-# %.mapping.Rdata %.mapping_exons.tsv %.mapping_trans.tsv: %.gtf
-# 	irap_gtf2mapping --gtf $(gtf_file_abspath) --out $*.mapping.tmp --cores $(max_threads) && \
-# 	mv $*.mapping.tmp.Rdata $*.mapping.Rdata && \
-# 	mv $*.mapping.tmp_exons.tsv $*.mapping_exons.tsv && \
-# 	mv $*.mapping.tmp_trans.tsv $*.mapping_trans.tsv 
 
 %.mapping_trans.tsv: %.gtf
 	irap_gtf2mapping.pl --gtf $< --feature transcript > $@.tmp && mv $@.tmp $@
@@ -1915,19 +1968,19 @@ phony_targets+= setup setup_files
 # file with the length of the features (gene, isoform, exon)
 BOOTSTRAP_TARGETS+= setup_dirs $(trans_abspath) $(gtf_file_abspath).checked  $(gff3_file_abspath).filt.gff3   $(name)/version
 
-SETUP_DATA_FILES+= setup_data_files2 $(name)/data/$(gtf_file_basename).gene_class.txt $(index_files)   $(gtf_file_abspath).exon_id.gtf $(juncs_file_abspath)   $(annot_tsv)  $(name)/data/$(reference_basename).introns.bed  $(name)/data/$(reference_basename).genes.bed6 $(name)/data/$(reference_basename).transcripts.bed6 $(name)/data/$(reference_basename).genes.bed $(name)/data/$(reference_basename).exons.bed $(feat_mapping_files) 
+SETUP_DATA_FILES+= setup_data_files2 $(auxdata_toplevel_folder)/$(gtf_file_basename).gene_class.txt $(index_files)   $(gtf_file_abspath).exon_id.gtf $(juncs_file_abspath)   $(annot_tsv)  $(auxdata_toplevel_folder)/$(reference_basename).introns.bed  $(auxdata_toplevel_folder)/$(reference_basename).genes.bed6 $(auxdata_toplevel_folder)/$(reference_basename).transcripts.bed6 $(auxdata_toplevel_folder)/$(reference_basename).genes.bed $(auxdata_toplevel_folder)/$(reference_basename).exons.bed $(feat_mapping_files) 
 
-WAVE0_TARGETS+= $(name)/data/$(gtf_file_basename).gene_class.txt $(word 1,$(index_files))   $(gtf_file_abspath).exon_id.gtf $(juncs_file_abspath)   $(annot_tsv)  $(name)/data/$(reference_basename).introns.bed  $(name)/data/$(reference_basename).genes.bed6 $(name)/data/$(reference_basename).transcripts.bed6  $(feat_mapping_files)
+WAVE0_TARGETS+= $(auxdata_toplevel_folder)/$(gtf_file_basename).gene_class.txt $(word 1,$(index_files))   $(gtf_file_abspath).exon_id.gtf $(juncs_file_abspath)   $(annot_tsv)  $(auxdata_toplevel_folder)/$(reference_basename).introns.bed  $(auxdata_toplevel_folder)/$(reference_basename).genes.bed6 $(auxdata_toplevel_folder)/$(reference_basename).transcripts.bed6  $(feat_mapping_files)
 
-setup2_files:=$(name)/data/$(reference_basename).$(gtf_file_basename).data_info.tsv 
+setup2_files:=$(auxdata_toplevel_folder)/$(reference_basename).$(gtf_file_basename).data_info.tsv 
 WAVE1_TARGETS+= $(setup2_files)  $(word 2,$(index_files))
 
 setup_data_files2: $(setup2_files) 
 #phony_targets+=setup_data_files2
 
-# TODO: move $(name)/data/$(reference_basename).chr_sizes.sorted.txt to $(name)/data/$(reference_basename).chr_sizes.txt
+# TODO: move $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.sorted.txt to $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.txt
 # No need to include these files since they are generated by some rule
-# $(name)/data/introns.bed -> $(name)/data/genes.bed $(name)/data/exons.bed 
+# $(auxdata_toplevel_folder)/introns.bed -> $(auxdata_toplevel_folder)/genes.bed $(auxdata_toplevel_folder)/exons.bed 
 # $(gff3_file_abspath).csv -> $(gff3_file_abspath) 
 
 setup_files: $(SETUP_DATA_FILES)  $(BOOTSTRAP_TARGETS)
@@ -1973,49 +2026,49 @@ $(gff3_file_abspath): $(gtf_file_abspath)
 
 # Filter the gff3 file to contain only the chr that are in the fasta file
 # use the faidx file to ensure that the ordering is the same
-$(gff3_file_abspath).filt.gff3: $(gff3_file_abspath) $(name)/data/$(reference_basename).chr_sizes.sorted.bed 
-	bedtools intersect -wa -a $(gff3_file_abspath) -b $(name)/data/$(reference_basename).chr_sizes.sorted.bed  > $@.tmp &&  bedtools sort -faidx $(name)/data/$(reference_basename).chr_sizes.sorted.bed  -i $@.tmp > $@.tmp2 && mv $@.tmp2 $@ && rm -f $@.tmp
+$(gff3_file_abspath).filt.gff3: $(gff3_file_abspath) $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.sorted.bed 
+	bedtools intersect -wa -a $(gff3_file_abspath) -b $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.sorted.bed  > $@.tmp &&  bedtools sort -faidx $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.sorted.bed  -i $@.tmp > $@.tmp2 && mv $@.tmp2 $@ && rm -f $@.tmp
 
 
 # 
 $(gff3_file_abspath).csv: $(gff3_file_abspath)
 	gff32csv.R $<   >   $@.tmp && mv $@.tmp $@
 
-#$(name)/data/$(reference_basename).gene_class.txt: $(refgeneclass_file)
-$(name)/data/$(gtf_file_basename).gene_class.txt: $(refgeneclass_file)
+#$(auxdata_toplevel_folder)/$(reference_basename).gene_class.txt: $(refgeneclass_file)
+$(auxdata_toplevel_folder)/$(gtf_file_basename).gene_class.txt: $(refgeneclass_file)
 	cp $< $@.tmp && mv $@.tmp $@
 
 # file with chr\tchr_size
-$(name)/data/$(reference_basename).chr_sizes.txt: $(reference_abspath).fai
+$(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.txt: $(reference_abspath).fai
 	cut -f 1,2 $< > $@.tmp && mv $@.tmp $@
 
 #######################################################
 # Collect some stats about the reference and annotation
-data_stats: $(name)/data/$(reference_basename).$(gtf_file_basename).data_info.tsv
+data_stats: $(auxdata_toplevel_folder)/$(reference_basename).$(gtf_file_basename).data_info.tsv
 
 print_data_stats_file:
-	@echo $(name)/data/$(reference_basename).$(gtf_file_basename).data_info.tsv
+	@echo $(auxdata_toplevel_folder)/$(reference_basename).$(gtf_file_basename).data_info.tsv
 
-$(name)/data/$(reference_basename).$(gtf_file_basename).data_info.tsv: $(name)/data/$(reference_basename).irap_stats.tsv $(name)/data/$(gtf_file_basename).irap_stats.tsv
+$(auxdata_toplevel_folder)/$(reference_basename).$(gtf_file_basename).data_info.tsv: $(auxdata_toplevel_folder)/$(reference_basename).irap_stats.tsv $(auxdata_toplevel_folder)/$(gtf_file_basename).irap_stats.tsv
 	echo "Species|$(species)" | tr "|" "\n" > $@.tmp2
 	echo "Genome|$(reference_basename)" | tr "|" "\n" > $@.tmp3
 	paste $@.tmp2 $@.tmp3 $^   > $@.tmp && mv $@.tmp $@ && rm -f $@.tmp2 $@.tmp3
 
-$(name)/data/$(reference_basename).irap_stats.tsv: $(name)/data/$(reference_basename).chr_sizes.txt
+$(auxdata_toplevel_folder)/$(reference_basename).irap_stats.tsv: $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.txt
 	irap_genome_stats -i $< -o $@.tmp && mv $@.tmp $@
 
-$(name)/data/$(gtf_file_basename).irap_stats.tsv: $(name)/data/$(gtf_file_basename).lengths.Rdata
+$(auxdata_toplevel_folder)/$(gtf_file_basename).irap_stats.tsv: $(auxdata_toplevel_folder)/$(gtf_file_basename).lengths.Rdata
 	irap_annot_stats -i $< -o $@.tmp && mv $@.tmp $@
 
 #########################################################
 
 # temporary rule:
-# remove $(name)/data/$(reference_basename).chr_sizes.sorted.txt
-# and rename to  $(name)/data/$(reference_basename).chr_sizes.txt
-$(name)/data/$(reference_basename).chr_sizes.sorted.txt: $(name)/data/$(reference_basename).chr_sizes.txt
+# remove $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.sorted.txt
+# and rename to  $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.txt
+$(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.sorted.txt: $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.txt
 	sort -k 1,1 $<  > $@.tmp  && mv $@.tmp $@
 
-$(name)/data/$(reference_basename).chr_sizes.sorted.bed: $(name)/data/$(reference_basename).chr_sizes.sorted.txt
+$(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.sorted.bed: $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.sorted.txt
 	cat $< | awk 'BEGIN {OFS="\t";} {print  $$1,"1",$$2;}' > $@.tmp && mv $@.tmp $@
 
 $(reference_abspath).fai: $(reference_abspath)
@@ -2028,14 +2081,14 @@ $(reference_abspath).fai: $(reference_abspath)
 $(refgeneannot_file) $(refgeneannot_file).Rdata: $(gtf_file_abspath)
 	irap_gtf2annot --gtf $< -s $(species) --cores $(max_threads) --rdata -o $@.tmp && mv $@.tmp $@ && mv $@.tmp.Rdata $@.Rdata
 
-$(name)/data/$(reference_basename).gene.annot.tsv: $(refgeneannot_file) 
+$(auxdata_toplevel_folder)/$(reference_basename).gene.annot.tsv: $(refgeneannot_file) 
 	cp $< $@.tmp && mv $@.tmp $@
 
-$(name)/data/$(reference_basename).gene.annot.tsv.Rdata: $(refgeneannot_file).Rdata
+$(auxdata_toplevel_folder)/$(reference_basename).gene.annot.tsv.Rdata: $(refgeneannot_file).Rdata
 	cp $< $@.tmp && mv $@.tmp $@
 #endif
 
-$(name)/data/empty.gene.annot.tsv: 
+$(auxdata_toplevel_folder)/empty.gene.annot.tsv: 
 	echo '"ID","Name","locus","source","lname","GO","GOterm","KEGG","biotype"' | tr "," "\t" > $@
 
 # collect genes, transcripts and exons lengths
@@ -2044,10 +2097,10 @@ $(gtf_file_abspath).lengths.Rdata: $(gtf_file_abspath)
 	irap_gtf2featlength --gtf $< -o $@.tmp --cores $(max_threads) && mv $@.tmp.Rdata $@ && mv $@.tmp.gene_length.tsv $@.gene_length.tsv && mv $@.tmp.exon_length.tsv $@.exon_length.tsv && mv $@.tmp.trans_length.tsv $@.trans_length.tsv
 
 
-$(name)/data/$(gtf_file_basename).lengths.Rdata: $(gtf_file_abspath).lengths.Rdata
+$(auxdata_toplevel_folder)/$(gtf_file_basename).lengths.Rdata: $(gtf_file_abspath).lengths.Rdata
 	sleep 2 && cp $< $@.tmp && mv $@.tmp $@ 
 
-precious_targets+=$(name)/data/$(gtf_file_basename).lengths.Rdata
+precious_targets+=$(auxdata_toplevel_folder)/$(gtf_file_basename).lengths.Rdata
 
 
 
@@ -2055,7 +2108,7 @@ $(DEXSEQ_GFF).lengths.Rdata: $(DEXSEQ_GFF)
 	irap_DexSeqExonLen --gff $< -o $@.tmp --cores $(max_threads) && mv $@.tmp.Rdata $@
 
 # sleep to ensure that the file will not have the same timestamp
-$(name)/data/$(gtf_file_basename).dexseq.lengths.Rdata: $(gtf_file_abspath).DEXSeq.gff.lengths.Rdata
+$(auxdata_toplevel_folder)/$(gtf_file_basename).dexseq.lengths.Rdata: $(gtf_file_abspath).DEXSeq.gff.lengths.Rdata
 	sleep 2 && cp $< $@.tmp && mv $@.tmp $@
 
 
@@ -2067,36 +2120,21 @@ $(name)/data/$(gtf_file_basename).dexseq.lengths.Rdata: $(gtf_file_abspath).DEXS
 # Setup directory structure
 phony_targets+= setup_dirs
 
-setup_dirs: $(tmp_dir)  $(if $(mapper),$(name)/$(mapper)/) $(name)/data/  $(if $(quant_method),$(name)/$(mapper)/$(quant_method)/)  $(if $(de_method),$(name)/$(mapper)/$(quant_method)/$(de_method)/) $(name)/data/pre
+setup_dirs: $(tmp_dir)  $(auxdata_toplevel_folder)/ \
+	$(qc_toplevel_folder)/ \
+	$(if $(mapper),$(mapper_toplevel_folder)/) \
+	$(if $(quant_method),$(quant_toplevel_folder)/)  \
+	$(if $(de_method),$(de_toplevel_folder)/)
 	$(call p_info,[DONE] Directory structure created)
 
 bootstrap: $(BOOTSTRAP_TARGETS)
 
 $(tmp_dir):
-	mkdir -p $@
+	@mkdir -p $@
 
-# really required?
-#$(data_dir)/data:
-#	mkdir -p $@
+%/:
+	@mkdir -p $@
 
-
-$(name)/data/:
-	mkdir -p $@
-
-$(name)/data/pre:
-	mkdir -p $@
-
-#$(name)/report/riq/:
-#	mkdir -p $@
-
-$(name)/$(mapper)/:
-	mkdir -p $@
-
-$(name)/$(mapper)/$(quant_method)/:
-	mkdir -p $@
-
-$(name)/$(mapper)/$(quant_method)/$(de_method)/:
-	mkdir -p $@
 
 
 
@@ -2119,13 +2157,13 @@ do_qc: $(STAGE1_OUT_FILES)
 # Mapping
 ################################################################################
 # All mapping files have the same name (but are placed in different folders)
-# The mappings are placed in $(name)/$(mapper) with the suffix (se/pe)hits.bam
+# The mappings are placed in $(mapper_toplevel_folder) with the suffix (se/pe)hits.bam
 
 # ** TODO **
 # 1. Use singleton reads if available  (f.sing.fastq file)
 # 2. make mapping independent from the remaining steps...WIP
 
-mapping: stage1 $(name)/$(mapper)/ $(mapper)_mapping
+mapping: stage1 $(mapper_toplevel_folder) $(mapper)_mapping
 	$(call p_info,[DONE] Mapping)
 
 print_stage2_files:
@@ -2172,9 +2210,9 @@ $(mapper)_mappingbyname: $(index_files) $(STAGE2BYNAME_OUT_FILES)
 
 # interleaved fastq file
 # special rule for GEM with PE
-# 1-mapper
+# 1-mapper - broken - discontinued support for GEM
 define mapper_ifiles=
-$(if $(subst gem,,$(1)),$(3),$(name)/data/$(2)_int.f.fastq)
+$(if $(subst gem,,$(1)),$(3),$(name)$(qc_method)/$(2)_int.f.fastq)
 endef
 
 ##############################################
@@ -2211,94 +2249,26 @@ $(foreach l,$(se),$(eval $(call make-se-bam-rule,$(l))))
 $(foreach l,$(pe),$(eval $(call make-pe-bam-rule,$(l))))
 endif
 
+
 # interleaved fastq file
-$(name)/data/%_int.f.fastq: $(name)/data/%_1.f.fastq $(name)/data/%_2.f.fastq
+%_int.f.fastq: %_1.f.fastq %_2.f.fastq
 	fastq2interleaved.pl $^ $@.tmp && mv $@.tmp $@
 
 %.$(mapper).index: %.fa
 
 
-
-#*****************
-# Scripture 
-#*****************
-
-ifndef scripture_params
-scripture_params= -minSpliceSupport 1
-endif
-
-define scripture_pe_file=
-$(if $(strip $(pe)),$(1).paired.bam,)
-endef
-
-define scripture_pe_params=
-$(if $(strip $(pe)),-pairedEnd $(1),)
-endef
-# run scripture for each chr
-# extract the sequences
-#                 1     2            3          4           5             6              7
-# run_scripture (sam,tsv file,reference_dir,target_dir,pairend_option,annot.gtf,tsv file@extended bed)
-define run_scripture=
-	mkdir -p $(4)
-	for chr in `cut -f 1 $(2)`; do  \
-		scripture  $(scripture_params) -alignment $(1) -out $(4)/$$chr.segments -sizeFile $(2) -chr $$chr  -chrSequence $(3)/$$chr.fa $(5); \
-	    scripture  -task score -in  $(4)/$$chr.segments -alignment $(1) -sizeFile $(2) -out $(4)/$$chr.score.tsv $(5);\
-	done; 
-	cat $(4)/*.score.tsv > $(7).tmp  && bedtools intersect -wb -b $(6) -a $(7).tmp | cut -f 15,29- | sed -e "s/^\([0-9]*\).0.\(.*\)/\2\t\1/" > $(7).tmp2 &&\
-	irap_naive_count.pl $(7).tmp2 $(7).exons $(7).genes && \
-	mv $(7).exons $(7).exons.tsv && \
-	mv $(7).genes $(7).genes.tsv  && \
-	grep -v -e "(`cut -f 1 $(7).exons.tsv|sed 's/ /|/g'`)" $(gtf_file_abspath)| sed  "s/.*gene_id .\([^\"]*\).;.*/\1\t0/" >>  $(7).genes $(7).genes.tsv 
-endef
-
-phony_targets+= scripture_quant scripture_assembly scripture_setup scripture_assembly_lsf1
-
-scripture_quant: mapping $(name)/$(mapper)/scripture/rawcounts.scripture.tsv
-	$(call p_error,scripture assembly is working (use target scripture_assembly) but quantification is still under development)
-#
-# as recommend by scripture manual
-scripture_assembly: $(name)/$(mapper)/scripture/rawcounts.all.scripture.tsv
-
-scripture_setup: $(name)/$(mapper)/$(quant_method)/$(reference_basename).chr_size.tsv $(reference_abspath)_files
-
-# only generate the bam files for each lib
-scripture_assembly_lsf1: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.$(quant_method).tsv) $(foreach s,$(se), $(name)/$(mapper)/$(quant_method)/$(s).se.$(quant_method).tsv)
-
-$(name)/$(mapper)/scripture/rawcounts.all.scripture.tsv:  $(gtf_file_abspath) $(name)/$(mapper)/$(quant_method)/alignments.bam $(name)/$(mapper)/$(quant_method)/$(reference_basename).chr_size.tsv $(reference_abspath)_files    $(call scripture_pe_file,$(name)/$(mapper)/$(quant_method)/alignments.bam) 
-	mkdir -p $(@D)/all
-	$(call run_scripture,$(@D)/alignments.bam,$(@D)/$(reference_basename).chr_size.tsv,$(reference_abspath)_files,$(@D)/all, $(call scripture_pe_params,$(call scripture_pe_file,$(@D)/alignments.bam)),$(gtf_file_abspath),$@.tmp) && mv $@.tmp.genes.tsv $@
-
-
-#
-# for DE and normalization it may be better to have the counts file by file
-$(name)/$(mapper)/scripture/rawcounts.scripture.tsv: $(foreach p,$(pe),$(name)/$(mapper)/$(quant_method)/$(p).pe.$(quant_method).tsv) $(foreach s,$(se), $(name)/$(mapper)/$(quant_method)/$(s).se.$(quant_method).tsv)
-	( $(call pass_args_stdin,irap_merge_tsv.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
-
-# SE & PE
-$(name)/$(mapper)/scripture/%.se.scripture.tsv: $(name)/$(mapper)/%.se.hits.bam $(gtf_file_abspath) $(name)/$(mapper)/$(quant_method)/$(reference_basename).chr_size.tsv $(reference_abspath)_files   $(name)/$(mapper)/%.se.hits.bam.bai
-	$(call run_scripture,$<,$(@D)/$(reference_basename).chr_size.tsv,$(reference_abspath)_files,$(@D)/$*,,$(gtf_file_abspath),$@.tmp) && mv $@.tmp.genes.tsv $@
-
-$(name)/$(mapper)/scripture/%.pe.scripture.tsv: $(name)/$(mapper)/%.pe.hits.bam $(gtf_file_abspath) $(name)/$(mapper)/$(quant_method)/$(reference_basename).chr_size.tsv $(reference_abspath)_files   $(name)/$(mapper)/%.pe.hits.bam.bai
-	$(call run_scripture,$<,$(@D)/$(reference_basename).chr_size.tsv,$(reference_abspath)_files,$(@D)/$*, -pairedEnd $<,$(gtf_file_abspath),$@.tmp) && mv $@.tmp.genes.tsv $@
-
-
-$(name)/$(mapper)/$(quant_method)/alignments.bam: $(foreach p,$(pe),$(name)/$(mapper)/$(p).pe.hits.byname.bam) $(foreach s,$(se),$(name)/$(mapper)/$(s).se.hits.byname.bam)
+$(mapper_toplevel_folder)/alignments.bam: $(foreach s,$(se), $(call lib2bam_folder,$(s))$(s).se.hits.bam)
 	$(call samcat,$^) | samtools sort -m $(SAMTOOLS_SORT_MEM) -T $@.sorted -o $@.sorted.bam -  && mv  $@.sorted.bam $@  && samtools index $@
 
 
-$(name)/$(mapper)/$(quant_method)/alignments.bam.paired.bam: $(foreach p,$(pe),$(name)/$(mapper)/$(p).pe.hits.byname.bam)
+$(mapper_toplevel_folder)/alignments.bam.paired.bam: $(foreach s,$(pe), $(call lib2bam_folder,$(s))$(s).pe.hits.bam)
 	$(call samcat,$^) | samtools sort  -m $(SAMTOOLS_SORT_MEM) -T $@.tmp -o $@.tmp.bam -  && mv $@.tmp.bam $@ && samtools index $@
 
-#
-#A 2-column tab separated file containing the chromosome name and size for the organism.
-$(name)/$(mapper)/$(quant_method)/$(reference_basename).chr_size.tsv: $(reference_abspath).fai
-	cut -f 1,2 $< > $@.tmp && mv $@.tmp $@
 
 $(reference_abspath)_files: $(reference_abspath)
 	irap_fasta_split.pl $< $@
 
-$(name)/$(mapper)/scripture/genes.raw.scripture.tsv: $(name)/$(mapper)/scripture/rawcounts.scripture.tsv
-	cp $< $@
+
 
 ################################################################################
 # STAGE 3
@@ -2366,11 +2336,11 @@ clean_data_files:
 # delete all files related to the libraries
 lib_full_clean: clean_quality_filtering_and_report_cleanup 
 	rm -rf $(STAGE1_OUT_FILES)
-	$(foreach l,$(se) $(pe), $(if $($(l)_dir), rm -rf $(name)/data/$($(l)_dir)))
+	$(foreach l,$(se) $(pe), $(if $($(l)_dir), rm -rf $(qc_toplevel_folder)/$($(l)_dir)))
 	rm -rf $(STAGE2_OUT_FILES)
-	$(foreach l,$(se) $(pe), $(if $($(l)_dir), rm -rf $(name)/$(mapper)/$($(l)_dir)))
+	$(foreach l,$(se) $(pe), $(if $($(l)_dir), rm -rf $(mapper_toplevel_folder))/$($(l)_dir)))
 	rm -rf $(STAGE3_OUT_FILES)
-	$(foreach l,$(se) $(pe), $(if $($(l)_dir), rm -rf $(name)/$(mapper)/$(quant_method)/$($(l)_dir)))
+	$(foreach l,$(se) $(pe), $(if $($(l)_dir), rm -rf $(quant_toplevel_folder)/$($(l)_dir)))
 
 # TODO: archive (delete everything except the "main" output files for each stage
 #
@@ -2388,7 +2358,7 @@ stage3a: setup $(quant_method)_quant
 stage3as: setup quantification_s
 #stage3b: setup stage3a
 # deprecated
-stage3b: setup $(shell rm -f $(name)/$(mapper)/$(quant_method)/rawcounts.$(quant_method).$(expr_ext)) stage3a
+stage3b: setup $(shell rm -f $(quant_toplevel_folder)/rawcounts.$(quant_method).$(expr_ext)) stage3a
 stage4: setup $(STAGE4_OUT_FILES)
 stage5: setup $(STAGE5_OUT_FILES)
 
@@ -2426,6 +2396,7 @@ status_html: $(name)/report/status.html
 
 status: $(name)/$(name).status.tsv
 	$(call p_info,Created $<)
+	@cat $<
 
 ### Tracks
 define exclude_empty=

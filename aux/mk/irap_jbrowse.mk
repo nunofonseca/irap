@@ -23,14 +23,14 @@
 
 ######################
 # Jbrowse
-JBROWSE_RDIR=$(name)/report/jbrowse
+JBROWSE_RDIR=$(report_toplevel_folder)/jbrowse
 JBROWSE_DATA=$(JBROWSE_RDIR)/data
 
 # also used to keep BED and BEDGraph files
 # TODO: http://gmod.org/wiki/JBrowse_Configuration_Guide#Wiggle_Tracks (use the new wiggle track definition procedure)
 JBROWSE_WIG_DIR=$(JBROWSE_RDIR)/raw/wig
 JBROWSE_BAM_DIR=$(JBROWSE_RDIR)/raw/bam
-#JBROWSE_RAW_DATA=$(name)/report/jbrowse/raw
+#JBROWSE_RAW_DATA=$(report_toplevel_folder)/jbrowse/raw
 
 # alias
 ifdef browser
@@ -56,12 +56,12 @@ jbrowser_stage1_targets:
 
 # Initialize dir. structure
 # Add reference and annotation track
-report_browser_setup: $(name)/report/jbrowse.setup.ok \
-		      $(name)/report/jbrowse/refs.ok $(name)/report/jbrowse/annot.ok \
-	               $(name)/report/menu.html $(gff3_file_abspath).csv
+report_browser_setup: $(report_toplevel_folder)/jbrowse.setup.ok \
+		      $(report_toplevel_folder)/jbrowse/refs.ok $(report_toplevel_folder)/jbrowse/annot.ok \
+	               $(report_toplevel_folder)/menu.html $(gff3_file_abspath).csv
 
 # irap_report_main generates the menu
-$(name)/report/menu.html:
+$(report_toplevel_folder)/menu.html:
 	$(call p_error,"please run irap with the report option")
 
 # 
@@ -81,26 +81,26 @@ upload_tracks: stage2_upload_tracks stage3_upload_tracks stage4_upload_tracks re
 
 ####################################################
 # Initialization
-$(name)/report/jbrowse.setup.ok $(name)/report/jbrowse/ $(name)/report/jbrowse/data $(name)/report/jbrowse/index.html: $(IRAP_DIR)/aux/jbrowse.zip
+$(report_toplevel_folder)/jbrowse.setup.ok $(report_toplevel_folder)/jbrowse/ $(report_toplevel_folder)/jbrowse/data $(report_toplevel_folder)/jbrowse/index.html: $(IRAP_DIR)/aux/jbrowse.zip
 	irap_setup_jbrowser.sh $(JBROWSE_RDIR) $(name) &&
-	touch $(name)/report/jbrowse.setup.ok
+	touch $(report_toplevel_folder)/jbrowse.setup.ok
 
 # Track: reference
-$(name)/report/jbrowse/refs.ok: $(reference_abspath)  $(name)/report/jbrowse.setup.ok
+$(report_toplevel_folder)/jbrowse/refs.ok: $(reference_abspath)  $(report_toplevel_folder)/jbrowse.setup.ok
 	prepare-refseqs.pl --fasta $(reference_abspath) -out $(JBROWSE_DATA) && touch $@
 
 # Track: annotation
 #        mRNA
 #        gene
 # Add more data?
-$(name)/report/jbrowse/annot.ok: $(gff3_file_abspath) $(name)/report/jbrowse.setup.ok
+$(report_toplevel_folder)/jbrowse/annot.ok: $(gff3_file_abspath) $(report_toplevel_folder)/jbrowse.setup.ok
 	track_add.sh -d gff3  -l mRNA -o  $(JBROWSE_DATA) -t mRNA -i $< &&\
 	track_add.sh -d gff3  -l gene -o  $(JBROWSE_DATA) -t gene -i $< &&\
 	touch $@
 
 #########################################################
 # Track: BAM
-phony_targets+= $(name)/$(mapper)/%.bam.tracks 
+#phony_targets+= $()/%.bam.tracks 
 
 jbrowser_bam_targets=
 jbrowser_stage2_targets: 
@@ -126,11 +126,7 @@ jbrowser_stage2_targets:
 	touch $@
 
 
-# old 
-#$(name)/$(mapper)/%.se.hits.bam.track: $(name)/$(mapper)/%.se.hits.bam $(name)/$(mapper)/%.se.hits.bam.bed $(name)/$(mapper)/%.se.hits.bam.bai
-#	track_add.sh -d bam2  -l "$(notdir $*)-$(mapper)-BAM" -o $(JBROWSE_DATA) -i $< && 	touch $(name)/$(mapper)/%.se.hits.bam.track $(name)/$(mapper)/%.se.hits.bam.track
 
-# Coverage Wig from BAM
 %.se.hits.bam.cov.track: %.se.hits.bam.bw %.se.hits.bam  %.se.hits.bam.bai
 	track_add.sh -d cov -l "$(notdir $*)-$(mapper)-Cov" -o $(JBROWSE_DATA) -i $< \
 	-m $(call get_metadata,Mapping,$(mapper),,,,Alignment Coverage Track,"Lib" : "$(notdir $*)";) &&\
@@ -171,7 +167,7 @@ endef
 #
 # Track: quantification
 # exon|gene|transcripts-raw|fpkm|rpkm|tpm|nlib-$(Quant)-$(mapper)-GE
-phony_targets+= $(name)/$(mapper)/$(quant_method)/%.tsv.tracks
+phony_targets+= $(quant_toplevel_folder)/%.tsv.tracks
 
 # remove .se and .pe from the prefix of the file to obtain the libname
 define pprint_libname=
@@ -182,91 +178,61 @@ endef
 jbrowser_stage3_targets: 
 	echo $(stage3_tracks_targets)
 
-$(call p_debug,$(name)/$(mapper)/$(quant_method)/%.tsv.tracks: $(name)/$(mapper)/$(quant_method)/%.bw $(name)/$(mapper)/$(quant_method)/%.bedGraph)
-$(name)/$(mapper)/$(quant_method)/%.tsv.tracks: $(name)/$(mapper)/$(quant_method)/%.bw $(name)/$(mapper)/$(quant_method)/%.bedGraph
-	touch $@
-
-$(name)/$(mapper)/$(quant_method)/%.tsv.tracks.uploaded: $(name)/$(mapper)/$(quant_method)/%.tsv.covd.track
+### TODO fix
+%.tsv.tracks.uploaded: %.tsv.covd.track
 	$(call p_info,Quantification tracks $@ to browser)
 
-$(name)/$(mapper)/$(quant_method)/%.tsv.tracks.uploaded: $(name)/$(mapper)/$(quant_method)/%.tsv.tracks
+%.tsv.tracks.uploaded: %.tsv.tracks
 	$(call p_info,Quantification tracks $@ to browser)
 
-# pure bedgraph 	track_add.sh -d wig  -l "$*-raw-$(quant_method)-$(mapper)-EE" -o $(JBROWSE_DATA) -i $< \
-# counts
-# $(name)/$(mapper)/$(quant_method)/%.exons.raw.$(quant_method).bw $(gff3_file_abspath).csv
-$(name)/$(mapper)/$(quant_method)/%.exons.raw.$(quant_method).tsv.covd.track: 
+# TODO
+%.exons.raw.$(quant_method).tsv.covd.track: 
 	$(call p_info, TODO/WIP - tsv2bedGraph support for exon level quant)
-# mv $< $(name)/$(mapper)/$(quant_method)/$(call pprint_libname,$*).transcripts.raw.$(mapper).$(quant_method).tsv.bw &&\
 # track_add.sh -d covd  -l "$*-raw-$(quant_method)-$(mapper)-EE" -o $(JBROWSE_DATA) \
-# -i $(name)/$(mapper)/$(quant_method)/$*.transcripts.raw.$(mapper).$(quant_method).tsv.bw \
 # -m $(call get_metadata,Quantification,$(mapper),$(quant_method),,,Reads per exon,"Lib" : "$(call pprint_libname,$*)") &&
 	touch $@
 
-$(name)/$(mapper)/$(quant_method)/%.transcripts.raw.$(quant_method).tsv.covd.track: $(name)/$(mapper)/$(quant_method)/%.transcripts.raw.$(quant_method).bw $(gff3_file_abspath).csv
-	mv $< $(name)/$(mapper)/$(quant_method)/$*.transcripts.raw.$(mapper).$(quant_method).tsv.bw &&\
-	track_add.sh -d covd  -l "$(call pprint_libname,$*)-raw-$(quant_method)-$(mapper)-TE" -o $(JBROWSE_DATA) \
-	-i $(name)/$(mapper)/$(quant_method)/$*.transcripts.raw.$(mapper).$(quant_method).tsv.bw \
-	-m $(call get_metadata,Quantification,$(mapper),$(quant_method),,,Reads per transcript,"Lib" : "$(call pprint_libname,$*)") &&\
+
+%.transcripts.raw.$(quant_method).tsv.covd.track: %.transcripts.raw.$(quant_method).bw $(gff3_file_abspath).csv
+	track_add.sh -d covd  -l "$(call pprint_libname,$(basename $*))-raw-$(quant_method)-$(mapper)-TE" -o $(JBROWSE_DATA) \
+	-i $< \
+	-m $(call get_metadata,Quantification,$(mapper),$(quant_method),,,Reads per transcript,"Lib" : "$(call pprint_libname,$(basename $*))") &&\
 	touch $@
 
-$(name)/$(mapper)/$(quant_method)/%.genes.raw.$(quant_method).tsv.covd.track: $(name)/$(mapper)/$(quant_method)/%.genes.raw.$(quant_method).bw $(gff3_file_abspath).csv
-	mv $< $(name)/$(mapper)/$(quant_method)/$*.genes.raw.$(mapper).$(quant_method).tsv.bw &&\
-	track_add.sh -d covd  -l "$(call pprint_libname,$*)-raw-$(quant_method)-$(mapper)-GE" -o $(JBROWSE_DATA) \
-	-i $(name)/$(mapper)/$(quant_method)/$*.genes.raw.$(mapper).$(quant_method).tsv.bw \
-	-m $(call get_metadata,Quantification,$(mapper),$(quant_method),,,Reads per gene,"Lib" : "$(call pprint_libname,$*)") &&\
+
+%.genes.raw.$(quant_method).tsv.covd.track: %.genes.raw.$(quant_method).bw $(gff3_file_abspath).csv
+	track_add.sh -d covd  -l "$(call pprint_libname,$(basename $*))-raw-$(quant_method)-$(mapper)-GE" -o $(JBROWSE_DATA) \
+	-i $< \
+	-m $(call get_metadata,Quantification,$(mapper),$(quant_method),,,Reads per gene,"Lib" : "$(call pprint_libname,$(basename $*))") &&\
 	touch $@
 
 # TODO: WIP
 #rpkms
-$(name)/$(mapper)/$(quant_method)/%.exons.fpkms.$(quant_norm_method).tsv.covd.track: 
+%.exons.fpkms.$(quant_norm_method).tsv.covd.track: 
 	$(call p_info, TODO/WIP - tsv2bedGraph support for exon level quant)
-#$(name)/$(mapper)/$(quant_method)/%.exons.fpkms.$(quant_norm_method).tsv.bedGraph $(gff3_file_abspath).csv
+#$(quant_method_toplevel)/%.exons.fpkms.$(quant_norm_method).tsv.bedGraph $(gff3_file_abspath).csv
 #	track_add.sh -d rna_bedgraph  -l "$*-fpkms-$(quant_method)-$(mapper)-EE" -o $(JBROWSE_DATA) -i $< && touch $@
-	track_add.sh -d covd  -l "$*-fpkms-$(quant_method)-$(mapper)-EE" -o $(JBROWSE_DATA) -i $< && touch $@
+	track_add.sh -d covd  -l "$(basename $*)-fpkms-$(quant_method)-$(mapper)-EE" -o $(JBROWSE_DATA) -i $< && touch $@
 
-$(name)/$(mapper)/$(quant_method)/%.transcripts.fpkms.$(quant_norm_method).tsv.covd.track: $(name)/$(mapper)/$(quant_method)/%.transcripts.fpkms.$(quant_norm_method).bedGraph $(gff3_file_abspath).csv
+%.transcripts.fpkms.$(quant_norm_method).tsv.covd.track: $(quant_toplevel_folder)/%.transcripts.fpkms.$(quant_norm_method).bedGraph $(gff3_file_abspath).csv
 #	track_add.sh -d rna_bedgraph  -l "$*-fpkms-$(quant_method)-$(mapper)-TE" -o $(JBROWSE_DATA) -i $< && touch $@
-	track_add.sh -d covd -l "$*-fpkms-$(quant_method)-$(mapper)-TE" -o $(JBROWSE_DATA) -i $< && touch $@
+	track_add.sh -d covd -l "$(basename $*)-fpkms-$(quant_method)-$(mapper)-TE" -o $(JBROWSE_DATA) -i $< && touch $@
 
-$(name)/$(mapper)/$(quant_method)/%.genes.fpkms.$(quant_norm_method).tsv.covd.track: $(name)/$(mapper)/$(quant_method)/%.genes.fpkms.$(quant_norm_method).bw $(gff3_file_abspath).csv
-	track_add.sh -d covd  -l "$*-fpkms-$(quant_method)-$(mapper)-GE" -o $(JBROWSE_DATA) -i $< \
-	-m $(call get_metadata,Quantification,$(mapper),$(quant_method),,,FPKMs per gene (GE),"Lib" : "$*") &&\
+%.genes.fpkms.$(quant_norm_method).tsv.covd.track: %.genes.fpkms.$(quant_norm_method).bw $(gff3_file_abspath).csv
+	track_add.sh -d covd  -l "$(basename $*)-fpkms-$(quant_method)-$(mapper)-GE" -o $(JBROWSE_DATA) -i $< \
+	-m $(call get_metadata,Quantification,$(mapper),$(quant_method),,,FPKMs per gene (GE),"Lib" : "$(call pprint_libname,$(basename $*)") &&\
 	touch $@
 
 ######
 # TODO: combine multiple values in a single track?
-$(name)/$(mapper)/$(quant_method)/exons.%.tsv.tracks:
+$(quant_toplevel_folder)/exons.%.tsv.tracks:
 	$(call p_info,exon tracks WIP)
 
-$(name)/$(mapper)/$(quant_method)/transcripts.%.tsv.tracks:
+$(quant_toplevel_folder)/transcripts.%.tsv.tracks:
 	$(call p_info,transcripts WIP)
 
-$(name)/$(mapper)/$(quant_method)/genes.%.tsv.tracks:
+$(quant_toplevel_folder)/genes.%.tsv.tracks:
 	$(call p_info,WIP - all libs in a single track)
-
-#: $(name)/$(mapper)/$(quant_method)/exons.%.$(quant_method).tsv.bedGraph $(gff3_file_abspath).csv
-# 	@touch $@
-
-# $(name)/$(mapper)/$(quant_method)/genes.%.$(quant_method).tsv.covd.track: $(name)/$(mapper)/$(quant_method)/genes.%.$(quant_method).tsv.bedGraph $(gff3_file_abspath).csv
-# 	$(call p_info,WIP)
-# 	@touch $@
-
-# $(name)/$(mapper)/$(quant_method)/transcripts.%.$(quant_method).tsv.covd.track: $(name)/$(mapper)/$(quant_method)/transcripts.%.$(quant_method).tsv.bedGraph $(gff3_file_abspath).csv
-# 	$(call p_info,WIP)
-# 	@touch $@
-
-
-# # Counts normalized by lib count
-# $(name)/$(mapper)/$(quant_method)/%.exons.nlib.$(quant_method).tsv.bedGraph: $(name)/$(mapper)/$(quant_method)/%.exons.nlib.$(quant_method).tsv $(gff3_file_abspath).csv
-# 	tsv2bedGraph.R $<  "exon" $(gff3_file_abspath).csv > $@.tmp && mv $@.tmp $@
-
-# $(name)/$(mapper)/$(quant_method)/%.transcripts.nlib.$(quant_method).tsv.bedGraph: $(name)/$(mapper)/$(quant_method)/%.transcripts.nlib.$(quant_method).tsv $(gff3_file_abspath).csv
-# 	tsv2bedGraph.R $<  "mRNA" $(gff3_file_abspath).csv > $@.tmp && mv $@.tmp $@
-
-# $(name)/$(mapper)/$(quant_method)/%.genes.nlib.$(quant_method).tsv.bedGraph: $(name)/$(mapper)/$(quant_method)/%.genes.nlib.$(quant_method).tsv $(gff3_file_abspath).csv
-# 	tsv2bedGraph.R $<  "gene" $(gff3_file_abspath).csv > $@.tmp && mv $@.tmp $@
-
 
 ###########################################################
 # Track: DE
@@ -280,34 +246,34 @@ jbrowser_stage4_targets:
 # generic rule
 # works only for gene level visualization
 # TODO: add support for transcript and exon level visualization (change track name accordingly)
-$(name)/$(mapper)/$(quant_method)/$(de_method)/%.genes_de.tsv.tracks: $(name)/$(mapper)/$(quant_method)/$(de_method)/%.genes_de.fold.bw $(name)/$(mapper)/$(quant_method)/$(de_method)/%.genes_de.pval.bw $(name)/$(mapper)/$(quant_method)/$(de_method)/%.genes_de.fold.bedGraph $(name)/$(mapper)/$(quant_method)/$(de_method)/%.genes_de.pval.bedGraph
+$(de_toplevel_folder)/%.genes_de.tsv.tracks: $(de_toplevel_folder)/%.genes_de.fold.bw $(de_toplevel_folder)/%.genes_de.pval.bw $(de_toplevel_folder)/%.genes_de.fold.bedGraph $(de_toplevel_folder)/%.genes_de.pval.bedGraph
 	$(call p_info,DE tracks $@ generated)	
 
-$(name)/$(mapper)/$(quant_method)/$(de_method)/%.genes_de.tsv.tracks.uploaded: $(name)/$(mapper)/$(quant_method)/$(de_method)/%.genes_de.tsv.fold.track  $(name)/$(mapper)/$(quant_method)/$(de_method)/%.genes_de.tsv.pval.track
+$(de_toplevel_folder)/%.genes_de.tsv.tracks.uploaded: $(de_toplevel_folder)/%.genes_de.tsv.fold.track  $(de_toplevel_folder)/%.genes_de.tsv.pval.track
 	touch $@
 
-$(name)/$(mapper)/$(quant_method)/$(de_method)/%.genes_de.tsv.fold.track: $(name)/$(mapper)/$(quant_method)/$(de_method)/%.genes_de.fold.bw  $(gff3_file_abspath).csv 
-	mv $< $(name)/$(mapper)/$(quant_method)/$(de_method)/$*.$(mapper).$(quant_method).$(de_method).genes_de.fold.bw &&\
+$(de_toplevel_folder)/%.genes_de.tsv.fold.track: $(de_toplevel_folder)/%.genes_de.fold.bw  $(gff3_file_abspath).csv 
+	mv $< $(de_toplevel_folder)/$*.$(mapper).$(quant_method).$(de_method).genes_de.fold.bw &&\
 	track_add.sh -d foldchange  -l "$*-$(quant_method)-$(mapper)-$(de_method)-DE-fold" -o $(JBROWSE_DATA) \
-	-i $(name)/$(mapper)/$(quant_method)/$(de_method)/$*.$(mapper).$(quant_method).$(de_method).genes_de.fold.bw  \
+	-i $(de_toplevel_folder)/$*.$(mapper).$(quant_method).$(de_method).genes_de.fold.bw  \
 	-m $(call get_metadata,DE,$(mapper),$(quant_method),$(quant_norm_method),$(de_method),DE at gene level (fold change),"Contrast" : "$*") &&\
 	touch $@
 
-$(name)/$(mapper)/$(quant_method)/$(de_method)/%.genes_de.tsv.pval.track: $(name)/$(mapper)/$(quant_method)/$(de_method)/%.genes_de.pval.bw  $(gff3_file_abspath).csv 
-	mv $< $(name)/$(mapper)/$(quant_method)/$(de_method)/$*.$(mapper).$(quant_method).$(de_method).genes_de.pval.bw &&\
+$(de_toplevel_folder)/%.genes_de.tsv.pval.track: $(de_toplevel_folder)/%.genes_de.pval.bw  $(gff3_file_abspath).csv 
+	mv $< $(de_toplevel_folder)/$*.$(mapper).$(quant_method).$(de_method).genes_de.pval.bw &&\
 	track_add.sh -d covd  -l "$*-$(quant_method)-$(mapper)-$(de_method)-DE-pval" -o $(JBROWSE_DATA) \
-	-i $(name)/$(mapper)/$(quant_method)/$(de_method)/$*.$(mapper).$(quant_method).$(de_method).genes_de.pval.bw  \
+	-i $(de_toplevel_folder)/$*.$(mapper).$(quant_method).$(de_method).genes_de.pval.bw  \
 	-m $(call get_metadata,DE,$(mapper),$(quant_method),$(quant_norm_method),$(de_method),DE at gene level (pval),"Contrast" : "$*") &&\
 	touch $@
 
 ####################
 # DESEQ
 # fold change+pvalue
-$(name)/$(mapper)/$(quant_method)/deseq/%.genes_de.fold.bedGraph: $(name)/$(mapper)/$(quant_method)/deseq/%.genes_de.tsv $(gff3_file_abspath).csv
+$(de_toplevel_folder1)/deseq/%.genes_de.fold.bedGraph: $(de_toplevel_folder1)/deseq/%.genes_de.tsv $(gff3_file_abspath).csv
 	$(call deseq_bed,$<,$@,fold,gene) 
 
 # pvalue (adj)
-$(name)/$(mapper)/$(quant_method)/deseq/%.genes_de.pval.bedGraph: $(name)/$(mapper)/$(quant_method)/deseq/%.genes_de.tsv $(gff3_file_abspath).csv
+$(de_toplevel_folder1)/deseq/%.genes_de.pval.bedGraph: $(de_toplevel_folder1)/deseq/%.genes_de.tsv $(gff3_file_abspath).csv
 	$(call deseq_bed,$<,$@,adjpvalue,gene)
 
 # log2foldchange
@@ -320,7 +286,7 @@ DESEQ_FIELD_adjpvalue=8
 # 4 - gene|transcripts|exon
 define deseq_bed=
 	tail -n +2 $(1) | cut -f 1,$(DESEQ_FIELD_$(3)) > $(1).tmp &&\
-	tsv2bed.R $(1).tmp  $(4) $(gff3_file_abspath).csv $(name)/data/$(reference_basename).chr_sizes.txt | sed "s/Inf/0/" |\
+	tsv2bed.R $(1).tmp  $(4) $(gff3_file_abspath).csv $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.txt | sed "s/Inf/0/" |\
 	sort -k1,1 -k2,2n | \
 	bedtools merge -scores mean -i - > $(2).tmp &&\
 	rm -f $(1).tmp &&\
@@ -348,23 +314,23 @@ define cuffdiff_bed=
 	mv $(2).tmp $(2) 
 endef
 # R code fixes the number in scientific notation and change +-inf to 0...
-$(name)/$(mapper)/$(quant_method)/cuffdiff2/%.genes_de.fold.bedGraph: $(name)/$(mapper)/$(quant_method)/cuffdiff2/%.genes_de.tsv $(gff3_file_abspath).csv
+$(de_toplevel_folder1)/cuffdiff2/%.genes_de.fold.bedGraph: $(de_toplevel_folder1)/cuffdiff2/%.genes_de.tsv $(gff3_file_abspath).csv
 	$(call cuffdiff_bed,$<,$@,fold,gene)
-$(name)/$(mapper)/$(quant_method)/cuffdiff1/%.genes_de.fold.bedGraph: $(name)/$(mapper)/$(quant_method)/cuffdiff1/%.genes_de.tsv $(gff3_file_abspath).csv
+$(de_toplevel_folder1)/cuffdiff1/%.genes_de.fold.bedGraph: $(de_toplevel_folder1)/cuffdiff1/%.genes_de.tsv $(gff3_file_abspath).csv
 	$(call cuffdiff_bed,$<,$@,fold,gene)
-$(name)/$(mapper)/$(quant_method)/cuffdiff1_nd/%.genes_de.fold.bedGraph: $(name)/$(mapper)/$(quant_method)/cuffdiff1_nd/%.genes_de.tsv.bedGraph  $(gff3_file_abspath).csv
+$(de_toplevel_folder1)/cuffdiff1_nd/%.genes_de.fold.bedGraph: $(de_toplevel_folder1)/cuffdiff1_nd/%.genes_de.tsv.bedGraph  $(gff3_file_abspath).csv
 	$(call cuffdiff_bed,$<,$@,fold,gene)
-$(name)/$(mapper)/$(quant_method)/cuffdiff2_nd/%.genes_de.fold.bedGraph: $(name)/$(mapper)/$(quant_method)/cuffdiff2_nd/%.genes_de.tsv.bedGraph $(gff3_file_abspath).csv
+$(de_toplevel_folder1)/cuffdiff2_nd/%.genes_de.fold.bedGraph: $(de_toplevel_folder1)/cuffdiff2_nd/%.genes_de.tsv.bedGraph $(gff3_file_abspath).csv
 	$(call cuffdiff_bed,$<,$@,fold,gene)
 
 #
-$(name)/$(mapper)/$(quant_method)/cuffdiff1/%.genes_de.pval.bedGraph: $(name)/$(mapper)/$(quant_method)/cuffdiff1/%.genes_de.tsv.bedGraph $(gff3_file_abspath).csv
+$(de_toplevel_folder1)/cuffdiff1/%.genes_de.pval.bedGraph: $(de_toplevel_folder1)/cuffdiff1/%.genes_de.tsv.bedGraph $(gff3_file_abspath).csv
 	$(call cuffdiff_bed,$<,$@,padj,gene)
-$(name)/$(mapper)/$(quant_method)/cuffdiff1_nd/%.genes_de.pval.bedGraph: $(name)/$(mapper)/$(quant_method)/cuffdiff1_nd/%.genes_de.tsv.bedGraph
+$(de_toplevel_folder1)/cuffdiff1_nd/%.genes_de.pval.bedGraph: $(de_toplevel_folder1)/cuffdiff1_nd/%.genes_de.tsv.bedGraph
 	$(call cuffdiff_bed,$<,$@,padj,gene)
-$(name)/$(mapper)/$(quant_method)/cuffdiff2/%.genes_de.pval.bedGraph: $(name)/$(mapper)/$(quant_method)/cuffdiff2/%.genes_de.tsv.bedGraph $(gff3_file_abspath).csv
+$(de_toplevel_folder1)/cuffdiff2/%.genes_de.pval.bedGraph: $(de_toplevel_folder1)/cuffdiff2/%.genes_de.tsv.bedGraph $(gff3_file_abspath).csv
 	$(call cuffdiff_bed,$<,$@,padj,gene)
-$(name)/$(mapper)/$(quant_method)/cuffdiff2_nd/%.genes_de.pval.bedGraph: $(name)/$(mapper)/$(quant_method)/cuffdiff2_nd/%.genes_de.tsv.bedGraph $(gff3_file_abspath).csv
+$(de_toplevel_folder1)/cuffdiff2_nd/%.genes_de.pval.bedGraph: $(de_toplevel_folder1)/cuffdiff2_nd/%.genes_de.tsv.bedGraph $(gff3_file_abspath).csv
 	$(call cuffdiff_bed,$<,$@,padj,gene)
 
 #test_id gene_id gene    locus   sample_1        sample_2        status  value_1 value_2 log2(fold_change)       test_stat       p_value q_value significant?(y|n)

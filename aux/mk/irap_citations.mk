@@ -18,7 +18,6 @@
 # along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-#    $Id: scripts/irap Nuno Fonseca Fri Jan 4 18:20:42 2013$
 # =========================================================
 # Citations to the software used and version used.
 # Provide users an easy way to acknowledge the software they use (besides IRAP ;-))
@@ -310,7 +309,7 @@ show_citations:
 	echo "Analysis	Software	Version	Citation" > $@.tmp && \
 	$(foreach p,$(sort $(progs_used)),$(call prog_info,$(p)))
 
-citations_file: $(name)/report/software.tsv
+citations_file: $(report_toplevel_folder)/software.tsv
 
 %versions.tsv: $(conf)
 	echo "Analysis	Software	Version	Citation" > $@.tmp && \
@@ -319,7 +318,7 @@ citations_file: $(name)/report/software.tsv
 
 # it is only dependent on the configuration file
 # software.tsv is a tab separated value file
-$(name)/report/software.tsv: $(conf)
+$(report_toplevel_folder)/software.tsv: $(conf)
 	rm -f $@
 	touch $@.tmp && \
 	echo "Analysis	Software	Version	Citation" > $@.tmp && \
