@@ -520,6 +520,7 @@ endif
 ifneq (,$(filter $(suffix $(if1)),.bam .cram))
 $(info files in BAM/CRAM format will be converted to fastq.gz)
 ifeq ($(PE),OFF)
+$(eval override if1:=$(basename $(if1)).fastq.gz)
 ##	bamToFastq -i $^ -fq $@.tmp  &&
 $(f1_n).fastq.gz: $(f1_p)
 	samtools fastq -@ $(threads) -0 $@.tmp $^  && 
@@ -527,18 +528,20 @@ $(f1_n).fastq.gz: $(f1_p)
 	gzip -f $@.tmp && \
 	mv $@.tmp.gz $@
 
-$(eval override if1:=$(basename $(if1)).fastq.gz)
-else
-##	bamToFastq -i <(samtools sort --threads $(threads) -m $(SAMTOOLS_SORT_MEM) -n $< )  -fq $*_1.fastq.tmp -fq2 $*_2.fastq.tmp && 
-$(f1_n)_1.fastq.gz $(f1_n)_2.fastq.gz: $(f1_p)
-	$(info Converting bam to fastq...note that the bam file needs to be sorted by name.)
-	samtools fastq -N -@ $(threads) -1 $(f1_n)_1.fastq.tmp -2 $(f1_n)_2.fastq.tmp $< &> /dev/null && 
-	( fastq_not_empty $(f1_n)_1.fastq.tmp || (echo "ERROR: empty fastq file from $<" && exit 1 )) && \
-	gzip -f $(f1_n)_1.fastq.tmp && gzip -f $(f1_n)_2.fastq.tmp && mv $(f1_n)_2.fastq.tmp.gz $(f1_n)_2.fastq.gz && mv $(f1_n)_1.fastq.tmp.gz $(f1_n)_1.fastq.gz
 
+else
+##	bamToFastq -i <(samtools sort --threads $(threads) -m $(SAMTOOLS_SORT_MEM) -n $< )  -fq $*_1.fastq.tmp -fq2 $*_2.fastq.tmp &&
 $(eval override if2:=$(f1_n)_2.fastq.gz)
-$(eval override f2_n:=$(f1_n))
-$(eval override if1:=$(f1_n)_1.fastq.gz)
+$(eval override f2_n:=$(f1_n)_2)
+$(eval override f1_n:=$(f1_n)_1)
+$(eval override if1:=$(f1_n).fastq.gz)
+$(f1_n).fastq.gz $(f2_n).fastq.gz: $(f1_p)
+	$(info Converting bam to fastq...note that the bam file needs to be sorted by name.)
+	samtools fastq -N -@ $(threads) -1 $(f1_n).fastq.tmp -2 $(f2_n).fastq.tmp $< &> /dev/null && 
+	( fastq_not_empty $(f1_n).fastq.tmp || (echo "ERROR: empty fastq file from $<" && exit 1 )) && \
+	gzip -f $(f1_n).fastq.tmp && gzip -f $(f2_n).fastq.tmp && mv $(f2_n).fastq.tmp.gz $(f2_n).fastq.gz && mv $(f1_n).fastq.tmp.gz $(f1_n).fastq.gz
+
+
 endif
 endif
 
@@ -710,10 +713,10 @@ stage5:
 
 # skip filtering and create symlinks to the original fastq files
 ifeq ($(pe_data),1)
-$(out_prefix)_1.f.fastq.gz:  $(f1_n)_1.pre.fastq.gz
+$(out_prefix)_1.f.fastq.gz:  $(f1_n).pre.fastq.gz
 	rm -f $@ && ln -s $(abspath $<)  $@
 
-$(out_prefix)_2.f.fastq.gz:  $(f2_n)_2.pre.fastq.gz
+$(out_prefix)_2.f.fastq.gz:  $(f2_n).pre.fastq.gz
 	rm -f $@ && ln -s $(abspath $<)  $@
 else
 $(out_prefix).f.fastq.gz:  $(f1_n).pre.fastq.gz
@@ -734,7 +737,7 @@ STAGE6_REPORT_FILES= $(subst .fastq.gz,.fastqc.tsv,$(OUT_FASTQ_FILES))
 #Paired end reads
 $(info f1_n=$(f1_n))
 ifeq ($(pe_data),1)
-STAGE6_REPORT_FILES+=  $(f1_n)_1.pre.fastqc.tsv $(f2_n)_2.pre.fastqc.tsv
+STAGE6_REPORT_FILES+=  $(f1_n).pre.fastqc.tsv $(f2_n).pre.fastqc.tsv
 else
 STAGE6_REPORT_FILES+=  $(f1_n).fastqc.tsv
 endif
@@ -907,8 +910,9 @@ stage4: $(subst .fastq.gz,.f.fastq.gz,$(ORIGFILES))
 
 ifeq ($(pe_data),1)
 #PE
+# 2018-01-25 assume that fastq files are pre-ordered to avoid checking the order of the reads
 %_1.f.fastq.gz %_2.f.fastq.gz %.sing.fastq.gz: %_1.filter3.fastq.gz %_2.filter3.fastq.gz
-	fastq_filterpair $^ $*_1.f.fastq.gz.tmp $*_2.f.fastq.gz $*.sing.fastq.gz &&\
+	fastq_filterpair $^ $*_1.f.fastq.gz.tmp $*_2.f.fastq.gz $*.sing.fastq.gz sorted &&\
 	( fastq_not_empty $*_1.f.fastq.gz.tmp || (echo "ERROR: no paired-end reads after applying the filters ($<)" && exit 1 )) && \
 	mv $*_1.f.fastq.gz.tmp $*_1.f.fastq.gz
 else
@@ -924,16 +928,16 @@ STAGE6_TARGETS+=$(OUT_FASTQ_FILES) $(subst .fastq.gz,.csv,$(OUT_FASTQ_FILES))  $
 stage6:	$(STAGE6_TARGETS)
 
 ifeq ($(pe_data),1)
-$(out_prefix)_1.f.fastq.gz: $(f1_n)_1.f.fastq.gz
+$(out_prefix)_1.f.fastq.gz: $(f1_n).f.fastq.gz
 	rm -f $@ && ln -s $< $@
 
-$(out_prefix)_2.f.fastq.gz: $(f2_n)_2.f.fastq.gz
+$(out_prefix)_2.f.fastq.gz: $(f2_n).f.fastq.gz
 	rm -f $@ && ln -s $< $@
 
-$(out_prefix)_1.f.csv: $(f1_n)_1.f.csv
+$(out_prefix)_1.f.csv: $(f1_n).f.csv
 	rm -f $@ && cp $< $@
 
-$(out_prefix)_2.f.csv: $(f2_n)_2.f.csv
+$(out_prefix)_2.f.csv: $(f2_n).f.csv
 	rm -f $@ && cp $< $@
 #Single end reads
 else
