@@ -139,10 +139,10 @@ $(error $(gse_method) not supported)
 endif
 
 
-$(name)/$(mapper)/$(quant_method)/$(de_method)/%.gse.$(gse_tool).$(gse_method).go.tsv: $(name)/$(mapper)/$(quant_method)/$(de_method)/%_de.tsv $(gse_go_mapping)
+$(de_toplevel_folder)/%.gse.$(gse_tool).$(gse_method).go.tsv: $(de_toplevel_folder)/%_de.tsv $(gse_go_mapping)
 	$(call run_piano_goterm,$<,$@)
 
-$(name)/$(mapper)/$(quant_method)/$(de_method)/%.gse.$(gse_tool).$(gse_method).kegg.tsv: $(name)/$(mapper)/$(quant_method)/$(de_method)/%_de.tsv $(gse_pathway_mapping)
+$(de_toplevel_folder)/%.gse.$(gse_tool).$(gse_method).kegg.tsv: $(de_toplevel_folder)/%_de.tsv $(gse_pathway_mapping)
 	$(call run_piano_kegg,$<,$@)
 
 else
@@ -158,11 +158,11 @@ phony_targets+= gse_stage
 
 #########
 # reports
-$(name)/report/$(mapper)/$(quant_method)/$(de_method)/%.gse.$(gse_tool).$(gse_method).go.html: $(name)/$(mapper)/$(quant_method)/$(de_method)/%.gse.$(gse_tool).$(gse_method).go.tsv
-	$(call run_gse_report,$<,$@,,"$(mapper)x$(quant_method)x$(de_method)",$*)
+$(report_toplevel_folder)/%.gse.$(gse_tool).$(gse_method).go.html: $(name)/%.gse.$(gse_tool).$(gse_method).go.tsv
+	mkdir -p $(@D) && $(call run_gse_report,$<,$@,,"$(mapper)x$(quant_method)x$(de_method)",$*)
 
-$(name)/report/$(mapper)/$(quant_method)/$(de_method)/%.gse.$(gse_tool).$(gse_method).kegg.html: $(name)/$(mapper)/$(quant_method)/$(de_method)/%.gse.$(gse_tool).$(gse_method).kegg.tsv
-	$(call run_gse_report,$<,$@,--pathway,"$(mapper)x$(quant_method)x$(de_method)",$*)
+$(report_toplevel_folder)/%.gse.$(gse_tool).$(gse_method).kegg.html: $(name)/%.gse.$(gse_tool).$(gse_method).kegg.tsv
+	mkdir -p $(@D) && $(call run_gse_report,$<,$@,--pathway,"$(mapper)x$(quant_method)x$(de_method)",$*)
 
 
 ############

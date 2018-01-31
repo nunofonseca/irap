@@ -18,7 +18,6 @@
 # along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-#    $Id$
 # =========================================================
 
 # Fusion search
@@ -43,6 +42,10 @@ else
 fusion_search=y
 endif
 FUSION_TARGETS=
+
+# no label for now
+fusion_toplevel_folder1:=$(mapper_toplevel_folder)
+fusion_toplevel_folder:=$(mapper_toplevel_folder)/$(fusion_method)
 
 ifeq ($(fusion_search),y)
 
@@ -85,17 +88,17 @@ endif
 # RL > 75bp
 ifeq (fusionmap,$(filter fusionmap,$(fusion_method)))
 
-FUSIONMAP_BASEDIR=$(name)/data/fusionmap
+FUSIONMAP_BASEDIR=$(auxdata_toplevel_folder)/fusionmap
 
 # Setup
 SETUP_DATA_FILES+=$(FUSIONMAP_BASEDIR)/fusionmap.index $(FUSIONMAP_BASEDIR)/fusionmap.gm
 
 # 
-$(name)/data/fusionmap/fusionmap.index: $(reference_abspath)
+$(auxdata_toplevel_folder)/fusionmap/fusionmap.index: $(reference_abspath)
 	mkdir -p $(FUSIONMAP_BASEDIR)
 	mono $(IRAP_DIR)/bin/FusionMap.exe --buildref $(FUSIONMAP_BASEDIR) $< fusionmap_index  && touch $@
 
-$(name)/data/fusionmap/fusionmap.gm: $(gtf_file_abspath)
+$(auxdata_toplevel_folder)/fusionmap/fusionmap.gm: $(gtf_file_abspath)
 	mkdir -p $(FUSIONMAP_BASEDIR)
 	mono $(IRAP_DIR)/bin/FusionMap.exe --buildgm $(FUSIONMAP_BASEDIR) $< fusionmap_index  fusionmap_refgene && touch $@
 
@@ -114,13 +117,13 @@ endef
 
 #
 # Use the BAMs
-$(name)/$(mapper)/fusionmap/%.fusion.tsv: $(name)/$(mapper)/%.se.hits.bam $(name)/data/fusionmap/fusionmap.index $(name)/data/fusionmap/fusionmap.gm
+$(fusion_toplevel_folder1)/fusionmap/%.fusion.tsv: $(mapper_toplevel_folder)/%.se.hits.bam $(auxdata_toplevel_folder)/fusionmap/fusionmap.index $(auxdata_toplevel_folder)/fusionmap/fusionmap.gm
 	$(call run_fusionmap,$*,$<,se,$@.tmp) && mv $@.tmp $@
 
-$(name)/$(mapper)/fusionmap/%.fusion.tsv: $(name)/$(mapper)/%.pe.hits.bam $(name)/data/fusionmap/fusionmap.index $(name)/data/fusionmap/fusionmap.gm
+$(fusion_toplevel_folder1)/fusionmap/%.fusion.tsv: $(mapper_toplevel_folder)/%.pe.hits.bam $(auxdata_toplevel_folder)/fusionmap/fusionmap.index $(auxdata_toplevel_folder)/fusionmap/fusionmap.gm
 	$(call run_fusionmap,$*,$<,pe,$@.tmp)  && mv $@.tmp $@
 
-$(name)/$(mapper)/fusionmap/%.fusion.sum.tsv: $(name)/$(mapper)/fusionmap/%.fusion.tsv
+$(fusion_toplevel_folder1)/fusionmap/%.fusion.sum.tsv: $(mapper_toplevel_folder)/fusionmap/%.fusion.tsv
 	irap_Fusion_fm2descr --tsv "$^" --gtf $(gtf_file_abspath) -c $(max_threads)  -o $@.tmp && mv $@.tmp $@
 
 ############################
@@ -137,14 +140,14 @@ FUSION_TARGETS+=$(foreach p,$(pe),$(call lib2fusion_folder,$(p))$(p).fusion.sum.
 endif
 endif
 
-STAGE3_OUT_FILES+=$(name)/$(mapper)/fusionmap/fusionmap_readcounts.tsv $(name)/$(mapper)/fusionmap/fusionmap_fusions.tsv
+STAGE3_OUT_FILES+=$(fusion_toplevel_folder1)/fusionmap/fusionmap_readcounts.tsv $(fusion_toplevel_folder1)/fusionmap/fusionmap_fusions.tsv
 FUSION_TARGETS+=$(FUSION_LIB_TARGETS)
 
 # counts file
-$(name)/$(mapper)/fusionmap/fusionmap_readcounts.tsv:  $(FUSION_LIB_TARGETS)
+$(fusion_toplevel_folder1)/fusionmap/fusionmap_readcounts.tsv:  $(FUSION_LIB_TARGETS)
 	$(call pass_args_stdin,irap_Fusion_fm2tsv,$@.tmp, --tsv "$^" -o $@.tmp) && mv $@.tmp $@
 
-$(name)/$(mapper)/fusionmap/fusionmap_fusions.tsv:  $(FUSION_LIB_TARGETS)
+$(fusion_toplevel_folder1)/fusionmap/fusionmap_fusions.tsv:  $(FUSION_LIB_TARGETS)
 	$(call pass_args_stdin,irap_Fusion_fm2descr,$@.tmp, --tsv "$^"  -c $(max_threads) --gtf $(gtf_file_abspath) -o $@.tmp) && mv $@.tmp $@
 
 

@@ -25,9 +25,9 @@
 ##
 ifeq ($(rnaseq_type),sc)
 
-cell_qc_files=$(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).qc.tsv
+cell_qc_files=$(quant_toplevel_folder)/genes.raw.$(quant_method).qc.tsv
 ifeq ($(transcript_expr),y)
-cell_qc_files+=$(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).qc.tsv
+cell_qc_files+=$(quant_toplevel_folder)/transcripts.raw.$(quant_method).qc.tsv
 endif
 
 # generate the QC files
@@ -35,28 +35,28 @@ cell_qc: $(cell_qc_files)
 
 irap_cell_qc_params=$(if $(cell_filt_controls),--controls "$(cell_filt_controls)") --min_features $(cell_filt_min_features) $(if $(subst y,,$(cell_filt_outliers)),,--filt_outliers) --max_ERCC $(cell_filt_max_ERCC) --min_counts $(cell_filt_min_cell_expr) --min_expression $(cell_filt_min_expression)  -M $(cell_outliers_mad)
 
-$(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).qc.tsv: $(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).$(expr_ext) $(cell_filt_controls)
+$(quant_toplevel_folder)/genes.raw.$(quant_method).qc.tsv: $(quant_toplevel_folder)/genes.raw.$(quant_method).$(expr_ext) $(cell_filt_controls)
 	irap_cell_qc --$(expr_format) -i $< --out $@ $(irap_cell_qc_params) || (rm -f $@* && exit 1)
 
-$(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).qc.tsv: $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).$(expr_ext) $(cell_filt_controls)
+$(quant_toplevel_folder)/transcripts.raw.$(quant_method).qc.tsv: $(quant_toplevel_folder)/transcripts.raw.$(quant_method).$(expr_ext) $(cell_filt_controls)
 	irap_cell_qc --$(expr_format) -i $< --out $@ $(irap_cell_qc_params) || (rm -f $@* && exit 1)
 
 
 ## out files
-filtered_expr_matrices=$(name)/$(mapper)/$(quant_method)/genes.raw.filtered.$(quant_method).$(expr_ext)
+filtered_expr_matrices=$(quant_toplevel_folder)/genes.raw.filtered.$(quant_method).$(expr_ext)
 ifeq ($(transcript_expr),y)
-filtered_expr_matrices+=$(name)/$(mapper)/$(quant_method)/transcripts.raw.filtered.$(quant_method).$(expr_ext)
+filtered_expr_matrices+=$(quant_toplevel_folder)/transcripts.raw.filtered.$(quant_method).$(expr_ext)
 endif
 
 # apply the QC filtering
 filter_cells: $(filtered_expr_matrices)
 
 ## filter the expression matrix based on the QC outcome
-$(name)/$(mapper)/$(quant_method)/genes.raw.filtered.$(quant_method).$(expr_ext): $(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).$(expr_ext) $(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).qc.tsv
-	irap_filter_cols  -i $< -o $@ --$(expr_format) --qc $(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).qc.tsv || (rm -f $@ && exit 1)
+$(quant_toplevel_folder)/genes.raw.filtered.$(quant_method).$(expr_ext): $(quant_toplevel_folder)/genes.raw.$(quant_method).$(expr_ext) $(quant_toplevel_folder)/genes.raw.$(quant_method).qc.tsv
+	irap_filter_cols  -i $< -o $@ --$(expr_format) --qc $(quant_toplevel_folder)/genes.raw.$(quant_method).qc.tsv || (rm -f $@ && exit 1)
 
-$(name)/$(mapper)/$(quant_method)/transcripts.raw.filtered.$(quant_method).$(expr_ext): $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).$(expr_ext) $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).qc.tsv
-	irap_filter_cols  -i $< -o $@ --$(expr_format) --qc $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).qc.tsv  || (rm -f $@ && exit 1)
+$(quant_toplevel_folder)/transcripts.raw.filtered.$(quant_method).$(expr_ext): $(quant_toplevel_folder)/transcripts.raw.$(quant_method).$(expr_ext) $(quant_toplevel_folder)/transcripts.raw.$(quant_method).qc.tsv
+	irap_filter_cols  -i $< -o $@ --$(expr_format) --qc $(quant_toplevel_folder)/transcripts.raw.$(quant_method).qc.tsv  || (rm -f $@ && exit 1)
 
 
 # STAGE4_OFILES+=

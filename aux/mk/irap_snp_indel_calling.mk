@@ -57,6 +57,9 @@ ifndef indel_snp_calling_method
 indel_snp_calling_method=$(def_indel_snp_calling_method)
 endif
 
+# 
+snp_toplevel_folder:=$(mapper_toplevel_folder)/$(indel_snp_calling_method)
+
 ################
 # print the parameters
 $(info *	indel_snp_calling_method=$(indel_snp_calling_method))
@@ -72,7 +75,7 @@ endif
 
 ################################
 # samtools
-snp_dir=$(name)/$(mapper)/snp
+snp_dir=$(snp_toplevel_folder)
 
 lib2snp_folder=$(snp_dir)/$($(1)_dir)
 
@@ -100,7 +103,7 @@ indel_snp_calling_setup:
 snp_indel_calling_stage: 
 
 else
-BCF_FILES:=$(subst /$(mapper)/,/$(mapper)/snp/,$(subst .hits.bam,.$(indel_snp_calling_method).bcf,(filter %.bam,$(STAGE2_OUT_FILES))))
+BCF_FILES:=$(subst /$(mapper)/,/$(mapper)/$(indel_snp_calling_method)/,$(subst .hits.bam,.$(indel_snp_calling_method).bcf,(filter %.bam,$(STAGE2_OUT_FILES))))
 VCF_FILES:=$(subst .bcf,.vcf.gz,$(BCF_FILES))
 
 snp_indel_calling_stage: indel_snp_calling_setup $(VCF_FILES)

@@ -29,10 +29,10 @@ sc_visualization_files=
 
 ifneq ($(sc_quant_viz),none)
 # always based on gene expression
-sc_visualization_files+=$(name)/$(mapper)/$(quant_method)/genes.raw.filtered.$(quant_method).tsne.tsv
+sc_visualization_files+=$(quant_toplevel_folder)/genes.raw.filtered.$(quant_method).tsne.tsv
 ifeq ($(transcript_expr),y)
 # if transcript quantification is available then also generate clusters based on transcript quantification
-sc_visualization_files+=$(name)/$(mapper)/$(quant_method)/transcripts.raw.filtered.$(quant_method).tsne.tsv
+sc_visualization_files+=$(quant_toplevel_folder)/transcripts.raw.filtered.$(quant_method).tsne.tsv
 endif
 endif
 

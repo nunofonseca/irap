@@ -88,22 +88,22 @@ endif
 # 
 # deseq_min_reads:=5
 # Note: counts of technical replicates  have to be summed up into a single column
-$(name)/$(mapper)/$(quant_method)/genes.deseq_nlib.$(quant_method).irap.tsv: $(name)/$(mapper)/$(quant_method)/genes.raw.$(quant_method).tsv
+$(quant_toplevel_folder)/genes.deseq_nlib.$(quant_method).irap.tsv: $(quant_toplevel_folder)/genes.raw.$(quant_method).tsv
 	irap_deseq_norm $<  > $@.tmp && mv $@.tmp $@
 
-$(name)/$(mapper)/$(quant_method)/transcripts.deseq_nlib.$(quant_method).irap.tsv: $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv
+$(quant_toplevel_folder)/transcripts.deseq_nlib.$(quant_method).irap.tsv: $(quant_toplevel_folder)/transcripts.raw.$(quant_method).tsv
 	irap_deseq_norm $<  > $@.tmp && mv $@.tmp $@
 
 ifeq ($(exon_quant),y)
-$(name)/$(mapper)/$(quant_method)/exons.deseq_nlib.$(exon_quant_method).irap.tsv: $(name)/$(mapper)/$(quant_method)/exons.raw.$(exon_quant_method).tsv
+$(quant_toplevel_folder)/exons.deseq_nlib.$(exon_quant_method).irap.tsv: $(quant_toplevel_folder)/exons.raw.$(exon_quant_method).tsv
 	irap_deseq_norm $<  > $@.tmp && mv $@.tmp $@
 endif
 
 
 #################################################################
 # Disabled: just copy the file with the raw quantification values
-# $(name)/$(mapper)/$(quant_method)/%.raw.$(quant_method).tsv 
-$(name)/$(mapper)/$(quant_method)/%.nlib.none.tsv: 
+# $(quant_toplevel_folder)/%.raw.$(quant_method).tsv 
+$(quant_toplevel_folder)/%.nlib.none.tsv: 
 	$(call p_info,Quantification normalization disabled. Please set the quant_norm_method parameter if you do not want this behavior.)
 	@$(call empty_file,$@)
 
