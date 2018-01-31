@@ -134,8 +134,8 @@ function check_dependencies {
 	if [ "$PATH2BIN-" == "-" ]; then
 	    pinfo " $bin not found!"
 	    #
-	    if [ "$bin" == "R" ]; then
-		pinfo "WARNING:Please install the R package (and update all packages) or run irap_install.sh with -R to install R (version 3.2 or above)"
+	    if [ "$bin" == "R" ] && [ "$INSTALL_R3-" == "y-" ]; then
+		pinfo "WARNING: R not found but it will be installed since -R option was provided."
 	    else
 		MISSING=1
 	    fi
