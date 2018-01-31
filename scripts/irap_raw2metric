@@ -77,8 +77,9 @@ exon.length <- NULL
 # load TSV
 
 ##
+
 pinfo("Loading ",opt$ifile)
-if ( opt$is_mtx ) {
+if ( opt$is.mtx ) {
     table <- mtx.load(opt$ifile)
 } else {
     table <- quant.load(opt$ifile)
