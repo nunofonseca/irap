@@ -19,7 +19,6 @@
 # along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-#    $Id: irap.txt Nuno Fonseca Fri Mar 15 01:39:46 2013$
 # =========================================================
 
 ###############################################################
@@ -43,14 +42,14 @@ pdebug.enabled <- FALSE
 # htseq
 # tsvGE2html -f gene -s homo_sapiens  -i test_files/htseq/genes.raw.htseq2.tsv  -x 0 -t "TITLE" -a annot.file --css css.file -o 
 #######################
-usage <- "tsvGE2html --tsv file [options]"
-filenames <- c("tsv_file","annotation","feat_mapping_file") ;#filenames that must exist (if defined)
+usage <- "tsvGE2html --ifile file [options]"
+filenames <- c("ifile","annotation","feat_mapping_file") ;#filenames that must exist (if defined)
 option_list <- list(
   make_option(c("-v", "--verbose"), action="store_true", default=TRUE, help="Print extra output [default]"),
   make_option(c("-q", "--quietly"), action="store_false", dest="verbose", help="Print little output"),
   make_option(c("-f", "--feature"), type="character", dest="feature", default="gene",help="Feature (gene,exon,CDS) [default %default]"),
   make_option(c("-s", "--species"), type="character", dest="species", default="homo_sapiens",help="Species [default %default]"),
-  make_option(c("-i", "--tsv"), type="character", dest="tsv_file", default=NULL,help="TSV file name with ge values"),
+  make_option(c("-i", "--ifile"), type="character", dest="ifile", default=NULL,help="TSV file name with expression values"),
   make_option(c("--feat_mapping"), type="character", dest="feat_mapping_file", default=NULL,help="Rdata file with the mappings between exons/transcripts to gene ids."),
   make_option(c("-m", "--metric"), type="character", dest="metric", default="",help="Metric used in the normalized matrix  (raw, rpkm, nlib, ...)"),
   make_option(c("-x", "--min-value"), type="numeric", dest="min_value", default=0,help="Discard entries with  values lower than the one provided. [default %default]"),
@@ -67,10 +66,10 @@ option_list <- list(
 
 # check multiple options values
 multiple.options = list(
-  feature=c('gene','exon','CDS'),
+  feature=c('gene','exon','CDS','transcript'),
   metric=c('fpkm','tpm','rpkm','raw',"deseq_nlib")
 )
-mandatory <- c("tsv_file","out",'metric')
+mandatory <- c("ifile","out",'metric')
 opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
 
 #############################
@@ -79,6 +78,7 @@ opt$browser <- paste(gsub("/$","",opt$browser),"/",sep="")
 pdebug.enabled <- opt$debug
 
 html.template <- get.path2template(paste("tsvGE2html_",gsub(".*_","",opt$metric),sep=""))
+pinfo("html template=",html.template)
 ############
 # process group names and definition
 # TODO: move to irap_utils.R
@@ -159,19 +159,31 @@ file.prefix <- opt$out
 
 
 # load TSV
-# TODO: trap and report errors
+# 
 table <- NULL
-tryCatch(table <- read.table(opt$tsv_file,sep = "\t", header=T, quote = "\"",check.names=FALSE),error=function(x) NULL)
+is.mtx <- grepl("\\.(mtx|mtx.gz)$",opt$ifile)
+
+if ( is.mtx) {
+    pinfo("MTX input file...")
+    stable <- mtx.load(opt$ifile)
+    ## for now the table  is converted
+    table <- as.matrix(stable)
+    rownames(table) <- rownames(stable)
+} else {
+    table <- quant.load(opt$ifile)
+    table <- cbind(ID=rownames(table),table)
+}
 pinfo("data loaded=",nrow(table)," rows ",ncol(table)," cols")
 
-if (is.null(table) || is.irap.empty(table)) {
+#|| is.irap.empty(table)
+if (is.null(table) ) {
   pwarning("'empty' input file: ",opt$tsv_file)
   # generate an empty file
   brew.wrapper(get.path2template("no_data"),o.html.file)  
   q(status=0)
 }
 # fix id column name
-colnames(table)[1] <- "ID"
+#colnames(table)[1] <- "ID"
 
 # add rownames table
 # feature=gene=> gene_id
@@ -179,17 +191,17 @@ colnames(table)[1] <- "ID"
 #         exon => gene+exon#
 #
 # check for duplicates
-ndups <- sum(duplicated(table[,"ID"]))
-if (ndups > 0 ) {
-  duplicates <- table[duplicated(table[,"ID"]),"ID"]
-  perror("Found ",length(unique(duplicates))," gene(s) with multiple entries.")
-  perror("E.g.,",unique(as.character(duplicates))[1])
-  if (length(unique(duplicates))>1) {
-    perror("E.g.,",unique(as.character(duplicates))[2])
-  }
-  q(status=1)
-}
-rownames(table) <- as.character(table[,"ID"])
+## ndups <- sum(duplicated(table[,"ID"]))
+## if (ndups > 0 ) {
+##   duplicates <- table[duplicated(table[,"ID"]),"ID"]
+##   perror("Found ",length(unique(duplicates))," gene(s) with multiple entries.")
+##   perror("E.g.,",unique(as.character(duplicates))[1])
+##   if (length(unique(duplicates))>1) {
+##     perror("E.g.,",unique(as.character(duplicates))[2])
+##   }
+##   q(status=1)
+## }
+## rownames(table) <- as.character(table[,"ID"])
 
 # fix colnames (.rpkm)
 if ( opt$metric == "rpkm" ) {
