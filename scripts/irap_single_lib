@@ -331,12 +331,12 @@ if [ "$tidy_up_only" == "y" ]; then
     rm -rf $DATA_DIR/raw_data/single_lib/$folder
     # 
     name=`irap_get_name $conf "$irap_options"`
+
+    stage1_folder=`$cmd $irap_single_lib_options  $irap_options print_stage1_folder  |tail -n 1`
     echo toplevel_dir=$name
-    if [ -e $name/tophat2 ] ; then
-	find $name/tophat2 -type d -name "`basename $folder`" -print -exec rm -rf {} \; ;
-    fi
-    if [ -e $name/star ] ; then
-	find $name/star -type d -name "`basename $folder`" -print -exec rm -rf {} \; ;
+    echo qc_folder=$stage1_folder
+    if [ -e $stage1_folder ] ; then
+	find $stage1_folder -type d -name "`basename $folder`" -print -exec rm -rf {} \; ;
     fi
     exit 0
 fi
