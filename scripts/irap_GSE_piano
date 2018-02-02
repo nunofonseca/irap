@@ -237,19 +237,28 @@ if (!is.null(opt$go.file)) {
     q(status=2)
   }
   pinfo("Generating mapping from gene to goterm/pathway",opt$go.file)
+
+  dups <- duplicated(annot.table$ID)
+  if ( sum(dups) >0 ) {
+      warning("Annotation file contains ",sum(dups)," duplicated gene ids... picking one and continuing the analysis.")
+      annot.table <- annot.table[!duplicated(annot.table$ID),]
+  }
+
   tmp.m <- as.data.frame(list(ID=annot.table$ID,term=annot.table[,opt$annotation_col]))
+    #write.tsv(annot.table,file="clean.tsv")
   # which terms to use?
   # GOterm
   # KEGG
   #s.tmp.m <- head(tmp.m)
   s.tmp.m <- tmp.m
-  x <- strsplit(as.character(s.tmp.m$term),split=";")
+  x <- strsplit(as.character(s.tmp.m$term),split="[;,]")
   lx <- mclapply(x,length)
   names(lx) <- s.tmp.m$ID
   myrep <- function(x,n) {
     rep(x,n[x])
   }
-  
+  x <- x[names(lx>0)]
+
   gene2go <- data.frame(list(gene=unlist(mclapply(as.character(s.tmp.m$ID),myrep,lx)),
                              go.id=unlist(x)),stringsAsFactors = F)
 }
@@ -575,7 +584,7 @@ quit(save="no",status=0)
 ###############################################################
 IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
 if ( IRAP.DIR == "" ) {
-  IRAP.DIR="/home/nf/Research/Projects/WIP/EREAP/irap/"
+  IRAP.DIR="/home/nf/Research/Projects/WIP/EREAP/irap_f27/"
   Sys.setenv(IRAP_DIR=IRAP.DIR)
 }
 setwd("/home/nf/Research/Projects/WIP/EREAP/irap_tests")
