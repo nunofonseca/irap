@@ -19,7 +19,6 @@
 # along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-#    $Id: irap.txt Nuno Fonseca Wed Feb 6 00:51:29 2013$
 # =========================================================
 suppressPackageStartupMessages(library("optparse"))
 
@@ -152,17 +151,17 @@ get.mapping.gene.stats <- function(mapper,pe.bam.v,se.bam.v,pe.labels.v,se.label
 #opt$mapper_name="tophat1"
 mapper <- opt$mapper
 mapping.dfs <- list()
-mapping.dfs$raw <- quant.load(opt$bam_stats)
-mapping.dfs$perc <- quant.load(opt$bam_statsp)
+mapping.dfs$raw <- quant.load(opt$bam_stats,header=TRUE)
+mapping.dfs$perc <- quant.load(opt$bam_statsp,header=TRUE)
 if ( is.null(mapping.dfs$raw) || is.null(mapping.dfs$perc) ) {
   perror("Unable to read '",opt$bam_stats,"' or '",opt$bam_statsp,"'.")
   q(status=1)
 }
 #rownames(mapping.dfs$perc) <- mapping.dfs$perc[,1]
 #mapping.dfs$perc <- mapping.dfs$perc[,-1,drop=FALSE]
-mapping.feat <- as.matrix(quant.load(opt$bam_fstats))
+mapping.feat <- as.matrix(quant.load(opt$bam_fstats,header=TRUE))
 # exons/introns
-mapping.genes <- as.matrix(quant.load(opt$bam_gstats))
+mapping.genes <- as.matrix(quant.load(opt$bam_gstats,header=TRUE))
 pdebug.save.state("irap_report_mapping","p3")
 if (opt$debug) {
   print(mapping.genes)
@@ -187,7 +186,8 @@ pdebug.save.state("irap_report_mapping","p4")
 out.html.file <- paste(opt$out,sep="")
 brew.wrapper(opt$html_template,opt$out)
 warnings()
-q()
+pinfo("Created ",out.html.file)
+q(status=0)
 
 IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
 if ( IRAP.DIR == "" ) {
