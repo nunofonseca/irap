@@ -320,7 +320,7 @@ def_annot_tsv?=off
 
 CSS_FILE?=irap.css
 
-gen_html_report=y
+gen_html_report=n
 GEN_REPORT_QC_ONLY=
 
 ###########
@@ -1990,6 +1990,17 @@ print_stage0_files: setup_dirs
 
 print_stage1_files:
 	echo $(STAGE1_OUT_FILES)
+
+###############################################################
+
+print_stage1_folder:
+	echo $(qc_toplevel_folder)
+
+print_stage2_folder:
+	echo $(mapper_toplevel_folder)
+
+print_stage3_folder:
+	echo $(quant_toplevel_folder)
 
 ###############################################################
 
