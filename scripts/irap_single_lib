@@ -224,7 +224,7 @@ if [ "$is_atlas_run-" != "0-" ]; then
     irap_options="$irap_options $name"
 fi
 
-# TODO
+# 
 # Is there a second sop (sop2=) in the conf file
 sop2=$(conf_get_sop2 $conf "$irap_options" 2> /dev/null)
 # Note: although SOP2 may generate BAM files, irap_single_lib
@@ -338,6 +338,14 @@ if [ "$tidy_up_only" == "y" ]; then
     if [ -e $stage1_folder ] ; then
 	find $stage1_folder -type d -name "`basename $folder`" -print -exec rm -rf {} \; ;
     fi
+    if [ "$sop2-" != "-" ]; then
+	pinfo "Tidy up for sop2 ($sop2)..."
+	stage1_folder=`$cmd $irap_single_lib_options  $irap_options print_stage1_folder  sop=$sop2 |tail -n 1`
+	echo qc_folder=$stage1_folder
+	if [ -e $stage1_folder ] ; then
+	    find $stage1_folder -type d -name "`basename $folder`" -print -exec rm -rf {} \; ;
+	fi	
+    fi    
     exit 0
 fi
 
