@@ -18,7 +18,6 @@
 # along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-#    $Id: irap.txt Nuno Fonseca Wed Feb 6 00:51:29 2013$
 # =========================================================
 suppressPackageStartupMessages(library("optparse"))
 
@@ -83,20 +82,20 @@ gse.png.file.mix <- sub("\\.tsv$","_class_mix_dir_both.png",opt$tsv)
 
 gse.rdata.file <- sub("\\.tsv$",".Rdata",opt$tsv)
 
-if ( file.exists(gse.png.file.nd) ) {
-  pinfo("Found and reusing plot ",gse.png.file.nd)
-  system(paste("cp -a -f ",gse.png.file.nd," ",out.dir,sep=""))
-  gse.png.file.nd <- basename(gse.png.file.nd)
-} else {
-  gse.png.file.nd <- NULL
-}
-if ( file.exists(gse.png.file.dd) ) {
-  system(paste("cp -a -f ",gse.png.file.dd," ",out.dir,sep=""))
-  gse.png.file.dd <- basename(gse.png.file.dd)
-  pinfo("Found and reusing plot ",gse.png.file.dd)
-} else {
-  gse.png.file.dd <- NULL
-}
+## if ( file.exists(gse.png.file.nd) ) {
+##   pinfo("Found and reusing plot ",gse.png.file.nd)
+##   system(paste("cp -a -f ",gse.png.file.nd," ",out.dir,sep=""))
+##   gse.png.file.nd <- basename(gse.png.file.nd)
+## } else {
+gse.png.file.nd <- NULL
+#}
+## if ( file.exists(gse.png.file.dd) ) {
+##   system(paste("cp -a -f ",gse.png.file.dd," ",out.dir,sep=""))
+##   gse.png.file.dd <- basename(gse.png.file.dd)
+##   pinfo("Found and reusing plot ",gse.png.file.dd)
+## } else {
+gse.png.file.dd <- NULL
+##}
 
 #if ( file.exists(gse.eps.file.nd) ) {
 #  pinfo("Found and reusing plot ",gse.eps.file.nd)
@@ -126,7 +125,6 @@ if (file.exists(gse.rdata.file)) {
 pdebug.save.state("irap_report_gse","p2")
 
 # Piano information
-
 info.msg <- "<p>The total number of genes in each gene set (Genes tot.). The number of up-regulated genes in each gene set (Genes up.). The number of down-regulated genes in each gene set (Genes down.). </p> <p>Each gene set has p-values that may be calculated in different ways to take into account different aspects of regulation directionality: distinct-directional and non-directional. The non-directional p-values (non.dir) are calculated based on absolute values of the gene statistics (or p-values without sign information). The distinct-directional p-values (dist.dir) are calculated from statistics with sign information (e.g. t-statistics).</p>"
 
 tool.url <- "http://bioconductor.org/packages/release/bioc/html/piano.html"
@@ -156,19 +154,12 @@ if (ncol(gse.res)==9 ) {
                     "Genes (down)","p (mix.dir.dn)","p adj (mix.dir.dn)")
   sort.col <- "p adj (non-dir.)"
 }
-#if ( length(colnames(gse.res)) != 19 ) {
-#  perror("expected 19 columns in ",opt$tsv," but found ",length(colnames(gse.res)))
-#  q(status=1)
-#}
+
 if ( length(colnames(gse.res))==1 ) {
   gse.res.filt <- NULL
   gse.res <- NULL
 } else {
   not.in <- ! cols.to.keep %in% colnames(gse.res)
-  #if (sum(not.in) > 0 ) {
-    # back compatibility
-  #  cols.to.keep <- cols.to.keep.back
-  #}
   #not.in <- ! cols.to.keep %in% colnames(gse.res)
   if (sum(not.in) > 0 ) {
     pinfo("Columns found")
@@ -186,14 +177,12 @@ if ( length(colnames(gse.res))==1 ) {
   gse.res.filt <- gse.res[,cols.to.keep,drop=FALSE]
   colnames(gse.res.filt) <- sub("Genes\\.\\.","Genes ",colnames(gse.res.filt))
   colnames(gse.res.filt) <- gsub("\\.\\."," ",colnames(gse.res.filt))
-
 }
 
 # sort
 if ( !is.null(gse.res.filt) ) {
   gse.res.filt <- gse.res.filt[order(gse.res[,sort.col]),,drop=FALSE]
 }
-
 library(brew)
 
 # check if the columns are present
@@ -220,36 +209,32 @@ if (rdata.loaded && !is.null(gse.res) ) {
   gse.res.filt <- gse.res.filt[append(c(1,ncol(gse.res.filt)),seq(2,ncol(gse.res.filt)-1))]
   colnames(gse.res.filt)[1] <- f.col.name
 } else {
-  # no rdata
-  if (!opt$is.pathway.analysis) {
-    f.col.name <- "GO"
-  } else {
-    f.col.name <- "Pathway"
-    gse.res[,"Name"] <- ""
-  }
-
-
+    ## no rdata
+    if ( ! is.null(gse.res) ) {
+        if (!opt$is.pathway.analysis) {
+            f.col.name <- "GO"
+        } else {
+            f.col.name <- "Pathway"
+            gse.res[,"Name"] <- ""
+        }
+    }
 }
 
 if (!is.null(gse.res.filt) ) {
-  #if (opt$is.pathway.analysis) {
-  # add column with link to kegg
-  #  perror("COMPLETE THE CODE!!!")
-  #}
-
   pinfo("Saving TSV file...")
-  raw.tsv.file <- paste(out.prefix,".tsv",sep="")
-  r <- write.tsv(gse.res.filt,file=paste(out.dir,"/",raw.tsv.file,sep=""))
+  raw.tsv.file <- paste(out.prefix,".report.tsv",sep="")
+  out.file <- paste(out.dir,"/",raw.tsv.file,sep="")
+  r <- write.tsv(gse.res.filt,file=out.file)
   pinfo("Saved ",out.dir,"/",raw.tsv.file)
 
-  if (opt$is.pathway.analysis && rdata.loaded) {
+  if (opt$is.pathway.analysis) {
+  ##if (opt$is.pathway.analysis && rdata.loaded) {
     # assume kegg
     get.kegg.url <- function(id) {      
       sprintf("<A href='http://www.genome.jp/dbget-bin/www_bget?map%05d' target='_blank'>%05d</A>",id,id)
     }
-    gse.res.filt$Name <- sapply(gse.res.filt$Pathway,FUN=get.kegg.url)    
+    gse.res.filt$Name <- sapply(gse.res.filt[,f.col.name],FUN=get.kegg.url)    
   }
-
 }
 pinfo("Generating HTML...")
 out.html.file <- paste(opt$out,sep="")
