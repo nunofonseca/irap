@@ -5,20 +5,22 @@ mkdir -p $IRAP_DIR/data/reference/ecoli_k12
 mkdir -p $IRAP_DIR/data/raw_data/ecoli_k12
 
 pushd $IRAP_DIR/data/reference/ecoli_k12
-wget ftp://ftp.ensemblgenomes.org/pub/release-31/bacteria/fasta/bacteria_0_collection/escherichia_coli_str_k_12_substr_mg1655/dna/Escherichia_coli_str_k_12_substr_mg1655.ASM584v2.31.dna.toplevel.fa.gz
-wget ftp://ftp.ensemblgenomes.org/pub/release-31/bacteria/gtf/bacteria_0_collection/escherichia_coli_str_k_12_substr_mg1655/Escherichia_coli_str_k_12_substr_mg1655.ASM584v2.31.gtf.gz
-gunzip -f Escherichia_coli_str_k_12_substr_mg1655.ASM584v2.31.gtf.gz
-cat Escherichia_coli_str_k_12_substr_mg1655.ASM584v2.31.gtf | grep -v "^#" > tmp && mv tmp Escherichia_coli_str_k_12_substr_mg1655.ASM584v2.31.gtf
+wget -c ftp://ftp.ensemblgenomes.org/pub/release-37/bacteria/fasta/bacteria_122_collection/escherichia_coli_k_12_gca_000981485/dna/Escherichia_coli_k_12_gca_000981485.EcoliK12AG100.dna.chromosome.I.fa.gz
+
+wget -c ftp://ftp.ensemblgenomes.org/pub/release-37/bacteria/gtf/bacteria_122_collection/escherichia_coli_k_12_gca_000981485/Escherichia_coli_k_12_gca_000981485.EcoliK12AG100.90.gtf.gz
+
+gunzip -f Escherichia_coli_k_12_gca_000981485.EcoliK12AG100.90.gtf.gz
+cat Escherichia_coli_k_12_gca_000981485.EcoliK12AG100.90.gtf | grep -v "^#" > tmp && mv tmp Escherichia_coli_k_12_gca_000981485.EcoliK12AG100.90.gtf
 popd
 
 
 pushd $IRAP_DIR/data/raw_data/ecoli_k12
-wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR933/SRR933983/SRR933983.fastq.gz
-wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR933/SRR933984/SRR933984.fastq.gz
-wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR933/SRR933985/SRR933985.fastq.gz
-wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR933/SRR933989/SRR933989.fastq.gz
-wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR933/SRR933990/SRR933990.fastq.gz
-wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR933/SRR933991/SRR933991.fastq.gz
+wget -c ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR933/SRR933983/SRR933983.fastq.gz
+wget -c ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR933/SRR933984/SRR933984.fastq.gz
+wget -c ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR933/SRR933985/SRR933985.fastq.gz
+wget -c ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR933/SRR933989/SRR933989.fastq.gz
+wget -c ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR933/SRR933990/SRR933990.fastq.gz
+wget -c ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR933/SRR933991/SRR933991.fastq.gz
 popd
 
 cat <<EOF > ecoli_ex.conf
@@ -29,15 +31,17 @@ name=ecoli_ex
 # species
 species=ecoli_k12
 # reference genome
-reference=Escherichia_coli_str_k_12_substr_mg1655.ASM584v2.31.dna.toplevel.fa.gz
+reference=Escherichia_coli_k_12_gca_000981485.EcoliK12AG100.dna.chromosome.I.fa.gz
 # gtf file
-gtf_file=Escherichia_coli_str_k_12_substr_mg1655.ASM584v2.31.gtf
+gtf_file=Escherichia_coli_k_12_gca_000981485.EcoliK12AG100.90.gtf
+# 
+user_trans=auto
 # Enable filtering based on quality
 qual_filtering=on
 # Use a contamination data set to filter out reads
 cont_index=no
 # Toplevel directory with the data
-data_dir=$(IRAP_DIR)/data
+data_dir=$IRAP_DIR/data
 mapper=bowtie2
 
 # some contrasts...
@@ -72,7 +76,7 @@ FE=SRR933990.fastq.gz
 FE_rs=50
 FE_qual=33
 
-#FF=SRR933990.fastq.gz
-#FF_rs=50
-#FF_qual=33
+FF=SRR933990.fastq.gz
+FF_rs=50
+FF_qual=33
 EOF
