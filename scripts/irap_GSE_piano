@@ -131,8 +131,12 @@ if ( num.cores>detectCores()) {
 }
 
 options(mc.cores=num.cores)
-#save.image("debug.Rdata")
-#load("debug.Rdata")
+
+gen.empty.file <- function(ofile,content="no results") {
+    m <- matrix(c(content),ncol=1,nrow=1)
+    write.tsv(m,file=ofile)
+    pinfo("Created empty ",ofile)
+}
 #####################$
 # check for duplicates
 if ( length(unique(df[,1]))!=nrow(df) ) {
@@ -222,45 +226,43 @@ if (!is.null(opt$go.file)) {
     }
   }
 } else {
-  # load annot file
-  pinfo("Loading annotation file ",opt$annotation,"...")
-  annot.table <- load.annot(opt$annotation)
-  pinfo("Loading annotation file ",opt$annotation,"...done.")
-  # empty?
-  if ( is.null(annot.table) ) {
-      perror("Empty annotation file ",opt$annotation)
-      q(status=1)
-  }
-  # check if columns exist
-  if ( ! opt$annotation_col %in% colnames(annot.table) ) {
-    perror("Selected column ",opt$annotation_col," not found in ",opt$annotation)
-    q(status=2)
-  }
-  pinfo("Generating mapping from gene to goterm/pathway",opt$go.file)
+    ## load annot file
+    pinfo("Loading annotation file ",opt$annotation,"...")
+    annot.table <- load.annot(opt$annotation)
+    pinfo("Loading annotation file ",opt$annotation,"...done.")
+    ## empty?
+    if ( is.null(annot.table) ) {
+        perror("Empty annotation file ",opt$annotation)
+        q(status=1)
+    }
+    ## check if columns exist
+    if ( ! opt$annotation_col %in% colnames(annot.table) ) {
+        perror("Selected column ",opt$annotation_col," not found in ",opt$annotation)
+        q(status=2)
+    }
+    pinfo("Generating mapping from gene to goterm/pathway",opt$annotation)
+    
+    dups <- duplicated(annot.table$ID)
+    if ( sum(dups) >0 ) {
+        warning("Annotation file contains ",sum(dups)," duplicated gene ids... picking one and continuing the analysis.")
+        annot.table <- annot.table[!duplicated(annot.table$ID),]
+    }
+    tmp.m <- as.data.frame(list(ID=annot.table$ID,term=annot.table[,opt$annotation_col]))
 
-  dups <- duplicated(annot.table$ID)
-  if ( sum(dups) >0 ) {
-      warning("Annotation file contains ",sum(dups)," duplicated gene ids... picking one and continuing the analysis.")
-      annot.table <- annot.table[!duplicated(annot.table$ID),]
-  }
-
-  tmp.m <- as.data.frame(list(ID=annot.table$ID,term=annot.table[,opt$annotation_col]))
-    #write.tsv(annot.table,file="clean.tsv")
-  # which terms to use?
-  # GOterm
-  # KEGG
-  #s.tmp.m <- head(tmp.m)
-  s.tmp.m <- tmp.m
-  x <- strsplit(as.character(s.tmp.m$term),split="[;,]")
-  lx <- mclapply(x,length)
-  names(lx) <- s.tmp.m$ID
-  myrep <- function(x,n) {
-    rep(x,n[x])
-  }
-  x <- x[names(lx>0)]
-
-  gene2go <- data.frame(list(gene=unlist(mclapply(as.character(s.tmp.m$ID),myrep,lx)),
-                             go.id=unlist(x)),stringsAsFactors = F)
+    ## which terms to use?
+    ## GOterm
+    ## KEGG
+    ##s.tmp.m <- head(tmp.m)
+    s.tmp.m <- tmp.m
+    x <- strsplit(as.character(s.tmp.m$term),split="[;,]")
+    lx <- mclapply(x,length)
+    names(lx) <- s.tmp.m$ID
+    myrep <- function(x,n) {
+        rep(x,n[x])
+    }
+    #x <- x[names(lx>0)]
+    gene2go <- data.frame(list(gene=unlist(mclapply(as.character(s.tmp.m$ID),myrep,lx)),
+                               go.id=unlist(x)),stringsAsFactors = F)
 }
 # output filename
 out.tsv.file <- paste(opt$out,".tsv",sep="")
@@ -343,240 +345,230 @@ if(nrow(set2.annot)==0 ) {
   #q(status=2)
 }
 if ( length(set1)<=2 ) {
-  pwarning("Insufficient number of genes with a p-value <= ",pval.lim)
-  q(status=0)
+    pwarning("Insufficient number of genes with a p-value <= ",pval.lim)
+    ## write an empty file
+    gen.empty.file(out.tsv.file)
+    q(status=0)
 }
 #save.image("debug.Rdata")
 #pinfo(minSizeLim)
 pdebug.save.state("irap_GSE_piano","p1")
 if ( length(set2)>=minSizeLim && print.empty==FALSE )  {
-  print.empty <- FALSE
-  pinfo("Loading GSC...")
-  myGSC <- loadGSC(set2.annot)
-  if ( opt$method=="fisher-exact" ) {    
-    # runGSAhyper only uses the group membership of
-    # each gene (in/not in gene set, significant/non-significant).
-    genesinMyGSC <- unique(unlist(myGSC$gsc))      
-    if ( sum(set2 %in% genesinMyGSC) <=1 ) {
-      pwarning("No gene sets for the set of genes with data.")
-      q(status=0)    
-    }
-    if ( sum(set1 %in% genesinMyGSC) <=1 ) {
-      pwarning("No gene sets for the genes with p-value below the threshold.")
-      q(status=0)    
-    }
-    # enough gene sets?
-    sizes<-mclapply(myGSC$gsc,length)	
-    if (sum(sizes >=minSizeLim &  sizes <=maxSizeLim ) <=2) {
-       pwarning("No gene sets found with a size in the range of [",minSizeLim,",",maxSizeLim,"]")
-       q(status=0)
-    }
+    print.empty <- FALSE
+    pinfo("Loading GSC...")
+    myGSC <- loadGSC(set2.annot)
+    if ( opt$method=="fisher-exact" ) {    
+        ## runGSAhyper only uses the group membership of
+        ## each gene (in/not in gene set, significant/non-significant).
+        genesinMyGSC <- unique(unlist(myGSC$gsc))      
+        if ( sum(set2 %in% genesinMyGSC) <=1 ) {
+            pwarning("No gene sets for the set of genes with data.")
+            gen.empty.file(out.tsv.file)
+            q(status=0)    
+        }
+        if ( sum(set1 %in% genesinMyGSC) <=1 ) {
+            pwarning("No gene sets for the genes with p-value below the threshold.")
+            gen.empty.file(out.tsv.file)
+            q(status=0)    
+        }
+        ## enough gene sets?
+        sizes<-mclapply(myGSC$gsc,length)	
+        if (sum(sizes >=minSizeLim &  sizes <=maxSizeLim ) <=2) {
+            pwarning("No gene sets found with a size in the range of [",minSizeLim,",",maxSizeLim,"]")
+            gen.empty.file(out.tsv.file)
+            q(status=0)
+        }
+        pinfo("Gene sets:",length(myGSC$gsc)," genes:",length(genesinMyGSC))
+        pval.sel <- pval[set2]
+        pinfo("Running Fisher-exact test...")
+        fisherRes <- try(runGSAhyper2(genes=set2,
+                                      pvalues=pval.sel,
+                                      pcutoff=pval.lim,
+                                      gsc=myGSC,gsSizeLim=c(minSizeLim,maxSizeLim),
+                                      adjMethod="fdr"))
+        if ( class(fisherRes)=="try-error") {
+            perror("Failed runGSA(",opt$method,")")
+            pdebug.save.state("irap_GSE_piano","p2")
+            gen.empty.file(out.tsv.file)
+            q(status=0)
+        }
+        ## expected<- #sign. de genes * (num. genes in set/total number of genes)
+        de.genes <- sum(fisherRes$resTab[1,c("Significant (in gene set)","Significant (not in gene set)")])
+        expected <- de.genes*rowSums(fisherRes$resTab[,c("Significant (in gene set)","Non-significant (in gene set)")])/rowSums(fisherRes$resTab[,c("Significant (in gene set)","Non-significant (in gene set)","Significant (not in gene set)","Non-significant (not in gene set)")])
+        sSizes <- fisherRes$resTab[,c("Significant (in gene set)")]
+        ## observed <- sig.number of genes
+        observed <- fisherRes$resTab[,c("Significant (in gene set)")]
+        ## effect size
+        effect.size <- observed/expected
 
-    pinfo("Gene sets:",length(myGSC$gsc)," genes:",length(genesinMyGSC))
-    pval.sel <- pval[set2]
-    pinfo("Running Fisher-exact test...")
-    fisherRes <- try(runGSAhyper2(genes=set2,
-                             pvalues=pval.sel,
-                             pcutoff=pval.lim,
-                             gsc=myGSC,gsSizeLim=c(minSizeLim,maxSizeLim),
-                             adjMethod="fdr"))
-    if ( class(fisherRes)=="try-error") {
-      perror("Failed runGSA(",opt$method,")")
-      pdebug.save.state("irap_GSE_piano","p2")
-      q(status=0)
-    }
-    # expected<- #sign. de genes * (num. genes in set/total number of genes)
-    de.genes <- sum(fisherRes$resTab[1,c("Significant (in gene set)","Significant (not in gene set)")])
-    expected <- de.genes*rowSums(fisherRes$resTab[,c("Significant (in gene set)","Non-significant (in gene set)")])/rowSums(fisherRes$resTab[,c("Significant (in gene set)","Non-significant (in gene set)","Significant (not in gene set)","Non-significant (not in gene set)")])
-    sSizes <- fisherRes$resTab[,c("Significant (in gene set)")]
-    # observed <- sig.number of genes
-    observed <- fisherRes$resTab[,c("Significant (in gene set)")]
-    # effect size
-    effect.size <- observed/expected
-
-    pdebug.save.state("irap_GSE_piano","p2")
-    tab <- fisherRes$resTab
-    tab <- cbind(tab,effect.size)
-    Sets <- rownames(tab)
-    tmp <- data.frame(cbind(Sets,tab))
-    # Save the tsv file
-    # TODO: improve this
-    #colnames(tmp)
-    GenesInSet <- tab[,"Significant (in gene set)"]+tab[,"Non-significant (in gene set)"]
-    #head(tmp)
-    tmp$"Genes (tot)" <- GenesInSet
-    tmp <- tmp[,c("Sets","Genes (tot)","p.value","Adjusted.p.value",
-                  "Significant..in.gene.set.","Non.significant..in.gene.set.",
-                  "Significant..not.in.gene.set.","Non.significant..not.in.gene.set.",
-                  "effect.size")]
-    colnames(tmp)[1:4] <- c("Name","Genes (tot)","Stat (non-dir.) p","p adj (non-dir.)")
-    #colnames(tmp)
-    #head(tmp)
-    write.tsv(tmp,file=out.tsv.file,header=T)
-    pinfo("Created ",out.tsv.file)
-    
-    sel <- Sets
-    if ( !is.infinite(opt$top) ) {
-      #sort by observed/expected
-      tab2 <- cbind(rownames(tab),tab)
-      tmp <- tab2[as.numeric(tab2[,"Adjusted p-value"])<=opt$gs_fdr,,drop=FALSE]
-      #fisherRes.bak <- fisherRes
-      #fisherRes <- fisherRes.bak
-      # select with a 
-      sorted <- tmp[order(as.numeric(tmp[,"effect.size"])),,drop=FALSE]
-      sel <- head(rownames(sorted),opt$top)
-    }
-    
-    if ( !is.null(sel) && length(sel) >= 1 ) {
-      fisherRes$effect.size <- effect.size
-      fisherRes$sSizes <- sSizes
-      fisherRes$resTab <- fisherRes$resTab[sel,,drop=FALSE]
-      #fisherRes <- fisherRes.bak
-      g <- tryCatch(fisherNetworkPlot(fisherRes,edgeWidth=c(2,20),
-                             adjusted=T,significance=opt$gs_fdr,
-                             label="names",
-                             cexLegend=1.1,main=opt$title,
-                             long.names=long.names[sel]),error=function(x) NULL)
-      plot.file <- paste(opt$out,"_class_non_dir_both.png",sep="")
-
-      system(paste("rm -f ",plot.file,sep=""))
-
-      if ( !is.null(g) ) {
-      #
-        pinfo("Generating plot ",plot.file)
-        gen.plot2report(filename=plot.file,
-                         width=550,
-                        height=550,
-                        html=FALSE,
-                        ps=TRUE,
-                        to.plot = function () {
-                          fisherNetworkPlot(fisherRes,edgeWidth=c(2,20),
+        pdebug.save.state("irap_GSE_piano","p2")
+        tab <- fisherRes$resTab
+        tab <- cbind(tab,effect.size)
+        Sets <- rownames(tab)
+        tmp <- data.frame(cbind(Sets,tab))
+        ##
+        GenesInSet <- tab[,"Significant (in gene set)"]+tab[,"Non-significant (in gene set)"]
+        tmp$"Genes (tot)" <- GenesInSet
+        tmp <- tmp[,c("Sets","Genes (tot)","p.value","Adjusted.p.value",
+                      "Significant..in.gene.set.","Non.significant..in.gene.set.",
+                      "Significant..not.in.gene.set.","Non.significant..not.in.gene.set.",
+                      "effect.size")]
+        colnames(tmp)[1:4] <- c("Name","Genes (tot)","Stat (non-dir.) p","p adj (non-dir.)")
+        
+        write.tsv(tmp,file=out.tsv.file,header=T)
+        pinfo("Created ",out.tsv.file)
+        
+        sel <- Sets
+        if ( !is.infinite(opt$top) ) {
+            ##sort by observed/expected
+            tab2 <- cbind(rownames(tab),tab)
+            tmp <- tab2[as.numeric(tab2[,"Adjusted p-value"])<=opt$gs_fdr,,drop=FALSE]
+            ##
+            sorted <- tmp[order(as.numeric(tmp[,"effect.size"])),,drop=FALSE]
+            sel <- head(rownames(sorted),opt$top)
+        }
+        
+        if ( !is.null(sel) && length(sel) >= 1 ) {
+            fisherRes$effect.size <- effect.size
+            fisherRes$sSizes <- sSizes
+            fisherRes$resTab <- fisherRes$resTab[sel,,drop=FALSE]
+            g <- tryCatch(fisherNetworkPlot(fisherRes,edgeWidth=c(2,20),
                                             adjusted=T,significance=opt$gs_fdr,
                                             label="names",
                                             cexLegend=1.1,main=opt$title,
-                                            long.names=long.names[sel])
-                        })
-      } else {
-        pwarning("Skipping plot generation")
-      }
-    } else {
-      pwarning("Insufficient gene sets (",sel,") to draw a plot - plot not generated.")
+                                            long.names=long.names[sel]),error=function(x) NULL)
+            plot.file <- paste(opt$out,"_class_non_dir_both.png",sep="")
+            
+            system(paste("rm -f ",plot.file,sep=""))
+            
+            if ( !is.null(g) ) {
+                ##
+                pinfo("Generating plot ",plot.file)
+                gen.plot2report(filename=plot.file,
+                                width=550,
+                                height=550,
+                                html=FALSE,
+                                ps=TRUE,
+                                to.plot = function () {
+                                    fisherNetworkPlot(fisherRes,edgeWidth=c(2,20),
+                                                      adjusted=T,significance=opt$gs_fdr,
+                                                      label="names",
+                                                      cexLegend=1.1,main=opt$title,
+                                                      long.names=long.names[sel])
+                                })
+            } else {
+                pwarning("Skipping plot generation")
+            }
+        } else {
+            pwarning("Insufficient gene sets (",sel,") to draw a plot - plot not generated.")
+        }        
+        q(status=0)
     }
-    q(status=0)
-  }
-  pval.sel <- pval[set1]
-  fc.sel <- fc[set1]
-  # compute the 
-  gsaRes <- try(runGSA(geneLevelStats=pval,directions=fc,geneSetStat=opt$method,
+    pval.sel <- pval[set1]
+    fc.sel <- fc[set1]
+    ##
+    gsaRes <- try(runGSA(geneLevelStats=pval,directions=fc,geneSetStat=opt$method,
                          gsc=myGSC,gsSizeLim=c(minSizeLim,maxSizeLim)))  
-  print(gsaRes)
-  #gsaRes$geneSetStat
-  pdebug.save.state("irap_GSE_piano","p2")
-  if ( class(gsaRes)=="try-error") {
-    perror("Failed runGSA(",opt$method,")")
-    pinfo("Probably no gene sets were found.")
-    print.empty <- TRUE
-  } else {
-     # Create the plots
-     # 
-     # which sets to include
-     gsaRes2plot <- gsaRes
-     #opt$plot.annot.only <- T 
-     if (opt$plot.annot.only ) {
-       #Do not plot gene sets without annotation
-       gsaRes2Plot.sel <- (names(gsaRes$gsc)=="" )
-       #gsaRes2plot$gsc[[gsaRes2Plot.sel]] <- NULL
-       #gsaRes2plot$gsc <- gsaRes2plot$gsc[!is.null(gsaRes2plot$gsc)]
-       if ( sum(gsaRes2Plot.sel)==length(names(gsaRes2plot$gsc))) {
-         gsaRes2plot <- NULL
-       } else {
-         if (sum(gsaRes2Plot.sel)>0 ) {
-           gsaRes2plot$gsc <- gsaRes2plot$gsc[!gsaRes2Plot.sel]                
-           for (v in append(grep("^p" ,names(gsaRes2plot),value=T),"nGenesTot") ) {
-             gsaRes2plot[[v]] <- matrix(gsaRes2plot[[v]][!gsaRes2Plot.sel,,drop=FALSE],ncol=1)
-           }
-         }
-       }
-     }
-     sel <- NULL
-     if (is.null(gsaRes2plot) || length(names(gsaRes2plot$gsc))<3) {
-       pwarning("Unable to generate plots, not enough gene sets")
-     } else {
-       if ( !is.infinite(opt$top) ) {
-         v1 <- as.numeric(gsaRes2plot$pAdjDistinctDirDn)
-         v2 <- as.numeric(gsaRes2plot$pAdjDistinctDirUp)
-         names(v1) <- names(gsaRes2plot$gsc)
-         names(v2) <- names(gsaRes2plot$gsc)
-         v <- apply(cbind(v1,v2),1,min,na.rm=TRUE)
-         # select the top gene sets (lowest p-values, larger number of genes)
-         v2 <- as.numeric(gsaRes2plot$nGenesTot)
-         names(v2) <- names(gsaRes2plot$gsc)
-         m <- cbind(v,v2)       
-         rownames(m) <- names(gsaRes2plot$gsc)
-         sorted <- m[order(v,-v2),,drop=FALSE]
-         sel <- head(rownames(sorted),opt$top)
-       }
-       #If geneSetStat is set to"fisher","stouffer","reporter" or"tailStrength" only p-values are allowed as geneLevelStats.
-       if ( ! opt$method %in% c("fisher","stouffer","reporter","tailStrength")) {
-         gen.plot2report(filename=paste(opt$out,"_class_distinct_dir_both.png",sep=""),
-                         width=450,
-                         height=450,
-                         html=FALSE,
-                         ps=TRUE,
-                         to.plot = function () {
-                           nw1 <- networkPlot(gsaRes2plot,class="distinct",direction="both",edgeWidth=c(2,20),adjusted=T,significance=opt$gs_fdr,geneSets=sel,overlap=opt$minedge,cexLegend=0.8,main=opt$title)
-                         }                     
-                         )
-       }
-       # which sets to include
-       sel <- NULL
-       if ( !is.infinite(opt$top) ) {
-         # select the top gene sets (lowest p-values, larger number of genes)
-         v <- as.numeric(gsaRes2plot$pAdjNonDirectional)
-         v2 <- as.numeric(gsaRes2plot$nGenesTot)
-                                        #length(v2)
-                                        #length(names(gsaRes2plot$gsc))
-         m <- cbind(v,v2)       
-         rownames(m) <- names(gsaRes2plot$gsc)
-         sorted <- m[order(v,-v2),,drop=FALSE]
-         sel <- head(rownames(sorted),opt$top)
-       }
-       gen.plot2report(filename=paste(opt$out,"_class_non_dir_both.png",sep=""),
-                       width=550,
-                       height=550,
-                       html=FALSE,
-                       ps=TRUE,
-                       to.plot = function () {
-                         nw1 <- networkPlot(gsaRes2plot,class="non",edgeWidth=c(2,20),adjusted=T,significance=opt$pvalue,geneSets=sel,overlap=opt$minedge,cexLegend=0.8,main=opt$title)
-                       }                     
-                       )
-     }
-     # save the tsv file and the rdata file
-     #save(gsaRes,file=paste(opt$out,".Rdata",sep=""),envir=sys.frame())
-     # fix values type (Piano issue)
-     for ( n in c("nGenesTot","pAdjDistinctDirUp","pAdjDistinctDirDn","pAdjNonDirectional","pAdjMixedDirUp","pAdjMixedDirDn") ) {
-       if ( ! is.matrix(gsaRes[[n]]) ) {        
-         gsaRes[[n]] <- matrix(gsaRes[[n]],ncol=1)
-       }
-     }
-     #
-     tab <- GSAsummaryTable(gsaRes)
-     if ( nrow(tab)==1 && tab[1,1]=="" ) {
-       tab <- tab[-1,,drop=FALSE]
-     }
-     write.tsv(tab,file=out.tsv.file,header=T)
-     pinfo("Created ",out.tsv.file)
-     print.empty <- FALSE
-   }
+    print(gsaRes)
+    pdebug.save.state("irap_GSE_piano","p2")
+    if ( class(gsaRes)=="try-error") {
+        perror("Failed runGSA(",opt$method,")")
+        pinfo("Probably no gene sets were found.")
+        print.empty <- TRUE
+    } else {
+        ## Create the plots
+        ## which sets to include
+        gsaRes2plot <- gsaRes
+        if (opt$plot.annot.only ) {
+            ##Do not plot gene sets without annotation
+            gsaRes2Plot.sel <- (names(gsaRes$gsc)=="" )
+
+            if ( sum(gsaRes2Plot.sel)==length(names(gsaRes2plot$gsc))) {
+                gsaRes2plot <- NULL
+            } else {
+                if (sum(gsaRes2Plot.sel)>0 ) {
+                    gsaRes2plot$gsc <- gsaRes2plot$gsc[!gsaRes2Plot.sel]                
+                    for (v in append(grep("^p" ,names(gsaRes2plot),value=T),"nGenesTot") ) {
+                        gsaRes2plot[[v]] <- matrix(gsaRes2plot[[v]][!gsaRes2Plot.sel,,drop=FALSE],ncol=1)
+                    }
+                }
+            }
+        }
+        sel <- NULL
+        if (is.null(gsaRes2plot) || length(names(gsaRes2plot$gsc))<3) {
+            pwarning("Unable to generate plots, not enough gene sets")
+        } else {
+            if ( !is.infinite(opt$top) ) {
+                v1 <- as.numeric(gsaRes2plot$pAdjDistinctDirDn)
+                v2 <- as.numeric(gsaRes2plot$pAdjDistinctDirUp)
+                names(v1) <- names(gsaRes2plot$gsc)
+                names(v2) <- names(gsaRes2plot$gsc)
+                v <- apply(cbind(v1,v2),1,min,na.rm=TRUE)
+                ## select the top gene sets (lowest p-values, larger number of genes)
+                v2 <- as.numeric(gsaRes2plot$nGenesTot)
+                names(v2) <- names(gsaRes2plot$gsc)
+                m <- cbind(v,v2)       
+                rownames(m) <- names(gsaRes2plot$gsc)
+                sorted <- m[order(v,-v2),,drop=FALSE]
+                sel <- head(rownames(sorted),opt$top)
+            }
+            ##If geneSetStat is set to"fisher","stouffer","reporter" or"tailStrength" only p-values are allowed as geneLevelStats.
+            if ( ! opt$method %in% c("fisher","stouffer","reporter","tailStrength")) {
+                gen.plot2report(filename=paste(opt$out,"_class_distinct_dir_both.png",sep=""),
+                                width=450,
+                                height=450,
+                                html=FALSE,
+                                ps=TRUE,
+                                to.plot = function () {
+                                    nw1 <- networkPlot(gsaRes2plot,class="distinct",direction="both",edgeWidth=c(2,20),adjusted=T,significance=opt$gs_fdr,geneSets=sel,overlap=opt$minedge,cexLegend=0.8,main=opt$title)
+                                }                     
+                                )
+            }
+            ## which sets to include
+            sel <- NULL
+            if ( !is.infinite(opt$top) ) {
+                ## select the top gene sets (lowest p-values, larger number of genes)
+                v <- as.numeric(gsaRes2plot$pAdjNonDirectional)
+                v2 <- as.numeric(gsaRes2plot$nGenesTot)
+                m <- cbind(v,v2)       
+                rownames(m) <- names(gsaRes2plot$gsc)
+                sorted <- m[order(v,-v2),,drop=FALSE]
+                sel <- head(rownames(sorted),opt$top)
+            }
+            gen.plot2report(filename=paste(opt$out,"_class_non_dir_both.png",sep=""),
+                            width=550,
+                            height=550,
+                            html=FALSE,
+                            ps=TRUE,
+                            to.plot = function () {
+                                nw1 <- networkPlot(gsaRes2plot,class="non",edgeWidth=c(2,20),adjusted=T,significance=opt$pvalue,geneSets=sel,overlap=opt$minedge,cexLegend=0.8,main=opt$title)
+                            }                     
+                            )
+        }
+        ## save the tsv file and the rdata file
+        ## fix values type (Piano issue)
+        for ( n in c("nGenesTot","pAdjDistinctDirUp","pAdjDistinctDirDn","pAdjNonDirectional","pAdjMixedDirUp","pAdjMixedDirDn") ) {
+            if ( ! is.matrix(gsaRes[[n]]) ) {        
+                gsaRes[[n]] <- matrix(gsaRes[[n]],ncol=1)
+            }
+        }
+        ##
+        tab <- GSAsummaryTable(gsaRes)
+        if ( nrow(tab)==1 && tab[1,1]=="" ) {
+            tab <- tab[-1,,drop=FALSE]
+        }
+        write.tsv(tab,file=out.tsv.file,header=T)
+        pinfo("Created ",out.tsv.file)
+        print.empty <- FALSE
+    }
 } else {
-  pwarning("No significant entries found for p-value of ",opt$pvalue)
-  print.empty <- TRUE
+    pwarning("No significant entries found for p-value of ",opt$pvalue)
+    print.empty <- TRUE
 }
 pdebug.save.state("irap_GSE_piano","p3")
 if(print.empty) {
-  gsaRes=NA
-  write.tsv(matrix(),file=out.tsv.file)
-  pinfo("Created empty ",out.tsv.file)
+    gsaRes=NA
+    gen.empty.file(out.tsv.file)
 }
 save(gsaRes,file=paste(opt$out,".Rdata",sep=""))
 
@@ -584,7 +576,7 @@ quit(save="no",status=0)
 ###############################################################
 IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
 if ( IRAP.DIR == "" ) {
-  IRAP.DIR="/home/nf/Research/Projects/WIP/EREAP/irap_f27/"
+  IRAP.DIR=""
   Sys.setenv(IRAP_DIR=IRAP.DIR)
 }
-setwd("/home/nf/Research/Projects/WIP/EREAP/irap_tests")
+setwd("")
