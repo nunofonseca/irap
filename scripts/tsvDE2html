@@ -58,7 +58,7 @@ option_list <- list(
 # check multiple options values
 multiple.options = list(
   feature=c('gene','exon','CDS'),
-  flavour=c('cuffdiff','deseq','cuffdiff1','cuffdiff2','edger','voom','deseq2')
+  flavour=c('cuffdiff','deseq','cuffdiff1','cuffdiff2','edger','voom','deseq2','ebseq')
   )
 mandatory <- c("tsv_file","out")
 opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
@@ -143,7 +143,7 @@ if (opt$flavour == "cuffdiff" || opt$flavour == "cuffdiff1" || opt$flavour == "c
   table[,fields$FOLDCHANGE_MEDIAN] <- log2(median)
   fields$groups <- tcols
 }
-if ( opt$flavour == "deseq" || opt$flavour == "deseq2" ) {
+if ( opt$flavour == "deseq" || opt$flavour == "deseq2" || opt$flavour == "ebseq" ) {
   # exclude the rows based on the analysis
   # nothing to do
   # features
