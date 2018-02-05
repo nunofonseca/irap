@@ -28,5 +28,7 @@ pref=`basename $ifile|sed "s/.fastqc.zip//"|sed "s/_fastqc//"`
 echo "FASTQC $pref" | tr " " "\t"
 $cat_cmd  ${pref}_fastqc/summary.txt | awk  -F"\t"  '{print $2"\t"$1}'
 $cat_cmd  ${pref}_fastqc/fastqc_data.txt  | grep "Total Sequences" | sed 's/\t$//'
+$cat_cmd  ${pref}_fastqc/fastqc_data.txt  | grep "Basic Statistics" | sed 's/\t$//' | sed "s/>>/FASTQC /"
+$cat_cmd  ${pref}_fastqc/fastqc_data.txt  | grep "%GC" | sed 's/\t$//'|sed 's/^%//'
 
 exit 0
