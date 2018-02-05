@@ -18,9 +18,6 @@
 # along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-#    $Id: 0.1.1$
-# =========================================================
-
 ###############################################################
 suppressPackageStartupMessages(library("optparse"))
 
@@ -81,8 +78,7 @@ options(cores=num.cores)
 options(mc.cores=num.cores)
 
 gtf.table <- NULL
-gtf.table <- load.gtf(opt$gtf,selected.attr=c("gene_id","gene_name",feature="gene"))
-#head(gtf.table)
+gtf.table <- load.gtf(opt$gtf,selected.attr=c("gene_id","gene_name",feature=c("gene","CDS")))
 #
 pdebug.save.state("irap_gtf2annot","p0")
 # 
@@ -161,7 +157,10 @@ if( sum(is.na(dbs))==1 && !is.vector(dbs) ) {
   } else {
     pdebug("species DB found")
     r.table[,"egi"] <- annot.get.egi(as.character(r.table[,"ID"]),dbs)
-    pdebug("Entrez gene identifiers collected")
+    if (sum(is.na(r.table[,"egi"]))==nrow(r.table)) {
+        r.table[,"egi"] <- annot.get.egi(as.character(r.table[,"Name"]),dbs)
+    }
+    pdebug("Entrez gene identifiers collected")    
     safe.annot.get.go <- function(egi,dbs) {
       v <- try(annot.get.go(egi,dbs))
       if ( class(v)=="try-error" ) {
