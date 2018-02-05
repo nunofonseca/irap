@@ -135,7 +135,7 @@ load.gtf <- function(gtf.file,feature=NULL,selected.attr=NULL,gtf.format="auto")
       cat("GTF attributes ",gtf.format,"\n")
   }
 
-  if ( !is.null(feature) ) {
+  if ( !is.null(feature) && length(feature)==1 ) {
       if ( feature=="gene" && gtf.format=="ensembl" ) {
           feature <- "CDS"
       }
@@ -162,16 +162,15 @@ load.gtf <- function(gtf.file,feature=NULL,selected.attr=NULL,gtf.format="auto")
   attr <- list()
   for (att in gtf.attributes.names) {
       print(att)
-      re.str <- paste0('^.*\\s?',att,'\\s\\"?([^;\\"]+)\\"?;.*')
+      re.str <- paste0('^.*\\s?\\"?',att,'\\s\\"?([^;\\"]+)\\"?;.*')
       attr[[att]] <- gsub(re.str,"\\1",gtf$attributes)
       print(head(attr[[att]]))
   }
 
   if ( length(attr)!=0 ) {
-  #attr2vec(gtf$attributes[1])
-    vals<-matrix(unlist(attr),ncol=length(gtf.attributes.names),byrow=T)
-    colnames(vals) <- gtf.attributes.names
-    gtf <- cbind(gtf,vals)
+      vals<-matrix(unlist(attr),ncol=num.attr,byrow=F)
+      colnames(vals) <- gtf.attributes.names
+      gtf <- cbind(gtf,vals)
   }
   # try to determine the biotype column (use source by default...)
   biotypes <- gtf[,biotype.column(gtf)]
@@ -650,7 +649,7 @@ species2dbs <- function(species.name) {
       symbol.db <- org.EcK12.egSYMBOL
       # how to get the entrez ids from the ensembl gene id?
       # this will not until we can map the ensembl ids
-      ensembl.db <- NA
+      ensembl.db <- org.EcK12.egALIAS2EG
       kegg.db <- org.EcK12.egPATH
     } else  if (
       regexpr("^chicken.*",n.species,ignore.case=T,perl=T)!=-1 ||
@@ -1201,9 +1200,9 @@ write.tsv <- function(x,file,header=TRUE,rownames.label=NULL,fix=TRUE,gzip=FALSE
     invisible(1)
 }
 
-read.tsv <- function(file,header=T) {
+read.tsv <- function(file,header=T,...) {
 #read.table(file,sep = "\t", header=header, quote = "\"",comment.char="",check.names=FALSE)
-  return(qload.tsv(file,header))
+  return(qload.tsv(file,header=header,...))
 }
 
 #
