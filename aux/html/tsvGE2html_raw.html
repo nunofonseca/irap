@@ -177,9 +177,9 @@ if (do_heatmap(quant.data.group$mean)) {
   
     html <- paste(html,p$html,sep=" ")
   }
-  heatmap.cor.group.info <- paste("Heatmap(s) with the Pearson correlation of ",pprint.feat(opt$feature),"s' expression values between each  group of libraries. The expression value for a ",pprint.feat(opt$feature)," in a group corresponds to the mean values observed in the libraries of the group.",sep="")
-  heatmap.group.info <- paste("First heatmap is based on the Pearson correlation of ",pprint.feat(opt$feature),"s' expression values between each group of libraries. Second heatmap is based  on the ",pprint.feat(opt$feature),"s' expression values for each library. The expression value for a ",pprint.feat(opt$feature)," in a group corresponds to the mean values observed in the groups' libraries. Only the subset with ",nlim," genes with largest variance was considered.",sep="")
-  heatmap.sample.info <- paste("Heatmaps based on ",pprint.feat(opt$feature),"s expression values for each library. Only the subset with ",nlim," genes with largest variance was considered.",sep="")
+  heatmap.cor.group.info <- paste("Heatmap(s) with the Pearson correlation of ",pprint.feat(opt$feature)," expression values between each  group of libraries. The expression value for a ",pprint.feat(opt$feature)," in a group corresponds to the mean values observed in the libraries of the group.",sep="")
+  heatmap.group.info <- paste("First heatmap is based on the Pearson correlation of ",pprint.feat(opt$feature)," expression values between each group of libraries. Second heatmap is based  on the ",pprint.feat(opt$feature),"s' expression values for each library. The expression value for a ",pprint.feat(opt$feature)," in a group corresponds to the mean values observed in the groups' libraries. Only the subset with ",nlim," genes/exons/transcripts with largest variance was considered.",sep="")
+  heatmap.sample.info <- paste("Heatmaps based on ",pprint.feat(opt$feature)," expression values for each library. Only the subset with ",nlim," genes/exons/transcripts with largest variance was considered.",sep="")
 
   #heatmap.cor <- "Heatmap with the Pearson correlation of the expression by a group of libraries (the expression values by group corresponds to the mean values observed in the libraries of the group)."
   irap.output.html(html,paste(heatmap.cor.group.info,sep=""))
