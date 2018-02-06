@@ -66,7 +66,7 @@ rownames(colData) <- colnames(data.f)
 i1 <- which(colData$Contrast==opt$labels.v[1])
 i2 <- which(colData$Contrast!=opt$labels.v[1])
 colData <- rbind(colData[i1,,drop=FALSE],colData[i2,,drop=FALSE])
-opt$conds
+
 #########################
 suppressPackageStartupMessages(library(DEXSeq))
 #Note:counts of technical replicates  have to be summed up into a single column
@@ -107,17 +107,19 @@ pinfo("Collecting results...")
 res <- DEXSeqResults(dxd)
 
 id <- rownames(res)
+print(head(id))
+print(colnames(res))
 x <- data.frame(list(
     id=id,
     geneid=res$groupID,
     pvalue=res$pvalue,
     padj=res$padj,
     baseMean=res$exonBaseMean,
-    baseMeanA=res$C1,
-    baseMeanB=res$C2,
+    baseMeanA=res[[opt$labels.v[1]]],
+    baseMeanB=res[[opt$labels.v[2]]],
     dispersion=res$dispersion,
     stat=res$stat,
-    log2FoldChange=res$log2fold_C2_C1))
+    log2FoldChange=res[[paste0("log2fold_",opt$labels.v[2],"_",opt$labels.v[1])]]))
 
 x$foldChange <- 2^x$log2FoldChange
 res <- x
