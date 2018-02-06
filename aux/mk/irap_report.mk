@@ -80,7 +80,7 @@ report_all_targets:
 
 else
 # report enabled
-
+$(info * Report generation enabled)
 info_targets=$(report_toplevel_folder)/info.html $(report_toplevel_folder)/versions.html
 
 REPORT_TARGETS+=report_setup $(info_targets)  $(if $(call GEN_REPORT_QC_ONLY), qc_report, qc_report mapping_report quant_report de_report gse_report )   end_report $(report_toplevel_folder)/about.html
@@ -88,7 +88,9 @@ REPORT_TARGETS+=report_setup $(info_targets)  $(if $(call GEN_REPORT_QC_ONLY), q
 ####################################################
 #
 de_html_files:= $(foreach c,$(contrasts),$(patsubst %.tsv,%.html,$(call quiet_ls,$(de_toplevel_folder)/$(c)*_de.tsv)))
-gse_html_files:=$(foreach c,$(contrasts),$(patsubst %.tsv,%.html,$(call quiet_ls,$(de_toplevel_folder)/$(c)*.gse.*.tsv)))
+# defined in irap_gse
+# only produce reports if tsv files exist
+get_gse_html_files=$(patsubst %.tsv,%.html,$(call quiet_ls,$(patsubst %.html,%.tsv,$(gse_html_files))))
 
 ge_files:=$(shell find $(quant_toplevel_folder) -regextype egrep -type f -regex '.*/genes.*.(tsv|tsv.gz|mtx|mtx.gz)$$'  2>/dev/null )
 te_files:=$(filter-out .riu. .dt.,$(shell find $(quant_toplevel_folder) -type f -regextype egrep -regex '.*/transcripts.*.(tsv|tsv.gz|mtx|mtx.gz)$$'  2>/dev/null ))
@@ -101,10 +103,10 @@ mapping_dirs:=$(mapper_toplevel_folder)
 
 $(call p_debug, cached_vars=$(cached_vars))
 
-quant2report_folder:=$(shell realpath --relative-to=$(quant_toplevel_folder) $(report_toplevel_folder))
-mapper2report_folder:=$(shell realpath --relative-to=$(mapper_toplevel_folder) $(report_toplevel_folder))
-qc2report_folder:=$(shell realpath --relative-to=$(qc_toplevel_folder) $(report_toplevel_folder))
-de2report_folder:=$(shell realpath --relative-to=$(de_toplevel_folder) $(report_toplevel_folder))
+quant2report_folder:=$(shell realpath --relative-to=$(quant_toplevel_folder) $(report_toplevel_folder) 2> /dev/null)
+mapper2report_folder:=$(shell realpath --relative-to=$(mapper_toplevel_folder) $(report_toplevel_folder) 2> /dev/null)
+qc2report_folder:=$(shell realpath --relative-to=$(qc_toplevel_folder) $(report_toplevel_folder) 2> /dev/null)
+de2report_folder:=$(shell realpath --relative-to=$(de_toplevel_folder) $(report_toplevel_folder) 2> /dev/null)
 
 
 ########################################################################
@@ -123,7 +125,7 @@ endef
 ## GSE
 # input,output,options,pipeline,contrast
 define run_gse_report=
-irap_report_gse --tsv $1 --out $2 $3  --gse_method "$(gse_tool):$(gse_method)" --pipeline $4 --contrast $5 --pvalue $(gse_pvalue)  --css ../../../$(CSS_FILE) 
+irap_report_gse --tsv $(1) --out $(2) $(3)  --gse_method "$(gse_tool):$(gse_method)" --pipeline $(4) --contrast $(5) --pvalue $(gse_pvalue)  --css $(de2report_folder)/$(CSS_FILE) 
 endef
 
 
@@ -270,6 +272,25 @@ quant_report: report_setup $(quant_html_files)
 quant_report_files: 
 	echo $(quant_html_files)
 
+
+
+############################
+# DE
+phony_targets+=de_report de_report_files
+silent_targets+=de_report_files
+
+# TODO
+de_report: report_setup $(de_html_files)
+
+# just print the name of the files that will be produced
+de_report_files:
+	echo $(call de_html_files,$(name))
+
+
+$(de_toplevel_folder)/%.genes_de.html: $(de_toplevel_folder)/%.genes_de.tsv $(annot_tsv)
+	mkdir -p $(@D)
+	$(call DE_tsv2html,$(subst _nd,,$(call DEfilepath2demethod,$@)),$<,$(@D),$(subst .html,,$(shell basename $@)),$(subst /, x ,$*))
+
 #######################################
 # Quant. at gene level
 
@@ -294,24 +315,6 @@ $(quant_toplevel_folder)/%.html: $(quant_toplevel_folder)/%.tsv.gz  $(annot_tsv)
 	$(call GE_tsv2html,$(call ge_html2metric,$*),$<,$(@D),$(notdir $*).t,$(subst _x_, x ,$(subst /,,$(dir $*))),$(call ge_html2level,$*)) && \
 	cp $(subst .html,,$@).t.html $@
 
-
-############################
-# DE
-phony_targets+=de_report de_report_files
-silent_targets+=de_report_files
-
-# TODO
-de_report: report_setup $(de_html_files)
-
-# just print the name of the files that will be produced
-de_report_files:
-	echo $(call de_html_files,$(name))
-
-
-%.genes_de.html: %.genes_de.tsv $(annot_tsv)
-	mkdir -p $(@D)
-	$(call DE_tsv2html,$(subst _nd,,$(call DEfilepath2demethod,$@)),$<,$(@D),$(subst .html,,$(shell basename $@)),$(subst /, x ,$*))
-
 ############################
 # GSE
 phony_targets+=gse_report gse_report_files
@@ -319,11 +322,11 @@ silent_targets+=gse_report_files
 
 #$(call gse_html_files,$(name))
 # only generates the html iff the respective GSE tsv file exist
-gse_report: report_setup 
+gse_report: report_setup $(call get_gse_html_files)
 
 # just print the name of the files that will be produced
 gse_report_files:
-	echo $(call gse_html_files,$(name))
+	echo $(call get_gse_html_files)
 
 
 
@@ -349,7 +352,7 @@ $(report_toplevel_folder)/index.html: $(conf) $(info_targets) $(qc_html_files) $
 	sleep 2 &&
 	touch $@
 else
-$(report_toplevel_folder)/index.html: $(conf) $(info_targets)  $(call quant_html_files) $(qc_html_files) $(call mapping_report_targets) $(call de_html_files,$(name)) $(call gse_html_files,$(name))  $(call rep_browse,$(report_toplevel_folder)/jbrowse/index.html)  $(report_toplevel_folder)/about.html $(call must_exist,$(report_toplevel_folder)/irap.css) $(call must_exist,$(report_toplevel_folder)/menu.css)
+$(report_toplevel_folder)/index.html: $(conf) $(info_targets)  $(call quant_html_files) $(qc_html_files) $(call mapping_report_targets) $(call de_html_files,$(name)) $(call get_gse_html_files)  $(call rep_browse,$(report_toplevel_folder)/jbrowse/index.html)  $(report_toplevel_folder)/about.html $(call must_exist,$(report_toplevel_folder)/irap.css) $(call must_exist,$(report_toplevel_folder)/menu.css)
 	cp  $(report_toplevel_folder)/info.html $@ &&
 	irap_report_main $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(report_toplevel_folder) -m "$(call mapping_dirs)" -q "$(call quant_dirs,$(name))" -d "$(call de_dirs,$(name))" &&
 	sleep 2 &&
