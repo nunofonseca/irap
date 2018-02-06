@@ -107,8 +107,7 @@ pinfo("Collecting results...")
 res <- DEXSeqResults(dxd)
 
 id <- rownames(res)
-print(head(id))
-print(colnames(res))
+
 x <- data.frame(list(
     id=id,
     geneid=res$groupID,
