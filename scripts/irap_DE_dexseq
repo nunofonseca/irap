@@ -107,7 +107,10 @@ pinfo("Collecting results...")
 res <- DEXSeqResults(dxd)
 
 id <- rownames(res)
-
+print(head(id))
+print(colnames(res))
+print(opt$labels.v[1])
+print(opt$labels.v[2])
 x <- data.frame(list(
     id=id,
     geneid=res$groupID,
@@ -118,7 +121,7 @@ x <- data.frame(list(
     baseMeanB=res[[opt$labels.v[2]]],
     dispersion=res$dispersion,
     stat=res$stat,
-    log2FoldChange=res[[paste0("log2fold_",opt$labels.v[2],"_",opt$labels.v[1])]]))
+    log2FoldChange=res[[paste0("log2fold_",opt$labels.v[1],"_",opt$labels.v[2])]]))
 
 x$foldChange <- 2^x$log2FoldChange
 res <- x
