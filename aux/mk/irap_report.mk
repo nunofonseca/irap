@@ -87,7 +87,7 @@ REPORT_TARGETS+=report_setup $(info_targets)  $(if $(call GEN_REPORT_QC_ONLY), q
 
 ####################################################
 #
-de_html_files:= $(foreach c,$(contrasts),$(patsubst %.tsv,%.html,$(call quiet_ls,$(de_toplevel_folder)/$(c)*_de.tsv)))
+de_html_files:= $(foreach c,$(contrasts),$(patsubst %.tsv,%.html,$(call quiet_ls,$(de_toplevel_folder)/$(c)*_de.tsv))) $(foreach c,$(contrasts),$(patsubst %.tsv,%.html,$(call quiet_ls,$(ede_toplevel_folder)/$(c)*_de.tsv)))
 # defined in irap_gse
 # only produce reports if tsv files exist
 get_gse_html_files=$(patsubst %.tsv,%.html,$(call quiet_ls,$(patsubst %.html,%.tsv,$(gse_html_files))))
@@ -288,6 +288,11 @@ de_report_files:
 
 
 $(de_toplevel_folder)/%.genes_de.html: $(de_toplevel_folder)/%.genes_de.tsv $(annot_tsv)
+	mkdir -p $(@D)
+	$(call DE_tsv2html,$(subst _nd,,$(call DEfilepath2demethod,$@)),$<,$(@D),$(subst .html,,$(shell basename $@)),$(subst /, x ,$*))
+
+
+$(ede_toplevel_folder)/%.exons_de.html: $(ede_toplevel_folder)/%.exons_de.tsv $(annot_tsv)
 	mkdir -p $(@D)
 	$(call DE_tsv2html,$(subst _nd,,$(call DEfilepath2demethod,$@)),$<,$(@D),$(subst .html,,$(shell basename $@)),$(subst /, x ,$*))
 

@@ -58,7 +58,7 @@ option_list <- list(
 # check multiple options values
 multiple.options = list(
   feature=c('gene','exon','CDS'),
-  flavour=c('cuffdiff','deseq','cuffdiff1','cuffdiff2','edger','voom','deseq2','ebseq')
+  flavour=c('cuffdiff','deseq','cuffdiff1','cuffdiff2','edger','voom','deseq2','ebseq','dexseq')
   )
 mandatory <- c("tsv_file","out")
 opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
@@ -143,7 +143,7 @@ if (opt$flavour == "cuffdiff" || opt$flavour == "cuffdiff1" || opt$flavour == "c
   table[,fields$FOLDCHANGE_MEDIAN] <- log2(median)
   fields$groups <- tcols
 }
-if ( opt$flavour == "deseq" || opt$flavour == "deseq2" || opt$flavour == "ebseq" ) {
+if ( opt$flavour == "deseq" || opt$flavour == "deseq2" || opt$flavour == "ebseq" || opt$flavour=="dexseq") {
   # exclude the rows based on the analysis
   # nothing to do
   # features
@@ -151,12 +151,20 @@ if ( opt$flavour == "deseq" || opt$flavour == "deseq2" || opt$flavour == "ebseq"
     if ( opt$flavour == "deseq" ) {
       fields$cols2sel <- c("id","baseMean","baseMeanA","baseMeanB","foldChange","log2FoldChange","pval","padj")
     } else {
-      #opt$flavour == "deseq2"
+                                        #opt$flavour == "deseq2"
       fields$cols2sel <- c("id","baseMean","baseMeanA","baseMeanB","log2FoldChange", "stat","pvalue","padj")
     }
     fields$cols2tsv <- fields$cols2sel    
   } else {
-    perror("DESeq does only support DE analysis at gene level")    
+      if ( opt$feature == "exon" ) {
+          fields$cols2sel <- c("id","exonid","baseMean","baseMeanA","baseMeanB","foldChange","log2FoldChange","pval","padj")
+          ## rename the columns
+          rownames(table)[rownames(table)=="id"] <- "exonid"
+          rownames(table)[rownames(table)=="geneid"] <- "id"
+      } else {
+          perror("Unsupported feature combination.")
+          q(status=1)
+      }
   }
   fields$LOG2FOLDCHANGE <- "log2FoldChange"
   fields$URL.FIELD.NAME <- "name"
@@ -178,7 +186,7 @@ if ( opt$flavour == "edger" ) {
     fields$cols2sel <- c("id","logCPM","baseMeanA","baseMeanB","logFC","PValue","padj")
     fields$cols2tsv <- fields$cols2sel
   } else {
-    perror("edgeR does only support DE analysis at gene level")    
+      perror("edgeR does only support DE analysis at gene level")    
   }
   fields$LOG2FOLDCHANGE <- "logFC"
   fields$URL.FIELD.NAME <- "name"
@@ -454,25 +462,25 @@ library(brew)
 #
 gen.page <- function (o.html.file) {
 
-  reset.irap.ctr()
-  pdebug("Starting to generate html ",o.html.file)
+    reset.irap.ctr()
+    pdebug("Starting to generate html ",o.html.file)
   #
-  write.tsv(table.tsv,file=tsv.file)
-  system(paste("rm -f ",tsv.file,".gz ;gzip -c ",tsv.file," > ",tsv.file,".gz",sep=""))
-
-  if ( nrow(uncut.table)<20 ) {
-    pdebug("Not enough data")
-    write.tsv(uncut.table,file=tsv.file)
+    write.tsv(table.tsv,file=tsv.file)
     system(paste("rm -f ",tsv.file,".gz ;gzip -c ",tsv.file," > ",tsv.file,".gz",sep=""))
-    brew.wrapper(get.path2template("not_enough_data"),o.html.file)
-    return
-  }
-  
-  pdebug("Generating html ",o.html.file)
-  pdebug("temp=",html.template)
-  options("R2HTML.format.decimal.mark"=".")
-  caption <- ""
-  brew.wrapper(html.template,o.html.file)
+    
+    if ( nrow(uncut.table)<20 ) {
+        pdebug("Not enough data")
+        write.tsv(uncut.table,file=tsv.file)
+        system(paste("rm -f ",tsv.file,".gz ;gzip -c ",tsv.file," > ",tsv.file,".gz",sep=""))
+        brew.wrapper(get.path2template("not_enough_data"),o.html.file)
+        return
+    }
+    
+    pdebug("Generating html ",o.html.file)
+    pdebug("temp=",html.template)
+    options("R2HTML.format.decimal.mark"=".")
+    caption <- ""
+    brew.wrapper(html.template,o.html.file)
 }
 
 
@@ -480,10 +488,10 @@ pdebug.save.state("tsvDE2html2","p3")
 filt.name <- "All"
 o.html.file <-paste(opt$out,".html",sep="")
 file.prefix <- opt$out
-tsv.file <- gsub(".html$",".tsv",o.html.file)
+tsv.file <- gsub(".html$",".report.tsv",o.html.file)
 tsv.file.ref <- basename(tsv.file)
 gen.page(o.html.file)
-
+pinfo("Generated ",o.html.file)
 
 for (filt.name  in get.source.filter.names() ) {
   uncut.table <- uncut.table.orig
@@ -503,10 +511,9 @@ for (filt.name  in get.source.filter.names() ) {
     tsv.file.ref <- basename(tsv.file)
     file.prefix <- gsub(".html","",o.html.file)
     gen.page(o.html.file)
+    pinfo("Generated ",o.html.file)
   }
 }
-
-
 q(status=0)
 
 tsvDE2html.debug <- function(rdata.obj) {
