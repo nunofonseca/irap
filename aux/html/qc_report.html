@@ -3,7 +3,6 @@
 <%
 cols <- c("green","yellow","purple","blue","red")
 big.dataset <- 20
-
 library(xtable)
 dummy.data <- function(n=200) {
   NSAMPLES <- n
@@ -20,8 +19,10 @@ dummy.data <- function(n=200) {
 
 gen.qc.plot <- function(df,cols=NULL,ylab="Number of reads") {
   ########################
-  # Plot 
-  legend <- c("Passed", "Unpaired", "Ns", "Contamination","Quality")
+  ## Plot 
+  legend <- c("Passed","quality","contamination","uncalled bases", "unmated")
+  #c("Passed","Reads failed quality filter","Reads failed contamination filter","Reads failed uncalled bases filter", "Reads failed unmated reads filter")
+  ##legend <- c("Passed", "Unpaired", "Ns", "Contamination","Quality")
   if (is.null(cols)) {
     cols <- c("green","yellow","purple","blue","red")
   }
@@ -226,19 +227,19 @@ qc.barplot2 <- function(df,
 <DIV name='qc_res'>
 <H1>QC Report</H1>
 
-<H2 class="section">Reads passed QC</H2>
+<H2 class="section">Sequence level QC</H2>
 
 <H3><%=irap.ctr("Table")%></H3>
 <DIV class="table_wrapper">
 <%
 # anchor: qc_sum_table
-table2.rows <- c("reads","length","median.base.qual","mean.base.qual","sd.base.qual","GC")
-#rownames(etdf)
-table2 <- etdf[table2.rows,]
-rownames(table2) <- c("Reads","Read Length","Median quality","Mean quality","Quality SD","GC%")
+table2 <- table1
+table2 <- table2[!grepl("(file|Lib)",rownames(table2)),,drop=FALSE]							 
+
 xt <- xtable(table2,
              caption="",
              label="qc_sum_table")
+
 
 html <- print.xtable(file="/dev/null",
                      xt,
@@ -270,7 +271,6 @@ irap.output.html(html, "The following table shows information, per
 file <- "read_info_plot.png"
 #filepath <- "/tmp"
 filepath <- paste(out.dir,sep="")
-
 # handle experiments with a huge number of libs
 html <- gen.plot2report(filename=file,
                         dir=filepath,
@@ -281,14 +281,14 @@ html <- gen.plot2report(filename=file,
                         ps=TRUE,
                         caption="",
                         to.plot= function() {
-                          #print(xtable(df),type="html")
-                          data.info <- table2[c("Reads","Read Length","Median quality","GC%"),]
+                          data.info <- table2[c("Reads","Read Length","GC%"),]
                           data.info <- data.info[,!colnames(data.info) %in% c("SD","Mean","Median"),drop=FALSE]
                           par(mar=c(4,4,4,2),bty='n',xpd=NA)
-                          layout(matrix(c(1,2,3,4),ncol=4))
+                          #print(xtable(data.info),type="html")
+  	  	          layout(matrix(c(1,2,3,4),ncol=4))
                           boxplot(as.numeric(data.info["Reads",]),xlab="Number of reads",las=2,ylim=c(0,max(as.numeric(data.info["Reads",]),na.rm=T)),col=cols[1])
                            boxplot(as.numeric(data.info["Read Length",]),xlab="Read length",las=2,ylim=c(0,max(as.numeric(data.info["Read Length",]),na.rm=T)),col=cols[2],ylab="bases")
-                          boxplot(as.numeric(data.info["Median quality",]),xlab="Median Quality",las=2,ylim=c(0,45),col=cols[3],ylab="Phred quality score")
+                          #boxplot(as.numeric(data.info["Median quality",]),xlab="Median Quality",las=2,ylim=c(0,45),col=cols[3],ylab="Phred quality score")
                           boxplot(as.numeric(data.info["GC%",]),xlab="GC%",las=2,ylim=c(0,100),col=cols[4],ylab="%")
                           title(main=paste(ncol(data.info)," files",sep=""))
                         }
@@ -304,7 +304,6 @@ html <- gen.plot2report(filename=file,
 file <- "read_filtering_plot.png"
 #filepath <- "/tmp"
 filepath <- paste(out.dir,sep="")
-
 nlibs<-nrow(df)
 if ( nrow(df) > big.dataset ) {
     width=900
@@ -323,7 +322,7 @@ if (conf.is.qc.enabled(conf)) {
                             caption="",
                             to.plot= function() {
                               #print(xtable(df),type="html")
-	                      qc.barplot2(df,cols,df.cols=c("Passed", "Unpaired", "Ns", "Contamination","Quality"))
+	                      qc.barplot2(df,cols,df.cols=c("Passed","quality","contamination","uncalled bases", "unmated"))
                             }
                             )
   irap.output.html(html$html,"Number of reads per library that passed the filtering process and that were filtered out because of quality, contamination, having uncalled bases (Ns), unpaired reads (only applicable to paired-end libraries).")
