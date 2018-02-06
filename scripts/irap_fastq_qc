@@ -793,6 +793,8 @@ all: setup0 stage0 stage1 stage2 stage3 stage3 stage4  stage6
 	$(info out_files=$(OUT_FASTQ_FILES) $(subst .fastq.gz,.csv,$(OUT_FASTQ_FILES)) $(subst .fastq.gz,.fastqc.tsv,$(OUT_FASTQ_FILES)))
 	@echo Filtering complete.
 
+STAGE6_TARGETS+=$(patsubst %.fastq.gz,%.pre.fastqc.zip,$(ORIGFILES))
+
 ################################################################
 # STAGE 1 - QUALITY BASED
 # Input: the initial fastq file
