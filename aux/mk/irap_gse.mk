@@ -105,9 +105,10 @@ endif
 #  the columns with the foldchange and pvalues vary from DE method used
 #  findstring - empty if not found
 # last method=voom
-foldchange_col=$(if $(findstring cuffdiff,$(de_method)),10,$(if $(findstring deseq2,$(de_method)),6,$(if $(findstring deseq,$(de_method)),6,$(if $(findstring edger,$(de_method)),4,8))))
+foldchange_col=$(if $(findstring ebseq,$(de_method)),5,$(if $(findstring cuffdiff,$(de_method)),10,$(if $(findstring deseq2,$(de_method)),6,$(if $(findstring deseq,$(de_method)),6,$(if $(findstring edger,$(de_method)),4,8)))))
 
-pvalue_col=$(if $(findstring cuffdiff,$(de_method)),13,$(if $(findstring deseq2,$(de_method)),10,$(if $(findstring deseq,$(de_method)),8,$(if $(findstring edger,$(de_method)),7,6))))
+
+pvalue_col=$(if $(findstring ebseq,$(de_method)),10,$(if $(findstring cuffdiff,$(de_method)),13,$(if $(findstring deseq2,$(de_method)),10,$(if $(findstring deseq,$(de_method)),8,$(if $(findstring edger,$(de_method)),7,6)))))
 
 define run_piano_goterm=
 irap_GSE_piano --tsv $1 --out $(subst .tsv,,$2) --pvalue-col $(call pvalue_col) --foldchange-col $(call foldchange_col) --annotation_col $(gse_go_annot_col) $(gse_go_map_file_option) $(gse_go_mapping) --pvalue $(gse_pvalue) --minsize $(gse_minsize) --method $(gse_method) --minedge $(gse_minedge) --top $(gse_top)
@@ -158,10 +159,10 @@ phony_targets+= gse_stage
 
 #########
 # reports
-$(report_toplevel_folder)/%.gse.$(gse_tool).$(gse_method).go.html: $(name)/%.gse.$(gse_tool).$(gse_method).go.tsv
+$(de_toplevel_folder)/%.gse.$(gse_tool).$(gse_method).go.html: $(de_toplevel_folder)/%.gse.$(gse_tool).$(gse_method).go.tsv
 	mkdir -p $(@D) && $(call run_gse_report,$<,$@,,"$(mapper)x$(quant_method)x$(de_method)",$*)
 
-$(report_toplevel_folder)/%.gse.$(gse_tool).$(gse_method).kegg.html: $(name)/%.gse.$(gse_tool).$(gse_method).kegg.tsv
+$(de_toplevel_folder)/%.gse.$(gse_tool).$(gse_method).kegg.html: $(de_toplevel_folder)/%.gse.$(gse_tool).$(gse_method).kegg.tsv
 	mkdir -p $(@D) && $(call run_gse_report,$<,$@,--pathway,"$(mapper)x$(quant_method)x$(de_method)",$*)
 
 
@@ -169,12 +170,14 @@ $(report_toplevel_folder)/%.gse.$(gse_tool).$(gse_method).kegg.html: $(name)/%.g
 
 ifneq (none,$(gse_tool))
 GSE_OUT_FILES:=$(subst _de.tsv,.gse.$(gse_tool).$(gse_method).go.tsv,$(filter %_de.tsv,$(STAGE4_OUT_FILES))) $(subst _de.tsv,.gse.$(gse_tool).$(gse_method).kegg.tsv,$(filter %_de.tsv,$(STAGE4_OUT_FILES)))
+gse_html_files=$(patsubst %.tsv,%.html,$(GSE_OUT_FILES))
 
 GSE: DE $(GSE_OUT_FILES)
 	$(call p_info,[DONE] GSE analysis)
 
 else
 GSE_OUT_FILES=
+gse_html_files=
 
 GSE: 
 
