@@ -187,8 +187,8 @@ $(qc_toplevel_folder)/fastq_qc_report.tsv:
 ## end qc=off
 else
 ## qc=on |report
-$(qc_toplevel_folder)/qc.html $(qc_toplevel_folder)/qc.tsv: $(conf) $(call must_exist,$(auxdata_toplevel_folder)/)  $(qc_toplevel_folder)/fastq_qc_report.tsv
-	irap_report_qc $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(qc_toplevel_folder)  --css $(qc2report_folder)/$(CSS_FILE) || ( rm -f $@ && exit 1)
+$(qc_toplevel_folder)/qc.html $(qc_toplevel_folder)/qc.tsv: $(conf) $(call must_exist,$(auxdata_toplevel_folder)/)  $(qc_toplevel_folder)/fastq_qc_report.tsv $(qc_toplevel_folder)/qc_report.csv
+	irap_report_qc $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --out_dir $(qc_toplevel_folder) --qc_dir $(qc_toplevel_folder) --css $(qc2report_folder)/$(CSS_FILE) || ( rm -f $@ && exit 1)
 endif
 
 STAGE2_OUT_FILES+=$(qc_toplevel_folder)/qc.tsv
@@ -200,18 +200,25 @@ FASTQC_REPORT_FILES:=$(foreach p,$(se),$(call lib2filt_folder,$(p))$(p).f.fastqc
 STAGE2_OUT_FILES+=$(qc_toplevel_folder)/fastq_qc_report.tsv
 STAGE2_TARGETS+=$(qc_toplevel_folder)/fastq_qc_report.tsv
 
+FASTQC_REPORT_FILES:=$(foreach p,$(pe),$(qc_toplevel_folder)/$($(p)_dir)/$(p)_1.f.fastqc.tsv $(qc_toplevel_folder)/$($(p)_dir)/$(p)_2.f.fastqc.tsv) $(foreach p,$(se),$(qc_toplevel_folder)/$($(p)_dir)$(p).f.fastqc.tsv)
+QC_CSV_FILES:=$(foreach p,$(pe),$(qc_toplevel_folder)/$($(p)_dir)/$(p)_1.f.csv $(qc_toplevel_folder)/$($(p)_dir)/$(p)_2.f.csv) $(foreach p,$(se),$(qc_toplevel_folder)/$($(p)_dir)$(p).f.csv)
+
 ifeq  ($(qc),report)
 ## nothing to do
-FASTQC_REPORT_FILES:=$(foreach p,$(pe),$(qc_toplevel_folder)/$($(p)_dir)/$(p)_1.f.fastqc.tsv $(qc_toplevel_folder)/$($(p)_dir)/$(p)_2.f.fastqc.tsv) $(foreach p,$(se),$(qc_toplevel_folder)/$($(p)_dir)$(p).f.fastqc.tsv)
-$(info $(FASTQC_REPORT_FILES))
+##$(info $(FASTQC_REPORT_FILES))
 $(qc_toplevel_folder)/fastq_qc_report.tsv:  $(FASTQC_REPORT_FILES)
 	$(call pass_args_stdin,irap_merge2tsv,$@.tmp, --in='$(subst $(space),;,$^)'  --out $@.tmp) && mv $@.tmp $@
+
+$(qc_toplevel_folder)/qc_report.csv:  $(QC_CSV_FILES)
+	cat $^ > $@.tmp && mv $@.tmp $@	
 
 else
 ifeq ($(qc),on)
 $(qc_toplevel_folder)/fastq_qc_report.tsv:  $(FASTQC_REPORT_FILES)
 	$(call pass_args_stdin,irap_merge2tsv,$@.tmp, --in='$(subst $(space),;,$^)'  --out $@.tmp) && mv $@.tmp $@
 
+$(qc_toplevel_folder)/qc_report.csv:  $(QC_CSV_FILES)
+	cat $^ > $@.tmp && mv $@.tmp $@
 endif
 ## qc=on |report
 endif
