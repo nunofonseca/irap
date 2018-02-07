@@ -89,7 +89,7 @@ options(cores=num.cores)
 options(mc.cores=num.cores)
 
 # TODO : comment
-save.image("test.Rdata")
+# save.image("test.Rdata")
 ###############################################
 
 # load TSV
