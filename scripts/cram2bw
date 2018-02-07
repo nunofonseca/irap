@@ -22,7 +22,7 @@ echo "Processing $# cram files: $cram_files"
 for f in $cram_files; do
     if [ ! -e $f ]; then
 	echo "ERROR: file $f not found"
-	exit
+	exit 1
     fi
 done
 bw_files=
