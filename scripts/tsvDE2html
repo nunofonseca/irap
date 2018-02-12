@@ -162,8 +162,14 @@ if ( opt$flavour == "deseq" || opt$flavour == "deseq2" || opt$flavour == "ebseq"
           rownames(table)[rownames(table)=="id"] <- "exonid"
           rownames(table)[rownames(table)=="geneid"] <- "id"
       } else {
-          perror("Unsupported feature combination.")
-          q(status=1)
+          if (opt$feature == "CDS" ) {
+              fields$cols2sel <- c("id","transid","baseMean","baseMeanA","baseMeanB","foldChange","log2FoldChange","pval","padj")
+              rownames(table)[rownames(table)=="id"] <- "transid"
+              rownames(table)[rownames(table)=="transid"] <- "id"
+          } else {
+              perror("Unable to generate report: unsupported feature combination.")
+              q(status=1)
+          }
       }
   }
   fields$LOG2FOLDCHANGE <- "log2FoldChange"
