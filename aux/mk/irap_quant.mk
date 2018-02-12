@@ -1010,9 +1010,8 @@ SETUP_DATA_FILES+=$(salmon_index)
 
 
 $(salmon_index): $(trans_abspath)
-	$(call run_salmon_index)
-##	mkdir -p $(@D) && irap_w
-##	mkdir -p $(@D) && irap_wrapper.sh salmon salmon index $(salmon_index_params) -i $(salmon_index_name) -t $< && touch $@
+##	$(call run_salmon_index)
+	mkdir -p $(@D) && irap_wrapper.sh salmon salmon index $(salmon_index_params) -i $(salmon_index_name) -t $< && touch $@
 
 
 
