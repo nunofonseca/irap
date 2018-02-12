@@ -68,6 +68,7 @@ transcript_quant?=n
 # Default target - sc RNA-seq
 all: setup quality_filtering_and_report mapping quantification filter_cells clustering sc_visualization
 
+
 include $(irap_path)/../aux/mk/irap_core.mk
 
 # Checks for each protocol
