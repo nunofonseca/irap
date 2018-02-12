@@ -1633,7 +1633,7 @@ function quant_install {
     kallisto_install
     salmon_install
     umis_install
-
+    featurecounts_install
     #isoem_install
     #sailfish_install
     #mmseq_install
@@ -1642,6 +1642,7 @@ function quant_install {
     pinfo "To install fusionmap run: irap_install.sh -s . -x fusionmap"
     pinfo "To install fusioncatcher run: irap_install.sh -s . -x fusioncatcher"
     pinfo "To install scripture run: irap_install.sh -s . -x scripture"
+    
     # scripture_install
     # fusionmap_install
     # fusioncatcher
