@@ -1017,7 +1017,7 @@ ifndef quant_method
  quant_method:=$(def_quant_method)
 endif
 
-SUPPORTED_QUANT_METHODS=basic htseq1 htseq2 cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd  flux_cap nurd stringtie stringtie_nd rsem kallisto salmon umi_count umis 
+SUPPORTED_QUANT_METHODS=basic htseq1 htseq2 cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd  flux_cap nurd stringtie stringtie_nd rsem kallisto salmon umi_count umis featurecounts
 
 # methods that produce transcript level quantification by default
 TRANS_QUANT_METHODS=flux_cap cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd nurd stringtie stringtie_nd rsem kallisto salmon umi_count bitseq 
@@ -1091,7 +1091,7 @@ endif
 
 #####################
 # Exon quantification
-SUPPORTED_EXON_QUANT_METHODS=stringtie dexseq htseq1 htseq2
+SUPPORTED_EXON_QUANT_METHODS=stringtie dexseq htseq1 htseq2 featurecounts
 
 
 ifeq ($(strip $(exon_quant)),y)
@@ -1707,6 +1707,7 @@ STAGE2BYNAME_OUT_FILES=
 
 endif
 
+
 ifeq (umi_count,$(quant_method))
 WAVE3_p_TARGETS+=$(subst .hits.bam,.hits.bytag_$(CELL_TAG).bam,$(bam_files))
 endif
@@ -2197,12 +2198,14 @@ mapping: stage1 $(mapper_toplevel_folder) $(mapper)_mapping
 print_stage2_files:
 	echo $(STAGE2_OUT_FILES)
 
+print_bam_filenames:
+	echo $(bam_files)
 
 #*************
 # Generic rule
 #*************
 #####################
-phony_targets+= $(mapper)_mapping mapping stage2_tracks
+phony_targets+= $(mapper)_mapping mapping stage2_tracks print_bam_filenames
 
 outbams=
 ifeq ($(mapper),none)

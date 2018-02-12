@@ -184,6 +184,72 @@ endef
 # bulkRNA-seq 
 #************************************
 
+#**************
+# FeatureCounts
+#**************
+
+# default (if not provided by the user)
+featurecounts_params?=--primary --ignoreDup
+#
+featurecounts_params+= 
+
+irap_strand2featurecounts_option=$(if $(findstring $(1),first),-s 1,$(if $(findstring $(1),second),-s 2,-s 0))
+
+## only support gene and exon quantification
+define featurecounts_id_param=
+$(if $(filter $(1),gene),-g  gene_id,-g exon_id -f)
+endef 
+
+
+#1- BAM file
+#2- GTF/GFF file
+#3- output file 
+#4- exon|gene|transctript 
+#5- lib
+define run_featurecounts=
+	featureCounts  $(call irap_strand2featurecounts_option,$(call irap_strand2htseqoption,$($(5)_strand))) $(call featurecounts_id_param,$(4))  $(featurecounts_params)  -a $(2) -F GTF  -o $(3).tmp -T $(max_threads) --donotsort $(1) && \
+	tail -n +2 $(3).tmp | cut -f 1,7  > $(3).tmp2 && \
+	mv $(3).tmp $(3).featurecounts && sed -i -E "1s/Geneid/Gene/;1s/(.pe|.se).*//;1s|$(dir $(1))||" $(3).tmp2 && \
+	mv $(3).tmp2 $(3)
+endef
+
+# counts per gene
+$(quant_toplevel_folder1)/featurecounts/genes.raw.featurecounts.tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).tsv)
+	( $(call pass_args_stdin,irap_merge_tsv.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
+
+## featurecounts bam file needs to be sorted by name
+# $1 - lib
+# $2 - bam file prefix (includes .se|.pe)
+# $3 - quantification of exon|gene|trans
+# $4 - gtf file
+define make-featurecounts-quant-rule=
+$(call lib2quant_folder,$(1))$(2).$(3)s.raw.featurecounts.tsv: $(call lib2bam_folder,$(1))$(2).hits.byname.bam $(4)
+	mkdir -p $$(@D) && $$(call run_featurecounts,$$<,$(4),$$@,$(3),$(1))
+endef
+
+# generate the rules for htseq
+ifeq ($(patsubst featurecounts,,$(quant_method)),)
+# gene level quantification
+$(foreach l,$(se),$(eval $(call make-featurecounts-quant-rule,$(l),$(l).se,gene,$(gtf_file_abspath))))	
+$(foreach l,$(pe),$(eval $(call make-featurecounts-quant-rule,$(l),$(l).pe,gene,$(gtf_file_abspath))))
+
+ifeq ($(exon_quant),y)
+# exon level quantification
+ifeq ($(patsubst featurecounts,,$(exon_quant_method)),)
+$(foreach l,$(se),$(eval $(call make-featurecounts-quant-rule,$(l),$(l).se,exon,$(gtf_file_wexonid))))	
+$(foreach l,$(pe),$(eval $(call make-featurecounts-quant-rule,$(l),$(l).pe,exon,$(gtf_file_wexonid))))
+
+# counts per exon
+$(quant_toplevel_folder)/exons.raw.$(exon_quant_method).tsv: $(foreach p, $(pe),$(call lib2quant_folder,$(p))$(p).pe.exons.raw.$(exon_quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.exons.raw.$(exon_quant_method).tsv)
+	( $(call pass_args_stdin,irap_merge_tsv.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
+
+endif
+
+endif
+
+endif
+
+
 #************
 # HTSeq-count
 #************
