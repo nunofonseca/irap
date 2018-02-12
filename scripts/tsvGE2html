@@ -222,13 +222,13 @@ pdebug.save.state("tsvGE2html0","p0")
 if ( opt$feature != "gene" ) {
   pinfo("Loading mapping...")
   # LOAD the mapping
-  load(opt$feat_mapping_file)
+  annot.table <- read.tsv(opt$feat_mapping_file,header=T)
   # Apply the mapping to the quant table
-  if (opt$feature == "exon" ) {
-    annot.table <- exons.f
-  } else {
-    annot.table <- trans.f
-  }
+  #if (opt$feature == "exon" ) {
+  #  annot.table <- exons.f
+  #} else {
+  #  annot.table <- trans.f
+  #}
   pinfo(colnames(annot.table))
   pinfo("Loaded mapping ",nrow(annot.table)," entries")
   table2 <- cbind(table,annot.table[table$ID,])
@@ -319,29 +319,8 @@ gen.page <- function (o.html.file) {
   coloursbysample <- coloursbygroup[conds]
   names(coloursbysample) <- colnames(quant.data)
   
-  # if raw counts use deseq
-  # TODO: handle normalized values
-  if ( opt$metric=="raw" && ncol(quant.data)>1 ) {
-     # aggregate (using DE seq)
-     conds <- lib2group(groups.l,names(quant.data))
-
-     #Note: counts of technical replicates  have to be summed up into a single column
-     pdebug("Conds=",conds)
-     #pdebug(head(quant.data))
-     cds <- newCountDataSet(quant.data,conds)
-     #normalize the number of read counts
-     cds <- estimateSizeFactors(cds)
-     if (sum(is.na(sizeFactors(cds)))[1]==0) {
-       quant.data.norm <-counts(cds,normalized=T)
-       quant.data.norm.group <- data2groups(quant.data.norm,conds)
-     } else {
-       quant.data.norm <-counts(cds,normalized=F)
-       pinfo("Failed to normalize using deseq")
-     }     
-   } else {
-     quant.data.norm <- NULL
-  }
-  # data per group
+    quant.data.norm <- NULL
+    ## data per group
   pdebug("conds=",conds)
   pdebug("dim(quant.data.norm)=",dim(quant.data.norm))
   #save(file="wip",quant.data.norm,conds)
@@ -381,7 +360,8 @@ for (filt.name  in get.source.filter.names() ) {
       uncut.table <- table.tsv
     }
     table.html <- table
-    pdebug("Filter:",filt.name)
+    pinfo("Filter:",filt.name)
+    print(head(table))
     o.html.file <- get.source.filename(opt$out,filt.name)
     tsv.file <- gsub(".html$",".tsv",o.html.file)
     tsv.file.ref <- basename(tsv.file)
