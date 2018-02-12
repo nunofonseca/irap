@@ -162,7 +162,7 @@ load.gtf <- function(gtf.file,feature=NULL,selected.attr=NULL,gtf.format="auto")
   attr <- list()
   for (att in gtf.attributes.names) {
       print(att)
-      re.str <- paste0('^.*\\s?\\"?',att,'\\s\\"?([^;\\"]+)\\"?;.*')
+      re.str <- paste0('^.*\\s?\\"?',att,'\\s\\"?([^;\\"]+)\\"?([;$]?).*')
       attr[[att]] <- gsub(re.str,"\\1",gtf$attributes)
       print(head(attr[[att]]))
   }

@@ -37,7 +37,7 @@ source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
 pdebug.enabled <- TRUE
 
 #######################
-usage <- "irap_gff2exonlength --gff file --out outprefix [--cores number_cores]"
+usage <- "irap_DexSeqExonLen --gff file --out outprefix [--cores number_cores]"
 filenames <- c("gff_file") ;#filenames that must exist (if defined)
 option_list <- list(
     make_option(c("-c", "--cores"), type="character",default="2",dest="num_cores",help="Number of cores to use ([default %default])"),
@@ -92,7 +92,7 @@ exon.length <- data.frame(list(exon_id=ids,elength=len))
 out.file <- paste(opt$out,".Rdata",sep="")
 save(exon.length,file=out.file)
 pinfo("#Exons: ",nrow(exon.length))
-
+write.tsv(exon.length,paste(opt$out,".exon_len.tsv",sep=""))
 q(status=0)
 
 
