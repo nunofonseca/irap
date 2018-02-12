@@ -1021,7 +1021,7 @@ ifndef quant_method
  quant_method:=$(def_quant_method)
 endif
 
-SUPPORTED_QUANT_METHODS=basic htseq1 htseq2 cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd  flux_cap nurd stringtie stringtie_nd rsem kallisto salmon umi_count umis featurecounts
+SUPPORTED_QUANT_METHODS=htseq1 htseq2 cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd  flux_cap nurd stringtie stringtie_nd rsem kallisto salmon umi_count umis featurecounts
 
 # methods that produce transcript level quantification by default
 TRANS_QUANT_METHODS=flux_cap cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd nurd stringtie stringtie_nd rsem kallisto salmon umi_count bitseq 
