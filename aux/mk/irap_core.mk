@@ -58,6 +58,10 @@ file_exists_ce=$(if  $(realpath $(1)),,$(call p_error,$(1) - $(2)))
 
 must_exist=$(if  $(realpath $(1)),,$(1))
 
+# 1- pat
+define quiet_ls=
+$(shell ls --color=never -1 $(1) 2>/dev/null)
+endef
 
 
 #  check if a variable  $(1) is defined - return the variable name if it is defined or empty otherwise
@@ -2130,7 +2134,6 @@ $(auxdata_toplevel_folder)/$(gtf_file_basename).lengths.Rdata: $(gtf_file_abspat
 	sleep 2 && cp $< $@.tmp && mv $@.tmp $@ 
 
 precious_targets+=$(auxdata_toplevel_folder)/$(gtf_file_basename).lengths.Rdata
-
 
 
 $(DEXSEQ_GFF).lengths.Rdata: $(DEXSEQ_GFF)

@@ -39,10 +39,6 @@ report_qc_only?=n
 
 GEN_REPORT_QC_ONLY:=$(if $(filter $(strip $(report_qc_only)),y),y,)
 
-# 1- pat
-define quiet_ls=
-$(shell ls --color=never -1 $(1) 2>/dev/null)
-endef
 # 1 - pat
 # return only the the first file (most recent file)
 define quiet_ls1=
