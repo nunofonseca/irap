@@ -399,15 +399,15 @@ SCRIPTURE_FILE=scripture-${SCRIPTURE_VERSION}.jar
 SCRIPTURE_URL=ftp://ftp.broadinstitute.org/pub/papers/lincRNA/$SCRIPTURE_FILE
 
 # 2.1.24->2.3.93
-IGV_VERSION=2.3.93
+IGV_VERSION=2.4.8
 IGV_FILE=IGV_$IGV_VERSION.zip
-IGV_URL=http://www.broadinstitute.org/igv/projects/downloads/$IGV_FILE
+IGV_URL=http://www.broadinstitute.org/igv/projects/downloads/2.4/$IGV_FILE
 
 # 2.1.24->2.4.8
-IGV_TOOLS_VERSION=2.4.8
+IGV_TOOLS_VERSION=2.3.98
 #IGV_TOOLS_FILE=igvtools_nogenomes_$IGV_TOOLS_VERSION.zip
 IGV_TOOLS_FILE=igvtools_$IGV_TOOLS_VERSION.zip
-IGV_TOOLS_URL=http://data.broadinstitute.org/igv/projects/downloads/$IGV_TOOLS_FILE
+IGV_TOOLS_URL=http://data.broadinstitute.org/igv/projects/downloads/2.3/$IGV_TOOLS_FILE
 
 # new: FASTX_VERSION=0.0.13
 FASTX_VERSION=0.0.13
