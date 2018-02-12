@@ -26,6 +26,7 @@ f1=
 f2=
 conf=
 strand=both
+# value in bytes
 mem=4000000000
 threads=1
 #irap_options="atlas_run=y"
@@ -324,6 +325,7 @@ if [ ! -e  $odir ]; then
     mkdir -p $odir
 fi
 
+irap_single_lib_options="conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE max_mem=$mem max_threads=$threads raw_folder=single_lib "
 
 ####################################
 # tidy up only
@@ -334,18 +336,18 @@ if [ "$tidy_up_only" == "y" ]; then
     # 
     name=`irap_get_name $conf "$irap_options"`
 
-    stage1_folder=`$cmd $irap_single_lib_options  $irap_options print_stage1_folder  |tail -n 1`
-    echo toplevel_dir=$name
+    stage1_folder=`$cmd conf=$conf $irap_single_lib_options  $irap_options print_stage1_folder  skip_lib_validation=y |tail -n 1`
+    #echo toplevel_dir=$name
     echo qc_folder=$stage1_folder
     if [ -e $stage1_folder ] ; then
-	find $stage1_folder -type d -name "`basename $folder`" -print -exec rm -rf {} \; ;
+	find $stage1_folder -type d -name "`basename $folder`" -print -exec rm -rf {} \; 2> /dev/null
     fi
     if [ "$sop2-" != "-" ]; then
 	pinfo "Tidy up for sop2 ($sop2)..."
-	stage1_folder=`$cmd $irap_single_lib_options  $irap_options print_stage1_folder  sop=$sop2 |tail -n 1`
+	stage1_folder=`$cmd conf=$conf $irap_single_lib_options  $irap_options print_stage1_folder  sop=$sop2 skip_lib_validation=y |tail -n 1`
 	echo qc_folder=$stage1_folder
 	if [ -e $stage1_folder ] ; then
-	    find $stage1_folder -type d -name "`basename $folder`" -print -exec rm -rf {} \; ;
+	    find $stage1_folder -type d -name "`basename $folder`" -print -exec rm -rf {} \; 2> /dev/null
 	fi	
     fi    
     exit 0
@@ -525,8 +527,10 @@ if [ "-" == "$rs-" ] || [ $rs -gt 1023 ]; then
     irap_options="$irap_options cont_mapper=bowtie2"
 fi
 
-irap_single_lib_options="conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE max_mem=$mem max_threads=$threads raw_folder=single_lib "
+
+irap_single_lib_options="$irap_single_lib_options lib.info=$INFO_FILE"
 irap_clean_conf="$irap_single_lib_options $irap_options"
+
 
 ##################################################################
 pinfo "QC and filtering..."
@@ -576,11 +580,26 @@ if [ $? != 0 ]; then
 fi
 pinfo "Mapping QC...complete."
 
+###################################
+pinfo "Overall stats..."
+# report files
+TSVs=`$cmd $irap_single_lib_options  $irap_options print_stage3_s_files  |tail -n 1|grep -v "make:"`
+if [ "$TSVs-" == "-" ]; then
+    perror "No print_stage3_s_files??"
+    exit 1
+else
+    run_AND_timeIt "iRAP-stats" $time_log_file  $cmd $irap_single_lib_options $irap_options  $TSVs
+    if [ $? != 0 ]; then
+	perror "iRAP stats"
+	exit 1
+    fi
+fi
+pinfo "Stats...complete."
 
 #################################################################
 # BAM->CRAM
 set -e
-BAM=`$cmd $irap_single_lib_options $irap_options print_stage2_files|tail -n 1|grep -v "make:"`
+BAM=`$cmd $irap_single_lib_options $irap_options print_bam_filenames|tail -n 1|grep -v "make:"`
 if [ "$BAM-" == "-" ]; then
     run_AND_timeIt "iRAP-CRAM" $time_log_file  echo no bam no cram
 else
@@ -671,8 +690,7 @@ fi
 if [ "$REPORT_TSVs-" != "-"  ]; then 
     cp -a $REPORT_TSVs $odir
 fi
-# rename the files (remove the l prefix added by fastq_info)
-$rename_cmd $libname $libname_noprefix `dirname $odir/$f1_bn`/$libname*
+
 
 # copy the info file
 cp $INFO_FILE $odir
@@ -684,6 +702,10 @@ pinfo "Moving the following files to $odir: $TSVs "
 mkdir -p $odir/qc
 cp -ar $TSVs $odir/qc
 
+# rename the files (remove the l prefix added by fastq_info)
+$rename_cmd $libname $libname_noprefix `dirname $odir/$f1_bn`/$libname*
+$rename_cmd $libname $libname_noprefix `dirname $odir/$f1_bn`/qc/$libname*
+
 # data (genome and annotation)
 echo $cmd $irap_single_lib_options  $irap_options print_data_stats_file
 TSV=`$cmd $irap_single_lib_options  $irap_options print_data_stats_file  |tail -n 1`
@@ -692,7 +714,7 @@ cp -a $TSV $odir/$libname_noprefix.data_info.tsv
 
 # software versions
 pinfo "Generating  $odir/versions.tsv..."
-$cmd $irap_single_lib_options  $irap_options $odir/irap.versions.tsv  > $odir/versions.tsv.tmp && mv $odir/versions.tsv.tmp $odir/versions.tsv
+$cmd $irap_single_lib_options  $irap_options $odir/irap.versions.tsv
 pinfo "Generating  $odir/versions.tsv...done"
 cp -a $odir/versions.tsv $odir/$libname_noprefix.versions.tsv
 pinfo "Generating  $odir/$libname_noprefix.versions.tsv...done"
