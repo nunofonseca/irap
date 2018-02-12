@@ -29,7 +29,8 @@ include $(IRAP_DIR)/aux/mk/irap_versions.mk
 
 ############################################################
 # Map IRAP options to programs
-qc_on=FASTQC FASTX bowtie1
+qc_on=FASTQC FASTX bowtie1 bowtie2 fastq_info
+qc_report=FASTQC
 qc_off=empty
 
 quant_norm_none=empty
@@ -41,6 +42,7 @@ mapper_tophat1=tophat1
 mapper_tophat2=tophat2
 mapper_smalt=SMALT
 mapper_gsnap=GSNAP
+mapper_none=empty
 mapper_soapsplice=SOAPsplice
 mapper_bwa1=bwa1
 mapper_bwa2=bwa2
