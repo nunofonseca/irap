@@ -233,6 +233,9 @@ if (!is.null(gse.res.filt) ) {
     get.kegg.url <- function(id) {      
       sprintf("<A href='http://www.genome.jp/dbget-bin/www_bget?map%05d' target='_blank'>%05d</A>",id,id)
     }
+      print(colnames(gse.res.filt))
+      if (!f.col.name %in% colnames(gse.res.filt))
+          f.col.name <- "Name"
     gse.res.filt$Name <- sapply(gse.res.filt[,f.col.name],FUN=get.kegg.url)    
   }
 }
