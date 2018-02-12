@@ -448,6 +448,10 @@ PICARD_VERSION=2.9.2
 PICARD_FILE=picard-tools-$PICARD_VERSION.zip
 PICARD_URL=http://sourceforge.net/projects/picard/files/picard-tools/$PICARD_VERSION/$PICARD_FILE/download
 
+FEATURECOUNTS_VERSION=1.6.0
+FEATURECOUNTS_FILE=subread-$FEATURECOUNTS_VERSION-Linux-x86_64.tar.gz
+FEATURECOUNTS_URL=https://sourceforge.net/projects/subread/files/subread-$FEATURECOUNTS_VERSION/$FEATURECOUNTS_FILE/download
+
 
 fastq_utils_VERSION=0.14.7
 fastq_utils_FILE=$fastq_utils_VERSION.tar.gz
@@ -2081,6 +2085,14 @@ function picard_install {
     mkdir -p $BIN_DIR/picard-tools
     mv picard-tools-$PICARD_VERSION/* $BIN_DIR/picard-tools
     pinfo "Picard installed"    
+}
+
+function featurecounts_install {
+    pinfo "Installing subread/feature counts..."
+    download_software FEATURECOUNTS
+    tar xzvf $FEATURECOUNTS_FILE
+    mv subread-$FEATURECOUNTS_VERSION-Linux-x86_64/bin/* $BIN_DIR
+    pinfo "FeatureCounts installed"    
 }
 
 ###############################
