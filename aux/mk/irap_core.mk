@@ -386,7 +386,7 @@ endif
 
 ## Toplevel paths
 auxdata_toplevel_folder:=$(name)/data
-report_toplevel_folder:=$(name)/report
+report_toplevel_folder:=$(name)
 
 #************************
 # data_dir Data directory (directory where the data is expected to be)
@@ -1124,7 +1124,7 @@ endif
 ##################################
 
 
-SUPPORTED_NORM_TOOLS=cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd flux_cap  nurd stringtie irap
+SUPPORTED_NORM_TOOLS=cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd flux_cap  nurd stringtie irap kallisto
 ifeq (,$(filter $(quant_norm_tool),none $(SUPPORTED_NORM_TOOLS)))
 $(call p_error,quant_norm_tool '$(quant_norm_tool)' invalid)
 endif
@@ -1362,15 +1362,19 @@ max_mem_gb:=$(shell expr $(max_mem) \/ 1000)
 
 # samtools 1.x
 ifndef SAMTOOLS_SORT_MEM
- SAMTOOLS_SORT_MEM:=$(shell bash -c "expr $(max_mem_gb) \* 90 \/ 100 \/ $(max_threads)")G
+ SAMTOOLS_SORT_MEM:=$(shell bash -c "expr  $(max_mem_gb) \* 90 \/ 100 \/ $(max_threads) ")G
+ifeq ($(SAMTOOLS_SORT_MEM),0G)
+override SAMTOOLS_SORT_MEM:=1G
+endif
 endif
 
 
 # convert Gb to Mb - smatools sort controls better the memory usage with M
+# include an extra 1MB
 MIN_MEM?=1
 ifndef SAMTOOLS_SORT_MEM_MT
- SAMTOOLS_SORT_MEM_MT:=$(shell echo "($(max_mem_gb)-$(MIN_MEM))*0.95/$(max_threads)*1000000000" | bc )
-#shell bash -c "expr \( $(max_mem_gb) - $(MIN_MEM) \) \* 50 \/ 100 \/ $(max_threads) ")
+ SAMTOOLS_SORT_MEM_MT:=$(shell echo "($(max_mem_gb)-$(MIN_MEM))*0.95/$(max_threads)*1000000000+1200000" | bc )
+#shell bash -c "expr \( $(max_mem_gb) - $(MIN_MEM) \) \* 50 \/ 100 \/ $(max_thread
 endif
 
 
@@ -1741,6 +1745,10 @@ include $(irap_path)/../aux/mk/irap_sc_qc.mk
 include $(irap_path)/../aux/mk/irap_clustering.mk
 include $(irap_path)/../aux/mk/irap_sc_vis.mk
 
+# Junctions
+include $(irap_path)/../aux/mk/irap_junction.mk
+
+
 # HTML Reporting
 include $(irap_path)/../aux/mk/irap_report.mk
 #
@@ -1750,8 +1758,6 @@ ifdef irap_devel
 $(call p_info,Loading code under development)
 # include under development features
 include $(irap_path)/../aux/mk/irap_snp_indel_calling.mk
-# Junctions
-include $(irap_path)/../aux/mk/irap_junction.mk
 endif
 
 # Check if the options provided are valid
@@ -2355,14 +2361,14 @@ clean_data_files:
 	rm -rf $(SETUP_DATA_FILES) $(index_files) $(reference_abspath).fa
 
 
-# delete all files related to the libraries
-lib_full_clean: clean_quality_filtering_and_report_cleanup 
+# delete all files related to the libraries up to quantification
+lib_full_clean: 
 	rm -rf $(STAGE1_OUT_FILES)
-	$(foreach l,$(se) $(pe), $(if $($(l)_dir), rm -rf $(qc_toplevel_folder)/$($(l)_dir)))
+	$(foreach l,$(se) $(pe), $(if $(subst .,,$($(l)_dir)), rm -rf $(qc_toplevel_folder)/$($(l)_dir)))
 	rm -rf $(STAGE2_OUT_FILES)
-	$(foreach l,$(se) $(pe), $(if $($(l)_dir), rm -rf $(mapper_toplevel_folder))/$($(l)_dir)))
+	##$(foreach l,$(se) $(pe), $(if $(subst .,,$($(l)_dir)), rm -rf $(mapper_toplevel_folder))/$($(l)_dir)))
 	rm -rf $(STAGE3_OUT_FILES)
-	$(foreach l,$(se) $(pe), $(if $($(l)_dir), rm -rf $(quant_toplevel_folder)/$($(l)_dir)))
+	##	$(foreach l,$(se) $(pe), $(if  $(subst .,,$($(l)_dir)), rm -rf $(quant_toplevel_folder)/$($(l)_dir)))
 
 # TODO: archive (delete everything except the "main" output files for each stage
 #
