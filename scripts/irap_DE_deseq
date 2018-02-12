@@ -41,6 +41,9 @@ if ( length(opt$labels.v) > 2 ) {
   perror("irap_DE_deseq only supports pairwise comparisons!");
   q(status=2);
 }
+
+if ( opt$feature == "transcript" && is.null(opt$mapping) ) stop("missing g2t parameter")
+
 system(paste("mkdir -p ",opt$out));
 data <- quant.load(opt$tsv_file)
 ## debug
@@ -101,6 +104,16 @@ if ( !is.null(opt$annotation) && !is.na(opt$annotation)) {
 }
 
 de.annot <- de.annot[order(de.annot$pval),];
+
+if ( opt$feature == "transcript" ) {
+    ## include the geneid
+    pinfo("Transcripts per gene:")
+    print(summary(table(opt$mapping$gene)))
+    t2g <- opt$mapping$gene
+    names(t2g) <- opt$mapping$trans
+    de.annot$geneid <- t2g[de.annot$id]
+}
+
 
 save.de2tsv(de.annot,ofile.prefix=opt$out)
 # save the objects
