@@ -206,6 +206,8 @@ if ! [[ $mem =~ $int_re ]] ; then
     perror "-m value ($mem) should be an integer"
     exit 1
 fi
+## Convert bytes to MB
+let mem=$mem/1000000
 
 #############################
 DATA_DIR=`conf_get_data_dir $conf "$irap_options"`
