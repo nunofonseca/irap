@@ -43,6 +43,7 @@ option_list <- list(
     make_option(c("--exclude_irap_suffix"),action="store_true",dest="exclude_irap_suffix",default=FALSE,help="Exclude irap suffix from the name."),
     make_option(c("--add_header"),action="store_true",dest="add_header",default=FALSE,help=""),
     make_option(c("--dirname_header"),action="store_true",dest="dirname_header",default=FALSE,help="keep only the dirname in the column name."),
+    make_option(c("--is_tsv"),action="store_true",dest="is.tsv",default=FALSE,help="Input matrices are in tsv format (instead of MTX)."),
     make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode")
 )
 
@@ -59,6 +60,8 @@ opt <- myParseArgs(usage = usage,option_list=option_list,filenames.exist=filenam
 pdebug.enabled <- opt$debug
 pdebug.save.state("irap_merge_mtx","p0")
 
+#opt$has_no_header <- FALSE
+
 pinfo("Parameters parsed.")
 
 all.feat <- NULL
@@ -74,7 +77,7 @@ out.table <- NULL
 
 files <- unlist(strsplit(opt$mtx_files,"[ \t\n,;]+"))
 nfiles <- length(files)
-pinfo("Merging ",nfiles," mtx files")
+pinfo("Merging ",nfiles," files")
 ctr <- 0
 #files <- c("/home/nf/Research/Projects/WIP/EREAP/irap_tests/test_files/sparse1.mtx.gz","/home/nf/Research/Projects/WIP/EREAP/irap_tests/test_files/sparse2.mtx.gz")
                                         #f <- files[1]
@@ -88,7 +91,10 @@ for ( f in files ) {
         perror("File not found ",f)
         q(status=1)
     }
-    x <- mtx.load(f)
+    if (opt$is.tsv ) 
+        x <- quant.load(f)
+    else
+        x <- mtx.load(f)
     #dim(x)
     if ( is.null(x) ) {
         perror("Error loading ",f)
@@ -104,7 +110,7 @@ for ( f in files ) {
             label <- basename(label)
         } else {
             if ( opt$dirname_header) {
-        label <- dirname(label)
+                label <- dirname(label)
             }
         }
         if ( opt$exclude_irap_suffix ) {
@@ -137,8 +143,31 @@ for ( f in files ) {
     } else {
         ## merge
         if ( is.null(all.feat) ) {
-            if (nrow(out.table)!=nrow(x)) {
-                perror("Matrices should have the same number of rows" )
+            if (nrow(out.table)!=nrow(x) && ncol(x)==1 ) {
+                pwarning("Matrices should have the same number of rows" )
+                ##q(status=1)
+                ##
+                shared.rows <- intersect(rownames(out.table),rownames(x))
+                ## add the missing rows to x
+                new.x.rows <- rownames(out.table)[!rownames(out.table)%in%shared.rows]
+                new.x <- matrix(rep(0,length(new.x.rows)),ncol=1)
+                colnames(new.x) <- colnames(x)
+                new.x <- rbind(x,new.x)
+                rownames(new.x) <- append(rownames(x),new.x.rows)
+                
+                ## out.table
+                new.out.rows <- rownames(x)[!rownames(x)%in%rownames(out.table)]
+                new.out <- matrix(rep(0,length(new.out.rows)*ncol(out.table)),ncol=ncol(out.table))
+                colnames(new.out) <- colnames(out.table)
+                new.out <- rbind(out.table,new.out)
+                rownames(new.out) <- append(rownames(out.table),new.out.rows)
+
+                out.table <- new.out
+                x <- new.x
+                print(head(out.table))
+            }
+            if (nrow(out.table)!=nrow(x) && ncol(x)>1 ) {
+                pwarning("Matrices should have the same number of rows" )
                 q(status=1)
             }
         }
@@ -148,7 +177,8 @@ for ( f in files ) {
         ## remove the shared cols with no values
         x <- x[,!colnames(x)%in%names(cs[cs==0]),drop=FALSE]
         shared.cols <- intersect(colnames(out.table),colnames(x))
-        
+        print(head(x))
+        print(length(shared.cols))
         if ( length(shared.cols) >0 ) {
             pwarning("columns shared (" ,length(shared.cols),")" )
             ## assuming that these are replicates
@@ -167,10 +197,14 @@ for ( f in files ) {
 }
 
 
-if ( opt$add_header && opt$has_no_header ) {
-  opt$has_no_header=FALSE
+#if ( opt$add_header && opt$has_no_header ) {
+#  opt$has_no_header=FALSE
+#}
+if (opt$is.tsv ) {
+    write.tsv(out.table,file=opt$out,rownames.label="Feature")
+} else {
+    write.mtx(out.table,filename=opt$out,gzip=TRUE)
 }
-write.mtx(out.table,filename=opt$out,gzip=TRUE)
 pinfo("all done.")
 q(status=0)
 
