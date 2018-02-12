@@ -5,6 +5,12 @@
 menu=menu.html
 # include /
 toplevel_path=
+
+if [ ! -e $menu ]; then
+    echo "file $menu not found in $PWD"
+    exit 2
+fi
+
 inject_menu=`cat $menu| tr "\n" " "`
 
 function fix_html_files {
@@ -15,7 +21,7 @@ function fix_html_files {
     # 
     #echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>$$ $path<<<<<<<<<<<<<<<<<<<<<<<<<"
     #bash does not have a stack when invoking a function recursively
-    if [ "$path-" != "../../../../../-" ]; then
+    if [ "$path-" != "../../../../../../../-" ]; then
 	echo $path > .path
 	for d in `find -L .  -maxdepth 1  -type d -name  "*"`; do	
 	    if [ "$d" != "." ] ; then
@@ -35,35 +41,34 @@ function fix_html_files {
 	if [ `basename $f` != $menu ]; then
 	    echo "Fixing $f..."
 	    # 1st time
-	    N=`grep -c "$CSS_FILE" $f`
+	    N=`grep -c "menu.css" $f`
 	    if [ "$N-" == "0-" ]; then
-	    # add CSS FILE
-	    #echo adding menu.css
+		## add CSS FILE
+		##echo adding menu.css
   		sed  -E -i "s|<head>|<head>$CSS_FILE|" $f
 	    fi
 	    # add menu
 	    # replace toplevel path
 	    # remove r2html
-	    # add
-	    #sed  -E -i "s|(<body[^>]*)>.*|\1> $inject_menu|;s|TTOPLEVEL|$path|g;s|R2HTML||;s|aehts.css|irap.css|;s|href=\"*.*irap.css\"|href=${path}irap.css|" $f
-	    N=`grep -c "Just to keep a record on the number of people using iRAP" $f`
+	    # add 
+	    N=`grep -c "Just to keep an estimate on the number of people using iRAP" $f`
 	    if [ "$N-" == "0-" ]; then
 		# add the menu for the first time (first line)
 		sed  -E -i "s|(<body[^>]*)>|\1> $inject_menu\n|" $f
 	    fi	    
-	    sed  -E -i "s|(<body[^>].*)>.*|\1> $inject_menu|;s|TTOPLEVEL|$path|g;s|R2HTML||;s|aehts.css|irap.css|;s|href=\"*.*irap.css\"|href=${path}irap.css|" $f
-#	    sed  -E -i "s|(<body[^>]*)>.*|\1> $inject_menu|;s|TTOPLEVEL|$path|g;s|R2HTML||;s|aehts.css|irap.css|;s|href=../../ |href=${path}irap.css |" $f
+	    sed  -E -i "s|(<body[^>]*)>.*|\1> $inject_menu|;s|TTOPLEVEL|$path|g;s|R2HTML||;s|href=\".*irap.css\"|href=\"${path}irap.css\"|;s|href=\".*menu.css\"|href=\"${path}menu.css\"|" $f
+	    #sed  -E -i --file $sed_script $f
 	    # remove the line (temporary)
-	    sed -i "s|<p class='character'>Project: <a href='../index.html'>go to main page</a></p>||" $f
+	    #sed -i "s|<p class='character'>Project: <a href='../index.html'>go to main page</a></p>||" $f
 	    # keep this temporarily
 	    sed -i "s|<object id=\"mathplayer\" .*||" $f
 	    echo "'Fixing' $f...done."
 	fi    
     done
 }
-
 #
 fix_html_files
+
 exit 0
 
 
