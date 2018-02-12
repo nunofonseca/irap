@@ -86,7 +86,8 @@ if ( opt$feature == "transcript" ) {
     names(t2g) <- opt$mapping$trans
     x <- opt$ngVector[t2g]
     names(x) <- names(t2g)
-    opt$ngVector <- GetNg(IsoformName=opt$mapping$trans,GeneName=opt$mapping$gene,TrunThre=3)    
+    y <- min(table(opt$mapping$gene),5)
+    opt$ngVector <- GetNg(IsoformName=opt$mapping$trans,GeneName=opt$mapping$gene,TrunThre=y)    
 }
 
 ## library size factors
@@ -154,7 +155,10 @@ if (  opt$feature=="gene" && !is.null(opt$annotation) && !is.na(opt$annotation))
 }
 
 res.annot <- res.annot[order(res.annot$padj),];
-
+if ( opt$feature == "transcript" ) {
+    ## include the geneid
+    res.annot$geneid <- t2g[res.annot$id]
+}
 save.de2tsv(res.annot,ofile.prefix=opt$out)
 # save the objects
 save(opt,res.annot,EBres,Conds,Sizes,file=paste(opt$out,"de.Rdata",sep="/"))
