@@ -218,7 +218,7 @@ SOAP2_VERSION=2.21
 SOAP2_FILE=soap${SOAP2_VERSION}release.tar.gz
 SOAP2_URL=http://soap.genomics.org.cn/down/$SOAP2_FILE
 # 2.4.0i->2.5.0c->2.5.3
-STAR_VERSION=2.5.3a
+STAR_VERSION=2.5.4b
 STAR_FILE=${STAR_VERSION}.tar.gz
 STAR_URL=https://github.com/alexdobin/STAR/archive/$STAR_FILE
 
