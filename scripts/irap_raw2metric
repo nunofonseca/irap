@@ -79,7 +79,7 @@ exon.length <- NULL
 ##
 
 pinfo("Loading ",opt$ifile)
-if ( opt$is.mtx ) {
+if ( opt$is_mtx ) {
     table <- mtx.load(opt$ifile)
 } else {
     table <- quant.load(opt$ifile)
