@@ -453,9 +453,9 @@ fastq_utils_VERSION=0.14.7
 fastq_utils_FILE=$fastq_utils_VERSION.tar.gz
 fastq_utils_URL=https://github.com/nunofonseca/fastq_utils/archive/$fastq_utils_FILE
 
-# devel - 
-umis_VERSION=0.6.0
-umis_FILE=master.zip
+# 0.8 fails to installl
+umis_VERSION=0.7.0
+umis_FILE=v${umis_VERSION}.tar.gz
 umis_URL=https://github.com/vals/umis/archive/${umis_FILE}
 
 MAKE_VERSION=4.2
@@ -1566,9 +1566,10 @@ function umis_install {
     #git clone https://github.com/vals/umis.git
     #pushd umis    
     download_software umis
-    #tar xzvf $umis_FILE
-    unzip $umis_FILE    
-    pushd umis-master
+    tar xzvf $umis_FILE
+    #unzip $umis_FILE    
+    #pushd umis-master
+    pushd umis-$umis_VERSION
     pip install  --prefix $IRAP_DIR .
     popd
     # temporary fix
