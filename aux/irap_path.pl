@@ -318,7 +318,7 @@ m('kallisto',_,'',_).
 m('none',_,'',_).
 
 all_mappers(X):-all(M,m(M,_,_,_),X).
-all_quant([htseq1,htseq2,basic,flux_cap,cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,nurd,stringtie,stringtie_nd,rsem,kallisto,salmon,umi_count,umis]).
+all_quant([htseq1,htseq2,basic,flux_cap,cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,nurd,stringtie,stringtie_nd,rsem,kallisto,salmon,umi_count,umis,featurecounts]).
 all_quant_norm([flux_cap,cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,none,deseq,stringtie,stringtie_nd,rsem,irap]).
 all_tquant([cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,nurd,stringtie,stringtie_nd,rsem,kallisto,umi_count]).
 all_de([deseq,edger,voom,cuffdiff1,cuffdiff2,cuffdiff1_nd,cuffdiff2_nd,deseq2,ebseq,none]).
@@ -327,6 +327,7 @@ all_ede([dexseq]).
 %% bulk rna
 qr('htseq1',m(M),'Only requires the NH flag defined',stranded):-m(M,_,_,_S),not M==none.
 qr('htseq2',m(M),'Only requires the NH flag defined',stranded):-m(M,_,_,_S),not M==none.
+qr('featurecounts',m(M),'Only requires the NH flag defined',stranded):-m(M,_,_,_S),not M==none.
 qr('basic',m(M),'',S):-m(M,_,_,S),not M==none.
 qr('cufflinks1',m(M),'BAM flags...',stranded):-m(M,_,_,_S),not member(M,[soapsplice,none]).
 qr('cufflinks1_nd',m(M),'BAM flags...',stranded):-m(M,_,_,_S),not member(M,[soapsplice,none]).
@@ -354,6 +355,7 @@ qr(none,m(M),'',_):-m(M,_,_,_S).
 qr_sc('umis',m(_),'',_).
 qr_sc('umi_count',m(_),'',_).
 qr_sc('htseq2',m(_),'',no).%% smart-seq2 without UMIs
+qr_sc('featurecounts',m(_),'',no).%% smart-seq2 without UMIs
 qr_sc(none,m(M),'',_):-m(M,_,_,_S).
 
 qn(cufflinks1,qr(cufflinks1),_,stranded).
@@ -364,8 +366,8 @@ qn(nurd,qr(nurd),_,no).
 qn(stringtie,qr(stringtie),_,no).
 qn(stringtie_nd,qr(stringtie_nd),_,no).
 qn(flux_cap,qr(flux_cap),_,no).
-qn(deseq,qr(QR),_,_):-member(QR,[stringtie,flux_cap,basic,htseq1,htseq2]).
-qn(deseq2,qr(QR),_,_):-member(QR,[stringtie,flux_cap,basic,htseq1,htseq2]).
+qn(deseq,qr(QR),_,_):-member(QR,[stringtie,flux_cap,basic,htseq1,htseq2,featurecounts]).
+qn(deseq2,qr(QR),_,_):-member(QR,[stringtie,flux_cap,basic,htseq1,htseq2,featurecounts]).
 qn(none,qr(_),_,_).
 
 tde(deseq2,qr(QR),_):-all_tquant(ALL_QN),member(QR,ALL_QN).
@@ -375,7 +377,7 @@ tde(ebseq,qr(QR),_):-all_tquant(ALL_QN),member(QR,ALL_QN).
 tde(sleuth,qr(QR),_):-member(QR,[kallisto]).
 tde(none,qr(_),_).
 
-ede(dexseq,qr(QR),_):-member(QR,[htseq1,htseq2]).
+ede(dexseq,qr(QR),_):-member(QR,[htseq1,htseq2,featurecounts]).
 ede(none,qr(_),_).
 
 de(deseq,qr(QR),_):-all_quant(ALL_QN),member(QR,ALL_QN).
