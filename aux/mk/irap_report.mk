@@ -26,7 +26,8 @@ BROWSER_DIR=jbrowse
 
 # default CSS file
 CSS_FILE?=irap.css
-PATH2CSS_FILE?=$(IRAP_DIR)/aux/css/$(CSS_FILE)
+CSS_DIR?=$(IRAP_DIR)/aux/css
+PATH2CSS_FILE?=$(CSS_DIR)/$(CSS_FILE)
 
 IRAP_REPORT_MAIN_OPTIONS?=
 ifdef reuse_menu
@@ -85,16 +86,17 @@ info_targets=$(report_toplevel_folder)/info.html $(report_toplevel_folder)/versi
 
 REPORT_TARGETS+=report_setup $(info_targets)  $(if $(call GEN_REPORT_QC_ONLY), qc_report, qc_report mapping_report quant_report de_report gse_report )   end_report $(report_toplevel_folder)/about.html
 
+report_all_targets: $(REPORT_TARGETS)
 ####################################################
 #
-de_html_files:= $(foreach c,$(contrasts),$(patsubst %.tsv,%.html,$(call quiet_ls,$(de_toplevel_folder)/$(c)*_de.tsv))) $(foreach c,$(contrasts),$(patsubst %.tsv,%.html,$(call quiet_ls,$(ede_toplevel_folder)/$(c)*_de.tsv)))
+de_html_files:= $(foreach c,$(contrasts),$(patsubst %.tsv,%.html,$(call quiet_ls,$(de_toplevel_folder)/$(c)*_de.tsv))) $(foreach c,$(contrasts),$(patsubst %.tsv,%.html,$(call quiet_ls,$(ede_toplevel_folder)/$(c)*exons_de.tsv))) $(foreach c,$(contrasts),$(patsubst %.tsv,%.html,$(call quiet_ls,$(tde_toplevel_folder)/$(c)*transcripts_de.tsv)))
 # defined in irap_gse
 # only produce reports if tsv files exist
-get_gse_html_files=$(patsubst %.tsv,%.html,$(call quiet_ls,$(patsubst %.html,%.tsv,$(gse_html_files))))
+get_gse_html_files=$(gse_html_files)
 
-ge_files:=$(shell find $(quant_toplevel_folder) -regextype egrep -type f -regex '.*/genes.*.(tsv|tsv.gz|mtx|mtx.gz)$$'  2>/dev/null )
-te_files:=$(filter-out .riu. .dt.,$(shell find $(quant_toplevel_folder) -type f -regextype egrep -regex '.*/transcripts.*.(tsv|tsv.gz|mtx|mtx.gz)$$'  2>/dev/null ))
-ee_files:=$(shell find $(quant_toplevel_folder) -regextype egrep -type f -regex '*./exons.*.(tsv|tsv.gz|mtx|mtx.gz)$$'  2>/dev/null )
+ge_files:=$(shell find $(quant_toplevel_folder) -regextype egrep -type f -regex '.*/genes\.[^\.]+\.[^\.]+(\.[^t]+)*\.(tsv|tsv.gz|mtx|mtx.gz)$$'   2>/dev/null )
+te_files:=$(filter-out .riu. .dt.,$(shell find $(quant_toplevel_folder) -type f -regextype egrep -regex '.*/transcripts\.[^\.]+\.[^\.]+\.(tsv|tsv.gz|mtx|mtx.gz)$$'  2>/dev/null ))
+ee_files:=$(shell find $(quant_toplevel_folder) -regextype egrep -type f -regex '.*/exons\.[^\.]+\.[^\.]+\.(tsv|tsv.gz|mtx|mtx.gz)$$'  2>/dev/null )
 all_quant_files:=$(ge_files) $(te_files) $(ee_files)
 
 quant_html_files:=$(patsubst %.tsv,%.html,$(patsubst %.mtx.gz,%.html,$(patsubst %.tsv.gz,%.html,$(all_quant_files))))
@@ -108,6 +110,12 @@ mapper2report_folder:=$(shell realpath --relative-to=$(mapper_toplevel_folder) $
 qc2report_folder:=$(shell realpath --relative-to=$(qc_toplevel_folder) $(report_toplevel_folder) 2> /dev/null)
 de2report_folder:=$(shell realpath --relative-to=$(de_toplevel_folder) $(report_toplevel_folder) 2> /dev/null)
 
+
+# May be overriden in the configuration file
+REPORT_MAPPERS_DIRS?=$(mapping_dirs)
+REPORT_QC_DIRS?=$(qc_toplevel_folder)
+REPORT_QUANT_FILES?=$(patsubst %.tsv,%.html,$(patsubst %.mtx.gz,%.html,$(patsubst  %.tsv.gz,%.html,$(all_quant_files))))
+REPORT_DE_DIRS?=$(sort $(dir $(de_html_files)))
 
 ########################################################################
 ## DE
@@ -136,9 +144,10 @@ endef
 # 4 out file
 # 5 title
 # 6 feature
+# 7 map between feat and geneid
 # --anotation ....
 define GE_tsv2html=
-	tsvGE2html -m $(1) --ifile $(2) --out $(3)/$(4) --species $(species)  --browser $(quant2report_folder)/$(BROWSER_DIR)/ --css $(quant2report_folder)/$(CSS_FILE) --title "$(5)" -a $(annot_tsv)  --gdef "$(call groupsdef2str)" --gnames "$(call groups2str)" -f $(6) --feat_mapping $(word 1,$(feat_mapping_files))
+	tsvGE2html -m $(1) --ifile $(2) --out $(3)/$(4) --species $(species)  --browser $(quant2report_folder)/$(BROWSER_DIR)/ --css $(quant2report_folder)/$(CSS_FILE) --title "$(5)" -a $(annot_tsv)  --gdef "$(call groupsdef2str)" --gnames "$(call groups2str)" -f $(6) --feat_mapping $(7)
 endef
 
 #-x min value
@@ -164,7 +173,8 @@ clean_report: $(name)/
 phony_targets+=report_setup clean_report
 
 
-report_setup: $(call must_exist,$(report_toplevel_folder)) $(call must_exist,$(report_toplevel_folder)/mapping/) $(call must_exist,$(report_toplevel_folder)/de/) $(call must_exist,$(report_toplevel_folder)/quant/) $(call rep_browse,report_browser_setup) $(call must_exist,$(report_toplevel_folder)/irap.css) $(call must_exist,$(report_toplevel_folder)/menu.css) $(feat_mapping_files)
+report_setup: $(call must_exist,$(report_toplevel_folder)) $(call rep_browse,report_browser_setup) $(call must_exist,$(report_toplevel_folder)/irap.css) $(feat_mapping_files) $(report_toplevel_folder)/menu.css
+#$(report_toplevel_folder)/$(notdir $(qc_toplevel_folder))
 
 SETUP_DATA_FILES+=report_setup
 
@@ -174,8 +184,9 @@ $(report_toplevel_folder): $(report_toplevel_folder)/
 $(report_toplevel_folder)/irap.css: $(PATH2CSS_FILE)
 	cp -f $< $@
 
-$(report_toplevel_folder)/menu.css: $(IRAP_DIR)/aux/css/menu.css
+$(report_toplevel_folder)/menu.css: $(CSS_DIR)/menu.css
 	cp -f $< $@
+
 
 #############################
 # QC
@@ -208,7 +219,7 @@ $(report_toplevel_folder)/$(call notdir,$(conf)): $(conf)
 #############################
 phony_targets+=mapping_report quant_report mapping_report_req
 
-mapping_report_targets=$(foreach m,$(call mapping_dirs), $(mapper_toplevel_folder)/$(shell basename $(m)).html) 
+mapping_report_targets:=$(filter-out $(mapper_toplevel_folder)/none.html,$(foreach m,$(call mapping_dirs), $(mapper_toplevel_folder)/$(shell basename $(m)).html) )
 
 #$(report_toplevel_folder)/mapping/comparison.html 
 
@@ -220,20 +231,17 @@ mapping_report_files:
 print_mapping_dirs:
 	echo $(MAPPING_DIRS)
 
-mapping_report: report_setup $(mapper_toplevel_folder)/$(mapper).html
+mapping_report: report_setup $(mapping_report_targets)
 
 
 #$(foreach m,$(mapping_dirs),$(mapper_toplevel_folder)/$(m).html_req)
-print_mapping_report_req: $(mapper_toplevel_folder)/$(mapper).html_req
 
-$(mapper_toplevel_folder)/%.html_req:
-	echo $(MAPPING_REPORT_PRE_STATS)
 
 $(mapper_toplevel_folder)/%.html_doreq: $(MAPPING_REPORT_PRE_STATS)
 	@echo done $@
 
 # files required to produce the mapping report
-mapping_report_req: $(MAPPING_REPORT_PRE_STATS)
+
 #	@echo "done"
 
 # Mapping report for a specific mapper
@@ -296,6 +304,10 @@ $(ede_toplevel_folder)/%.exons_de.html: $(ede_toplevel_folder)/%.exons_de.tsv $(
 	mkdir -p $(@D)
 	$(call DE_tsv2html,$(subst _nd,,$(call DEfilepath2demethod,$@)),$<,$(@D),$(subst .html,,$(shell basename $@)),$(subst /, x ,$*))
 
+$(tde_toplevel_folder)/%.transcripts_de.html: $(tde_toplevel_folder)/%.transcripts_de.tsv $(annot_tsv)
+	mkdir -p $(@D)
+	$(call DE_tsv2html,$(subst _nd,,$(call DEfilepath2demethod,$@)),$<,$(@D),$(subst .html,,$(shell basename $@)),$(subst /, x ,$*))
+
 #######################################
 # Quant. at gene level
 
@@ -307,17 +319,21 @@ define ge_html2metric=
 $(word 2,$(subst ., ,$(notdir $1)))
 endef
 
-# 
-#$(_toplevel_folder)/%.html: 
-#	$(call GE_tsv2html,$(call ge_html2metric,$*),$(call quiet_ls1,$(name)/$(subst _x_,/,$*).tsv),$(@D),$(notdir $*).t,$(subst _x_, x ,$(subst /,,$(dir $*))),$(call ge_html2level,$*)) && \
-#	cp $(subst .html,,$@).t.html $@
 
 $(quant_toplevel_folder)/%.html: $(quant_toplevel_folder)/%.tsv $(annot_tsv) $(feat_mapping_files)
-	$(call GE_tsv2html,$(call ge_html2metric,$*),$<,$(@D),$(notdir $*).t,$(subst _x_, x ,$(subst /,,$(dir $*))),$(call ge_html2level,$*)) && \
+	$(call GE_tsv2html,$(call ge_html2metric,$*),$<,$(@D),$(notdir $*).t,$(subst _x_, x ,$(subst /,,$(dir $*))),$(call ge_html2level,$*),$(word 1,$(feat_mapping_files))) && \
 	cp $(subst .html,,$@).t.html $@
 
 $(quant_toplevel_folder)/%.html: $(quant_toplevel_folder)/%.tsv.gz  $(annot_tsv) $(feat_mapping_files)
-	$(call GE_tsv2html,$(call ge_html2metric,$*),$<,$(@D),$(notdir $*).t,$(subst _x_, x ,$(subst /,,$(dir $*))),$(call ge_html2level,$*)) && \
+	$(call GE_tsv2html,$(call ge_html2metric,$*),$<,$(@D),$(notdir $*).t,$(subst _x_, x ,$(subst /,,$(dir $*))),$(call ge_html2level,$*),$(word 1,$(feat_mapping_files))) && \
+	cp $(subst .html,,$@).t.html $@
+
+$(quant_toplevel_folder)/exons.%.html: $(quant_toplevel_folder)/exons.%.tsv $(annot_tsv) $(feat_mapping_files)
+	$(call GE_tsv2html,$(call ge_html2metric,exons.$*),$<,$(@D),exons.$(notdir $*).t,$(subst _x_, x ,$(subst /,,$(dir $*))),exon,$(word 2,$(feat_mapping_files))) && \
+	cp $(subst .html,,$@).t.html $@
+
+$(quant_toplevel_folder)/exons.%.html: $(quant_toplevel_folder)/exons.%.tsv.gz  $(annot_tsv) $(feat_mapping_files)
+	$(call GE_tsv2html,$(call ge_html2metric,exons.$*),$<,$(@D),exons.$(notdir $*).t,$(subst _x_, x ,$(subst /,,$(dir $*))),exon,$(word 2,$(feat_mapping_files))) && \
 	cp $(subst .html,,$@).t.html $@
 
 ############################
@@ -325,7 +341,7 @@ $(quant_toplevel_folder)/%.html: $(quant_toplevel_folder)/%.tsv.gz  $(annot_tsv)
 phony_targets+=gse_report gse_report_files
 silent_targets+=gse_report_files
 
-#$(call gse_html_files,$(name))
+$(info >>>>$(call get_gse_html_files))
 # only generates the html iff the respective GSE tsv file exist
 gse_report: report_setup $(call get_gse_html_files)
 
@@ -348,20 +364,23 @@ phony_targets+=end_report
 end_report: $(report_toplevel_folder)/index.html $(call must_exist,$(report_toplevel_folder)/irap.css)
 
 
-# TODO: replace versions.html by info_report
-# TODO $(call must_exist,$(report_toplevel_folder)/status.html)a
 ifeq ($(report_qc_only),y)
-$(report_toplevel_folder)/index.html: $(conf) $(info_targets) $(qc_html_files) $(call rep_browse,$(report_toplevel_folder)/jbrowse/index.html)  $(report_toplevel_folder)/about.html $(call must_exist,$(report_toplevel_folder)/irap.css) $(call must_exist,$(report_toplevel_folder)/menu.css)
+$(report_toplevel_folder)/index.html: $(conf) $(info_targets) $(qc_html_files) $(call rep_browse,$(report_toplevel_folder)/jbrowse/index.html)  $(report_toplevel_folder)/about.html $(call must_exist,$(report_toplevel_folder)/irap.css) $(report_toplevel_folder)/menu.css
 	cp  $(report_toplevel_folder)/info.html $@ &&
-	irap_report_main $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(report_toplevel_folder) -m "" -q "" -d "" &&
+	irap_report_main $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(report_toplevel_folder) -m "$(REPORT_MAPPERS_DIRS)" -q "$(REPORT_QUANT_FILES)" -d "$(REPORT_DE_DIRS)" --qc_dirs "$(REPORT_QC_DIRS)" &&
 	sleep 2 &&
 	touch $@
 else
-$(report_toplevel_folder)/index.html: $(conf) $(info_targets)  $(call quant_html_files) $(qc_html_files) $(call mapping_report_targets) $(call de_html_files,$(name)) $(call get_gse_html_files)  $(call rep_browse,$(report_toplevel_folder)/jbrowse/index.html)  $(report_toplevel_folder)/about.html $(call must_exist,$(report_toplevel_folder)/irap.css) $(call must_exist,$(report_toplevel_folder)/menu.css)
+$(report_toplevel_folder)/index.html: $(conf) $(info_targets)  $(call quant_html_files) $(qc_html_files) $(call mapping_report_targets) $(call de_html_files,$(name)) $(call get_gse_html_files)  $(call rep_browse,$(report_toplevel_folder)/jbrowse/index.html)  $(report_toplevel_folder)/about.html $(call must_exist,$(report_toplevel_folder)/irap.css) $(report_toplevel_folder)/menu.css
 	cp  $(report_toplevel_folder)/info.html $@ &&
-	irap_report_main $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(report_toplevel_folder) -m "$(call mapping_dirs)" -q "$(call quant_dirs,$(name))" -d "$(call de_dirs,$(name))" &&
+	irap_report_main $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(report_toplevel_folder) -m "$(REPORT_MAPPERS_DIRS)" -q "$(REPORT_QUANT_FILES)" -d "$(REPORT_DE_DIRS)" --qc_dirs "$(REPORT_QC_DIRS)" &&	
 	sleep 2 &&
 	touch $@
 endif
-
 endif
+
+print_mapping_report_req: $(mapper_toplevel_folder)/$(mapper).html_req
+
+$(mapper_toplevel_folder)/%.html_req:
+	echo $(MAPPING_REPORT_PRE_STATS)
+mapping_report_req: $(MAPPING_REPORT_PRE_STATS)
