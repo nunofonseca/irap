@@ -52,13 +52,13 @@ endif
 # Preprocessing of the input files (.fastq/.bam), QC, filtering
 
 define make-pe-qc-rule=
-$(call lib2filt_folder,$(1))$(1)_1.f.fastq.gz $(call lib2filt_folder,$(1))$(1)_2.f.fastq.gz $(call lib2filt_folder,$(1))$(1)_1.f.fastqc.tsv: $(raw_data_dir)$($(1)_dir)/$(notdir $(word 1,$($(1))))  $(raw_data_dir)$($(1)_dir)/$(notdir $(word 2,$($(1))))
+$(call lib2filt_folder,$(1))$(1)_1.f.fastq.gz $(call lib2filt_folder,$(1))$(1)_2.f.fastq.gz $(call lib2filt_folder,$(1))$(1)_1.f.fastqc.tsv $(call lib2filt_folder,$(1))$(1)_1.f.csv: $(raw_data_dir)$($(1)_dir)/$(notdir $(word 1,$($(1))))  $(raw_data_dir)$($(1)_dir)/$(notdir $(word 2,$($(1))))
 	$$(call p_info,Filtering $(call fix_libname,$(1)))
 	$$(call do_quality_filtering_and_report,$(call fix_libname,$(1)),$(raw_data_dir)$($(1)_dir),$$(@D),) || (rm -f $(call lib2filt_folder,$(1))$(1)_1.f.fastq.gz && exit 1)
 endef
 
 define make-se-qc-rule=
-$(call lib2filt_folder,$(1))$(1).f.fastq.gz $(call lib2filt_folder,$(1))$(1).f.fastqc.tsv: $(raw_data_dir)$($(1)_dir)/$(notdir $($(1)))
+$(call lib2filt_folder,$(1))$(1).f.fastq.gz $(call lib2filt_folder,$(1))$(1).f.fastqc.tsv $(call lib2filt_folder,$(1))$(1).f.csv: $(raw_data_dir)$($(1)_dir)/$(notdir $($(1)))
 	$$(call p_info,Filtering $(call fix_libname,$(1)))
 	$$(call do_quality_filtering_and_report,$(1),$(raw_data_dir)$($(1)_dir),$$(@D),) || (rm -f $(call lib2filt_folder,$(1))$(1).f.fastq.gz && exit 1)
 
@@ -83,14 +83,20 @@ clean_quality_filtering_and_report:
 
 #########################################################################
 # a single file with the mapping stats
+
+ifneq ($(mapper),none)
+MAPPING_REPORT_PRE_STATS:=$(foreach s,$(se),$(call lib2bam_folder,$(s))$(s).se.hits.bam.stats.csv) $(foreach s,$(pe),$(call lib2bam_folder,$(s))$(s).pe.hits.bam.stats.csv   )
+
 $(mapper_toplevel_folder)/libs_qc.tsv: $(mapper_toplevel_folder)/stats_raw.tsv $(mapper_toplevel_folder)/stats_perc.tsv  $(mapper_toplevel_folder)/featstats_raw.tsv   $(mapper_toplevel_folder)/genestats_raw.tsv 
 	irap_append2tsv --in "$(mapper_toplevel_folder)/stats_raw.tsv $(mapper_toplevel_folder)/featstats_raw.tsv $(mapper_toplevel_folder)/genestats_raw.tsv" --exclude_aggr  --cols_not_sorted --out $@.1.tmp &&\
 	irap_append2tsv --in "$(mapper_toplevel_folder)/stats_perc.tsv $(mapper_toplevel_folder)/featstats_perc.tsv $(mapper_toplevel_folder)/genestats_perc.tsv" --exclude_aggr --add_row_suffix "_perc" --cols_not_sorted --out $@.2.tmp && \
 	irap_append2tsv --in "$@.1.tmp $@.2.tmp" --exclude_aggr --transpose --out $@.tmp && mv $@.tmp $@ &&\
 	rm -f $@.1.tmp $@.2.tmp
+else
+# empty file
+$(mapper_toplevel_folder)/libs_qc.tsv:
+	touch $@
 
-ifneq ($(mapper),none)
-MAPPING_REPORT_PRE_STATS:=$(foreach s,$(se),$(call lib2bam_folder,$(s))$(s).se.hits.bam.stats.csv) $(foreach s,$(pe),$(call lib2bam_folder,$(s))$(s).pe.hits.bam.stats.csv   )
 endif
 
 ## the reference in the BAMs generated with kallisto is not the genome
