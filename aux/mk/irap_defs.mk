@@ -40,7 +40,7 @@ endif
 #################
 # SOP 
 ifdef sop
-$(info * sop=$(sop) (overriding some options))
+$(info * sop=$(sop) (using pre-defined SOP, overriding some options))
 
 ifeq ($(sop),pawg3_th2_mapping)
 $(info * SOP=PAWG3 mapping with TopHat2)
