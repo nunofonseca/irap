@@ -37,7 +37,7 @@ endif
 endif
 
 
-
+SUPPORTED_CLUSTERING_METHODS=sc3 none
 
 # generate the QC files
 clustering: $(clustering_files)
