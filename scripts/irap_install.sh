@@ -2035,7 +2035,11 @@ function python_packages_install {
 	pinfo "pip already installed"
     fi
     ##$PATH2PIP install pysam==0.8.4 --user
-    $PATH2PIP install pysam==0.8.4 --user    
+    $PATH2PIP install setuptools --user --upgrade
+    $PATH2PIP install pysam==0.8.4 --user
+    $PATH2PIP install cython --user
+    $PATH2PIP install pandas --user
+    $PATH2PIP install scipy --user    
     export CFLAGS=$CFLAGS_bak
     pinfo "python packages installed"
 }
