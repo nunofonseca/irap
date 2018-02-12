@@ -190,6 +190,9 @@ FASTQC_REPORT_FILES=
 $(qc_toplevel_folder)/fastq_qc_report.tsv:
 	touch $@
 
+## nothing
+print_qc_dirs_files:
+
 ## end qc=off
 else
 ## qc=on |report
@@ -208,6 +211,9 @@ STAGE2_TARGETS+=$(qc_toplevel_folder)/fastq_qc_report.tsv
 
 FASTQC_REPORT_FILES:=$(foreach p,$(pe),$(qc_toplevel_folder)/$($(p)_dir)/$(p)_1.f.fastqc.tsv $(qc_toplevel_folder)/$($(p)_dir)/$(p)_2.f.fastqc.tsv) $(foreach p,$(se),$(qc_toplevel_folder)/$($(p)_dir)$(p).f.fastqc.tsv)
 QC_CSV_FILES:=$(foreach p,$(pe),$(qc_toplevel_folder)/$($(p)_dir)/$(p)_1.f.csv $(qc_toplevel_folder)/$($(p)_dir)/$(p)_2.f.csv) $(foreach p,$(se),$(qc_toplevel_folder)/$($(p)_dir)$(p).f.csv)
+
+print_qc_dirs_files:  $(QC_CSV_FILES) $(FASTQC_REPORT_FILES) $(foreach p,$(pe) $(se),$(call quiet_ls,$(qc_toplevel_folder)/$($(p)_dir)/*.zip))
+	@echo $^
 
 ifeq  ($(qc),report)
 ## nothing to do
