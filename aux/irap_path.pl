@@ -132,6 +132,7 @@ valid_norm_selection(stringtie,stringtie,fpkm).
 valid_norm_selection(stringtie_nd,stringtie_nd,fpkm).
 valid_norm_selection(nurd,nurd,fpkm).
 valid_norm_selection(flux_cap,flux_cap,fpkm).
+valid_norm_selection(kallisto,kallisto,tpm).
 
 
 stranded_ok(yes,stranded).
