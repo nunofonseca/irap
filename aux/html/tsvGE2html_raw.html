@@ -95,17 +95,7 @@ if (ncol(quant.data)>=2 && ncol(quant.data)<12 && nrow(quant.data)>20 ) {
                        }
                        ) 
   html <- p$html
-  if ( opt$metric=="raw") {  
-       p <- gen.plot2report(filename=paste(file.prefix,"_group_pairs_norm.png",sep=""),
-                       width=600,
-                       height=600,
-                       caption=pprint.metric("nlib"),
-                       to.plot=function() {
-                         pairs(dolog2(quant.data.norm.group$mean),  lower.panel=panel.smooth, upper.panel=my.panel.cor,pch=".", main=paste("",sep=""))
-                       }
-                       )
-       html <- paste(html,p$html,sep=" ")      
-     }
+
   irap.output.html(html,paste("Pairwise comparison across all groups. Panels above the diagonal show the Pearson correlation between two groups. Panels below the diagonal show the log2 expression of each ",pprint.feat(opt$feature,cap=F)," for each pair of groups. A regression  (computed using the R lowess function) line is plotted in red.",sep=""))
 
 } else {
