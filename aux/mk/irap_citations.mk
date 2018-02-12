@@ -29,7 +29,7 @@ include $(IRAP_DIR)/aux/mk/irap_versions.mk
 
 ############################################################
 # Map IRAP options to programs
-qc_on=FASTQC FASTX bowtie1 bowtie2 fastq_info
+qc_on=FASTQC FASTX bowtie1 bowtie2 fastq_utils
 qc_report=FASTQC
 qc_off=empty
 
@@ -51,7 +51,7 @@ mapper_bowtie2=bowtie2
 mapper_gem=GEM
 mapper_star=STAR
 mapper_osa=OSA
-mapper_HISAT2=HISAT2
+mapper_hisat2=HISAT2
 
 # Quant. methods
 quant_basic=empty
@@ -117,7 +117,7 @@ STAR_analysis="Reads alignment"
 
 HISAT2_citation="Kim, Daehwan, Ben Langmead, and Steven L. Salzberg. "HISAT: a fast spliced aligner with low memory requirements." Nature methods 12.4 (2015): 357-360."
 HISAT2_bibtex=HISAT2.bib
-HISAT_analysis="Reads alignment"
+HISAT2_analysis="Reads alignment"
 
 #### 
 tophat1_citation=Cole Trapnell, Lior Pachter, and Steven L. Salzberg. TopHat: discovering splice junctions with RNA-Seq Bioinformatics (2009) 25(9): 1105-1111
@@ -180,6 +180,10 @@ GEM_analysis="Reads alignment"
 FASTQC_citation=http://www.bioinformatics.babraham.ac.uk/projects/fastqc/
 FASTQC_bibtex=
 FASTQC_analysis="QC"
+
+fastq_utils_citation=https://github.com/nunofonseca/fastq_utils
+fastq_utils_bibtex=
+fastq_utils_analysis="QC"
 
 #### 
 FASTX_citation=http://hannonlab.cshl.edu/fastx_toolkit/
