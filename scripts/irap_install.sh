@@ -374,9 +374,9 @@ SALMON_VERSION=0.9.1
 SALMON_FILE=Salmon-${SALMON_VERSION}_linux_x86_64.tar.gz
 SALMON_URL=https://github.com/COMBINE-lab/salmon/releases/download/v${SALMON_VERSION}/${SALMON_FILE}
 
-# kallisto - 0.42.1 -> 0.42.4 (multithreads)
+# kallisto - 0.42.1 -> 0.44.0 (multithreads)
 # 0.42.4->0.43.1
-kallisto_VERSION=0.43.1
+kallisto_VERSION=0.44.0
 kallisto_FILE=kallisto_linux-v$kallisto_VERSION.tar.gz
 kallisto_URL=https://github.com/pachterlab/kallisto/releases/download/v$kallisto_VERSION/$kallisto_FILE
 
