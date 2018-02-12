@@ -19,7 +19,7 @@ my $nfiles_ok=0;
 
 sub get_ext {
     my $file=shift;    
-    $file=~/.([a-z-A-z0-9]+)$/;
+    $file=~/.([a-z-A-Z0-9]+)$/;
     return $1
 }
 sub get_file_type {
@@ -69,7 +69,8 @@ sub valid_file {
     }
     return(1);
 }
-my $ext=get_file_type @files;
+#my $ext=get_file_type @files;
+my $ext="";
 for my $f (@files) {
     if ( valid_file($f,$ext) ) {
 	$nfiles_ok++;
