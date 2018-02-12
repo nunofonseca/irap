@@ -273,8 +273,8 @@ R2_FILE=R-${R2_VERSION}.tar.gz
 R2_URL=http://cran.r-project.org/src/base/R-2/$R2_FILE
 
 # 3.xx fails to compile due to pcre dependency
-# 3.2.5 -> 3.4.1
-R3_VERSION=3.4.1
+# 3.2.5 -> 3.4.3
+R3_VERSION=3.4.3
 R3_FILE=R-${R3_VERSION}.tar.gz 
 R3_URL=http://cran.r-project.org/src/base/R-3/$R3_FILE
 
@@ -375,7 +375,6 @@ SALMON_FILE=Salmon-${SALMON_VERSION}_linux_x86_64.tar.gz
 SALMON_URL=https://github.com/COMBINE-lab/salmon/releases/download/v${SALMON_VERSION}/${SALMON_FILE}
 
 # kallisto - 0.42.1 -> 0.44.0 (multithreads)
-# 0.42.4->0.43.1
 kallisto_VERSION=0.44.0
 kallisto_FILE=kallisto_linux-v$kallisto_VERSION.tar.gz
 kallisto_URL=https://github.com/pachterlab/kallisto/releases/download/v$kallisto_VERSION/$kallisto_FILE
@@ -404,8 +403,8 @@ IGV_VERSION=2.3.93
 IGV_FILE=IGV_$IGV_VERSION.zip
 IGV_URL=http://www.broadinstitute.org/igv/projects/downloads/$IGV_FILE
 
-# 2.1.24->2.3.93
-IGV_TOOLS_VERSION=2.3.93
+# 2.1.24->2.4.8
+IGV_TOOLS_VERSION=2.4.8
 #IGV_TOOLS_FILE=igvtools_nogenomes_$IGV_TOOLS_VERSION.zip
 IGV_TOOLS_FILE=igvtools_$IGV_TOOLS_VERSION.zip
 IGV_TOOLS_URL=http://data.broadinstitute.org/igv/projects/downloads/$IGV_TOOLS_FILE
