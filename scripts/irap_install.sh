@@ -223,8 +223,8 @@ STAR_FILE=${STAR_VERSION}.tar.gz
 STAR_URL=https://github.com/alexdobin/STAR/archive/$STAR_FILE
 
 # 
-# ->2017-05-08
-GSNAP_VERSION=2017-05-08
+# ->2017-05-08 gmap-gsnap-2018-02-10.tar.gz
+GSNAP_VERSION=2018-02-10
 GSNAP_FILE=gmap-gsnap-${GSNAP_VERSION}.tar.gz
 GSNAP_URL=http://research-pub.gene.com/gmap/src/$GSNAP_FILE
 
