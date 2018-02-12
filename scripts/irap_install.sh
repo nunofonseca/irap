@@ -369,8 +369,8 @@ Sailfish_FILE=SailfishBeta-${Sailfish_VERSION}_CentOS5.tar.gz
 #Sailfish_URL=http://github.com/kingsfordgroup/sailfish/archive/$Sailfish_FILE
 Sailfish_URL=http://github.com/kingsfordgroup/sailfish/releases/download/v$Sailfish_VERSION/$Sailfish_FILE
 
-# 0.7.2 -> 0.8.2
-SALMON_VERSION=0.8.2
+# 0.7.2 -> 0.9.1
+SALMON_VERSION=0.9.1
 SALMON_FILE=Salmon-${SALMON_VERSION}_linux_x86_64.tar.gz
 SALMON_URL=https://github.com/COMBINE-lab/salmon/releases/download/v${SALMON_VERSION}/${SALMON_FILE}
 
@@ -1539,7 +1539,7 @@ function salmon_install {
     pinfo "Installing salmon..."
     download_software SALMON
     tar xzvf $SALMON_FILE
-    pushd Salmon-${SALMON_VERSION}_linux_x86_64
+    pushd Salmon-latest_linux_x86_64
     mkdir -p $IRAP_DIR/bin/salmon/bin $IRAP_DIR/bin/salmon/lib
     cp bin/* $IRAP_DIR/bin/salmon/bin
     cp lib/* $IRAP_DIR/bin/salmon/lib
