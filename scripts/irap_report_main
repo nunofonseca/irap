@@ -18,7 +18,6 @@
 # along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-#    $Id: irap.txt Nuno Fonseca Sun Jan 13 14:04:31 2013$
 # =========================================================
 
 suppressPackageStartupMessages(library("optparse"))
@@ -33,17 +32,18 @@ source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
 #
 usage <- "irap_report_main --conf file --rep_dir report_dir --mapping_dirs map_dirs --quant_dirs dirs --de_dirs dirs [options]"
 option_list <- list(
-                    make_option(c("-v", "--verbose"), action="store_true", default=TRUE, help="Print extra output [default]"),
-                    make_option(c("-c", "--conf"), type="character", dest="conf_file", default="",help="configuration filename"),
-                    make_option(c("-r", "--rep_dir"), type="character", dest="rep_dir", default="",help="Report directory (output)"),
-                    make_option(c("-m", "--mapping_dirs"), type="character", dest="map_dirs", default="",help="directories with the mapping results"),
-                    make_option(c("-q", "--quant_dirs"), type="character", dest="quant_dirs", default="",help="directories with the quantification results"),
-                    make_option(c("-d", "--de_dirs"), type="character", dest="de_dirs", default="",help="Directory with the DE results"),
-                    make_option(c("--reuse_menu"), action="store_true", default=FALSE, help="Reuse menu.html file")
+    make_option(c("-v", "--verbose"), action="store_true", default=TRUE, help="Print extra output [default]"),
+    make_option(c("-c", "--conf"), type="character", dest="conf_file", default="",help="configuration filename"),
+    make_option(c("-r", "--rep_dir"), type="character", dest="rep_dir", default="",help="Report directory (output)"),
+    make_option(c("-m", "--mapping_dirs"), type="character", dest="map_dirs", default="",help="directories with the mapping results"),
+    make_option(c("-q", "--quant_dirs"), type="character", dest="quant_dirs", default="",help="directories with the quantification results"),
+    make_option(c( "--qc_dirs"), type="character", dest="qc_dirs", default="",help="Directory with the QC results"),
+    make_option(c("-d", "--de_dirs"), type="character", dest="de_dirs", default="",help="Directory with the DE results"),
+    make_option(c("--reuse_menu"), action="store_true", default=FALSE, help="Reuse menu.html file")
 )
 multiple.options = NULL
 filenames <- c("conf_file") ;#filenames that must exist (if defined)
-mandatory <- c("conf_file","rep_dir",'map_dirs','de_dirs','quant_dirs')
+mandatory <- c("conf_file","rep_dir",'map_dirs','de_dirs','quant_dirs','qc_dirs')
 opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
 
 #####################################################################
@@ -62,7 +62,90 @@ import.conf.variables(conf)
 
 # Check if directory exists
 file.required(opt$rep_dir)
+toplevel.dir <- dirname(opt$rep_dir)
+pinfo("Toplevel.dir=",toplevel.dir)
+####################################
+## supported tools
+irap.tools <- list()
+irap.tools["supported.qc"] <- c("irap_qc")
+irap.tools["supported.mappers"] <- strsplit(system(paste0("grep SUPPORTED_MAPPERS= ",IRAP.DIR,"/aux/mk/irap_core.mk | cut -f 2 -d="),intern=TRUE)," +")
 
+irap.tools["supported.gene.quant.methods"] <- strsplit(system(paste0("grep SUPPORTED_QUANT_METHODS= ",IRAP.DIR,"/aux/mk/irap_core.mk | cut -f 2 -d="),intern=TRUE)," +")
+
+irap.tools["supported.transcript.quant.methods"] <- strsplit(system(paste0("grep TRANS_QUANT_METHODS= ",IRAP.DIR,"/aux/mk/irap_core.mk | cut -f 2 -d="),intern=TRUE)," +")
+
+irap.tools["supported.exon.quant.methods"] <- strsplit(system(paste0("grep SUPPORTED_EXON_QUANT_METHODS= ",IRAP.DIR,"/aux/mk/irap_core.mk | cut -f 2 -d="),intern=TRUE)," +")
+
+irap.tools["supported.norm.tools"] <- strsplit(system(paste0("grep SUPPORTED_NORM_TOOLS= ",IRAP.DIR,"/aux/mk/irap_core.mk | cut -f 2 -d="),intern=TRUE)," +")
+
+irap.tools["supported.norm.methods"] <- strsplit(system(paste0("grep SUPPORTED_NORM_METHODS= ",IRAP.DIR,"/aux/mk/irap_core.mk | cut -f 2 -d="),intern=TRUE)," +")
+
+irap.tools["supported.gene.de.methods"] <- strsplit(system(paste0("grep SUPPORTED_DE_METHODS= ",IRAP.DIR,"/aux/mk/irap_core.mk | cut -f 2 -d="),intern=TRUE)," +")
+
+irap.tools["supported.transcript.de.methods"] <- strsplit(system(paste0("grep SUPPORTED_TRANSCRIPT_DE_METHODS= ",IRAP.DIR,"/aux/mk/irap_core.mk | cut -f 2 -d="),intern=TRUE)," +")
+
+irap.tools["supported.exon.de.methods"] <- strsplit(system(paste0("grep SUPPORTED_EXON_DE_METHODS= ",IRAP.DIR,"/aux/mk/irap_core.mk | cut -f 2 -d="),intern=TRUE)," +")
+
+irap.tools["supported.gse.tools"] <- strsplit(system(paste0("grep gse_valid_tools= ",IRAP.DIR,"/aux/mk/irap_gse.mk | cut -f 2 -d="),intern=TRUE)," +")
+
+irap.tools["supported.gse.method"] <- strsplit(system(paste0("grep gse_piano_valid_methods= ",IRAP.DIR,"/aux/mk/irap_gse.mk | cut -f 2 -d="),intern=TRUE)," +")
+
+irap.tools["supported.clustering_methods"] <- strsplit(system(paste0("grep SUPPORTED_CLUSTERING_METHODS= ",IRAP.DIR,"/aux/mk/irap_clustering.mk | cut -f 2 -d="),intern=TRUE)," +")
+## 
+
+
+################################################
+## take into account the label (if there is one)
+# folders only ,"gse","clustering")
+path2user.label <- function(path,level,cur.depth=NA) {
+    valid.levels <- c("qc","mapper","quant","de")
+    stopifnot (level %in% valid.levels )
+    valid.levels.folder.depth <- c(1,2,3,4)
+    names(valid.levels.folder.depth) <- valid.levels
+
+    # last component should be the tool or a user defined label
+    path <- gsub("/$","",path)
+    dirs.l <- strsplit(path,"/")[[1]]
+    n <- length(dirs.l)
+    possible.values <- grep(paste0(".",level),names(irap.tools),value=TRUE)
+    stopifnot (length(possible.values)>0)
+    possible.values <- append(unlist(irap.tools[possible.values]),"none")
+
+    if (is.na(cur.depth)) cur.depth <- valid.levels.folder.depth[level]
+    
+    res <- list()
+    if ( dirs.l[n] %in% possible.values ) {
+        ## not labelled
+        res$label <- ""
+        res$tool <- dirs.l[n]
+        res$menu_label <- res$tool
+        res$prev <- paste(dirs.l[seq(1,n-1)],collapse="/",sep="")
+        res$fp <- dirs.l[n]
+    } else {
+        res$label <- dirs.l[n]
+        res$tool <- dirs.l[n-1]
+        stopifnot (res$tool %in% possible.values)
+        res$menu_label <- paste0(res$tool,"(",res$label,")")
+        res$prev <- paste(dirs.l[seq(1,n-2)],collapse="/",sep="")
+        res$fp <- dirs.l[c(n-1,n)]
+    }
+    cur.depth <- cur.depth-1
+    res$path <- res$menu_label
+    if ( cur.depth >= 1 ) {
+        prev.level <- names(valid.levels.folder.depth)[valid.levels.folder.depth==cur.depth]
+        res2 <- path2user.label(res$prev,prev.level,cur.depth=cur.depth)
+        res$path <- paste0(res2$path," x ",res$menu_label)
+        res$fp <- append(res2$fp,res$fp)
+
+    }
+    res$filepath <- paste(res$fp,collapse="/",sep="")
+    return(res)
+}
+
+#path2user.label("/aasda/irap_qc/none/kallisto","quant")
+#path2user.label("/aasda/irap_qc","qc")
+#path2user.label("/aasda/asdsda","qc")
+#path2user.label("/aasda/asdsda","xx")
 
 ####################################
 #
@@ -79,27 +162,23 @@ path2name  <- function(dirs) {
 
 # add report to the path (assuming that the first folder is the exp. name)
 path2report <- function(file) {
-  l <- strsplit(file,"/")[[1]]
-  l1 <- l[1]
-  lr <- paste(l[-1],collapse="/")
-  path2file <- paste(l1,"/","report/",lr,sep="")
-  pwarning(file,"->",path2file)
-  return(path2file)
+    return(paste0(opt$rep_dir,"/",file))
 }
 
 # remove the everything up to the filename
 path2reporthtml <- function(file) {
   l <- strsplit(file,"/")[[1]]
-  lr <- paste("TTOPLEVEL",paste(l[c(-1,-2)],collapse="/"),sep="")
+  lr <- paste("TTOPLEVEL",paste0(l[c(-1,-2)],collapse="/"))
   return(lr)
 }
 
-# do mot fix fastqc files
+# do not fix fastqc files
 gen.toplevel.menu <- function(menufile) {
-  # TODO run versions to get the software used
-  sink(menufile)
+  ## TODO run versions to get the software used
+    sink(menufile)
+    
   cat("<div style='position: relative;z-index=999;'>
-<!--Just to keep a record on the number of people using iRAP :) -->
+<!--Just to keep an estimate on the number of people using iRAP :) ",date()," -->
 <img style='border:0;width:1px;height:1px' src='http://cracs.fc.up.pt/~nf/hit.php' alt=''>
 <nav>
  <ul>
@@ -114,40 +193,60 @@ gen.toplevel.menu <- function(menufile) {
 	 <li><a href='TTOPLEVELversions.html'>Software</a></li>
      </ul>
   </li>")
-  if (file.exists(paste(name,"/report/jbrowse/index.html",sep=""))) {
+  if (file.exists(path2report("jbrowse/index.html"))) {
     cat(" <li><a href='TTOPLEVELjbrowse/index.html'>Genome Browser</a></li>
 ")
   }
-  if (file.exists(paste(name,"/report/qc.html",sep=""))) {
-  cat("
-  <li><a href='TTOPLEVELqc.html'>QC</a>
+    xx <- strsplit(opt$qc_dirs,"[ ,;]+")
+    if ( length(xx) > 1 )
+        cat("
+ <li><a name=''>QC</a>
+ <ul>")    
+    for ( f in xx ) {
+        #if (file.exists(f)) {
+        x <- path2user.label(f,"qc")
+        ## backwards compatibility
+        if ( length(xx) ==1 ) x$menu_label <- "QC"
+        ## TODO: change to support different filterings
+        cat(paste0("
+  <li><a href='TTOPLEVELirap_qc/qc.html'>",x$menu_label,"</a>
     <ul>
-      <li><a href='TTOPLEVELqc.html'>Summary</a></li>
-      <li><a href='TTOPLEVELqc.html#plot'>QC Filtering Summary</a></li>
+      <li><a href='TTOPLEVELirap_qc/qc.html'>",x$menu_label," - Summary</a></li>
+      <li><a href='TTOPLEVELirap_qc/qc.html#plot'>",x$menu_label," - QC Filtering Summary</a></li>
     </ul>
  </li>
-")
-  }
-  cat("
- <li><a name=''>Mapping</a>
- <ul>")
-  # Mappers
-  for ( m in strsplit(opt$map_dirs," +")[[1]] ) {
-    name=path2name(m)
-    html="
-   <li><a href='TTOPLEVELmapping/$mapper.html'>$mapper</a>
+",sep=""))            
+        #}       
+    }
+    if ( length(xx) > 1 ) cat(" </ul></li>")
+    #######################################################
+    ## Mappers
+    cat("<li><a name=''>Mapping</a><ul>")
+    nmappers <- 0
+    for ( m in strsplit(opt$map_dirs,"[ ;,\n]+")[[1]] ) {
+        x <- path2user.label(m,"mapper")
+        mapper <- x$tool
+        fp <- x$filepath
+        pipeline <- x$path        
+        if ( mapper != "none"  ) {
+            nmappers <- nmappers + 1
+            html <- "
+   <li><a href='TTOPLEVEL$fp/$mapper.html'>$pipeline</a>
     <ul>
-      <li><a href='TTOPLEVELmapping/$mapper.html#ms'>Mapping statistics</a></li>
-      <li><a href='TTOPLEVELmapping/$mapper.html#mp'>Mapping profile</a></li>
+      <li><a href='TTOPLEVEL$fp/$mapper.html#ms'>Mapping statistics</a></li>
+      <li><a href='TTOPLEVEL$fp/$mapper.html#mp'>Mapping profile</a></li>
     </ul>
    </li>
      "
-    html<-gsub("$mapper",name,html,fixed=T)
-    cat(html)
-  }
-  if ( length(strsplit(opt$map_dirs," +")[[1]])>1 ) {
-  # Add a menu entry with the comparison
-    html="
+            html<-gsub("$mapper",mapper,html,fixed=T)
+            html<-gsub("$pipeline",pipeline,html,fixed=T)
+            html<-gsub("$fp",fp,html,fixed=T)
+            cat(html)
+        }
+    }
+    if ( nmappers > 1 ) {
+        ## Add a menu entry with the comparison
+        html="
    <li><a href='TTOPLEVELmapping/comparison.html'>Comparison</a>
     <ul>
       <li><a href='TTOPLEVELmapping/comparison.html#overall'>Overall Comparison</a></li>
@@ -155,144 +254,136 @@ gen.toplevel.menu <- function(menufile) {
     </ul>
    </li>
      "
-    cat(html)
+        cat(html)
+    }
+    cat("</ul></li>")
+    #########################################
+    ## Quantification
+    cat("
+<li><a name=''>Quantification</a><ul>");   
+    ##quantification - add splicing?
+    quant.levels <- c("gene", "exon" , "transcript")
+    names(quant.levels) <- c("Gene", "Exon" , "Transcript")
+    ## go through each folder per level
+    ##
+    xx <- sort(strsplit(opt$quant_dirs,"[ ,;\n]+")[[1]])
+    for ( quant.level  in quant.levels ) {
+        xx2 <- grep(quant.level,xx,value=TRUE)
+        quant.level.label <- names(quant.levels)[quant.levels==quant.level]
+        first <- TRUE
+        cat("<li><a name=''>",quant.level.label,"</a>")
+        ## filter by tool
+        for (m in xx2) {
+            x <- path2user.label(dirname(m),"quant")
+            xf <- basename(m)
+            fp <- x$filepath
+            pipeline <- x$path        
+            ##name <- path2name(quant)
+            tool <- x$tool
+            ll <- strsplit(basename(m),"\\.")[[1]]
+            tool2 <- ll[3]
+            if ( grepl(paste0(".",tool2,".html"),m)) {
+                ## metric
+                metric <- ll[2]
+                norm <- ll[4]
+                if ( metric != "raw" ) { metric <- paste0(metric,"/",norm)
+                } else { metric <- "Counts" }
+                if (first)  cat("<ul>")
+                first <- FALSE
+                cat(paste0("<li><a href='TTOPLEVEL",fp,"/",xf,"'>",pipeline," (",metric,")</a></li>"))
+            }
+        }
+        if (!first)  cat("</ul>")
+        cat("
+     </li>")
+    }
+    cat("
+  </ul>
+ </li>
+")
+    #################################################
+    ## DE
+    cat("
+ <li><a name=''>DE</a><ul>")    
+    contrasts <- conf.get.value(conf,"contrasts")
+    if ( !is.null(contrasts) ) {
+        xx <- sort(strsplit(opt$de_dirs,"[ ,;\n]+")[[1]])
+        for (c in contrasts ) {            
+            cat(paste("
+             <li><a name=''>",c,"</a>
+              <ul>",sep=''))
+            ## gene, transcript, exon level DE
+            for ( quant.level  in quant.levels ) {
+                quant.level.label <- names(quant.levels)[quant.levels==quant.level]
+                cat("<li><a name=''>",quant.level.label,"</a>")
+                n.quant <- 0
+                for (d in xx ) {
+                    x <- path2user.label(d,"de")
+                    #cat(paste('<li><a name="">',name,'</a><ul>',sep=''))
+                    file <- paste0(d,"/",c,".",quant.level,"s_de.html")
+                    if (file.exists(file)) {
+                        if (n.quant==0)
+                            cat("<ul>")
+                        n.quant <- 1
+                        html.file.href <- paste0(x$filepath,"/",basename(file))
+                        cat(paste0("
+         	<li><a href='TTOPLEVEL",html.file.href,"'>",x$path," DE</a></li>"))
+                        
+                        ## GSE links
+                        ## GO terms
+                        gse.methods <- c("mean","median","sum","fisher","fisher-exact","stouffer","tailStrength","wilcoxon","reporter","page")                            
+                        for ( gse.method in gse.methods) {
+                            ##
+                            gse.go.file <- sub("_de.html",paste(".gse.piano.",gse.method,".go.html",sep=""),file)
+                            gse.go.html.file.href<- sub("_de.html",paste(".gse.piano.",gse.method,".go.html",sep=""),html.file.href)
+                            ## KEGG Pathway
+                            gse.kegg.file <- sub("_de.html",paste(".gse.piano.",gse.method,".kegg.html",sep=""),file)
+                            gse.kegg.html.file.href<- sub("_de.html",paste(".gse.piano.",gse.method,".kegg.html",sep=""),html.file.href)
+                            if ( file.exists(gse.go.file) || file.exists(gse.kegg.file) ) {
+                                ## GSE submenu
+                                cat(paste0("
+                        <li><a name=''>GSE ",gse.method,"</a>
+                          <ul>"))
+                                gse.files <- c(gse.go.file,gse.kegg.file)
+                                names(gse.files) <- c("GO","KEGG")
+                                html.gse.files <- c(gse.go.html.file.href,gse.kegg.html.file.href)
+                                names(html.gse.files) <- c("GO","KEGG")
+                                for ( f in names(gse.files)) {
+                                    if ( file.exists(gse.files[f]) ) {
+                                        html <- paste0("<li><a href='TTOPLEVEL",html.gse.files[f],"'>",f,"</a></li> ")
+                                        cat(html)
+                                    }
+                                }
+                                cat("
+                         </ul>
+                       </li>");              
+                            }
+                        }
+                    }
+                }
+                if (n.quant!=0)
+                    cat("</ul>")
+                cat("</li>");              
+      }
+      cat("</ul>");
+      cat("</li>");      
+    }
   }
   cat("
- </ul> 
- </li>
- <li><a name=''>Quantification</a>
-  <ul>
-");
-
-  #quantification
-  levels <- c("gene", "exon" , "transcript")
-  # list name=extension
-  metrics <- list(
-    "Counts"=c('raw'),
-    "FPKM"=c('fpkm'),
-    "Counts/lib size"=c('deseq_nlib')
-    )
-  metrics2ext <- list(
-    "Counts"=c(""),
-    "FPKM"=c(".irap",".stringtie",".nurd",".cufflinks1",".cufflinks2",".rsem"),
-    "Counts/lib size"=c('.irap')
-    )
-  
-  # Quantification
-  for (quant in strsplit(opt$quant_dirs," +")[[1]] ) {
-    name <- path2name(quant)
-    method <- basename(quant)
-    cat(paste('<li><a name="">',name,' </a><ul>',sep=''))
-    # check what was quantified (gene, exon or transcript)
-    for (level in levels) {
-      # check what metrics/normalization methods were used (rpkms, counts, nlib, )
-      cat(paste('<li><a name="">',level,' level </a>',sep=''))
-      cat("<ul>");
-      for (m in names(metrics)) {        
-        ext <- metrics[[m]][1]
-        for ( ext2 in metrics2ext[[m]]) {
-          tool <- gsub("^.","",ext2)
-          file <- paste("quant/",name,"/",level,"s.",ext,".",method,ext2,".html",sep="")
-          path2file <- paste(strsplit(quant,"/")[[1]][1],"/","report/",file,sep="")
-          
-          if (file.exists(path2file)) {
-            cat(paste("<li><a href='TTOPLEVEL",file,"'>",m," ",tool,"</a></li>",sep=""))
-          } else {
-            if ( tool=="") {
-              cat(paste("<li><a name=''>",m," X</a></li>",sep=""))
-            }
-          }
-        }
-      }
-      cat("</ul>");
-      cat("</li>");      
-    }
-    cat("</ul>");
-    cat("</li>");      
-  }
-  cat('     
-    </ul> 
- </li>
- <li><a name="">DE</a>
-  <ul>')
-
-
-  contrasts <- conf.get.value(conf,"contrasts")
-#  pinfo("!!! contrasts ",contrasts)
-  if ( !is.null(contrasts) ) {
-  # DE
-    for (d in strsplit(opt$de_dirs," +")[[1]] ) {
-      name <- path2name(d)      
-      cat(paste('<li><a name="">',name,'</a><ul>',sep=''))
-       # for each contrast
-      for (c in contrasts ) {
-        # Menu - contrast
-        cat(paste('<li><a name="">',c,'</a>',sep=''))
-        first <- TRUE
-        for (level in levels) {
-          # data file
-          file <- paste(d,"/",c,".",level,"s_de.tsv",sep="")
-          if (file.exists(file)) {
-            if (first) {
-              cat("<ul>");
-              first=FALSE;
-            }
-            html.file.href <- sub(".tsv",".html",sub("[^/]*/","",file))
-            html <- '
-         	<li><a href="TTOPLEVEL__FILE__">__LEVEL__ DE</a></li>
-'            
-            html<-gsub("__FILE__",html.file.href,html,fixed=T)
-            html<-gsub("__LEVEL__",level,html,fixed=T)
-            cat(html)
-            ############
-            # GSE links
-            # GO terms
-            gse.methods <- c("mean","median","sum","fisher","fisher-exact","stouffer","tailStrength","wilcoxon","reporter","page")
-
-            for ( gse.method in gse.methods) {
-              gse.go.file <- path2report(sub("_de.tsv",paste(".gse.piano.",gse.method,".go.html",sep=""),file))
-# KEGG Pathway
-              gse.kegg.file <- path2report(sub("_de.tsv",paste(".gse.piano.",gse.method,".kegg.html",sep=""),file))
-              if ( file.exists(gse.go.file) || file.exists(gse.kegg.file) ) {
-# GSE submenu
-                cat(paste('<li><a name="">GSE ',gse.method,'</a><ul>',sep=''))
-                gse.files <- c(gse.go.file,gse.kegg.file)
-                names(gse.files) <- c("GO","KEGG")
-                for ( f in names(gse.files)) {
-                  if ( file.exists(gse.files[f]) ) {
-                    html <- paste("<li><a href=",path2reporthtml(gse.files[f]),">",f,"</a></li> ",sep="")
-                    cat(html)
-                  }
-                }
-                cat("</ul>");              
-              }
-            }
-          }
-        }
-        if (!first) {
-          cat("</ul>");
-        }
-        cat("</li>");      
-      }
-      cat("</ul>");
-      cat("</li>");      
-    }
-  }
-  cat('
    </ul>
   </li>
-  <li><a href="TTOPLEVELabout.html">About IRAP</a></li>
+  <li><a href='TTOPLEVELabout.html'>About IRAP</a></li>
   </ul>
-</nav></div>')
+</nav></div>")
   sink()
 }
 
 
 # Toplevel menu - needs to be updated to show the links to new results 
 if (!opt$reuse_menu) {
-  pinfo("Generating menu.html...")
- gen.toplevel.menu(paste(opt$rep_dir,"menu.html",sep="/"))
-  pinfo("Generating menu.html...done.")
+    pinfo("Generating menu.html...")
+    gen.toplevel.menu(paste(opt$rep_dir,"menu.html",sep="/"))
+    pinfo("Generating menu.html...done.")
 }
 
 #save.image()

@@ -18,7 +18,6 @@
 # along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-#    $Id$
 # =========================================================
 
 ###############################################################
@@ -36,7 +35,7 @@ status.file <- args[2]
 out.file <- args[3]
 out.dir <- ""
 # other variables
-stages <- c("stage1","stage2","stage3","stage4")
+stages <- c("stage1","stage2","stage3","stage4","stage5")
 print.html <- FALSE
 pinfo("Usage: irap_report_status conf.file status.file.csv [file.html]")
 
@@ -89,7 +88,7 @@ if ( print.html ) {
 #  HTMLInitFile( outdir=out.dir, filename=out.file, title=paste("",sep=""), CSSFile=basename(irap_css_file), useGrid=FALSE)
   system(paste("cp ",irap_css_file," ",out.dir,sep=""));
   pinfo("HTML file opened")
-  HTML.pprint.conf(conf,exps)
+  ##HTML.pprint.conf(conf,exps)
   HTML( "<h1>Completion Status</h1>" )
 }
 
@@ -129,7 +128,7 @@ for ( n in exps ) {
     }
   }
 }
-print(df)
+#print(df)
 if ( print.html ) {
   HTML.pprint.table(df,"Stage1 Status")
 }
@@ -178,9 +177,25 @@ if ( nrow(stage4.data) == 0 ) {
   sum4.perc.table <- xtabs(comp.perc~exp+de, data=sum4.perc)
   print(sum4.perc.table)
   if ( print.html ) {
-    HTML.pprint.table(sum0.perc.table,"Stage4 Status")
+    HTML.pprint.table(sum4.perc.table,"Stage4 Status")
   }
 }
+
+
+pinfo("Stage4 status")
+stage5.data <- data[data[,"stage"]=="stage5",]
+if ( nrow(stage5.data) == 0 ) {
+  pinfo("Stage5 disabled?")
+} else {
+  sum5 <-aggregate(x=stage5.data[,c("exp.files","comp.files","comp.perc")], by=list(exp=stage5.data$exp,stage=stage5.data$stage,de=stage5.data$de),FUN=sum)
+  sum5.perc <- sum5[,c("exp","de","comp.perc")]
+  sum5.perc$de<-factor(sum5.perc$de)
+  sum5.perc.table <- xtabs(comp.perc~exp+de, data=sum5.perc)
+  if ( print.html ) {
+    HTML.pprint.table(sum5.perc.table,"Stage5 Status")
+  }
+}
+
 
 if ( print.html ) {
   irap.HTMLEnd()
