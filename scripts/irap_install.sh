@@ -416,7 +416,7 @@ FASTX_URL=http://hannonlab.cshl.edu/fastx_toolkit/$FASTX_FILE
 
 
 # 0.10.1->0.11.4->0.11.5
-FASTQC_VERSION=0.11.5
+FASTQC_VERSION=0.11.7
 FASTQC_FILE=fastqc_v${FASTQC_VERSION}.zip
 FASTQC_URL=http://www.bioinformatics.babraham.ac.uk/projects/fastqc/$FASTQC_FILE
 
