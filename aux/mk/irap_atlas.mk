@@ -22,7 +22,7 @@
 # deprecated
 ifdef atlas_run
 $(info * Atlas mode enabled)
-SETUP_DATA_FILES+=$(feat_mapping_file)
+SETUP_DATA_FILES+=$(feat_mapping_files)
 endif
 
 # Reduce the resolution of some images
