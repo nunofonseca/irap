@@ -43,6 +43,9 @@ if ( length(opt$labels.v) > 2 ) {
 }
 system(paste("mkdir -p ",opt$out));
 data <- quant.load(opt$tsv_file)
+
+if ( opt$feature == "transcript" && is.null(opt$mapping) ) stop("missing g2t parameter")
+
 ## debug
 pdebug.save.state("irap_DE_deseq2","1")
 ## 
@@ -152,6 +155,16 @@ if (  opt$feature=="gene" && !is.null(opt$annotation) && !is.na(opt$annotation))
 }
 
 res.annot <- res.annot[order(res.annot$padj),];
+
+if ( opt$feature == "transcript" ) {
+    ## include the geneid
+    pinfo("Transcripts per gene:")
+    print(summary(table(opt$mapping$gene)))
+    t2g <- opt$mapping$gene
+    names(t2g) <- opt$mapping$trans
+    res.annot$geneid <- t2g[res.annot$id]
+}
+
 
 save.de2tsv(res.annot,ofile.prefix=opt$out)
 # save the objects
