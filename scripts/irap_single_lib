@@ -716,7 +716,7 @@ cp -a $TSV $odir/$libname_noprefix.data_info.tsv
 pinfo "Generating  $odir/versions.tsv..."
 $cmd $irap_single_lib_options  $irap_options $odir/irap.versions.tsv
 pinfo "Generating  $odir/versions.tsv...done"
-cp -a $odir/versions.tsv $odir/$libname_noprefix.versions.tsv
+cp -a $odir/irap.versions.tsv $odir/$libname_noprefix.versions.tsv
 pinfo "Generating  $odir/$libname_noprefix.versions.tsv...done"
 # keep versions.tsv and irap_versions.tsv for backwards compatibility
 
