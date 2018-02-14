@@ -96,7 +96,7 @@ endef
 # 3=de tsv file
 # 4=feature type
 define run_deseq=
-irap_DE_deseq --tsv $(1) --min $(de_min_count) --contrasts "$(call get_contrast_def,$(2))" --labels "$(call get_contrast_labels,$(2))" --out $(3) $(call get_de_annot) $(call get_de_annot_genes_only) $(if $(technical.replicates),--tech-rep "$(technical.replicates)") --feature $(4) --min $($(4)_de_min_count)
+irap_DE_deseq --tsv $(1)  --contrasts "$(call get_contrast_def,$(2))" --labels "$(call get_contrast_labels,$(2))" --out $(3) $(call get_de_annot) $(call get_de_annot_genes_only) $(if $(technical.replicates),--tech-rep "$(technical.replicates)") --feature $(4) --min $($(4)_de_min_count)
 endef
 
 #************
@@ -168,13 +168,13 @@ $(de_toplevel_folder1)/cuffdiff2_nd/%.genes_de.tsv: $(de_toplevel_folder1)/$(de_
 $(tde_toplevel_folder1)/cuffdiff1/%.transcripts_de.tsv: $(de_toplevel_folder1)/$(de_method)/%.$(de_method)/isoform_exp.diff
 	cp $< $@.tmp && mv $@.tmp $@
 
-$(tde_toplevel_folder1)/cuffdiff2/%_transcripts.de.tsv: $(de_toplevel_folder1)/$(de_method)/%.$(de_method)/isoform_exp.diff
+$(tde_toplevel_folder1)/cuffdiff2/%_transcripts_de.tsv: $(de_toplevel_folder1)/$(de_method)/%.$(de_method)/isoform_exp.diff
 	cp $< $@.tmp && mv $@.tmp $@
 
-$(tde_toplevel_folder1)/cuffdiff1_nd/%_transcripts.de.tsv: $(de_toplevel_folder1)/$(de_method)/%.$(de_method)/isoform_exp.diff
+$(tde_toplevel_folder1)/cuffdiff1_nd/%_transcripts_de.tsv: $(de_toplevel_folder1)/$(de_method)/%.$(de_method)/isoform_exp.diff
 	cp $< $@.tmp && mv $@.tmp $@
 
-$(tde_toplevel_folder1)/cuffdiff2_nd/%_transcripts.de.tsv: $(de_toplevel_folder1)/$(de_method)/%.$(de_method)/isoform_exp.diff
+$(tde_toplevel_folder1)/cuffdiff2_nd/%_transcripts_de.tsv: $(de_toplevel_folder1)/$(de_method)/%.$(de_method)/isoform_exp.diff
 	cp $< $@.tmp && mv $@.tmp $@
 
 # b) Differential analysis with gene and transcript discovery
@@ -217,7 +217,7 @@ $(tde_toplevel_folder1)/deseq2/%.transcripts_de.tsv $(tde_toplevel_folder1)/dese
 $(de_toplevel_folder1)/edger/%.genes_de.tsv $(de_toplevel_folder1)/edger/%.genes_de.Rdata: $(quant_toplevel_folder)/genes.raw.$(quant_method).tsv $(annot_tsv) 
 	$(call run_edger,$<,$*,$(@D)/$*.edger,gene) && mv $(@D)/$*.edger/de.tsv $(@D)/$*.genes_de.tsv && mv $(@D)/$*.edger/de.Rdata $(@D)/$*.genes_de.Rdata
 
-$(tde_toplevel_folder1)/edger/%.transcripts_de.tsv $(tde_toplevel_folder1)/edger/%.transcripts_de.Rdata: $(quant_toplevel_folder1)/transcripts.raw.$(quant_method).tsv $(annot_tsv) 
+$(tde_toplevel_folder1)/edger/%.transcripts_de.tsv $(tde_toplevel_folder1)/edger/%.transcripts_de.Rdata: $(quant_toplevel_folder)/transcripts.raw.$(quant_method).tsv $(annot_tsv)  $(mapTrans2gene)
 	$(call run_edger,$<,$*,$(@D)/$*.edger,transcript) && mv $(@D)/$*.edger/de.tsv $(@D)/$*.transcripts_de.tsv && mv $(@D)/$*.edger/de.Rdata $(@D)/$*.transcripts_de.Rdata
 
 # VOOM

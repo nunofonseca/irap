@@ -615,6 +615,10 @@ ifeq ($(TARGETS),report)
 override gen_html_report:=y
 endif
 
+ifeq ($(TARGETS),qc_report)
+override gen_html_report:=y
+endif
+
 ifdef do_stage0_only
 skip_lib_validation=no
 endif
@@ -927,6 +931,10 @@ qc_modes=on off report
 ifeq ($(qc_modes),$(filter-out $(qc),$(qc_modes)))
 $(call p_error,Invalid qc/qual_filtering value)
 endif
+
+$(info *	qc/filter=$(qc))
+
+
 ##############
 # Fine tune QC
 
@@ -1788,7 +1796,7 @@ endif
 ifneq ($(transcript_de_method),none)
 $(info ** Transcript level DE: $(call pprint_path,$(tde_toplevel_folder)))
 endif
-ifneq ($(transcript_de_method),none)
+ifneq ($(exon_de_method),none)
 $(info ** Exon level DE: $(call pprint_path,$(ede_toplevel_folder)))
 endif
 $(info --------------------------------------------------------)

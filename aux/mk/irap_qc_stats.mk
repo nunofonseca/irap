@@ -52,7 +52,7 @@ endif
 # Preprocessing of the input files (.fastq/.bam), QC, filtering
 
 define make-pe-qc-rule=
-$(call lib2filt_folder,$(1))$(1)_1.f.fastq.gz $(call lib2filt_folder,$(1))$(1)_2.f.fastq.gz $(call lib2filt_folder,$(1))$(1)_1.f.fastqc.tsv $(call lib2filt_folder,$(1))$(1)_1.f.csv: $(raw_data_dir)$($(1)_dir)/$(notdir $(word 1,$($(1))))  $(raw_data_dir)$($(1)_dir)/$(notdir $(word 2,$($(1))))
+$(call lib2filt_folder,$(1))$(1)_1.f.fastq.gz $(call lib2filt_folder,$(1))$(1)_2.f.fastq.gz $(call lib2filt_folder,$(1))$(1)_1.f.fastqc.tsv $(call lib2filt_folder,$(1))$(1)_2.f.fastqc.tsv $(call lib2filt_folder,$(1))$(1)_1.f.csv $(call lib2filt_folder,$(1))$(1)_2.f.csv: $(raw_data_dir)$($(1)_dir)/$(notdir $(word 1,$($(1))))  $(raw_data_dir)$($(1)_dir)/$(notdir $(word 2,$($(1))))
 	$$(call p_info,Filtering $(call fix_libname,$(1)))
 	$$(call do_quality_filtering_and_report,$(call fix_libname,$(1)),$(raw_data_dir)$($(1)_dir),$$(@D),) || (rm -f $(call lib2filt_folder,$(1))$(1)_1.f.fastq.gz && exit 1)
 endef
@@ -97,6 +97,7 @@ else
 $(mapper_toplevel_folder)/libs_qc.tsv:
 	touch $@
 
+## mapper
 endif
 
 ## the reference in the BAMs generated with kallisto is not the genome
@@ -182,6 +183,12 @@ endif
 
 ######################################################################
 # qc=none|on|off
+STAGE1_OUT_FILES+=$(qc_toplevel_folder)/fastq_qc_report.tsv
+STAGE1_TARGETS+=$(qc_toplevel_folder)/fastq_qc_report.tsv
+
+STAGE1_OUT_FILES+=$(qc_toplevel_folder)/qc.tsv
+STAGE1_TARGETS+=$(qc_toplevel_folder)/qc.tsv
+
 ifeq ($(qc),off)
 $(qc_toplevel_folder)/qc.html $(qc_toplevel_folder)/qc.tsv: 
 
@@ -198,40 +205,21 @@ else
 ## qc=on |report
 $(qc_toplevel_folder)/qc.html $(qc_toplevel_folder)/qc.tsv: $(conf) $(call must_exist,$(auxdata_toplevel_folder)/)  $(qc_toplevel_folder)/fastq_qc_report.tsv $(qc_toplevel_folder)/qc_report.csv
 	irap_report_qc $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --out_dir $(qc_toplevel_folder) --qc_dir $(qc_toplevel_folder) --css $(qc2report_folder)/$(CSS_FILE) || ( rm -f $@ && exit 1)
-endif
-
-STAGE2_OUT_FILES+=$(qc_toplevel_folder)/qc.tsv
-STAGE2_TARGETS+=$(qc_toplevel_folder)/qc.tsv
-
-FASTQC_REPORT_FILES:=$(foreach p,$(se),$(call lib2filt_folder,$(p))$(p).f.fastqc.tsv) $(foreach p,$(pe),$(call lib2filt_folder,$(p))$(p)_1.f.fastqc.tsv)
 
 
-STAGE2_OUT_FILES+=$(qc_toplevel_folder)/fastq_qc_report.tsv
-STAGE2_TARGETS+=$(qc_toplevel_folder)/fastq_qc_report.tsv
+FASTQC_REPORT_FILES:=$(foreach p,$(se),$(call lib2filt_folder,$(p))$(p).f.fastqc.tsv) $(foreach p,$(pe),$(call lib2filt_folder,$(p))$(p)_1.f.fastqc.tsv $(call lib2filt_folder,$(p))$(p)_2.f.fastqc.tsv)
 
-FASTQC_REPORT_FILES:=$(foreach p,$(pe),$(qc_toplevel_folder)/$($(p)_dir)/$(p)_1.f.fastqc.tsv $(qc_toplevel_folder)/$($(p)_dir)/$(p)_2.f.fastqc.tsv) $(foreach p,$(se),$(qc_toplevel_folder)/$($(p)_dir)$(p).f.fastqc.tsv)
-QC_CSV_FILES:=$(foreach p,$(pe),$(qc_toplevel_folder)/$($(p)_dir)/$(p)_1.f.csv $(qc_toplevel_folder)/$($(p)_dir)/$(p)_2.f.csv) $(foreach p,$(se),$(qc_toplevel_folder)/$($(p)_dir)$(p).f.csv)
+QC_CSV_FILES:=$(foreach p,$(se),$(call lib2filt_folder,$(p))$(p).f.csv) $(foreach p,$(pe),$(call lib2filt_folder,$(p))$(p)_1.f.csv $(call lib2filt_folder,$(p))$(p)_2.f.csv)
 
 print_qc_dirs_files:  $(QC_CSV_FILES) $(FASTQC_REPORT_FILES) $(foreach p,$(pe) $(se),$(call quiet_ls,$(qc_toplevel_folder)/$($(p)_dir)/*.zip))
 	@echo $^
 
-ifeq  ($(qc),report)
-## nothing to do
-##$(info $(FASTQC_REPORT_FILES))
-$(qc_toplevel_folder)/fastq_qc_report.tsv:  $(FASTQC_REPORT_FILES)
-	$(call pass_args_stdin,irap_merge2tsv,$@.tmp, --in='$(subst $(space),;,$^)'  --out $@.tmp) && mv $@.tmp $@
-
-$(qc_toplevel_folder)/qc_report.csv:  $(QC_CSV_FILES)
-	cat $^ > $@.tmp && mv $@.tmp $@	
-
-else
-ifeq ($(qc),on)
 $(qc_toplevel_folder)/fastq_qc_report.tsv:  $(FASTQC_REPORT_FILES)
 	$(call pass_args_stdin,irap_merge2tsv,$@.tmp, --in='$(subst $(space),;,$^)'  --out $@.tmp) && mv $@.tmp $@
 
 $(qc_toplevel_folder)/qc_report.csv:  $(QC_CSV_FILES)
 	cat $^ > $@.tmp && mv $@.tmp $@
-endif
+
 ## qc=on |report
 endif
 
