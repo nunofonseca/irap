@@ -358,14 +358,16 @@ ifdef lib.info
 lib_info=$(lib.info)
 endif
 
+
 ifdef lib_info
  $(call file_exists,$(lib_info))
  $(info * Trying to load information about the libraries - file $(lib_info)...)
  include $(lib_info)
  $(info * Information about the libraries loaded.)
 endif
+lib_info?=
 
-
+get_lib_info_option=$(if $(lib_info),--lib_info $(lib_info),)
 
 ###############################################
 # Load some definitions

@@ -358,10 +358,11 @@ phony_targets+=end_report
 end_report: $(report_toplevel_folder)/index.html $(call must_exist,$(report_toplevel_folder)/irap.css)
 
 
+
 ifeq ($(report_qc_only),y)
-$(report_toplevel_folder)/index.html: $(conf) $(info_targets) $(qc_html_files) $(call rep_browse,$(report_toplevel_folder)/jbrowse/index.html)  $(report_toplevel_folder)/about.html $(call must_exist,$(report_toplevel_folder)/irap.css) $(report_toplevel_folder)/menu.css
+$(report_toplevel_folder)/index.html: $(conf) $(info_targets) $(qc_html_files) $(call rep_browse,$(report_toplevel_folder)/jbrowse/index.html)  $(report_toplevel_folder)/about.html $(call must_exist,$(report_toplevel_folder)/irap.css) $(report_toplevel_folder)/menu.css $(lib_info)
 	cp  $(report_toplevel_folder)/info.html $@ &&
-	irap_report_main $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(report_toplevel_folder) -m "$(REPORT_MAPPERS_DIRS)" -q "$(REPORT_QUANT_FILES)" -d "$(REPORT_DE_DIRS)" --qc_dirs "$(REPORT_QC_DIRS)" &&
+	irap_report_main $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --rep_dir $(report_toplevel_folder) -m "$(REPORT_MAPPERS_DIRS)" -q "$(REPORT_QUANT_FILES)" -d "$(REPORT_DE_DIRS)" --qc_dirs "$(REPORT_QC_DIRS)" $(call get_lib_info_option) &&
 	sleep 2 &&
 	touch $@
 else

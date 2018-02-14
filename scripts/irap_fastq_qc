@@ -970,9 +970,9 @@ endif
 
 # clean intermediate files
 clean:
-	rm -f $(out_prefix).* $(f1_n).filter{1,2,3}.* $(f1_n).*
+	rm -rf $(out_prefix).* $(f1_n).filter{1,2,3}.* $(f1_n).*
 ifeq ($(pe_data),1)
-	rm -f $(out_prefix).* $(f2_n).filter{1,2,3}.* $(f2_n).*
+	rm -fr $(out_prefix).* $(f2_n).filter{1,2,3}.* $(f2_n).*
 endif
 
 
