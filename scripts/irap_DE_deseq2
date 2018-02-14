@@ -133,7 +133,7 @@ if ( length(bCols) == 1 ) {
 }
 res <- cbind(res,baseMeanA)
 res <- cbind(res,baseMeanB)
-# report code expects foldChange column
+# report code expects foldChange column B/A
 foldChange <- 2^res$log2FoldChange
 res <- cbind(res,foldChange)
 #print(colnames(res))
