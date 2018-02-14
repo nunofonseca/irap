@@ -27,7 +27,7 @@ gen.qc.plot <- function(df,cols=NULL,ylab="Number of reads") {
     cols <- c("green","yellow","purple","blue","red")
   }
                                         #rainbow(length(legend))
-  bp.data <- t(as.matrix(df[,legend]))
+  bp.data <- t(as.matrix(df[,legend,drop=FALSE]))
   rownames(bp.data) <- legend
   n <- length(colnames(bp.data))
   cex <- NULL

@@ -39,10 +39,11 @@ option_list <- list(
     make_option(c("-q", "--quant_dirs"), type="character", dest="quant_dirs", default="",help="directories with the quantification results"),
     make_option(c( "--qc_dirs"), type="character", dest="qc_dirs", default="",help="Directory with the QC results"),
     make_option(c("-d", "--de_dirs"), type="character", dest="de_dirs", default="",help="Directory with the DE results"),
+    make_option(c("--lib_info"), type="character", dest="lib_info",default="",help="path to the .info file (if used in iRAP)"),
     make_option(c("--reuse_menu"), action="store_true", default=FALSE, help="Reuse menu.html file")
 )
 multiple.options = NULL
-filenames <- c("conf_file") ;#filenames that must exist (if defined)
+filenames <- c("conf_file","lib_info") ;#filenames that must exist (if defined)
 mandatory <- c("conf_file","rep_dir",'map_dirs','de_dirs','quant_dirs','qc_dirs')
 opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
 
@@ -56,7 +57,7 @@ se <-
 pinfo("conf_file=",opt$conf_file)
 
 # 
-conf <- load.configuration.file(opt$conf_file)
+conf <- load.configuration.file(opt$conf_file,lib.info-opt$lib_info)
 # set the variables
 import.conf.variables(conf)
 

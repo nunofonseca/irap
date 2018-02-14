@@ -325,6 +325,36 @@ if [ ! -e  $odir ]; then
     mkdir -p $odir
 fi
 
+
+####################################
+# 
+# Check if the files exist
+if [ ! -e $f1 ] ; then
+    perror "File $f1 not found"    
+    exit 1
+fi
+
+if [ "$f2-" != "-" ] && [ ! -e $f2 ] ; then
+    perror "File $f1 not found"    
+    exit 1
+fi
+
+is_relative_path $f1 "-1"
+# FullPath to $f1
+fp_f1=`readlink -f $f1`
+f1_bn=`basename $f1`
+if [ "$f2-" == "-" ]; then
+    fp_f2=
+else
+    fp_f2=`readlink -f $f2`
+    f2_bn=`basename $f2`
+    is_relative_path $f2 "-2"
+fi
+
+set -e
+
+
+INFO_FILE=$TARGET_DIR/$f1_bn.info
 irap_single_lib_options="conf=$conf data_dir=$DATA_DIR $libs lib.info=$INFO_FILE max_mem=$mem max_threads=$threads raw_folder=single_lib "
 
 ####################################
@@ -356,33 +386,6 @@ if [ "$tidy_up_only" == "y" ]; then
     fi    
     exit 0
 fi
-
-####################################
-# 
-# Check if the files exist
-if [ ! -e $f1 ] ; then
-    perror "File $f1 not found"    
-    exit 1
-fi
-
-if [ "$f2-" != "-" ] && [ ! -e $f2 ] ; then
-    perror "File $f1 not found"    
-    exit 1
-fi
-
-is_relative_path $f1 "-1"
-# FullPath to $f1
-fp_f1=`readlink -f $f1`
-f1_bn=`basename $f1`
-if [ "$f2-" == "-" ]; then
-    fp_f2=
-else
-    fp_f2=`readlink -f $f2`
-    f2_bn=`basename $f2`
-    is_relative_path $f2 "-2"
-fi
-
-set -e
 
 ##################################################################
 # place the tarball in the correct folder
@@ -512,7 +515,7 @@ if [ $do_info_only == "y" ]; then
     exit 0
 fi    
 popd
-INFO_FILE=$TARGET_DIR/$f1_bn.info
+
 sl_init_files="$sl_init_files $INFO_FILE"
 
 set +e

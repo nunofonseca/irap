@@ -41,11 +41,12 @@ option_list <- list(
   make_option(c("-o", "--out_dir"), type="character", dest="out_dir",help="path to iRAP's report directory (output)"),
   make_option(c("-q", "--qc_dir"), type="character", dest="qc_dir",help="path to iRAP's toplevel qc directory"),
   make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
+  make_option(c("--lib_info"), type="character", dest="lib_info",default="",help="path to the .info file (if used in iRAP)"),
   make_option(c("-t","--html"),type="character",dest="html_template",default=html.temp,help="HTML template file [default: %default]")
 )
 
 multiple.options = list()
-filenames <- c("conf.file","html_template") ;#filenames that must exist (if defined)
+filenames <- c("conf.file","html_template","lib_info") ;#filenames that must exist (if defined)
 
 # check multiple options values
 mandatory <- c("conf.file","qc_dir","out_dir","html_template")
@@ -56,6 +57,7 @@ irap.css <- opt$css
 pdebug.enabled <- opt$debug
 pinfo("Parameters parsed.")
 
+
 ###########################
 # Functions
 ###########################
@@ -65,6 +67,7 @@ raw.summary.dataframe <- function(conf,qc.sum,fastqc.sum) {
 
     vv <- c("Lib","File", "length","qual","strand","ins","sd", "Quality","Contamination","Ns","Unpaired","Passed","reads")
 
+    ## In some cases (irap_single_lib) there may be no se/pe in the conf file
     pe <- conf.get.value(conf,"pe")
     se <- conf.get.value(conf,"se")
     
@@ -74,7 +77,6 @@ raw.summary.dataframe <- function(conf,qc.sum,fastqc.sum) {
     filt.stats <- qc.sum
     filt.stats[,vv] <- NA
     ## add lib name to qc.sum
-    
     libs1.se <- gsub("\\.(fastq|fq|cram|bam).*","",unlist(lapply(se,conf.get.value,conf=conf)))
     names(libs1.se) <- se
 
@@ -84,8 +86,8 @@ raw.summary.dataframe <- function(conf,qc.sum,fastqc.sum) {
     #names(xx) <- gsub("$","_1",gsub("$","_2",names(xx)))
 
     libs1.pe <- xx
-    ##libs1 <- c(libs1.se,gsub("_1$","/1",libs1.pe),gsub("_1$","/2",libs1.pe))
-    ##names(libs1) <- c(se,gsub("$","/1",names(libs1.pe)),gsub("$","/2",names(libs1.pe)))
+    #libs1 <- c(libs1.se,gsub("_1$","/1",libs1.pe),gsub("_1$","/2",libs1.pe))
+    #names(libs1) <- c(se,gsub("$","/1",names(libs1.pe)),gsub("$","/2",names(libs1.pe)))
     #print(xx)
     
     libs1 <- c(libs1.se,gsub("$","_1",libs1.pe),gsub("$","_2",libs1.pe))
@@ -123,8 +125,11 @@ raw.summary.dataframe <- function(conf,qc.sum,fastqc.sum) {
     rownames(filt.stats) <-  filt.stats$Lib
     ## match the two matrices
     i <- intersect(rownames(fastqc.sum),rownames(filt.stats))
+    print(rownames(fastqc.sum))
+    print("-----------")
+    print(rownames(filt.stats))
     if ( length(i) == 0 ) {
-        perror("To complete")
+        perror("WIP")
         q(status=1)
         ## qc=off
         ## try to use the file column without the .f suffix
@@ -302,7 +307,8 @@ path2qual.report <- function(dir.name,file.prefix) {
 # load configuration file
 pinfo("conf_file=",opt$conf.file)
 #
-conf <- load.configuration.file(opt$conf.file)
+conf <- load.configuration.file(opt$conf.file,lib.info=opt$lib_info)
+
 #
 pinfo("Configuration file ",opt$conf.file," loaded.")
 
@@ -341,9 +347,10 @@ if ( is.null(fastqc.sum) ) {
 
 new.cols <- gsub(".f$","",gsub("_2.f$","_2",gsub("_1.f$","_1",colnames(fastqc.sum))))
 
+orig.cols <- colnames(fastqc.sum)
 colnames(fastqc.sum) <- new.cols
-rownames(fastqc.sum) <- fastqc.sum[,1]
-fastqc.sum <- fastqc.sum[,-1]
+rownames(fastqc.sum) <- as.character(fastqc.sum[,1])
+fastqc.sum <- fastqc.sum[,-1,drop=FALSE]
 fastqc.sum <- t(fastqc.sum)
 ###
 qc.sum.file <- paste(qc.dir,"/qc_report.csv",sep="")
@@ -355,8 +362,25 @@ pinfo("Loading ",qc.sum.file)
 qc.sum <- read.table(qc.sum.file,sep=",")
 pinfo("Loading ",qc.sum.file," done.")
 
+###################################
+## In some cases (irap_single_lib) there may be no se/pe in the conf file
+## Fix this...
+## pe <- conf.get.value(conf,"pe")
+## se <- conf.get.value(conf,"se")
+
+## if ( is.null(pe) && is.null(se) ) {
+##     pwarning("No se/pe values in conf. file - assuming single lib run")
+##     xx <- gsub("(_[12])*\\.f$","",basename(orig.cols[2]))
+##     print(xx)
+##     if ( grepl("_[12]\\.f$",orig.cols[2]) ) {
+##         conf <- conf.set.value("pe",c(xx),conf)
+##     } else {
+##         conf <- conf.set.value("se",c(xx),conf)
+##     }
+## }
+
 ############################
-# reads info
+## reads info
 df <- raw.summary.dataframe(conf,qc.sum,fastqc.sum)
 
 ############################
@@ -427,7 +451,7 @@ pdebug.save.state("irap_report_qc","p3")
 table1.rows <- c("Passed","Reads failed quality filter","Reads failed contamination filter","Reads failed uncalled bases filter", "Reads failed unmated reads filter")
 # 
 table1 <- quality.details.matrix(etdf,conf)
-out.table1 <- table1[table1.rows,]
+out.table1 <- table1[table1.rows,,drop=FALSE]
 out.table1 <- gsub(conf.get.value(conf,"report.dir"),"",out.table1)
 pdebug.save.state("irap_report_qc","p4")
 
