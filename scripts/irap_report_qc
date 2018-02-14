@@ -360,7 +360,7 @@ pinfo("Loading ",qc.sum.file," done.")
 df <- raw.summary.dataframe(conf,qc.sum,fastqc.sum)
 
 ############################
-
+pdebug.save.state("irap_report_qc","p1a")
 pinfo("Expanding table..")
 etdf <- qc.expand.table(t(df),conf)
 pdebug.save.state("irap_report_qc","p2")
@@ -368,7 +368,6 @@ pdebug.save.state("irap_report_qc","p2")
 
 ############################
 ## pprint names
-
 x <- rownames(etdf)
 names(x) <- x
 
@@ -392,9 +391,13 @@ x["Basic Statistics"] <- "fastqc:status"
 for (f in c("Per base sequence quality","Per sequence quality scores","Per base sequence content","Per sequence GC content","Per base N content","Sequence Length Distribution","Sequence Duplication Levels","Overrepresented sequences","Adapter Content","Kmer Content"))
     x[f] <- paste0("fastqc:",f)
 
-rownames(etdf) <- as.character(x)
+## common
+rows.sel <- intersect(names(x),rownames(etdf))
+#length(rows.sel)
+#x <- x[rows.sel]
+etdf <- etdf[rows.sel,,drop=FALSE]
+rownames(etdf) <- as.character(x[rows.sel])
 ## reorder the rows
-
 logic.order <- c("Lib",
                  "Read Length","Quality encoding","Strand","Insert Size","Insert Size sd",
                  "Reads",
@@ -408,8 +411,7 @@ logic.order <- c("Lib",
                  )
 
 #print(logic.order[!logic.order%in%rownames(etdf)])
-etdf <- etdf[logic.order,,drop=FALSE]
-
+etdf <- etdf[logic.order[logic.order%in%rownames(etdf)],,drop=FALSE]
 
 ############################
 # save stats file
@@ -470,4 +472,5 @@ if ( IRAP.DIR == "" ) {
   IRAP.DIR="/home/nf/Research/Projects/WIP/EREAP/irap"
   Sys.setenv(IRAP_DIR=IRAP.DIR)
 }
+setwd("~/Research/Projects/WIP/EREAP/irap_tests")
 
