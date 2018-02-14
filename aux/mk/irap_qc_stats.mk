@@ -204,7 +204,7 @@ print_qc_dirs_files:
 else
 ## qc=on |report
 $(qc_toplevel_folder)/qc.html $(qc_toplevel_folder)/qc.tsv: $(conf) $(call must_exist,$(auxdata_toplevel_folder)/)  $(qc_toplevel_folder)/fastq_qc_report.tsv $(qc_toplevel_folder)/qc_report.csv
-	irap_report_qc $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --out_dir $(qc_toplevel_folder) --qc_dir $(qc_toplevel_folder) --css $(qc2report_folder)/$(CSS_FILE) || ( rm -f $@ && exit 1)
+	irap_report_qc $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --out_dir $(qc_toplevel_folder) --qc_dir $(qc_toplevel_folder) --css $(qc_report_folder)/$(CSS_FILE) || ( rm -f $@ && exit 1)
 
 
 FASTQC_REPORT_FILES:=$(foreach p,$(se),$(call lib2filt_folder,$(p))$(p).f.fastqc.tsv) $(foreach p,$(pe),$(call lib2filt_folder,$(p))$(p)_1.f.fastqc.tsv $(call lib2filt_folder,$(p))$(p)_2.f.fastqc.tsv)
