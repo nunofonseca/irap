@@ -320,7 +320,7 @@ m('none',_,'',_).
 all_mappers(X):-all(M,m(M,_,_,_),X).
 all_quant([htseq1,htseq2,basic,flux_cap,cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,nurd,stringtie,stringtie_nd,rsem,kallisto,salmon,umi_count,umis,featurecounts]).
 all_quant_norm([flux_cap,cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,none,deseq,stringtie,stringtie_nd,rsem,irap]).
-all_tquant([cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,nurd,stringtie,stringtie_nd,rsem,kallisto,umi_count]).
+all_tquant([cufflinks1,cufflinks2,cufflinks1_nd,cufflinks2_nd,nurd,stringtie,stringtie_nd,rsem,kallisto,salmon,umi_count]).
 all_de([deseq,edger,voom,cuffdiff1,cuffdiff2,cuffdiff1_nd,cuffdiff2_nd,deseq2,ebseq,none]).
 all_ede([dexseq]).
 

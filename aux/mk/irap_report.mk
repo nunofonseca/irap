@@ -346,8 +346,6 @@ gse_report_files:
 	echo $(call get_gse_html_files)
 
 
-
-
 $(report_toplevel_folder)/about.html: 
 	cat $(IRAP_DIR)/aux/html/page.header.html $(IRAP_DIR)/aux/html/about.html  $(IRAP_DIR)/aux/html/page.footer.html >  $@
 
