@@ -75,6 +75,10 @@ sampleTable = data.frame(
     row.names = names(opt$conds),
     condition = opt$conds)
 
+## rownames should have :
+if ( sum(grepl(":",head(rownames(data.f)))) == 0 ) {
+    pwarning("Exon ids do not seem to be compatible with DexSEQ...")
+}
 #colData
 pinfo("Generating DEXSeq Dataset")
 dxd <- DEXSeqDataSet(countData=as.matrix(data.f[,rownames(colData)]),
@@ -98,7 +102,8 @@ dxd <- testForDEU(dxd)
 
 ##
 pinfo("Running DEXSeq: estimating foldchange")
-dxd <- estimateExonFoldChanges(dxd,fitExpToVar="condition")
+#B/A
+dxd <- estimateExonFoldChanges(dxd,fitExpToVar="condition",denominator=opt$labels.v[1])
 
 pdebug.save.state("irap_DE_dexseq","2")
 
@@ -118,7 +123,7 @@ x <- data.frame(list(
     baseMeanB=res[[opt$labels.v[2]]],
     dispersion=res$dispersion,
     stat=res$stat,
-    log2FoldChange=res[[paste0("log2fold_",opt$labels.v[1],"_",opt$labels.v[2])]]))
+    log2FoldChange=res[[paste0("log2fold_",opt$labels.v[2],"_",opt$labels.v[1])]]))
 
 x$foldChange <- 2^x$log2FoldChange
 res <- x
@@ -153,10 +158,10 @@ irap_DE_dexseq_debug <- function(rdata.obj) {
   load(rdata.obj,envir=.GlobalEnv)
   pdebug.rdata()
   source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
-  library(Dexseq)
+  library(DEXSeq)
 }
 IRAP.DIR="/home/nf/Research/Projects/WIP/EREAP/irap"
-IRAP.DIR=getwd()
+#IRAP.DIR=getwd()
 Sys.setenv(IRAP_DIR=IRAP.DIR)
 rdata.obj="irap_DE_dexseq.Rdata"
 irap_DE_dexseq_debug("irap_DE_dexseq.Rdata")
