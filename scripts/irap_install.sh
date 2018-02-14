@@ -1892,9 +1892,13 @@ function data_install {
     pinfo "Creating data folder $IRAP_DIR/data..."
     mkdir -p $IRAP_DIR/data
     cp -r $SRC_DIR/data/contamination $IRAP_DIR/data
+    cp -r $SRC_DIR/data/ercc $IRAP_DIR/data
     mkdir -p $IRAP_DIR/data/reference
     mkdir -p $IRAP_DIR/data/raw_data
     pinfo "Creating data folder...done."
+    if [ "$INSTALL_CONT_DB-" == "y-" ]; then
+	install_cont_db
+    fi
 }
 
 
@@ -2099,6 +2103,13 @@ function featurecounts_install {
     pinfo "FeatureCounts installed"    
 }
 
+function install_cont_db {
+    pinfo "Downloading and preparing contamination indices/db..."
+    pushd $IRAP_DIR/data/contamination/default
+    ./generate_default_contamination_DBs.sh
+    popd
+    pinfo "Downloading and preparing contamination indices/db...done."
+}
 ###############################
 UPDATE_FILE_PERMS=n
 INSTALL_JBROWSE=n
@@ -2108,9 +2119,10 @@ INSTALL_BOOST=n
 # all|bulk|sc
 INSTALL_RNA=all
 INSTALL_DEPS=y
+INSTALL_CONT_DB=n
 SPECIAL_SH_TO_USE=bash
 OPTERR=0
-while getopts "s:c:l:a:x:gmqpruhbdtfjvGKRBSD"  Option
+while getopts "s:c:l:a:x:gmqpruhbdtfjvGKRBSDC"  Option
 do
     case $Option in
 # update/reinstall
@@ -2133,6 +2145,7 @@ do
 	v ) install=collect_software_versions;IRAP_DIR1=$IRAP_DIR;;
 	j ) INSTALL_JBROWSE=y;;
 	G ) INSTALL_GCC=y;;
+	C ) INSTALL_CONT_DB=y;;
 	R ) INSTALL_R3=y;;
 	B ) INSTALL_BOOST=y;;
 	K ) SPECIAL_SH_TO_USE=ksh;;
