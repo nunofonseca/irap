@@ -10,12 +10,12 @@ fi
 
 ## viruses
 if [ ! -e viral.fa.gz ]; then
-    wget ftp://ftp.ncbi.nlm.nih.gov/refseq/release/viral/viral.2.1.genomic.fna.gz -O viral.fa.gz
+    wget -c ftp://ftp.ncbi.nlm.nih.gov/refseq/release/viral/viral.2.1.genomic.fna.gz -O viral.fa.gz
 fi
 
 ## phi-X174
 if [ ! -e phiX174.fa.gz ]; then
-    wget 'https://www.ncbi.nlm.nih.gov/sviewer/viewer.cgi?tool=portal&save=file&log$=seqview&db=nuccore&report=fasta&id=9626372&maxplex=1' -O phiX174.fa
+    wget -c 'https://www.ncbi.nlm.nih.gov/sviewer/viewer.cgi?tool=portal&save=file&log$=seqview&db=nuccore&report=fasta&id=9626372&maxplex=1' -O phiX174.fa
     gzip phiX174.fa
 fi
 
@@ -26,7 +26,7 @@ fi
 
 ## ecoli
 if [ ! -e ecoli.fa.gz ]; then
-    wget ftp://ftp.ensemblgenomes.org/pub/release-37/bacteria/fasta/bacteria_0_collection/escherichia_coli_str_k_12_substr_mg1655/dna/Escherichia_coli_str_k_12_substr_mg1655.ASM584v2.dna.toplevel.fa.gz -O ecoli.fa.gz
+    wget -c ftp://ftp.ensemblgenomes.org/pub/release-37/bacteria/fasta/bacteria_0_collection/escherichia_coli_str_k_12_substr_mg1655/dna/Escherichia_coli_str_k_12_substr_mg1655.ASM584v2.dna.toplevel.fa.gz -O ecoli.fa.gz
 fi
 
 
