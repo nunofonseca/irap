@@ -338,16 +338,20 @@ if [ "$tidy_up_only" == "y" ]; then
 
     stage1_folder=`$cmd conf=$conf $irap_single_lib_options  $irap_options print_stage1_folder  skip_lib_validation=y |tail -n 1`
     #echo toplevel_dir=$name
-    echo qc_folder=$stage1_folder
+    echo ">qc_folder=$stage1_folder<"
     if [ -e $stage1_folder ] ; then
+	set +e
 	find $stage1_folder -type d -name "`basename $folder`" -print -exec rm -rf {} \; 2> /dev/null
+	set -e
     fi
     if [ "$sop2-" != "-" ]; then
 	pinfo "Tidy up for sop2 ($sop2)..."
 	stage1_folder=`$cmd conf=$conf $irap_single_lib_options  $irap_options print_stage1_folder  sop=$sop2 skip_lib_validation=y |tail -n 1`
-	echo qc_folder=$stage1_folder
+	
 	if [ -e $stage1_folder ] ; then
+	    set +
 	    find $stage1_folder -type d -name "`basename $folder`" -print -exec rm -rf {} \; 2> /dev/null
+	    set -
 	fi	
     fi    
     exit 0
