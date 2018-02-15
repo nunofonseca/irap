@@ -41,7 +41,7 @@ option_list <- list(
   make_option(c("-o", "--out_dir"), type="character", dest="out_dir",help="path to iRAP's report directory (output)"),
   make_option(c("-q", "--qc_dir"), type="character", dest="qc_dir",help="path to iRAP's toplevel qc directory"),
   make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
-  make_option(c("--lib_info"), type="character", dest="lib_info",default="",help="path to the .info file (if used in iRAP)"),
+  make_option(c("--lib_info"), type="character", dest="lib_info",default=NULL,help="path to the .info file (if used in iRAP)"),
   make_option(c("-t","--html"),type="character",dest="html_template",default=html.temp,help="HTML template file [default: %default]")
 )
 

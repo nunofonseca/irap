@@ -2051,13 +2051,13 @@ contrasts2matrix <- function(exp.conf) {
 }
 
 #
-load.configuration.file <- function(conf_file,lib.info="") {
+load.configuration.file <- function(conf_file,lib.info=NULL) {
 
   # 
     pinfo("Loading configuration file...")
     conf.table <- read.delim(conf_file,sep="=",comment.char="#",header=FALSE,stringsAsFactors=FALSE)
     pinfo("Loading conf_file...done")
-    if ( lib.info!="") {
+    if ( !is.null(lib.info) && lib.info!="") {
         pinfo("Loading .info file...")
         conf.table2 <- read.delim(lib.info,sep="=",comment.char="#",header=FALSE,stringsAsFactors=FALSE)
         conf.table <- rbind(conf.table2,conf.table)
