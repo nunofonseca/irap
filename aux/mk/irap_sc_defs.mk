@@ -138,35 +138,35 @@ expr_ext=tsv
 endif
 
 # smart-seq2
-ifeq ($(sc_protocol),smarter)
-user_trans_biotypes=protein_coding|IG_([a-zA-Z0-9]+)_gene|TR_([a-zA-Z0-9]+)_gene|lnc
-user_trans=cdna
+ifeq ($(sc_protocol),smart-seq2)
+user_trans_biotypes?=protein_coding,IG_([a-zA-Z0-9]+)_gene,TR_([a-zA-Z0-9]+)_gene,lnc
+user_trans?=auto
 # always assume spiked data
-spikein_fastq=ERCC
+spikein_fasta?=ERCC
 
 mapper?=none
 quant_method?=kallisto
-quant_norm_method=tpm
-quant_norm_tool=irap
+quant_norm_method?=tpm
+quant_norm_tool?=irap
 qc?=on
 ## read preprocessing filtering
 trim_poly_at?=y
-trim_poly_at_len=8
+trim_poly_at_len?=8
 # no need to trim reads
-trim_reads=n
+trim_reads?=n
 ##Maximum (percentage) of uncalled bases acceptable in a read
-max_n=0.05
-min_read_quality=10
-cont_index=ecoli_fungi_viral
+max_n?=0.05
+min_read_quality?=10
+cont_index?=ecoli_fungi_viral
 
 #  cell exclusion criteria
 # minimum number of features expressed as a percentage of the total number of features
-cell_filt_min_features=0.15
+cell_filt_min_features?=0.15
 # maximum percentage of expression that may be atributed to ERCC spike-ins
-cell_filt_max_ERCC=0.8  
-cell_filt_min_cell_expr=
+cell_filt_max_ERCC?=0.8  
+cell_filt_min_cell_expr?=
 
-single_cell=y
-expr_format=tsv
-expr_ext=tsv
+single_cell?=y
+expr_format?=tsv
+expr_ext?=tsv
 endif
