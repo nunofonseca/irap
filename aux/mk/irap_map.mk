@@ -1056,6 +1056,7 @@ define kallisto_strand_params=
 endef
 
 # ignore arguments
+# aligns to the transcript sequences
 define run_kallisto_index=
 	mkdir -p $(dir $(call kallisto_index_filename)) && \
 	irap_wrapper.sh kallisto kallisto index $(kallisto_index_params) -i $(call kallisto_index_prefix)  $(trans_abspath) && \
