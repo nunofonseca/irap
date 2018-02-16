@@ -72,7 +72,7 @@ cmd="$irap_cmd "
 
 if [ "$stage0_only-" == "y-" ]; then
     IRAP_PARAMS="$IRAP_PARAMS do_stage0_only=1"
-    level=2
+    level=0
 fi
 
 wave=$level
