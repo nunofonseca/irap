@@ -125,8 +125,8 @@ raw.summary.dataframe <- function(conf,qc.sum,fastqc.sum) {
     rownames(filt.stats) <-  filt.stats$Lib
     ## match the two matrices
     i <- intersect(rownames(fastqc.sum),rownames(filt.stats))
-    print(rownames(fastqc.sum))
-    print("-----------")
+    #print(rownames(fastqc.sum))
+    #print("-----------")
     print(rownames(filt.stats))
     if ( length(i) == 0 ) {
         perror("WIP")
@@ -196,8 +196,12 @@ qc.expand.table <- function(dft,conf) {
     names(dft.median) <- rownames(dft)
     names(dft.mean) <- rownames(dft)
     names(dft.sd) <- rownames(dft)
-
-    for ( n in c("Passed","Unpaired","Ns","Contamination","Quality","reads","length","GC","Pass1","Pass2","Pass3","Pass4") ) {
+    cols.sel <- c("Passed","Unpaired","Ns","Contamination","Quality","reads","length","GC","Pass1","Pass2","Pass3","Pass4")
+    if ( sum(cols.sel %in% rownames(dft))>0 ) {
+        perror("Columns ",paste(cols.sel[!cols.sel%in%rownames(dft)],sep=",")," not found in matrix")
+        q(status=1)
+    }
+    for ( n in cols.sel ) {
         dft.median[n] <- round(median(as.numeric(dft[n,]),na.rm=T),2)
         dft.mean[n] <- round(mean(as.numeric(dft[n,]),na.rm=T),2)
         dft.sd[n] <- round(sd(as.numeric(dft[n,]),na.rm=T),2)
