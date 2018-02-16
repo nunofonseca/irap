@@ -1133,6 +1133,8 @@ gtf_file_wexonid=$(gtf_file_abspath)
 #$(gtf_file_wexonid)=$(gtf_file_abspath).exon_id.gtf
 endif
 
+
+
 ##################################
 # method to normalize the counts
 ##################################
@@ -1148,8 +1150,8 @@ $(call p_error,quant_norm_method Please use fpkm instead of RPKM)
 endif
 
 # Normalization methods
-SUPPORTED_NORM_METHODS=fpkm deseq_nlib tpm
-# rpkm_qn
+SUPPORTED_NORM_METHODS=fpkm uq-fpkm fpkm-uq deseq_nlib tpm
+
 ifeq (,$(filter $(quant_norm_method),none $(SUPPORTED_NORM_METHODS)))
 $(call p_error,quant_norm_method '$(quant_norm_method)' invalid)
 endif
@@ -1172,6 +1174,15 @@ endif
 
 $(info *	quant_norm_tool=$(quant_norm_tool))
 $(info *	quant_norm_method=$(quant_norm_method))
+
+ifeq ($(quant_norm_tool),irap)
+## Sequence of biotypes, separated by comma, that define the set of genes that are used to compute the total number of reads (rpkm/fpkm/tpm)
+## default: all biotypes
+## e.g.
+## quant_norm_mass_biotypes=protein_coding,lncRNA,pseudogenes
+quant_norm_mass_biotypes?=
+$(info *	quant_norm_mass_biotypes=$(quant_norm_mass_biotypes))
+endif
 #******************************
 # Use unspliced mapping: yes/no 
 #******************************
@@ -1246,6 +1257,9 @@ endif
 
 transcript_de_min_count?=0
 exon_de_min_count?=0
+
+# 1 - feature
+get_gtf_for_feature=$(if $(subst exon,,$(1)),$(gtf_file_wexonid),$(gtf_file_abspath))
 
 #********************
 # Transcript level DE
@@ -2397,7 +2411,7 @@ silent_targets+=
 stage0: setup
 stage1: setup quality_filtering_and_report
 stage2: setup mapping
-stage3: setup $(STAGE3_OUT_FILES)
+stage3: setup $(STAGE3_OUT_FILES) $(STAGE3_S_OFILES) $(STAGE3_S_OFILES)
 stage3a: setup $(quant_method)_quant 
 stage3as: setup quantification_s
 #stage3b: setup stage3a

@@ -45,7 +45,7 @@ option_list <- list(
   make_option(c("-l", "--lengths"), type="character",dest="lengths_file",default="",help=" [default %default]."),
   make_option(c("-e", "--exclude"), type="character",dest="toexclude",default="",help="biotypes to exclude (separated by comma) [default %default]."),
   make_option(c("--length_as_tsv"), dest="lengths_tsv_format",action="store_true",default=FALSE,help="lengths are provided in a two column TSV file with the feature and length [default %default]."),
-                                        #make_option(c("p","--rpkm_pc"),action="store_true",dest="mass_pconly",default=FALSE,help="Consider protein coding only for the total number of reads (rpkm) [default %default]"),
+  make_option(c("m","--mass_biotypes"),type="character",dest="mass_biotypes",default=NULL,help="Sequence of biotypes, separated by comma, that define the set of genes that are used to compute the total number of reads (rpkm/fpkm/tpm) [default all genes]"),
   make_option(c("--mtx"), action="store_true",default=FALSE,dest="is_mtx",help="The input file is in Matrix Market format. Default is TSV format."),
   make_option(c("--tsv"), action="store_false",default=FALSE,dest="is_mtx",help="The input file is in TSV format (default)."),
   make_option(c("--exit_on_error"),action="store_true",dest="exit.on.error",default=FALSE,help="Exit when an inconsistency is found between the expression matrix and the file with the lengths. by default it will emit an warning and try to continue."),
@@ -78,6 +78,12 @@ exon.length <- NULL
 
 ##
 
+if ( ! is.null(opt$mass_biotypes) && is.null(opt$gtf_file) ) {
+    perror("--gtf option is required when using --mass_biotypes")
+    q(status=1)
+}
+
+
 pinfo("Loading ",opt$ifile)
 if ( opt$is_mtx ) {
     table <- mtx.load(opt$ifile)
@@ -94,7 +100,7 @@ if ( is.vector(table) ) {
 }
 
 # Gene lib1 ....
-if ( ! opt$lengths_tsv_format && is.null(opt$gtf_file)) {
+if ( ! opt$lengths_tsv_format ) {
     ## load lengths
     pinfo("Loading ",opt$lengths_file)
     load(opt$lengths_file)   
@@ -108,10 +114,11 @@ if ( ! opt$lengths_tsv_format && is.null(opt$gtf_file)) {
     }
     pinfo("Loading ",opt$lengths_file," done.")
 }
-if ( opt$lengths_tsv_format && is.null(opt$gtf_file)) {
+if ( opt$lengths_tsv_format ) {
     ## TSV format
     pinfo("Loading ",opt$lengths_file, " (tsv format)")
     lens.df <- read.table(opt$lengths_file,sep="\t",header=F,comment.char="",quote="")
+    lengths <- list()
     lens <- lens.df[,2]
     names(lens) <- lens.df[,1]
     if (opt$feature=="gene") {
@@ -132,24 +139,37 @@ gtf.table <- NULL
 mass.labels <- NULL
 feature.label <- paste(opt$feature,"_id",sep="")
 if (!is.null(opt$gtf_file) ) {
-  gtf.table <- load.gtf(opt$gtf_file,selected.attr=c(feature.label,"biotype"))
+  gtf.table <- load.gtf(opt$gtf_file,feature=opt$feature,selected.attr=c(feature.label,"biotype"))
   pinfo("GTF file loaded: ",opt$gtf," ",nrow(gtf.table)," entries")
 
-  #if ( opt$mass_pconly) {
-  #  mass.labels <- gtf.table[gtf.table$biotype=="protein_coding",feature.label]
-  #}
+  if ( ! is.null(opt$mass_biotypes) ) {
+      ss <- strsplit(opt$mass_biotypes,split=",")[[1]]
+      in.gtf <- as.character(unique(gtf.table$biotype))
+      found.ss <- ss[ss%in%in.gtf]
+      if (length(found.ss) == 0 ) {
+          perror("Unable to find biotype(s) (",opt$mass_biotypes,") in ",opt$gtf_file)
+          q(status=1)
+      }
+      pinfo("Found ",paste(found.ss,sep=","))
+      gtf.table$biotype=="protein_coding"
+      mass.labels <- as.character(gtf.table[gtf.table$biotype%in%found.ss,feature.label])      
+      pinfo("#Features used to compute the mass:",length(mass.labels))
+  }
 }
 
 if (opt$feature=="exon" ) {
   #eids <- paste(exon.length$gene_id,exon.length$exon_number,sep=".")
-  if ( sum( "exon_id" %in% colnames(exon.length)) > 0 ) {
-    eids <- as.character(exon.length$exon_id)
-  } else { 	     
-    # backward compatibility
-    eids <- paste(exon.length$gene_id,exon.length$exon_number,sep=".")
-  }
-  exon.length <- exon.length[,"elength"]
-  names(exon.length) <- eids
+    if ( sum( "exon_id" %in% colnames(exon.length)) > 0 ) {
+        eids <- as.character(exon.length$exon_id)
+    } else { 	     
+        ## backward compatibility
+        ## eids <- paste(exon.length$gene_id,exon.length$exon_number,sep=".")
+        perror("exon_id not found in lengths file...file generated in a version of irap < 0.9.0?")
+        q(status=2)        
+    }
+    exon.length <- exon.length[,"elength"]
+    names(exon.length) <- eids
+    mass.labels <- mass.labels[mass.labels%in%eids]
 }
 
 lengths <- list(gene=gene.length,transcript=trans.length,exon=exon.length)
@@ -158,8 +178,9 @@ lengths <- list(gene=gene.length,transcript=trans.length,exon=exon.length)
 ## sometime after version 80 Ensembl decided to use transcript ids
 ## in the cdna file different from the transcripts ids found in the GTF!?
 if ( opt$feature=="transcript" && sum(grepl(".",rownames(table),fixed=TRUE))==nrow(table) && sum(grepl(".",names(trans.length),fixed=TRUE))==0 ) {
-    pinfo("Applying Ensembl workaround")
+    pinfo("Applying Ensembl workaround...")
     rownames(table) <- gsub("\\.[0-9]+","",rownames(table))
+    mass.labels <- gsub("\\.[0-9]+","",mass.labels)
     print(head(table))
 }
 ## Missing features in the GTF
@@ -173,7 +194,7 @@ if (!opt$exit.on.error) {
         table <- table[!missing.feat,,drop=FALSE]
     }
 }
-
+#print(str(lengths))
 pdebug.save.state("irap_raw2metric","p1")
 if ( opt$metric == "rpkm" || opt$metric=="fpkm" ) {
   #(read count  * 1,000,000) / (total number of reads * kilobase of gene/transcript/exon)

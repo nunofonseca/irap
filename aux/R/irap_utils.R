@@ -115,7 +115,7 @@ formats.cols <- list(
   gtf=c("seqid","source","feature","start","end","score","strand","frame","attributes")
   )
 attributes.cols <- list(
-  gencode=c("gene_id","transcript_id","exon_number","gene_name","gene_type","gene_status","transcript type","level","transcript_name","havana_gene","exon_id","gene_biotype"),
+  gencode=c("gene_id","transcript_id","exon_number","gene_name","gene_type","gene_status","transcript_type","level","transcript_name","havana_gene","exon_id","gene_biotype"),
   ensembl=c("gene_id","transcript_id","exon_number","gene_name","gene_biotype","transcript_name","protein_id","exon_id","exonic_part_number")
   )
 # TODO: improve error handling
@@ -154,17 +154,23 @@ load.gtf <- function(gtf.file,feature=NULL,selected.attr=NULL,gtf.format="auto")
   gtf.attributes.names<-attributes.cols[[gtf.format]]
 
   if ( !is.null(selected.attr) ) {
-      selected.attr.i <- unique(append(selected.attr,"gene_biotype"))
+      if ( gtf.format == "gencode" ) {
+          if (feature=="transcript")
+              selected.attr.i <- unique(append(selected.attr,"transcript_type"))
+          else
+              selected.attr.i <- unique(append(selected.attr,"gene_type"))
+      } else {
+          selected.attr.i <- unique(append(selected.attr,"gene_biotype"))
+      }
       gtf.attributes.names<- gtf.attributes.names[gtf.attributes.names %in% selected.attr.i]
   }
 
   num.attr <- length(gtf.attributes.names)
   attr <- list()
   for (att in gtf.attributes.names) {
-      print(att)
-      re.str <- paste0('^.*\\s?\\"?',att,'\\s\\"?([^;\\"]+)\\"?([;$]?).*')
+      re.str <- paste0('^.*\\s?',att,'\\s\\"?([^;\\"]+)\\"?([;$]?).*')
+      x <- gsub(re.str,"\\1",gtf$attributes[1])
       attr[[att]] <- gsub(re.str,"\\1",gtf$attributes)
-      print(head(attr[[att]]))
   }
 
   if ( length(attr)!=0 ) {
@@ -176,8 +182,8 @@ load.gtf <- function(gtf.file,feature=NULL,selected.attr=NULL,gtf.format="auto")
   biotypes <- gtf[,biotype.column(gtf)]
   pinfo("biotype col:",biotype.column(gtf))
   gtf$biotype <- biotypes
-  #print(head(gtf))
-  return(gtf[,! colnames(gtf) %in% c("attributes")])
+  ##print(head(gtf))
+  return(gtf[,! colnames(gtf) %in% c("attributes"),drop=FALSE])
 }
 
 # deprecated
@@ -477,7 +483,9 @@ counts2RPKMs <- function(count.matrix,annot.table=NULL) {
 countstable2rpkms <- function(table,lens,mass.labels=NULL,exitonerror=TRUE,UQ=FALSE,TUQ=FALSE) {
     ## check if there missing features
     missing.feat <- (!rownames(table) %in% names(lens))
-    
+    if ( ! is.null(mass.labels) ) {
+        mass.labels <- mass.labels[mass.labels%in%names(lens) & mass.labels%in%rownames(table)]
+    }
     if ( sum(missing.feat) ) {
         message("ERROR: Length of ",paste(rownames(table)[missing.feat],sep=",")," not found.")
         if (exitonerror) { q(status=1) }
@@ -516,7 +524,7 @@ countstable2rpkms <- function(table,lens,mass.labels=NULL,exitonerror=TRUE,UQ=FA
         #return((10^9*l)/(tot.mass*lens))
         return(expr)
     }
-    # 
+
     if ( is.vector(table) ) {
         stopifnot(sum(!names(table)%in%names(lens))==0)
         # fix ordering & and convert to numeric
@@ -2051,13 +2059,13 @@ contrasts2matrix <- function(exp.conf) {
 }
 
 #
-load.configuration.file <- function(conf_file,lib.info="") {
+load.configuration.file <- function(conf_file,lib.info=NULL) {
 
   # 
     pinfo("Loading configuration file...")
     conf.table <- read.delim(conf_file,sep="=",comment.char="#",header=FALSE,stringsAsFactors=FALSE)
     pinfo("Loading conf_file...done")
-    if ( lib.info!="") {
+    if ( !is.null(lib.info) && lib.info!="") {
         pinfo("Loading .info file...")
         conf.table2 <- read.delim(lib.info,sep="=",comment.char="#",header=FALSE,stringsAsFactors=FALSE)
         conf.table <- rbind(conf.table2,conf.table)
@@ -2153,17 +2161,17 @@ biotype.column <- function(table) {
   if ( sum("source" %in% colnames(table))>0 ) {
     sources <- unique(as.character(table$source))
     if ( sum(grepl("HAVANA",sources,ignore.case=FALSE))>0 ) {
-      pinfo("cols:",colnames(table))
-      if ( sum("gene_type" %in% colnames(table))>0 ) {
-        return("gene_type")
-      }
+        #pinfo("cols:",colnames(table))
+        if ( sum("gene_type" %in% colnames(table))>0 ) {
+            return("gene_type")
+        }
       # 
-      return("gene_biotype")        
+        return("gene_biotype")        
     } else {
-      if ( sum(grepl("(havana|ena|WormBase|irgsp|VectorBase|bgi|ensembl|jgi|tair|JCVI|brad|cmer|FlyBase|ibsc|oge|ensembl_genomes|GFBGP|cirad|pgsb|PomBase|iwgsc|gramene
+        if ( sum(grepl("(havana|ena|WormBase|irgsp|VectorBase|bgi|ensembl|jgi|tair|JCVI|brad|cmer|FlyBase|ibsc|oge|ensembl_genomes|GFBGP|cirad|pgsb|PomBase|iwgsc|gramene
 excepds|pythiumgenomedatabase|Ensembl_Fungi)",sources,ignore.case=FALSE))>0 ) {
-        # more recent ensembl files do not have the biotype in the source column
-        return("gene_biotype")
+                                        # more recent ensembl files do not have the biotype in the source column
+            return("gene_biotype")
       }
     }
   }

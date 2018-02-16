@@ -45,7 +45,7 @@ irap_path:=$(shell dirname `which irap`)
 
 #####################################################################
 # Default target - bulk RNA-seq
-all: setup quality_filtering_and_report mapping quantification DE GSE
+all: setup stage1 stage2 stage3 stage4 stage5
 
 include $(irap_path)/../aux/mk/irap_core.mk
 

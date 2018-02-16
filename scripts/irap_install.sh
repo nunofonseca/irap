@@ -84,6 +84,10 @@ function download {
     if [ "$USE_CACHE-" == "y-" ]; then
 	# avoid copying
 	rm -f $FILE2
+	if [ ! -e $SRC_DIR/download/$FILE2 ]; then
+	    echo "ERROR: file $SRC_DIR/download/$FILE2 not found"
+	    exit 1
+	fi
 	ln -s $SRC_DIR/download/$FILE2 .
     else
 	set +e
