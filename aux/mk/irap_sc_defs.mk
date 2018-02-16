@@ -139,7 +139,7 @@ endif
 
 # smart-seq2
 ifeq ($(sc_protocol),smart-seq2)
-user_trans_biotypes?=protein_coding,IG_([a-zA-Z0-9]+)_gene,TR_([a-zA-Z0-9]+)_gene,lnc
+user_trans_biotypes?=protein_coding|IG_([a-zA-Z0-9]+)_gene|TR_([a-zA-Z0-9]+)_gene|lnc
 user_trans?=auto
 # always assume spiked data
 spikein_fasta?=ERCC
