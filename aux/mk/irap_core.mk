@@ -240,6 +240,8 @@ license=This pipeline is distributed  under the terms of the GNU General Public 
 ## Internal 
 isl_mode?=n
 
+share_files_in_reference?=y
+
 ################################################################################
 # START!
 $(info *****************************************************)
@@ -500,6 +502,9 @@ endif
 
 #$(call file_exists,$(trans_file))
 
+ifeq ($(spikein_fasta),)
+override undefine spikein_fasta
+endif
 
 # ************
 # spikein data
@@ -522,7 +527,9 @@ $(call file_exists,$(spikein_fasta_abspath))
 override spikein_fasta_abspath:=$(subst .gz,,$(spikein_fasta_abspath))
 # gtf and fasta files
 # new reference file cannot be shared across experiments
+ifeq ($(share_files_in_reference),n)
 reference_dir:=$(auxdata_toplevel_folder)
+endif
 user_reference_abspath:=$(reference_abspath)
 # newref: ref_prefix.spikein_prefix.fasta
 spikein_fasta_prefix:=$(patsubst %.fa,%,$(patsubst %.fasta,%,$(patsubst %.gz,%,$(notdir $(spikein_fasta)))))
@@ -535,9 +542,14 @@ reference_basename=$(notdir $(reference_abspath))
 ## transcripts
 override trans_abspath:=$(dir $(user_trans_abspath))/$(patsubst %.fasta,%.$(spikein_fasta_prefix),$(patsubst %.fa,%.fasta,$(subst .gz,,$(notdir $(user_trans_abspath))))).fa
 
-gtf_file_dir:=$(auxdata_toplevel_folder)
 user_gtf_abspath:=$(gtf_file_abspath)
+ifeq ($(share_files_in_reference),n)
+gtf_file_dir:=$(auxdata_toplevel_folder)
 gtf_file_abspath:=$(auxdata_toplevel_folder)/$(subst .fasta,,$(spikein_fasta_prefix)).$(subst .gz,,$(notdir $(user_gtf_abspath)))
+else
+gtf_file_abspath:=$(dir $(reference_abspath))/$(subst .fasta,,$(spikein_fasta_prefix)).$(subst .gz,,$(notdir $(user_gtf_abspath)))
+endif
+
 spikein_gtf_file:=$(patsubst %.fasta,%.gtf,$(spikein_fasta_abspath))
 override gtf_file:=$(notdir $(gtf_file_abspath))
 
@@ -1651,6 +1663,11 @@ define args2file=
 endef
 # add the new line in the end
 
+wave_file?=
+#1 - args
+define wave_echo=
+$(if $(wave_file),$(file > $(wave_file),$(1)),echo $(1))
+endef
 ####################
 ###################
 # 
@@ -2550,37 +2567,37 @@ run_wave_6: $(WAVE6_TARGETS)
 run_wave_7: $(WAVE7_TARGETS)
 
 print_wave_b_targets:
-	echo $(sort $(WAVEB_TARGETS))
+	$(call wave_echo,echo $(sort $(WAVEB_TARGETS)))
 
 print_wave_0_targets:
-	echo $(sort $(WAVE0_TARGETS))
+	$(call wave_echo,echo $(sort $(WAVE0_TARGETS)))
 
 print_wave_1_targets:
-	echo $(sort $(WAVE1_TARGETS))
+	$(call wave_echo,echo $(sort $(WAVE1_TARGETS)))
 
 print_wave_2_targets:
-	echo $(sort $(WAVE2_TARGETS))
+	$(call wave_echo,echo $(sort $(WAVE2_TARGETS)))
 
 print_wave_3_targets:
-	echo $(sort $(WAVE3_TARGETS))
+	$(call wave_echo,echo $(sort $(WAVE3_TARGETS)))
 
 print_wave_3_s_targets:
-	echo $(sort $(WAVE3_s_TARGETS))
+	$(call wave_echo,echo $(sort $(WAVE3_s_TARGETS)))
 
 print_wave_3_p_targets:
-	echo $(sort $(WAVE3_p_TARGETS))
+	$(call wave_echo,echo $(sort $(WAVE3_p_TARGETS)))
 
 print_wave_4_targets:
-	echo $(sort $(WAVE4_TARGETS))
+	$(call wave_echo,echo $(sort $(WAVE4_TARGETS)))
 
 print_wave_5_targets:
-	echo $(sort $(WAVE5_TARGETS))
+	$(call wave_echo,echo $(sort $(WAVE5_TARGETS)))
 
 print_wave_6_targets:
-	echo $(sort $(WAVE6_TARGETS))
+	$(call wave_echo,echo $(sort $(WAVE6_TARGETS)))
 
 print_wave_7_targets:
-	echo $(sort $(WAVE7_TARGETS))
+	$(call wave_echo,$(sort $(WAVE7_TARGETS)))
 
 ###################################################
 # Keep the versions used in the top level folder
