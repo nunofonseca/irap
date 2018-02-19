@@ -235,6 +235,54 @@ contact=Developed by Nuno Fonseca (authorname (at) acm.org)
 license=This pipeline is distributed  under the terms of the GNU General Public License 3
 
 
+
+###########
+## Internal 
+isl_mode?=n
+
+################################################################################
+# START!
+$(info *****************************************************)
+$(info * $(pname) $(version))
+$(info * $(contact))
+$(info * $(license))
+$(info *)
+
+$(info * Initializing...)
+
+
+###############################################
+# Load configuration (mandatory)
+ifdef conf
+ $(call file_exists,$(conf))
+ $(info * Trying to load configuration file $(conf)...)
+ include $(conf)
+ $(info * Configuration loaded.)
+else
+ $(call p_error,Configuration file missing)
+endif
+
+# load library specific information
+ifdef lib.info
+lib_info=$(lib.info)
+endif
+
+
+ifdef lib_info
+ $(call file_exists,$(lib_info))
+ $(info * Trying to load information about the libraries - file $(lib_info)...)
+ include $(lib_info)
+ $(info * Information about the libraries loaded.)
+endif
+lib_info?=
+
+get_lib_info_option=$(if $(lib_info),--lib_info $(lib_info),)
+
+###############################################
+# Load some definitions
+include $(irap_path)/../aux/mk/irap_sc_defs.mk
+include $(irap_path)/../aux/mk/irap_defs.mk
+
 ################################################################################
 # Default values
 ################################################################################
@@ -326,53 +374,6 @@ CSS_FILE?=irap.css
 
 gen_html_report?=n
 GEN_REPORT_QC_ONLY=
-
-###########
-## Internal 
-isl_mode?=n
-
-################################################################################
-# START!
-$(info *****************************************************)
-$(info * $(pname) $(version))
-$(info * $(contact))
-$(info * $(license))
-$(info *)
-
-$(info * Initializing...)
-
-
-###############################################
-# Load configuration (mandatory)
-ifdef conf
- $(call file_exists,$(conf))
- $(info * Trying to load configuration file $(conf)...)
- include $(conf)
- $(info * Configuration loaded.)
-else
- $(call p_error,Configuration file missing)
-endif
-
-# load library specific information
-ifdef lib.info
-lib_info=$(lib.info)
-endif
-
-
-ifdef lib_info
- $(call file_exists,$(lib_info))
- $(info * Trying to load information about the libraries - file $(lib_info)...)
- include $(lib_info)
- $(info * Information about the libraries loaded.)
-endif
-lib_info?=
-
-get_lib_info_option=$(if $(lib_info),--lib_info $(lib_info),)
-
-###############################################
-# Load some definitions
-include $(irap_path)/../aux/mk/irap_sc_defs.mk
-include $(irap_path)/../aux/mk/irap_defs.mk
 
 
 ###############################################################

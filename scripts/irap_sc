@@ -48,19 +48,18 @@ irap_path:=$(shell dirname `which irap`)
 # default settings for sc-RNA-seq
 override de_method=none
 override rnaseq_type:=sc
-sc_protocol?=10x_v2
-quant_method?=umi_count
-
+#sc_protocol?=10x_v2
+#quant_method?=umi_count
 ## get tsne
-sc_quant_viz?=tsne
 
-expr_format=mtx
-expr_ext=mtx.gz
+
+#expr_format=mtx
+#expr_ext=mtx.gz
 
 dt_fc=n
 
 ## disable transcript expression by default
-transcript_expr=n
+transcript_expr?=n
 transcript_quant?=n
 
 # rsem_params+= --single-cell-prior

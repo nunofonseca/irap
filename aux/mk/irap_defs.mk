@@ -102,9 +102,11 @@ user_trans:=auto
 ## which genes will be included in the cdna file
 user_trans_biotypes:=protein_coding|lincRNA
 ## always include the ercc spikeins
-spikein_fasta=ERCC
+spikein_fasta:=ERCC
 ##
 
+## get tsne
+sc_quant_viz:=tsne
 endif
 
 ifeq ($(sop),atlas)
