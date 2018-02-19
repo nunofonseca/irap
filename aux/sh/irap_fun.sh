@@ -185,8 +185,10 @@ function get_targets_4_level {
 	echo "ERROR: Internal error in get_targets_4_level $level"
 	exit 1
     fi
-    targets=`$cmd conf=$conf $IRAP_PARAMS print_wave_${level}_targets|tail -n 1`
-    echo $targets
+    WAVE_FILE=.$$.wave
+    targets=`$cmd conf=$conf $IRAP_PARAMS print_wave_${level}_targets wave_file=$WAVE_FILE`
+    #echo $targets
+    cat $WAVE_FILE
 }
 
 _INIT_SUSP_JOB=
