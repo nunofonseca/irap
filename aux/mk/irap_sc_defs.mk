@@ -160,7 +160,7 @@ trim_reads?=n
 ##Maximum (percentage) of uncalled bases acceptable in a read
 max_n?=0.05
 min_read_quality?=10
-cont_index?=ecoli_fungi_viral
+cont_index?=$(data_dir)/contamination/ecoli_fungi_viral
 
 #  cell exclusion criteria
 # minimum number of features expressed as a percentage of the total number of features
