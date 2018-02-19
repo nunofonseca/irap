@@ -1037,8 +1037,9 @@ endef
 # Kallisto
 kallisto_index_params?=
 kallisto_map_params?=
+kallisto_map_options?=
 # TODO: use $(max_threads) when supported by kallisto with --pseudobam
-kallisto_map_params+= --threads $(max_threads) --pseudobam
+kallisto_map_params+= --threads $(max_threads) --pseudobam $(kallisto_map_options)
 
 define kallisto_index_filename=
 $(trans_abspath)_kallisto/kallisto_index.irap
