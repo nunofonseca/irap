@@ -112,6 +112,9 @@ def_sample_size=8
 ## not 100% sure that the file is the correct one for 10xv2
 def_known_cells_file=$(IRAP_DIR)/data/10x/737K-august-2016.txt
 
+expr_format=mtx
+expr_ext=mtx.gz
+
 endif
 
 
@@ -123,8 +126,8 @@ qc?=on
 ## enable errc by default
 mapper?=none
 quant_method?=kallisto
-n_>1
-quality < 01
+#n_>1
+#quality < 01
 
 # no need to trim reads
 trim_reads=n
