@@ -203,7 +203,7 @@ function irap_init_job {
     export IRAP_PARAMS="$IRAP_PARAMS use_cached_vars=y"
     p_info " * Starting initial job"
     CUR_STAGE=stage0
-    submit_job "${jobname_prefix}i" $cmd conf=$conf bootstrap $IRAP_PARAMS -j $THREADS
+    submit_job "${jobname_prefix}i" $cmd conf=$conf bootstrap $IRAP_PARAMS -j $THREADS skip_lib_validation=
     stop_job  "${jobname_prefix}i"
     _INIT_SUSP_JOB=${jobname_prefix}i
     CUR_TARGETS=bootstrap
@@ -226,15 +226,44 @@ function submit_jobs4stage {
 	    p_info "Skipping submission of jobs in level $level - all done"
 	    DEPS=$1	    
 	else
-	    DEPS="${jobname_prefix}${level}*" 
-	    let i=1
-	    p_info "* Stage ${level}..." 
+	    p_info "* Stage ${level}..."
+	    DEPS="${jobname_prefix}${level}.*"
+	    local nx=($targets)
+	    local NJOBS=${#nx[@]}
+	    p_info "Submiting $NJOBS jobs"
+	    let JOBSPERBATCH=800
+	    let BATCH=1
+	    local BATCHGROUP=
+	    if [ $NJOBS -gt $JOBSPERBATCH ]; then
+		BATCHGROUP=b$BATCH.
+		p_info "Too many jobs...grouping them in batches of $JOBSPERBATCH"
+	    else
+		BATCHGROUP=.
+	    fi
+	    
+	    let i=1	   
 	    for f in $targets; do    
-		submit_job "${jobname_prefix}${level}[$i]"  -w "ended($waitfor)" $cmd conf=$conf  $IRAP_PARAMS $f
+		submit_job "${jobname_prefix}${level}${BATCHGROUP}$i"  -w "ended($waitfor)" $cmd conf=$conf  $IRAP_PARAMS $f
 		let i=$i+1
+		if [ $i -gt $JOBSPERBATCH ]; then
+		    p_info "Batch $BATCH submitted"
+		    THREADS=1 MAX_MEM=4000 submit_job "${jobname_prefix}${level}.$BATCH"  -w "ended(${jobname_prefix}${level}${BATCHGROUP}*)" echo nop
+		    let i=1
+		    let BATCH=$BATCH+1
+		    BATCHGROUP=b$BATCHGROUP.
+		fi
 	    done
-	    p_info "* Stage ${level}...$i jobs"
-	    CUR_TARGETS=$targets
+	    if [ $i -gt 1 ] && [ "$BATCHGROUP-" != ".-" ]; then
+		p_info "Batch $BATCH submitted"
+		THREADS=1 MAX_MEM=4000 submit_job "${jobname_prefix}${level}.$BATCH"  -w "ended(${jobname_prefix}${level}${BATCHGROUP}*)" echo nop
+	    fi
+
+	    if [ "$BATCHGROUP-" != ".-" ]; then
+		p_info "* Stage ${level}...$i jobs/$BATCH"
+	    else
+		p_info "* Stage ${level}...$i jobs"
+	    fi
+	    CUR_TARGETS=run_wave_$level
 	fi
     fi
     echo $DEPS
