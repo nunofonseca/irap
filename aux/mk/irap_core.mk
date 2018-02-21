@@ -671,9 +671,6 @@ endif
 # A=""
 ifdef pe
  all_pe_files:=$(foreach l,$(pe),$($(l)))
- map=$(foreach a,$(2),$(abspath $(call $(1),$(a))))
- deref=$($1)
- fastq_files?=$(call map, deref, $(pe))
  $(info *	pe=$(pe))
  # $(info * debug * fastq_files=$(fastq_files))
  # check the definition of 
