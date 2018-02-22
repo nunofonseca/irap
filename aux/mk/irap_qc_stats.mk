@@ -211,8 +211,10 @@ FASTQC_REPORT_FILES:=$(foreach p,$(se),$(call lib2filt_folder,$(p))$(p).f.fastqc
 
 QC_CSV_FILES:=$(foreach p,$(se),$(call lib2filt_folder,$(p))$(p).f.csv) $(foreach p,$(pe),$(call lib2filt_folder,$(p))$(p)_1.f.csv $(call lib2filt_folder,$(p))$(p)_2.f.csv)
 
+## work around the limitation on the number of arguments
 print_qc_dirs_files:  $(QC_CSV_FILES) $(FASTQC_REPORT_FILES) $(foreach p,$(pe) $(se),$(call quiet_ls,$(qc_toplevel_folder)/$($(p)_dir)/*.zip))
-	@echo $^
+	@echo -n $(file > /dev/stdout, $^)
+
 
 $(qc_toplevel_folder)/fastq_qc_report.tsv:  $(FASTQC_REPORT_FILES)
 	$(call pass_args_stdin,irap_merge2tsv,$@.tmp, --in='$(subst $(space),;,$^)'  --out $@.tmp) && mv $@.tmp $@
