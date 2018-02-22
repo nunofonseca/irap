@@ -7,4 +7,4 @@ if [ "$IRAP_DOCKER_IMAGE-" == "-" ]; then
 fi
 #
 # override the entry point to start irap in the current folder
-docker run -v `pwd`:/irap_data --entrypoint="/usr/bin/env" -i -t $IRAP_DOCKER_IMAGE xvfb-run  --server-args="-screen 0 1024x768x24" bash -c "source /irap_install/irap_setup.sh && cd /irap_data && irap $*"
+docker run -v `pwd`:/irap_data --entrypoint="/usr/bin/env" -i -t $IRAP_DOCKER_IMAGE xvfb-run  --server-args="-screen 0 1024x768x24" bash -c "cd /irap_data && /usr/bin/irap $*"
