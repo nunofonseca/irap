@@ -250,7 +250,7 @@ function submit_jobs4stage {
 		    THREADS=1 MAX_MEM=4000 submit_job "${jobname_prefix}${level}.$BATCH"  -w "ended(${jobname_prefix}${level}${BATCHGROUP}*)" echo nop
 		    let i=1
 		    let BATCH=$BATCH+1
-		    BATCHGROUP=b$BATCHGROUP.
+		    BATCHGROUP=b$BATCH.
 		fi
 	    done
 	    if [ $i -gt 1 ] && [ "$BATCHGROUP-" != ".-" ]; then
