@@ -501,11 +501,11 @@ endif
 ## $(info *  $(user_trans_abspath))
 
 #$(call file_exists,$(trans_file))
-
+ifdef spikein_fasta
 ifeq ($(spikein_fasta),)
 override undefine spikein_fasta
 endif
-
+endif
 # ************
 # spikein data
 ifdef spikein_fasta
@@ -2297,7 +2297,8 @@ define make-se-bam-rule=
 ifeq ($(mapper),star)
 $(call lib2bam_folder,$(1))$(1).se.hits.bam.trans.bam: $(call lib2bam_folder,$(1))$(1).se.hits.bam
 endif
-$(call lib2bam_folder,$(1))$(1).se.hits.bam: $(call lib2filt_folder,$(1))$(1).f.fastq.gz $(index_files) $(gtf_file_abspath) $(reference_prefix) 
+$(call lib2bam_folder,$(1))$(1).se.hits.bam: $(call lib2filt_folder,$(1))$(1).f.fastq.gz $(index_files) $(gtf_file_abspath) $(reference_prefix)
+	mkdir -p $(call lib2bam_folder,$(1)) && \
 	$(call run_$(mapper)_map,$(1),$$<,$$@)
 endef
 
@@ -2308,13 +2309,14 @@ ifeq ($(mapper),star)
 $(call lib2bam_folder,$(1))$(1).pe.hits.bam.trans.bam: $(call lib2bam_folder,$(1))$(1).pe.hits.bam
 endif
 $(call lib2bam_folder,$(1))$(1).pe.hits.bam: $(call mapper_ifiles,$(mapper),$(1),$(call lib2filt_folder,$(1))$(1)_1.f.fastq.gz $(call lib2filt_folder,$(1))$(1)_2.f.fastq.gz)   $(index_files)
+	mkdir -p $(call lib2bam_folder,$(1)) && \
 	$(call run_$(mapper)_map,$(1),$(call mapper_ifiles,$(mapper),$(1),$(call lib2filt_folder,$(1))$(1)_1.f.fastq.gz $(call lib2filt_folder,$(1))$(1)_2.f.fastq.gz),$$@)
 endef
 
 
 # create the output directories
 ifneq ($(mapper),none)
-$(foreach l,$(se) $(pe),$(eval $(shell mkdir -p $(call lib2bam_folder,$(l)))))
+#$(foreach l,$(se) $(pe),$(eval $(shell mkdir -p $(call lib2bam_folder,$(l)))))
 
 # rules for SE libraries
 $(foreach l,$(se),$(eval $(call make-se-bam-rule,$(l))))
@@ -2595,6 +2597,21 @@ print_wave_6_targets:
 
 print_wave_7_targets:
 	$(call wave_echo,$(sort $(WAVE7_TARGETS)))
+
+###################################################
+# libraries
+print_libs:
+	@echo -n $(file > /dev/stdout,$(pe) $(se))
+
+print_se_libs:
+	@echo -n $(file > /dev/stdout,$(se))
+
+print_pe_libs:
+	@echo -n $(file > /dev/stdout,$(pe)) 
+
+phony_targets+= print_libs lib_isl
+###################################################
+lib_isl: stage1 stage2 stage3as $(WAVE3_s_TARGETS)
 
 ###################################################
 # Keep the versions used in the top level folder
