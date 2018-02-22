@@ -1,0 +1,148 @@
+#!/usr/bin/env bash
+# =========================================================
+# Copyright 2012-2018,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+# =========================================================
+#Send irap jobs to the farm - if paired end files, parallelize
+#Input: a config file and irap parameters
+#Output: send jobs on the farm
+set -e 
+function stop_now {
+    cur_level=$1
+    wfc=$2
+    shift 2
+    pend=$*
+    if [ "$wave-" == "$cur_level-" ]; then
+	final_job $pend $wfc $cur_level
+	exit
+    fi
+}
+
+function usage {
+    echo "irap_lsf [-s -l level] irap options"
+}
+###################################
+level=6
+irap_cmd=irap
+DEBUG=0
+stage0_only=n
+
+# DEBUG=1 - prints all lsf commands
+# DEBUG=2 - prints all irap commands
+
+while getopts "l:sdD0"  Option; do
+    case $Option in
+	s ) irap_cmd=irap_sc;;
+        l ) level=$OPTARG;;
+	0 ) stage0_only=y;;  
+	d ) DEBUG=1;;
+	D ) DEBUG=2;;
+	h) usage; exit;;
+    esac
+done
+
+shift $((OPTIND-1))
+if [ "$DEBUG-" != "0-" ]; then
+    echo "DEBUG enabled ($DEBUG)"
+fi
+
+
+###################################
+# load shared code
+LSF_CMD=irap_lsf
+source $IRAP_DIR/aux/sh/irap_fun.sh
+source $IRAP_DIR/aux/sh/lsf_shared_code.sh
+cmd="$irap_cmd "
+
+if [ "$stage0_only-" == "y-" ]; then
+    IRAP_PARAMS="$IRAP_PARAMS do_stage0_only=1"
+    level=0
+fi
+
+wave=$level
+set +e
+
+
+echo "Checking current status..."
+$cmd conf=$conf $IRAP_PARAMS -n -q 
+let ret=$?
+if [ $ret -eq 0 ]; then
+    echo "All done - no need to submit jobs"
+    exit 0
+fi
+if [ $ret -eq 1 ]; then
+    echo "Starting job submission..."
+else
+    echo "ERROR: please run"
+    echo "$cmd conf=$conf $IRAP_PARAMS quickcheck -n -q"
+    echo "before runnig irap_lsf and address the error messages"
+    exit 1
+fi
+echo "Starting job submission..."
+
+# adjust the memory
+MAX_MEM=4000 THREADS=2 wfb=`irap_init_job|tail -n 1`
+# stage0 
+wf0=`submit_jobs4stage $wfb 0|tail -n 1`
+stop_now 0 $wfb $wf0
+
+pe_libs=`get_pe_libs`
+se_libs=`get_se_libs`
+
+THREADS_O=$THREADS
+IRAP_PARAMS_O=$IRAP_PARAMS
+let ip=$THREADS/3+1
+IRAP_PARAMS="$IRAP_PARAMS -j $ip"
+##
+all_libs=
+for lib in $pe_libs; do
+    all_libs=$all_libs pe=$lib
+done
+for lib in $se_libs; do
+    all_libs=$all_libs se=$lib
+done
+## ISL like run (stage1,2, and 3as+stats)
+## uses -p 
+wf1=`submit_jobs4libs $wf0 lib_isl 123 |tail -n 1`
+stop_now 1 $wfb $wf1
+
+## Increase parallelism at make level
+let ip=$THREADS_O/2+1
+let threads=$THREADS_O/2+1
+IRAP_PARAMS="$IRAP_PARAMS_O -j $ip"
+THREADS=$threads
+## stage3
+wf2=`submit_jobs4target $wf1 3 stage3 run_wave_3 |tail -n 1`
+stop_now 2 $wfb $wf2
+
+## stage4
+wf3=`submit_jobs4target $wf1 4 run_wave_4 |tail -n 1`
+stop_now 3 $wfb $wf3
+
+THREADS=$THREADS_O
+wf4=`submit_jobs4target $wf1 5 run_wave_5 |tail -n 1`
+stop_now 4 $wfb $wf4
+wf5=`submit_jobs4target $wf1 6 run_wave_6 |tail -n 1`
+stop_now 5 $wfb $wf5
+wf6=`submit_jobs4target $wf1 7 run_wave_7 |tail -n 1`
+stop_now 6 $wfb $wf6
+
+final_job $wf7 $wfb 7
+exit
+

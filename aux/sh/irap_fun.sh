@@ -203,7 +203,7 @@ function irap_init_job {
     export IRAP_PARAMS="$IRAP_PARAMS use_cached_vars=y"
     p_info " * Starting initial job"
     CUR_STAGE=stage0
-    submit_job "${jobname_prefix}i" $cmd conf=$conf bootstrap $IRAP_PARAMS -j $THREADS skip_lib_validation=
+    submit_job "${jobname_prefix}i" $cmd conf=$conf bootstrap $IRAP_PARAMS -j $THREADS
     stop_job  "${jobname_prefix}i"
     _INIT_SUSP_JOB=${jobname_prefix}i
     CUR_TARGETS=bootstrap
@@ -405,4 +405,88 @@ function finish_report {
 # update the menu 
    submit_job "${jobname_prefix}u" -w "ended(\"${jobname_prefix}f*\")"  "$cmd conf=$conf report  $IRAP_PARAMS browsing=n"
    echo ${jobname_prefix}u
+}
+
+#
+function submit_jobs4libs {
+    waitfor=$1
+    target=$2
+    level=$3
+    libs_ids=$all_libs
+    if [ "$libs_ids-" == "-" ]; then
+	DEPS=$1
+    else
+	DEPS="${jobname_prefix}${level}.*"
+	local nx=($libs_ids)
+	local NJOBS=${#nx[@]}
+	p_info "Submiting a maximum of $NJOBS jobs"
+	let JOBSPERBATCH=800
+	let BATCH=1
+	local BATCHGROUP=
+	if [ $NJOBS -gt $JOBSPERBATCH ]; then
+	    BATCHGROUP=b$BATCH.
+	    p_info "Too many jobs...grouping them in batches of $JOBSPERBATCH"
+	else
+	    BATCHGROUP=.
+	fi
+	let i=1	   
+	for lib in $libs_ids; do
+	    p_info "* Checking current status for $lib..."
+	    $cmd conf=$conf $IRAP_PARAMS $lib $target -n -q
+	    let ret=$?
+	    if [ $ret -eq 0 ]; then
+		p_info "Skipping submission of job for $lib"
+	    else
+		p_info "* Submitting jobs for $lib..."	    
+		submit_job "${jobname_prefix}${level}${BATCHGROUP}$i"  -w "ended($waitfor)" $cmd conf=$conf  $IRAP_PARAMS $lib $target
+		let i=$i+1
+		if [ $i -gt $JOBSPERBATCH ]; then
+		    p_info "Batch $BATCH submitted"
+		    THREADS=1 MAX_MEM=4000 submit_job "${jobname_prefix}${level}.$BATCH"  -w "ended(${jobname_prefix}${level}${BATCHGROUP}*)" echo nop
+		    let i=1
+		    let BATCH=$BATCH+1
+		    BATCHGROUP=b$BATCHGROUP.
+		fi
+	    fi
+	done	
+	if [ $i -gt 1 ] && [ "$BATCHGROUP-" != ".-" ]; then
+	    p_info "Batch $BATCH submitted"
+	    THREADS=1 MAX_MEM=4000 submit_job "${jobname_prefix}${level}.$BATCH"  -w "ended(${jobname_prefix}${level}${BATCHGROUP}*)" echo nop
+	fi
+
+	if [ "$BATCHGROUP-" != ".-" ]; then
+	    p_info "* Stage ${level}...$i jobs/$BATCH"
+	else
+	    p_info "* Stage ${level}...$i jobs"
+	fi
+	CUR_TARGETS=$target
+    fi
+    echo $DEPS
+}
+
+function submit_jobs4target {
+    waitfor=$1
+    level=$2
+    shift 2
+    target=$*
+
+    DEPS="${jobname_prefix}${level}.*"
+    p_info "* Checking current status for $target..."
+    $cmd conf=$conf $IRAP_PARAMS $lib $target -n -q
+    let ret=$?
+    if [ $ret -eq 0 ]; then
+	p_info "Skipping submission of job for $target"
+	DEPS=$waitfor
+    else
+	p_info "* Submitting jobs for $lib..."
+	submit_job "${jobname_prefix}${level}"  -w "ended($waitfor)" $cmd conf=$conf  $IRAP_PARAMS $target
+    fi
+    echo $DEPS
+}
+		
+function get_pe_libs {
+    $cmd conf=$conf $IRAP_PARAMS get_pe_libs se= 
+}
+function get_se_libs {
+    $cmd conf=$conf $IRAP_PARAMS get_se_libs pe= 
 }
