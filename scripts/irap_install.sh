@@ -1578,10 +1578,10 @@ function umis_install {
     #unzip $umis_FILE    
     #pushd umis-master
     pushd umis-$umis_VERSION
+    # temporary fix
+    sed -i "s/'UM'/'QX'/" umis/umis.py
     pip install  --prefix $IRAP_DIR .
     popd
-    # temporary fix
-    sed -i "s/'UM'/'QX'/" $IRAP_DIR/lib64/python2.7/site-packages/umis/umis.py
     pinfo "Compiling and installing umis...done."
 }
 
