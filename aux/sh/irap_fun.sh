@@ -233,9 +233,9 @@ function submit_jobs4stage {
 	    p_info "Submiting $NJOBS jobs"
 	    let JOBSPERBATCH=800
 	    let BATCH=1
-	    local BATCHGROUP=
+	    BATCHGROUP=
 	    if [ $NJOBS -gt $JOBSPERBATCH ]; then
-		BATCHGROUP=b$BATCH.
+		BATCHGROUP=b${BATCH}.
 		p_info "Too many jobs...grouping them in batches of $JOBSPERBATCH"
 	    else
 		BATCHGROUP=.
@@ -250,7 +250,7 @@ function submit_jobs4stage {
 		    THREADS=1 MAX_MEM=4000 submit_job "${jobname_prefix}${level}.$BATCH"  -w "ended(${jobname_prefix}${level}${BATCHGROUP}*)" echo nop
 		    let i=1
 		    let BATCH=$BATCH+1
-		    BATCHGROUP=b$BATCH.
+		    BATCHGROUP=b${BATCH}.
 		fi
 	    done
 	    if [ $i -gt 1 ] && [ "$BATCHGROUP-" != ".-" ]; then
@@ -420,11 +420,11 @@ function submit_jobs4libs {
 	local nx=($libs_ids)
 	local NJOBS=${#nx[@]}
 	p_info "Submiting a maximum of $NJOBS jobs"
-	let JOBSPERBATCH=800
+	let JOBSPERBATCH=1000
 	let BATCH=1
-	local BATCHGROUP=
+	BATCHGROUP=
 	if [ $NJOBS -gt $JOBSPERBATCH ]; then
-	    BATCHGROUP=b$BATCH.
+	    BATCHGROUP=b${BATCH}.
 	    p_info "Too many jobs...grouping them in batches of $JOBSPERBATCH"
 	else
 	    BATCHGROUP=.
@@ -445,7 +445,7 @@ function submit_jobs4libs {
 		    THREADS=1 MAX_MEM=4000 submit_job "${jobname_prefix}${level}.$BATCH"  -w "ended(${jobname_prefix}${level}${BATCHGROUP}*)" echo nop
 		    let i=1
 		    let BATCH=$BATCH+1
-		    BATCHGROUP=b$BATCHGROUP.
+		    BATCHGROUP=b${BATCH}.
 		fi
 	    fi
 	done	
