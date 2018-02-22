@@ -80,7 +80,7 @@ set +e
 
 
 echo "Checking current status..."
-$cmd conf=$conf $IRAP_PARAMS -n -q
+$cmd conf=$conf $IRAP_PARAMS -n -q 
 let ret=$?
 if [ $ret -eq 0 ]; then
     echo "All done - no need to submit jobs"
@@ -116,6 +116,6 @@ wf6=`submit_jobs4stage $wf5 6 |tail -n 1`
 stop_now 6 $wfb $wf6
 wf7=`submit_jobs4stage $wf6 7 |tail -n 1`
 
-final_job $wf7 $wf0 7
+final_job $wf7 $wfb 7
 exit
 
