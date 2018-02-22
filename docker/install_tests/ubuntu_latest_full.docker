@@ -1,0 +1,20 @@
+FROM ubuntu:16.04
+# Initially created by Natalja Kurbatova
+# Update the image with the latest packages (recommended)
+# and install missing packages
+# docker build --no-cache -t iRAP:latest
+ENV DEBIAN_FRONTEND=noninteractive
+
+LABEL iRAP.version="pre_release" maintainer="nuno.fonseca at gmail.com"
+
+RUN apt-get update
+RUN apt-get install -y  build-essential texlive xvfb zlibc zlib1g zlib1g-dev  libncurses5-dev  sqlite  sqlite3 libsqlite3-dev  gettext  python  python-dev   gfortran bzip2 libbz2-1.0 libbz2-dev libreadline-dev  libx11-dev libxt-dev python-numpy r-base libgd-dev  libxml2-dev  libxml2 libpng12-0 curl texinfo libcurl4-openssl-dev libexpat1 libexpat1-dev libpangocairo-1.0-0  libdb-dev openjdk-8-jre openjdk-8-jdk git bison  poxml  unzip  libboost-all-dev wget graphviz libpcre3-dev libpcre++-dev  && apt-get clean
+
+ADD build/irap_docker_setup.sh build
+# R
+RUN echo "deb http://cran.rstudio.com/bin/linux/ubuntu xenial/" >> /etc/apt/sources.list &&  gpg --keyserver hkp://keyserver.ubuntu.com --recv-key E084DAB9 &&  gpg -a --export E084DAB9 | apt-key add - &&  apt-get update &&  apt-get install -y r-base r-base-dev
+
+RUN bash build skip_os_install devel full
+
+#ENTRYPOINT ["irap"]
+
