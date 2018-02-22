@@ -247,7 +247,7 @@ function submit_jobs4stage {
 		let i=$i+1
 		if [ $i -gt $JOBSPERBATCH ]; then
 		    p_info "Batch $BATCH submitted"
-		    THREADS=1 MAX_MEM=4000 submit_job "${jobname_prefix}${level}.$BATCH"  -w "ended(${jobname_prefix}${level}${BATCHGROUP}*)" echo nop
+		    THREADS=1 MEM=4000 submit_job "${jobname_prefix}${level}.$BATCH"  -w "ended(${jobname_prefix}${level}${BATCHGROUP}*)" echo nop
 		    let i=1
 		    let BATCH=$BATCH+1
 		    BATCHGROUP=b${BATCH}.
@@ -255,7 +255,7 @@ function submit_jobs4stage {
 	    done
 	    if [ $i -gt 1 ] && [ "$BATCHGROUP-" != ".-" ]; then
 		p_info "Batch $BATCH submitted"
-		THREADS=1 MAX_MEM=4000 submit_job "${jobname_prefix}${level}.$BATCH"  -w "ended(${jobname_prefix}${level}${BATCHGROUP}*)" echo nop
+		THREADS=1 MEM=4000 submit_job "${jobname_prefix}${level}.$BATCH"  -w "ended(${jobname_prefix}${level}${BATCHGROUP}*)" echo nop
 	    fi
 
 	    if [ "$BATCHGROUP-" != ".-" ]; then
@@ -442,7 +442,7 @@ function submit_jobs4libs {
 		let i=$i+1
 		if [ $i -gt $JOBSPERBATCH ]; then
 		    p_info "Batch $BATCH submitted"
-		    THREADS=1 MAX_MEM=4000 submit_job "${jobname_prefix}${level}.$BATCH"  -w "ended(${jobname_prefix}${level}${BATCHGROUP}*)" echo nop
+		    THREADS=1 MEM=4000 submit_job "${jobname_prefix}${level}.$BATCH"  -w "ended(${jobname_prefix}${level}${BATCHGROUP}*)" echo nop
 		    let i=1
 		    let BATCH=$BATCH+1
 		    BATCHGROUP=b${BATCH}.
@@ -451,7 +451,7 @@ function submit_jobs4libs {
 	done	
 	if [ $i -gt 1 ] && [ "$BATCHGROUP-" != ".-" ]; then
 	    p_info "Batch $BATCH submitted"
-	    THREADS=1 MAX_MEM=4000 submit_job "${jobname_prefix}${level}.$BATCH"  -w "ended(${jobname_prefix}${level}${BATCHGROUP}*)" echo nop
+	    THREADS=1 MEM=4000 submit_job "${jobname_prefix}${level}.$BATCH"  -w "ended(${jobname_prefix}${level}${BATCHGROUP}*)" echo nop
 	fi
 
 	if [ "$BATCHGROUP-" != ".-" ]; then
