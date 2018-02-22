@@ -82,6 +82,7 @@ if [ "$IRAP_VERSION-" == "irap_new_release-" ]; then
 fi
 if [ $CLONE == y ]; then
     git clone http://github.com/nunofonseca/irap.git -b $CLONE_BRANCH irap_clone --depth 50
+    rm -rf irap_clone/.git
 else
     wget https://github.com/nunofonseca/irap/archive/v$IRAP_VERSION.tar.gz -o irap.tar.gz
     tar xzvf irap.tar.gz
