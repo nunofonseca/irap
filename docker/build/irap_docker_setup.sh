@@ -72,6 +72,10 @@ if [ "$IRAP_VERSION-" == "devel-" ]; then
     CLONE=y
     CLONE_BRANCH=devel
 fi
+if [ "$IRAP_VERSION-" == "master-" ]; then
+    CLONE=y
+    CLONE_BRANCH=master
+fi
 if [ "$IRAP_VERSION-" == "irap_new_release-" ]; then
     CLONE=y
     CLONE_BRANCH=irap_new_release
