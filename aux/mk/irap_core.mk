@@ -535,7 +535,7 @@ user_reference_abspath:=$(reference_abspath)
 # newref: ref_prefix.spikein_prefix.fasta
 spikein_fasta_prefix:=$(patsubst %.fa,%,$(patsubst %.fasta,%,$(patsubst %.gz,%,$(notdir $(spikein_fasta)))))
 new_spike_ref_prefix:=$(dir $(reference_abspath))/$(patsubst %.fasta,%.$(spikein_fasta_prefix),$(patsubst %.fa,%.fasta,$(subst .gz,,$(reference))))
-override reference_abspath:=$(new_spike_ref_prefix).fa
+override reference_abspath:=$(abspath $(new_spike_ref_prefix).fa)
 reference_prefix=$(reference_abspath)
 
 reference_basename=$(notdir $(reference_abspath))
@@ -546,7 +546,7 @@ override trans_abspath:=$(dir $(user_trans_abspath))/$(patsubst %.fasta,%.$(spik
 user_gtf_abspath:=$(gtf_file_abspath)
 ifeq ($(share_files_in_reference),n)
 gtf_file_dir:=$(auxdata_toplevel_folder)
-gtf_file_abspath:=$(auxdata_toplevel_folder)/$(subst .fasta,,$(spikein_fasta_prefix)).$(subst .gz,,$(notdir $(user_gtf_abspath)))
+gtf_file_abspath:=$(abspath $(auxdata_toplevel_folder)/$(subst .fasta,,$(spikein_fasta_prefix)).$(subst .gz,,$(notdir $(user_gtf_abspath))))
 else
 gtf_file_abspath:=$(dir $(reference_abspath))/$(subst .fasta,,$(spikein_fasta_prefix)).$(subst .gz,,$(notdir $(user_gtf_abspath)))
 endif
