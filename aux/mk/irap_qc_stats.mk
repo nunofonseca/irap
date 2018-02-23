@@ -207,13 +207,15 @@ $(qc_toplevel_folder)/qc.html $(qc_toplevel_folder)/qc.tsv: $(conf) $(call must_
 	irap_report_qc $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --out_dir $(qc_toplevel_folder) --qc_dir $(qc_toplevel_folder) --css $(CSS_FILE) $(call get_lib_info_option) || ( rm -f $@ && exit 1)
 
 
-FASTQC_REPORT_FILES:=$(foreach p,$(se),$(call lib2filt_folder,$(p))$(p).f.fastqc.tsv) $(foreach p,$(pe),$(call lib2filt_folder,$(p))$(p)_1.f.fastqc.tsv $(call lib2filt_folder,$(p))$(p)_2.f.fastqc.tsv)
+FASTQC_REPORT_FILES=$(foreach p,$(se),$(call lib2filt_folder,$(p))$(p).f.fastqc.tsv) $(foreach p,$(pe),$(call lib2filt_folder,$(p))$(p)_1.f.fastqc.tsv $(call lib2filt_folder,$(p))$(p)_2.f.fastqc.tsv)
 
-QC_CSV_FILES:=$(foreach p,$(se),$(call lib2filt_folder,$(p))$(p).f.csv) $(foreach p,$(pe),$(call lib2filt_folder,$(p))$(p)_1.f.csv $(call lib2filt_folder,$(p))$(p)_2.f.csv)
+QC_CSV_FILES=$(foreach p,$(se),$(call lib2filt_folder,$(p))$(p).f.csv) $(foreach p,$(pe),$(call lib2filt_folder,$(p))$(p)_1.f.csv $(call lib2filt_folder,$(p))$(p)_2.f.csv)
+
+ZIP_FILES=$(foreach p,$(se),$(qc_toplevel_folder)/$($(p)_dir)$(p).f.fastqc.zip) $(foreach p,$(pe),$(qc_toplevel_folder)/$($(p)_dir)$(p)_1.f.fastqc.zip $(qc_toplevel_folder)/$($(p)_dir)$(p)_2.f.fastqc.zip)
 
 ## work around the limitation on the number of arguments
-print_qc_dirs_files:  $(QC_CSV_FILES) $(FASTQC_REPORT_FILES) $(foreach p,$(pe) $(se),$(call quiet_ls,$(qc_toplevel_folder)/$($(p)_dir)/*.zip))
-	@echo -n $(file > /dev/stdout, $^)
+print_qc_dirs_files:  
+	@echo -n $(file > /dev/stdout, $(QC_CSV_FILES) $(FASTQC_REPORT_FILES) $(ZIP_FILES))
 
 
 $(qc_toplevel_folder)/fastq_qc_report.tsv:  $(FASTQC_REPORT_FILES)
