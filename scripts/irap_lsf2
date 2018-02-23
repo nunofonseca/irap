@@ -106,8 +106,16 @@ echo "Starting job submission..."
 MEM=6000 THREADS=2 wfb=`irap_init_job|tail -n 1`
 
 THREADS=$THREADS_O
-# stage0 
-wf0=`submit_jobs4stage $wfb 0|tail -n 1`
+# wave0
+wfw0=`submit_jobs4stage $wfb 0|tail -n 1`
+let ip=$THREADS/3+1
+IRAP_PARAMS="$IRAP_PARAMS_O -j $ip"
+if [ $MEM -gt 8000 ]; then
+    MEM2=8000
+else
+    MEM2=$MEM
+fi
+MEM=$MEM2 wf0=`submit_jobs4target $wfw0 stage0|tail -n 1`
 stop_now 0 $wfb $wf0
 
 pe_libs=`get_pe_libs`
@@ -147,7 +155,7 @@ stop_now 2 $wfb $wf2
 let ip=$THREADS_O/3+1
 IRAP_PARAMS="$IRAP_PARAMS_O -j $ip"
 
-wf3=`submit_jobs4target $wf2 3_7 run_wave_3 run_wave_4 run_wave_5 run_wave_6 run_wave_7 |tail -n 1`
+MEM=$MEM_O THREADS=$THREADS_O wf3=`submit_jobs4target $wf2 3_7 run_wave_3 run_wave_4 run_wave_5 run_wave_6 run_wave_7 |tail -n 1`
 stop_now 3 $wfb $wf3
 
 final_job $wf3 $wfb 3

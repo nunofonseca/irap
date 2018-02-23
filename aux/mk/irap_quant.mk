@@ -417,7 +417,7 @@ endef
 # $2 - cufflinks1|cufflinks1_nd|cuffflinks2|...
 # $3 - bam file prefix (includes .se|.pe)
 define make-cufflinks-quant-rule=
-$(call lib2quant_folder,$(1))$(3).cuff.gtf $(call lib2quant_folder,$(1))$(3).cuff.genes.fpkm_tracking $(call lib2quant_folder,$(1))$(3).cuff.isoforms.fpkm_tracking: $(call lib2bam_folder,$(1))$(3).hits.bam
+$(call lib2quant_folder,$(1))$(3).cuff%gtf $(call lib2quant_folder,$(1))$(3).cuff.genes%fpkm_tracking $(call lib2quant_folder,$(1))$(3).cuff%isoforms.fpkm_tracking: $(call lib2bam_folder,$(1))$(3).hits.bam
 	$(call run_$(subst _nd,,$(2)),$$<,$(1),$(call lib2quant_folder,$(1))$(3).cuff.gtf,$(call lib2quant_folder,$(1))$(3).cuff.isoforms.fpkm_tracking,$(call lib2quant_folder,$(1))$(3).cuff.genes.fpkm_tracking)
 
 
@@ -671,7 +671,7 @@ $(quant_toplevel_folder1)/nurd/transcripts.raw.nurd.tsv: $(foreach p,$(pe),$(cal
 # $1 - lib
 # $2 - bam file prefix (includes .se|.pe)
 define make-nurd-quant-rule=
-$(call lib2quant_folder,$(1))$(2).nurd.tsv $(call lib2quant_folder,$(1))$(2).raw.nurd.tsv : $(call lib2bam_folder,$(1))$(2).hits.bam $(gtf_file_abspath) 
+$(call lib2quant_folder,$(1))$(2).nurd%tsv $(call lib2quant_folder,$(1))$(2).raw.nurd%tsv: $(call lib2bam_folder,$(1))$(2).hits.bam $(gtf_file_abspath) 
 	$$(call run_nurd,$$<,$$(gtf_file_abspath),$(call lib2quant_folder,$(1))$(2))
 # Process nurd output
 $(call lib2quant_folder,$(1))$(2).genes.raw.nurd.tsv: $(call lib2quant_folder,$(1))$(2).nurd.tsv 
@@ -909,7 +909,7 @@ endef
 # 2 bam prefix
 # 3 paired-end/se options
 define make-rsem-quant-rule=
-$(call lib2quant_folder,$(1))$(2).genes.results $(call lib2quant_folder,$(1))$(2).isoforms.results: $(call lib2bam_folder,$(1))$(2).hits.bam.trans.bam 
+$(call lib2quant_folder,$(1))$(2).genes%results $(call lib2quant_folder,$(1))$(2).isoforms%results: $(call lib2bam_folder,$(1))$(2).hits.bam.trans.bam 
 	(mkdir -p $$(@D) && $$(call run_rsem,$$<,$$(@D)/$(2),$(3),$(1))) || (rm -rf $$@ && exit 1)
 
 $(call lib2quant_folder,$(1))$(2).genes.tpm.rsem.rsem.tsv: $(call lib2quant_folder,$(1))$(2).genes.results
