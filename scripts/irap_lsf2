@@ -37,6 +37,7 @@ function stop_now {
 function usage {
     echo "irap_lsf [-s -l level] irap options"
 }
+
 ###################################
 level=6
 irap_cmd=irap
@@ -62,12 +63,12 @@ if [ "$DEBUG-" != "0-" ]; then
     echo "DEBUG enabled ($DEBUG)"
 fi
 
-
 ###################################
 # load shared code
 LSF_CMD=irap_lsf
 source $IRAP_DIR/aux/sh/irap_fun.sh
 source $IRAP_DIR/aux/sh/lsf_shared_code.sh
+
 cmd="$irap_cmd "
 
 if [ "$stage0_only-" == "y-" ]; then
@@ -78,6 +79,9 @@ fi
 wave=$level
 set +e
 
+THREADS_O=$THREADS
+MEM_O=$MEM
+IRAP_PARAMS_O=$IRAP_PARAMS
 
 echo "Checking current status..."
 $cmd conf=$conf $IRAP_PARAMS -n -q 
@@ -96,8 +100,12 @@ else
 fi
 echo "Starting job submission..."
 
+
 # adjust the memory
-MAX_MEM=4000 THREADS=2 wfb=`irap_init_job|tail -n 1`
+# bootstraping requires a small amount of memory
+MEM=6000 THREADS=2 wfb=`irap_init_job|tail -n 1`
+
+THREADS=$THREADS_O
 # stage0 
 wf0=`submit_jobs4stage $wfb 0|tail -n 1`
 stop_now 0 $wfb $wf0
@@ -105,43 +113,50 @@ stop_now 0 $wfb $wf0
 pe_libs=`get_pe_libs`
 se_libs=`get_se_libs`
 
-THREADS_O=$THREADS
-IRAP_PARAMS_O=$IRAP_PARAMS
+#echo $pe_libs
+#echo $se_libs
+
 let ip=$THREADS/3+1
-IRAP_PARAMS="$IRAP_PARAMS -j $ip"
+IRAP_PARAMS="$IRAP_PARAMS_O -j $ip"
 ##
 all_libs=
 for lib in $pe_libs; do
-    all_libs=$all_libs pe=$lib
+    all_libs="$all_libs pe=$lib"
 done
 for lib in $se_libs; do
-    all_libs=$all_libs se=$lib
+    all_libs="$all_libs se=$lib"
 done
-## ISL like run (stage1,2, and 3as+stats)
-## uses -p 
-wf1=`submit_jobs4libs $wf0 lib_isl 123 |tail -n 1`
-stop_now 1 $wfb $wf1
+echo $all_libs
 
 ## Increase parallelism at make level
-let ip=$THREADS_O/2+1
-let threads=$THREADS_O/2+1
+let ip=$THREADS_O/3+1
+
+## ISL like run (stage1,2, and 3as+stats)
+## uses -j
 IRAP_PARAMS="$IRAP_PARAMS_O -j $ip"
-THREADS=$threads
+MEM=$MEM_O THREADS=$THREADS_O wf1=`submit_jobs4libs $wf0 lib_isl 123 |tail -n 1`
+stop_now 1 $wfb $wf1
+
 ## stage3
-wf2=`submit_jobs4target $wf1 3 stage3 run_wave_3 |tail -n 1`
+let ip=$THREADS/2+1
+IRAP_PARAMS="$IRAP_PARAMS_O -j $ip"
+MEM=$MEM_O THREADS=$THREADS_O wf2=`submit_jobs4target $wf1 3 stage3 |tail -n 1`
 stop_now 2 $wfb $wf2
 
-## stage4
-wf3=`submit_jobs4target $wf1 4 run_wave_4 |tail -n 1`
+## waves...
+let ip=$THREADS_O/3+1
+IRAP_PARAMS="$IRAP_PARAMS_O -j $ip"
+
+wf3=`submit_jobs4target $wf2 3p run_wave_3_p |tail -n 1`
 stop_now 3 $wfb $wf3
 
-THREADS=$THREADS_O
-wf4=`submit_jobs4target $wf1 5 run_wave_5 |tail -n 1`
+wf4=`submit_jobs4target $wf3 4 run_wave_4 |tail -n 1`
 stop_now 4 $wfb $wf4
-wf5=`submit_jobs4target $wf1 6 run_wave_6 |tail -n 1`
+wf5=`submit_jobs4target $wf4 5 run_wave_5 |tail -n 1`
 stop_now 5 $wfb $wf5
-wf6=`submit_jobs4target $wf1 7 run_wave_7 |tail -n 1`
+wf6=`submit_jobs4target $wf5 6 run_wave_6 |tail -n 1`
 stop_now 6 $wfb $wf6
+wf7=`submit_jobs4target $wf6 7 run_wave_7 |tail -n 1`
 
 final_job $wf7 $wfb 7
 exit
