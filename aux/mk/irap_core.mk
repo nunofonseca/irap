@@ -548,7 +548,7 @@ ifeq ($(share_files_in_reference),n)
 gtf_file_dir:=$(auxdata_toplevel_folder)
 gtf_file_abspath:=$(abspath $(auxdata_toplevel_folder)/$(subst .fasta,,$(spikein_fasta_prefix)).$(subst .gz,,$(notdir $(user_gtf_abspath))))
 else
-gtf_file_abspath:=$(dir $(reference_abspath))/$(subst .fasta,,$(spikein_fasta_prefix)).$(subst .gz,,$(notdir $(user_gtf_abspath)))
+gtf_file_abspath:=$(abspath $(dir $(reference_abspath))/$(subst .fasta,,$(spikein_fasta_prefix)).$(subst .gz,,$(notdir $(user_gtf_abspath))))
 endif
 
 spikein_gtf_file:=$(patsubst %.fasta,%.gtf,$(spikein_fasta_abspath))
