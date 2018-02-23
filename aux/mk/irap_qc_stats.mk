@@ -50,17 +50,22 @@ endif
 
 ####################################################################
 # Preprocessing of the input files (.fastq/.bam), QC, filtering
-
+define rep_is_on=
+$(if $(filter off,$(qc)),,$(1))
+endef
+#$(info $(call rep_is_on))
+intermediate_targets=
 define make-pe-qc-rule=
-$(call lib2filt_folder,$(1))$(1)_1.f.fastq.gz $(call lib2filt_folder,$(1))$(1)_2.f.fastq.gz $(call lib2filt_folder,$(1))$(1)_1.f.fastqc.tsv $(call lib2filt_folder,$(1))$(1)_2.f.fastqc.tsv $(call lib2filt_folder,$(1))$(1)_1.f.csv $(call lib2filt_folder,$(1))$(1)_2.f.csv: $(raw_data_dir)$($(1)_dir)/$(notdir $(word 1,$($(1))))  $(raw_data_dir)$($(1)_dir)/$(notdir $(word 2,$($(1))))
+$(call lib2filt_folder,$(1))$(1)_1.f.fastq%gz $(call lib2filt_folder,$(1))$(1)_2.f.fastq%gz $(call lib2filt_folder,$(1))$(1)_1.f.fastqc%tsv $(call lib2filt_folder,$(1))$(1)_2.f.fastqc%tsv $(call lib2filt_folder,$(1))$(1)_1.f%csv $(call lib2filt_folder,$(1))$(1)_2.f%csv $(call rep_is_on,$(call lib2filt_folder,$(1))$(1)_1.f.fastqc%zip) $(call rep_is_on,$(call lib2filt_folder,$(1))$(1)_2.f.fastqc%zip): $(raw_data_dir)$($(1)_dir)/$(notdir $(word 1,$($(1))))  $(raw_data_dir)$($(1)_dir)/$(notdir $(word 2,$($(1))))
 	$$(call p_info,Filtering $(call fix_libname,$(1)))
-	$$(call do_quality_filtering_and_report,$(call fix_libname,$(1)),$(raw_data_dir)$($(1)_dir),$$(@D),) || (rm -f $(call lib2filt_folder,$(1))$(1)_1.f.fastq.gz && exit 1)
+	+$$(call do_quality_filtering_and_report,$(call fix_libname,$(1)),$(raw_data_dir)$($(1)_dir),$$(@D),) || (rm -f $(call lib2filt_folder,$(1))$(1)_1.f.fastq.gz && exit 1)
 endef
 
 define make-se-qc-rule=
-$(call lib2filt_folder,$(1))$(1).f.fastq.gz $(call lib2filt_folder,$(1))$(1).f.fastqc.tsv $(call lib2filt_folder,$(1))$(1).f.csv: $(raw_data_dir)$($(1)_dir)/$(notdir $($(1)))
+
+$(call lib2filt_folder,$(1))$(1).f.fastq%gz $(call lib2filt_folder,$(1))$(1).f.fastqc%tsv $(call lib2filt_folder,$(1))$(1).f%csv $(call rep_is_on,$(call lib2filt_folder,$(1))$(1).f.fastqc%zip): $(raw_data_dir)$($(1)_dir)/$(notdir $($(1)))
 	$$(call p_info,Filtering $(call fix_libname,$(1)))
-	$$(call do_quality_filtering_and_report,$(1),$(raw_data_dir)$($(1)_dir),$$(@D),) || (rm -f $(call lib2filt_folder,$(1))$(1).f.fastq.gz && exit 1)
+	+$$(call do_quality_filtering_and_report,$(1),$(raw_data_dir)$($(1)_dir),$$(@D),) || (rm -f $(call lib2filt_folder,$(1))$(1).f.fastq.gz && exit 1)
 
 endef
 # rules for SE libraries
@@ -115,14 +120,14 @@ endif
 WAVE4_TARGETS+=
 
 # merge into a single file the statistics collected from the BAMs 
-$(mapper_toplevel_folder)/stats_raw.tsv $(mapper_toplevel_folder)/stats_perc.tsv: $(foreach s,$(se),$(call lib2bam_folder,$(s))$(s).se.hits.bam) $(foreach p,$(pe),$(call lib2bam_folder,$(p))$(p).pe.hits.bam)
+$(mapper_toplevel_folder)/stats_raw%tsv $(mapper_toplevel_folder)/stats_perc%tsv: $(foreach s,$(se),$(call lib2bam_folder,$(s))$(s).se.hits.bam) $(foreach p,$(pe),$(call lib2bam_folder,$(p))$(p).pe.hits.bam)
 	$(call pass_args_stdin,irap_bams2tsv,$(mapper_toplevel_folder)/stats_raw.tsv, --pe "$(call remove_spaces,$(foreach p,$(pe),;$(call lib2bam_folder,$(p))$(p).pe.hits.bam))" --se "$(call remove_spaces,$(foreach s,$(se),;$(call lib2bam_folder,$(s))$(s).se.hits.bam))"  --pe_labels "$(call remove_spaces,$(foreach p,$(pe),;$(p)))" --se_labels "$(call remove_spaces,$(foreach s,$(se),;$(s)))" --out $(mapper_toplevel_folder)/$(mapper)) && mv $(mapper_toplevel_folder)/$(mapper)_mapping_stats_raw.tsv $(mapper_toplevel_folder)/stats_raw.tsv && mv $(mapper_toplevel_folder)/$(mapper)_mapping_stats_perc.tsv $(mapper_toplevel_folder)/stats_perc.tsv
 
 #
-$(mapper_toplevel_folder)/featstats_raw.tsv $(mapper_toplevel_folder)/featstats_perc.tsv:  $(foreach s,$(se),$(call lib2bam_folder,$(s))$(s).se.hits.bam.stats) $(foreach p,$(pe),$(call lib2bam_folder,$(p))$(p).pe.hits.bam.stats)
+$(mapper_toplevel_folder)/featstats_raw%tsv $(mapper_toplevel_folder)/featstats_perc%tsv:  $(foreach s,$(se),$(call lib2bam_folder,$(s))$(s).se.hits.bam.stats) $(foreach p,$(pe),$(call lib2bam_folder,$(p))$(p).pe.hits.bam.stats)
 	$(call pass_args_stdin,merge_featstats,$(mapper_toplevel_folder)/featstats_raw.tsv, --header --stats "$(call remove_spaces,$(foreach p,$(pe),;$(call lib2bam_folder,$(p))$(p).pe.hits.bam.stats))$(call remove_spaces, $(foreach s,$(se),;$(call lib2bam_folder,$(s))$(s).se.hits.bam.stats))"  --labels "$(call remove_spaces,$(foreach p,$(pe) $(se),;$(p)))"  --out $(mapper_toplevel_folder)/$(mapper).ftmp) && mv $(mapper_toplevel_folder)/$(mapper).ftmp_featstats_raw.tsv $(mapper_toplevel_folder)/featstats_raw.tsv && mv $(mapper_toplevel_folder)/$(mapper).ftmp_featstats_perc.tsv $(mapper_toplevel_folder)/featstats_perc.tsv
 
-$(mapper_toplevel_folder)/genestats_raw.tsv $(mapper_toplevel_folder)/genestats_perc.tsv:   $(foreach s,$(se),$(call lib2bam_folder,$(s))$(s).se.hits.bam.gene.stats) $(foreach p,$(pe),$(call lib2bam_folder,$(p))$(p).pe.hits.bam.gene.stats)
+$(mapper_toplevel_folder)/genestats_raw%tsv $(mapper_toplevel_folder)/genestats_perc%tsv:   $(foreach s,$(se),$(call lib2bam_folder,$(s))$(s).se.hits.bam.gene.stats) $(foreach p,$(pe),$(call lib2bam_folder,$(p))$(p).pe.hits.bam.gene.stats)
 	$(call pass_args_stdin,merge_featstats,$(mapper_toplevel_folder)/genestats_raw.tsv, --stats "$(call remove_spaces,$(foreach p,$(pe),;$(call lib2bam_folder,$(p))$(p).pe.hits.bam.gene.stats))$(call remove_spaces,$(foreach p,$(se),;$(call lib2bam_folder,$(p))$(p).se.hits.bam.gene.stats))"  --labels "$(call remove_spaces,$(foreach p,$(pe) $(se),;$(p)))"  --out $(mapper_toplevel_folder)/$(mapper).gtmp) && mv $(mapper_toplevel_folder)/$(mapper).gtmp_featstats_perc.tsv $(mapper_toplevel_folder)/genestats_perc.tsv && mv $(mapper_toplevel_folder)/$(mapper).gtmp_featstats_raw.tsv $(mapper_toplevel_folder)/genestats_raw.tsv 
 
 ################
@@ -206,15 +211,22 @@ print_qc_dirs_files:
 ## end qc=off
 else
 ## qc=on |report
-$(qc_toplevel_folder)/qc.html $(qc_toplevel_folder)/qc.tsv: $(conf) $(call must_exist,$(auxdata_toplevel_folder)/)  $(qc_toplevel_folder)/fastq_qc_report.tsv $(qc_toplevel_folder)/qc_report.csv $(lib_info)
-	irap_report_qc $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --out_dir $(qc_toplevel_folder) --qc_dir $(qc_toplevel_folder) --css $(CSS_FILE) $(call get_lib_info_option) || ( rm -f $@ && exit 1)
+$(qc_toplevel_folder)/qc%html $(qc_toplevel_folder)/qc%tsv: $(conf) $(call must_exist,$(auxdata_toplevel_folder)/)  $(qc_toplevel_folder)/fastq_qc_report.tsv $(qc_toplevel_folder)/qc_report.csv $(lib_info)
+	irap_report_qc $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --out_dir $(qc_toplevel_folder) --qc_dir $(qc_toplevel_folder) --css $(CSS_FILE) $(call get_lib_info_option) || ( rm -f $(qc_toplevel_folder)/qc.tsv && exit 1)
 
 
+
+ifneq ($(qc),off)
 FASTQC_REPORT_FILES=$(foreach p,$(se),$(call lib2filt_folder,$(p))$(p).f.fastqc.tsv) $(foreach p,$(pe),$(call lib2filt_folder,$(p))$(p)_1.f.fastqc.tsv $(call lib2filt_folder,$(p))$(p)_2.f.fastqc.tsv)
 
 QC_CSV_FILES=$(foreach p,$(se),$(call lib2filt_folder,$(p))$(p).f.csv) $(foreach p,$(pe),$(call lib2filt_folder,$(p))$(p)_1.f.csv $(call lib2filt_folder,$(p))$(p)_2.f.csv)
 
 ZIP_FILES=$(foreach p,$(se),$(qc_toplevel_folder)/$($(p)_dir)$(p).f.fastqc.zip) $(foreach p,$(pe),$(qc_toplevel_folder)/$($(p)_dir)$(p)_1.f.fastqc.zip $(qc_toplevel_folder)/$($(p)_dir)$(p)_2.f.fastqc.zip)
+else
+ZIP_FILES=
+QC_CSV_FILES=
+FASTQC_REPORT_FILES=
+endif
 
 STAGE1_S_TARGETS+=$(QC_CSV_FILES) $(FASTQC_REPORT_FILES) $(ZIP_FILES)
 
