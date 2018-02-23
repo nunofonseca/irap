@@ -165,7 +165,8 @@ lib2quant_folder=$(quant_toplevel_folder)/$($(1)_dir)
 lib2fusion_folder=$(fusion_toplevel_folder)/$($(1)_dir)
 
 # check if a parameter is defined
-check_param_ok=$(if $(call is_defined,$(strip $(1))),$(info *	$(1)=$($(1))),$(error * Missing -$(1)-))
+check_param_ok_verbose=$(if $(call is_defined,$(strip $(1))),$(info *	$(1)=$($(1))),$(error * Missing -$(1)-))
+check_param_ok=$(if $(call is_defined,$(strip $(1))),,$(error * Missing -$(1)-))
 
 # check  contrast name
 # 1 - param 2-param_name
@@ -640,10 +641,11 @@ endif
 
 #
 ifdef skip_lib_validation
-$(info * "Skipping validation of se and pe")
+$(info * Skipping validation of se and pe)
 override se:=
 override pe:=
 else
+$(info * Validating se and pe)
 ifdef se
 ifneq ($(se),)
  $(info *	se=$(se))
@@ -735,7 +737,7 @@ ifdef contrasts
  $(info *	contrasts=$(contrasts))
 # check contrast/group names
  $(foreach l,$(contrasts),$(call check_name,$(l),contrast);$(foreach g,$($(l)),$(call check_name,$(g),group/condition)))
- $(foreach l,$(contrasts),$(info *      $(l)=$($(l)));$(foreach g,$($(l)),$(call check_param_ok,$(g))))
+ $(foreach l,$(contrasts),$(info *      $(l)=$($(l)));$(foreach g,$($(l)),$(call check_param_ok_verbose,$(g))))
 else
 contrasts=
 endif
@@ -757,7 +759,7 @@ ifndef groups
 $(info *	groups=  parameter not defined, this should be defined if you intend to generate an HTML report for the inferred gene/level/transcript quantification)
 groups=
 else
-$(foreach g,$(groups),$(call check_param_ok,$(g)))
+$(foreach g,$(groups),$(call check_param_ok_verbose,$(g)))
 $(info *	groups=$(groups))
 endif
 
