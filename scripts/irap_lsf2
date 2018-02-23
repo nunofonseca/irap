@@ -147,8 +147,11 @@ stop_now 2 $wfb $wf2
 let ip=$THREADS_O/3+1
 IRAP_PARAMS="$IRAP_PARAMS_O -j $ip"
 
-wf3=`submit_jobs4target $wf2 3p run_wave_3_p |tail -n 1`
+wf3=`submit_jobs4target $wf2 3_7 run_wave_3 run_wave_4 run_wave_5 run_wave_6 run_wave_7 |tail -n 1`
 stop_now 3 $wfb $wf3
+
+final_job $wf3 $wfb 3
+exit
 
 wf4=`submit_jobs4target $wf3 4 run_wave_4 |tail -n 1`
 stop_now 4 $wfb $wf4
@@ -157,7 +160,4 @@ stop_now 5 $wfb $wf5
 wf6=`submit_jobs4target $wf5 6 run_wave_6 |tail -n 1`
 stop_now 6 $wfb $wf6
 wf7=`submit_jobs4target $wf6 7 run_wave_7 |tail -n 1`
-
-final_job $wf7 $wfb 7
-exit
 
