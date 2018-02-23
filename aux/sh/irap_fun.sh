@@ -193,12 +193,12 @@ function get_targets_4_level {
 
 _INIT_SUSP_JOB=
 function irap_init_job {
+
     # #############
     ## Submit jobs
-    p_info " * Initialization "
+    p_info " * Initialization..."
     # save variables
     $cmd conf=$conf $IRAP_PARAMS save_cache
-
     ##load the file with the variables already computed
     export IRAP_PARAMS="$IRAP_PARAMS use_cached_vars=y"
     p_info " * Starting initial job"
@@ -220,7 +220,7 @@ function submit_jobs4stage {
 	DEPS=$1
     else
 	p_info "* Checking current status..."
-	$cmd conf=$conf $IRAP_PARAMS run_wave_$level -n -q
+	$cmd conf=$conf $IRAP_PARAMS run_wave_$level -n -q 2> /dev/null
 	let ret=$?
 	if [ $ret -eq 0 ]; then
 	    p_info "Skipping submission of jobs in level $level - all done"
@@ -432,7 +432,7 @@ function submit_jobs4libs {
 	let i=1	   
 	for lib in $libs_ids; do
 	    p_info "* Checking current status for $lib..."
-	    $cmd conf=$conf $IRAP_PARAMS $lib $target -n -q
+	    $cmd conf=$conf $IRAP_PARAMS $lib $target -n -q 2> /dev/null
 	    let ret=$?
 	    if [ $ret -eq 0 ]; then
 		p_info "Skipping submission of job for $lib"
@@ -470,23 +470,25 @@ function submit_jobs4target {
     shift 2
     target=$*
 
-    DEPS="${jobname_prefix}${level}.*"
-    p_info "* Checking current status for $target..."
-    $cmd conf=$conf $IRAP_PARAMS $lib $target -n -q
+    DEPS="${jobname_prefix}${level}"
+    p_info "* Checking current status for $target ($waitfor)..."
+    $cmd conf=$conf $IRAP_PARAMS $target -n -q 2> /dev/null
     let ret=$?
     if [ $ret -eq 0 ]; then
 	p_info "Skipping submission of job for $target"
 	DEPS=$waitfor
     else
-	p_info "* Submitting jobs for $lib..."
+	p_info "* Submitting jobs for $target ($IRAP_PARAMS)..."
 	submit_job "${jobname_prefix}${level}"  -w "ended($waitfor)" $cmd conf=$conf  $IRAP_PARAMS $target
     fi
     echo $DEPS
 }
 		
 function get_pe_libs {
-    $cmd conf=$conf $IRAP_PARAMS get_pe_libs se= 
+    #echo $cmd conf=$conf $IRAP_PARAMS print_pe_libs se= > /dev/stderr
+    $cmd conf=$conf $IRAP_PARAMS print_pe_libs se= |tail -n 1
 }
 function get_se_libs {
-    $cmd conf=$conf $IRAP_PARAMS get_se_libs pe= 
+    #echo $cmd conf=$conf $IRAP_PARAMS print_se_libs pe= > /dev/stderr
+    $cmd conf=$conf $IRAP_PARAMS print_se_libs pe= | tail -n 1
 }

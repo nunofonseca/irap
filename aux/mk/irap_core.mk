@@ -608,8 +608,8 @@ refgeneannot_file=$(subst .gtf,,$(subst .gz,,$(gtf_file_abspath))).gene_annot.ts
 #************
 # FASTQ files
 # SE reads
-all_se_files=""
-all_pe_files=""
+all_se_files=
+all_pe_files=
 
 # no need to check the se and pe parameters if
 # the target is stage0 only
@@ -645,6 +645,7 @@ override se:=
 override pe:=
 else
 ifdef se
+ifneq ($(se),)
  $(info *	se=$(se))
  all_se_files:=$(foreach l,$(se),$($(l)))
  #$(foreach l,$(se),$(info $(l)=$($(l)))) 
@@ -664,12 +665,13 @@ ifdef se
  $(foreach l,$(se),$(foreach bc,known_umi_file known_cells_file index1 index2 index3 umi_read umi_offset umi_size cell_read cell_offset cell_size sample_read sample_offset sample_size read1_offset read2_offset read1_size read2_size sample_name,$(eval $(l)_$(bc)=$(call check_bc_value_ok,$(l),$(bc)))))
  ifile_given=1
 endif
-
+endif
 # PE files (libraries)
 # lib=A B C
 # 
 # A=""
 ifdef pe
+ifneq ($(pe),)
  all_pe_files:=$(foreach l,$(pe),$($(l)))
  $(info *	pe=$(pe))
  # $(info * debug * fastq_files=$(fastq_files))
@@ -701,6 +703,7 @@ ifdef pe
  #$(foreach l,$(pe),$(call check_param_ok,$(l)_mp))
  ifile_given=1
 endif
+endif
 
 all_fq_files:=$(all_pe_files) $(all_se_files)
 nfqfiles:=$(words $(all_fq_files))
@@ -713,10 +716,9 @@ endif
 #$(call p_info,has_stranded_data=$(has_stranded_data))
 
 ifndef ifile_given
-$(warning pe parameter or se parameter should be defined and non-empty)
+$(info *	pe parameter or se parameter should be defined and non-empty)
 endif
 endif
-# endif  ($(MAKECMDGOALS),stage0)
 
 endif
 
@@ -752,7 +754,7 @@ endif
 # ex.
 # groups=group1 group2 group3 
 ifndef groups
-$(info *	 groups=  parameter not defined, this should be defined if you intend to generate an HTML report for the inferred gene/level/transcript quantification)
+$(info *	groups=  parameter not defined, this should be defined if you intend to generate an HTML report for the inferred gene/level/transcript quantification)
 groups=
 else
 $(foreach g,$(groups),$(call check_param_ok,$(g)))
@@ -2566,34 +2568,34 @@ run_wave_6: $(WAVE6_TARGETS)
 run_wave_7: $(WAVE7_TARGETS)
 
 print_wave_b_targets:
-	$(call wave_echo,echo $(sort $(WAVEB_TARGETS)))
+	$(call wave_echo,$(sort $(WAVEB_TARGETS)))
 
 print_wave_0_targets:
-	$(call wave_echo,echo $(sort $(WAVE0_TARGETS)))
+	$(call wave_echo,$(sort $(WAVE0_TARGETS)))
 
 print_wave_1_targets:
-	$(call wave_echo,echo $(sort $(WAVE1_TARGETS)))
+	$(call wave_echo,$(sort $(WAVE1_TARGETS)))
 
 print_wave_2_targets:
-	$(call wave_echo,echo $(sort $(WAVE2_TARGETS)))
+	$(call wave_echo,$(sort $(WAVE2_TARGETS)))
 
 print_wave_3_targets:
-	$(call wave_echo,echo $(sort $(WAVE3_TARGETS)))
+	$(call wave_echo,$(sort $(WAVE3_TARGETS)))
 
 print_wave_3_s_targets:
-	$(call wave_echo,echo $(sort $(WAVE3_s_TARGETS)))
+	$(call wave_echo,$(sort $(WAVE3_s_TARGETS)))
 
 print_wave_3_p_targets:
-	$(call wave_echo,echo $(sort $(WAVE3_p_TARGETS)))
+	$(call wave_echo,$(sort $(WAVE3_p_TARGETS)))
 
 print_wave_4_targets:
-	$(call wave_echo,echo $(sort $(WAVE4_TARGETS)))
+	$(call wave_echo,$(sort $(WAVE4_TARGETS)))
 
 print_wave_5_targets:
-	$(call wave_echo,echo $(sort $(WAVE5_TARGETS)))
+	$(call wave_echo,$(sort $(WAVE5_TARGETS)))
 
 print_wave_6_targets:
-	$(call wave_echo,echo $(sort $(WAVE6_TARGETS)))
+	$(call wave_echo,$(sort $(WAVE6_TARGETS)))
 
 print_wave_7_targets:
 	$(call wave_echo,$(sort $(WAVE7_TARGETS)))

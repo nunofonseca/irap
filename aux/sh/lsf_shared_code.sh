@@ -72,7 +72,7 @@ function check_dependency {
 
 function stop_job {
     if [ "$DEBUG-" != "0-" ]; then
-	echo "stop/suspend job $1"
+	echo "stop/suspend job $1" > /dev/stderr
     else
 	bstop -J $1
     fi
@@ -80,7 +80,7 @@ function stop_job {
 
 function resume_job {
     if [ "$DEBUG-" != "0-" ]; then
-	echo "resume job $1"
+	echo "resume job $1" > /dev/stderr
     else
 	bresume -J $1
     fi
@@ -100,7 +100,7 @@ function submit_job_status {
     #p_info "WAITFOR (id)=$JOB_ID $jobname   $WAITFOR"
     # in spite of the checks, the job may have finished before lunching the new one, hence catch the error and submit a new one if an error occurs
     if [ "$DEBUG-" == "2-" ]; then	
-	$ECHO $IRAP_PAR_CMD -n -q 
+	$ECHO $IRAP_PAR_CMD -n -q  > /dev/stderr
 	ret=$?
     else
 	$ECHO bsub $IRAP_LSF_PARAMS -M 1000 -R "select[mem>=1000]  rusage[mem=1000]" -q $QUEUE  -J "${jobname}n" $WAITFOR  irap_lsf_job_status.sh $jobname $JOB_ID  `get_maxmem $MEM` $LOG_DIR  $IRAP_PAR_CMD	
