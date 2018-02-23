@@ -72,6 +72,7 @@ $(foreach l,$(pe),$(eval $(call make-pe-qc-rule,$(l))))
 qc_files:=$(foreach p,$(se),$(call lib2filt_folder,$(p))$(p).f.fastq.gz) $(foreach p,$(pe),$(call lib2filt_folder,$(p))$(p)_1.f.fastq.gz)
 STAGE1_OUT_FILES+=$(qc_files)
 STAGE1_TARGETS+=$(qc_files)
+STAGE1_S_TARGETS+=$(qc_files)
 
 
 CLEANUP_TARGETS+= clean_quality_filtering_and_report
@@ -83,7 +84,7 @@ clean_quality_filtering_and_report:
 
 #########################################################################
 # a single file with the mapping stats
-
+MAPPING_REPORT_PRE_STATS=
 ifneq ($(mapper),none)
 MAPPING_REPORT_PRE_STATS:=$(foreach s,$(se),$(call lib2bam_folder,$(s))$(s).se.hits.bam.stats.csv) $(foreach s,$(pe),$(call lib2bam_folder,$(s))$(s).pe.hits.bam.stats.csv   )
 
@@ -100,9 +101,11 @@ $(mapper_toplevel_folder)/libs_qc.tsv:
 ## mapper
 endif
 
-## the reference in the BAMs generated with kallisto is not the genome
+## the reference in the BAMs generated with kallisto is not the mapper
 ifneq ($(mapper),kallisto)
+ifneq ($(mapper),none)
 MAPPING_REPORT_PRE_STATS+=$(foreach s,$(se), $(call lib2bam_folder,$(s))$(s).se.hits.bam.gene.stats  $(call lib2bam_folder,$(s))$(s).se.hits.bam.stats) $(foreach s,$(pe), $(call lib2bam_folder,$(s))$(s).pe.hits.bam.gene.stats $(call lib2bam_folder,$(s))$(s).pe.hits.bam.stats)
+endif
 endif	
 
 WAVE3_s_TARGETS+=$(MAPPING_REPORT_PRE_STATS)
@@ -212,6 +215,8 @@ FASTQC_REPORT_FILES=$(foreach p,$(se),$(call lib2filt_folder,$(p))$(p).f.fastqc.
 QC_CSV_FILES=$(foreach p,$(se),$(call lib2filt_folder,$(p))$(p).f.csv) $(foreach p,$(pe),$(call lib2filt_folder,$(p))$(p)_1.f.csv $(call lib2filt_folder,$(p))$(p)_2.f.csv)
 
 ZIP_FILES=$(foreach p,$(se),$(qc_toplevel_folder)/$($(p)_dir)$(p).f.fastqc.zip) $(foreach p,$(pe),$(qc_toplevel_folder)/$($(p)_dir)$(p)_1.f.fastqc.zip $(qc_toplevel_folder)/$($(p)_dir)$(p)_2.f.fastqc.zip)
+
+STAGE1_S_TARGETS+=$(QC_CSV_FILES) $(FASTQC_REPORT_FILES) $(ZIP_FILES)
 
 ## work around the limitation on the number of arguments
 print_qc_dirs_files:  

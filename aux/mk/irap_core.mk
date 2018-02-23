@@ -1737,6 +1737,7 @@ WAVE6_TARGETS?=
 STAGE3_S_TARGETS?=
 # STAGE3 library level output files
 STAGE3_S_OFILES?=
+STAGE1_S_TARGETS?=
 
 ##
 #STAGE1_OUT_FILES+=$(foreach p,$(se),$(call lib2filt_folder,$(p))$(p).f.fastq.gz) $(foreach p,$(pe),$(call lib2filt_folder,$(p))$(p)_1.f.fastq.gz)
@@ -2056,6 +2057,9 @@ print_stage0_files: setup_dirs
 print_stage1_files:
 	echo $(STAGE1_OUT_FILES)
 
+print_stage1_s_files:
+	echo $(STAGE1_S_TARGETS)
+
 ###############################################################
 
 print_stage1_folder:
@@ -2238,7 +2242,7 @@ do_qc: $(STAGE1_OUT_FILES)
 # 1. Use singleton reads if available  (f.sing.fastq file)
 # 2. make mapping independent from the remaining steps...WIP
 
-mapping: stage1 $(mapper_toplevel_folder) $(mapper)_mapping
+mapping: $(STAGE1_S_TARGETS) $(mapper_toplevel_folder) $(mapper)_mapping
 	$(call p_info,[DONE] Mapping)
 
 print_stage2_files:
@@ -2255,9 +2259,8 @@ phony_targets+= $(mapper)_mapping mapping stage2_tracks print_bam_filenames
 
 outbams=
 ifeq ($(mapper),none)
-$(mapper)_mapping: 
+$(mapper)_mapping:
 else
-
 outbams:=$(foreach p,$(pe), $(call lib2bam_folder,$(p))$(p).pe.hits.bam) $(foreach s,$(se), $(call lib2bam_folder,$(s))$(s).se.hits.bam)
 STAGE2_OUT_FILES+=$(outbams)
 STAGE2_TARGETS+=$(outbams)
@@ -2615,7 +2618,7 @@ print_pe_libs:
 
 phony_targets+= print_libs lib_isl
 ###################################################
-lib_isl: stage1 stage2 stage3as $(WAVE3_s_TARGETS)
+lib_isl: $(STAGE1_S_TARGETS) stage2 stage3as $(WAVE3_s_TARGETS)
 
 ###################################################
 # Keep the versions used in the top level folder
