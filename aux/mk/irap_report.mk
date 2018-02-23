@@ -337,7 +337,7 @@ $(quant_toplevel_folder)/exons.%.html: $(quant_toplevel_folder)/exons.%.tsv.gz  
 phony_targets+=gse_report gse_report_files
 silent_targets+=gse_report_files
 
-$(info >>>>$(call get_gse_html_files))
+#$(info >>>>$(call get_gse_html_files))
 # only generates the html iff the respective GSE tsv file exist
 gse_report: report_setup $(call get_gse_html_files)
 
