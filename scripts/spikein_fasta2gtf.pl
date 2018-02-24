@@ -37,10 +37,10 @@ while (my $inseq = $seq_in->next_seq) {
     my $len=length($inseq->seq);
     my $id=$inseq->id;
     #print "$id\tprotein_coding\texon\t1\t$len\t.\t+\t.\tgene_id \"$id\"; transcript_id \"t$id\"; exon_number \"1\"; gene_bio_type \"spikein\" \n";
-    print "$id\tspikein\texon\t1\t$len\t.\t+\t.\tgene_id \"$id\"; transcript_id \"t$id\"; exon_number \"1\"; gene_name \"$id\"; exon_id \"e${id}_1\"; gene_biotype \"protein_coding\";\n";
+    print "$id\tspikein\texon\t1\t$len\t.\t+\t.\tgene_id \"$id\"; transcript_id \"t$id\"; exon_number \"1\"; gene_name \"$id\"; exon_id \"e${id}_1\"; gene_biotype \"protein_coding\"; gene_type \"protein_coding\";\n";
     #print "$id\tspikein\tCDS\t1\t$len\t.\t+\t.\tgene_id \"$id\"; transcript_id \"t$id\"; gene_bio_type \"protein_coding\"; transcript_name \"t$id\";\n";
-    print "$id\tspikein\ttranscript\t1\t$len\t.\t+\t.\tgene_id \"$id\"; transcript_id \"t$id\"; gene_biotype \"protein_coding\"; transcript_name \"t$id\";\n";
-    print "$id\tspikein\tgene\t1\t$len\t.\t+\t.\tgene_id \"$id\"; gene_biotype \"protein_coding\"; gene_name \"$id\";\n";
+    print "$id\tspikein\ttranscript\t1\t$len\t.\t+\t.\tgene_id \"$id\"; transcript_id \"t$id\"; gene_biotype \"protein_coding\"; transcript_biotype \"protein_coding\"; transcript_type \"protein_coding\"; transcript_name \"t$id\";\n";
+    print "$id\tspikein\tgene\t1\t$len\t.\t+\t.\tgene_id \"$id\"; gene_biotype \"protein_coding\"; gene_type \"protein_coding\"; gene_name \"$id\";\n";
 }
 
 exit(0);
