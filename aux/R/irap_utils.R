@@ -115,8 +115,9 @@ formats.cols <- list(
   gtf=c("seqid","source","feature","start","end","score","strand","frame","attributes")
   )
 attributes.cols <- list(
-  gencode=c("gene_id","transcript_id","exon_number","gene_name","gene_type","gene_status","transcript_type","level","transcript_name","havana_gene","exon_id","gene_biotype"),
-  ensembl=c("gene_id","transcript_id","exon_number","gene_name","gene_biotype","transcript_name","protein_id","exon_id","exonic_part_number")
+    gencode=c("gene_id","transcript_id","exon_number","gene_name","gene_type","gene_status","transcript_type","level","transcript_name","havana_gene","exon_id","gene_biotype","transcript_biotype"),
+    ensembl90=c("gene_id","transcript_id","gene_name","gene_biotype","transcript_name","havana_gene","exon_id","exon_number","transcript_type"),
+    ensembl=c("gene_id","transcript_id","exon_number","gene_name","gene_biotype","transcript_name","protein_id","exon_id","exonic_part_number")
   )
 # TODO: improve error handling
 load.gtf <- function(gtf.file,feature=NULL,selected.attr=NULL,gtf.format="auto") {
@@ -128,7 +129,11 @@ load.gtf <- function(gtf.file,feature=NULL,selected.attr=NULL,gtf.format="auto")
   # detect format
   if ( gtf.format=="auto" ) {
       if (sum(grepl("level",as.character(head(gtf$attributes,50)))) >0) {
-          gtf.format <- "gencode"
+          if (sum(grepl("transcript_biotype",as.character(head(gtf$attributes,50)))) >0)              
+              gtf.format <- "ensembl90"              
+          else
+              gtf.format <- "gencode"
+          
       } else {
           gtf.format <- "ensembl"
       }
@@ -136,11 +141,13 @@ load.gtf <- function(gtf.file,feature=NULL,selected.attr=NULL,gtf.format="auto")
   }
 
   if ( !is.null(feature) && length(feature)==1 ) {
-      if ( feature=="gene" && gtf.format=="ensembl" ) {
+      if ( grepl("ensembl",gtf.format)) {
+          if ( feature=="gene" ) {
           feature <- "CDS"
-      }
-      if ( feature=="transcript" && gtf.format=="ensembl" ) {
-          feature <- "CDS"
+          }
+          if ( feature=="transcript") {
+              feature <- "CDS"
+          }
       }
   }
   
@@ -160,7 +167,15 @@ load.gtf <- function(gtf.file,feature=NULL,selected.attr=NULL,gtf.format="auto")
           else
               selected.attr.i <- unique(append(selected.attr,"gene_type"))
       } else {
-          selected.attr.i <- unique(append(selected.attr,"gene_biotype"))
+          if ( gtf.format == "gencode90" ) {
+              if (feature=="transcript")
+                  selected.attr.i <- unique(append(selected.attr,"transcript_biotype"))
+              else
+                  selected.attr.i <- unique(append(selected.attr,"gene_biotype"))
+          } else {
+              ## ensembl
+              selected.attr.i <- unique(append(selected.attr,"gene_biotype"))
+          }
       }
       gtf.attributes.names<- gtf.attributes.names[gtf.attributes.names %in% selected.attr.i]
   }
