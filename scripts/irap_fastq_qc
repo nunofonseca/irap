@@ -535,7 +535,7 @@ $(eval override if2:=$(f1_n)_2.fastq.gz)
 $(eval override f2_n:=$(f1_n)_2)
 $(eval override f1_n:=$(f1_n)_1)
 $(eval override if1:=$(f1_n).fastq.gz)
-$(f1_n).fastq.gz $(f2_n).fastq.gz: $(f1_p)
+$(f1_n).fastq%gz $(f2_n).fastq%gz: $(f1_p)
 	$(info Converting bam to fastq...note that the bam file needs to be sorted by name.)
 	samtools fastq -N -@ $(threads) -1 $(f1_n).fastq.tmp -2 $(f2_n).fastq.tmp $< &> /dev/null && 
 	( fastq_not_empty $(f1_n).fastq.tmp || (echo "ERROR: empty fastq file from $<" && exit 1 )) && \
