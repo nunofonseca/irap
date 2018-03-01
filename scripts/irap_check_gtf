@@ -35,7 +35,9 @@ $FEATURES=~s/\n/ /g;
 print "Features found: $FEATURES\n";
 my @features=split(" ",$FEATURES);
 # Mandatory features
-my @must_have=("exon","CDS","start_codon","stop_codon");
+#my @must_have=("exon","CDS","start_codon","stop_codon");
+my @must_have=("exon","gene");
+#"start_codon","stop_codon");
 
 foreach my $feat (@must_have) {
     if ( grep(/$feat/,@features)==0 ) {
