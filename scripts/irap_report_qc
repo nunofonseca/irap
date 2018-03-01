@@ -197,8 +197,10 @@ qc.expand.table <- function(dft,conf) {
     names(dft.mean) <- rownames(dft)
     names(dft.sd) <- rownames(dft)
     cols.sel <- c("Passed","Unpaired","Ns","Contamination","Quality","reads","length","GC","Pass1","Pass2","Pass3","Pass4")
-    if ( sum(cols.sel %in% rownames(dft))>0 ) {
+    if ( sum(!cols.sel %in% rownames(dft))>0 ) {
         perror("Columns ",paste(cols.sel[!cols.sel%in%rownames(dft)],sep=",")," not found in matrix")
+        print(rownames(dft))
+        print(cols.sel)
         q(status=1)
     }
     for ( n in cols.sel ) {
