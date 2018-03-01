@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+set -o pipefail
 
 if [ "$1-" = "-" ]; then
     echo "Usage: irapBAM2stats2.sh bam_file_name" > /dev/stderr
