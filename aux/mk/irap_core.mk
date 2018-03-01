@@ -853,9 +853,10 @@ cell_filt_outliers?=y   # filter outliers based on the total number of counts/ex
 ## Exclude outliers based on the 5*median absolute difference (like scater).
 cell_outliers_mad=5
 
+## minimum expression per feature
 cell_filt_min_expression?=1
 
-cell_filt_min_cell_expr?=1000 # minimum number of counts per cell
+cell_filt_min_tot_expr?=1000 # minimum number of counts per cell
 
 sc_quant_viz?=tsne
 
@@ -2242,9 +2243,7 @@ do_qc: $(STAGE1_OUT_FILES)
 
 # ** TODO **
 # 1. Use singleton reads if available  (f.sing.fastq file)
-# 2. make mapping independent from the remaining steps...WIP
-
-mapping: $(STAGE1_S_TARGETS) $(mapper_toplevel_folder) $(mapper)_mapping
+mapping: $(STAGE1_S_TARGETS) $(mapper_toplevel_folder)/ $(mapper)_mapping
 	$(call p_info,[DONE] Mapping)
 
 print_stage2_files:
