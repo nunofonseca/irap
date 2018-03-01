@@ -2243,9 +2243,7 @@ do_qc: $(STAGE1_OUT_FILES)
 
 # ** TODO **
 # 1. Use singleton reads if available  (f.sing.fastq file)
-# 2. make mapping independent from the remaining steps...WIP
-
-mapping: $(STAGE1_S_TARGETS) $(mapper_toplevel_folder) $(mapper)_mapping
+mapping: $(STAGE1_S_TARGETS) $(mapper_toplevel_folder)/ $(mapper)_mapping
 	$(call p_info,[DONE] Mapping)
 
 print_stage2_files:
