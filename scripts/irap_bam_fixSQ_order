@@ -27,6 +27,7 @@ else
     samtools view -H $1 | grep -v "^@SQ" > $1.header.sam
     cat $1.seq.neworder.sam >> $1.header.sam
     ( cat $1.header.sam; samtools view $1 ) | samtools view -b  - > $2.tmp && mv $2.tmp $2
+    echo "Reordering @SQ entries in BAM file $1...done"
 fi
 # samtools reheader -P $1.header.sam $1 > $2
 #rm -f $1.header $1.seq.neworder.sam $1.seq.order.sam
