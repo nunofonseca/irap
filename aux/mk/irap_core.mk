@@ -466,7 +466,7 @@ endif
 # remove .gz if the file is gziped...the creation of the uncompress file is automatic
 gtf_file_dir:=$(abspath $(data_dir)/reference/$(species))
 gtf_file_abspath:=$(abspath $(gtf_file_dir)/$(subst .gz,,$(gtf_file)))
-gtf_file_basename:=$(notdir $(gtf_file_abspath))
+
 
 $(info *       gtf_file  = $(gtf_file))
 $(call file_exists,$(gtf_file_dir)/$(gtf_file))
@@ -564,14 +564,18 @@ $(info * Warning:  spikein concentration not provided)
 endif
 
 #
-$(info * Currently spikein data is not explored when performing differential expression analysis)
+$(info * Currently spikeins are not used while performing differential expression analysis)
 endif
 
 #trans_abspath?=$(cdna_file_abspath)
 trans_abspath?=$(user_trans_abspath)
 $(info *       Transcripts = $(trans_abspath))
 
+gtf_file_basename:=$(notdir $(gtf_file_abspath))
 
+# mapping (exon/transcript to gene) file obtained from the gtf file
+trans2gene_mapping_file:=$(subst .gz,,$(subst .gtf,.mapping_trans.tsv,$(gtf_file_abspath)))
+feat_mapping_files?=$(trans2gene_mapping_file) $(subst .gz,,$(subst .gtf,.mapping_exons.tsv,$(gtf_file_abspath)))
 
 # ****************
 # single cell
@@ -600,9 +604,6 @@ gff3_file:=$(notdir $(gff3_file_abspath))
 $(info *       gff3_file  = $(gff3_file_abspath))
 
 
-# mapping (exon/transcript to gene) file obtained from the gtf file
-trans2gene_mapping_file:=$(subst .gz,,$(subst .gtf,.mapping_trans.tsv,$(gtf_file_abspath)))
-feat_mapping_files?=$(trans2gene_mapping_file) $(subst .gz,,$(subst .gtf,.mapping_exons.tsv,$(gtf_file_abspath)))
 
 #**********
 refgeneclass_file=$(subst .gz,,$(gtf_file_abspath)).gene_class.txt
@@ -614,6 +615,8 @@ refgeneannot_file=$(subst .gtf,,$(subst .gz,,$(gtf_file_abspath))).gene_annot.ts
 all_se_files=
 all_pe_files=
 
+# should be defined by the code that includes this file
+ALL_TARGETS?=
 # no need to check the se and pe parameters if
 # the target is stage0 only
 TARGETS=
@@ -1477,6 +1480,12 @@ define pass_args_stdin=
 $(call args2file,$(2).in,$(3)) cat $(2).in | $(1) -stdin && rm -f $(2).in
 endef
 
+# 1- infiles
+# 2- outfile
+define stdin_cat=
+$(call args2file,$(2).in,$(1)) xargs -a $(2).in cat > $(2)
+endef
+
 else
 BIG_EXP=0
 #$(call p_info, Small number of libraries mode)
@@ -1485,6 +1494,12 @@ BIG_EXP=0
 # args=$3
 define pass_args_stdin=
 $(1) $(3) 
+endef
+
+# $(1) input files
+# 2- outfile
+define stdin_cat=
+cat $(1) > $(2)
 endef
 
 endif
@@ -1989,7 +2004,7 @@ $(foreach tag,CR CB,$(eval $(call make-sort-bam-by-tag-rule,$(tag))))
 # bigWig from bed 
 # bed file needs to be sorted and converted to bedGraph
 %.bw: %.bed $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.txt
-	tail -n +2 $< | cut -f 1,2,3,5 | sort -k1,1 -k2,2n  > $<.sorted.bed && \
+	set -o pipefail && tail -n +2 $< | cut -f 1,2,3,5 | sort -k1,1 -k2,2n  > $<.sorted.bed && \
 	bedGraphToBigWig $<.sorted.bed $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.txt $@.tmp && mv $@.tmp $@
 
 # bigwig from bedgraph
@@ -2003,7 +2018,7 @@ endef
 # TSV (with feature value) is converted to bedGraph (http://genome.ucsc.edu/goldenPath/help/bedgraph.html)
 # bedGraph generated is sorted
 %.bedGraph: %.$(expr_ext) $(gff3_file_abspath).csv $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.txt
-	tsv2bed.R $<  $(call quant_levelFromFilename,$*) $(gff3_file_abspath).csv $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.txt | \
+	set -o pipefail && tsv2bed.R $<  $(call quant_levelFromFilename,$*) $(gff3_file_abspath).csv $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.txt | \
 	sort -k1,1 -k2,2n | \
 	bedtools merge -scores mean -i - > $@.tmp &&\
 	mv $@.tmp $@
@@ -2105,7 +2120,7 @@ $(juncs_file_abspath): $(gtf_file_abspath)
 #
 # .gff3.csv: .gff3
 $(gff3_file_abspath): $(gtf_file_abspath)
-	gtf2gff3.pl $< | sort -k1,1 -k4,4n > $@.tmp && mv $@.tmp $@
+	set -o pipefail && gtf2gff3.pl $< | sort -k1,1 -k4,4n > $@.tmp && mv $@.tmp $@
 
 # Filter the gff3 file to contain only the chr that are in the fasta file
 # use the faidx file to ensure that the ordering is the same
@@ -2152,7 +2167,7 @@ $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.sorted.txt: $(auxdata
 	sort -k 1,1 $<  > $@.tmp  && mv $@.tmp $@
 
 $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.sorted.bed: $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.sorted.txt
-	cat $< | awk 'BEGIN {OFS="\t";} {print  $$1,"1",$$2;}' > $@.tmp && mv $@.tmp $@
+	set -o pipefail && cat $< | awk 'BEGIN {OFS="\t";} {print  $$1,"1",$$2;}' > $@.tmp && mv $@.tmp $@
 
 $(reference_abspath).fai: $(reference_abspath)
 	samtools faidx $< && sleep 1
@@ -2162,7 +2177,7 @@ $(reference_abspath).fai: $(reference_abspath)
 # avoid generating file if it is in the reference directory
 # Create a Rdata file to speedup loading the matrix 
 $(refgeneannot_file) $(refgeneannot_file).Rdata: $(gtf_file_abspath)
-	irap_gtf2annot --gtf $< -s $(species) --cores $(max_threads) --rdata -o $@.tmp && mv $@.tmp $@ && mv $@.tmp.Rdata $@.Rdata
+	irap_gtf2annot --gtf $< -s $(species) --cores $(max_threads) --rdata -o $(refgeneannot_file).tmp && mv $(refgeneannot_file).tmp $(refgeneannot_file) && mv $(refgeneannot_file).tmp.Rdata $(refgeneannot_file).Rdata
 
 $(auxdata_toplevel_folder)/$(reference_basename).gene.annot.tsv: $(refgeneannot_file) 
 	cp $< $@.tmp && mv $@.tmp $@
@@ -2341,11 +2356,11 @@ endif
 
 
 $(mapper_toplevel_folder)/alignments.bam: $(foreach s,$(se), $(call lib2bam_folder,$(s))$(s).se.hits.bam)
-	$(call samcat,$^) | samtools sort -m $(SAMTOOLS_SORT_MEM) -T $@.sorted -o $@.sorted.bam -  && mv  $@.sorted.bam $@  && samtools index $@
+	set -o pipefail && $(call samcat,$^) | samtools sort -m $(SAMTOOLS_SORT_MEM) -T $@.sorted -o $@.sorted.bam -  && mv  $@.sorted.bam $@  && samtools index $@
 
 
 $(mapper_toplevel_folder)/alignments.bam.paired.bam: $(foreach s,$(pe), $(call lib2bam_folder,$(s))$(s).pe.hits.bam)
-	$(call samcat,$^) | samtools sort  -m $(SAMTOOLS_SORT_MEM) -T $@.tmp -o $@.tmp.bam -  && mv $@.tmp.bam $@ && samtools index $@
+	set -o pipefail && $(call samcat,$^) | samtools sort  -m $(SAMTOOLS_SORT_MEM) -T $@.tmp -o $@.tmp.bam -  && mv $@.tmp.bam $@ && samtools index $@
 
 
 $(reference_abspath)_files: $(reference_abspath)
@@ -2620,6 +2635,7 @@ print_pe_libs:
 phony_targets+= print_libs lib_isl
 ###################################################
 lib_isl: $(STAGE1_S_TARGETS) stage2 stage3as $(WAVE3_s_TARGETS)
+
 
 ###################################################
 # Keep the versions used in the top level folder
