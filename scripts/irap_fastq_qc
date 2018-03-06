@@ -826,7 +826,7 @@ filter1_cmd=fastq_quality_filter  -v -Q $(qual) -p $(qual_perc) -q $(min_qual) |
 	fastx_artifacts_filter -v -Q $(qual) 
 
 %.filter1.fastq.gz: %.pre.fastq.gz
-	zcat $< | $(filter1_cmd) | gzip -c -  > $@.tmp && \
+	set -o pipefail && zcat $< | $(filter1_cmd) | gzip -c -  > $@.tmp && \
 	( fastq_not_empty $@.tmp || (echo "ERROR: no reads pass the quality thresholds ($<)" && exit 1 )) &&\
 	mv $@.tmp $@
 
@@ -863,17 +863,18 @@ STAGE6_TARGETS+=$(subst .fastq.gz,.cont.stats.tsv,$(ORIGFILES))
 # check for contamination
 ifeq ($(mapper),bowtie)
 %.filter2.fastq.gz %.cont.bam: %.filter1.fastq.gz
-	$(mapper_path) --sam -p $(threads) -v $(contamination_mismatches) -q $(mapper_extra_options) --phred$(qual)-quals  --un $@.tmp   $(cont_index)  <(zcat $<) | samtools view -b -F 4 -  > $*.cont.bam.tmp && \
+	set -o pipefail && $(mapper_path) --sam -p $(threads) -v $(contamination_mismatches) -q $(mapper_extra_options) --phred$(qual)-quals  --un $*.filter2.fastq.gz.tmp   $(cont_index)  <(zcat $<) | samtools view -b -F 4 -  > $*.cont.bam.tmp && \
 	( fastq_not_empty $@.tmp || (echo "ERROR: no reads pass the contamination filter ($<)" && exit 1 )) && \
-	gzip -f $@.tmp && \
-	mv $*.cont.bam.tmp $*.cont.bam && mv $@.tmp.gz $@
+	gzip -f $*.filter2.fastq.gz.tmp && \
+	mv $*.cont.bam.tmp $*.cont.bam && mv $*.filter2.fastq.gz.tmp.gz $*.filter2.fastq.gz
 endif
 
 ifeq ($(mapper),bowtie2)
 %.filter2.fastq.gz %.cont.bam: %.filter1.fastq.gz
-	$(mapper_path) -p $(threads)   $(mapper_extra_options) --un $@.tmp  --fast-local  --phred$(qual) -x $(cont_index) -U <(zcat $<)   -S /dev/stdout  | samtools view -b -F 4 - > $*.cont.bam.tmp && \
+	set -o pipefail && $(mapper_path) -p $(threads)   $(mapper_extra_options) --un $*.filter2.fastq.gz.tmp  --fast-local  --phred$(qual) -x $(cont_index) -U <(zcat $<)   -S /dev/stdout  | samtools view -b -F 4 - > $*.cont.bam.tmp && \
 	( fastq_not_empty $@.tmp || (echo "ERROR: no reads pass the contamination filter ($<)" && exit 1 )) &&\
-	gzip -f $@.tmp && mv $*.cont.bam.tmp $*.cont.bam && mv $@.tmp.gz $@
+	gzip -f $*.filter2.fastq.gz.tmp && \
+	mv $*.cont.bam.tmp $*.cont.bam && mv $*.filter2.fastq.gz.tmp.gz $*.filter2.fastq.gz
 endif
 
 endif
@@ -896,7 +897,7 @@ ifeq ($(max_n),100)
 	rm -f $@ && ln -s $< $@
 else
 %.filter3.fastq.gz: %.filter2.fastq.gz
-	fastq_filter_n -n $(max_n) $< | gzip -c - > $@.tmp && \
+	set -o pipefail && fastq_filter_n -n $(max_n) $< | gzip -c - > $@.tmp && \
 	( fastq_not_empty $@.tmp || (echo "ERROR: no reads pass the uncalled bases filter ($<)" && exit 1 )) && \
 	mv $@.tmp $@
 endif
@@ -914,7 +915,7 @@ ifeq ($(pe_data),1)
 #PE
 # 2018-01-25 assume that fastq files are pre-ordered to avoid checking the order of the reads
 %_1.f.fastq.gz %_2.f.fastq.gz %.sing.fastq.gz: %_1.filter3.fastq.gz %_2.filter3.fastq.gz
-	fastq_filterpair $^ $*_1.f.fastq.gz.tmp $*_2.f.fastq.gz $*.sing.fastq.gz sorted &&\
+	set -o pipefail && fastq_filterpair $^ $*_1.f.fastq.gz.tmp $*_2.f.fastq.gz $*.sing.fastq.gz sorted &&\
 	( fastq_not_empty $*_1.f.fastq.gz.tmp || (echo "ERROR: no paired-end reads after applying the filters ($<)" && exit 1 )) && \
 	mv $*_1.f.fastq.gz.tmp $*_1.f.fastq.gz
 else
