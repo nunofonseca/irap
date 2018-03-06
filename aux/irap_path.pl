@@ -105,11 +105,13 @@ valid_combination([Map,QR,QNT,QN,DE,TDE,EDE,GSE,Stranded,sc,'smart-seq2']):-
     %%de(DE,qr(QR),_),
     gse(GSE,de(DE),_).
 
+%% 10x, drop-seq
 valid_combination([Map,QR,QNT,_QN,DE,TDE,EDE,GSE,Stranded,sc,SC_PROT]):-
     (SC_PROT=='smart-seq2'->fail;true),
     m(Map,_,_,S1),
     sc_mapper(Map),
     qr_sc(QR,m(Map),_,S2),
+    member(QR,['umis','umi_count']),
     QNT==none,
     !,
     (Stranded==yes->(Map==none->true;S1==stranded,stranded_ok(Stranded,S2));true),
