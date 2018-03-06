@@ -45,7 +45,6 @@ sc_visualization: $(sc_visualization_files)
 %.tsne.tsv: %.$(expr_ext) 
 	irap_tsne -i $< --$(expr_format) --out $@ --max_threads $(max_threads) -C $(tsne_min_cells) -G $(tsne_min_genes) && cp $@_tsne_perp_10.tsv $@ || ( rm -f $@* && exit 1)
 
-
 # requires filtered+normalized expression
 STAGE5_OUTFILES+=$(sc_visualization_files)
 STAGE5_TARGETS+=$(sc_visualization_files)
