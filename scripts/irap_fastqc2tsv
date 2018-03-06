@@ -7,7 +7,7 @@ fi
 
 
 set -e 
-
+set -o pipefail 
 
 zip=y
 ifile=$1
@@ -26,9 +26,20 @@ else
 fi
 pref=`basename $ifile|sed "s/.fastqc.zip//"|sed "s/_fastqc//"`
 echo "FASTQC $pref" | tr " " "\t"
-$cat_cmd  ${pref}_fastqc/summary.txt | awk  -F"\t"  '{print $2"\t"$1}'
-$cat_cmd  ${pref}_fastqc/fastqc_data.txt  | grep "Total Sequences" | sed 's/\t$//'
-$cat_cmd  ${pref}_fastqc/fastqc_data.txt  | grep "Basic Statistics" | sed 's/\t$//' | sed "s/>>/FASTQC /"
-$cat_cmd  ${pref}_fastqc/fastqc_data.txt  | grep "%GC" | sed 's/\t$//'|sed 's/^%//'
+
+$cat_cmd  ${pref}_fastqc/summary.txt | grep -m 1 "Basic Statistics" | awk  -F"\t"  '{print $2"\t"$1}'
+$cat_cmd  ${pref}_fastqc/summary.txt | grep -m 1  "Per base sequence quality" | awk  -F"\t"  '{print $2"\t"$1}'
+$cat_cmd  ${pref}_fastqc/summary.txt | grep -m 1  "Per sequence quality scores" | awk  -F"\t"  '{print $2"\t"$1}'
+$cat_cmd  ${pref}_fastqc/summary.txt | grep -m 1  "Per base sequence content" | awk  -F"\t"  '{print $2"\t"$1}'
+$cat_cmd  ${pref}_fastqc/summary.txt | grep -m 1  "Per sequence GC content" | awk  -F"\t"  '{print $2"\t"$1}'
+$cat_cmd  ${pref}_fastqc/summary.txt | grep -m 1  "Per base N content" | awk  -F"\t"  '{print $2"\t"$1}'
+$cat_cmd  ${pref}_fastqc/summary.txt | grep  -m 1 "Sequence Length Distribution" | awk  -F"\t"  '{print $2"\t"$1}'
+$cat_cmd  ${pref}_fastqc/summary.txt | grep  -m 1 "Sequence Duplication Levels" | awk  -F"\t"  '{print $2"\t"$1}'
+$cat_cmd  ${pref}_fastqc/summary.txt | grep  -m 1 "Overrepresented sequences" | awk  -F"\t"  '{print $2"\t"$1}'
+$cat_cmd  ${pref}_fastqc/summary.txt | grep  -m 1 "Adapter Content" | awk  -F"\t"  '{print $2"\t"$1}'
+
+$cat_cmd  ${pref}_fastqc/fastqc_data.txt  | grep  -m 1 "Total Sequences" | sed 's/\t$//'
+$cat_cmd  ${pref}_fastqc/fastqc_data.txt  | grep  -m 1 "Basic Statistics" | sed 's/\t$//' | sed "s/>>/FASTQC /"
+$cat_cmd  ${pref}_fastqc/fastqc_data.txt  | grep  -m 1 "%GC" | sed 's/\t$//'|sed 's/^%//'
 
 exit 0
