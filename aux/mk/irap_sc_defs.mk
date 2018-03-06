@@ -166,10 +166,16 @@ cont_index?=$(data_dir)/contamination/ecoli_fungi_viral
 # minimum number of features expressed as a percentage of the total number of features
 cell_filt_min_features?=0.15
 # maximum percentage of expression that may be atributed to ERCC spike-ins
-cell_filt_max_ERCC?=0.8  
-cell_filt_min_cell_expr?=
+cell_filt_max_ERCC?=0.3  
+cell_filt_min_cell_expr=5
+
+cell_filt_outliers=y
+cell_outliers_mad=5
 
 single_cell?=y
 expr_format?=tsv
 expr_ext?=tsv
+
+min_clusters?=2
+max_clusters?=15
 endif
