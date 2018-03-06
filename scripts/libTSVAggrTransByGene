@@ -88,7 +88,11 @@ pinfo("Expression loaded")
 
 
 pinfo("Loading mapping")
-g2t.map <- read.table(g2t.file,sep="\t",header=T)
+g2t.map <- read.tsv(g2t.file,header=T)
+if ( is.null (g2t.map) ) {
+    perror("Failed to load ",g2t.file)
+    q(status=1)
+}
 g2t.map <- g2t.map[,c(opt$gene_col,opt$trans_col)]
 colnames(g2t.map) <- c("gene_id","transcript_id")
 # remove duplicate entries (due to exons)
