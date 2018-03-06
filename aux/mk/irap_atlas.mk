@@ -22,8 +22,27 @@
 # deprecated
 ifdef atlas_run
 $(info * Atlas mode enabled)
+
 SETUP_DATA_FILES+=$(feat_mapping_files)
+
+ifeq($(rnaseq_type),sc)
+ALL_TARGETS+=atlas_sc_wrap_up
+## expression matrix
+## QC
+ATLAS_SC_FILES=$(qc_toplevel_folder)/qc.tsv $(quant_toplevel_folder)/genes.raw.$(quant_method).$(expr_ext) $(cell_qc_files) $(filtered_expr_matrices) $(sc_visualization_files) $(clustering_files)
+ifneq ($(mapper),none)
+ATLAS_SC_FILES+=$(mapper_toplevel_folder)/libs_qc.tsv
 endif
+endif
+endif
+
+
+atlas_sc_wrap_up: $(name)/sc_bundle 
+
+$(name)/sc_bundle: $(ATLAS_SC_FILES)
+	mkdir -p $@
+	cp -ar $(ATLAS_SC_FILES) $@
+	cp $(quant_toplevel_folder)/transcripts.raw.filtered.$(quant_method).*tsne_perp*.tsv $@
 
 # Reduce the resolution of some images
 ATLAS_IMAGES2CONVERT=$(shell ls --color=never -1 $(report_toplevel_folder)/read_filtering_plot.png $(if $(call GEN_REPORT_QC_ONLY),,$(report_toplevel_folder)/mapping/$(mapper)*.png) 2>/dev/null | grep -v orig.png | grep -v scaled.png )
