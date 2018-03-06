@@ -29,8 +29,9 @@
 $(mapTrans2gene): $(trans2gene_mapping_file)
 	echo 'gene_id	transcript_id' > $@.tmp && awk 'BEGIN {OFS="\t"} { print $$2,$$1; }' $< | tail -n +2 | sort -u >> $@.tmp && mv $@.tmp $@
 
-WAVE2_TARGETS+=$(mapTrans2gene)
+WAVE1_TARGETS+=$(mapTrans2gene)
 STAGE0_TARGETS+=$(mapTrans2gene)
+SETUP_DATA_FILES+=$(mapTrans2gene)
 
 ## Output files produced
 STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).$(expr_ext)) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).$(expr_ext))
