@@ -70,32 +70,47 @@ raw.summary.dataframe <- function(conf,qc.sum,fastqc.sum) {
     ## In some cases (irap_single_lib) there may be no se/pe in the conf file
     pe <- conf.get.value(conf,"pe")
     se <- conf.get.value(conf,"se")
-    
+    libs1.se <- c()
+    libs1.pe <- c()
     qc.enabled <- conf.is.qc.enabled(conf)
 
     colnames(qc.sum) <- c("Orig.file","Pass0","Pass1","Pass2","Pass3","Pass4")
     filt.stats <- qc.sum
     filt.stats[,vv] <- NA
+
     ## add lib name to qc.sum
-    libs1.se <- gsub("\\.(fastq|fq|cram|bam).*","",unlist(lapply(se,conf.get.value,conf=conf)))
-    names(libs1.se) <- se
+    if ( length(se)>0) {
+        libs1.se <- gsub("\\.(fastq|fq|cram|bam).*","",unlist(lapply(se,conf.get.value,conf=conf)))
+        names(libs1.se) <- se
+    }
+    if ( length(pe)>0) {
+        xx <- lapply(pe,conf.get.value,conf=conf)
+        names(xx) <- pe
+        ##
+        names(xx) <- paste(names(xx),"_",sep="")    
+        x <- unlist(xx)
+        xx <- gsub("\\.(fastq|fq|cram|bam).*","",x=x,perl=TRUE)
+        
+        libs1.pe <- xx    
+    ## handle cram/bam    
+        cram.bam <- grepl("\\.(cram|bam)$",x)
+        if (sum(cram.bam)>0 ) {
+            pinfo("Workaround for CRAM/BAMs")
+            libs1.pe.a <- libs1.pe[cram.bam]
+            libs1.pe.b <- libs1.pe[!cram.bam]
+            libs1.pe.a2 <- c(gsub("$","_1",libs1.pe.a),gsub("$","_2",libs1.pe.a))
+            names(libs1.pe.a2) <- c(gsub("$","_1",names(libs1.pe.a)),gsub("$","_2",names(libs1.pe.a)))
+            libs1.pe <- c(libs1.pe.b,libs1.pe.a2)
+        }
+    }
+    libs1 <- c(libs1.se,libs1.pe)
+    names(libs1) <- c(se,names(libs1.pe))
 
-    xx <- lapply(pe,conf.get.value,conf=conf)
-    names(xx) <- pe
-    xx <- gsub("\\.(fastq|fq|cram|bam).*","",unlist(xx))
-    #names(xx) <- gsub("$","_1",gsub("$","_2",names(xx)))
-
-    libs1.pe <- xx
-    #libs1 <- c(libs1.se,gsub("_1$","/1",libs1.pe),gsub("_1$","/2",libs1.pe))
-    #names(libs1) <- c(se,gsub("$","/1",names(libs1.pe)),gsub("$","/2",names(libs1.pe)))
-    #print(xx)
+    #pinfo("libs1=",head(sort(libs1)))
+    #print(head(sort(libs1)))
     
-    libs1 <- c(libs1.se,gsub("$","_1",libs1.pe),gsub("$","_2",libs1.pe))
-    names(libs1) <- c(se,gsub("$","_1",names(libs1.pe)),gsub("$","_2",names(libs1.pe)))
-
     orig2lib <- names(libs1)
     names(orig2lib) <- libs1
-
     ## two cases
     ## qc=report => file name==libname
     ## qc=on     => file_name==orig_.*
@@ -109,7 +124,7 @@ raw.summary.dataframe <- function(conf,qc.sum,fastqc.sum) {
         ##        
         vvv <- gsub(".*orig_","",filt.stats$Orig.file)
         rownames(filt.stats) <- vvv
-        print(orig2lib)
+        #print(head(orig2lib))
         ## some libs may have been skipped
         orig2lib <- orig2lib[!is.na(orig2lib)]
         ##
@@ -125,9 +140,6 @@ raw.summary.dataframe <- function(conf,qc.sum,fastqc.sum) {
     rownames(filt.stats) <-  filt.stats$Lib
     ## match the two matrices
     i <- intersect(rownames(fastqc.sum),rownames(filt.stats))
-    #print(rownames(fastqc.sum))
-    #print("-----------")
-    print(rownames(filt.stats))
     if ( length(i) == 0 ) {
         perror("WIP")
         q(status=1)
@@ -297,7 +309,7 @@ path2qual.report <- function(dir.name,file.prefix) {
       return(NULL)
     }
     # unzip file
-    unzip.cmd <- paste("unzip -o -d ",root.dir," ",filt.qual.zip,sep="")
+    unzip.cmd <- paste("unzip -q -o -d ",root.dir," ",filt.qual.zip,sep="")
     system(unzip.cmd)
     if (!file.exists(filt.qual.dir)) {
       pwarning("Unzip file ",filt.qual.zip," apparently failed.")
