@@ -65,7 +65,9 @@ transcript_quant?=n
 # rsem_params+= --single-cell-prior
 #####################################################################
 # Default target - sc RNA-seq
-all: setup quality_filtering_and_report mapping quantification filter_cells clustering sc_visualization
+
+ALL_TARGETS=setup quality_filtering_and_report mapping quantification filter_cells clustering sc_visualization
+all: $(ALL_TARGETS)
 
 
 include $(irap_path)/../aux/mk/irap_core.mk
