@@ -1849,7 +1849,7 @@ conf.set.value <- function(var,value,conf) {
     conf <- rbind(c(var,value),conf)
     rownames(conf)[nrow(conf)] <- var
   } else {
-    pinfo(conf[var,])
+    ##pinfo(conf[var,])
     conf[var,] <- c(var,value)
   }
   return(conf)
@@ -2091,7 +2091,7 @@ load.configuration.file <- function(conf_file,lib.info=NULL) {
   for ( i in 1:nrow(conf.table) ) {
     if ( mytrim(as.character(conf.table[i,1])) != "" ) {
       assign(as.character(conf.table[i,1]),mytrim(conf.table[i,2]))
-      pinfo("",conf.table[i,1],"=",conf.table[i,2])
+      ##pinfo("",conf.table[i,1],"=",conf.table[i,2])
       line2include <- append(line2include,i)
     } 
   }
@@ -2695,7 +2695,7 @@ importArgsfromStdin <- function() {
   if ( args[1]=="-stdin" ) {
     f <- file("stdin")
     open(f)
-    line <- readLines(f,n=1)
+    line <- readLines(f,n=1)    
     ##write(line, stderr())
     # process line
     args <- commandline.args2vector(line)
