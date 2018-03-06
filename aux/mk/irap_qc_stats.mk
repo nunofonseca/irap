@@ -144,7 +144,7 @@ $(mapper_toplevel_folder)/genestats_raw%tsv $(mapper_toplevel_folder)/genestats_
 	irapBAM2stats bam=$< || ( rm -f $@ && exit 1)
 
 %.bam.gene.stats: %.bam $(auxdata_toplevel_folder)/$(reference_basename).exons.bed $(auxdata_toplevel_folder)/$(reference_basename).introns.bed $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.sorted.txt
-	echo -n "Exons	" > $@.tmp &&\
+	set -o pipefail && echo -n "Exons	" > $@.tmp &&\
 	bedtools intersect -sorted -g $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.sorted.txt -abam $<  -b $(auxdata_toplevel_folder)/$(reference_basename).exons.bed |samtools view -c - >> $@.tmp && echo >> $@ &&\
 	echo -n "Introns	" >> $@.tmp &&\
 	bedtools intersect -sorted -g $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.sorted.txt -abam $<  -b $(auxdata_toplevel_folder)/$(reference_basename).introns.bed |samtools view -c - >> $@.tmp && echo >> $@ && \
@@ -154,30 +154,30 @@ $(mapper_toplevel_folder)/genestats_raw%tsv $(mapper_toplevel_folder)/genestats_
 # bed files required to get some extra stats
 # exons.bed
 $(auxdata_toplevel_folder)/$(reference_basename).exons.bed: $(gff3_file_abspath).filt.gff3 $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.sorted.bed
-	cat $< | awk 'BEGIN{OFS="\t";} $$3=="exon" {print $$1,$$4,$$5,$$6,$$6,$$7}' | sort -u| bedtools sort -i /dev/stdin > $@.tmp.bed && \
-	bedtools merge -i $@.tmp.bed | bedtools sort -faidx $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.sorted.bed -i /dev/stdin > $@.tmp && \
+	set -o pipefail && cat $< | awk 'BEGIN{OFS="\t";} $$3=="exon" {print $$1,$$4,$$5,$$6,$$6,$$7}' | sort -u| bedtools sort -faidx $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.sorted.bed -i /dev/stdin > $@.tmp.bed && \
+	bedtools sort -faidx $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.sorted.bed -i $@.tmp.bed > $@.tmp && \
 	mv $@.tmp $@ && rm -f $@.tmp.bed
 
 # genes.bed
 $(auxdata_toplevel_folder)/$(reference_basename).genes.bed: $(gff3_file_abspath).filt.gff3 $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.sorted.bed
-	cat $< | awk 'BEGIN{OFS="\t";} $$3=="gene" {print $$1,$$4,$$5}' |  sort -u| bedtools sort -i /dev/stdin > $@.tmp.bed &&\
+	set -o pipefail &&  cat $< | awk 'BEGIN{OFS="\t";} $$3=="gene" {print $$1,$$4,$$5}' | sort -k1,1 -k2,2n -u  > $@.tmp.bed &&\
 	bedtools merge -i $@.tmp.bed  | bedtools sort -faidx $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.sorted.bed -i /dev/stdin  > $@.tmp && \
 	mv $@.tmp $@ && rm -f $@.tmp.bed
 
 # 
 $(auxdata_toplevel_folder)/$(reference_basename).genes.bed6: $(gtf_file_abspath)
-	sed -E 's/[^\t]*gene_id "([^;]+)".*$$/\1/' $< | awk 'BEGIN{OFS="\t";} $$3=="exon" {print $$1,$$4,$$5,$$9,$$6,$$7}' |  sort -u| bedtools sort -i /dev/stdin > $@.tmp.bed &&\
+	set -o pipefail &&  sed -E 's/[^\t]*gene_id "([^;]+)".*$$/\1/' $< | awk 'BEGIN{OFS="\t";} $$3=="exon" {print $$1,$$4,$$5,$$9,$$6,$$7}' |  sort -u| bedtools sort -faidx $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.sorted.bed -i /dev/stdin > $@.tmp.bed &&\
 	mv $@.tmp.bed $@ && rm -f $@.tmp.bed
 
 
 # introns
 $(auxdata_toplevel_folder)/$(reference_basename).introns.bed: $(auxdata_toplevel_folder)/$(reference_basename).genes.bed $(auxdata_toplevel_folder)/$(reference_basename).exons.bed
-	bedtools subtract -sorted -a $< -b $(auxdata_toplevel_folder)/$(reference_basename).exons.bed > $@.tmp && if [ `wc -l $@.tmp |cut -f 1 -d\ ` == 0 ]; then echo -e 'dummy_entry\t1\t1' > $@.tmp; fi && mv $@.tmp $@
+	 sort -k1,1 -k2,2n -u $(auxdata_toplevel_folder)/$(reference_basename).exons.bed > $@.tmp.bed && bedtools subtract -sorted -a $< -b $@.tmp.bed > $@.tmp && if [ `wc -l $@.tmp |cut -f 1 -d\ ` == 0 ]; then echo -e 'dummy_entry\t1\t1' > $@.tmp; fi && mv $@.tmp $@
 
 
 ## transcripts
 $(auxdata_toplevel_folder)/$(reference_basename).transcripts.bed6:  $(gtf_file_abspath)
-	grep -E "(exon)" $< | sed -E 's/[^\t]*transcript_id "([^;]+)".*$$/\1/'|awk 'BEGIN{OFS="\t";} {print $$1,$$4,$$5,$$9,$$6,$$7}' |  sort -u| bedtools sort -i /dev/stdin > $@.tmp.bed &&\
+	set -o pipefail && grep -E "(exon)" $< | sed -E 's/[^\t]*transcript_id "([^;]+)".*$$/\1/'|awk 'BEGIN{OFS="\t";} {print $$1,$$4,$$5,$$9,$$6,$$7}' |  sort -u| bedtools sort -i /dev/stdin > $@.tmp.bed &&\
 	mv $@.tmp.bed $@ && rm -f $@.tmp.bed
 
 
@@ -236,10 +236,10 @@ print_qc_dirs_files:
 
 
 $(qc_toplevel_folder)/fastq_qc_report.tsv:  $(FASTQC_REPORT_FILES)
-	$(call pass_args_stdin,irap_merge2tsv,$@.tmp, --in='$(subst $(space),;,$^)'  --out $@.tmp) && mv $@.tmp $@
+	$(call pass_args_stdin,irap_merge2tsv,$@.tmp, --in "$(subst $(space),;,$^)"  --out $@.tmp) && mv $@.tmp $@
 
 $(qc_toplevel_folder)/qc_report.csv:  $(QC_CSV_FILES)
-	cat $^ > $@.tmp && mv $@.tmp $@
+	$(call stdin_cat,$^,$@.tmp) && mv $@.tmp $@
 
 ## qc=on |report
 endif
