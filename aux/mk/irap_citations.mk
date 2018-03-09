@@ -309,7 +309,8 @@ $(if $($(1)_citation),$(call pprint_prog_info,$(1),$($(1)_citation),$($(1)_bibte
 endef
 
 # Scientific software
-progs_used=$(qc_$(qual_filtering))  $(mapper_$(mapper)) $(quant_$(quant_method))  $(quant_norm_$(quant_norm_tool))  $(de_$(de_method)) $(gse_$(gse_tool)) IRAP
+progs_used?=
+progs_used+=$(qc_$(qual_filtering))  $(mapper_$(mapper)) $(quant_$(quant_method))  $(quant_norm_$(quant_norm_tool))  $(de_$(de_method)) $(gse_$(gse_tool)) IRAP
 
 silent_targets+= show_citations citations_file
 
