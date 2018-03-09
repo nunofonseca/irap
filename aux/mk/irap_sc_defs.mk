@@ -118,30 +118,7 @@ expr_ext=mtx.gz
 endif
 
 
-
-
-ifeq ($(sc_protocol),smart)
-
-qc?=on
-## enable errc by default
-mapper?=none
-quant_method?=kallisto
-#n_>1
-#quality < 01
-
-# no need to trim reads
-trim_reads=n
-# counts+TPM
-quant_norm_method=tpm
-quant_norm_tool=irap
-
-
-expr_format=tsv
-expr_ext=tsv
-endif
-
-# smart-seq2
-ifeq ($(sc_protocol),smart-seq2)
+define set_smart_params=
 user_trans_biotypes?=protein_coding|IG_([a-zA-Z0-9]+)_gene|TR_([a-zA-Z0-9]+)_gene|lnc
 user_trans?=auto
 # always assume spiked data
@@ -155,7 +132,7 @@ qc?=on
 ## read preprocessing filtering
 trim_poly_at?=y
 trim_poly_at_len?=8
-# no need to trim reads
+# no need to filter based on trimming
 trim_reads?=n
 ##Maximum (percentage) of uncalled bases acceptable in a read
 max_n?=0.05
@@ -177,5 +154,20 @@ expr_format?=tsv
 expr_ext?=tsv
 
 min_clusters?=2
-max_clusters?=15
+max_clusters?=5
+endef
+
+# smart-seq2
+ifeq ($(sc_protocol),smart-seq2)
+$(eval $(call set_smart_params))
+endif
+
+# smart-seq
+ifeq ($(sc_protocol),smart-seq)
+$(eval $(call set_smart_params))
+endif
+
+ifeq ($(sc_protocol),smart)
+$(eval $(call set_smart_params))
+qc?=on
 endif

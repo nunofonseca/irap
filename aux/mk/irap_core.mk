@@ -803,7 +803,7 @@ $(info *	rnaseq_type=$(rnaseq_type))
 
 ifeq ($(rnaseq_type),sc)
 ## single cell protocol
-SUPPORTED_SCP:=none smart-seq2 drop-seq 10x_v1 10x_v1p 10x_v2 10x_v2p
+SUPPORTED_SCP:=none smart-seq2 smart-seq smart drop-seq 10x_v1 10x_v1p 10x_v2 10x_v2p
 # drop-seq 10x
 ifeq (,$(filter $(sc_protocol),$(SUPPORTED_SCP)))
 $(call p_info,[ERROR] Invalid sc_protocol - valid values are $(SUPPORTED_SCP))
@@ -1801,8 +1801,6 @@ include $(irap_path)/../aux/mk/irap_de.mk
 # Gene set enrichment analysis
 include $(irap_path)/../aux/mk/irap_gse.mk
 
-# Atlas (atlas specific stuff)
-include $(irap_path)/../aux/mk/irap_atlas.mk
 
 # Fusion
 include $(irap_path)/../aux/mk/irap_fusion.mk
@@ -1826,6 +1824,9 @@ $(call p_info,Loading code under development)
 # include under development features
 include $(irap_path)/../aux/mk/irap_snp_indel_calling.mk
 endif
+
+# Atlas (atlas specific stuff)
+include $(irap_path)/../aux/mk/irap_atlas.mk
 
 # Check if the options provided are valid
 ifeq (invalid,$(shell irap_paths $(mapper) $(quant_method) $(quant_norm_tool) $(quant_norm_method) $(de_method) $(transcript_de_method) $(exon_de_method) $(gse_tool) $(has_stranded_data) $(rnaseq_type) $(sc_protocol)))

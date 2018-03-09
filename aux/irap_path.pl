@@ -92,7 +92,8 @@ valid_combination([Map,QR,QNT,QN,DE,TDE,EDE,GSE,Stranded,blk,_]):-
     gse(GSE,de(DE),_).
 
 %% smart-seq2 - has UMIs => subset of quantification methods and no fpkm
-valid_combination([Map,QR,QNT,QN,DE,TDE,EDE,GSE,Stranded,sc,'smart-seq2']):-
+valid_combination([Map,QR,QNT,QN,DE,TDE,EDE,GSE,Stranded,sc,SMART]):-
+    member(SMART,['smart-seq2','smart-seq','smart']),
     m(Map,_,_,S1),
     sc_mapper(Map),
     qr(QR,m(Map),_,S2),
@@ -107,7 +108,7 @@ valid_combination([Map,QR,QNT,QN,DE,TDE,EDE,GSE,Stranded,sc,'smart-seq2']):-
 
 %% 10x, drop-seq
 valid_combination([Map,QR,QNT,_QN,DE,TDE,EDE,GSE,Stranded,sc,SC_PROT]):-
-    (SC_PROT=='smart-seq2'->fail;true),
+    (member(SC_PROT,['smart-seq2','smart-seq','smart'])->fail;true),
     m(Map,_,_,S1),
     sc_mapper(Map),
     qr_sc(QR,m(Map),_,S2),
