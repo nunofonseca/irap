@@ -6,7 +6,7 @@ if [ "$1-" == "-" ]; then
 fi
 
 
-set -e 
+set -eu
 set -o pipefail 
 
 zip=y
@@ -37,9 +37,9 @@ $cat_cmd  ${pref}_fastqc/summary.txt | grep  -m 1 "Sequence Length Distribution"
 $cat_cmd  ${pref}_fastqc/summary.txt | grep  -m 1 "Sequence Duplication Levels" | awk  -F"\t"  '{print $2"\t"$1}'
 $cat_cmd  ${pref}_fastqc/summary.txt | grep  -m 1 "Overrepresented sequences" | awk  -F"\t"  '{print $2"\t"$1}'
 $cat_cmd  ${pref}_fastqc/summary.txt | grep  -m 1 "Adapter Content" | awk  -F"\t"  '{print $2"\t"$1}'
-
+set +e
 $cat_cmd  ${pref}_fastqc/fastqc_data.txt  | grep  -m 1 "Total Sequences" | sed 's/\t$//'
-$cat_cmd  ${pref}_fastqc/fastqc_data.txt  | grep  -m 1 "Basic Statistics" | sed 's/\t$//' | sed "s/>>/FASTQC /"
-$cat_cmd  ${pref}_fastqc/fastqc_data.txt  | grep  -m 1 "%GC" | sed 's/\t$//'|sed 's/^%//'
+$cat_cmd  ${pref}_fastqc/fastqc_data.txt  | grep  -m 1 "Basic Statistics" | sed 's/\t$//;s/>>/FASTQC /'
+$cat_cmd  ${pref}_fastqc/fastqc_data.txt  | grep  -m 1 "%GC" | sed 's/\t$//;s/^%//'
 
 exit 0
