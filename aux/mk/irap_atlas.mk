@@ -20,29 +20,36 @@
 #
 # =========================================================
 # deprecated
+ATLAS_SC_FILES?=
 ifdef atlas_run
 $(info * Atlas mode enabled)
 
 SETUP_DATA_FILES+=$(feat_mapping_files)
+endif
 
-ifeq($(rnaseq_type),sc)
-ALL_TARGETS+=atlas_sc_wrap_up
+ifeq ($(rnaseq_type),sc)
+##ALL_TARGETS+=atlas_sc_wrap_up
 ## expression matrix
 ## QC
-ATLAS_SC_FILES=$(qc_toplevel_folder)/qc.tsv $(quant_toplevel_folder)/genes.raw.$(quant_method).$(expr_ext) $(cell_qc_files) $(filtered_expr_matrices) $(sc_visualization_files) $(clustering_files)
+ATLAS_SC_FILES+=$(qc_toplevel_folder)/qc.tsv $(quant_toplevel_folder)/genes.raw.$(quant_method).$(expr_ext) $(quant_toplevel_folder)/transcripts.raw.$(quant_method).$(expr_ext) $(cell_qc_files) $(filtered_expr_matrices) $(sc_visualization_files) $(clustering_files) $(report_toplevel_folder)/software.tsv
 ifneq ($(mapper),none)
 ATLAS_SC_FILES+=$(mapper_toplevel_folder)/libs_qc.tsv
 endif
+
 endif
-endif
 
 
-atlas_sc_wrap_up: $(name)/sc_bundle 
 
-$(name)/sc_bundle: $(ATLAS_SC_FILES)
+phony_targets+= atlas_sc_wrap_up atlas_bundle
+atlas_sc_wrap_up: atlas_bundle
+
+sc_bundle_dir=$(name)/sc_bundle
+atlas_bundle: $(sc_bundle_dir) $(ATLAS_SC_FILES)
+	cp -ar $(ATLAS_SC_FILES) $(sc_bundle_dir)
+	cp -ar $(quant_toplevel_folder)/genes.raw.filtered.$(quant_method).*tsne_perp*.tsv $(sc_bundle_dir)
+
+$(sc_bundle_dir)/: 
 	mkdir -p $@
-	cp -ar $(ATLAS_SC_FILES) $@
-	cp $(quant_toplevel_folder)/transcripts.raw.filtered.$(quant_method).*tsne_perp*.tsv $@
 
 # Reduce the resolution of some images
 ATLAS_IMAGES2CONVERT=$(shell ls --color=never -1 $(report_toplevel_folder)/read_filtering_plot.png $(if $(call GEN_REPORT_QC_ONLY),,$(report_toplevel_folder)/mapping/$(mapper)*.png) 2>/dev/null | grep -v orig.png | grep -v scaled.png )
