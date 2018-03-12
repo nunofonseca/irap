@@ -416,6 +416,7 @@ function submit_jobs4libs {
     if [ "$libs_ids-" == "-" ]; then
 	DEPS=$1
     else
+	OLDDEPS=$1
 	DEPS="${jobname_prefix}${level}.*"
 	local nx=($libs_ids)
 	local NJOBS=${#nx[@]}
@@ -453,7 +454,10 @@ function submit_jobs4libs {
 	    p_info "Batch $BATCH submitted"
 	    THREADS=1 MEM=4000 submit_job "${jobname_prefix}${level}.$BATCH"  -w "ended(${jobname_prefix}${level}${BATCHGROUP}*)" echo nop
 	fi
-
+	if [ $i -eq 1  ]; then
+	    ## no jobs where submitted
+	    DEPS=$OLDDEPS
+	fi
 	if [ "$BATCHGROUP-" != ".-" ]; then
 	    p_info "* Stage ${level}...$i jobs/$BATCH"
 	else
