@@ -54,6 +54,7 @@ data.f <- handle.tech.replicates(data.f,opt)
 
 data.f <- apply(data.f,2,round,0)
 storage.mode(data.f) <- "integer"
+##print(storage.mode(data.f))
 
 #
 opt$conds <- map.conds2cols(opt$label2group,colnames(data.f))

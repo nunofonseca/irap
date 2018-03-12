@@ -23,7 +23,7 @@ install=all
 IRAP_DIR1=
 SRC_DIR=
 
-IRAP_VERSION=0.8.5.p8
+IRAP_VERSION=0.8.5d3
 
 
 #
@@ -785,7 +785,7 @@ function mappers_install {
    #bfast_install
    #smalt_install
    gsnap_install 
-   ## osa_install
+   #osa_install
    star_install
    hisat2_install
    pinfo "To install GEM run: irap_install.sh -s . -x gem"
@@ -1635,7 +1635,6 @@ function quant_install {
     stringtie_install
     rsem_install
     kallisto_install
-    ##fusionmap_install
     salmon_install
     umis_install
     featurecounts_install

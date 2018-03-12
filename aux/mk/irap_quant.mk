@@ -37,17 +37,29 @@ SETUP_DATA_FILES+=$(mapTrans2gene)
 STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).$(expr_ext)) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).$(expr_ext))
 
 
-ifeq ($(transcript_quant),y)
+## Quantification statistics
+a_quant_qc_stats:=
+quant_qc_stats:=$(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).quant_qc.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).quant_qc.tsv)
+WAVE3_s_TARGETS+=$(quant_qc_stats)
+
+a_quant_qc_stats+= $(quant_qc_stats)
+
+ifeq ($(transcript_expr),y)
+quant_qc_statst:= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).quant_qc.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).quant_qc.tsv)
+a_quant_qc_stats+= $(quant_qc_statst)
 
 WAVE3_s_TARGETS+=$(quant_qc_statst)
 STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).$(expr_ext)) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).$(expr_ext)) 
 endif
 
 ifeq ($(exon_quant),y)
+quant_qc_statse:= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.exons.raw.$(exon_quant_method).quant_qc.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.exons.raw.$(exon_quant_method).quant_qc.tsv)
+a_quant_qc_stats+= $(quant_qc_statse)
 
 WAVE3_s_TARGETS+=$(quant_qc_statse)
 STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.exons.raw.$(exon_quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.exons.raw.$(exon_quant_method).tsv) 
 endif
+
 
 #*****************
 # Cufflinks 1 & 2
@@ -1137,8 +1149,12 @@ SETUP_DATA_FILES+=$(mapTrans2gene)
 $(quant_toplevel_folder)/%.transcripts.riu.$(quant_method).irap.$(expr_ext): $(quant_toplevel_folder)/%.transcripts.raw.$(quant_method).$(expr_ext) $(mapTrans2gene)
 	irap_transcript_gene_rel_expr --ifile $< --$(expr_format) --map $(mapTrans2gene) --cores $(max_threads)  --gene_col 1 --trans_col 2  --out $@ || (rm -f $@ && exit 1)
 
-$(name)/$(mapper)/$(quant_method)/%.transcripts.riu.$(quant_method).irap.tsv: $(name)/$(mapper)/$(quant_method)/%.transcripts.raw.$(quant_method).tsv $(mapTrans2gene)
-	irap_transcript_gene_rel_expr --tsv_file $<  --map $(mapTrans2gene) --cores $(max_threads)  --gene_col 1 --trans_col 2  --out $@.tmp && mv $@.tmp $@	
+$(quant_toplevel_folder)/transcripts.riu.$(quant_method).irap.tsv: $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.riu.$(quant_method).irap.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.riu.$(quant_method).irap.tsv)
+	( $(call pass_args_stdin,irap_merge_tsv.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
+
+$(quant_toplevel_folder)/transcripts.riu.$(quant_method).irap.mtx.gz: $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.riu.$(quant_method).irap.mtx.gz) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.riu.$(quant_method).irap.mtx.gz)
+	( $(call pass_args_stdin,irap_merge_mtx,$@,-o $@ --in "$^") ) || ( rm -f $@ || exit 1 )
+
 
 $(quant_toplevel_folder)/%.transcripts.dt.$(quant_method).irap.$(expr_ext): $(quant_toplevel_folder)/%.transcripts.riu.$(quant_method).irap.$(expr_ext)  $(mapTrans2gene)
 	irap_riu2dominant --fc $(dt_fc) -i $< --$(expr_format) --map $(mapTrans2gene) --cores $(max_threads) --gene_col 1 --trans_col 2  --out $@ || (rm -f $@ && exit 1)
@@ -1178,7 +1194,7 @@ STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transc
 
 
 # include the raw counts
-STAGE3_OUT_FILES+= $(name)/$(mapper)/$(quant_method)/transcripts.raw.$(quant_method).tsv  $(name)/$(mapper)/$(quant_method)/transcripts.riu.$(quant_method).irap.tsv 
+STAGE3_S_OFILES+= $(quant_toplevel_folder)/transcripts.riu.$(quant_method).irap.$(expr_ext)
 
 
 # useful functions

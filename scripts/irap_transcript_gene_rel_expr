@@ -40,14 +40,16 @@ pdebug.enabled <- FALSE
 usage <- "irap_transcript_gene_rel_expr --ifile file --map gene2transcript [options]"
 filenames <- c("ifile","mapping_file") ;#filenames that must exist (if defined)
 option_list <- list(
-  make_option(c("-i", "--tsv_file"), type="character", dest="tsv_file", default=NULL,help="TSV file name with the quantification by transcript"),
-  make_option(c("-m", "--mapping_file"), type="character", dest="mapping_file", default=NULL,help="TSV file name with the  mapping between transcripts and genes."),
-  make_option(c("--trans_col"), type="numeric",default=1,help="Column with the transcript ids [default %default]."),
-  make_option(c("--gene_col"), type="numeric",default=2,help="Column with the gene ids [default %default]."),
-  make_option(c("-c", "--cores"), type="numeric",default=1,dest="num_cores",help="Number of cores to use ([default %default])"),
-  make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
-  make_option(c("--exit_on_error"),action="store_true",dest="exit.on.error",default=FALSE,help="Exit when an inconsistency is found between the expression matrix and the mapping file. by default it will emit an warning and try to continue."),
-  make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name. The file will contain the relative expression of a transcript within a gene.")
+    make_option(c("-i", "--ifile"), type="character", dest="ifile", default=NULL,help="File name with the quantification by transcript"),
+    make_option(c("--mtx"), action="store_true",default=FALSE,dest="is_mtx",help="The input file is in Matrix Market format. Default is TSV format."),
+    make_option(c("--tsv"), action="store_false",default=FALSE,dest="is_mtx",help="The input file is in TSV forma (default)."),
+    make_option(c("-m", "--mapping_file"), type="character", dest="mapping_file", default=NULL,help="TSV file name with the  mapping between transcripts and genes."),
+    make_option(c("--trans_col"), type="numeric",default=1,help="Column with the transcript ids [default %default]."),
+    make_option(c("--gene_col"), type="numeric",default=2,help="Column with the gene ids [default %default]."),
+    make_option(c("-c", "--cores"), type="numeric",default=1,dest="num_cores",help="Number of cores to use ([default %default])"),
+    make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
+    make_option(c("--exit_on_error"),action="store_true",dest="exit.on.error",default=FALSE,help="Exit when an inconsistency is found between the expression matrix and the mapping file. by default it will emit an warning and try to continue."),
+    make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name. The file will contain the relative expression of a transcript within a gene.")
 )
 
 # check multiple options values

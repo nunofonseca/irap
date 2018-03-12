@@ -20,7 +20,7 @@
 # =========================================================
 # TODO: create an object for the conf. information
 
-irap_version<-"0.8.5.p8"
+irap_version<-"0.8.5d3"
 
 
 IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
@@ -35,7 +35,7 @@ irap_menu_css_file <- paste(IRAP.DIR,"/aux/css/menu.css",sep="")
 irap.css <- "irap.css"
 ############################################################
 # Useful functions
-pinfo <- function(...) {
+pinfo <- function(...) {   
     cat(paste0("[INFO ",format(Sys.time(), format="%d/%m-%H:%M"),"] ",...,"\n"))
 }
 
