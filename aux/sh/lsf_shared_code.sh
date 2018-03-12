@@ -98,7 +98,7 @@ function submit_job_status {
     fi
     ret=
     #p_info "WAITFOR (id)=$JOB_ID $jobname   $WAITFOR"
-    # in spite of the checks, the job may have finished before lunching the new one, hence catch the error and submit a new one if an error occurs
+    # in spite of the checks, the job may have finished before launching the new one, hence catch the error and submit a new one if an error occurs
     if [ "$DEBUG-" == "2-" ]; then	
 	$ECHO $IRAP_PAR_CMD -n -q  > /dev/stderr
 	ret=$?
