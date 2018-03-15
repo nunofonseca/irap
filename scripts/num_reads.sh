@@ -3,7 +3,7 @@ if [ "-$1" = "-" ]; then
     echo "ERROR! usage: num_reads.sh fastq_filename" >&2
     exit 1
 fi
-
+set -e
 if [ -e $1 ]; then 
     fastq_num_reads $1
     exit 0
