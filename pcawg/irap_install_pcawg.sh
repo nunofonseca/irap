@@ -46,18 +46,20 @@ if [ ! -e  scripts/irap_install.sh ]; then
     exit 1
 fi
 echo DIR=$DIR
-set -e 
+set -eux 
 export IRAP_DIR=$DIR
 ./scripts/irap_install.sh -s $SRC_DIR  -x make
 ./scripts/irap_install.sh -s $SRC_DIR  -x zlib
 ./scripts/irap_install.sh -s $SRC_DIR  -x perl
 # no longer needed
 #./scripts/irap_install.sh -s $SRC_DIR  -x R3
-./scripts/irap_install.sh -s $SRC_DIR -x gnuplot
 ./scripts/irap_install.sh -s $SRC_DIR -x YAP
 ./scripts/irap_install.sh -s $SRC_DIR -x samtools1
 ./scripts/irap_install.sh -s $SRC_DIR -x samtools
 ./scripts/irap_install.sh -s $SRC_DIR -x bedtools
+./scripts/irap_install.sh -s $SRC_DIR -x vcftools
+./scripts/irap_install.sh -s $SRC_DIR -x python_packages
+./scripts/irap_install.sh -s $SRC_DIR -x fastq_utils
 
 ./scripts/irap_install.sh -s $SRC_DIR -x core
 source $DIR/irap_setup.sh
@@ -68,8 +70,10 @@ source $DIR/irap_setup.sh
 ./scripts/irap_install.sh -s $SRC_DIR -x bowtie1
 ./scripts/irap_install.sh -s $SRC_DIR -x star
 ./scripts/irap_install.sh -s $SRC_DIR -x fastq_qc
+./scripts/irap_install.sh -s $SRC_DIR -x fastx
 ./scripts/irap_install.sh -s $SRC_DIR -x htseq
 ./scripts/irap_install.sh -s $SRC_DIR -v
+#./scripts/irap_install.sh -s $SRC_DIR -x data
 # iRAP is now installed...
 # install all the data needed by pcawg
 #./examples/setup_pcawg.sh
