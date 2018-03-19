@@ -87,13 +87,14 @@ for (p in packages2install ) {
 ## downgrade
 remove.packages("scater")
 remove.packages("SC3")
+
+biocLite("biomaRt",ask=FALSE, suppressUpdates=TRUE)
 install.packages('https://bioconductor.org/packages/3.5/bioc/src/contrib/scater_1.4.0.tar.gz')
 install.packages('https://bioconductor.org/packages/3.5/bioc/src/contrib/SC3_1.4.2.tar.gz')
 
 # http://bioconductor.org/packages/2.13/data/annotation/src/contrib/GO.db_2.10.1.tar.gz fails to install
 #biocLite('GO.db',ask=FALSE, suppressUpdates=TRUE)
 #biocLite("topGO",ask=FALSE, suppressUpdates=TRUE)
-#biocLite("biomaRt",ask=FALSE, suppressUpdates=TRUE)
 
 #biocLite('goseq',ask=FALSE, suppressUpdates=TRUE)
 
