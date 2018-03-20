@@ -175,8 +175,8 @@ check_name=$(if $(shell echo $(1)|sed "s/[0-9]*//g"),,$(error * Invalid $(2) $(1
 # the library name should be different from the prefix of the fastq files
 # ex. of an invalid library name: lib1=lib1.fastq
 # 1=libname
-check_se_libname_ok=$(if $(subst $(1).fastq,,$($(1))),, $(error * Invalid libname $(1)))
-check_pe_libname_ok=$(if $(strip $(subst $(1)_2.fastq,,$(subst $(1)_1.fastq,,$($(1))))), ,$(error * Invalid libname $(1)))
+check_se_libname_ok=$(if $(subst $(1).fastq,,$($(1))),, $(warning * no longer invalid libname $(1)))
+check_pe_libname_ok=$(if $(strip $(subst $(1)_2.fastq,,$(subst $(1)_1.fastq,,$($(1))))), ,$(warning * no longer invalid libname $(1)))
 
 # 1 - lib
 # 2 - bam

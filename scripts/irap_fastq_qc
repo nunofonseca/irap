@@ -228,9 +228,9 @@ ifndef out_dir
 out_dir=$(input_dir)
 endif
 
-ifeq ($(out_prefix),$(subst .fastq,,$(subst .gz,,$(f1))))
-$(error * out_prefix should not be the input fastq file prefix)
-endif
+#ifeq ($(out_prefix),$(subst .fastq,,$(subst .gz,,$(f1))))
+#$(error * out_prefix should not be the input fastq file prefix)
+#endif
 
 #Temporary directory
 #If none, use output directory (default = input_dir)
