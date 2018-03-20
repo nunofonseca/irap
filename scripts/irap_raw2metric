@@ -43,7 +43,7 @@ option_list <- list(
   make_option(c("-i", "--ifile"), type="character", dest="ifile", help="TSV file name with the matrix with the counts per gene/transcript."),
   make_option(c("-g", "--gtf"), type="character", dest="gtf_file", default=NULL, help="GTF file name"),
   make_option(c("-l", "--lengths"), type="character",dest="lengths_file",default="",help=" [default %default]."),
-  make_option(c("-e", "--exclude"), type="character",dest="toexclude",default="",help="biotypes to exclude (separated by comma) [default %default]."),
+  make_option(c("-e", "--exclude"), type="character",dest="toexclude",default="",help="biotypes to exclude (separated by comma) [default %default]. (deprecated)"),
   make_option(c("--length_as_tsv"), dest="lengths_tsv_format",action="store_true",default=FALSE,help="lengths are provided in a two column TSV file with the feature and length [default %default]."),
   make_option(c("m","--mass_biotypes"),type="character",dest="mass_biotypes",default=NULL,help="Sequence of biotypes, separated by comma, that define the set of genes that are used to compute the total number of reads (rpkm/fpkm/tpm) [default all genes]"),
   make_option(c("--mtx"), action="store_true",default=FALSE,dest="is_mtx",help="The input file is in Matrix Market format. Default is TSV format."),
