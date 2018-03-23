@@ -830,7 +830,8 @@ $(info *	rnaseq_type=$(rnaseq_type))
 
 ifeq ($(rnaseq_type),sc)
 ## single cell protocol
-SUPPORTED_SCP:=none smart-seq2 smart-seq smart drop-seq 10x_v1 10x_v1p 10x_v2 10x_v2p
+SUPPORTED_SCP:=none smart-seq2 smart-seq smart drop-seq 10x_v1 10x_v1p 10x_v2 10x_v2p 10xV1 10xV2 10xV1a
+
 # drop-seq 10x
 ifeq (,$(filter $(sc_protocol),$(SUPPORTED_SCP)))
 $(call p_info,[ERROR] Invalid sc_protocol - valid values are $(SUPPORTED_SCP))
