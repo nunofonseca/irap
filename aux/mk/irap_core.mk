@@ -774,19 +774,44 @@ endif
 # Technical replicates
 #*********************
 
-# ex. technical.replicates=SE1,SE2;PE1,PE3,PE4
-# means that there are two groups of tech. replicates (separated by;), group 1 composed by SE1 and SE2  and group2 composed by PE1,PE3 and PE4.
-ifndef technical.replicates
-technical.replicates=
- $(info *	technical.replicates=NONE)
+# backwards compatibility
+ifdef technical.replicates
+technical_replicates?=$(technical.replicates)
+endif
+
+# ex. technical.replicates=SE1,SE2;PE1,PE3,PE4;SE3
+# means that there are two groups of tech. replicates (separated by;), group 1 composed by SE1 and SE2  and group2 composed by PE1,PE3 and PE4, SE3 does not have tech. replicates
+ifndef technical_replicates
+technical_replicates=
+ $(info *	technical_replicates=NONE)
 else
- $(info *	technical.replicates=$(technical.replicates))
+ $(info *	technical_replicates=$(technical_replicates))
  # validate the libraries names
  comma=,
  quote="
- $(foreach  l,$(subst $(quote), ,$(subst $(comma), ,$(subst ;, ,$(technical.replicates)))),$(call check_param_ok,$(strip $(l))))
+ $(foreach  l,$(subst $(quote), ,$(subst $(comma), ,$(subst ;, ,$(technical_replicates)))),$(call check_param_ok,$(strip $(l))))
+#"
+## check - should be improved...
+num_tr=$(words $(sort $(subst $(quote), ,$(subst $(comma), ,$(subst ;, ,$(technical_replicates))))))
+num_libs=$(words $(sort $(se) $(pe)))
+ifneq ($(num_tr),$(num_libs))
+$(error technical_replicates should include all libs in se and pe: found $(num_tr) labels but expected $(num_libs))
 endif
-#" 
+## technical replicate names expected
+ifndef technical_replicates_labels
+$(error technical_replicates_labels should be defined when technical_replicates is defined)
+endif
+##
+## number of technical replicates labels needs to match the number of groups defined in technical.replicates
+# technical.replicates.labels=G1;G2;G3
+ng1=$(words $(sort $(subst ;, ,$(technical_replicates))))
+ng2=$(words $(sort $(subst ;, ,$(technical_replicates_labels))))
+ifneq ($(ng1),$(ng2))
+$(error technical_replicates inconsistent with technical_replicates_labels: found $(ng2) labels but expected $(ng1) labels in technical_replicates_labels)
+endif
+$(info *	number of technical replicate groups/labels=$(ng1))
+endif
+
 
 
 #####################
