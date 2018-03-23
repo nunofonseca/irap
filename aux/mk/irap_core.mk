@@ -805,7 +805,7 @@ endif
 ## number of technical replicates labels needs to match the number of groups defined in technical.replicates
 # technical.replicates.labels=G1;G2;G3
 ng1=$(words $(sort $(subst ;, ,$(technical_replicates))))
-ng2=$(words $(sort $(subst ;, ,$(technical_replicates_labels))))
+ng2=$(words $(sort $(subst ;, ,$(subst $(space),_,$(technical_replicates_labels)))))
 ifneq ($(ng1),$(ng2))
 $(error technical_replicates inconsistent with technical_replicates_labels: found $(ng2) labels but expected $(ng1) labels in technical_replicates_labels)
 endif
