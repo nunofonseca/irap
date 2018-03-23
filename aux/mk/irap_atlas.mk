@@ -31,25 +31,43 @@ ifeq ($(rnaseq_type),sc)
 ##ALL_TARGETS+=atlas_sc_wrap_up
 ## expression matrix
 ## QC
-ATLAS_SC_FILES+=$(qc_toplevel_folder)/qc.tsv $(quant_toplevel_folder)/genes.raw.$(quant_method).$(expr_ext) $(quant_toplevel_folder)/transcripts.raw.$(quant_method).$(expr_ext) $(cell_qc_files) $(filtered_expr_matrices) $(sc_visualization_files) $(clustering_files) $(report_toplevel_folder)/software.tsv
+ATLAS_SC_FILES+=$(qc_toplevel_folder)/qc.tsv   $(cell_qc_files) $(filtered_expr_matrices)  $(clustering_files) $(report_toplevel_folder)/software.tsv  
+ifneq ($(sc_quant_viz),none)
+ATLAS_SC_FILES+=$(sc_visualization_files)
+endif
 ifneq ($(mapper),none)
 ATLAS_SC_FILES+=$(mapper_toplevel_folder)/libs_qc.tsv
 endif
-
+# mtx - always
+EXPR_FILES=$(quant_toplevel_folder)/genes.raw.$(quant_method).mtx.gz $(quant_toplevel_folder)/genes.raw.$(quant_method).mtx_cols.gz $(quant_toplevel_folder)/genes.raw.$(quant_method).mtx_cols.gz $(quant_toplevel_folder)/genes.$(quant_norm_method).$(quant_method).$(quant_norm_tool).$(expr_ext) $(filtered_expr_matrices)
+ifeq ($(transcript_quant),y)
+EXPR_FILES+=$(quant_toplevel_folder)/transcripts.raw.$(quant_method).$(expr_ext) $(quant_toplevel_folder)/transcripts.$(quant_norm_method).$(quant_method).$(quant_norm_tool).$(expr_ext)
 endif
-
+# non-10x and no drop-seq
+ifneq ($(expr_format),mtx)
+EXPR_FILES+=$(quant_toplevel_folder)/genes.$(quant_norm_method).$(quant_method).$(quant_norm_tool).mtx.gz $(quant_toplevel_folder)/genes.$(quant_norm_method).$(quant_method).$(quant_norm_tool).mtx_cols.gz $(quant_toplevel_folder)/genes.$(quant_norm_method).$(quant_method).$(quant_norm_tool).mtx_rows.gz $(subst .tsv,.mtx.gz,$(filtered_expr_matrices)) $(subst .tsv,.mtx_rows.gz,$(filtered_expr_matrices)) $(subst .tsv,.mtx_cols.gz,$(filtered_expr_matrices))
+endif
+endif
 
 
 phony_targets+= atlas_sc_wrap_up atlas_bundle
 atlas_sc_wrap_up: atlas_bundle
 
 sc_bundle_dir=$(name)/sc_bundle
-atlas_bundle: $(sc_bundle_dir) $(ATLAS_SC_FILES)
-	cp -ar $(ATLAS_SC_FILES) $(sc_bundle_dir)
+## single cell bundle
+atlas_bundle: $(sc_bundle_dir)/ $(ATLAS_SC_FILES) $(EXPR_FILES)
+	cp -ar $(ATLAS_SC_FILES) $(sc_bundle_dir) 
+	cp -ar $(sort $(EXPR_FILES)) $(sc_bundle_dir)
+ifneq ($(sc_quant_viz),none)
 	cp -ar $(quant_toplevel_folder)/genes.raw.filtered.$(quant_method).*tsne_perp*.tsv $(sc_bundle_dir)
+endif 
+
 
 $(sc_bundle_dir)/: 
 	mkdir -p $@
+
+%.mtx.gz %.mtx_cols.gz %.mtx_rows.gz: %.tsv
+	irap_tsv2mtx --tsv $< --out $*.tmp.mtx && mv $*.tmp.mtx.gz $*.mtx.gz  && mv $*.tmp.mtx_cols.gz  $*.mtx_cols.gz  && mv $*.tmp.mtx_rows.gz  $*.mtx_rows.gz 
 
 # Reduce the resolution of some images
 ATLAS_IMAGES2CONVERT=$(shell ls --color=never -1 $(report_toplevel_folder)/read_filtering_plot.png $(if $(call GEN_REPORT_QC_ONLY),,$(report_toplevel_folder)/mapping/$(mapper)*.png) 2>/dev/null | grep -v orig.png | grep -v scaled.png )
