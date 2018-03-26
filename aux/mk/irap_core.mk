@@ -315,6 +315,10 @@ def_trim_poly_at?=n
 # by default, if a read has at least 10 consecutive A or T in the edges then it will be trimmed. This option is only used if trim_poly_at is set to y
 def_trim_poly_at_len?=10
 
+# trim trailing N bases independtly of quality
+# 0 = no trimming
+trim_n_trailing_bases?=0
+
 #Trim all reads to the minimum read size after quality trimming - y/n
 def_trim_reads?=y
 
@@ -1905,7 +1909,7 @@ $(call p_info,[DONE] Initialization)
 ###################
 # Quality Filtering
 ###################
-read_qual_filter_common_params=tmp_dir=$(tmp_dir)  threads=$(max_threads)  qual_filtering=$(qual_filtering)  min_qual=$(min_read_quality) trim=$(trim_reads) cont_index=$(cont_index) mapper=$(cont_mapper) max_n=$(max_n) max_mem=$(max_mem) poly_at_len=$(trim_poly_at_len) trim_poly_at=$(trim_poly_at) qc_stage1=$(qc_stage1)
+read_qual_filter_common_params=tmp_dir=$(tmp_dir)  threads=$(max_threads)  qual_filtering=$(qual_filtering)  min_qual=$(min_read_quality) trim=$(trim_reads) cont_index=$(cont_index) mapper=$(cont_mapper) max_n=$(max_n) max_mem=$(max_mem) poly_at_len=$(trim_poly_at_len) trim_poly_at=$(trim_poly_at) qc_stage1=$(qc_stage1) trim_n_trailing_bases=$(trim_n_trailing_bases)
 
 # get a param value pair iff the value passed is not empty and not undef
 # 1 - param name

@@ -419,6 +419,11 @@ trim=n
 endif
 $(info * trim=$(trim))
 
+# trim trailing N bases independtly of quality
+# 0 = no trimming
+trim_n_trailing_bases?=0
+
+
 # Trim poly-A/T? y|n
 trim_poly_at?=n
 # minimum poly-at length
@@ -807,9 +812,15 @@ stage1: $(subst .fastq.gz,.filter1.fastq.gz,$(ORIGFILES))
 qc_stage1?=y
 ifeq ($(qc_stage1),y)
 ####################################################################################
+ifneq ($(trim_n_trailing_bases),0)
+trim_trainling_fastx_param:=-f $(shell expr $(trim_n_trailing_bases) + 1)
+else
+trim_trainling_fastx_param=
+endif
+
 # -p Minimum percent of bases that must have min_qual
 ifeq ($(trim),y)
-trim_cmd= fastx_trimmer -l $(min_len) -m $(min_len) -v -Q $(qual) |
+trim_cmd= fastx_trimmer $(trim_trainling_fastx_param) -l $(min_len) -m $(min_len) -v -Q $(qual) |
 else
 trim_cmd=
 endif
