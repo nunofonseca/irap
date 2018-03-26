@@ -875,6 +875,9 @@ ifneq ($(mapper),star)
 $(error RSEM needs to be ran with STAR)
 endif
 
+## 
+irap_strand2rsemoption=$(if $(findstring $(1),first),reverse,$(if $(findstring $(1),second),forward,none))
+
 star_map_params+=
 # --quantMode TranscriptomeSAM will be enabled in the star code because transcript quantification is enabled
 
@@ -887,7 +890,7 @@ rsem_params+=--alignments  --estimate-rspd  --calc-ci --no-bam-output --seed 123
 ##--bam
 rsem_reference_name=$(subst .gtf,rsem,$(gtf_file_abspath))/rsemref
 rsem_reference_target=$(rsem_reference_name)/rsem.irap
-# --strandedness non|forward|reverse
+# --strandedness none|forward|reverse
 # --paired-end
 # Add the reference preparation to STAGE0
 SETUP_DATA_FILES+=$(rsem_reference_target)
@@ -899,9 +902,8 @@ $(rsem_reference_target): $(reference_abspath)  $(gtf_file_abspath)
 # 2 output prefix
 # 3 PE/SE info
 #  --sam/--bam [--paired-end] input reference_name sample_name
-# TODO: stranded data: --forward-prob 0
 define run_rsem=
-	irap_wrapper.sh rsem rsem-calculate-expression $(rsem_params)   $(3) $(1) $(rsem_reference_name) $(2)
+	irap_wrapper.sh rsem rsem-calculate-expression $(rsem_params)   $(3) $(1) --strandedness $(call irap_strand2rsemoption,$(1)) $(rsem_reference_name) $(2)
 endef
 ## 
 #sample_name.genes.results
