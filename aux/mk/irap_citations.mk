@@ -298,8 +298,7 @@ phony_targets+= show_citations
 # bibtex_file 3
 # prog version 4
 define pprint_prog_info=
-
-echo "$(5)	$(1)	$(4)	$(2)"
+echo "$(5)|$(1)|$(4)|$(2)"|tr "|" "\t"
 
 endef
 
@@ -321,9 +320,14 @@ show_citations:
 
 citations_file: $(report_toplevel_folder)/software.tsv
 
-%versions.tsv: $(conf)
-	echo "Analysis	Software	Version	Citation" > $@.tmp && \
+%/versions.tsv: $(conf) $(gtf_file_abspath) $(reference_abspath)
+	echo "Analysis|Software|Version|Citation" > $@.tmp && \
 	( $(foreach p,$(sort $(progs_used)),$(call prog_info,$(p))) ) >> $@.tmp &&\
+	echo "iRAP params|$(call get_cmdline_params) $(MAKECMDGOALS)||" | sed -E "s/\s+/ /g" >> $@.tmp &&\
+	echo "Data|gene model|$(notdir $(ogtf_file))|">> $@.tmp &&\
+	echo "Data|reference|$(notdir $(oreference))|" >> $@.tmp &&\
+	cp $(conf) $(name)
+	sed -i "s/|/\t/g" $@.tmp
 	mv $@.tmp $@
 
 # it is only dependent on the configuration file
