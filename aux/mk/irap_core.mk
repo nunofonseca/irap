@@ -801,7 +801,8 @@ num_libs=$(words $(sort $(se) $(pe)))
 ifneq ($(num_tr),$(num_libs))
 $(error technical_replicates should include all libs in se and pe: found $(num_tr) labels but expected $(num_libs))
 endif
-## technical replicate names expected
+
+## technical replicate names 
 ifndef technical_replicates_labels
 $(error technical_replicates_labels should be defined when technical_replicates is defined)
 endif
