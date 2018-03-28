@@ -1,0 +1,117 @@
+#!/usr/bin/env Rscript
+#; -*- mode: R;-*-
+# =========================================================
+#
+# Copyright 2012-2018,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+
+###############################################################
+suppressPackageStartupMessages(library("optparse"))
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+#
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+
+cmd <- "irap_aggr_cols"
+args <- importArgsfromStdin()
+
+usage <- paste(cmd," --tsv file  --groups c1,c2;c3;c4;c5,c6 --labels label1;label2;...  [--op operation] --out outprefix ",sep="")
+option_list <- list(
+    make_option(c("--groups"), type="character", dest="groups", default=NULL,help="groups grouped by ',' and separated by ';'. E.g., 'L1R1,L1R2;L2R1,L2R2,L2R3'"),
+    make_option(c("--labels"), type="character", dest="labels", default=NULL,help="labels for the aggregated columns"),
+    make_option(c("-o", "--op"), type="character",default="sum",help="aggregation operation: sum, max, min, median, mean (default:%default)"), 
+    make_option(c("--out"), type="character", dest="out", default=NULL,help="Output file name"),
+    make_option(c("-i", "--tsv"), type="character", dest="tsv_file", default=NULL,help="TSV file name"),
+    make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode")
+  )
+
+## check multiple options values
+filenames <- c("tsv_file")
+multiple.options = list(op=c("sum","median","sum","max","mean"))
+mandatory <- c("tsv_file","out","labels","groups")
+opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
+
+if (opt$debug) {
+    pdebug.enable()
+}
+
+## ;, separate list of groups : ex. file1,file2;file3,file4
+opt$labels.v <- strsplit(opt$labels,"[;,]")[[1]];
+## list with the files/cols that belong to a specific group
+opt$groups.def <- strsplit(opt$groups,";")[[1]]
+if (length(opt$labels.v)!=length(opt$groups.def)) {
+    perror("labels=",opt$labels.v)
+    perror("contrast=",opt$groups.def)
+    perror("Contrast and labels mismatch!\n");
+    q(status=1);
+}
+
+opt$groups.l <- list()
+pinfo("Data with ",length(opt$groups.def)," groups...")
+for ( s in opt$groups.def) {
+    opt$groups.l[[paste(",",s,",",sep="")]] <- strsplit(s,",")[[1]]
+}
+names(opt$groups.l) <- opt$labels.v
+
+pinfo("Parameters parsed.")
+pdebug.save.state("irap_aggr_cols","0")
+
+## load tsv
+data <- quant.load(opt$tsv_file)
+
+## debug
+pdebug.save.state("irap_aggr_cols","1")
+
+## check
+## cols in groups.l should appear in data
+x <- !unlist(opt$groups.l) %in% colnames(data)
+if ( sum(x)>0 ) {
+    perror("Missing columns:",head(unlist(opt$groups.l)[x]))
+    q(status=1)
+}
+
+#load("irap_aggr_cols.Rdata")
+pinfo("Aggregating matrix...")
+## 
+data.f <- matrix(NA,nrow=nrow(data),ncol=length(opt$groups.l))
+rownames(data.f) <- rownames(data)
+colnames(data.f) <- names(opt$groups.l)
+
+for (g in names(opt$groups.l)) {
+    #print(g)
+    vv <- unlist(opt$groups.l[g])
+    #print(vv)
+    #print(dim(data.f))
+    if (length(vv)==1 ) {
+        data.f[,g] <- data[,vv]
+    } else {
+        data.f[,g] <-apply(data[,vv],MARGIN=1,FUN=opt$op,na.rm=FALSE)
+    }
+}
+pinfo("Aggregating matrix...done.")
+## save
+pinfo("Creating ",opt$out," ...")
+write.tsv(data.f,file=opt$out,rownames.label="Feature")
+pinfo("All done.")
+quit(save="no",status=0)
+
