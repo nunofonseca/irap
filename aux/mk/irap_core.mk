@@ -520,7 +520,7 @@ endif
 # spikein data
 ifdef spikein_fasta
 ifeq ($(spikein_fasta),ERCC)
-override spikein_fasta:=$(data_dir)/ercc/ercc.fasta
+override spikein_fasta:=$(data_dir)/ercc/ercc.fasta.gz
 spikein_fasta_abspath:=$(abspath $(spikein_fasta))
 else
 spikein_fasta_abspath:=$(abspath $(spikein_fasta))
