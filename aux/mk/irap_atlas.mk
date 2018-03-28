@@ -39,9 +39,9 @@ ifneq ($(mapper),none)
 ATLAS_SC_FILES+=$(mapper_toplevel_folder)/libs_qc.tsv
 endif
 # mtx - always
-EXPR_FILES=$(quant_toplevel_folder)/genes.raw.$(quant_method).mtx.gz $(quant_toplevel_folder)/genes.raw.$(quant_method).mtx_cols.gz $(quant_toplevel_folder)/genes.raw.$(quant_method).mtx_cols.gz $(quant_toplevel_folder)/genes.$(quant_norm_method).$(quant_method).$(quant_norm_tool).$(expr_ext) $(filtered_expr_matrices)
+EXPR_FILES=$(quant_toplevel_folder)/genes.raw.$(quant_method).mtx.gz $(quant_toplevel_folder)/genes.uraw.$(quant_method).mtx.gz $(quant_toplevel_folder)/genes.raw.$(quant_method).mtx_cols.gz $(quant_toplevel_folder)/genes.raw.$(quant_method).mtx_cols.gz $(quant_toplevel_folder)/genes.$(quant_norm_method).$(quant_method).$(quant_norm_tool).$(expr_ext) $(filtered_expr_matrices)
 ifeq ($(transcript_quant),y)
-EXPR_FILES+=$(quant_toplevel_folder)/transcripts.raw.$(quant_method).$(expr_ext) $(quant_toplevel_folder)/transcripts.$(quant_norm_method).$(quant_method).$(quant_norm_tool).$(expr_ext)
+EXPR_FILES+=$(quant_toplevel_folder)/transcripts.raw.$(quant_method).$(expr_ext) $(quant_toplevel_folder)/transcripts.uraw.$(quant_method).$(expr_ext) $(quant_toplevel_folder)/transcripts.$(quant_norm_method).$(quant_method).$(quant_norm_tool).$(expr_ext)
 endif
 # non-10x and no drop-seq
 ifneq ($(expr_format),mtx)
