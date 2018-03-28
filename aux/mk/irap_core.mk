@@ -52,6 +52,9 @@ $(if $($(1)),,$(p_error Missing $(1)))
 endef
 endif
 
+empty:=
+space:=$(empty) $(empty)#
+
 # complain if a file does not exist and exit
 file_exists=$(if  $(realpath $(1)),,$(call p_error,$(1) not found))
 file_exists_ce=$(if  $(realpath $(1)),,$(call p_error,$(1) - $(2)))
@@ -1564,8 +1567,6 @@ phony_targets=
 silent_targets= 
 precious_targets=
 
-empty:=
-space:=$(empty) $(empty)#
 ################################################################################
 # AUXILIARY FUNCTIONS
 ################################################################################
