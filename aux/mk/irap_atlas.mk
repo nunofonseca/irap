@@ -21,6 +21,7 @@
 # =========================================================
 # deprecated
 ATLAS_SC_FILES?=
+EXPR_FILES?=
 ifdef atlas_run
 $(info * Atlas mode enabled)
 
