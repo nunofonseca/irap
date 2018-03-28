@@ -70,6 +70,8 @@ endef
 #  check if a variable  $(1) is defined - return the variable name if it is defined or empty otherwise
 is_defined=$(if $(subst undefined,,$(origin $(1))),$(1),)
 
+get_cmdline_params=$(foreach p,$(.VARIABLES),$(if $(filter-out $(origin $(p)),command line),,$(p)='$($(p))'))
+
 
 ###################################################################
 # Variables
@@ -466,6 +468,7 @@ reference_basename:=$(notdir $(reference_abspath))
 
 $(info *	reference=$(reference))
 $(call file_exists,$(reference_dir)/$(reference))
+oreference=$(reference)
 #********* 
 # GTF file
 ifndef gtf_file
@@ -481,7 +484,7 @@ $(info *       gtf_file  = $(gtf_file))
 $(call file_exists,$(gtf_file_dir)/$(gtf_file))
 
 DEXSEQ_GFF:=$(gtf_file_abspath).DEXSeq.gff
-
+ogtf_file=$(gtf_file)
 # irap's gtf file
 # lgtf_file_dir:=
 
