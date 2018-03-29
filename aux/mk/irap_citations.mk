@@ -29,14 +29,15 @@ include $(IRAP_DIR)/aux/mk/irap_versions.mk
 
 ############################################################
 # Map IRAP options to programs
-qc_on=FASTQC FASTX bowtie1 bowtie2 fastq_utils
-qc_report=FASTQC
+qc_on=FASTQC FASTX fastq_utils $(cont_mapper)
+qc_report=FASTQC fastq_utils
 qc_off=empty
 
 quant_norm_none=empty
 de_none=empty
 quant_none=empty
 gse_none=empty
+clustering_none=sc3
 # tophat1 tophat2 smalt gsnap soapsplice bwa1 bwa2 bowtie1 bowtie2 gem star
 mapper_tophat1=tophat1
 mapper_tophat2=tophat2
@@ -52,6 +53,7 @@ mapper_gem=GEM
 mapper_star=STAR
 mapper_osa=OSA
 mapper_hisat2=HISAT2
+mapper_kallisto=kallisto
 
 # Quant. methods
 quant_basic=empty
@@ -72,6 +74,8 @@ quant_stringtie=stringtie
 quant_stringtie_nd=stringtie
 quant_rsem=rsem
 quant_featurecounts=FeatureCounts
+quant_umi_count=fastq_utils
+quant_umis=fastq_utils
 
 # quant_norm_method cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd deseq flux_cap edger 
 quant_norm_cufflinks1=cufflinks1
@@ -93,6 +97,9 @@ de_dexseq=DEXSeq
 de_bayseq=baySeq
 de_voom=baySeq
 de_ebseq=EBSeq
+
+clustering_method_sc3=SC3
+clustering_method_seurat=Seurat
 
 # GSE
 gse_piano=piano
@@ -184,9 +191,22 @@ FASTQC_citation=http://www.bioinformatics.babraham.ac.uk/projects/fastqc/
 FASTQC_bibtex=
 FASTQC_analysis=QC
 
+SC3_citation=Kiselev, Vladimir Yu, Kristina Kirschner, Michael T. Schaub, Tallulah Andrews, Andrew Yiu, Tamir Chandra, Kedar N. Natarajan et al. SC3: consensus clustering of single-cell RNA-seq data. Nature methods 14, no. 5 (2017): 483.
+SC3_bibtex=
+SC3_analysis=Clustering/Gene markers
+
+Seurat_citation=http://satijalab.org/seurat/
+Seurat_bibtex=
+Seurat_analysis=Clustering
+
+
 fastq_utils_citation=https://github.com/nunofonseca/fastq_utils
 fastq_utils_bibtex=
 fastq_utils_analysis=QC
+
+umis_citation=https://github.com/vals/umis/
+umis_bibtex=
+umis_analysis=Quantification
 
 #### 
 FASTX_citation=http://hannonlab.cshl.edu/fastx_toolkit/
@@ -309,7 +329,7 @@ endef
 
 # Scientific software
 progs_used?=
-progs_used+=$(qc_$(qual_filtering))  $(mapper_$(mapper)) $(quant_$(quant_method))  $(quant_norm_$(quant_norm_tool))  $(de_$(de_method)) $(gse_$(gse_tool)) IRAP
+progs_used+=$(qc_$(qual_filtering))  $(mapper_$(mapper)) $(quant_$(quant_method))  $(quant_norm_$(quant_norm_tool))  $(de_$(de_method)) $(gse_$(gse_tool)) IRAP $(clustering_method_$(clustering_method))
 
 silent_targets+= show_citations citations_file
 
