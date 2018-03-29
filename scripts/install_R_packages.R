@@ -69,7 +69,7 @@ install.packages("http://cran.rstudio.com/src/contrib/00Archive/RcppArmadillo/Rc
 
 # 
 
-
+# Include the main packages in irap_gen_version_mk.sh
 packages2install<-c("intervals","gclus",'R2HTML',"agricolae","bit64",
                     "optparse","brew","reshape","gtools","gdata","caTools",
                     "devtools","httr","sfsmisc","gplots","lattice","data.table",
