@@ -144,7 +144,7 @@ $(quant_toplevel_folder)/%.genes.$(1).$(quant_method).irap.$(expr_ext): $(quant_
 	irap_raw2metric --ifile $$<   --$(expr_format) --lengths $(feat_length) --feature gene --metric $(1) $(call irap_raw2metric_mass_params,gene) --out $$@ || (rm -f $$@ && exit 1)
 
 $(quant_toplevel_folder)/%.transcripts.$(1).$(quant_method).irap.$(expr_ext): $(quant_toplevel_folder)/%.transcripts.raw.$(quant_method).$(expr_ext)
-	irap_raw2metric --ifile $$<  --lengths $(feat_length)  --$(expr_format) --feature transcript --metric $(1) $(call irap_raw2metric_mass_params,transcript) --out $$@.tmp || (rm -f $$@ && exit 1)
+	irap_raw2metric --ifile $$<  --lengths $(feat_length)  --$(expr_format) --feature transcript --metric $(1) $(call irap_raw2metric_mass_params,transcript) --out $$@ || (rm -f $$@ && exit 1)
 
 
 $(quant_toplevel_folder)/%.exons.$(1).$(exon_quant_method).irap.$(expr_ext): $(quant_toplevel_folder)/%.exons.raw.$(exon_quant_method).$(expr_ext)
