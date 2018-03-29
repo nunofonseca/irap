@@ -159,11 +159,14 @@ pinfo("Checking the presence of columns...done.")
 
 ## work with lower case names
 orig.col.names <- tolower(colnames(sdrf))
-colnames(sdrf) <- gsub("\\].*","",gsub(".*\\[","",orig.col.names))
+## ignore spaces
+colnames(sdrf) <- gsub("\\].*$","",gsub("^.*\\[","",gsub(" ","",orig.col.names)))
 
 ## print the values
 pinfo("Most frequent values per column...")
 for (col in tolower(c(expected.cols,expected.comment.cols,expected.factor.cols,expected.characteristic.cols)) ) {
+    # ignore spaces
+    col <- gsub(" ","",col)
     tt <- table(sdrf[,col])
     if (length(tt)==nrow(sdrf) ) {
         pinfo(col,": unique values")
