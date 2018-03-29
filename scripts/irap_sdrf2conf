@@ -46,7 +46,8 @@ option_list <- list(
     make_option(c("--reference"), type="character", dest="reference", default="$SPECIES_REFERENCE", help="genome reference"),
     make_option(c("--gtf"), type="character", dest="gtf", default="$SPECIES_GTF", help="gtf"),
     make_option(c("-s", "--sdrf"), type="character", dest="sdrf_file", default=NULL, help="SDRF file name"),
-  make_option(c("--sc"), action="store_true",default=FALSE,dest="is_sc",help="Single cell experiment?. Default is FALSE."),
+    make_option(c("--sc"), action="store_true",default=FALSE,dest="is_sc",help="Single cell experiment?. Default is FALSE."),
+    make_option(c("-c","--check_only"),action="store_true",dest="check_only",default=FALSE,help="Checks the sdrf/idf but skips the generation of the configuration file."),
   make_option(c("--exit_on_error"),action="store_true",dest="exit.on.error",default=FALSE,help="Exit when an inconsistency is found between the expression matrix and the file with the lengths. by default it will emit an warning and try to continue."),
   make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
   make_option(c("--out_prefix"), type="character",default=NULL,help="Filename prefix for extra files created from the SDRF file "),
@@ -116,7 +117,7 @@ if( opt$is_sc ) {
 
 #"Characteristics[developmental stage]"           
 #"Characteristics [cell type]"               
-colsInSDRF <- function(cols,sdrf,comment.cols=FALSE,characteristic.cols=FALSE,factor.cols=FALSE) {
+colsInSDRF <- function(cols,sdrf,comment.cols=FALSE,characteristic.cols=FALSE,factor.cols=FALSE,exit.on.error=TRUE) {
     if ( length(cols) == 0 ) return
     sdrf.cols <- gsub(" ","",tolower(colnames(sdrf)))
     to.check.cols <- gsub(" ","",tolower(cols))
@@ -129,15 +130,24 @@ colsInSDRF <- function(cols,sdrf,comment.cols=FALSE,characteristic.cols=FALSE,fa
     if (characteristic.cols) {
         to.check.cols <- paste("characteristics[",to.check.cols,"]",sep="")
     }
+    if ( !comment.cols && ! characteristic.cols && !factor.cols ) {
+        sdrf.cols <- gsub("\\].*","",gsub(".*\\[","",sdrf.cols))
+    }
     miss <- cols[!to.check.cols%in%sdrf.cols]
     if (length(miss)>0 ) {
-        print(to.check.cols)
-        print(sdrf.cols)
-        perror("Columns ", miss, " not found in the SDRF file")
-        q(status=1)
+        #print(to.check.cols)
+        #print(sdrf.cols)
+
+        if (exit.on.error) {
+            perror("Columns ", paste(miss,collapse=","), " not found in the SDRF file")
+            q(status=1)
+        }
+        pwarning("Columns ", paste(miss,collapse=","), " not found in the SDRF file")
+        return(miss)
     }    
 }
 
+pinfo("Columns found:")
 print(colnames(sdrf))
 pinfo("Checking presence of columns...")
 colsInSDRF(expected.cols,sdrf)
@@ -146,17 +156,29 @@ colsInSDRF(expected.comment.cols,sdrf,comment.cols=TRUE)
 colsInSDRF(expected.factor.cols,sdrf,factor.cols=TRUE)
 pinfo("Checking the presence of columns...done.")
 
+
 ## work with lower case names
 orig.col.names <- tolower(colnames(sdrf))
 colnames(sdrf) <- gsub("\\].*","",gsub(".*\\[","",orig.col.names))
 
-
+## print the values
+pinfo("Most frequent values per column...")
+for (col in tolower(c(expected.cols,expected.comment.cols,expected.factor.cols,expected.characteristic.cols)) ) {
+    tt <- table(sdrf[,col])
+    if (length(tt)==nrow(sdrf) ) {
+        pinfo(col,": unique values")
+    } else {
+        pinfo(col,": ");print(head(sort(tt,decreasing=TRUE),n=10))
+    }
+}
+#######################
 ## add optional columns
-xx <- opt.cols[!opt.cols%in%colnames(sdrf)]
+pinfo("Checking optional columns...")
+xx <- colsInSDRF(opt.cols,sdrf,exit.on.error=FALSE)
 if ( length(xx) > 0 ) {
-    pinfo("Missing optional columns:",xx)
     sdrf[,xx] <- -1
 }
+
 
 sdrf$organism <- gsub(" ","_",tolower(sdrf$organism))
 species <- unique(sdrf$organism)
@@ -178,7 +200,8 @@ if ( ! "technical replicate group" %in% colnames(sdrf) ) {
     ## use the source name to fill the missing values
     is.empty <- sdrf$"technical replicate group"==""
     if ( sum(is.empty)>0) {
-        pinfo("Found ",sum(is.empty)," entries in technical replicate groupd without values")
+        perror("Found ",sum(is.empty)," entries in technical replicate group without values")
+        q(status=1)
     }
     sdrf$"technical replicate group"[is.empty] <- sdrf$"source name"[is.empty]
 }
@@ -237,6 +260,11 @@ if ( opt$is_sc ) {
         perror("Unsupported single cell protocol ",not.in.pp)
         q(status=1)
     }    
+}
+
+if ( opt$check_only ) {
+    pinfo("SDRF/IDF look OK!")    
+    q(status=0)
 }
 ################################
 confs <- list()
