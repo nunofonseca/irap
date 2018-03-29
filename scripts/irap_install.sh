@@ -2282,13 +2282,14 @@ fi
 if [ "$install" == "collect_software_versions" ]; then
     check_for_irap_env
     collect_software_versions
-    pinfo "Log saved to $logfile"
+    pinfo "Log saved to $logfile"    
     exit 0
 fi
 
 if [ "$install" == "software_install" ]; then
     # TODO check if software exists
     ${SOFTWARE}_install
+    collect_software_versions    
     pinfo "Log saved to $logfile"
     exit 0
 fi
@@ -2296,6 +2297,8 @@ fi
 if [ "$install" == "core" ]; then
     # TODO: check if IRAP is installed (otherwise it will fail)
     core_install
+    # update versions
+    collect_software_versions    
     pinfo "Log saved to $logfile"
     exit 0
 fi
@@ -2303,6 +2306,7 @@ fi
 if [ "$install" == "mappers" ]; then
     check_for_irap_env
     mappers_install
+    collect_software_versions    
     pinfo "Log saved to $logfile"
     exit 0
 fi
@@ -2310,6 +2314,7 @@ fi
 if [ "$install" == "r_pack" ]; then
     check_for_irap_env
     R_packages_install
+    collect_software_versions    
     pinfo "Log saved to $logfile"
     exit 0
 fi
@@ -2324,6 +2329,7 @@ fi
 if [ "$install" == "quant" ]; then
     check_for_irap_env
     quant_install
+    collect_software_versions    
     pinfo "Log saved to $logfile"
     exit 0
 fi
@@ -2331,6 +2337,7 @@ fi
 if [ "$install" == "browser" ]; then
     check_for_irap_env
     jbrowse_install
+    collect_software_versions    
     pinfo "Log saved to $logfile"
     exit 0
 fi
@@ -2348,7 +2355,7 @@ if [ "$install" == "testing" ]; then
     isoem_install
     #sailfish_install
     #NURD_install
-    rsem_install
+    #rsem_install
     pinfo "Log saved to $logfile"
     exit 0
 fi
