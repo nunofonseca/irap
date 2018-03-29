@@ -2492,6 +2492,7 @@ stage2: setup mapping
 stage3: setup $(STAGE3_OUT_FILES) $(STAGE3_S_OFILES) $(STAGE3_S_OFILES)
 stage3a: setup $(quant_method)_quant 
 stage3as: setup quantification_s
+stage3s: $(STAGE3_S_OFILES)
 #stage3b: setup stage3a
 # deprecated
 stage3b: setup $(shell rm -f $(quant_toplevel_folder)/rawcounts.$(quant_method).$(expr_ext)) stage3a
