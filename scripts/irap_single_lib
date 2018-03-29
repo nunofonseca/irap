@@ -562,7 +562,7 @@ run_AND_timeIt "iRAP-Mapping" $time_log_file  $cmd $irap_single_lib_options $ira
 pinfo "Aligning data...complete."
 
 pinfo "Quantification..."
-run_AND_timeIt "iRAP-Quant" $time_log_file $cmd $irap_single_lib_options $irap_options stage3as
+run_AND_timeIt "iRAP-Quant" $time_log_file $cmd $irap_single_lib_options $irap_options stage3s
 # Also get TPMs
 # if [ "$is_atlas_run-" != "0-" ]; then
 #     # also get tpms
@@ -675,7 +675,7 @@ cp -a $TSVs $odir
 #
 if [ "$sop2-" != "-" ]; then
     pinfo "Quantification (SOP2)..."
-    run_AND_timeIt "iRAP-Quant" $time_log_file  $cmd $irap_single_lib_options $irap_options sop=$sop2 stage3as
+    run_AND_timeIt "iRAP-Quant" $time_log_file  $cmd $irap_single_lib_options $irap_options sop=$sop2 stage3s
     TSVs=`$cmd $irap_single_lib_options  $irap_options sop=$sop2 print_stage3_s_files  |tail -n 1|grep -v "make:"`
 
     pinfo "Moving the following files to $odir: $TSVs"
@@ -721,12 +721,26 @@ cp -a $TSV $odir/$libname_noprefix.data_info.tsv
 
 # software versions
 pinfo "Generating  $odir/versions.tsv..."
-$cmd $irap_single_lib_options  $irap_options $odir/irap.versions.tsv
+$cmd $irap_single_lib_options  $irap_options $odir/versions.tsv
 pinfo "Generating  $odir/versions.tsv...done"
-cp -a $odir/irap.versions.tsv $odir/$libname_noprefix.versions.tsv
+cp -a $odir/versions.tsv $odir/$libname_noprefix.versions.tsv
 pinfo "Generating  $odir/$libname_noprefix.versions.tsv...done"
+if [ "$sop2-" != "-" ]; then
+    ## regenerate a new file and merge with the versions
+    ## file from the other SOP
+    pinfo "Generating  $odir/versions.tsv for SOP=$sop2..."
+    rm -f $odir/versions.tsv
+    $cmd $irap_single_lib_options  $irap_options $odir/versions.tsv sop=$sop2    
+    pinfo "Generating  $odir/versions.tsv for SOP=$sop2...done"
+    pinfo "Combining versions files from the two SOPs..."
+    head -n 1 $odir/$libname_noprefix.versions.tsv > $odir/mult_sop.tsv
+    tail -q -n +2 $odir/$libname_noprefix.versions.tsv $odir/versions.tsv | sort -u >> $odir/mult_sop.tsv
+    mv $odir/mult_sop.tsv $odir/$libname_noprefix.versions.tsv
+    pinfo "Combining versions files from the two SOPs...done"
+    pinfo "Generating  $odir/$libname_noprefix.versions.tsv updated."
+fi
 # keep versions.tsv and irap_versions.tsv for backwards compatibility
-
+cp -a $odir/$libname_noprefix.versions.tsv $odir/versions.tsv 
 #################################################################
 # Cleanup
 if [ "$do_clean" == "y" ]; then
