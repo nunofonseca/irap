@@ -43,6 +43,7 @@ option_list <- list(
     make_option(c("--data_dir"), type="character", dest="data_dir", default=".", help="iRAP's toplevel data directory"),
     make_option(c("--raw_dir"), type="character", dest="raw_dir", default=".", help="iRAP's toplevel data directory"),
     make_option(c("--sop"), type="character", dest="sop", default=NULL, help="iRAP's toplevel data directory"),
+    make_option(c("--nc"), type="numeric", dest="nc", default=0, help="esimated number of clusters [default %default]"),    
     make_option(c("--reference"), type="character", dest="reference", default="$SPECIES_REFERENCE", help="genome reference"),
     make_option(c("--gtf"), type="character", dest="gtf", default="$SPECIES_GTF", help="gtf"),
     make_option(c("-s", "--sdrf"), type="character", dest="sdrf_file", default=NULL, help="SDRF file name"),
@@ -297,7 +298,7 @@ for (specie in species) {
 
     conf.l <- rbind(conf.l,paste0("reference=",opt$reference))
     conf.l <- rbind(conf.l,paste0("gtf_file=",opt$gtf_file))
-
+    
     ## spikein
     if ( grepl("ercc.*",spikein) ) {
         conf.l <- rbind(conf.l,paste0("spikein_fasta=ERCC"))
@@ -392,7 +393,19 @@ for (specie in species) {
     ##  l prefix no longer needed
     conf.l <- rbind(conf.l,paste0("se=",paste(gsub("^","",se.runs),collapse=" ")))
     conf.l <- rbind(conf.l,paste0("pe=",paste(gsub("^","",pe.runs),collapse=" ")))
-
+    ##########################
+    ## clusters
+    clusters.window <- 10
+    if ( opt$nc < 2 ) {
+        opt$nc <- round(log2(nrow(layout)))
+    }
+    num.min.c <- max(round(opt$nc-clusters.window/2,0),2)
+    num.max.c <- num.min.c+clusters.window
+    pinfo("#clusters:",num.min.c,"-",num.max.c)
+    conf.l <- rbind(conf.l,paste0("min_clusters=",num.min.c))
+    conf.l <- rbind(conf.l,paste0("max_clusters=",num.max.c))
+    ############################
+    ##Runs
     fp2fastq <- paste(opt$data_dir,opt$raw_dir,sep="/")
     if ( !opt$check_only ) {
         ## ena sample (groups)
