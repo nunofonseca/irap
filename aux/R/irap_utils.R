@@ -2075,8 +2075,8 @@ contrasts2matrix <- function(exp.conf) {
 
 #
 load.configuration.file <- function(conf_file,lib.info=NULL) {
-
-  # 
+    
+    ## 
     pinfo("Loading configuration file...")
     conf.table <- read.delim(conf_file,sep="=",comment.char="#",header=FALSE,stringsAsFactors=FALSE)
     pinfo("Loading conf_file...done")
@@ -2086,43 +2086,43 @@ load.configuration.file <- function(conf_file,lib.info=NULL) {
         conf.table <- rbind(conf.table2,conf.table)
         pinfo("Loading .info file...done.")
     }
-  pinfo("Configuration:")
-  line2include <- c()
-  for ( i in 1:nrow(conf.table) ) {
-    if ( mytrim(as.character(conf.table[i,1])) != "" ) {
-      assign(as.character(conf.table[i,1]),mytrim(conf.table[i,2]))
-      ##pinfo("",conf.table[i,1],"=",conf.table[i,2])
-      line2include <- append(line2include,i)
-    } 
-  }
-  # exclude empty lines
-  conf.table <- conf.table[line2include,,drop=FALSE]
-  pinfo("Loading default parameters...")
-  ###################
-  # handle duplicates
-  conf.table <- conf.table[!duplicated(conf.table[,1]),]
-  #################
-  # Default values
-  vars <- c("mapper","quant_method","de_method","qual_filtering","gse_tool")
-  for ( v in vars ) {
-    if ( sum(as.character(conf.table[,1])==v)==0 ) {
-      # get default value from IRAP main file
-      entry <- c(v,conf.get.default.value(v))
-      conf.table[nrow(conf.table)+1,] <- entry
+    pinfo("Configuration:")
+    line2include <- c()
+    for ( i in 1:nrow(conf.table) ) {
+        if ( mytrim(as.character(conf.table[i,1])) != "" ) {
+            assign(as.character(conf.table[i,1]),mytrim(conf.table[i,2]))
+            ##pinfo("",conf.table[i,1],"=",conf.table[i,2])
+            line2include <- append(line2include,i)
+        } 
     }
-  }
-  rownames(conf.table) <- conf.table[,1]
-  pinfo("Loading default parameters...done.")
-  conf.table[nrow(conf.table)+1,] <- c("toplevel.dir",paste(dirname(conf_file),conf.table["name",2],sep="/"))
-  #alias
-  if ( ! "qc" %in%  rownames(conf.table) ) {
-    conf.table[nrow(conf.table)+1,] <- c("qc",conf.table["qual_filtering",2])
-  }
-  conf.table[nrow(conf.table)+1,] <- c("qc.enabled",(conf.get.value(conf.table,"qc")=="on"||conf.get.value(conf.table,"qc")=="yes"))
-  #
-  rownames(conf.table) <- conf.table[,1]
-  
-  conf.table
+    ## exclude empty lines
+    conf.table <- conf.table[line2include,,drop=FALSE]
+    pinfo("Loading default parameters...")
+    ###################
+    ## handle duplicates
+    ## -take the last value defined
+    conf.table <- conf.table[!duplicated(conf.table[,1],fromLast = TRUE),]
+    #################
+    ## Default values
+    vars <- c("mapper","quant_method","de_method","qual_filtering","gse_tool")
+    for ( v in vars ) {
+        if ( sum(as.character(conf.table[,1])==v)==0 ) {
+            ## get default value from IRAP main file
+            entry <- c(v,conf.get.default.value(v))
+            conf.table[nrow(conf.table)+1,] <- entry
+        }
+    }
+    rownames(conf.table) <- conf.table[,1]
+    pinfo("Loading default parameters...done.")
+    conf.table[nrow(conf.table)+1,] <- c("toplevel.dir",paste(dirname(conf_file),conf.table["name",2],sep="/"))
+    ##alias
+    if ( ! "qc" %in%  rownames(conf.table) ) {
+        conf.table[nrow(conf.table)+1,] <- c("qc",conf.table["qual_filtering",2])
+    }
+    conf.table[nrow(conf.table)+1,] <- c("qc.enabled",(conf.get.value(conf.table,"qc")=="on"||conf.get.value(conf.table,"qc")=="yes"))
+    rownames(conf.table) <- conf.table[,1]
+    
+    conf.table
 }
 
 # imports to global env. all the variables loaded from the configuration
