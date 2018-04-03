@@ -749,20 +749,20 @@ endef
 
 define make-stringtie-quant-rule=
 
-$(call lib2quant_folder,$(1))$(3).$(quant_method).gtf: $(call lib2bam_folder,$(1))$(3).hits.bam
+$(call lib2quant_folder,$(1))$(3).$(quant_method)%gtf $(call lib2quant_folder,$(1))$(1)/t_data%ctab: $(call lib2bam_folder,$(1))$(3).hits%bam
 	$(call run_stringtie,$(call lib2bam_folder,$(1))$(3).hits.bam,$(1),$(if $(filter $(quant_method),stringtie_nd),-e,-l CUFF),$$@)
 
-$(call lib2quant_folder,$(1))$(3).transcripts.fpkm.$(quant_method).$(quant_norm_tool).tsv: $(call lib2quant_folder,$(1))$(3).$(quant_method).gtf $(call lib2quant_folder,$(1))$(1)/t_data.ctab 
+$(call lib2quant_folder,$(1))$(3).transcripts.fpkm.$(quant_method).$(quant_method).tsv: $(call lib2quant_folder,$(1))$(3).$(quant_method).gtf $(call lib2quant_folder,$(1))$(1)/t_data.ctab 
 	cut -f 6,12 $$(@D)/$(1)/t_data.ctab | tail -n +2 > $$@.tmp && mv $$@.tmp $$@
 
-$(call lib2quant_folder,$(1))$(3).genes.fpkm.$(quant_method).$(quant_norm_tool).tsv: $(call lib2quant_folder,$(1))$(3).$(quant_method).gtf $(call lib2quant_folder,$(1))$(1)/t_data.ctab 
+$(call lib2quant_folder,$(1))$(3).genes.fpkm.$(quant_method).$(quant_method).tsv: $(call lib2quant_folder,$(1))$(3).$(quant_method).gtf $(call lib2quant_folder,$(1))$(1)/t_data.ctab 
 	tsv.aggrbygene.stringtie $(call lib2quant_folder,$(1))$(1)/t_data.ctab  FPKM $$@.tmp && mv  $$@.tmp $$@
 
-$(call lib2quant_folder,$(1))$(3).transcripts.raw.$(quant_method).tsv:  $(call lib2quant_folder,$(1))$(3).$(quant_method).gtf
+$(call lib2quant_folder,$(1))$(3).transcripts.raw.$(quant_method).tsv:  $(call lib2quant_folder,$(1))$(3).$(quant_method).gtf $(call lib2quant_folder,$(1))$(1)/t_data.ctab 
 	$$(call p_info,Warning! Stringtie produces FPKMS and does not provide counts. Generating pseudo counts $$@.)
 	$$(call stringtie2counts_t,$(1),$$(@D),$(call lib2quant_folder,$(1))$(1)/t_data.ctab,$(quant_method),$$@)
 
-$(call lib2quant_folder,$(1))$(3).genes.raw.$(quant_method).tsv: $(call lib2quant_folder,$(1))$(3).$(quant_method).gtf
+$(call lib2quant_folder,$(1))$(3).genes.raw.$(quant_method).tsv: $(call lib2quant_folder,$(1))$(3).$(quant_method).gtf $(call lib2quant_folder,$(1))$(1)/t_data.ctab 
 	$$(call p_info,Warning! Stringtie produces FPKMS and does not provide counts. Generating pseudo counts $$@.)
 	$$(call stringtie2counts_g,$(1),$$(@D),$(call lib2quant_folder,$(1))$(1)/t_data.ctab,$(quant_method),$$@)
 
@@ -792,10 +792,10 @@ $(quant_toplevel_folder)/$(name).assemblies.txt: $(foreach p,$(pe),$(call lib2qu
 	rm -f $@
 	touch $@.tmp && for f in $^; do echo $$f >> $@.tmp ; done && mv $@.tmp $@
 
-$(quant_toplevel_folder)/transcripts.fpkm.$(quant_method).$(quant_norm_tool).tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).transcripts.fpkm.$(quant_method).$(quant_norm_tool).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).transcripts.fpkm.$(quant_method).$(quant_norm_tool).tsv) 
+$(quant_toplevel_folder)/transcripts.fpkm.$(quant_method).$(quant_method).tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).transcripts.fpkm.$(quant_method).$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).transcripts.fpkm.$(quant_method).$(quant_method).tsv) 
 	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) )  > $@.tmp && mv $@.tmp $@
 
-$(quant_toplevel_folder)/genes.fpkm.$(quant_method).$(quant_norm_tool).tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).genes.fpkm.$(quant_method).$(quant_norm_tool).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).genes.fpkm.$(quant_method).$(quant_norm_tool).tsv) 
+$(quant_toplevel_folder)/genes.fpkm.$(quant_method).$(quant_method).tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).genes.fpkm.$(quant_method).$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).genes.fpkm.$(quant_method).$(quant_method).tsv) 
 	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) )  > $@.tmp && mv $@.tmp $@
 
 $(quant_toplevel_folder)/%nlib.stringtie.stringtie.tsv:
@@ -809,6 +809,8 @@ $(quant_toplevel_folder)/exons.fpkm.$(quant_method).$(quant_norm_tool).tsv:
 $(quant_toplevel_folder)/exons.uraw.$(quant_method).tsv: 
 	$(call p_info, Warning (WIP)! Exon quantification file $@ with $(quant_method) will be empty.)
 	@$(call empty_file,$@)
+
+# stringtie
 endif
 
 ##############################################################
