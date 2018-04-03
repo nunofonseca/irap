@@ -665,6 +665,7 @@ else
 $(info * Validating se and pe)
 ifdef se
 ifneq ($(se),)
+ $(foreach l,$(se),$(call check_param_ok,$(l)))
  $(info *	se=$(se))
  all_se_files:=$(foreach l,$(se),$($(l)))
  #$(foreach l,$(se),$(info $(l)=$($(l)))) 
@@ -691,6 +692,7 @@ endif
 # A=""
 ifdef pe
 ifneq ($(pe),)
+ $(foreach l,$(pe),$(call check_param_ok,$(l)))
  all_pe_files:=$(foreach l,$(pe),$($(l)))
  $(info *	pe=$(pe))
  # $(info * debug * fastq_files=$(fastq_files))
@@ -1412,6 +1414,11 @@ endif
 
 ##########
 # other options
+
+# alias
+ifdef html
+gen_html_report=$(html)
+endif
 
 # maximum number of mappings allowed for each read
 ifndef max_hits
