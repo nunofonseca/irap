@@ -360,8 +360,9 @@ for (specie in species) {
         runs <- length(unique(layout$run))
         has.tr2 <- sum(samples!=runs)>0
         if ( has.tr2!=has.tr  ) {
-            perror("Technical replicate group inconsistent with ena_sample")
-            q(status=1)
+            pinfo(has.tr," vs ",has.tr2)
+            pwarning("Technical replicate group inconsistent with ena_sample")
+            ##q(status=1)
         }
     }
     if(!has.tr) {
