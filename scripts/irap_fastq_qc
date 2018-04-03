@@ -687,7 +687,7 @@ stage0: $(STAGE0_TARGETS)
 
 # stats from the final filtered fastq file
 %.f.csv: %.f.fastq.gz
-	echo $*,`num_reads.sh $<`,\
+	echo $*,`num_reads.sh $(subst .f.fastq.gz,.pre.fastq.gz,$<)`,\
 	`num_reads.sh $*.filter1.fastq.gz`,\
 	`num_reads.sh $*.filter2.fastq.gz`,\
 	`num_reads.sh $*.filter3.fastq.gz`,\
