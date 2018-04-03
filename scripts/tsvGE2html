@@ -67,7 +67,7 @@ option_list <- list(
 # check multiple options values
 multiple.options = list(
   feature=c('gene','exon','CDS','transcript'),
-  metric=c('fpkm','tpm','rpkm','raw',"deseq_nlib")
+  metric=c('fpkm','tpm','rpkm','raw',"uraw","deseq_nlib")
 )
 mandatory <- c("ifile","out",'metric')
 opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
