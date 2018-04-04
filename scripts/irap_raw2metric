@@ -151,7 +151,7 @@ if (!is.null(opt$gtf_file) ) {
           q(status=1)
       }
       pinfo("Found ",paste(found.ss,sep=","))
-      gtf.table$biotype=="protein_coding"
+      #gtf.table$biotype=="protein_coding"
       mass.labels <- as.character(gtf.table[gtf.table$biotype%in%found.ss,feature.label])      
       pinfo("#Features used to compute the mass:",length(mass.labels))
   }
@@ -245,7 +245,7 @@ if ( opt$metric == "uq-fpkm" || opt$metric=="fpkm-uq" ) {
 
 
 if ( opt$metric == "tpm" ) {
-    tpm <- countstable2tpm(table,lengths[[opt$feature]])
+    tpm <- countstable2tpm(table,lengths[[opt$feature]],mass.labels=mass.labels)
     if ( is.vector(tpm) ) {
         tpm <- data.frame(cbind(names(tpm),tpm),check.names=F)
         colnames(tpm) <- append(capitalize(opt$feature),"Lib")

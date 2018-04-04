@@ -563,7 +563,7 @@ countstable2rpkms <- function(table,lens,mass.labels=NULL,exitonerror=TRUE,UQ=FA
 # BMC Bioinformatics 2011, 12:323  doi:10.1186/1471-2105-12-323
 # http://arxiv.org/abs/1104.3889 - TPM=(FPKM/SUM(FPKM))*10^6
 # TODO: call the FPKM function
-countstable2tpm <- function(table,lens,exitonerror=TRUE) {
+countstable2tpm <- function(table,lens,mass.labels=NULL,exitonerror=TRUE) {
   # check if there missing features
   missing.feat <- (!rownames(table) %in% names(lens))
 
@@ -572,15 +572,24 @@ countstable2tpm <- function(table,lens,exitonerror=TRUE) {
     if (exitonerror) { q(status=1) }
     return(NULL)
   }
-  v.compute.tpm <-  function(l,lens) {
-    ta <- l/lens[names(l)]
-    tap <- ta/sum(ta)
+
+  if ( ! is.null(mass.labels) ) {
+      mass.labels <- mass.labels[mass.labels%in%names(lens) & mass.labels%in%rownames(table)]
+  }
+
+  v.compute.tpm <-  function(l,lens,mass.labels=NULL) {
+     #print(head(ta))   
+     if ( is.null(mass.labels) ) {
+         tap <- ta/sum(ta)
+     } else {
+         tap <- ta/sum(ta[mass.labels])
+     }
     return(tap*10^6)
   }
   if ( is.vector(table) ) {
-    return(round(v.compute.tpm(table,lens),2))
+    return(round(v.compute.tpm(table,lens,mass.labels),2))
   } else {
-    return(round(apply(table,2,v.compute.tpm,lens),2))
+    return(round(apply(table,2,v.compute.tpm,lens,mass.labels=mass.labels),2))
   }
 }
 
