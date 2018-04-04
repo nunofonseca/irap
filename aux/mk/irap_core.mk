@@ -1244,6 +1244,11 @@ ifeq ($(quant_norm_tool),irap)
 quant_norm_mass_biotypes?=
 $(info *	quant_norm_mass_biotypes=$(quant_norm_mass_biotypes))
 endif
+
+irap_raw2metric_params?=
+ifneq ($(irap_raw2metric_params),)
+$(info *	irap_raw2metric_params=$(irap_raw2metric_params))
+endif
 #******************************
 # Use unspliced mapping: yes/no 
 #******************************
@@ -1523,7 +1528,7 @@ BIG_EXP=1
 # out_file=$2
 # args=$3
 define pass_args_stdin=
-$(call args2file,$(2).in,$(3)) cat $(2).in | $(1) -stdin && rm -f $(2).in
+$(call args2file,$(name).$(2).in,$(3)) cat $(name).$(2).in | $(1) -stdin && rm -f $(name).$(2).in
 endef
 
 # 1- infiles

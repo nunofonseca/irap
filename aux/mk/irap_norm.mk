@@ -128,27 +128,27 @@ $(quant_toplevel_folder)/%.transcripts.$(1).$(quant_method).$(2).quant_qc.tsv: $
 
 
 $(quant_toplevel_folder)/genes.$(1).$(quant_method).irap.$(expr_ext): $(quant_toplevel_folder)/genes.raw.$(quant_method).$(expr_ext) $(feat_length)
-	irap_raw2metric --ifile $$<  --lengths $(feat_length)   --$(expr_format) --feature gene --metric $(1) $(call irap_raw2metric_mass_params,gene) --out $$@  || (rm -f $$@ && exit 1)
+	irap_raw2metric $(irap_raw2metric_params) --ifile $$<  --lengths $(feat_length)   --$(expr_format) --feature gene --metric $(1) $(call irap_raw2metric_mass_params,gene) --out $$@  || (rm -f $$@ && exit 1)
 
 ifeq ($(exon_quant),y)
 $(quant_toplevel_folder)/exons.$(1).$(exon_quant_method).irap.$(expr_ext): $(quant_toplevel_folder)/exons.raw.$(exon_quant_method).$(expr_ext) $(feat_length)
-	irap_raw2metric --ifile $$<  --lengths $(exon_length) --feature exon  --$(expr_format) --metric $(1) $(call irap_raw2metric_mass_params,exon) --out $$@  || (rm -f $$@ && exit 1)
+	irap_raw2metric $(irap_raw2metric_params) --ifile $$<  --lengths $(exon_length) --feature exon  --$(expr_format) --metric $(1) $(call irap_raw2metric_mass_params,exon) --out $$@  || (rm -f $$@ && exit 1)
 endif
 
 $(quant_toplevel_folder)/transcripts.$(1).$(quant_method).irap.$(expr_ext): $(quant_toplevel_folder)/transcripts.raw.$(quant_method).$(expr_ext) $(feat_length)
-	irap_raw2metric --ifile $$<  --lengths $(feat_length)  --$(expr_format) --feature transcript --metric $(1) $(call irap_raw2metric_mass_params,transcript) --out $$@  || (rm -f $$@ && exit 1)
+	irap_raw2metric $(irap_raw2metric_params) --ifile $$<  --lengths $(feat_length)  --$(expr_format) --feature transcript --metric $(1) $(call irap_raw2metric_mass_params,transcript) --out $$@  || (rm -f $$@ && exit 1)
 
 
 # per library
 $(quant_toplevel_folder)/%.genes.$(1).$(quant_method).irap.$(expr_ext): $(quant_toplevel_folder)/%.genes.raw.$(quant_method).$(expr_ext) $(feat_length)
-	irap_raw2metric --ifile $$<   --$(expr_format) --lengths $(feat_length) --feature gene --metric $(1) $(call irap_raw2metric_mass_params,gene) --out $$@ || (rm -f $$@ && exit 1)
+	irap_raw2metric $(irap_raw2metric_params) --ifile $$<   --$(expr_format) --lengths $(feat_length) --feature gene --metric $(1) $(call irap_raw2metric_mass_params,gene) --out $$@ || (rm -f $$@ && exit 1)
 
 $(quant_toplevel_folder)/%.transcripts.$(1).$(quant_method).irap.$(expr_ext): $(quant_toplevel_folder)/%.transcripts.raw.$(quant_method).$(expr_ext)
-	irap_raw2metric --ifile $$<  --lengths $(feat_length)  --$(expr_format) --feature transcript --metric $(1) $(call irap_raw2metric_mass_params,transcript) --out $$@ || (rm -f $$@ && exit 1)
+	irap_raw2metric $(irap_raw2metric_params) --ifile $$<  --lengths $(feat_length)  --$(expr_format) --feature transcript --metric $(1) $(call irap_raw2metric_mass_params,transcript) --out $$@ || (rm -f $$@ && exit 1)
 
 
 $(quant_toplevel_folder)/%.exons.$(1).$(exon_quant_method).irap.$(expr_ext): $(quant_toplevel_folder)/%.exons.raw.$(exon_quant_method).$(expr_ext)
-	irap_raw2metric --ifile $$<  --lengths $(exon_length) --$(expr_format) --feature exon --metric $(1) $(call irap_raw2metric_mass_params,exon) --out $$@ || (rm -f $$@ && exit 1)
+	irap_raw2metric $(irap_raw2metric_params) --ifile $$<  --lengths $(exon_length) --$(expr_format) --feature exon --metric $(1) $(call irap_raw2metric_mass_params,exon) --out $$@ || (rm -f $$@ && exit 1)
 
 endef
 
