@@ -84,8 +84,8 @@ if ( ! is.null(opt$mass_biotypes) && is.null(opt$gtf_file) ) {
     q(status=1)
 }
 
-if ( opt$roundto<0 ) {
-    perror("--round value should be greater or equal to 0 (",opt$roundto,")")
+if ( opt$roundto<0 || !is.numeric(opt$round) || is.null(opt$round) || !is.integer(opt$round) ) {
+    perror("--round value should be an integer greater or equal to 0 (",opt$roundto,")")
     q(status=1)
 }
 
