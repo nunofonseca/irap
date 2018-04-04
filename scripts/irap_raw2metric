@@ -44,6 +44,7 @@ option_list <- list(
   make_option(c("-g", "--gtf"), type="character", dest="gtf_file", default=NULL, help="GTF file name"),
   make_option(c("-l", "--lengths"), type="character",dest="lengths_file",default="",help=" [default %default]."),
   make_option(c("-e", "--exclude"), type="character",dest="toexclude",default="",help="biotypes to exclude (separated by comma) [default %default]. (deprecated)"),
+  make_option(c("-r", "--round"), type="numeric",dest="roundto",default=2,help="Round values to 'round' decimal places [default %default]."),
   make_option(c("--length_as_tsv"), dest="lengths_tsv_format",action="store_true",default=FALSE,help="lengths are provided in a two column TSV file with the feature and length [default %default]."),
   make_option(c("m","--mass_biotypes"),type="character",dest="mass_biotypes",default=NULL,help="Sequence of biotypes, separated by comma, that define the set of genes that are used to compute the total number of reads (rpkm/fpkm/tpm) [default all genes]"),
   make_option(c("--mtx"), action="store_true",default=FALSE,dest="is_mtx",help="The input file is in Matrix Market format. Default is TSV format."),
@@ -83,6 +84,10 @@ if ( ! is.null(opt$mass_biotypes) && is.null(opt$gtf_file) ) {
     q(status=1)
 }
 
+if ( opt$roundto<0 ) {
+    perror("--round value should be greater or equal to 0 (",opt$roundto,")")
+    q(status=1)
+}
 
 pinfo("Loading ",opt$ifile)
 if ( opt$is_mtx ) {
@@ -198,7 +203,7 @@ if (!opt$exit.on.error) {
 pdebug.save.state("irap_raw2metric","p1")
 if ( opt$metric == "rpkm" || opt$metric=="fpkm" ) {
   #(read count  * 1,000,000) / (total number of reads * kilobase of gene/transcript/exon)
-    rpkm <- countstable2rpkms(table,lengths[[opt$feature]],mass.labels)
+    rpkm <- countstable2rpkms(table,lengths[[opt$feature]],mass.labels,round=opt$roundto)
     if ( is.vector(rpkm) ) {
         rpkm <- data.frame(cbind(names(rpkm),rpkm),check.names=F)
         colnames(rpkm) <- append(capitalize(opt$feature),"Lib")
@@ -226,7 +231,7 @@ if ( opt$metric == "uq-fpkm" || opt$metric=="fpkm-uq" ) {
         TUQ=FALSE
         UQ=TRUE 
     }
-    norm.vals <- countstable2rpkms(table,lengths[[opt$feature]],mass.labels,UQ=UQ,TUQ=TUQ)
+    norm.vals <- countstable2rpkms(table,lengths[[opt$feature]],mass.labels,UQ=UQ,TUQ=TUQ,round=opt$roundto)
     if ( is.vector(norm) ) {
         norm.vals <- data.frame(cbind(names(norm.vals),norm.vals),check.names=F)
         colnames(norm.vals) <- append(capitalize(opt$feature),"Lib")
@@ -245,7 +250,7 @@ if ( opt$metric == "uq-fpkm" || opt$metric=="fpkm-uq" ) {
 
 
 if ( opt$metric == "tpm" ) {
-    tpm <- countstable2tpm(table,lengths[[opt$feature]],mass.labels=mass.labels)
+    tpm <- countstable2tpm(table,lengths[[opt$feature]],mass.labels=mass.labels,round=opt$roundto)
     if ( is.vector(tpm) ) {
         tpm <- data.frame(cbind(names(tpm),tpm),check.names=F)
         colnames(tpm) <- append(capitalize(opt$feature),"Lib")

@@ -495,7 +495,7 @@ counts2RPKMs <- function(count.matrix,annot.table=NULL) {
 # RPKM/FPKM 
 # TUQ=True then it returns UQ-FPKM = UQ(FPKM) 
 # UQ=TUR then it returns FPKM-UQ (as described in PCAWG)
-countstable2rpkms <- function(table,lens,mass.labels=NULL,exitonerror=TRUE,UQ=FALSE,TUQ=FALSE) {
+countstable2rpkms <- function(table,lens,mass.labels=NULL,exitonerror=TRUE,UQ=FALSE,TUQ=FALSE,round=2) {
     ## check if there missing features
     missing.feat <- (!rownames(table) %in% names(lens))
     if ( ! is.null(mass.labels) ) {
@@ -544,14 +544,14 @@ countstable2rpkms <- function(table,lens,mass.labels=NULL,exitonerror=TRUE,UQ=FA
         stopifnot(sum(!names(table)%in%names(lens))==0)
         # fix ordering & and convert to numeric
         lens <- as.numeric(lens[names(table)])
-        res <- round(v.compute.rpkm(table,lens,mass.labels,UQ),2)
+        res <- round(v.compute.rpkm(table,lens,mass.labels,UQ),round)
         names(res) <- names(table)
         return(res)
     } else {
         stopifnot(sum(!rownames(table)%in%names(lens))==0)
         # fix ordering & and convert to numeric
         lens <- as.numeric(lens[rownames(table)])
-        res <- round(apply(table,2,v.compute.rpkm,lens,mass.labels,UQ),2)
+        res <- round(apply(table,2,v.compute.rpkm,lens,mass.labels,UQ),round)
         rownames(res) <- rownames(table)
         return(res)
     }
@@ -563,7 +563,7 @@ countstable2rpkms <- function(table,lens,mass.labels=NULL,exitonerror=TRUE,UQ=FA
 # BMC Bioinformatics 2011, 12:323  doi:10.1186/1471-2105-12-323
 # http://arxiv.org/abs/1104.3889 - TPM=(FPKM/SUM(FPKM))*10^6
 # TODO: call the FPKM function
-countstable2tpm <- function(table,lens,mass.labels=NULL,exitonerror=TRUE) {
+countstable2tpm <- function(table,lens,mass.labels=NULL,exitonerror=TRUE,round=2) {
   # check if there missing features
   missing.feat <- (!rownames(table) %in% names(lens))
 
@@ -578,7 +578,7 @@ countstable2tpm <- function(table,lens,mass.labels=NULL,exitonerror=TRUE) {
   }
 
   v.compute.tpm <-  function(l,lens,mass.labels=NULL) {
-     #print(head(ta))   
+     ta <- l/lens[names(l)]
      if ( is.null(mass.labels) ) {
          tap <- ta/sum(ta)
      } else {
@@ -587,9 +587,9 @@ countstable2tpm <- function(table,lens,mass.labels=NULL,exitonerror=TRUE) {
     return(tap*10^6)
   }
   if ( is.vector(table) ) {
-    return(round(v.compute.tpm(table,lens,mass.labels),2))
+    return(round(v.compute.tpm(table,lens,mass.labels),round))
   } else {
-    return(round(apply(table,2,v.compute.tpm,lens,mass.labels=mass.labels),2))
+    return(round(apply(table,2,v.compute.tpm,lens,mass.labels=mass.labels),round))
   }
 }
 
