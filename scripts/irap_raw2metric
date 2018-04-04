@@ -84,10 +84,11 @@ if ( ! is.null(opt$mass_biotypes) && is.null(opt$gtf_file) ) {
     q(status=1)
 }
 
-if ( opt$roundto<0 || !is.numeric(opt$round) || is.null(opt$round) || !is.integer(opt$round) ) {
+if ( opt$roundto<0 ||  is.null(opt$roundto)) {
     perror("--round value should be an integer greater or equal to 0 (",opt$roundto,")")
     q(status=1)
 }
+opt$roundto <- round(opt$roundto,0)
 
 pinfo("Loading ",opt$ifile)
 if ( opt$is_mtx ) {
