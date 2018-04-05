@@ -48,9 +48,6 @@ endef
 # theoretical locations of the barcodes
 #alias
 ifeq ($(sc_protocol),10xV1)
-override $(sc_protocol)=10x_v1
-endif
-ifeq ($(sc_protocol),10x_v1)
 # index1=read2/I7, index2=I5
 $(eval $(call set_10x_params))
 def_umi_read=index1
@@ -69,9 +66,6 @@ endif
 
 # files obtained from the 10x website
 ifeq ($(sc_protocol),10xV1a)
-override $(sc_protocol)=10x_v1p
-endif
-ifeq ($(sc_protocol),10x_v1p)
 # index1=*I1*
 # index2=*I2*
 # index3=read_RA*_2
@@ -97,10 +91,8 @@ def_known_cells_file=$(IRAP_DIR)/data/10x/737K-april-2014_rc.txt
 $(info set 10x_v1p)
 endif
 
+
 ifeq ($(sc_protocol),10xV2)
-override $(sc_protocol)=10x_v2
-endif
-ifeq ($(sc_protocol),10x_v2)
 $(eval $(call set_10x_params))
 
 # default values?
@@ -123,7 +115,7 @@ def_known_cells_file=$(IRAP_DIR)/data/10x/737K-august-2016.txt
 
 expr_format=mtx
 expr_ext=mtx.gz
-
+$(info set 10xV2)
 endif
 
 
