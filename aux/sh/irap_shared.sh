@@ -217,11 +217,12 @@ function run_AND_timeIt {
 #     Number of file system outputs by the process.
     # label\tTime elapsed\tTime leapsed(Seconds)\taximum resident set size\tcommand\t exit status
     # label |Time elapsed |Time elapsed(Seconds)| maximum resident memory |date|command\t | exit status | ....
-    /usr/bin/time -o $logfile -a --format "$label\t%E\t%e\t%M\t$datetime\t$*\t%x\t%I\t%O\t%W" bash -c "$*" 2> $serr 
+    /usr/bin/time -o $logfile -a --format "$label\t%E\t%e\t%M\t$datetime\t$*\t%x\t%I\t%O\t%W" bash -c "$*" 2> >(tee -a $serr >&2)
+
     EXIT_STATUS=$?
     # output stderr
     #cat $sout >/dev/stdout
-    cat $serr > /dev/stderr
+    #cat $serr > /dev/stderr
 
     if [ $EXIT_STATUS -ne 0 ]; then
 	classify_error $label $serr
