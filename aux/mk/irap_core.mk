@@ -843,7 +843,7 @@ $(info *	rnaseq_type=$(rnaseq_type))
 
 ifeq ($(rnaseq_type),sc)
 ## single cell protocol
-SUPPORTED_SCP:=none smart-seq2 smart-seq smart drop-seq 10x_v1 10x_v1p 10x_v2 10x_v2p 10xV1 10xV2 10xV1a
+SUPPORTED_SCP:=none smart-seq2 smart-seq smart drop-seq 10xV1 10xV2 10xV1a
 
 # drop-seq 10x
 ifeq (,$(filter $(sc_protocol),$(SUPPORTED_SCP)))
@@ -1528,7 +1528,7 @@ BIG_EXP=1
 # out_file=$2
 # args=$3
 define pass_args_stdin=
-$(call args2file,$(name).$(2).in,$(3)) cat $(name).$(2).in | $(1) -stdin && rm -f $(name).$(2).in
+$(call args2file,$(2).in,$(3)) cat $(2).in | $(1) -stdin && rm -f $(2).in
 endef
 
 # 1- infiles
