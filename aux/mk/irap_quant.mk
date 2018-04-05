@@ -1309,6 +1309,13 @@ quantification_s: $(STAGE3_S_TARGETS)
 # Take the technical replicates into account if necessary
 technical_replicates_aggr_op?=sum
 
+## technical replicates definition is ignored with droplet-based data
+## aggregation is done at the level of '<lib>_sample_name'.
+ifeq ($(droplet_based_sc_protocol),y)
+ifneq ($(technical_replicates),)
+$(call p_info,technical replicates information ignored for droplet-based data)
+endif
+else
 ifeq ($(technical_replicates),)
 ## no technical replicates
 $(quant_toplevel_folder)/genes.raw.$(quant_method).$(expr_ext):$(quant_toplevel_folder)/genes.uraw.$(quant_method).$(expr_ext)
@@ -1331,7 +1338,7 @@ $(quant_toplevel_folder)/exons.raw.$(exon_quant_method).$(expr_ext): $(quant_top
 	$(call pass_args_stdin,irap_aggr_cols,$@.tmp, --tsv=$<  --labels "$(technical_replicates_labels)"  --groups "$(technical_replicates)" --out $@.tmp --op $(technical_replicates_aggr_op)) && mv $@.tmp $@
 
 endif
-
+endif
 ###################################
 # quantification enabled/end
 ###################################

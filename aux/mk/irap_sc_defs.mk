@@ -3,6 +3,7 @@
 # obviously, may be overriden by the users
 #####################################################################
 
+droplet_based_sc_protocol=n
 # Drop-seq
 ifeq ($(sc_protocol),drop-seq)
 mapper?=kallisto
@@ -13,6 +14,8 @@ def_umi_size=8
 def_cell_read=index1
 def_cell_offset=0
 def_cell_size=12
+
+droplet_based_sc_protocol=y
 # include GX and TX and other tags in the BAM files
 barcode_post_process_bam=y
 endif
@@ -32,6 +35,7 @@ cell_filt_min_features?=30
 cell_filt_max_ERCC?=75
 cell_filt_outliers?=y
 qc?=report
+droplet_based_sc_protocol=y
 # include GX and TX and other tags in the BAM files
 barcode_post_process_bam=y
 #

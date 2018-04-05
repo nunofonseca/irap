@@ -93,8 +93,9 @@ get_gse_html_files=$(gse_html_files)
 ge_files:=$(shell find $(quant_toplevel_folder) -regextype egrep -type f -regex '.*/genes\.[^\.]+\.[^\.]+(\.[^t]+)*\.(tsv|tsv.gz|mtx|mtx.gz)$$'   2>/dev/null )
 te_files:=$(filter-out .riu. .dt.,$(shell find $(quant_toplevel_folder) -type f -regextype egrep -regex '.*/transcripts\.[^\.]+\.[^\.]+\.(tsv|tsv.gz|mtx|mtx.gz)$$'  2>/dev/null ))
 ee_files:=$(shell find $(quant_toplevel_folder) -regextype egrep -type f -regex '.*/exons\.[^\.]+\.[^\.]+\.(tsv|tsv.gz|mtx|mtx.gz)$$'  2>/dev/null )
-all_quant_files:=$(ge_files) $(te_files) $(ee_files)
+all_quant_files:=$(filter-out %.uraw.%,$(ge_files) $(te_files) $(ee_files))
 
+# exclude uraw files (for now)
 quant_html_files:=$(patsubst %.tsv,%.html,$(patsubst %.mtx.gz,%.html,$(patsubst %.tsv.gz,%.html,$(all_quant_files))))
 
 mapping_dirs:=$(mapper_toplevel_folder)
@@ -143,7 +144,7 @@ endef
 # 7 map between feat and geneid
 # --anotation ....
 define GE_tsv2html=
-	tsvGE2html -m $(1) --ifile $(2) --out $(3)/$(4) --species $(species)  --browser $(quant2report_folder)/$(BROWSER_DIR)/ --css $(quant2report_folder)/$(CSS_FILE) --title "$(5)" -a $(annot_tsv)  --gdef "$(call groupsdef2str)" --gnames "$(call groups2str)" -f $(6) --feat_mapping $(7)
+	$(call pass_args_stdin,tsvGE2html,$(4), -m $(1) --ifile $(2) --out $(3)/$(4) --species $(species)  --browser $(quant2report_folder)/$(BROWSER_DIR)/ --css $(quant2report_folder)/$(CSS_FILE) --title "$(5)" -a $(annot_tsv)  --gdef "$(call groupsdef2str)" --gnames "$(call groups2str)" -f $(6) --feat_mapping $(7))
 endef
 
 #-x min value
