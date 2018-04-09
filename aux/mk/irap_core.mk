@@ -782,6 +782,12 @@ $(foreach g,$(groups),$(call check_param_ok_verbose,$(g)))
 $(info *	groups=$(groups))
 endif
 
+## names of the factors
+## by default onky 
+factors?=
+## like the groups
+# factorA=...
+
 #*********************
 # Technical replicates
 #*********************
@@ -1606,6 +1612,13 @@ define groupsnames=
 $(sort $(strip $(foreach l,$(groups),$(l) )))
 endef
 
+define factorsnames=
+$(sort $(strip $(foreach l,$(factors),$(l) )))
+endef
+
+define factorsdef2str=
+$(call remove_spaces,$(foreach g,$(call factorsnames),$(call spaces2commas,$(strip $($(g))));))
+endef
 
 # return groups definition
 define groupsdef2str=
