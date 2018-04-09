@@ -32,7 +32,7 @@ ifeq ($(rnaseq_type),sc)
 ##ALL_TARGETS+=atlas_sc_wrap_up
 ## expression matrix
 ## QC
-ATLAS_SC_FILES+=$(qc_toplevel_folder)/qc.tsv   $(cell_qc_files) $(filtered_expr_matrices)  $(clustering_files) $(report_toplevel_folder)/software.tsv  
+ATLAS_SC_FILES+=$(qc_toplevel_folder)/qc.tsv   $(cell_qc_files) $(filtered_expr_matrices)  $(clustering_files) $(report_toplevel_folder)/software.tsv   $(report_toplevel_folder)/versions.tsv
 ifneq ($(sc_quant_viz),none)
 ATLAS_SC_FILES+=$(sc_visualization_files)
 endif
@@ -61,11 +61,12 @@ atlas_bundle: $(sc_bundle_dir)/ $(ATLAS_SC_FILES) $(EXPR_FILES)
 	cp -ar $(sort $(EXPR_FILES)) $(sc_bundle_dir)
 ifneq ($(sc_quant_viz),none)
 	cp -ar $(quant_toplevel_folder)/genes.raw.filtered.$(quant_method).*tsne_perp*.tsv $(sc_bundle_dir)
-endif 
-
 
 $(sc_bundle_dir)/: 
 	mkdir -p $@
+
+
+endif 
 
 %.mtx.gz %.mtx_cols.gz %.mtx_rows.gz: %.tsv
 	irap_tsv2mtx --tsv $< --out $*.tmp.mtx && mv $*.tmp.mtx.gz $*.mtx.gz  && mv $*.tmp.mtx_cols.gz  $*.mtx_cols.gz  && mv $*.tmp.mtx_rows.gz  $*.mtx_rows.gz 
