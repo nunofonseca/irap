@@ -1616,6 +1616,10 @@ define factorsnames=
 $(sort $(strip $(foreach l,$(factors),$(l) )))
 endef
 
+define factors2str=
+$(call spaces2commas,$(call factorsnames))
+endef
+
 define factorsdef2str=
 $(call remove_spaces,$(foreach g,$(call factorsnames),$(call spaces2commas,$(strip $($(g))));))
 endef
