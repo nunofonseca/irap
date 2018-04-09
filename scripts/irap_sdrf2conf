@@ -43,7 +43,7 @@ option_list <- list(
     make_option(c("--data_dir"), type="character", dest="data_dir", default=".", help="iRAP's toplevel data directory"),
     make_option(c("--raw_dir"), type="character", dest="raw_dir", default=".", help="fastq directory"),
     make_option(c("--sop"), type="character", dest="sop", default=NULL, help="iRAP's toplevel data directory"),
-    make_option(c("--nc"), type="numeric", dest="nc", default=0, help="esimated number of clusters [default %default]"),    
+    make_option(c("--nc"), type="numeric", dest="nc", default=0, help="estimated number of clusters [default %default]"),    
     make_option(c("--reference"), type="character", dest="reference", default="$SPECIES_REFERENCE", help="genome reference"),
     make_option(c("--gtf"), type="character", dest="gtf", default="$SPECIES_GTF", help="gtf"),
     make_option(c("-s", "--sdrf"), type="character", dest="sdrf_file", default=NULL, help="SDRF file name"),
