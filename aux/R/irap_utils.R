@@ -1395,6 +1395,30 @@ data2groups <- function(data.matrix,conds) {
   list(mean=avg.matrix,sd=sd.matrix)
 }
 
+quantbygroups <- function(data.matrix,metadata.groups) {
+    ##metadata.groups <- metadata.ds$factors[[ff]]
+    nvalues <- length(metadata.groups)
+    avg.matrix <- data.frame(data.matrix[,c(1:nvalues)])
+    colnames(avg.matrix) <- names(metadata.groups)
+    rownames(avg.matrix) <- rownames(data.matrix)
+    sd.matrix <- avg.matrix
+    for ( g in names(metadata.groups) ) {
+        sel.cols <- metadata.groups[[g]]
+        pdebug("group=",g," sel.cols=",sum(sel.cols))
+        irap.assert(length(sel.cols)>0,"Columns selected")
+        if (length(sel.cols)==1) {
+            ## single element
+            pwarning("group ",g," with a single column, unable to compute sd")
+            sd.matrix[,g] <- 0
+            avg.matrix[,g] <- data.matrix[,sel.cols]
+        } else {
+            sd.matrix[,g] <- apply(data.matrix[,sel.cols],1,FUN=sd)
+            avg.matrix[,g] <- apply(data.matrix[,sel.cols],1,FUN=mean)
+        }
+    }
+    list(mean=avg.matrix,sd=sd.matrix)
+}
+
 rowVariance <- function(x) {
 
   sqrt=function(x) { x * x }
@@ -2207,7 +2231,7 @@ init.source.filter <- function(table,id.col="ID") {
   # define the source column
   source.column <- "biotype"
   pinfo("biotype column=",source.column)
-  pinfo(colnames(table))
+  pinfo(paste(c(head(colnames(table),n=20),"..."),collapse=" "))
   if ( source.column %in% colnames(table) ) {
     source.filt.groups.def <- list()
     source.filt.groups <- list()
@@ -2215,7 +2239,7 @@ init.source.filter <- function(table,id.col="ID") {
     sources <- unique(as.character(table[,source.column]))
     
     pinfo("#Sources/biotypes:",length(sources))
-    pinfo(sources)
+    pinfo("    ",paste(sources,collapse=" "))
     # all
     source.filt.groups.def$"all" <- sources
     source.filt.groups$"all" <- as.character(table[,id.col])
@@ -2804,4 +2828,107 @@ quantile_norm <- function(df,means=NULL){
   df_qn<- apply(ranks, 2, quantile_norm_vect, means)
   rownames(df_qn) <- rownames(df)
   return(list(qn=df_qn,means=means))
+}
+
+
+## construct the list from the data
+## metadata$factors$factorname$factorvalue$samples
+get.metadata.ds <- function(factors.names.s,factors.def.s,groups.names.s,groups.def.s) {
+
+    groups.names <- sapply(strsplit(groups.names.s,",")[[1]],mytrim)
+    groups.def <- strsplit(gsub(";$","",groups.def.s),";")[[1]]
+    
+    ##
+    ## if no factor is defined then assume that there is a single one
+    if ( factors.def.s=="" && length(groups.names)>0 ) {
+        factors.names <- c("Factor")
+        if (factors.names.s=="") {
+            factors.def <- groups.names
+        }
+    } else {
+        
+        factors.names <- sapply(strsplit(factors.names.s,",")[[1]],mytrim)
+        factors.def <- strsplit(gsub(";$","",factors.def.s),";")[[1]]
+    }
+
+    conv2list <- function(groups.names,groups.def) {
+        groups.l <- list();
+        label2group <- list();
+        i <- 1;
+        for (c  in groups.def) {
+            groups.l[[groups.names[i]]] <- mytrim(strsplit(c,",")[[1]])
+        for (f in groups.l[[groups.names[i]]]) {
+            label2group[[f]] <- groups.names[i]
+        }
+            i <- i+1;
+        }
+        return(groups.l)
+    }
+    ##
+    groups.l <- conv2list(groups.names,groups.def)
+    factors.l <- conv2list(factors.names,factors.def)
+    ## check if is incomplete
+    if ( sum(is.na(names(factors.l)))>0 ) {
+        perror("Missing factor names (",sum(is.na(names(factors.l))),")")
+        q(status=1)
+    }
+    ## same check for groups
+    if ( sum(is.na(names(groups.l)))>0 ) {
+        perror("Missing group names (",sum(is.na(names(groups.l))),")")
+        q(status=1)
+    }    
+    ##
+    ff <- unlist(factors.l)
+    gg <- names(groups.l)
+    ## all the factor names should have a corresponding group
+    mm <- ff[!ff%in%gg]
+    if (length(mm)>0) {
+        ## all the factor names should have a corresponding group
+        print(mm)
+        perror("Some factor names do not have a group")
+        q(status=1)
+    }
+    ## merge
+    new.l <- list()
+    for (n in names(factors.l)) {
+        new.l[[n]] <- list()
+        for ( g in factors.l[[n]] ) {
+            new.l[[n]][[g]] <- groups.l[[g]]
+        }
+        ## unique values within a group
+        xx<-unlist(new.l[[n]])
+        dd <- duplicated(xx)
+        if(sum(dd)>0) {
+            perror("Duplicated:")
+            perror(xx[dd])
+            perror("sample names should be unique for a given factor")
+            q(status=1)
+        }
+    }
+    metadata <- list()
+    metadata$factors <- new.l
+    metadata$groups <- groups.names
+    ## add colors information
+    metadata$factor.colors <- list()
+    for ( n in names(metadata$factors) ) {
+        ## assign one color for each group within a factor
+        ## map samples to colors within a factor
+        gg <- names(metadata$factors[[n]])
+        ## TODO: use a different function to get the colors
+        coloursbygroup <- rainbow(length(gg))
+        names(coloursbygroup) <- gg
+        metadata$factor.colors[[n]] <- list()
+        metadata$factor.colors[[n]]$coloursbygroup <- coloursbygroup        
+        ## colours by sample
+        unlist(metadata$factors[[n]],use.names=TRUE)
+        x <- sapply(metadata$factors[[n]],FUN=length)
+        xx <- c()
+        for ( n2 in names(x) ) {
+            xx2 <- rep_len(coloursbygroup[n2],x[n2])
+            names(xx2) <- metadata$factors[[n]][[n2]]
+            xx <- c(xx,xx2)
+        }
+        metadata$factor.colors[[n]]$coloursbysample <- xx
+    }
+    return(metadata)
 }
