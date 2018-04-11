@@ -2841,12 +2841,12 @@ get.metadata.ds <- function(factors.names.s,factors.def.s,groups.names.s,groups.
     ##
     ## if no factor is defined then assume that there is a single one
     if ( factors.def.s=="" && length(groups.names)>0 ) {
+        ## default factor name - back. compat.
         factors.names <- c("Factor")
         if (factors.names.s=="") {
-            factors.def <- groups.names
+            factors.def <- groups.names.s
         }
-    } else {
-        
+    } else {        
         factors.names <- sapply(strsplit(factors.names.s,",")[[1]],mytrim)
         factors.def <- strsplit(gsub(";$","",factors.def.s),";")[[1]]
     }
@@ -2857,15 +2857,19 @@ get.metadata.ds <- function(factors.names.s,factors.def.s,groups.names.s,groups.
         i <- 1;
         for (c  in groups.def) {
             groups.l[[groups.names[i]]] <- mytrim(strsplit(c,",")[[1]])
-        for (f in groups.l[[groups.names[i]]]) {
-            label2group[[f]] <- groups.names[i]
-        }
+            for (f in groups.l[[groups.names[i]]]) {
+                label2group[[f]] <- groups.names[i]
+            }
             i <- i+1;
         }
         return(groups.l)
     }
     ##
     groups.l <- conv2list(groups.names,groups.def)
+    #cat("name:",paste(groups.names,sep=" ",collapse=" "),"\n")
+    #cat("def:",paste(groups.def,sep=" ",collapse=" "),"\n")
+    #cat("name:",paste(factors.names,sep=" ",collapse=" "),"\n")
+    #cat("def:",paste(factors.def,sep=" ",collapse=" "),"\n")
     factors.l <- conv2list(factors.names,factors.def)
     ## check if is incomplete
     if ( sum(is.na(names(factors.l)))>0 ) {
