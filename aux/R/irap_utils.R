@@ -1404,7 +1404,7 @@ quantbygroups <- function(data.matrix,metadata.groups) {
     sd.matrix <- avg.matrix
     for ( g in names(metadata.groups) ) {
         sel.cols <- metadata.groups[[g]]
-        pdebug("group=",g," sel.cols=",sum(sel.cols))
+        pdebug("group=",g," sel.cols=",length(sel.cols))
         irap.assert(length(sel.cols)>0,"Columns selected")
         if (length(sel.cols)==1) {
             ## single element
