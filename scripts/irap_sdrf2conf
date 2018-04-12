@@ -101,7 +101,7 @@ exp.characteristic.cols <- c()
 exp.factor.cols <- c()
 opt.cols <- c("ORGANISM","organism part","sex","spike in","molecule","technical replicate group","ENA_RUN","ENA_SAMPLE","Scan Name")
 
-sc.exp.cols <- c("Material Type")
+sc.exp.cols <- c("Material Type","technical replicate group")
 sc.exp.comment.cols <- c("LIBRARY_STRAND")
 
 ##
@@ -149,10 +149,10 @@ colsInSDRF <- function(cols,sdrf,comment.cols=FALSE,characteristic.cols=FALSE,fa
         #print(sdrf.cols)
 
         if (exit.on.error) {
-            perror("Columns ", paste(miss,collapse=","), " not found in the SDRF file")
+            perror("Column(s) ", paste(miss,collapse=","), " not found in the SDRF file")
             q(status=1)
         }
-        pwarning("Columns ", paste(miss,collapse=","), " not found in the SDRF file")
+        pwarning("Column(s) ", paste(miss,collapse=","), " not found in the SDRF file")
         return(miss)
     }    
 }
