@@ -1233,7 +1233,6 @@ write.tsv <- function(x,file,header=TRUE,rownames.label=NULL,fix=TRUE,gzip=FALSE
 }
 
 read.tsv <- function(file,header=T,...) {
-#read.table(file,sep = "\t", header=header, quote = "\"",comment.char="",check.names=FALSE)
   return(qload.tsv(file,header=header,...))
 }
 
@@ -1476,7 +1475,7 @@ load.annot <- function(file) {
 }
 # keep backwards compatibility by using read.table when data.table is not 
 # available
-qload.tsv <- function(f,header=NULL,comment.char="",nrows=-1L) {
+qload.tsv <- function(f,header=NULL,comment.char="",nrows=-1L,fill=FALSE,quote="\"",colClasses=NULL) {
   tsv.data <- NULL
   if (require("data.table",quietly=TRUE,character.only=TRUE) &&
       compareVersion(as.character(packageVersion("data.table")),"1.9.6")>=0) {
@@ -1491,9 +1490,9 @@ qload.tsv <- function(f,header=NULL,comment.char="",nrows=-1L) {
       f <- paste(f," | grep -v \"^",comment.char,"\"",sep="")
     }
     if (is.null(header)) header="auto"
-    tryCatch(tsv.data <- fread(input=f,sep = "\t", nrows=nrows, header=header,check.names=FALSE,data.table=FALSE),error=function(x) NULL)
+    tryCatch(tsv.data <- fread(input=f,sep = "\t", nrows=nrows, header=header,check.names=FALSE,data.table=FALSE,fill=fill,quote=quote,colClasses=colClasses),error=function(x) NULL)
   } else 
-    tryCatch(tsv.data <- read.table(f,sep = "\t", header=header, comment.char=comment.char, quote = "\"", nrows=nrows, check.names=FALSE),error=function(x) NULL)
+    tryCatch(tsv.data <- read.table(f,sep = "\t", header=header, comment.char=comment.char, quote = quote, nrows=nrows, check.names=FALSE),error=function(x) NULL)
   return(tsv.data)
 }
 
@@ -2154,7 +2153,7 @@ load.configuration.file <- function(conf_file,lib.info=NULL) {
     }
     conf.table[nrow(conf.table)+1,] <- c("qc.enabled",(conf.get.value(conf.table,"qc")=="on"||conf.get.value(conf.table,"qc")=="yes"))
     rownames(conf.table) <- conf.table[,1]
-    
+    ##print(conf.table)
     conf.table
 }
 
