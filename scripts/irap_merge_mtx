@@ -60,8 +60,49 @@ opt <- myParseArgs(usage = usage,option_list=option_list,filenames.exist=filenam
 pdebug.enabled <- opt$debug
 pdebug.save.state("irap_merge_mtx","p0")
 
-#opt$has_no_header <- FALSE
+add.Sparse.Matrices <- function(M1,M2) {
+    ##  M2 dest
+    shared.cols <- intersect(colnames(M2),colnames(M1))
+    ## do not consider empty columns
+    cs <- colSums(M1[,shared.cols,drop=FALSE])
+    ## remove the shared cols with no values
+    tmp.M1 <- M1[,!colnames(M1)%in%names(cs[cs==0]),drop=FALSE]   
+    ## update shared cols
+    shared.cols <- intersect(colnames(M2),colnames(tmp.M1))
 
+    if ( length(shared.cols) >0 ) {
+        ## non-zero rows
+        nzr1 <- rowSums(M1[,shared.cols,drop=FALSE])>0
+        nzr2 <- rowSums(M2[,shared.cols,drop=FALSE])>0
+        nzr2e <- nzr1 & nzr2
+        pwarning("columns shared (" ,length(shared.cols),")" )
+        pwarning("non zero rows(" ,sum(nzr2e),")" )
+        ## assuming that these are replicates
+        pinfo("aggregating columns common between files")
+        M2[nzr2e,shared.cols] <- M2[nzr2e,shared.cols,drop=FALSE]+tmp.M1[rownames(M2)[nzr2e],shared.cols,drop=FALSE]
+        pinfo("aggregating columns common between files...done")
+        ## cols unique to x (2nd file)
+        M1 <- M1[,!colnames(M1)%in%shared.cols,drop=FALSE]
+        M1 <- M1[,colSums(M1)>0,drop=FALSE]
+    } 
+    return(cbind(M2,M1))
+}
+
+library(Matrix)
+##
+generateTestMatrix <- function(N=50000, n.row=100, n.col=20) {
+
+    s1 <- sample(N, n.row)
+    c1 <- sample(N, n.col)
+    M1 <- array(0, dim=c(n.row,n.col), dimnames=list(s1, c1))
+    r1 <- sample(n.row*n.col,n.row, replace=TRUE)
+    M1[r1] <- sample(N,n.row)
+    Matrix(M1)
+}
+## set.seed(50)
+## M1 <- generateTestMatrix(100, 50, 20)
+## M2 <- generateTestMatrix(100, 50, 30)
+## microbenchmark(add.Sparse.Matrices(M1, M2))
 pinfo("Parameters parsed.")
 
 all.feat <- NULL
@@ -75,14 +116,11 @@ if ( !is.null(opt$all_feat_file) ) {
 
 out.table <- NULL
 
-files <- unlist(strsplit(opt$mtx_files,"[ \t\n,;]+"))
+files <- unique(unlist(strsplit(opt$mtx_files,"[ \t\n,;]+")))
 nfiles <- length(files)
 pinfo("Merging ",nfiles," files")
 ctr <- 0
-#files <- c("/home/nf/Research/Projects/WIP/EREAP/irap_tests/test_files/sparse1.mtx.gz","/home/nf/Research/Projects/WIP/EREAP/irap_tests/test_files/sparse2.mtx.gz")
-                                        #f <- files[1]
-#f <- files[2]
-#print(files)
+##
 for ( f in files ) {
     ctr <- ctr+1
     done <- round(ctr/nfiles*100,2)
@@ -118,10 +156,7 @@ for ( f in files ) {
         }
         colnames(x)[1] <- label
     }
-    
-    ##   if (opt$rows_not_sorted) {
-    ##        x <- x[order(rownames(x)),]
-    ##    }
+
     if ( !is.null(all.feat) ) {
         ##
         miss.rows<-all.feat[!all.feat %in% rownames(x)]
@@ -134,72 +169,49 @@ for ( f in files ) {
             xx <- NULL
         }
     }
-    #print(dim(x))
     ## 
-    x <- x[sort(rownames(x)),,drop=FALSE]
     ## 
     if ( is.null(out.table) ) {
+        x <- x[sort(rownames(x)),,drop=FALSE]
         out.table <- x
     } else {
         ## merge
+        if (nrow(out.table)!=nrow(x) && ncol(x)>1 ) {
+            pwarning("Matrices should have the same number of rows" )
+            q(status=1)
+        }
         if ( is.null(all.feat) ) {
             if (nrow(out.table)!=nrow(x) && ncol(x)==1 ) {
-                pwarning("Matrices should have the same number of rows" )
-                ##q(status=1)
-                ##
-                shared.rows <- intersect(rownames(out.table),rownames(x))
+                pwarning("Ideally matrices should have the same number of rows" )
+                pinfo("dim 1:",dim(out.table))
+                pinfo("dim 2:",dim(x))                
+                all.rows <- unique(c(rownames(out.table),rownames(x)))
                 ## add the missing rows to x
-                new.x.rows <- rownames(out.table)[!rownames(out.table)%in%shared.rows]
-                new.x <- matrix(rep(0,length(new.x.rows)),ncol=1)
+                new.x.rows <- all.rows[!all.rows%in%rownames(x)]
+                new.x <- Matrix(0,nrow=length(new.x.rows),ncol=1)
+                rownames(new.x) <- new.x.rows
                 colnames(new.x) <- colnames(x)
+                if (opt$is.tsv) new.x <- as.matrix(new.x)
                 new.x <- rbind(x,new.x)
-                rownames(new.x) <- append(rownames(x),new.x.rows)
-                
                 ## out.table
-                new.out.rows <- rownames(x)[!rownames(x)%in%rownames(out.table)]
-                new.out <- matrix(rep(0,length(new.out.rows)*ncol(out.table)),ncol=ncol(out.table))
+                new.out.rows <- all.rows[!all.rows%in%rownames(out.table)]
+                new.out <- Matrix(0,ncol=ncol(out.table),nrow=length(new.out.rows))
+                rownames(new.out) <- new.out.rows
                 colnames(new.out) <- colnames(out.table)
+                if (opt$is.tsv) new.out <- as.matrix(new.out)
                 new.out <- rbind(out.table,new.out)
-                rownames(new.out) <- append(rownames(out.table),new.out.rows)
-
                 out.table <- new.out
                 x <- new.x
-                print(head(out.table))
-            }
-            if (nrow(out.table)!=nrow(x) && ncol(x)>1 ) {
-                pwarning("Matrices should have the same number of rows" )
-                q(status=1)
+                new.x <- NULL
+                new.out <- NULL
+                pinfo("number of rows fixed...")
             }
         }
-        shared.cols <- intersect(colnames(out.table),colnames(x))
-        ## do not consider empty columns
-        cs <- colSums(x[,shared.cols,drop=FALSE])
-        ## remove the shared cols with no values
-        x <- x[,!colnames(x)%in%names(cs[cs==0]),drop=FALSE]
-        shared.cols <- intersect(colnames(out.table),colnames(x))
-        print(head(x))
-        print(length(shared.cols))
-        if ( length(shared.cols) >0 ) {
-            pwarning("columns shared (" ,length(shared.cols),")" )
-            ## assuming that these are replicates
-            ##perror("Not supporting this for now" )
-            ##q(status=1)
-            pinfo("aggregating columns common between files")
-            ##print(head(out.table[,shared.cols[c(1,2)]]))
-            ##print(head(x[,shared.cols[c(1,2)]]))
-            im <- out.table[,shared.cols,drop=FALSE]+x[rownames(out.table),shared.cols,drop=FALSE]
-            ##print(head(im[,shared.cols[c(1,2)]]))
-            out.table[,shared.cols,drop=FALSE] <- im
-            x <- x[,!colnames(x)%in%shared.cols,drop=FALSE]
-        } 
-        out.table <- cbind(out.table,x)
+        x <- x[rownames(out.table),,drop=FALSE]        
+        out.table <- add.Sparse.Matrices(out.table,x)
     }
 }
 
-
-#if ( opt$add_header && opt$has_no_header ) {
-#  opt$has_no_header=FALSE
-#}
 if (opt$is.tsv ) {
     write.tsv(out.table,file=opt$out,rownames.label="Feature")
 } else {
