@@ -2704,6 +2704,7 @@ phony_targets+= print_libs lib_isl
 ###################################################
 lib_isl: $(STAGE1_S_TARGETS) stage2 stage3as $(WAVE3_s_TARGETS)
 
+lib_isl_stage1: $(STAGE1_S_TARGETS)
 
 ###################################################
 # Keep the versions used in the top level folder

@@ -541,7 +541,7 @@ irap_clean_conf="$irap_single_lib_options $irap_options"
 
 ##################################################################
 pinfo "QC and filtering..."
-run_AND_timeIt "iRAP-QC" $time_log_file  $cmd $irap_single_lib_options $irap_options stage1
+run_AND_timeIt "iRAP-QC" $time_log_file  $cmd $irap_single_lib_options $irap_options lib_isl_stage1
 pinfo "QC and filtering...complete."
 
 # force BAM regeneration
