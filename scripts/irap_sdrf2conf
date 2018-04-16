@@ -629,9 +629,9 @@ for (specie in species) {
     #################
     ## LIBRARY LAYOUT
     ## se
-    se.runs <- rownames(layout)[!grepl("PAIRED",layout$library_layout,ignore.case=TRUE)]
+    se.runs <- rownames(layout)[!grepl("PAIRED",layout[,normalize.cols("library_layout")],ignore.case=TRUE)]
     ## pe
-    pe.runs <- rownames(layout)[grepl("PAIRED",layout$library_layout,ignore.case=TRUE)]
+    pe.runs <- rownames(layout)[grepl("PAIRED",layout[,normalize.cols("library_layout")],ignore.case=TRUE)]
 
     ##  l prefix no longer needed
     conf.l <- rbind(conf.l,paste0("se=",paste(gsub("^","",se.runs),collapse=" ")))
