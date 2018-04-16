@@ -65,6 +65,40 @@ opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filena
 
 pdebug.enabled <- opt$debug
 
+## validates each file independently using fastq_info
+checkFiles <- function(filenames.v,validator.cmd="irap_fastq_info") {
+    ## filenames.v - as provided in the SDRF
+    exp.files <- filenames.v
+    dir <- paste0(opt$data_dir,"/raw_data")
+    exp.files.p <- paste(opt$raw_dir,"/",exp.files,sep="")
+    exp.files.ps <- paste(exp.files.p,collapse=" ",sep="")
+
+    stopifnot(validator.cmd %in% c("fastq_info","irap_fastq_info"))
+    stopifnot(length(filenames.v)>0 && length(filenames.v)<=2)
+    
+    if (validator.cmd=="fastq_info" ) {
+        cmd <- paste0("fastq_info ",exp.files.ps," > ",exp.files.p[1],".info.tmp 2> /dev/null && mv ",exp.files.p[1],".info.tmp ",exp.files.p[1],".info")
+        cmd.err <- paste0("fastq_info ",exp.files.ps)
+    } else {
+        cmd <- paste0("irap_fastq_info files='",exp.files.ps,"'")
+        cmd.err <- cmd
+    }
+    cmd <- paste0("pushd ",dir," >/dev/null; ",cmd)
+    pinfo("Checking ",exp.files.ps)
+    rr <- system(paste0(cmd),intern=FALSE,ignore.stdout=TRUE)
+    info.file <- paste0(opt$data_dir,"/raw_data/",opt$raw_dir,"/",exp.files[1],".info")
+    ##print(rr)
+    if ( ! file.exists(info.file) || rr!=0 ) {
+        print(cmd)
+        ## rerun command to report the error
+        rr <- system(paste0("pushd ",dir,"; ",cmd.err),intern=FALSE,ignore.stdout=TRUE,ignore.stderr=FALSE)        
+        perror("Failed to validate and generate info file ",info.file)
+        q(status=1)
+    }
+    pinfo("ok")
+    return(info.file)    
+}
+
 warnings.lst <- c()
 addWarning <- function(...) {
     warnings.lst <- append(warnings.lst,paste0(...))
@@ -696,18 +730,7 @@ for (specie in species) {
                 perror("Folder ",dir," not found")
                 q(status=1)
             }
-            cmd <- paste0("pushd ",dir," &>/dev/null; irap_fastq_info files='",ssfiles,"'")
-            pinfo("Checking ",ssfiles)
-            rr <- system(paste0(cmd),intern=FALSE,ignore.stdout=TRUE)
-            ## look for the info file
-            info.file <- paste0(opt$data_dir,"/raw_data/",opt$raw_dir,"/",sfiles[1],".info")
-            ##print(rr)
-            if ( ! file.exists(info.file) || rr!=0 ) {
-                print(cmd)
-                perror("Failed to generate info file ",info.file)
-                q(status=1)
-            }
-            pinfo("ok")
+            info.file <- checkFiles(sfiles)
             rr <- system(paste0("cat ",info.file),intern=TRUE)
             conf.l <- rbind(conf.l,matrix(rr,ncol=1))
             ###########################################
@@ -731,22 +754,7 @@ for (specie in species) {
                 ## but check files...
                 exp.files.cols <- c("read1 file","index1 file")
                 exp.files <- sdrf.tmp[sdrf.tmp$run==run,exp.files.cols]
-                exp.files.p <- paste(opt$raw_dir,"/",exp.files,sep="")
-                exp.files.ps <- paste(exp.files.p,collapse=" ",sep="")
-                
-                cmd <- paste0("pushd ",dir," >/dev/null; fastq_info ",exp.files.ps," > ",exp.files.p[1],".info.tmp 2> /dev/null && mv ",exp.files.p[1],".info.tmp ",exp.files.p[1],".info")
-                pinfo("Checking ",exp.files.p[1])
-                rr <- system(paste0(cmd),intern=FALSE,ignore.stdout=TRUE)
-                info.file <- paste0(opt$data_dir,"/raw_data/",opt$raw_dir,"/",exp.files[1],".info")
-                #print(rr)
-                if ( ! file.exists(info.file) || rr!=0 ) {
-                    print(cmd)
-                    perror("Failed to generate info file ",info.file)
-                    q(status=1)
-                }
-                pinfo("ok")
-                system(paste0("cat ",info.file),intern=TRUE)
-
+                checkFiles(exp.files,validator.cmd="fastq_info")
                 conf.l <- rbind(conf.l,paste0("",run,"_index1=",exp.files[1]))
                 conf.l <- rbind(conf.l,paste0("",run,"_index2=",exp.files[2]))
                 sss <- as.numeric(as.factor(sdrf.tmp[,"technical replicate group"]))[sdrf.tmp$run==run]
