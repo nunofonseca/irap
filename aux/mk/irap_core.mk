@@ -791,6 +791,12 @@ factors?=
 #*********************
 # Technical replicates
 #*********************
+ifdef technical_replicates_labels
+ifeq ($(technical_replicates_labels),not applicable)
+override technical_replicates_labels:=
+override technical_replicates:=
+endif
+endif
 
 # backwards compatibility
 ifdef technical.replicates
