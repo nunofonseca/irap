@@ -2718,14 +2718,14 @@ runGSAhyper2 <- function (genes, pvalues, pcutoff, universe,
 ###################################################
 #
 
-importArgsfromStdin <- function() {
+importArgsfromStdin <- function(ifile="stdin") {
   args <- commandArgs(trailingOnly = TRUE)
 
-  if ( length(args)== 0 ) {
+  if ( length(args)== 0 && ifile=="stdin" ) {
     return(args)
   }
-  if ( args[1]=="-stdin" ) {
-    f <- file("stdin")
+  if ( args[1]=="-stdin" || ifile!="stdin") {
+    f <- file(ifile)
     open(f)
     line <- readLines(f,n=1)    
     ##write(line, stderr())
