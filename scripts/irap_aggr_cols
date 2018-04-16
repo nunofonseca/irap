@@ -32,6 +32,7 @@ if ( IRAP.DIR == "" ) {
 #
 source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
 
+
 cmd <- "irap_aggr_cols"
 args <- importArgsfromStdin()
 
@@ -49,7 +50,7 @@ option_list <- list(
 filenames <- c("tsv_file")
 multiple.options = list(op=c("sum","median","sum","max","mean"))
 mandatory <- c("tsv_file","out","labels","groups")
-opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
+opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory,args=args)
 
 if (opt$debug) {
     pdebug.enable()
