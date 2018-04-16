@@ -370,7 +370,7 @@ if [ "$tidy_up_only" == "y" ]; then
 	pinfo "Looking for folders in $name ($file_prefix)"
 	find $name  -type d -name "$file_prefix" -print -exec rm -rf {} \; 2> /dev/null
     else
-	#echo toplevel_dir=$name
+	##echo toplevel_dir=$name
 	for stage in stage1 stage2 stage3; do
 	    ##echo "$cmd conf=$conf $irap_single_lib_options  $irap_options print_${stage}_folder  skip_lib_validation=y |tail -n 1"
 	    stage_folder=`$cmd conf=$conf $irap_single_lib_options  $irap_options print_${stage}_folder  skip_lib_validation=y |tail -n 1`
