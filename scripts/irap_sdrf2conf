@@ -156,14 +156,14 @@ if (length(common)>0) {
     }
     addWarning("SDRF: common factors and comments - ",paste(common,collapse=","))
 }
-common <- intersect(factors,characteristics)
-if (length(common)>0) {
-    if ( opt$atlas_mode==TRUE ) {
-        perror("SDRF: common factors and characteristics - ",paste(common,collapse=","))
-        q(status=1)
-    }
-    addWarning("SDRF: common factors and characteristics - ",paste(common,collapse=","))
-}
+## common <- intersect(factors,characteristics)
+## if (length(common)>0) {
+##     if ( opt$atlas_mode==TRUE ) {
+##         perror("SDRF: common factors and characteristics - ",paste(common,collapse=","))
+##         q(status=1)
+##     }
+##     addWarning("SDRF: common factors and characteristics - ",paste(common,collapse=","))
+## }
 common <- intersect(comments,characteristics)
 if (length(common)>0) {
     if ( opt$atlas_mode==TRUE ) {
