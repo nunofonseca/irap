@@ -51,9 +51,8 @@ option_list <- list(
     make_option(c("-i", "--idf"), type="character", dest="idf_file", default=NULL, help="IDF file name"),
     make_option(c("--sc"), action="store_true",default=FALSE,dest="is_sc",help="Single cell experiment?. Default is FALSE."),
     make_option(c("-c","--check_only"),action="store_true",dest="check_only",default=FALSE,help="Checks the sdrf/idf but skips the generation of the configuration file."),
-    make_option(c("--atlas"),action="store_false",dest="atlas_mode",default=FALSE,help="Enable more stringent checks for the sdrf/idf files (for ExpressionAtlas)"),
+    make_option(c("--atlas"),action="store_true",dest="atlas_mode",default=FALSE,help="Enable more stringent checks for the sdrf/idf files (for ExpressionAtlas)"),
   make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
-  make_option(c("--out_prefix"), type="character",default=NULL,help="Filename prefix for extra files created from the SDRF file "),
   make_option(c("-o", "--out_conf"), type="character",default=NULL,help="Filename of the new iRAP's configuration file.")
 )
 
@@ -66,25 +65,39 @@ opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filena
 
 pdebug.enabled <- opt$debug
 
+warnings.lst <- c()
+addWarning <- function(...) {
+    warnings.lst <- append(warnings.lst,paste0(...))
+    assign("warnings.lst",warnings.lst,envir = .GlobalEnv)
+    pwarning(...)
+}
+printAllWarnings <- function() {
+    n <- length(warnings.lst)
+    if ( n > 0 ) return
+    pwarning(n," warnings:")
+    sapply(warnings.lst,pwarning)
+}
 normalize.cols <- function(vals,strip.brackets=TRUE) {
-    ##ignore typos & inconsistencies
-    ##
+    ## try to workaround typos & inconsistencies
     x <- vals
     if (strip.brackets)
         x <- gsub("\\].*","",gsub(".*\\[","",x))
+    else {
+        x <- gsub(" +\\]","]",gsub(" +\\[","[",x))
+        x <- gsub("] +","]",x)
+    }
     # a space or underscore seems to be the same thing
-    x <- gsub("_","",x)
-    return(tolower(gsub(" +","",x)))
+    x <- gsub("_+"," ",x) ## no underscores
+    return(tolower(gsub(" +"," ",x))) ##lowercase and single space
 }
 #
 pdebug.save.state("irap_sdrf2conf","p0")
-# load TSV
+sdfcols2save2tsv <- c()
+
 for ( n in names(opt) ) {
     cat(paste0(n,"=",opt[[n]]))
 }
-
 ##
-sdfcols2save2tsv <- c()
 
 pinfo("Loading SDRF...")
 sdrf <- read.tsv(opt$sdrf_file,header=TRUE,comment.char="")
@@ -93,6 +106,40 @@ cat("Columns: ",ncol(sdrf),"\n")
 cat("Entries: ",nrow(sdrf),"\n")
 pinfo("Columns found in SDRF:")
 cat(paste(colnames(sdrf),collapse=","),"\n")
+
+
+#################################################
+## factors should not be simultaneously comments 
+factors <- normalize.cols(colnames(sdrf)[grepl("^factorvalue",colnames(sdrf),ignore.case=TRUE)])
+comments <- normalize.cols(colnames(sdrf)[grepl("^comment",colnames(sdrf),ignore.case=TRUE)])
+characteristics <- normalize.cols(colnames(sdrf)[grepl("^characteristics",colnames(sdrf),ignore.case=TRUE)])
+
+common <- intersect(factors,comments)
+if (length(common)>0) {
+    if ( opt$atlas_mode==TRUE ) {
+        perror("SDRF: common factors and comments - ",paste(common,collapse=","))
+        q(status=1)
+    }
+    addWarning("SDRF: common factors and comments - ",paste(common,collapse=","))
+}
+common <- intersect(factors,characteristics)
+if (length(common)>0) {
+    if ( opt$atlas_mode==TRUE ) {
+        perror("SDRF: common factors and characteristics - ",paste(common,collapse=","))
+        q(status=1)
+    }
+    addWarning("SDRF: common factors and characteristics - ",paste(common,collapse=","))
+}
+common <- intersect(comments,characteristics)
+if (length(common)>0) {
+    if ( opt$atlas_mode==TRUE ) {
+        perror("SDRF: common characteristics and comments - ",paste(common,collapse=","))
+        q(status=1)
+    }
+    addWarning("SDRF: common characteristics and comments - ",paste(common,collapse=","))
+}
+
+##
 idf <- NULL
 if ( !is.null(opt$idf_file) ) {
     pinfo("Loading IDF...")
@@ -107,7 +154,11 @@ if ( !is.null(opt$idf_file) ) {
     idf <- idf[idf$V1!="",,drop=FALSE]
     cat("Columns: ",ncol(idf),"\n")
     cat("Entries: ",nrow(idf),"\n")
+    #######################################
     ## SecondaryAccession may be non-unique
+    if ( sum(tolower(idf[,1])!="comment[secondaryaccession]") > 1 ) {
+        addWarning("IDF: Multiple 'SecondaryAccession' entries")
+    }
     idf <- idf[tolower(idf[,1])!="comment[secondaryaccession]",]
     ## basic idf check (non unique rownames)
     dups <- duplicated(idf[,1])
@@ -130,8 +181,7 @@ if ( !is.null(opt$idf_file) ) {
         perror("SDRF file in IDF (",idf["sdrf file",1],") differs from given sdrf file name ",basename(opt$sdrf_file))
         q(status=1)
     }
-    cat("IDF:",paste(rownames(idf),collapse=","),"\n")
-    
+    cat("IDF:",paste(rownames(idf),collapse=","),"\n")    
     ##expectedclusters
     ##
     ## ExperimentType       differential|baseline (mandatory)
@@ -157,19 +207,25 @@ if ( !is.null(opt$idf_file) ) {
         q(status=1)
     }
     if ( opt$atlas_mode ) {
-        if ( sum(!c("baseline","differential") %in% tolower(idf["experimenttype",1]))>0 ) {
+        if ( sum(c("baseline","differential") %in% tolower(idf["experimenttype",1]))==0 ) {
             perror("IDF error in EAExperimentType: Invalid value (",idf["experimenttype",1],") expected baseline or differential")
             q(status=1)
         }
         ##AEExperimentType
         expected.vals <- tolower(c("RNA-seq of coding RNA from single cells","RNA-seq of coding RNA"))
-        if ( sum(! expected.vals %in% tolower(idf["aeexperimenttype",1]))>0 ) {
+        if ( sum( expected.vals %in% tolower(idf["aeexperimenttype",1]))==0 ) {
             perror("IDF error in AEExperimentType: Invalid value (",idf["aeexperimenttype",1],") expected ",paste(expected.vals,sep=" or ",collapse=" or "))
             q(status=1)
+        }
+        if ( expected.vals[1] %in% tolower(idf["aeexperimenttype",1]) ) {
+            opt$is_sc <- TRUE
         }
     }
 }
 
+if (opt$is_sc) {
+    pinfo("Single cell experiment")
+} 
 #################################
 ## Check mandactory columns (SDRF)
 exp.cols <- c("Source Name")
@@ -226,14 +282,11 @@ colsInSDRF <- function(cols,sdrf,comment.cols=FALSE,characteristic.cols=FALSE,fa
     }
     miss <- cols[!to.check.cols%in%sdrf.cols]
     if (length(miss)>0 ) {
-        #print(to.check.cols)
-        #print(sdrf.cols)
-
         if (exit.on.error) {
-            perror("Column(s) ", paste(miss,collapse=","), " not found in the SDRF file")
+            perror("SDRF: Column(s) ", paste(miss,collapse=","), " not found")
             q(status=1)
         }
-        pwarning("Column(s) ", paste(miss,collapse=","), " not found in the SDRF file")
+        addWarning("SDRF: Column(s) ", paste(miss,collapse=","), " not found")
         return(miss)
     }
 }
@@ -278,8 +331,7 @@ species <- unique(sdrf$organism)
 cat("Species:",species,"\n")
 if (!is.null(opt$specie) ) {
     if (!opt$specie%in%species) {
-        print(species)
-        perror("Specie ",opt$specie," not found in SDRF")
+        perror("SDRF: Specie ",opt$specie," not found")
         q(status=1)
     }
     species <- c(opt$specie)
@@ -288,14 +340,14 @@ if (!is.null(opt$specie) ) {
 ## should be mandatory...lets be a bit flexible
 if ( ! normalize.cols("technical replicate group") %in% colnames(sdrf) ) {
     sdrf[,normalize.cols("technical replicate group")] <- rep("",nrow(sdrf))
-    pwarning("Missing technical replicate group column")
+    addWarning("SDRF: technical replicate group column missing (assuming no technical replicates)")
 } else {
     ## some groups entries may be empty
     ## use the source name to fill the missing values
     nc <- normalize.cols("technical replicate group")
     is.empty <- sdrf[,nc]==""
     if ( sum(is.empty)>0) {
-        perror("Found ",sum(is.empty)," entries in technical replicate group without values")
+        perror("SDRF: Found ",sum(is.empty)," entries in technical replicate group without values")
         q(status=1)
     }
     #sdrf$"technical replicate group"[is.empty] <- sdrf$"source name"[is.empty]
@@ -304,11 +356,12 @@ if ( ! normalize.cols("technical replicate group") %in% colnames(sdrf) ) {
 ## run
 if ( ! "run" %in% colnames(sdrf) ) {
     ## ENA_RUN must be present
-    if ( ! "ena_run" %in% colnames(sdrf) ) {
-        perror("SDRF error: expected RUN or ENA_RUN - none found")
+    if ( ! normalize.cols("ena_run") %in% colnames(sdrf) ) {
+        perror("SDRF: expected RUN or ENA_RUN - none found")
         q(status=1)
     }
-    sdrf$run <- sdrf$ena_run
+    addWarning("SDRF: run column not found")
+    sdrf$run <- sdrf[,normalize.cols("ena_run")]
 }
 ###############
 ## runs /unique
@@ -320,7 +373,8 @@ cat("#runs:",length(runs),"\n")
 ## factors
 factor.cols <- colnames(sdrf)[grepl("^factorvalue",gsub(" +","",tolower(orig.col.names)))]
 cat("#factors:",length(factor.cols),"\n")
-
+cat(factor.cols,"\n")
+sdfcols2save2tsv <- append(sdfcols2save2tsv,factor.cols)
 #######################
 ## spike ins (optional)
 sin <- normalize.cols("spike in")
@@ -343,10 +397,11 @@ layout.cols <- c("run","library_layout","ena_sample","library_layout","library_s
 if ( opt$is_sc ) {
     layout.cols <- append(layout.cols,c("single cell identifier"))
     ## add a few extra columns
-    layout.cols  <- append(layout.cols,intersect(normalize.cols(c("read1 file","read2 file","index1 file")),colnames(sdrf)))
+    opt.cols <- c("read1 file","read2 file","index1 file","index2 file","index3 file")
+    layout.cols  <- append(layout.cols,intersect(normalize.cols(opt.cols),colnames(sdrf)))
 }
 
-layout.cols <- normalize.cols(layout.cols,FALSE)
+layout.cols <- unique(normalize.cols(layout.cols,FALSE))
 xx <- colsInSDRF(layout.cols,sdrf)
 ##print(xx)
 
@@ -356,7 +411,7 @@ if ( opt$is_sc ) {
     prot.cols <- normalize.cols(c("library method","library_construction"))
     prot.col <- prot.cols[prot.cols%in%colnames(sdrf)]
     if ( is.null(prot.col) ) {
-        perror("Column(s) not found: ",prot.cols[!prot.cols%in%colnames(sdrf)])
+        perror("SDRF: Column(s) not found: ",prot.cols[!prot.cols%in%colnames(sdrf)])
         q(status=1)
     }
     pp <- unique(as.character(sdrf[,normalize.cols("library_construction")]))
@@ -364,9 +419,9 @@ if ( opt$is_sc ) {
     supported.single.cell.protocols <- c("smart-seq2","smarter","smart-like","10xv2")
     not.in.pp <- pp[!tolower(pp)%in%supported.single.cell.protocols]
     if ( length(not.in.pp) ) {
-        perror("SDRF error: Unsupported single cell protocol ",not.in.pp)
+        perror("SDRF: Unsupported single cell protocol ",not.in.pp)
         q(status=1)
-    }    
+    }
 }
 ################################
 ## IDF
@@ -394,7 +449,7 @@ if ( !is.null(idf) ) {
             perror("IDF error in EAAdditionalAttributes:",paste(attrs[not.present],sep=",")," not found in SDRF")
             q(status=1)
         }
-        sdfcols2save2tsv <- c(sdfcols2save2tsv,attrs)
+        sdfcols2save2tsv <- unique(c(sdfcols2save2tsv,attrs))
     }
     ## Cross check idf with SDRF
     if ( opt$atlas_mode ) {
@@ -419,7 +474,7 @@ if ( !is.null(idf) ) {
             perror("SDRF/IDF inconsistency: factor values do not match")
             q(status=2)
         }
-        sdfcols2save2tsv <- c(sdfcols2save2tsv,factor.cols)
+        sdfcols2save2tsv <- unique(c(sdfcols2save2tsv,factor.cols))
     }
 }
 
@@ -452,31 +507,31 @@ for (specie in species) {
     sruns <- unique(sdrf.tmp$run)
     cat("#runs:",length(sruns),"\n")
 
-    print(layout.cols)
-    print(colnames(sdrf.tmp))
+    #print(layout.cols)
+    #print(colnames(sdrf.tmp))
     layout <- sdrf.tmp[,layout.cols,drop=FALSE]
     layout <- layout[!duplicated(layout$run),,drop=FALSE]
     rownames(layout) <- layout$run
-    pp <- ""
+    run.pp <- ""
     ##
     if ( opt$is_sc ) {
-        pp <- unique(as.character(sdrf[,normalize.cols("library construction")]))
-        
+        run.pp <- unique(as.character(sdrf.tmp[,normalize.cols("library construction")]))        
         ## single protocol
-        if ( length(pp)>1 ) {
-            perror("multiple library construction values:",paste(pp,sep=","))
+        if ( length(run.pp)>1 ) {
+            perror("multiple library construction values:",paste(run.pp,sep=","))
             q(status=1)
         }
 
-        if ( length(pp)==0 ) {
+        if ( length(run.pp)==0 ) {
             perror("Missing 'library construction' values/column")
             q(status=1)
         }
-        if ( pp == "smart-like" ) pp <- "smart-seq"
-        conf.l <- rbind(conf.l,paste0("sc_protocol=",pp))
-
+        if ( run.pp == "smart-like" ) run.pp <- "smart-seq"
+        if ( run.pp == "10xv2" ) run.pp <- "10xV2"
+        conf.l <- rbind(conf.l,paste0("sc_protocol=",run.pp))
+        pinfo("sc_protocol=",run.pp)
         ## single cell quality
-        if ( "single cell quality" %in% colnames(layout) ) {
+        if ( normalize.cols("single cell quality") %in% colnames(layout) ) {
             ## OK, OK filtered or not OK
             scq <- normalize.cols("single cell quality")
             layout[,scq] <- gsub(" +"," ",tolower(layout$"single cell quality"))
@@ -498,6 +553,13 @@ for (specie in species) {
     trn <- normalize.cols("technical replicate group")
     ue <- length(unique(sdrf[,trn]))
     has.tr <- (ue!=nrow(sdrf) && ue!=1)
+    if ( ue==1 ) {
+        ## it may be the case for SC (10x) that only ue==1
+        if (sdrf[1,trn]!="NA" && sdrf[1,trn]!="" ) {
+            has.tr <- TRUE
+        }
+    }
+
     esn <- normalize.cols("ena_sample")
     if ( esn %in% colnames(sdrf) ) {
         samples <- length(unique(layout$ena_sample))
@@ -505,7 +567,7 @@ for (specie in species) {
         has.tr2 <- sum(samples!=runs)>0
         if ( has.tr2!=has.tr  ) {
             pinfo("SDRF column ",has.tr," vs ena_sample ",has.tr2)
-            pwarning("Technical replicate group inconsistent with ena_sample")
+            addWarning("Technical replicate group inconsistent with ena_sample")
             ##q(status=1)
         }
     }
@@ -515,7 +577,6 @@ for (specie in species) {
     } else {
         pinfo("Technical replicates: yes")
         x<-layout[order(layout[,normalize.cols("technical replicate group")]),normalize.cols(c("run","technical replicate group"))]
-        #print(x)
         ##
         v1 <- aggregate(x$run,by=list(v1=x[,2]),FUN=paste,collapse=",")
         ##print(head(v1))
@@ -523,11 +584,14 @@ for (specie in species) {
         ##print("--------------")
         tr <- paste(unlist(v1$x),collapse=";",sep="")
         tr.labels <- paste(v1$v1,collapse=";",sep="")
-        #print(head(v2))
-        conf.l <- rbind(conf.l,paste0("technical_replicates=",tr))
-        conf.l <- rbind(conf.l,paste0("technical_replicates_labels=",tr.labels))
-        
+
+        if ( run.pp != "10xV2" ) {
+            ## technical replicates are encoded in the sample
+            conf.l <- rbind(conf.l,paste0("technical_replicates=",tr))
+            conf.l <- rbind(conf.l,paste0("technical_replicates_labels=",tr.labels))
+        }
     }
+
     #################
     ## LIBRARY LAYOUT
     ## se
@@ -554,6 +618,18 @@ for (specie in species) {
     ##Runs
     fp2fastq <- paste(opt$data_dir,opt$raw_dir,sep="/")
     if ( !opt$check_only ) {
+        #########################################
+        ## save factors and characteristics
+        if ( length(sdfcols2save2tsv)>0 ) {
+            ofile <- paste0(opt$out_conf,".metadata.tsv")
+            to.save <- sdfcols2save2tsv
+            if (has.tr) { to.save <- c(to.save,"technical replicate group") }
+            layout2save <- layout[,normalize.cols(to.save)]
+            layout2save <- cbind(run=rownames(layout2save),layout2save)
+            write.tsv(layout2save,file=ofile,header=TRUE)
+            pinfo("Created ",ofile)
+            conf.l <- rbind(conf.l,paste0("extra_metadata=",basename(ofile)))            
+        }
         ## 
         for (run in sruns ) {
             ## lib
@@ -565,33 +641,50 @@ for (specie in species) {
             }
             if ( length(sfiles) == 0 || sfiles == "" ) {
                 ## if empty URI then look for read1 and read2
-                if ( "read1file" %in% colnames(sdrf.tmp) ) {
-                    sfiles <- sdrf.tmp[sdrf.tmp$run==run,"read1file"]
-                    if ("read2file" %in% colnames(sdrf.tmp) ) {
-                        sfiles <- c(sfiles,sdrf.tmp[sdrf.tmp$run==run,"read2file"])
+                if ( "read1 file" %in% colnames(sdrf.tmp) ) {
+                    sfiles <- sdrf.tmp[sdrf.tmp$run==run,"read1 file"]
+                    if ("read2 file" %in% colnames(sdrf.tmp) ) {
+                        sfiles <- c(sfiles,sdrf.tmp[sdrf.tmp$run==run,"read2 file"])
                     }
-                    if ("index1file" %in% colnames(sdrf.tmp) ) {
-                        sfiles <- c(sfiles,sdrf.tmp[sdrf.tmp$run==run,"index1file"])
+                    if ("index1 file" %in% colnames(sdrf.tmp) ) {
+                        sfiles <- c(sfiles,sdrf.tmp[sdrf.tmp$run==run,"index1 file"])
                     }
                     sfiles <- sfiles[sfiles!=""]
                 } else {                    
-                    perror("No raw data file for ",run)                
+                    perror("SDRF: No raw data file for ",run)                
                     q(status=1)
                 }
             }
-            cat(run,"-->",sfiles,"\n")
-            
+            #########################################
+            ##
+            exp.files <- c()
+            if ( opt$is_sc==TRUE && run.pp == "10xV2" ) {
+                exp.files <- c("read2 file","read1 file","index1 file")
+                if ( sum(!exp.files %in% colnames(sdrf))>0 ) {
+                    perror("SDRF: missing columns for ",run.pp," - expected ",paste(exp.files,collapse=","))
+                    q(status=1)
+                }
+                ## we must have files
+                files <- sdrf.tmp[sdrf.tmp$run==run,exp.files]
+                if ( sum(files!="")!=length(exp.files)) {
+                    perror("SDRF: files missing for ",run,"")
+                    q(status=1)
+                }
+                sfiles <- sdrf.tmp[sdrf.tmp$run==run,"read2 file"]                
+            }
+            ##
+            cat(run,"-->",sfiles,"\n")            
             if ( run %in% pe.runs && length(sfiles)!=2) {
                 ## do not fail for some protocols
                 do.not.fail <- FALSE
                 if (opt$is_sc ) {
-                    cat(">>>>>>>>>>>>>>>>>>>",pp,"\n")
-                    if ( pp %in% c("10x") ) {
+                    if ( run.pp %in% c("10xV2") ) {
+                        ## more than 2 files expected
                         do.not.fail <- TRUE
                     }
                 }
                 if (!do.not.fail) {
-                    perror("PE run ",run," does not have the 2 fastq files")
+                    perror("SDRF: PE run ",run," does not have the 2 fastq files")
                     q(status=1)
                 }
             }
@@ -603,19 +696,21 @@ for (specie in species) {
                 perror("Folder ",dir," not found")
                 q(status=1)
             }
-            cmd <- paste0("pushd ",dir," >/dev/null; irap_fastq_info files='",ssfiles,"'")        
-            rr <- system(paste0(cmd),intern=TRUE)
+            cmd <- paste0("pushd ",dir," &>/dev/null; irap_fastq_info files='",ssfiles,"'")
+            rr <- system(paste0(cmd),intern=FALSE,ignore.stdout=TRUE)
             ## look for the info file
             info.file <- paste0(opt$data_dir,"/raw_data/",opt$raw_dir,"/",sfiles[1],".info")
-            if ( ! file.exists(info.file) ) {
+            print(rr)
+            if ( ! file.exists(info.file) || rr!=0 ) {
                 print(cmd)
                 perror("Failed to generate info file ",info.file)
                 q(status=1)
-            }
+            }           
             rr <- system(paste0("cat ",info.file),intern=TRUE)
             conf.l <- rbind(conf.l,matrix(rr,ncol=1))
+            ###########################################
             ## strand
-            strand <- layout[run,"library_strand"]
+            strand <- layout[run,normalize.cols("library_strand")]
             ## print(strand)
             if ( grepl("(first|second)",strand ) ) {
                 ## l prefix no longer needed
@@ -628,25 +723,38 @@ for (specie in species) {
             }
             ## 
             ## 10x,drop-seq, ...
-            ## index,cell,umi, sample....
-        }
-        ##
-        ## save factors
-        if ( length(sdfcols2save2tsv) ) {
-            ofile <- paste0(opt$out_prefix,".metadata.tsv")
-            to.save <- sdfcols2save2tsv
-            if (has.tr) { to.save <- c(to.save,"technical replicate group") }
-            layout2save <- layout[,to.save]
-            layout2save <- cbind(run=rownames(layout2save),layout2save)
-            write.table(layout2save,file=ofile,row.names=FALSE,col.names=TRUE,quote="",sep="\t")
-            pinfo("Created ",ofile)
-            conf.l <- rbind(conf.l,paste0("extra_metadata=",basename(ofile)))            
+            ## index,cell,umi
+            if ( run.pp == "10xV2" ) {
+                ## No need to check if values exist, already done
+                ## but check files...
+                exp.files.cols <- c("read1 file","index1 file")
+                exp.files <- sdrf.tmp[sdrf.tmp$run==run,exp.files.cols]
+                exp.files.p <- paste(opt$raw_dir,"/",exp.files,sep="")
+                exp.files.ps <- paste(exp.files.p,collapse=" ",sep="")
+                
+                cmd <- paste0("pushd ",dir," >/dev/null; fastq_info ",exp.files.ps," > ",exp.files.p[1],".info.tmp 2> /dev/null && mv ",exp.files.p[1],".info.tmp ",exp.files.p[1],".info")
+                rr <- system(paste0(cmd),intern=FALSE,ignore.stdout=TRUE)
+                info.file <- paste0(opt$data_dir,"/raw_data/",opt$raw_dir,"/",exp.files[1],".info")
+                print(rr)
+                if ( ! file.exists(info.file) || rr!=0 ) {
+                    print(cmd)
+                    perror("Failed to generate info file ",info.file)
+                    q(status=1)
+                }
+                system(paste0("cat ",info.file),intern=TRUE)
+
+                conf.l <- rbind(conf.l,paste0("",run,"_index1=",exp.files[1]))
+                conf.l <- rbind(conf.l,paste0("",run,"_index2=",exp.files[2]))
+                sss <- as.numeric(as.factor(sdrf.tmp[,"technical replicate group"]))[sdrf.tmp$run==run]
+                conf.l <- rbind(conf.l,paste0("",run,"_sample=",sss))
+            }
         }
     }
     confs[[specie]] <- conf.l   
 }
 
 if ( opt$check_only ) {
+    printAllWarnings()
     pinfo("SDRF/IDF look OK!")    
     q(status=0)
 }
@@ -667,8 +775,6 @@ if ( length(names(confs))>1) {
     write.table(confs[1],file=ofile,row.names=FALSE,col.names=FALSE,quote=FALSE)
     pinfo("Created ",ofile)
 }
-
+printAllWarnings()
+pinfo("All done")
 q(status=0)
-
-
-
