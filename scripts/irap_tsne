@@ -167,14 +167,10 @@ if (length(nbt@var.genes)<=30) {
 pinfo("PCA...")
 nbt <- RunPCA(object = nbt, pc.genes = nbt@var.genes, do.print = FALSE, pcs.print = 1:5)
 
-## TODO: include the cell names in the TSNE
-library(Rtsne)
-perp.values <- c(1, 5, 10, 15, 20)
-#object<-nbt
-for (p in perp.values) {
-    pinfo("TSNE: perplexity ",p)
-    nbt.res <- myRunTSNE(object = nbt, dims.use = 1:30,  do.fast = TRUE,perplexity=p)
-    ofile <- paste0(out.prefix,"_tsne_perp_",p,".tsv")
+gen.tsne <- function(nbt,perp,ofile) {
+
+    nbt.res <- myRunTSNE(object = nbt, dims.use = 1:30,  do.fast = TRUE,perplexity=perp)
+
     tosave <- nbt.res$tsne
     tosave <- cbind(tosave,Label=rownames(nbt.res$tsne))
     print(head(tosave))
@@ -186,11 +182,20 @@ for (p in perp.values) {
     par(bty="l",mar=c(4,4,1,8))
     plot(nbt.res$tsne)    
     dev.off()
-    pinfo("Created ",ofile2)
+    pinfo("Created ",ofile2) 
 }
+## TODO: include the cell names in the TSNE
+library(Rtsne)
+perp.values <- c(1, 5, 10, 15, 20)
 
-
-
+for (p in perp.values) {
+    pinfo("TSNE: perplexity ",p)
+    ofile <- paste0(out.prefix,"_tsne_perp_",p,".tsv")
+    x <- try(gen.tsne(nbt,perp=p,ofile=ofile))
+    if ( inherits(x,"try-error") ) {
+        perror("Failed to generate TSNE for perplexity ",p,":",attr(x,"condition"))
+    }
+}
+pinfo("All done.")
 q(status=0)
-setwd("/home/nf/Research/Projects/WIP/EREAP/irap_tests")
-load("irap_tsne.Rdata")
+#load("irap_tsne.Rdata")
