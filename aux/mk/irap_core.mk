@@ -898,9 +898,9 @@ sc_use_sample_barcode?=n
 
 ########################
 ## single cell filtering
-cell_filt_min_features?=0.15   # minimum number of features expressed as a percentage of the total number of features
+cell_filt_min_features?=15   # minimum number of features expressed as a percentage of the total number of features
 
-cell_filt_max_ERCC?=0.8  # maximum percentage of expression that may be atributed to ERCC spike-ins
+cell_filt_max_ERCC?=30  # maximum percentage of expression that may be atributed to ERCC spike-ins
 
 # pre-blacklisted cells
 cell_filt_controls?=   # file with the a known list of cells that should not be used in downstream analysis
