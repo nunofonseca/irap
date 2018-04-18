@@ -146,9 +146,9 @@ cont_index?=$(data_dir)/contamination/ecoli_fungi_viral
 
 #  cell exclusion criteria
 # minimum number of features expressed as a percentage of the total number of features
-cell_filt_min_features?=0.15
+cell_filt_min_features?=15
 # maximum percentage of expression that may be atributed to ERCC spike-ins
-cell_filt_max_ERCC?=0.3  
+cell_filt_max_ERCC?=30
 cell_filt_min_cell_expr=5
 
 cell_filt_outliers=y
