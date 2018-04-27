@@ -35,7 +35,7 @@ function stop_now {
 }
 
 function usage {
-    echo "irap_lsf [-s -l level] irap options"
+    echo "irap_lsf2 [-s -l level] irap options"
 }
 
 ###################################
