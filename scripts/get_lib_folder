@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# =========================================================
+# Copyright 2012-2018,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+# =========================================================
+if [ "$1-" == "-" ]; then
+   echo "Usage: get_lib_folder url"
+   exit 1
+fi
+if [ "$IRAP_DIR-" == "-" ]; then
+    echo "ERROR: IRAP_DIR variable not set."
+    exit 1
+fi
+
+source $IRAP_DIR/aux/sh/irap_shared.sh
+
+echo $(get_new_folder3 $1)
+exit 0
