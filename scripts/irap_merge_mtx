@@ -113,7 +113,6 @@ if ( !is.null(opt$all_feat_file) ) {
     pinfo("Expected ",length(all.feat)," unique genes/transcripts")
 }
 
-
 out.table <- NULL
 
 files <- unique(unlist(strsplit(opt$mtx_files,"[ \t\n,;]+")))
@@ -176,10 +175,10 @@ for ( f in files ) {
         out.table <- x
     } else {
         ## merge
-        if (nrow(out.table)!=nrow(x) && ncol(x)>1 ) {
-            pwarning("Matrices should have the same number of rows" )
-            q(status=1)
-        }
+        #if (nrow(out.table)!=nrow(x) && ncol(x)>1 ) {
+        #    pwarning("Matrices should have the same number of rows" )
+        #q(status=1)
+        #}
         if ( is.null(all.feat) ) {
             if (nrow(out.table)!=nrow(x) && ncol(x)==1 ) {
                 pwarning("Ideally matrices should have the same number of rows" )
