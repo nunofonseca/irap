@@ -29,7 +29,7 @@ endif
 
 define set_10x_params=
 mapper?=kallisto
-umi_quant?=umi_count
+quant_method?=umi_count
 sc_non_zero_rows?=1
 cell_filt_min_features?=30
 cell_filt_max_ERCC?=75
