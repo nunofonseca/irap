@@ -186,7 +186,7 @@ gen.tsne <- function(nbt,perp,ofile) {
 }
 ## TODO: include the cell names in the TSNE
 library(Rtsne)
-perp.values <- c(1, 5, 10, 15, 20)
+perp.values <- c(1, 5, 10, 15, 20, 25, 30)
 
 for (p in perp.values) {
     pinfo("TSNE: perplexity ",p)
