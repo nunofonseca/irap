@@ -145,7 +145,7 @@ function conf_get_var_value {
 # removes .(fq|fastq).* from the file name
 function get_fastq_fileprefix {
     filename=`basename $1`
-    filepref=`echo $filename|sed -E "s/.(fastq|fq).*//"`
+    filepref=`echo $filename|sed -E "s/.(fastq|fq|bam).*//;s/_R*[12A]$//;s/_I[123]$//"`
     echo $filepref
 }
 
@@ -165,10 +165,22 @@ function is_relative_path {
 # get_new_folder path
 function get_new_folder {
     filename=`basename $1`
-    filepref=`get_fastq_fileprefix $1`
-    md5=`echo $filename|md5sum`
+    filepref=`get_fastq_fileprefix $1`    
+    md5=`echo $filepref|md5sum`
     fl=`echo $md5|cut -b 1,2`
     echo $fl/$filepref
+}
+
+## 3 levels
+# L1: ~1.7K folders
+# L2: ~1.7K folders
+function get_new_folder3 {
+    filename=`basename $1`
+    filepref=`get_fastq_fileprefix $1`
+    md5=`echo $filepref|md5sum`
+    fl=`echo $md5|cut -b 1,2`
+    f2=`echo $md5|cut -b 3,4`
+    echo $fl/$f2/$filepref
 }
 
 ##########################################################################
