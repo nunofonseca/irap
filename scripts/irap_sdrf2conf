@@ -52,7 +52,8 @@ option_list <- list(
     make_option(c("--sc"), action="store_true",default=FALSE,dest="is_sc",help="Single cell experiment?. Default is FALSE."),
     make_option(c("-c","--check_only"),action="store_true",dest="check_only",default=FALSE,help="Checks the sdrf/idf but skips the generation of the configuration file."),
     make_option(c("--atlas"),action="store_true",dest="atlas_mode",default=FALSE,help="Enable more stringent checks for the sdrf/idf files (for ExpressionAtlas)"),
-  make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
+    make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
+    make_option(c("--subfolders"),action="store_true",dest="fastq.splited.by.subfolders",default=FALSE,help="Are the files distributed across subfolders"),
   make_option(c("-o", "--out_conf"), type="character",default=NULL,help="Filename of the new iRAP's configuration file.")
 )
 
@@ -66,34 +67,51 @@ opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filena
 pdebug.enabled <- opt$debug
 
 ## validates each file independently using fastq_info
-checkFiles <- function(filenames.v,validator.cmd="irap_fastq_info") {
+checkFiles <- function(filenames.v,validator.cmd="irap_fastq_info",subfolders=FALSE) {
     ## filenames.v - as provided in the SDRF
+    addLibSubfolder <- function(f) {
+        paste0(system(paste0("get_lib_folder ",f),intern=TRUE),"/",f)
+    }
+    if (subfolders) {
+        filenames.v <- sapply(filenames.v,addLibSubfolder)
+    }
     exp.files <- filenames.v
     dir <- paste0(opt$data_dir,"/raw_data")
-    exp.files.p <- paste(opt$raw_dir,"/",exp.files,sep="")
-    exp.files.ps <- paste(exp.files.p,collapse=" ",sep="")
+    #exp.files.p <- paste(opt$raw_dir,"/",exp.files,sep="")
+    exp.files.ps <- paste(exp.files,collapse=" ",sep="")
 
     stopifnot(validator.cmd %in% c("fastq_info","irap_fastq_info"))
     stopifnot(length(filenames.v)>0 && length(filenames.v)<=2)
-    
+    use.cached <- FALSE
+    info.file <- paste0(opt$data_dir,"/raw_data/",opt$raw_dir,"/",exp.files[1],".info")
     if (validator.cmd=="fastq_info" ) {
-        cmd <- paste0("fastq_info ",exp.files.ps," > ",exp.files.p[1],".info.tmp 2> /dev/null && mv ",exp.files.p[1],".info.tmp ",exp.files.p[1],".info")
-        cmd.err <- paste0("fastq_info ",exp.files.ps)
+        ## check if file exists before running fastq_info again
+        if ( file.exists(info.file) ) {
+            pinfo("Using cached info file")
+        } else {
+            cmd <- paste0("cd ",opt$raw_dir," && fastq_info ",exp.files.ps," > ",exp.files[1],".info.tmp 2> /dev/null && mv ",exp.files[1],".info.tmp ",exp.files[1],".info")
+            cmd.err <- paste0("cd ",opt$raw_dir," && fastq_info ",exp.files.ps," > ",exp.files[1],".info.tmp && mv ",exp.files[1],".info.tmp ",exp.files[1],".info")
+        }
     } else {
-        cmd <- paste0("irap_fastq_info files='",exp.files.ps,"'")
+        cmd <- paste0("cd ",opt$raw_dir," && irap_fastq_info files='",exp.files.ps,"'")
         cmd.err <- cmd
     }
-    cmd <- paste0("pushd ",dir," >/dev/null; ",cmd)
-    pinfo("Checking ",exp.files.ps)
-    rr <- system(paste0(cmd),intern=FALSE,ignore.stdout=TRUE)
-    info.file <- paste0(opt$data_dir,"/raw_data/",opt$raw_dir,"/",exp.files[1],".info")
-    ##print(rr)
-    if ( ! file.exists(info.file) || rr!=0 ) {
-        print(cmd)
+
+    if ( file.exists(info.file) ) {
+        pinfo("Using cached file ",info.file)
+    } else {
+        cmd <- paste0("pushd ",dir," >/dev/null; ",cmd)
+        pinfo("Checking ",exp.files.ps)
+        rr <- system(paste0(cmd),intern=FALSE,ignore.stdout=TRUE)
+        
+        ##print(rr)
+        if ( ! file.exists(info.file) || rr!=0 ) {
+            print(cmd)
         ## rerun command to report the error
-        rr <- system(paste0("pushd ",dir,"; ",cmd.err),intern=FALSE,ignore.stdout=TRUE,ignore.stderr=FALSE)        
-        perror("Failed to validate and generate info file ",info.file)
-        q(status=1)
+            rr <- system(paste0("pushd ",dir," && ",cmd.err),intern=FALSE,ignore.stdout=TRUE,ignore.stderr=FALSE)        
+            perror("Failed to validate and generate info file ",info.file)
+            q(status=1)
+        }
     }
     pinfo("ok")
     return(info.file)    
@@ -397,6 +415,7 @@ if ( ! "run" %in% colnames(sdrf) ) {
     addWarning("SDRF: run column not found")
     sdrf$run <- sdrf[,normalize.cols("ena_run")]
 }
+
 ###############
 ## runs /unique
 # get unique runs
@@ -506,7 +525,7 @@ if ( !is.null(idf) ) {
         funi <- sort(unique(c(factor.cols),attrs))
         if ( fint!=funi ) {
             perror("SDRF/IDF inconsistency: factor values do not match")
-            q(status=2)
+            q(status=1)
         }
         sdfcols2save2tsv <- unique(c(sdfcols2save2tsv,factor.cols))
     }
@@ -514,6 +533,11 @@ if ( !is.null(idf) ) {
 
 # Update the layout cols with the factors and char. of interest
 layout.cols <- unique(c(layout.cols,normalize.cols(sdfcols2save2tsv)))
+################################
+split.files.by.subfolders <- FALSE
+if ( nrow(sdrf) > 5090 || opt$fastq.splited.by.subfolders) {    
+    split.files.by.subfolders <- TRUE
+}
 ################################
 confs <- list()
 for (specie in species) {
@@ -633,9 +657,6 @@ for (specie in species) {
     ## pe
     pe.runs <- rownames(layout)[grepl("PAIRED",layout[,normalize.cols("library_layout")],ignore.case=TRUE)]
 
-    ##  l prefix no longer needed
-    conf.l <- rbind(conf.l,paste0("se=",paste(gsub("^","",se.runs),collapse=" ")))
-    conf.l <- rbind(conf.l,paste0("pe=",paste(gsub("^","",pe.runs),collapse=" ")))
     ##########################
     ## clusters
     clusters.window <- opt$nc_window
@@ -730,8 +751,9 @@ for (specie in species) {
                 perror("Folder ",dir," not found")
                 q(status=1)
             }
-            info.file <- checkFiles(sfiles)
-            rr <- system(paste0("cat ",info.file),intern=TRUE)
+            info.file <- checkFiles(sfiles,subfolders=split.files.by.subfolders)
+            ## sed - hack for single cell
+            rr <- system(paste0("cat ",info.file,"|sed -E 's/_L[0-9]+_R[A0-9]+_[0-9]+//'"),intern=TRUE)
             conf.l <- rbind(conf.l,matrix(rr,ncol=1))
             ###########################################
             ## strand
@@ -754,25 +776,32 @@ for (specie in species) {
                 ## but check files...
                 exp.files.cols <- c("read1 file","index1 file")
                 exp.files <- sdrf.tmp[sdrf.tmp$run==run,exp.files.cols]
-                checkFiles(exp.files,validator.cmd="fastq_info")
+                checkFiles(exp.files,validator.cmd="fastq_info",subfolders=split.files.by.subfolders)
                 conf.l <- rbind(conf.l,paste0("",run,"_index1=",exp.files[1]))
                 conf.l <- rbind(conf.l,paste0("",run,"_index2=",exp.files[2]))
                 sss <- as.numeric(as.factor(sdrf.tmp[,"technical replicate group"]))[sdrf.tmp$run==run]
                 conf.l <- rbind(conf.l,paste0("",run,"_sample=",sss))
+                ## not PE but SE
+                pe.runs <- pe.runs[pe.runs %in% run]
+                se.runs <- c(se.runs,run)
             }
         }
     }
-    confs[[specie]] <- conf.l   
+    ##  l prefix no longer needed
+    conf.l <- rbind(conf.l,paste0("se=",paste(gsub("^","",se.runs),collapse=" ")))
+    conf.l <- rbind(conf.l,paste0("pe=",paste(gsub("^","",pe.runs),collapse=" "))) 
+    confs[[specie]] <- conf.l
+ 
 }
 
 if ( opt$check_only ) {
     printAllWarnings()
-    pinfo("SDRF/IDF look OK!")    
+    pinfo("SDRF/IDF looks OK!")    
     q(status=0)
 }
 
 if ( length(confs)==0 ) {
-        perror("No configuration file to save, see above errors")
+        perror("Unable to create configuration file, see above errors")
         q(status=1)
 }
 ##
