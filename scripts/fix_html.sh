@@ -19,7 +19,6 @@ function fix_html_files {
     CSS_FILE='<link rel="stylesheet" href="TTOPLEVELmenu.css">'
     
     # 
-    #echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>$$ $path<<<<<<<<<<<<<<<<<<<<<<<<<"
     #bash does not have a stack when invoking a function recursively
     if [ "$path-" != "../../../../../../../-" ]; then
 	echo $path > .path
