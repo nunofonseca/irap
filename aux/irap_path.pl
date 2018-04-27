@@ -107,15 +107,15 @@ valid_combination([Map,QR,QNT,QN,DE,TDE,EDE,GSE,Stranded,sc,SMART]):-
     gse(GSE,de(DE),_).
 
 %% 10x, drop-seq
-valid_combination([Map,QR,QNT,_QN,DE,TDE,EDE,GSE,Stranded,sc,SC_PROT]):-
+valid_combination([Map,QR,QNT,_QN,DE,TDE,EDE,GSE,_Stranded,sc,SC_PROT]):-
     (member(SC_PROT,['smart-seq2','smart-seq','smart'])->fail;true),
-    m(Map,_,_,S1),
+    m(Map,_,_,_S1),
     sc_mapper(Map),
-    qr_sc(QR,m(Map),_,S2),
+    qr_sc(QR,m(Map),_,_S2),
     member(QR,['umis','umi_count']),
     QNT==none,
     !,
-    (Stranded==yes->(Map==none->true;S1==stranded,stranded_ok(Stranded,S2));true),
+    %%(Stranded==yes->(Map==none->true;S1==stranded,stranded_ok(Stranded,S2));true),
     DE==none,
     TDE==none,
     EDE==none,
