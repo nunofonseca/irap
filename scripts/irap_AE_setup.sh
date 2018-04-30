@@ -75,6 +75,28 @@ function get_column {
     fi
     echo $COL
 }
+####################################
+# Look for the species column in the SDRF
+function get_species {
+    COL=""
+    COL=$(get_column $1 "[organism]")
+    if [ "$COL-" == "-" ]; then
+	perror organism not found in $1
+	exit 1
+    fi
+    if [ "$(echo $COL | wc -w)" != "1" ]; then
+	cols="$(echo $COL| tr ' ' ',')"
+	perror found multiple organism columns in $1: $(head -n 1 $1|cut -f $cols)
+	exit 1
+    fi
+#    NSPECIES=$(tail -n +2 $SDRF_FILE|cut -f $COL |sort -u |wc -l)
+#    if [ $NSPECIES -ne 1 ]; then
+#	perror "SDRF files with data from different ($NSPECIES) organisms not supported yet"
+#	exit 1
+    #    fi
+    tail -n +2 $1|cut -f $COL |sort -u
+}
+
 ###################################
 ROOT_DIR=$PWD
 DATA_DIR=$ROOT_DIR/data
@@ -87,7 +109,7 @@ DOWNLOAD_SDRF=n
 download_private_data=n
 skip_idf=n
 be_quiet=n
-THREADS=5
+THREADS=1
 batch_number=0
 batch_size=0
 
@@ -123,9 +145,11 @@ if [ "$batch_size-" != "0-" ]; then
 fi
 set +e
 set -o pipefail
+# folder where previously downloaded data may be found
 pinfo "root_dir=$ROOT_DIR"
 pinfo "data_dir=$DATA_DIR"
 pinfo "protocol=$PROTOCOL"
+
 if [ $habemus_batches != 0 ]; then
     pinfo "batch=$batch_number"
     pinfo "batch size=$batch_size"
@@ -185,6 +209,8 @@ if [ $N_FQ -gt 5090 ]; then
     distribute_by_subfolders=1
 fi
 
+local_download_folder=$(readlink -f $ROOT_DIR/ManuallyDownloaded/$ID)
+pinfo "previously downloaded data folder=$local_download_folder"
 ###################################
 set -e
 #set -ex
@@ -196,6 +222,12 @@ CONF_FILE=$CONF_FILE_PREF.conf
 create_dir $TOP_FOLDER
 create_dir $SPECIES_CONF_DIR
 pushd $TOP_FOLDER 2>/dev/null
+SPECIES=`get_species $SDRF_FILE_FP|tr ' ' '_'|tr 'A-Z' 'a-z'`
+
+pinfo species=$SPECIES
+if [ "$SPECIES-" == "-" ]; then
+    exit 1
+fi
 
 ###################################
 ##
@@ -205,12 +237,15 @@ pinfo $SDRF_FILE with $NL lines
 # batches
 if [ $habemus_batches != 0 ]; then
     ##
-    tmp_file_pref=.$(basename $SDRF_FILE_FP)
-    tmp_file_lock=.$(basename $SDRF_FILE_FP).lock
-    tmp_file_split=.$(basename $SDRF_FILE_FP).split.$batch_size
+    pwd
+    cd $ROOT_DIR
+    tmp_file_pref=$ROOT_DIR/$SPECIES/$ID/.$(basename $SDRF_FILE_FP)
+    tmp_file_lock=$tmp_file_pref.lock
+    tmp_file_split=$tmp_file_pref.split.$batch_size
     if [ -e $tmp_file_split.1 ] && [ $tmp_file_split -nt $SDRF_FILE_FP ]; then
 	echo "Using cached $tmp_file_split.1 "
-    else 
+    else
+	pinfo "Splitting sdrf into $batch_size long chunks"
 	if [ ! -e $tmp_file_lock ]; then
 	    touch $tmp_file_lock
 	    tail -n +2 $SDRF_FILE_FP|cut -f 1 |sort -u > ${tmp_file_pref}.libs
@@ -226,11 +261,16 @@ if [ $habemus_batches != 0 ]; then
 	fi
     fi
     if [ "$batch_number-" == "0-" ]; then
-	all_batches=$(ls -1 --color=never $tmp_file_split.*{0,1,2,3,4,5,7,8,9}|sed "s|$tmp_file_split.||g"|sort -n)
+	all_batches=$(ls -1 --color=never $tmp_file_split.*{0,1,2,3,4,5,6,7,8,9}|sed "s|$tmp_file_split.||g"|sort -n)
 	echo $all_batches
-	cd $ROOT_DIR
 	for batch_num in $all_batches; do
-	    irap_AE_setup.sh $* -b $batch_num -d $DATA_DIR
+	    BCONF_FILE_PREF=$ROOT_DIR/$SPECIES/$ID/$ID.B$batch_num.$batch_size 
+	    BCONF_FILE=$BCONF_FILE_PREF.conf
+	    if [ -e $BCONF_FILE ] && [ $BCONF_FILE -nt $SDRF_FILE_FP ]; then
+		echo Skipping generation of $BCONF_FILE
+	    else
+		irap_AE_setup.sh $* -b $batch_num -d $DATA_DIR
+	    fi
 	done
 	# finally...generate a single conf file
 	irap_AE_setup.sh $* -b 0 -B 0 -d $DATA_DIR
@@ -248,38 +288,11 @@ if [ $habemus_batches != 0 ]; then
     fi
     SDRF_FILE=$splitted_sdrf
     SDRF_FILE_FP=$(readlink -f $splitted_sdrf)
-    CONF_FILE_PREF=$TOP_FOLDER/$ID.B$batch_number
+    CONF_FILE_PREF=$TOP_FOLDER/$ID.B$batch_number.$batch_size
     CONF_FILE=$CONF_FILE_PREF.conf
     echo habemus_batches
     pinfo "CONF_FILE=$CONF_FILE"
     pinfo "SDRF_FILE=$SDRF_FILE_FP"
-fi
-####################################
-# Look for the species column in the SDRF
-function get_species {
-    COL=""
-    COL=$(get_column $1 "[organism]")
-    if [ "$COL-" == "-" ]; then
-	perror organism not found in $1
-	exit 1
-    fi
-    if [ "$(echo $COL | wc -w)" != "1" ]; then
-	cols="$(echo $COL| tr ' ' ',')"
-	perror found multiple organism columns in $1: $(head -n 1 $1|cut -f $cols)
-	exit 1
-    fi
-#    NSPECIES=$(tail -n +2 $SDRF_FILE|cut -f $COL |sort -u |wc -l)
-#    if [ $NSPECIES -ne 1 ]; then
-#	perror "SDRF files with data from different ($NSPECIES) organisms not supported yet"
-#	exit 1
-    #    fi
-    tail -n +2 $1|cut -f $COL |sort -u
-}
-SPECIES=`get_species $SDRF_FILE_FP|tr ' ' '_'|tr 'A-Z' 'a-z'`
-
-pinfo species=$SPECIES
-if [ "$SPECIES-" == "-" ]; then
-    exit 1
 fi
 ####################################
 # IDF
@@ -312,6 +325,7 @@ fi
 # SDRF
 SOURCE_NAME_COL=$(get_column $SDRF_FILE_FP "SOURCE NAME" 1)
 
+set +e
 #ENA_SAMPLE for tech replicates
 ENA_SAMPLE_COL=$(get_column $SDRF_FILE_FP "[ENA_SAMPLE]")
 pinfo "ENA_SAMPLE_COL: $ENA_SAMPLE_COL"
@@ -322,6 +336,7 @@ pinfo "TECH_REPL_COL: $TECH_REPL_COL"
 
 ENA_RUN_COL=$(get_column $SDRF_FILE_FP "[ENA_RUN]")
 pinfo "ENA_RUN_COL: $ENA_RUN_COL"
+set -e
 if [ "$ENA_RUN_COL-" == "-" ]; then
     ENA_RUN_COL=$(get_column $SDRF_FILE_FP "[RUN]" 1)
     pinfo "RUN_COL: $ENA_RUN_COL"
@@ -448,31 +463,44 @@ function DOWNLOAD_PRIVATE2 {
 function download {
     file=$1
     fn=$2
-    pinfo "downloading $fn"
-    if [ "$dl_fun" == "DOWNLOAD_PUBLIC" ]; then
-	set +e
-	DOWNLOAD_PUBLIC $file $fn		
-	if [ $? -ne 0 ]; then
+    ##
+    if [ -e $local_download_folder ]; then
+	pinfo "Skipping download - looking for $fn in $local_download_folder"
+	if [ -e $local_download_folder/$file ]; then
+	    # avoid duplicating
+	    ln -s $(readlink -f  $local_download_folder/$file) $(readlink -f $fn)
+	else
+	    echo "File $local_download_folder/$file  not found"
+	    exit 1
+	fi
+    else
+	## 
+	pinfo "downloading $fn"
+	if [ "$dl_fun" == "DOWNLOAD_PUBLIC" ]; then
+	    set +e
+	    DOWNLOAD_PUBLIC $file $fn		
+	    if [ $? -ne 0 ]; then
 	    echo "Failed to download from ENA  $file..." > /dev/stderr
 	    dl_fun="DOWNLOAD_PRIVATE"
 	fi
-	set -e
-    fi
-    
-    if [ "$dl_fun" == "DOWNLOAD_PRIVATE" ]; then
-	stdbuf -o0 echo -n
-	set +e
-	DOWNLOAD_PRIVATE $file $fn $ID $SDRF_FILE_FP
-	if [ $? -ne 0 ]; then
-	    echo "Failed to download from private location $file..." > /dev/stderr
-	    stdbuf -o0 echo -n
-	    DOWNLOAD_PRIVATE2 $file $fn $ID $SDRF_FILE_FP
-	    if [ $? -ne 0 ]; then
-		echo "Failed to download from private location2 $file...given up" > /dev/stderr
-		exit 1
-	    fi
+	    set -e
 	fi
-	set -e		
+	
+	if [ "$dl_fun" == "DOWNLOAD_PRIVATE" ]; then
+	    stdbuf -o0 echo -n
+	    set +e
+	    DOWNLOAD_PRIVATE $file $fn $ID $SDRF_FILE_FP
+	    if [ $? -ne 0 ]; then
+		echo "Failed to download from private location $file..." > /dev/stderr
+		stdbuf -o0 echo -n
+		DOWNLOAD_PRIVATE2 $file $fn $ID $SDRF_FILE_FP
+		if [ $? -ne 0 ]; then
+		    echo "Failed to download from private location2 $file...given up" > /dev/stderr
+		    exit 1
+		fi
+	    fi
+	    set -e		
+	fi
     fi
 }
 
