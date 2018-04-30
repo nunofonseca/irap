@@ -137,7 +137,7 @@ let ip=$THREADS_O/3+1
 
 ## ISL like run (stage1,2, and 3as+stats)
 ## uses -j
-IRAP_PARAMS="$IRAP_PARAMS_O"
+IRAP_PARAMS="$IRAP_PARAMS_O technical_replicates=  technical_replicates_labels= "
 MEM=$MEM_O THREADS=$THREADS_O wf1=`submit_jobs4libs $wf0 lib_isl 123 |tail -n 1`
 stop_now 1 $wfb $wf1
 
