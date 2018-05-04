@@ -72,9 +72,14 @@ checkFiles <- function(filenames.v,validator.cmd="irap_fastq_info",subfolders=FA
     addLibSubfolder <- function(f) {
         paste0(system(paste0("get_lib_folder ",f),intern=TRUE),"/",f)
     }
+    fixFilename <- function(f) {
+        paste0(dirname(f),"/",gsub("#","_",basename(f)))
+    }
     if (subfolders) {
         filenames.v <- sapply(filenames.v,addLibSubfolder)
     }
+    filenames.v <- sapply(filenames.v,fixFilename)
+    print(filenames.v)
     exp.files <- filenames.v
     dir <- paste0(opt$data_dir,"/raw_data")
     #exp.files.p <- paste(opt$raw_dir,"/",exp.files,sep="")
@@ -158,7 +163,7 @@ cat("Columns: ",ncol(sdrf),"\n")
 cat("Entries: ",nrow(sdrf),"\n")
 pinfo("Columns found in SDRF:")
 cat(paste(colnames(sdrf),collapse=","),"\n")
-
+##print(head(sdrf))
 
 #################################################
 ## factors should not be simultaneously comments 
@@ -401,6 +406,11 @@ if ( ! normalize.cols("technical replicate group") %in% colnames(sdrf) ) {
     if ( sum(is.empty)>0) {
         perror("SDRF: Found ",sum(is.empty)," entries in technical replicate group without values")
         q(status=1)
+    }
+    ## ignore if there is a single value: e.g., not aplicable
+    nn <- table(tolower(sdrf[,nc]))
+    if ( max(nn) == length(nrow(sdrf)) ) {
+        sdrf[,nc] <- ""
     }
     #sdrf$"technical replicate group"[is.empty] <- sdrf$"source name"[is.empty]
 }
