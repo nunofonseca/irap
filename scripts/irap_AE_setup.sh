@@ -50,6 +50,11 @@ function perror {
     echo "ERROR: $*" > /dev/stderr
 }
 
+## fix the filename by replacing some characters
+## that may complicate things
+function fix_filename {
+    echo ${1//\#/_};
+}
 
 function create_dir {
     FOLDER=$1
@@ -242,7 +247,8 @@ if [ $habemus_batches != 0 ]; then
     tmp_file_pref=$ROOT_DIR/$SPECIES/$ID/.$(basename $SDRF_FILE_FP)
     tmp_file_lock=$tmp_file_pref.lock
     tmp_file_split=$tmp_file_pref.split.$batch_size
-    if [ -e $tmp_file_split.1 ] && [ $tmp_file_split -nt $SDRF_FILE_FP ]; then
+    mkdir -p $ROOT_DIR/$SPECIES/$ID/
+    if [ -e $tmp_file_split.1 ] && [ $tmp_file_split.1 -nt $SDRF_FILE_FP ]; then
 	echo "Using cached $tmp_file_split.1 "
     else
 	pinfo "Splitting sdrf into $batch_size long chunks"
@@ -260,21 +266,45 @@ if [ $habemus_batches != 0 ]; then
 	    exit
 	fi
     fi
+    set -e
     if [ "$batch_number-" == "0-" ]; then
-	all_batches=$(ls -1 --color=never $tmp_file_split.*{0,1,2,3,4,5,6,7,8,9}|sed "s|$tmp_file_split.||g"|sort -n)
+	set +e
+	all_batches=$(shopt -s nullglob && echo $tmp_file_split.*{0,1,2,3,4,5,6,7,8,9}*|sed "s|$tmp_file_split.||g"|tr ' ' '\n' |grep -v .txt|sort -n -u)
+	set -e
 	echo $all_batches
 	for batch_num in $all_batches; do
 	    BCONF_FILE_PREF=$ROOT_DIR/$SPECIES/$ID/$ID.B$batch_num.$batch_size 
 	    BCONF_FILE=$BCONF_FILE_PREF.conf
+	    echo $BCONF_FILE
+	    echo $SDRF_FILE_FP
 	    if [ -e $BCONF_FILE ] && [ $BCONF_FILE -nt $SDRF_FILE_FP ]; then
 		echo Skipping generation of $BCONF_FILE
 	    else
-		irap_AE_setup.sh $* -b $batch_num -d $DATA_DIR
+		set +e
+		let jobs_run=0
+		let jobs_run=$(jobs -r | wc -l)
+		set -e		
+		if [ $jobs_run -gt $THREADS ]; then
+		    echo -n "waiting for slot..."
+		    builtin wait -n
+		    ret=$?
+		    if [ "$ret-" != "0-" ] && [ "$ret-" != "127-" ] ; then
+			echo "Failed to process batch."
+			exit 1
+		    fi
+		    echo "done."
+		fi
+		irap_AE_setup.sh $* -b $batch_num -d $DATA_DIR > $BCONF_FILE.log &
 	    fi
 	done
+	builtin wait
+	if [ "$?-" != "0-" ]; then
+	    echo "Failed to process batch."
+	    exit 1
+	fi
 	# finally...generate a single conf file
 	irap_AE_setup.sh $* -b 0 -B 0 -d $DATA_DIR
-	exit 
+	exit
     fi
     ## split the sdrf
     splitted_sdrf=$tmp_file_split.$batch_number.sdrf.txt
@@ -467,8 +497,13 @@ function download {
     if [ -e $local_download_folder ]; then
 	pinfo "Skipping download - looking for $fn in $local_download_folder"
 	if [ -e $local_download_folder/$file ]; then
+	    ## rename file if necessary
+	    ## note: the subfolder, if used, is based on the $file name
+	    fn=$(fix_filename $fn)
 	    # avoid duplicating
-	    ln -s $(readlink -f  $local_download_folder/$file) $(readlink -f $fn)
+	    if [ ! -h $(readlink -f $fn) ]; then
+		ln -s $(readlink -f  $local_download_folder/$file) $(readlink -f $fn)
+	    fi
 	else
 	    echo "File $local_download_folder/$file  not found"
 	    exit 1
@@ -520,7 +555,9 @@ for file in $FASTQ_FILES; do
     if ( [ -e $fn ] && [ $USE_CACHE -eq 1 ] ) || ( [ $DEBUG -eq 1 ] ); then
 	pinfo "skipped downloading $fn"
     else
+	set +e	
 	let jobs_run=$(jobs -r | wc -l)
+	set -e
 	if [ $jobs_run -ge $THREADS ]; then
 	    echo -n "."
 	    builtin wait -n
@@ -568,10 +605,12 @@ sed -i "s/^reference/#reference/;s|^gtf_file.*|include $SPECIES_CONF_DIR/$SPECIE
 ## Move to the destination dir
 ##
 DEST_DIR=$ROOT_DIR/$SPECIES/$ID
-mkdir -p $DEST_DIR
-mv $CONF_FILE_PREF* $DEST_DIR
+mkdir -p $DEST_DIR   
+if [ -e $CONF_FILE_PREF.conf ]; then
+    mv $CONF_FILE_PREF.* $DEST_DIR
+fi
 echo "Files placed in $DEST_DIR"
-if [ $batch_number == 0 ]; then    
+if [ $batch_number == 0 ]; then
     rm -rf $TOP_FOLDER
 fi
 exit 0
