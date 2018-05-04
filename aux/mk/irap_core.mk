@@ -636,12 +636,19 @@ ifdef MAKECMDGOALS
 TARGETS=$(MAKECMDGOALS)
 endif
 
+# 
+ifeq ($(TARGETS),all)
+tr_validation=y
+endif
+
 # skip validation of SE or PE
 ifeq ($(TARGETS),stage0)
-skip_lib_validation=no
+skip_lib_validation=y
+#tr_validation=y
 endif
+
 ifeq ($(TARGETS),stage0_fix)
-skip_lib_validation=no
+skip_lib_validation=y
 endif
 
 ifeq ($(TARGETS),report)
@@ -653,7 +660,7 @@ override gen_html_report:=y
 endif
 
 ifdef do_stage0_only
-skip_lib_validation=no
+skip_lib_validation=y
 endif
 
 #
@@ -818,21 +825,26 @@ else
 ## check - should be improved...
 num_tr=$(words $(sort $(subst $(quote), ,$(subst $(comma), ,$(subst ;, ,$(technical_replicates))))))
 num_libs=$(words $(sort $(se) $(pe)))
+
+ifdef tr_validation
 ifneq ($(num_tr),$(num_libs))
 $(error technical_replicates should include all libs in se and pe: found $(num_tr) labels but expected $(num_libs))
 endif
-
 ## technical replicate names 
 ifndef technical_replicates_labels
 $(error technical_replicates_labels should be defined when technical_replicates is defined)
 endif
+endif
+
 ##
 ## number of technical replicates labels needs to match the number of groups defined in technical.replicates
 # technical.replicates.labels=G1;G2;G3
 ng1=$(words $(sort $(subst ;, ,$(technical_replicates))))
 ng2=$(words $(sort $(subst ;, ,$(subst $(space),_,$(technical_replicates_labels)))))
+ifdef tr_validation
 ifneq ($(ng1),$(ng2))
 $(error technical_replicates inconsistent with technical_replicates_labels: found $(ng2) labels but expected $(ng1) labels in technical_replicates_labels)
+endif
 endif
 $(info *	number of technical replicate groups/labels=$(ng1))
 endif
