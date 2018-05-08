@@ -595,6 +595,7 @@ for (specie in species) {
             q(status=1)
         }
         if ( run.pp == "smart-like" ) run.pp <- "smart-seq"
+        if ( run.pp == "Smart-seq2" ) run.pp <- "smart-seq2"
         if ( run.pp == "10xv2" ) run.pp <- "10xV2"
         conf.l <- rbind(conf.l,paste0("sc_protocol=",run.pp))
         pinfo("sc_protocol=",run.pp)
