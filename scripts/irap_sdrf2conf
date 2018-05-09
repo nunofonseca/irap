@@ -156,7 +156,7 @@ for ( n in names(opt) ) {
 }
 ##
 
-pinfo("Loading SDRF...")
+pinfo("Loading SDRF ",opt$sdrf_file," ...")
 sdrf <- read.tsv(opt$sdrf_file,header=TRUE,comment.char="")
 pinfo("Loading SDRF...done.")
 cat("Columns: ",ncol(sdrf),"\n")
@@ -414,6 +414,7 @@ if ( ! normalize.cols("technical replicate group") %in% colnames(sdrf) ) {
     }
     #sdrf$"technical replicate group"[is.empty] <- sdrf$"source name"[is.empty]
 }
+
 ######
 ## run
 if ( ! "run" %in% colnames(sdrf) ) {
@@ -766,6 +767,7 @@ for (specie in species) {
             }
             info.file <- checkFiles(sfiles,subfolders=split.files.by.subfolders,opt=opt)
             ## sed - hack for single cell
+            ## note/warning: there is an assumption that the lib name (file basename prefix)  corresponds to the run name. The code needs to be changed if that is not the case.
             rr <- system(paste0("cat ",info.file,"|sed -E 's/_L[0-9]+_R[A0-9]+_[0-9]+//'"),intern=TRUE)
             conf.l <- rbind(conf.l,matrix(rr,ncol=1))
             ###########################################
