@@ -214,7 +214,8 @@ if [ $N_FQ -gt 5090 ]; then
     distribute_by_subfolders=1
 fi
 
-local_download_folder=$(readlink -f $ROOT_DIR/ManuallyDownloaded/$ID)
+## avoid keeping the local download folder under ROOT_DIR
+local_download_folder=$(readlink -f $ROOT_DIR/../ManuallyDownloaded/$ID)
 pinfo "previously downloaded data folder=$local_download_folder"
 ###################################
 set -e
@@ -552,7 +553,7 @@ for file in $FASTQ_FILES; do
 	mkdir -p $dest_dir
     fi
     fn=$dest_dir/$fn
-    if ( [ -e $fn ] && [ $USE_CACHE -eq 1 ] ) || ( [ $DEBUG -eq 1 ] ); then
+    if ( ( [ -e $fn ] || [ -h $fn ] ) && [ $USE_CACHE -eq 1 ] ) || ( [ $DEBUG -eq 1 ] ); then
 	pinfo "skipped downloading $fn"
     else
 	set +e	
