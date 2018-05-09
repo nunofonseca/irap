@@ -139,11 +139,24 @@ $(call p_info,[ERROR] gse_method)
 $(error $(gse_method) not supported)
 endif
 
-
 $(de_toplevel_folder)/%.gse.$(gse_tool).$(gse_method).go.tsv: $(de_toplevel_folder)/%_de.tsv $(gse_go_mapping)
 	$(call run_piano_goterm,$<,$@)
 
 $(de_toplevel_folder)/%.gse.$(gse_tool).$(gse_method).kegg.tsv: $(de_toplevel_folder)/%_de.tsv $(gse_pathway_mapping)
+	$(call run_piano_kegg,$<,$@)
+
+## exon
+$(ede_toplevel_folder)/%.gse.$(gse_tool).$(gse_method).go.tsv: $(ede_toplevel_folder)/%_de.tsv $(gse_go_mapping)
+	$(call run_piano_goterm,$<,$@)
+
+$(ede_toplevel_folder)/%.gse.$(gse_tool).$(gse_method).kegg.tsv: $(ede_toplevel_folder)/%_de.tsv $(gse_pathway_mapping)
+	$(call run_piano_kegg,$<,$@)
+
+## transcript
+$(tde_toplevel_folder)/%.gse.$(gse_tool).$(gse_method).go.tsv: $(tde_toplevel_folder)/%_de.tsv $(gse_go_mapping)
+	$(call run_piano_goterm,$<,$@)
+
+$(tde_toplevel_folder)/%.gse.$(gse_tool).$(gse_method).kegg.tsv: $(tde_toplevel_folder)/%_de.tsv $(gse_pathway_mapping)
 	$(call run_piano_kegg,$<,$@)
 
 else
@@ -164,6 +177,19 @@ $(de_toplevel_folder)/%.gse.$(gse_tool).$(gse_method).go.html: $(de_toplevel_fol
 
 $(de_toplevel_folder)/%.gse.$(gse_tool).$(gse_method).kegg.html: $(de_toplevel_folder)/%.gse.$(gse_tool).$(gse_method).kegg.tsv
 	mkdir -p $(@D) && $(call run_gse_report,$<,$@,--pathway,"$(mapper)x$(quant_method)x$(de_method)",$*)
+
+$(ede_toplevel_folder)/%.gse.$(gse_tool).$(gse_method).go.html: $(ede_toplevel_folder)/%.gse.$(gse_tool).$(gse_method).go.tsv
+	mkdir -p $(@D) && $(call run_gse_report,$<,$@,,"$(mapper)x$(exon_quant_method)x$(exon_de_method)",$*)
+
+$(ede_toplevel_folder)/%.gse.$(gse_tool).$(gse_method).kegg.html: $(ede_toplevel_folder)/%.gse.$(gse_tool).$(gse_method).kegg.tsv
+	mkdir -p $(@D) && $(call run_gse_report,$<,$@,--pathway,"$(mapper)x$(exon_quant_method)x$(exon_de_method)",$*)
+
+
+$(tde_toplevel_folder)/%.gse.$(gse_tool).$(gse_method).go.html: $(tde_toplevel_folder)/%.gse.$(gse_tool).$(gse_method).go.tsv
+	mkdir -p $(@D) && $(call run_gse_report,$<,$@,,"$(mapper)x$(quant_method)x$(transcipt_de_method)",$*)
+
+$(tde_toplevel_folder)/%.gse.$(gse_tool).$(gse_method).kegg.html: $(tde_toplevel_folder)/%.gse.$(gse_tool).$(gse_method).kegg.tsv
+	mkdir -p $(@D) && $(call run_gse_report,$<,$@,--pathway,"$(mapper)x$(quant_method)x$(transcript_de_method)",$*)
 
 
 ############
