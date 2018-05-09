@@ -180,7 +180,8 @@ function get_new_folder3 {
     md5=`echo $filepref|md5sum`
     fl=`echo $md5|cut -b 1,2`
     f2=`echo $md5|cut -b 3,4`
-    echo $fl/$f2/$filepref
+    ## handle some characters   
+    echo $fl/$f2/${filepref//\#/_};
 }
 
 ##########################################################################
