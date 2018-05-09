@@ -67,7 +67,7 @@ opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filena
 pdebug.enabled <- opt$debug
 
 ## validates each file independently using fastq_info
-checkFiles <- function(filenames.v,validator.cmd="irap_fastq_info",subfolders=FALSE) {
+checkFiles <- function(filenames.v,validator.cmd="irap_fastq_info",subfolders=FALSE,opt) {
     ## filenames.v - as provided in the SDRF
     addLibSubfolder <- function(f) {
         paste0(system(paste0("get_lib_folder ",f),intern=TRUE),"/",f)
@@ -88,13 +88,13 @@ checkFiles <- function(filenames.v,validator.cmd="irap_fastq_info",subfolders=FA
     stopifnot(validator.cmd %in% c("fastq_info","irap_fastq_info"))
     stopifnot(length(filenames.v)>0 && length(filenames.v)<=2)
     use.cached <- FALSE
-    info.file <- paste0(opt$data_dir,"/raw_data/",opt$raw_dir,"/",exp.files[1],".info")
+    info.file <- paste0(dir,"/",opt$raw_dir,"/",exp.files[1],".info")
     if (validator.cmd=="fastq_info" ) {
         ## check if file exists before running fastq_info again
         if ( file.exists(info.file) ) {
             pinfo("Using cached info file")
         } else {
-            cmd <- paste0("cd ",opt$raw_dir," && fastq_info ",exp.files.ps," > ",exp.files[1],".info.tmp 2> /dev/null && mv ",exp.files[1],".info.tmp ",exp.files[1],".info")
+            cmd <- paste0("cd ",opt$raw_dir," && fastq_info -s -r ",exp.files.ps," > ",exp.files[1],".info.tmp 2> /dev/null && mv ",exp.files[1],".info.tmp ",exp.files[1],".info")
             cmd.err <- paste0("cd ",opt$raw_dir," && fastq_info ",exp.files.ps," > ",exp.files[1],".info.tmp && mv ",exp.files[1],".info.tmp ",exp.files[1],".info")
         }
     } else {
@@ -105,7 +105,7 @@ checkFiles <- function(filenames.v,validator.cmd="irap_fastq_info",subfolders=FA
     if ( file.exists(info.file) ) {
         pinfo("Using cached file ",info.file)
     } else {
-        cmd <- paste0("pushd ",dir," >/dev/null; ",cmd)
+        cmd <- paste0("cd ",dir," && ",cmd)
         pinfo("Checking ",exp.files.ps)
         rr <- system(paste0(cmd),intern=FALSE,ignore.stdout=TRUE)
         
@@ -595,6 +595,7 @@ for (specie in species) {
             q(status=1)
         }
         if ( run.pp == "smart-like" ) run.pp <- "smart-seq"
+        ## shouldn't be necessary
         if ( run.pp == "Smart-seq2" ) run.pp <- "smart-seq2"
         if ( run.pp == "10xv2" ) run.pp <- "10xV2"
         conf.l <- rbind(conf.l,paste0("sc_protocol=",run.pp))
@@ -682,7 +683,6 @@ for (specie in species) {
     norm.fastq.uri <- normalize.cols("fastq_uri")
     ############################
     ##Runs
-    fp2fastq <- paste(opt$data_dir,opt$raw_dir,sep="/")
     if ( !opt$check_only ) {
         #########################################
         ## save factors and characteristics
@@ -762,7 +762,7 @@ for (specie in species) {
                 perror("Folder ",dir," not found")
                 q(status=1)
             }
-            info.file <- checkFiles(sfiles,subfolders=split.files.by.subfolders)
+            info.file <- checkFiles(sfiles,subfolders=split.files.by.subfolders,opt=opt)
             ## sed - hack for single cell
             rr <- system(paste0("cat ",info.file,"|sed -E 's/_L[0-9]+_R[A0-9]+_[0-9]+//'"),intern=TRUE)
             conf.l <- rbind(conf.l,matrix(rr,ncol=1))
@@ -787,7 +787,7 @@ for (specie in species) {
                 ## but check files...
                 exp.files.cols <- c("read1 file","index1 file")
                 exp.files <- sdrf.tmp[sdrf.tmp$run==run,exp.files.cols]
-                checkFiles(exp.files,validator.cmd="fastq_info",subfolders=split.files.by.subfolders)
+                checkFiles(exp.files,validator.cmd="fastq_info",subfolders=split.files.by.subfolders,opt=opt)
                 conf.l <- rbind(conf.l,paste0("",run,"_index1=",exp.files[1]))
                 conf.l <- rbind(conf.l,paste0("",run,"_index2=",exp.files[2]))
                 sss <- as.numeric(as.factor(sdrf.tmp[,"technical replicate group"]))[sdrf.tmp$run==run]
