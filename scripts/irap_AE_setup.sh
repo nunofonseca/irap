@@ -25,14 +25,14 @@
 # Download data from ArrayExpress and setup the files necessary
 # to run iRAP
 function usage {
-    echo "irap_AE_setup.sh [-D -s  -t root_dir  -p prot -d data_dir -c -h] -i id"
+    echo "irap_AE_setup.sh [ -s  -t root_dir  -p prot -d data_dir -c -h] -i id"
     echo <<EOF
  -t root_dir - toplevel directory where a folder <id> will be created and the fastq files will be downloaded
  -p prot     - protocol (blk,10xV1,drop-seq,smart-seq2,...)
  -d data_dir - path to iRAP's data directory
  -i id       - array express experiment ID (e.g., E-MTAB-4411)
  -c       - skip downloading if files are already present
- -D       - download SDRF from EBI
+ -C       - skip downloading or checking if files are already present
  -S       - skip checking IDF
  -s       - single cell
  -a       - try to download private data (only works at EBI)
@@ -117,12 +117,14 @@ be_quiet=n
 THREADS=1
 batch_number=0
 batch_size=0
+skip_file_checking=0
 
-while getopts "b:B:T:t:p:d:i:ahceDdsSq"  Option; do
+while getopts "b:B:T:t:p:d:i:CahceDdsSq"  Option; do
     case $Option in
 	a ) download_private_data=y;;
 	e ) AT_EBI=1;;
 	c ) USE_CACHE=1;;
+	C ) skip_file_checking=1;;
 	D ) DOWNLOAD_SDRF="y";;
 	s ) irap_cmd=irap_sc;;
         t ) ROOT_DIR=$OPTARG;;
@@ -540,50 +542,54 @@ function download {
     fi
 }
 
-
-dl_fun=DOWNLOAD_PUBLIC
-dest_dir=.
-pinfo Downloading $N_FQ fastq files
-for file in $FASTQ_FILES; do
-    fn=$(basename $file)
-    if [ $distribute_by_subfolders == 1 ]; then
-	## avoid relying on the download path since
-	## not all files come from ENA
-	dest_dir=$(get_lib_folder $file)
-	mkdir -p $dest_dir
-    fi
-    fn=$dest_dir/$fn
-    if ( ( [ -e $fn ] || [ -h $fn ] ) && [ $USE_CACHE -eq 1 ] ) || ( [ $DEBUG -eq 1 ] ); then
+if [ $skip_file_checking == 1 ]; then
+    pinfo Skipping downloading and checking $N_FQ fastq files
+else
+    dl_fun=DOWNLOAD_PUBLIC
+    dest_dir=.
+    pinfo Downloading $N_FQ fastq files
+    for file in $FASTQ_FILES; do
+	fn=$(basename $file)
+	if [ $distribute_by_subfolders == 1 ]; then
+	    ## avoid relying on the download path since
+	    ## not all files come from ENA
+	    dest_dir=$(get_lib_folder $file)
+	    mkdir -p $dest_dir
+	fi
+	fn=$dest_dir/$fn
+	if ( ( [ -e $fn ] || [ -h $fn ] ) && [ $USE_CACHE -eq 1 ] ) || ( [ $DEBUG -eq 1 ] ); then
 	pinfo "skipped downloading $fn"
-    else
-	set +e	
-	let jobs_run=$(jobs -r | wc -l)
-	set -e
-	if [ $jobs_run -ge $THREADS ]; then
-	    echo -n "."
-	    builtin wait -n
-	    ret=$?
-	    if [ "$ret-" != "0-" ] && [ "$ret-" != "127-" ] ; then
-		echo "Failed to download."
-		exit 1
+	else
+	    set +e	
+	    let jobs_run=$(jobs -r | wc -l)
+	    set -e
+	    if [ $jobs_run -ge $THREADS ]; then
+		echo -n "."
+		builtin wait -n
+		ret=$?
+		if [ "$ret-" != "0-" ] && [ "$ret-" != "127-" ] ; then
+		    echo "Failed to download."
+		    exit 1
+		fi
+	    fi
+	    if [ $AT_EBI -eq 1 ]; then
+		echo file exists?
+		echo creating symlink?
+		echo TODO
+	    else
+		download $file $fn &
+		sleep 1
 	    fi
 	fi
-	if [ $AT_EBI -eq 1 ]; then
-	    echo file exists?
-	    echo creating symlink?
-	    echo TODO
-	else
-	    download $file $fn &
-	    sleep 1
-	fi
+    done
+    builtin wait
+    if [ "$?-" != "0-" ]; then
+	echo "Failed to download."
+	exit 1
     fi
-done
 
-builtin wait
-if [ "$?-" != "0-" ]; then
-    echo "Failed to download."
-    exit 1
 fi
+
 
 
    
