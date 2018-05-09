@@ -636,6 +636,9 @@ ifdef MAKECMDGOALS
 TARGETS=$(MAKECMDGOALS)
 endif
 
+# dry_run?
+dry_run=$(findstring n,$(firstword $(MAKEFLAGS)))
+
 # 
 ifeq ($(TARGETS),all)
 tr_validation=y
@@ -1541,19 +1544,25 @@ endif
 # When the number of libraries is greater than BIG_LIM then pass the arguments
 # to some scripts from stdin
 ifndef BIG_LIM
-BIG_LIM:=400
+BIG_LIM:=0
 endif
 
 ifeq ($(shell expr $(words $(se) $(pe)) \<  $(BIG_LIM)),0)
 # too many libs to be able to pass them as an argument
 $(call p_info, Big number of libraries mode (>$(BIG_LIM)))
-BIG_EXP=1
+BIG_EXP=400
 # cmd=$1
 # out_file=$2
 # args=$3
+ifeq ($(dry_run),n)
+define pass_args_stdin=
+cat $(2).in | $(1) -stdin && rm -f $(2).in
+endef
+else
 define pass_args_stdin=
 $(call args2file,$(2).in,$(3)) cat $(2).in | $(1) -stdin && rm -f $(2).in
 endef
+endif
 
 # 1- infiles
 # 2- outfile
