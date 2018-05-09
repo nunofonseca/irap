@@ -428,6 +428,8 @@ if ( ! "run" %in% colnames(sdrf) ) {
 
 ###############
 ## runs /unique
+## fix the run names (should not include # )
+sdrf$run <- gsub("#","_",sdrf$run)
 # get unique runs
 runs <- unique(sdrf$run)
 cat("#runs:",length(runs),"\n")
