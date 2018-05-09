@@ -44,7 +44,8 @@ rs=`echo $A| sed -E "s/.*Read length: ([0-9]+) ([0-9]+) ([0-9]+).*/\3/" `
 rs_range=`echo $A| sed -E "s/.*Read length: ([0-9]+) ([0-9]+) ([0-9]+).*/\1 \2 \3/" ` 
 # validate libname
 # if libname end with _{1,2} then change it
-libname=`echo $libname|sed -E "s/_([12])$/.\1/"`
+# 2018-05-09: no longer necessary...
+#libname=`echo $libname|sed -E "s/_([12])$/.\1/"`
 
 echo "#nreads=$nreads" 
 echo $libname=`basename $1` `basename $2 2>/dev/null` 
