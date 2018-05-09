@@ -518,7 +518,7 @@ function download {
 	    set +e
 	    DOWNLOAD_PUBLIC $file $fn		
 	    if [ $? -ne 0 ]; then
-	    echo "Failed to download from ENA  $file..." > /dev/stderr
+	    echo "Failed to download from ENA  $file ..." > /dev/stderr
 	    dl_fun="DOWNLOAD_PRIVATE"
 	fi
 	    set -e
@@ -529,11 +529,11 @@ function download {
 	    set +e
 	    DOWNLOAD_PRIVATE $file $fn $ID $SDRF_FILE_FP
 	    if [ $? -ne 0 ]; then
-		echo "Failed to download from private location $file..." > /dev/stderr
+		echo "Failed to download from private location $file ..." > /dev/stderr
 		stdbuf -o0 echo -n
 		DOWNLOAD_PRIVATE2 $file $fn $ID $SDRF_FILE_FP
 		if [ $? -ne 0 ]; then
-		    echo "Failed to download from private location2 $file...given up" > /dev/stderr
+		    echo "Failed to download from private location2 $file ...given up" > /dev/stderr
 		    exit 1
 		fi
 	    fi
