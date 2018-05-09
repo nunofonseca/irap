@@ -2720,7 +2720,7 @@ print_pe_libs:
 
 phony_targets+= print_libs lib_isl
 ###################################################
-lib_isl: $(STAGE1_S_TARGETS) stage2 stage3as $(WAVE3_s_TARGETS)
+lib_isl: $(STAGE1_S_TARGETS) stage2 stage3as $(WAVE3_s_TARGETS) $(STAGE3_S_OFILES)
 
 lib_isl_stage1: $(STAGE1_S_TARGETS)
 
