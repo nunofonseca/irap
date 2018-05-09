@@ -445,7 +445,7 @@ $(quant_toplevel_folder)/%xons.raw.$(quant_method).tsv:
 	$(call p_info,Warning! Cufflinks produces FPKMS and does not provide counts. Generating empty file $@.)
 	@$(call empty_file,$@)
 
-$(quant_toplevel_folder)/genes.uraw.$(quant_method).tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).tsv) 
+$(quant_toplevel_folder)/genes.uraw.$(quant_method).tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).tsv)
 	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) ) > $@.tmp && mv $@.tmp $@
 
 # Run Cuffmerge on all your assemblies to create a single merged transcriptome annotation
