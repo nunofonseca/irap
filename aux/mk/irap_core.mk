@@ -1544,7 +1544,7 @@ endif
 # When the number of libraries is greater than BIG_LIM then pass the arguments
 # to some scripts from stdin
 ifndef BIG_LIM
-BIG_LIM:=0
+BIG_LIM:=400
 endif
 
 ifeq ($(shell expr $(words $(se) $(pe)) \<  $(BIG_LIM)),0)
