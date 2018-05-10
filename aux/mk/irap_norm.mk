@@ -153,9 +153,8 @@ $(quant_toplevel_folder)/%.exons.$(1).$(exon_quant_method).irap.$(expr_ext): $(q
 endef
 
 ## generate the rules for each norm. method
-ifdef $(quant_norm_tool)
 $(foreach nm,fpkm tpm fpkm-uq uq-fpkm,$(eval $(call make-norm-rules,$(nm),$(quant_norm_tool))))
-endif
+
 
 ####################################
 ##
