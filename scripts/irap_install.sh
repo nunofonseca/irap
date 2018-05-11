@@ -2114,6 +2114,17 @@ function install_cont_db {
     popd
     pinfo "Downloading and preparing contamination indices/db...done."
 }
+## install a more recent version of BASH
+function bash_install {
+    pinfo "Installing bash..."
+    wget  http://ftp.gnu.org/gnu/bash/bash-4.4.18.tar.gz
+    tar zxvf bash-4.4.18.tar.gz
+    cd bash-4.4.18
+    ./configure --prefix $IRAP_DIR
+    make install
+    pinfo "bash installed"    
+    
+}
 ###############################
 UPDATE_FILE_PERMS=n
 INSTALL_JBROWSE=n
