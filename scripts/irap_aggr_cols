@@ -42,6 +42,7 @@ option_list <- list(
     make_option(c("--labels"), type="character", dest="labels", default=NULL,help="labels for the aggregated columns"),
     make_option(c("-o", "--op"), type="character",default="sum",help="aggregation operation: sum, max, min, median, mean (default:%default)"), 
     make_option(c("--out"), type="character", dest="out", default=NULL,help="Output file name"),
+    make_option(c("-c", "--max_threads"), type="numeric",default=1,help="Maximum number of threads that may be used."),
     make_option(c("-i", "--tsv"), type="character", dest="tsv_file", default=NULL,help="TSV file name"),
     make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode")
   )
@@ -74,6 +75,9 @@ for ( s in opt$groups.def) {
 }
 names(opt$groups.l) <- opt$labels.v
 
+library(data.table)
+setDTthreads(opt$max_threads)
+
 pinfo("Parameters parsed.")
 pdebug.save.state("irap_aggr_cols","0")
 
@@ -98,6 +102,7 @@ data.f <- matrix(NA,nrow=nrow(data),ncol=length(opt$groups.l))
 rownames(data.f) <- rownames(data)
 colnames(data.f) <- names(opt$groups.l)
 
+##
 for (g in names(opt$groups.l)) {
     #print(g)
     vv <- unlist(opt$groups.l[g])
@@ -112,7 +117,7 @@ for (g in names(opt$groups.l)) {
 pinfo("Aggregating matrix...done.")
 ## save
 pinfo("Creating ",opt$out," ...")
-write.tsv(data.f,file=opt$out,rownames.label="Feature")
+write.tsv(data.f,file=opt$out,rownames.label="Feature",fix=FALSE,gzip=FALSE)
 pinfo("All done.")
 quit(save="no",status=0)
 

@@ -1224,15 +1224,22 @@ write.tsv <- function(x,file,header=TRUE,rownames.label=NULL,fix=TRUE,gzip=FALSE
     }
     if ( gzip ) {
         con=gzfile(file,"w+")
+        if (!is.null(x) && !is.matrix(x)) {
+                x <- as.matrix(x)
+        }
+        write.table(x,con,sep="\t",row.names=FALSE,col.names=header,quote=FALSE)
+        tryCatch(close(con),error=function(x) return(NULL))
     } else {
-        con=file(file,"w+")
+        library(data.table)
+        if (!is.null(x) && ! is.data.frame(x)) {
+            x <- as.data.frame(x)
+        }
+        fwrite(x,file=file,sep="\t",row.names=FALSE,col.names=header,quote=FALSE,verbose=FALSE)
     }
-    write.table(x,con,sep="\t",row.names=F,col.names=header,quote=F)
-    tryCatch(close(con),error=function(x) return(NULL))
     invisible(1)
 }
 
-read.tsv <- function(file,header=T,...) {
+read.tsv <- function(file,header=TRUE,...) {
   return(qload.tsv(file,header=header,...))
 }
 
