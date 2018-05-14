@@ -339,11 +339,11 @@ if [ $skip_idf != "y" ]; then
 	sc_params="--sop atlas_sc --sc"
 	irap_cmd=irap_sc
 	## expected number of clusters
-	if [ $(grep -c ExpectedClusters $IDF_FILE_FP) -eq 0 ]; then
+	if [ $(grep -c EAExpectedClusters $IDF_FILE_FP) -eq 0 ]; then
 	    echo ERROR: EAExpectedClusters not found in IDF > /dev/stderr
 	    exit 1
 	fi
-	expected_clusters=$(grep -c ExpectedClusters $IDF_FILE_FP|cut -f 2)
+	expected_clusters=$(grep EAExpectedClusters $IDF_FILE_FP|cut -f 2)
 	expected_clusters_params="--nc $expected_clusters"
 
     else
