@@ -18,8 +18,13 @@ if [ "$TOPLEVEL_FOLDER-" == "-" ]; then
     exit 1
 fi
 
-if [ ! -e $SDRF_FOLDER ]; then
-    echo "$SDRF_FOLDER  file not found"
+if [ ! -d $SDRF_FOLDER ]; then
+    echo "$SDRF_FOLDER  folder not found"
+    exit 1
+fi
+
+if [ ! -d $TOPLEVEL_FOLDER ]; then
+    echo "$TOPLEVEL_FOLDER  folder not found"
     exit 1
 fi
 
@@ -41,7 +46,13 @@ function quiet_echo {
 }
 
 ############################################################
-# 
+#
+mkdir -p $control_folder
+
+if [ ! -d $control_folder ]; then
+    echo "ERROR: Unable to continue - $control_folder does not exist and could not be created"
+    exit 1
+fi
 lock_file=$control_folder/lock
 ## lock
 if [ -e $lock_file ]; then
@@ -59,10 +70,9 @@ touch $lock_file
 pushd $TOPLEVEL_FOLDER &> /dev/null
 mkdir -p $control_folder
 mkdir -p $jobs_folder
-
-SDRF_FILES=`ls --color=never $SDRF_FOLDER/*.sdrf.txt`
-files=( $SDRF_FILES )
 set +e
+SDRF_FILES=`ls --color=never $SDRF_FOLDER/*.sdrf.txt 2> /dev/null`
+files=( $SDRF_FILES )
 
 ## keep a copy of the sdrf file
 let new_sdrfs=0
