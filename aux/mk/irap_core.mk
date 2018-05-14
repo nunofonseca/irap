@@ -70,7 +70,7 @@ endef
 #  check if a variable  $(1) is defined - return the variable name if it is defined or empty otherwise
 is_defined=$(if $(subst undefined,,$(origin $(1))),$(1),)
 
-get_cmdline_params=$(foreach p,$(.VARIABLES),$(if $(filter-out $(origin $(p)),command line),,$(p)='$($(p))'))
+get_cmdline_params=$(sort $(foreach p,$(.VARIABLES),$(if $(filter-out $(origin $(p)),command line),,$(p)='$($(p))')))
 
 
 ###################################################################
@@ -201,7 +201,7 @@ endef
 # 1 = quant_method
 # TODO: reduce memory footprint of irap_merge_tsv_NA.sh 
 define merge_tsv=
-$(if $(findstring cufflinks,$(1)),irap_merge_tsv_NA.sh,irap_merge_tsv.sh)
+$(if $(findstring cufflinks,$(1)),irap_merge_tsv_NA.sh,MAX_THREADS=$(max_threads) irap_merge_tsv_p.sh)
 endef
 
 ################################################################################
