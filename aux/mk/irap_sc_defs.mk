@@ -144,15 +144,18 @@ max_n?=0.05
 min_read_quality?=10
 cont_index?=$(data_dir)/contamination/ecoli_fungi_viral
 
-#  cell exclusion criteria
-# minimum number of features expressed as a percentage of the total number of features
+##  cell exclusion criteria
+## minimum number of features expressed as a percentage of the total number of features
 cell_filt_min_features?=15
-# maximum percentage of expression that may be atributed to ERCC spike-ins
+## maximum percentage of expression that may be atributed to ERCC spike-ins
 cell_filt_max_ERCC?=30
-cell_filt_min_cell_expr=5
+## minimum expression per feature
+cell_filt_min_expression=1
 
 cell_filt_outliers=y
 cell_outliers_mad=5
+## minimum number of reads per cell
+cell_filt_min_tot_expr=1000 
 
 single_cell?=y
 expr_format?=tsv
