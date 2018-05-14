@@ -55,11 +55,7 @@ option_list <- list(
 )
 
 
-# check multiple options values
-##multiple.options = list(
-##  feature=c('gene','exon','transcript'),
-##  metric=c('rpkm','tpm','fpkm','fpkm-uq','uq-fpkm')
-##  )
+
 multiple.options <- NULL
 mandatory <- c("ifile","out")
 
