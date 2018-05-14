@@ -78,7 +78,7 @@ if [ "$MAX_THREADS" != "1" ]; then
 #    set -eux
     set -e
     let chunk=1
-    fname_prefix=`mktemp`
+    fname_prefix=`mktemp .tmp.$$.XXXXXXXXXX`
     set +e
     let files_chunk=0
     set -e
@@ -114,22 +114,23 @@ EOF
 	let files_chunk=0
 	set -e
     fi
-    echo "Waiting for all jobs to finish..."  > /dev/stderr
+    echo "Waiting for all jobs to finish..."  > /dev/stderr    
     set +e
     builtin wait
     if [ "$?-" != "0-" ]; then
+	rm -f $fname_prefix $ofiles
 	echo "Failed to merge." > /dev/stderr
 	exit 1
     fi
     set -e
     echo Merging $chunk files  > /dev/stderr
-    # merge all tmp files
-    ofile=$fname_prefix.tsv
-    irap_merge_tsv.sh -stdin <<EOF > $ofile 
+    # merge all tmp files (in parallel if necessary)
+    ofile=$fname_prefix.tsv    
+    FILES_PER_THREAD=50 irap_merge_tsv_p.sh -stdin <<EOF > $ofile 
 $ofiles
 EOF
     cat $fname_prefix.tsv
-    #rm -f $fname_prefix.*    
+    #rm -f $fname_prefix $fname_prefix.*    
 else
     ## just call irap_merge_tsv.sh
     set -e
