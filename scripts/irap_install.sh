@@ -507,7 +507,7 @@ function gen_setup_irap {
 
     cat <<EOF > $1
 export IRAP_DIR=$IRAP_DIR
-export PATH=\$IRAP_DIR/python/bin/:\$IRAP_DIR/bin/bowtie1/bin:\$IRAP_DIR/bin:\$IRAP_DIR/scripts:\$IRAP_DIR/python/bin/:\$PATH
+export PATH=\$IRAP_DIR/python/bin/:\$IRAP_DIR/bin/bowtie1/bin:\$IRAP_DIR/bin:\$IRAP_DIR/scripts:\$IRAP_DIR/python/bin/:\$IRAP_DIR/cellBrowser/:\$PATH
 export LD_LIBRARY_PATH=\$IRAP_DIR/lib:\$LD_LIBRARY_PATH:/usr/local/lib
 export CFLAGS="-I\$IRAP_DIR/include -I\$IRAP_DIR/include/bam -I\$IRAP_DIR/include/boost  \$CFLAGS"
 export R_LIBS_USER=$IRAP_DIR/Rlibs
@@ -2122,9 +2122,21 @@ function bash_install {
     cd bash-4.4.18
     ./configure --prefix $IRAP_DIR
     make install
-    pinfo "bash installed"    
-    
+    pinfo "bash installed"        
 }
+## cell browser
+function cellBrowser_install {
+    pinfo "Installing cellBrowser..."
+    git clone https://github.com/maximilianh/cellBrowser.git
+    pip install --user sklearn
+    pip install --user numpy
+    pip install --user trimap
+    ## copy the folder structure to IRAP_DIR
+    rm -rf $IRAP_DIR/cellBrowser
+    mv cellBrowser $IRAP_DIR
+    pinfo "cellBrowser installed"    
+}
+
 ###############################
 UPDATE_FILE_PERMS=n
 INSTALL_JBROWSE=n
