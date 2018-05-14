@@ -1,4 +1,22 @@
 #!/bin/env bash
+# =========================================================
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+# =========================================================
+
 # Script to be run as cron
 
 SDRF_FOLDER=$1
@@ -6,8 +24,6 @@ TOPLEVEL_FOLDER=$2
 
 QUEUE=production-rh7
 LSF_GROUP=/download
-control_folder=$TOPLEVEL_FOLDER/.control
-jobs_folder=$TOPLEVEL_FOLDER/.control/jobs
 EMAIL_CC=nf@ebi.ac.uk
 MEM=8000
 has_changes=n
@@ -27,6 +43,12 @@ if [ ! -d $TOPLEVEL_FOLDER ]; then
     echo "$TOPLEVEL_FOLDER  folder not found"
     exit 1
 fi
+
+TOPLEVEL_FOLDER=$(readlink -f $TOPLEVEL_FOLDER)
+SDRF_FOLDER=$(readlink -f $SDRF_FOLDER)
+
+control_folder=$TOPLEVEL_FOLDER/.control
+jobs_folder=$TOPLEVEL_FOLDER/.control/jobs
 
 #set -eux
 set -e
@@ -53,6 +75,8 @@ if [ ! -d $control_folder ]; then
     echo "ERROR: Unable to continue - $control_folder does not exist and could not be created"
     exit 1
 fi
+
+
 lock_file=$control_folder/lock
 ## lock
 if [ -e $lock_file ]; then
