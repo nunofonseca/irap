@@ -1329,13 +1329,13 @@ $(quant_toplevel_folder)/exons.raw.$(exon_quant_method).$(expr_ext): $(quant_top
 
 else
 $(quant_toplevel_folder)/genes.raw.$(quant_method).$(expr_ext):$(quant_toplevel_folder)/genes.uraw.$(quant_method).$(expr_ext)
-	$(call pass_args_stdin,irap_aggr_cols,$@.tmp, --tsv "$<"  --labels "$(technical_replicates_labels)"  --groups "$(technical_replicates)" --out $@.tmp --op "$(technical_replicates_aggr_op)") && mv $@.tmp $@
+	$(call pass_args_stdin,irap_aggr_cols,$@.tmp, --tsv "$<"  --labels "$(technical_replicates_labels)"  --groups "$(technical_replicates)" --out $@.tmp --max_threads $(max_threads) --op "$(technical_replicates_aggr_op)") && mv $@.tmp $@
 
 $(quant_toplevel_folder)/transcripts.raw.$(quant_method).$(expr_ext): $(quant_toplevel_folder)/transcripts.uraw.$(quant_method).$(expr_ext)
-	$(call pass_args_stdin,irap_aggr_cols,$@.tmp, --tsv $< --labels "$(technical_replicates_labels)"  --groups "$(technical_replicates)" --out $@.tmp --op "$(technical_replicates_aggr_op)") && mv $@.tmp $@
+	$(call pass_args_stdin,irap_aggr_cols,$@.tmp, --tsv $< --labels "$(technical_replicates_labels)"  --groups "$(technical_replicates)" --out $@.tmp --max_threads $(max_threads) --op "$(technical_replicates_aggr_op)") && mv $@.tmp $@
 
 $(quant_toplevel_folder)/exons.raw.$(exon_quant_method).$(expr_ext): $(quant_toplevel_folder)/exons.uraw.$(exon_quant_method).$(expr_ext)
-	$(call pass_args_stdin,irap_aggr_cols,$@.tmp, --tsv $<  --labels "$(technical_replicates_labels)"  --groups "$(technical_replicates)" --out $@.tmp --op "$(technical_replicates_aggr_op)") && mv $@.tmp $@
+	$(call pass_args_stdin,irap_aggr_cols,$@.tmp, --tsv $<  --labels "$(technical_replicates_labels)"  --groups "$(technical_replicates)" --out $@.tmp --max_threads $(max_threads) --op "$(technical_replicates_aggr_op)") && mv $@.tmp $@
 
 endif
 endif
