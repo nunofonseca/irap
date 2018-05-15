@@ -497,7 +497,7 @@ function download {
     file=$1
     fn=$2
     ##
-    if [ -e $local_download_folder ]; then
+    if [ -d "$local_download_folder" ]; then
 	pinfo "Skipping download - looking for $fn in $local_download_folder"
 	if [ -e $local_download_folder/$file ]; then
 	    ## rename file if necessary
