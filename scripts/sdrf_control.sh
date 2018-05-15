@@ -105,8 +105,8 @@ let mod_idfs=0
 for f in $SDRF_FILES; do
     bf=`basename $f`
     cbf=`cached_sdrf_file $f`
-    cidf=$(echo $cbf|sed "s/.sdrf./.idf./")
-    idf=$(dirname $f)/$(echo $bf|sed "s/.sdrf./.idf./")
+    cidf=$(echo $cbf|sed "s/\.sdrf\./.idf./")
+    idf=$(dirname $f)/$(echo $bf|sed "s/\.sdrf\./.idf./")
     if [ ! -e $cbf ]; then 
 	## new 
 	cp $f $cbf
