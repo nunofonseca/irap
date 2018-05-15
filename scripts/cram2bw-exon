@@ -13,7 +13,7 @@ track_name=$4
 track_descr=$5
 shift 5
 cram_files=$*
-set -e 
+set -e -o pipefail
 if [ ! -e $chr_sizes ]; then
     echo "ERROR: $chr_sizes not found"
     exit 1
