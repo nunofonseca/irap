@@ -344,8 +344,11 @@ if [ $skip_idf != "y" ]; then
 	    exit 1
 	fi
 	expected_clusters=$(grep EAExpectedClusters $IDF_FILE_FP|cut -f 2)
-	expected_clusters_params="--nc $expected_clusters"
-
+	if [ "$expected_clusters-" != "-" ]; then
+	    expected_clusters_params="--nc $expected_clusters"
+	else
+	    expected_clusters_params=""
+	fi
     else
 	## assume, by default, that is bulk RNA-seq
 	pinfo "bulk RNA-seq"
@@ -405,7 +408,7 @@ pinfo "LIBRARY_SOURCE_COL: $LIBRARY_SOURCE_COL"
 
 # quickly validate the sdrf before continuing
 set -e
-irap_sdrf2conf --name $ID --sdrf $SDRF_FILE_FP --out_conf $CONF_FILE_PREF --species=$SPECIES --data_dir=$DATA_DIR --raw_dir=$SPECIES/$ID/fastq $sc_params $expected_clusters_params -c
+irap_sdrf2conf --name $ID --sdrf $SDRF_FILE_FP --out_conf $CONF_FILE_PREF --species=$SPECIES --data_dir=$DATA_DIR --raw_dir=$SPECIES/$ID/fastq $sc_params $expected_clusters_params -c --atlas
 set +e
 
 
@@ -600,10 +603,10 @@ extra_params=
 if [ $distribute_by_subfolders == 1 ]; then
     extra_params=--subfolder
 fi
-echo irap_sdrf2conf --name $ID --sdrf $SDRF_FILE_FP --out_conf $CONF_FILE_PREF  --species=$SPECIES --data_dir=$DATA_DIR --raw_dir=$SPECIES/$ID/fastq --sop atlas_sc $sc_params $expected_clusters_params $extra_params
+echo irap_sdrf2conf --name $ID --sdrf $SDRF_FILE_FP --out_conf $CONF_FILE_PREF  --species=$SPECIES --data_dir=$DATA_DIR --raw_dir=$SPECIES/$ID/fastq --sop atlas_sc $sc_params $expected_clusters_params $extra_params --atlas
 
 set -e
-irap_sdrf2conf --name $ID --sdrf $SDRF_FILE_FP --out_conf $CONF_FILE_PREF  --species=$SPECIES --data_dir=$DATA_DIR --raw_dir=$SPECIES/$ID/fastq $sc_params $expected_clusters_params --sc --atlas $extra_params
+irap_sdrf2conf --name $ID --sdrf $SDRF_FILE_FP --out_conf $CONF_FILE_PREF  --species=$SPECIES --data_dir=$DATA_DIR --raw_dir=$SPECIES/$ID/fastq $sc_params $expected_clusters_params --sc --atlas $extra_params --atlas
 ## comment reference/gtf lines
 ## add an include to the species.conf file
 pinfo "Adding last details to the conf. file"
