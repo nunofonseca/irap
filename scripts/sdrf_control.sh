@@ -53,7 +53,7 @@ jobs_folder=$TOPLEVEL_FOLDER/.control/jobs
 #set -eux
 set -e
 function filepath2sdrf_id {
-    x=`basename $1|sed "s/.txt$//;s/.sdrf//"`
+    x=`basename $1|sed "s/\.txt$//;s/\.sdrf//"`
     echo $x
 }
 
@@ -77,7 +77,7 @@ if [ ! -d $control_folder ]; then
 fi
 
 
-lock_file=$control_folder/lock
+lock_file=$control_folder/sdrf.lock
 ## lock
 if [ -e $lock_file ]; then
     echo "ERROR: Unable to continue - found lock file $lock_file"
@@ -92,9 +92,10 @@ touch $lock_file
 
 
 pushd $TOPLEVEL_FOLDER &> /dev/null
+mkdir -p $control_folder
 mkdir -p $jobs_folder
 set +e
-SDRF_FILES=`ls -1 --color=never $SDRF_FOLDER/*.sdrf.txt 2> /dev/null`
+SDRF_FILES=`ls --color=never $SDRF_FOLDER/*.sdrf.txt 2> /dev/null`
 files=( $SDRF_FILES )
 
 ## keep a copy of the sdrf file
@@ -105,8 +106,8 @@ let mod_idfs=0
 for f in $SDRF_FILES; do
     bf=`basename $f`
     cbf=`cached_sdrf_file $f`
-    cidf=$(echo $cbf|sed "s/.sdrf./.idf./")
-    idf=$(dirname $f)/$(echo $bf|sed "s/.sdrf./.idf./")
+    cidf=$(echo $cbf|sed "s/\.sdrf\./.idf./")
+    idf=$(echo $f|sed "s/\.sdrf\./.idf./")
     if [ ! -e $cbf ]; then 
 	## new 
 	cp $f $cbf
@@ -124,7 +125,7 @@ for f in $SDRF_FILES; do
 	cp $idf $cidf
 	## force update
 	touch $cbf
-	echo "New IDF: $(basename $idf)"
+	echo "New IDF: $bf"
 	let new_idfs=$new_idfs+1
     else
 	if [  $idf -nt $cidf ]; then
