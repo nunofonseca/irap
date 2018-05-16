@@ -499,13 +499,13 @@ function download {
     ##
     if [ -d "$local_download_folder" ]; then
 	pinfo "Skipping download - looking for $fn in $local_download_folder"
-	if [ -e $local_download_folder/$file ]; then
+	if [ -e $local_download_folder/$fn ]; then
 	    ## rename file if necessary
 	    ## note: the subfolder, if used, is based on the $file name
 	    fn=$(fix_filename $fn)
 	    # avoid duplicating
 	    if [ ! -h $(readlink -f $fn) ]; then
-		ln -s $(readlink -f  $local_download_folder/$file) $(readlink -f $fn)
+		ln -s $(readlink -f  $local_download_folder/$fn) $(readlink -f $fn)
 	    fi
 	else
 	    echo "File $local_download_folder/$file  not found"
