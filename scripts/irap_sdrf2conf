@@ -628,7 +628,7 @@ for (specie in species) {
     has.tr <- (ue!=nrow(sdrf) && ue!=1)
     if ( ue==1 ) {
         ## it may be the case for SC (10x) that only ue==1
-        if (sdrf[1,trn]!="NA" && sdrf[1,trn]!="" ) {
+        if (sdrf[1,trn]!="NA" && sdrf[1,trn]!="" && sdrf[1,trn]!="not applicable" ) {
             has.tr <- TRUE
         }
     }
