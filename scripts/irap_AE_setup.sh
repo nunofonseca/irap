@@ -36,7 +36,8 @@ function usage {
  -S       - skip checking IDF
  -s       - single cell
  -a       - try to download private data (only works at EBI)
- -T threads - number of threads to download the files
+ -T threads - maximum number of threads that may be used to download the files
+ -P program_name - name of the script/program to be used to download the data (instead of wget). Shoud take two arguments: 1) uri of the file to download; 2) local filename.
  -b batch_number 
  -B batch_size   - number of cells/samples per batch
 EOF
@@ -118,9 +119,11 @@ THREADS=1
 batch_number=0
 batch_size=0
 skip_file_checking=0
+download_program=
 
-while getopts "b:B:T:t:p:d:i:CahceDdsSq"  Option; do
+while getopts "b:B:T:t:p:d:i:P:CahceDdsSq"  Option; do
     case $Option in
+	P ) download_program=$OPTARG;;
 	a ) download_private_data=y;;
 	e ) AT_EBI=1;;
 	c ) USE_CACHE=1;;
@@ -449,11 +452,19 @@ N_FQ=$(echo $FASTQ_FILES|wc -w)
 
 # TODO: handle the cases where the fastq_uri  may point to non-fastq files (bam/cram) or be empty
 function DOWNLOAD_PUBLIC {
-    url=$1
-    ofile=$2
+    local url=$1
+    local ofile=$2
+    local download_program=$3
     rm -f $ofile.tmp
+    ##echo "<<<<<<<<<<<<<<<<<"
     ##echo wget  -nv -c $url -O $ofile.tmp
-    wget  -nv -c $url -O $ofile.tmp && mv $ofile.tmp $ofile
+    if [ "-$download_program" != "-" ]; then
+	echo "Running: $download_program $url $ofile.tmp"
+	$download_program $url $ofile.tmp && mv $ofile.tmp $ofile
+    else
+	wget  -nv -c $url -O $ofile.tmp && mv $ofile.tmp $ofile
+    fi
+    [ -e $ofile ]
 }
 function DOWNLOAD_PRIVATE {
     url=$1
@@ -477,10 +488,10 @@ function DOWNLOAD_PRIVATE {
 }
 
 function DOWNLOAD_PRIVATE2 {
-    url=$1
-    ofile=$2
-    id=$3
-    sdrf_file=$4
+    local url=$1
+    local ofile=$2
+    local id=$3
+    local sdrf_file=$4
     ## submitted file
     set +e
     rm -f $ofile.tmp
@@ -499,8 +510,9 @@ function DOWNLOAD_PRIVATE2 {
 function download {
     file=$1
     fn=$2
+    local download_program=$3
     ##
-    if [ -e $local_download_folder ]; then
+    if [ -e $local_download_folder ] && [ "-$local_download_folder" != "-" ]; then
 	pinfo "Skipping download - looking for $fn in $local_download_folder"
 	if [ -e $local_download_folder/$file ]; then
 	    ## rename file if necessary
@@ -519,7 +531,7 @@ function download {
 	pinfo "downloading $fn"
 	if [ "$dl_fun" == "DOWNLOAD_PUBLIC" ]; then
 	    set +e
-	    DOWNLOAD_PUBLIC $file $fn		
+	    DOWNLOAD_PUBLIC $file $fn $download_program
 	    if [ $? -ne 0 ]; then
 	    echo "Failed to download from ENA  $file ..." > /dev/stderr
 	    dl_fun="DOWNLOAD_PRIVATE"
@@ -580,8 +592,7 @@ else
 		echo creating symlink?
 		echo TODO
 	    else
-		download $file $fn &
-		sleep 1
+		download $file $fn $download_program &
 	    fi
 	fi
     done
