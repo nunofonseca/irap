@@ -52,19 +52,19 @@ if [ "$MEM2-" == "-" ]; then
     MEM2=20000
 fi
 if [ "$MEM3-" == "-" ]; then
-    MEM2=30000
+    MEM3=30000
 fi
 if [ "$MEM4-" == "-" ]; then
-    MEM2=45000
+    MEM4=45000
 fi
 if [ "$MEM5-" == "-" ]; then
-    MEM2=55000
+    MEM5=55000
 fi
 if [ "$MEM6-" == "-" ]; then
-    MEM2=65000
+    MEM6=65000
 fi
 if [ "$MEM7-" == "-" ]; then
-    MEM2=85000
+    MEM7=85000
 fi
 max_mem_level=7
 control_folder=$TOPLEVEL_FOLDER/.control
