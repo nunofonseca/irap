@@ -22,10 +22,6 @@
 SDRF_FOLDER=$1
 TOPLEVEL_FOLDER=$2
 
-QUEUE=production-rh7
-LSF_GROUP=/download
-EMAIL_CC=nf@ebi.ac.uk
-MEM=8000
 has_changes=n
 
 
@@ -44,12 +40,34 @@ if [ ! -d $TOPLEVEL_FOLDER ]; then
     exit 1
 fi
 
+
 TOPLEVEL_FOLDER=$(readlink -f $TOPLEVEL_FOLDER)
 SDRF_FOLDER=$(readlink -f $SDRF_FOLDER)
 
 control_folder=$TOPLEVEL_FOLDER/.control
 jobs_folder=$TOPLEVEL_FOLDER/.control/jobs
 
+
+## Load configuration file
+##
+IRAP_AE_SETUP_PARAMS=
+QUEUE=production-rh7
+LSF_GROUP=/download
+EMAIL_CC=
+MEM=8000
+
+sdrf_control_conf_file=$(TOPLEVEL_FOLDER)/sdrf_control.conf
+if [ -e $sdrf_control_conf_file ]; then
+    echo "Found conf. file: $sdrf_control_conf_file"
+    source $sdrf_control_conf_file
+else
+    echo "No conf. file file found in $sdrf_control_conf_file"
+fi
+
+if [ "$EMAIL_CC-" == "-" ]; then
+    echo "ERROR: EMAIL_CC not defined - please define it in $sdrf_control_conf_file"
+    exit 1
+fi
 #set -eux
 set -e
 function filepath2sdrf_id {
@@ -247,8 +265,8 @@ for f in $SDRF_FILES; do
     cbf=`cached_sdrf_file $f`
     status=`get_file_status $bf|cut -f 1 -d\ `
     case $status in
-	new) run_wrapper $bf irap_AE_setup.sh -t $TOPLEVEL_FOLDER -c -i $cbf -a;;
-	mod) rerun_wrapper $bf irap_AE_setup.sh -t $TOPLEVEL_FOLDER -c -i $cbf -a;;
+	new) run_wrapper $bf irap_AE_setup.sh -t $TOPLEVEL_FOLDER -c -i $cbf -a $IRAP_AE_SETUP_PARAMS;;
+	mod) rerun_wrapper $bf irap_AE_setup.sh -t $TOPLEVEL_FOLDER -c -i $cbf -a $IRAP_AE_SETUP_PARAMS;;
 	nochange);; ## do nothing
     esac
 done
@@ -278,7 +296,7 @@ for f in $SDRF_FILES; do
 		 fi
 	     fi
 	     ;;
-	mod) rerun_wrapper $bf irap_AE_setup.sh -t $TOPLEVEL_FOLDER -c -i $cbf -a
+	mod) rerun_wrapper $bf irap_AE_setup.sh -t $TOPLEVEL_FOLDER -c -i $cbf -a $IRAP_AE_SETUP_PARAMS
 	     echo $bf RUN
 	     ;;
 	failed) quiet_echo $bf failed;;
