@@ -170,13 +170,18 @@ for f in $SDRF_FILES; do
 	echo Found $pf
     fi
     ## conf more recent than the status file
+    ## and there is a difference in the conf file
     if [ $pf -nt $rs ]; then
-	# modified
-	echo Modified $id
-	## killing jobs if necessary
-	kill_id_jobs $id
-	##
-	echo mod > $rs
+	#diff -q TODO
+	#res=$?
+	#if [ $res != 0 ]; then
+	    # modified
+	    echo Modified $id
+	    ## killing jobs if necessary
+	    kill_id_jobs $id
+	    ##
+	    echo mod > $rs
+	#fi
     fi
 done
 
