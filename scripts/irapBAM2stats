@@ -25,6 +25,8 @@ exec make --warn-undefined-variables -Rf "$0"  ${1+"$@"}
 # =========================================================
 file_exists=$(if  $(realpath $(1)),,$(call error,$(1) not found))
 
+SHELL=bash
+
 ifdef bam
  $(call file_exists,$(bam))
 else
