@@ -45,7 +45,9 @@ if [ "$OS-" == "ubuntu_16-" ]; then
     echo "Updating and installing Ubuntu packages"
     #apt-get install -y
     ## R >= 3.4.2
-    apt-get update
+    if [ "$IRAP_VERSION-" != "devel-" ]; then
+	apt-get update
+    fi
     apt-get install -yq --no-install-recommends build-essential
     apt-get install -yq --no-install-recommends unzip
     apt-get install -yq --no-install-recommends libpcre3-dev
@@ -63,7 +65,13 @@ if [ "$OS-" == "ubuntu_16-" ]; then
     apt-get clean
     os_install_done=y
 fi
-
+if [ "$OS-" == "aws-" ]; then
+    #yum update -y
+    yum install -y  zlib-devel python-devel bzip2-devel python readline-devel libgfortran gcc-gfortran gcc-c++ libX11-devel libXt-devel numpy gd-devel libxml2-devel libxml2 libpng texi2html libcurl-devel expat-devel  pango-devel cairo-devel  java python gcc gcc-c++ gcc-objc++  gcc-gfortran curl git which make bzip2 bison gettext-devel  unzip make wget sqlite sqlite-devel db4-devel libdb-devel graphviz texlive tar java-devel texinfo  xorg-x11-server-Xvfb automake evince  texlive-collection-latex firefox tk-devel tcl-devel libtool  R python3-devel python3
+    # texlive-incons*  
+    yum clean all
+    os_install_done=y
+fi
 if [ "$OS-" == "skip_os_install-" ]; then
     os_install_done=y
 fi
