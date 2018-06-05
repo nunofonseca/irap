@@ -77,6 +77,18 @@ if [ "$MAX_THREADS" != "1" ]; then
     echo "Using $MAX_THREADS threads..." > /dev/stderr
 #    set -eux
     set -e
+    ## check if version of bash is recent enough
+    bash_version=$(bash --version|head -n 1|cut -f 4 -d\ |cut -f 1 -d\()
+    major=$(echo $bash_version|cut -f 1 -d\.)
+    minor=$(echo $bash_version|cut -f 2 -d\.)
+    rev=$(echo $bash_version|cut -f 3 -d\.)
+    if [ $major -lt 4 ] ||
+	   ( [ $major -eq 4 ] && [ $minor -lt 4 ] ) ||
+	   ( [ $major -eq 4 ] && [ $minor -eq 4 ] &&  [ $rev -lt 19 ]) ; then
+	echo "Invalid version of bash: expected 4.4.19+ and got $bash_version" > /dev/stderr
+	exit 1
+    fi
+    ## bask ok...carry on
     let chunk=1
     fname_prefix=`mktemp .tmp.$$.XXXXXXXXXX`
     set +e
@@ -125,7 +137,11 @@ EOF
     set -e
     echo Merging $chunk files  > /dev/stderr
     # merge all tmp files (in parallel if necessary)
-    ofile=$fname_prefix.tsv    
+    ofile=$fname_prefix.tsv
+    if [ $chunk == 1 ]; then
+	## avoid infinite recursion
+	export MAX_THREADS=1
+    fi
     FILES_PER_THREAD=50 irap_merge_tsv_p.sh -stdin <<EOF > $ofile 
 $ofiles
 EOF
