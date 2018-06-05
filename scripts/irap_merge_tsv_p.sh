@@ -84,8 +84,8 @@ if [ "$MAX_THREADS" != "1" ]; then
     rev=$(echo $bash_version|cut -f 3 -d\.)
     if [ $major -lt 4 ] ||
 	   ( [ $major -eq 4 ] && [ $minor -lt 4 ] ) ||
-	   ( [ $major -eq 4 ] && [ $minor -eq 4 ] &&  [ $rev -lt 19 ]) ; then
-	echo "Invalid version of bash: expected 4.4.19+ and got $bash_version" > /dev/stderr
+	   ( [ $major -eq 4 ] && [ $minor -eq 4 ] &&  [ $rev -lt 18 ]) ; then
+	echo "Invalid version of bash: expected 4.4.18+ and got $bash_version" > /dev/stderr
 	exit 1
     fi
     ## bask ok...carry on
