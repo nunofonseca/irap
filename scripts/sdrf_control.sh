@@ -56,7 +56,7 @@ LSF_GROUP=/download
 EMAIL_CC=
 MEM=8000
 
-sdrf_control_conf_file=$(TOPLEVEL_FOLDER)/sdrf_control.conf
+sdrf_control_conf_file=$TOPLEVEL_FOLDER/sdrf_control.conf
 if [ -e $sdrf_control_conf_file ]; then
     echo "Found conf. file: $sdrf_control_conf_file"
     source $sdrf_control_conf_file
