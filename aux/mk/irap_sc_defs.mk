@@ -51,6 +51,9 @@ endef
 
 # theoretical locations of the barcodes
 #alias
+ifeq ($(sc_protocol),10x_v1)
+override sc_protocol:=10xV1
+endif
 ifeq ($(sc_protocol),10xV1)
 # index1=read2/I7, index2=I5
 $(eval $(call set_10x_params))
@@ -95,6 +98,9 @@ def_known_cells_file=$(IRAP_DIR)/data/10x/737K-april-2014_rc.txt
 $(info set 10x_v1p)
 endif
 
+ifeq ($(sc_protocol),10x_v2)
+override sc_protocol:=10xV2
+endif
 
 ifeq ($(sc_protocol),10xV2)
 $(eval $(call set_10x_params))
