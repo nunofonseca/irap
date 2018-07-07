@@ -21,7 +21,6 @@
 
 SDRF_FOLDER=$1
 TOPLEVEL_FOLDER=$2
-LOG_FOLDER=$3
 
 has_changes=n
 
@@ -47,7 +46,7 @@ SDRF_FOLDER=$(readlink -f $SDRF_FOLDER)
 
 control_folder=$TOPLEVEL_FOLDER/.control
 #jobs_folder=$TOPLEVEL_FOLDER/.control/jobs
-jobs_folder=$LOG_FOLDER/jobs
+jobs_folder=$TOPLEVEL_FOLDER/logs/jobs
 
 ## Load configuration file
 ##
