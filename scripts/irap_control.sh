@@ -23,6 +23,8 @@
 
 TOPLEVEL_FOLDER=$1
 
+CONF_DIR=$TOPLEVEL_FOLDER/conf/study
+
 if [ "$TOPLEVEL_FOLDER-" == "-" ]; then
     echo "ERROR: usage: irap_control.sh TOPLEVEL_FOLDER [id]"
     exit 1
@@ -113,6 +115,8 @@ else
 fi
 set +e
 
+echo "SF: " $SDRF_FILES
+
 function kill_id_jobs {
     set +e    
     lsf_list|grep $LSF_GROUP|grep "=$id.conf"|cut -f 1 -d,|while read n; do bkill $n; done
@@ -151,7 +155,7 @@ for f in $SDRF_FILES; do
     echo "rs=$rs ri=$ri id=$id"
     if [ ! -e $ri ]; then 
 	## new 
-	mfolder=`find . -maxdepth 2 -name "$id"`	
+	mfolder=`find $CONF_DIR -maxdepth 2 -name "$id"`	
 	if [ "$mfolder-" == "-" ]; then
 	    echo "unable to find $id.conf"
 	    exit 1
