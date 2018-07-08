@@ -102,7 +102,6 @@ function cached_sdrf_file {
 pushd $TOPLEVEL_FOLDER
 mkdir -p $control_folder
 
-
 if [ "$ID-" == "-" ]; then
     SDRF_FILES=`grep conf .control/*.sdrf.status|cut -f 1 -d:`
     files=( $SDRF_FILES )
@@ -115,8 +114,6 @@ else
     fi    
 fi
 set +e
-
-echo "SF: " $SDRF_FILES
 
 function kill_id_jobs {
     set +e    
@@ -161,7 +158,6 @@ for f in $SDRF_FILES; do
 	    echo "unable to find $id.conf"
 	    exit 1
 	fi
-	echo mfolder=$mfolder
 	pf="$mfolder/$id.conf"
 	echo $pf > $ri
 	echo new > $rs
@@ -232,7 +228,9 @@ function run_wrapper {
     shift 3
     
     pushd $wd
+    echo "in working dir $wd"
     set -e
+    echo "Status; $status"
     if [ $status == "runa" ]; then
 	    jid=`bash -c "set -o pipefail; $* | tail -n 1 |cut -f 2 -d="`
 	    rets=$?
@@ -250,6 +248,7 @@ function run_wrapper {
     if [ "$jid" == "All done - no need to submit jobs" ]; then
 	    jid="DONE"
     fi
+    echo "Setting status"
     ## change status
     set_run_status $id $status $jid
 }
@@ -325,17 +324,15 @@ for f in $SDRF_FILES; do
     rs=`id2runstatus $id`
     ri=`id2runinfo $id`
     conf=`cat $ri`
-    run_dir=`dirname $conf`
-    conf2=`basename $conf`
     scprot=`grep sc_protocol= $conf | cut -f 2 -d=`
     status=`get_run_status $id|cut -f 1 -d\ `
     echo id=$id $status
     case $status in
 	new)
-	    run_wrapper $id runa $WORKING_DIR IRAP_LSF_GROUP=$LSF_GROUP THREADS=$THREADS MEM=$MEM1 QUEUE=$QUEUE irap_lsf2 -s conf=$conf2
+	    run_wrapper $id runa $WORKING_DIR IRAP_LSF_GROUP=$LSF_GROUP THREADS=$THREADS MEM=$MEM1 QUEUE=$QUEUE irap_lsf2 -s conf=$conf
 	    ;;
 	mod)
-	    run_wrapper $id runa $WORKING_DIR IRAP_LSF_GROUP=$LSF_GROUP THREADS=$THREADS MEM=$MEM1 QUEUE=$QUEUE irap_lsf2 -s conf=$conf2
+	    run_wrapper $id runa $WORKING_DIR IRAP_LSF_GROUP=$LSF_GROUP THREADS=$THREADS MEM=$MEM1 QUEUE=$QUEUE irap_lsf2 -s conf=$conf
 	    ;;
 	reruna)
 	    rs=`get_mem_level $id`
@@ -343,11 +340,11 @@ for f in $SDRF_FILES; do
 	    echo $rs
 	    if [ "$rs-" != "$max_mem_level-" ]; then
 		MEMX=${!v}
-		run_wrapper $id runa $WORKING_DIR IRAP_LSF_GROUP=$LSF_GROUP THREADS=$THREADS MEM=$MEMX QUEUE=$QUEUE irap_lsf2 -s conf=$conf2
+		run_wrapper $id runa $WORKING_DIR IRAP_LSF_GROUP=$LSF_GROUP THREADS=$THREADS MEM=$MEMX QUEUE=$QUEUE irap_lsf2 -s conf=$conf
 	    fi
 	    ;;
 	rerunb)
-	    run_wrapper $id runb $WORKING_DIR bsub -M $MEM irap_sc conf=$conf2 atlas_bundle
+	    run_wrapper $id runb $WORKING_DIR bsub -M $MEM irap_sc conf=$conf atlas_bundle
 	    ;;
 	runa) s=`status_wrapper $id`
 	      if [ "$s-" == "DONE-" ]; then
