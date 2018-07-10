@@ -25,6 +25,7 @@ TOPLEVEL_FOLDER=$1
 
 CONF_DIR=$TOPLEVEL_FOLDER/conf/study
 WORKING_DIR=$TOPLEVEL_FOLDER/working
+RESULTS_DIR=$TOPLEVEL_FOLDER/results
 
 if [ "$TOPLEVEL_FOLDER-" == "-" ]; then
     echo "ERROR: usage: irap_control.sh TOPLEVEL_FOLDER [id]"
@@ -141,7 +142,7 @@ function id2idf {
     echo $control_folder/$1.idf.txt
 }
 function rundir2bundle_dir {
-    echo $1/$(basename $1)/sc_bundle
+    echo $1/$2/sc_bundle
 }
 ##
 set -e
@@ -203,7 +204,7 @@ function is_all_done {
 	echo "n"
     else
 	for f in `id2sdrf $id` `id2idf $id`; do
-	    cp -a $f `rundir2bundle_dir $run_dir`
+	    cp -a $f `rundir2bundle_dir $run_dir $id`
 	done
 	echo y
     fi
@@ -387,8 +388,14 @@ for f in $SDRF_FILES; do
 	    s=`is_all_done $id $WORKING_DIR`
 	    echo "s=$s" > /dev/stderr
 	    if [ "$s" == "y" ]; then
-		# set as all done
-		ddd=$(readlink -f `rundir2bundle_dir $WORKING_DIR`)
+		# Copy results out of working directory
+        bundle_dir=`rundir2bundle_dir $WORKING_DIR $id`
+        results=$RESULTS_DIR/`basename $bundle_dir`
+
+        cp -rp $bundle_dir $results
+
+        # set as all done
+		ddd=$(readlink -f $results)
 		set_run_status $id all_done $ddd
 		echo $id $WORKING_DIR all_done $ddd
 		touch all.done.txt
