@@ -46,6 +46,7 @@ option_list <- list(
     make_option(c("-c", "--max_threads"), type="numeric",default=1,help="Maximum number of threads that may be used."),
     make_option(c("-C", "--min_cells"), type="numeric",default=1,dest="min.cells",help="Filter genes based on the number of cells where it is expressed."),
     make_option(c("-G", "--min_genes"), type="numeric",default=1,dest="min.genes",help="Filter cells based on the number of genes expressed."),
+    make_option(c("-P", "--max-perplexity"), type="numeric",default=35,dest="max.perlexity",help="Maximum perplexity to consider."),
     make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode")
 )
 
@@ -186,7 +187,7 @@ gen.tsne <- function(nbt,perp,ofile) {
 }
 ## TODO: include the cell names in the TSNE
 library(Rtsne)
-perp.values <- c(1, 5, 10, 15, 20, 25, 30)
+perp.values <- c(1, seq(5,opt$max.perplexity,5))
 
 for (p in perp.values) {
     pinfo("TSNE: perplexity ",p)
