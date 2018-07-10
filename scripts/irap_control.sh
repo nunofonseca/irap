@@ -390,7 +390,7 @@ for f in $SDRF_FILES; do
 	    if [ "$s" == "y" ]; then
 		# Copy results out of working directory
         bundle_dir=`rundir2bundle_dir $WORKING_DIR $id`
-        results=$RESULTS_DIR/`basename $bundle_dir`
+        results=$RESULTS_DIR/$id
 
         cp -rp $bundle_dir $results
 
@@ -398,9 +398,12 @@ for f in $SDRF_FILES; do
 		ddd=$(readlink -f $results)
 		set_run_status $id all_done $ddd
 		echo $id $WORKING_DIR all_done $ddd
-		touch all.done.txt
-		echo $id $ddd >> all.done.txt
-		sort -u all.done.txt > all.tmp && mv all.tmp all.done.txt
+		
+        # Append to all_done.txt file
+        all_done=$RESULTS_DIR/all.done.txt
+        touch $all_done
+		echo $id $ddd >> $all_done
+		sort -u $all_done > $all_done.tmp && mv $all_done.tmp $all_done
 		
 	    else
 		set_run_status $id complete_onhold
