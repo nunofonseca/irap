@@ -23,6 +23,9 @@
 
 TOPLEVEL_FOLDER=$1
 
+CONF_DIR=$TOPLEVEL_FOLDER/conf/study
+WORKING_DIR=$TOPLEVEL_FOLDER/working
+
 if [ "$TOPLEVEL_FOLDER-" == "-" ]; then
     echo "ERROR: usage: irap_control.sh TOPLEVEL_FOLDER [id]"
     exit 1
@@ -99,7 +102,6 @@ function cached_sdrf_file {
 pushd $TOPLEVEL_FOLDER
 mkdir -p $control_folder
 
-
 if [ "$ID-" == "-" ]; then
     SDRF_FILES=`grep conf .control/*.sdrf.status|cut -f 1 -d:`
     files=( $SDRF_FILES )
@@ -151,12 +153,11 @@ for f in $SDRF_FILES; do
     echo "rs=$rs ri=$ri id=$id"
     if [ ! -e $ri ]; then 
 	## new 
-	mfolder=`find . -maxdepth 2 -name "$id"`	
+	mfolder=`find $CONF_DIR -maxdepth 2 -name "$id"`	
 	if [ "$mfolder-" == "-" ]; then
 	    echo "unable to find $id.conf"
 	    exit 1
 	fi
-	echo mfolder=$mfolder
 	pf="$mfolder/$id.conf"
 	echo $pf > $ri
 	echo new > $rs
@@ -227,24 +228,27 @@ function run_wrapper {
     shift 3
     
     pushd $wd
+    echo "in working dir $wd"
     set -e
+    echo "Status; $status"
     if [ $status == "runa" ]; then
-	jid=`bash -c "set -o pipefail; $* | tail -n 1 |cut -f 2 -d="`
-	rets=$?
+	    jid=`bash -c "set -o pipefail; $* | tail -n 1 |cut -f 2 -d="`
+	    rets=$?
     else
-	jid=`bash -c "set -o pipefail;$* | tail -n 1 |cut -f 1 -d\>|cut -f 2 -d\<"`
-	rets=$?
+	    jid=`bash -c "set -o pipefail;$* | tail -n 1 |cut -f 1 -d\>|cut -f 2 -d\<"`
+	    rets=$?
     fi
     popd
     echo jid=$jid
     if [ $rets -ne 0 ]; then
-	echo "Unable to submit job"
-	exit 1
+	    echo "Unable to submit job"
+	    exit 1
     fi
     ##
     if [ "$jid" == "All done - no need to submit jobs" ]; then
-	jid="DONE"
+	    jid="DONE"
     fi
+    echo "Setting status"
     ## change status
     set_run_status $id $status $jid
 }
@@ -320,17 +324,15 @@ for f in $SDRF_FILES; do
     rs=`id2runstatus $id`
     ri=`id2runinfo $id`
     conf=`cat $ri`
-    run_dir=`dirname $conf`
-    conf2=`basename $conf`
     scprot=`grep sc_protocol= $conf | cut -f 2 -d=`
     status=`get_run_status $id|cut -f 1 -d\ `
     echo id=$id $status
     case $status in
 	new)
-	    run_wrapper $id runa $run_dir IRAP_LSF_GROUP=$LSF_GROUP THREADS=$THREADS MEM=$MEM1 QUEUE=$QUEUE irap_lsf2 -s conf=$conf2
+	    run_wrapper $id runa $WORKING_DIR IRAP_LSF_GROUP=$LSF_GROUP THREADS=$THREADS MEM=$MEM1 QUEUE=$QUEUE irap_lsf2 -s conf=$conf
 	    ;;
 	mod)
-	    run_wrapper $id runa $run_dir IRAP_LSF_GROUP=$LSF_GROUP THREADS=$THREADS MEM=$MEM1 QUEUE=$QUEUE irap_lsf2 -s conf=$conf2
+	    run_wrapper $id runa $WORKING_DIR IRAP_LSF_GROUP=$LSF_GROUP THREADS=$THREADS MEM=$MEM1 QUEUE=$QUEUE irap_lsf2 -s conf=$conf
 	    ;;
 	reruna)
 	    rs=`get_mem_level $id`
@@ -338,11 +340,11 @@ for f in $SDRF_FILES; do
 	    echo $rs
 	    if [ "$rs-" != "$max_mem_level-" ]; then
 		MEMX=${!v}
-		run_wrapper $id runa $run_dir IRAP_LSF_GROUP=$LSF_GROUP THREADS=$THREADS MEM=$MEMX QUEUE=$QUEUE irap_lsf2 -s conf=$conf2
+		run_wrapper $id runa $WORKING_DIR IRAP_LSF_GROUP=$LSF_GROUP THREADS=$THREADS MEM=$MEMX QUEUE=$QUEUE irap_lsf2 -s conf=$conf
 	    fi
 	    ;;
 	rerunb)
-	    run_wrapper $id runb $run_dir bsub -M $MEM irap_sc conf=$conf2 atlas_bundle
+	    run_wrapper $id runb $WORKING_DIR bsub -M $MEM irap_sc conf=$conf atlas_bundle
 	    ;;
 	runa) s=`status_wrapper $id`
 	      if [ "$s-" == "DONE-" ]; then
@@ -365,14 +367,14 @@ for f in $SDRF_FILES; do
 	runb) s=`status_wrapper $id`
 	     if [ "$s-" == "DONE-" ]; then
 		 set_run_status $id run_complete
-		 echo $id $run_dir run_complete
+		 echo $id run_complete
 	     else
 		 if [ "$s-" != "RUN-" ] &&  [ "$s-" != "PEND-" ];  then
 		     rs=`get_mem_level $id`
 		     if [ "$rs-" == "6-" ]; then
-			 set_run_status $id onhold $run_dir
+			 set_run_status $id onhold $WORKING_DIR
 		     else
-			 set_run_status $id rerunb $run_dir
+			 set_run_status $id rerunb $WORKING_DIR
 		     fi
 		     echo "$id analysis failed"
 		 else
@@ -382,20 +384,20 @@ for f in $SDRF_FILES; do
 	     ;;
 #	complete)
 	run_complete)
-	    s=`is_all_done $id $run_dir`
+	    s=`is_all_done $id $WORKING_DIR`
 	    echo "s=$s" > /dev/stderr
 	    if [ "$s" == "y" ]; then
 		# set as all done
-		ddd=$(readlink -f `rundir2bundle_dir $run_dir`)
+		ddd=$(readlink -f `rundir2bundle_dir $WORKING_DIR`)
 		set_run_status $id all_done $ddd
-		echo $id $run_dir all_done $ddd
+		echo $id $WORKING_DIR all_done $ddd
 		touch all.done.txt
 		echo $id $ddd >> all.done.txt
 		sort -u all.done.txt > all.tmp && mv all.tmp all.done.txt
 		
 	    else
 		set_run_status $id complete_onhold
-		echo $id $run_dir complete_onhold
+		echo $id $WORKING_DIR complete_onhold
 	    fi
 	    ;;
 	all_done) echo $id all_done;;
