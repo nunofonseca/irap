@@ -325,15 +325,17 @@ for f in $SDRF_FILES; do
     rs=`id2runstatus $id`
     ri=`id2runinfo $id`
     conf=`cat $ri`
+    species=`awk -F/ '{print $(NF-2)}' <<< $conf`
+    run_dir=$WORKING_DIR/$species
     scprot=`grep sc_protocol= $conf | cut -f 2 -d=`
     status=`get_run_status $id|cut -f 1 -d\ `
     echo id=$id $status
     case $status in
 	new)
-	    run_wrapper $id runa $WORKING_DIR IRAP_LSF_GROUP=$LSF_GROUP THREADS=$THREADS MEM=$MEM1 QUEUE=$QUEUE irap_lsf2 -s conf=$conf
+	    run_wrapper $id runa $run_dir IRAP_LSF_GROUP=$LSF_GROUP THREADS=$THREADS MEM=$MEM1 QUEUE=$QUEUE irap_lsf2 -s conf=$conf
 	    ;;
 	mod)
-	    run_wrapper $id runa $WORKING_DIR IRAP_LSF_GROUP=$LSF_GROUP THREADS=$THREADS MEM=$MEM1 QUEUE=$QUEUE irap_lsf2 -s conf=$conf
+	    run_wrapper $id runa $run_dir IRAP_LSF_GROUP=$LSF_GROUP THREADS=$THREADS MEM=$MEM1 QUEUE=$QUEUE irap_lsf2 -s conf=$conf
 	    ;;
 	reruna)
 	    rs=`get_mem_level $id`
@@ -341,11 +343,11 @@ for f in $SDRF_FILES; do
 	    echo $rs
 	    if [ "$rs-" != "$max_mem_level-" ]; then
 		MEMX=${!v}
-		run_wrapper $id runa $WORKING_DIR IRAP_LSF_GROUP=$LSF_GROUP THREADS=$THREADS MEM=$MEMX QUEUE=$QUEUE irap_lsf2 -s conf=$conf
+		run_wrapper $id runa $run_dir IRAP_LSF_GROUP=$LSF_GROUP THREADS=$THREADS MEM=$MEMX QUEUE=$QUEUE irap_lsf2 -s conf=$conf
 	    fi
 	    ;;
 	rerunb)
-	    run_wrapper $id runb $WORKING_DIR bsub -M $MEM irap_sc conf=$conf atlas_bundle
+	    run_wrapper $id runb $run_dir bsub -M $MEM irap_sc conf=$conf atlas_bundle
 	    ;;
 	runa) s=`status_wrapper $id`
 	      if [ "$s-" == "DONE-" ]; then
@@ -373,9 +375,9 @@ for f in $SDRF_FILES; do
 		 if [ "$s-" != "RUN-" ] &&  [ "$s-" != "PEND-" ];  then
 		     rs=`get_mem_level $id`
 		     if [ "$rs-" == "6-" ]; then
-			 set_run_status $id onhold $WORKING_DIR
+			 set_run_status $id onhold $run_dir
 		     else
-			 set_run_status $id rerunb $WORKING_DIR
+			 set_run_status $id rerunb $run_dir
 		     fi
 		     echo "$id analysis failed"
 		 else
@@ -385,19 +387,19 @@ for f in $SDRF_FILES; do
 	     ;;
 #	complete)
 	run_complete)
-	    s=`is_all_done $id $WORKING_DIR`
+	    s=`is_all_done $id $run_dir`
 	    echo "s=$s" > /dev/stderr
 	    if [ "$s" == "y" ]; then
 		# Copy results out of working directory
-        bundle_dir=`rundir2bundle_dir $WORKING_DIR $id`
-        results=$RESULTS_DIR/$id
+        bundle_dir=`rundir2bundle_dir $run_dir $id`
+        results=$RESULTS_DIR/$species/$id
 
         cp -rp $bundle_dir $results
 
         # set as all done
 		ddd=$(readlink -f $results)
 		set_run_status $id all_done $ddd
-		echo $id $WORKING_DIR all_done $ddd
+		echo $id $run_dir all_done $ddd
 		
         # Append to all_done.txt file
         all_done=$RESULTS_DIR/all.done.txt
@@ -407,7 +409,7 @@ for f in $SDRF_FILES; do
 		
 	    else
 		set_run_status $id complete_onhold
-		echo $id $WORKING_DIR complete_onhold
+		echo $id $run_dir complete_onhold
 	    fi
 	    ;;
 	all_done) echo $id all_done;;
