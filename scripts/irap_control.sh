@@ -327,6 +327,7 @@ for f in $SDRF_FILES; do
     conf=`cat $ri`
     species=`awk -F/ '{print $(NF-2)}' <<< $conf`
     run_dir=$WORKING_DIR/$species
+    mkdir -p $run_dir
     scprot=`grep sc_protocol= $conf | cut -f 2 -d=`
     status=`get_run_status $id|cut -f 1 -d\ `
     echo id=$id $status
