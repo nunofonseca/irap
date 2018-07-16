@@ -393,7 +393,9 @@ for f in $SDRF_FILES; do
 	    if [ "$s" == "y" ]; then
 		# Copy results out of working directory
         bundle_dir=`rundir2bundle_dir $run_dir $id`
+        mkdir -p $RESULTS_DIR/$species
         results=$RESULTS_DIR/$species/$id
+        rm -rf $results
 
         cp -rp $bundle_dir $results
 
