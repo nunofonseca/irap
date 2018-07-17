@@ -56,10 +56,14 @@ opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filena
 
 pdebug.enabled <- opt$debug
 
+# Setup files
 
-## Stats from the BAM
+reads_per_chr_file <- paste0(opt$out,".tmp")
+generic_stats_file <- paste0(opt$bam_file,".stats.csv")
+
+## Reads per chr from the BAM
 pinfo("Generating ",opt$out,".tsv")
-cmd <- paste0("samtools view ",opt$bam_file," |cut -f 3|sort |uniq -c|awk 'BEGIN {OFS=\"\t\";} {print $2,$1;}' > ",opt$out,".tmp")
+cmd <- paste0("samtools view ",opt$bam_file," |cut -f 3|sort |uniq -c|awk 'BEGIN {OFS=\"\t\";} {print $2,$1;}' > ", reads_per_chr_file)
 status <- system(cmd)
 if ( status != 0 ) {
     q(status=status)
@@ -73,32 +77,37 @@ if ( status != 0 ) {
     q(status=status)
 }
 
+## Read the tables to generate a contamination summary
 
-# read the tables
-x <- read.tsv(paste0(opt$out,".tmp"),header=FALSE)
+# The generic status should be populated whatever
 
-if ( !is.null(x) ) {
-    x$class <- gsub(":.*","",x$V1)
-    y <- aggregate(x$V2,by=list(class=x$class),FUN=sum)
+out_col_names <- c("label","N")
+contamination_summary <- read.table(generic_stats_file, sep=",", col.names = out_col_names)
+contamination_summary <- rbind(contamination_summary,c("ReadsUnmapped",opt$reads))
 
-    ## read the tables
-    z <- read.table(paste0(opt$bam_file,".stats.csv"),sep=",")
-    z <- rbind(z,c("ReadsUnmapped",opt$reads))
-    y$class <- paste("class:",y$class,sep="")
-    x$class <-  paste("species:",x$V1,sep="")
-    x <- x[,c("class","V2")]
-    
-    colnames(z) <- c("label","N")
-    colnames(y) <- c("label","N")
-    colnames(x) <- c("label","N")
-    z <- rbind(z,y)
-    z <- rbind(z,x)
-} else {
-    z <- NULL
+# The reads per chr may not be populated if 0 reads mapped to chromosomes in
+# the contamination indices
+
+if ( file.size(reads_per_chr_file) > 0){
+    reads_per_chr <- read.tsv(reads_per_chr_file, header=FALSE)
+    reads_per_chr$class <- gsub(":.*","",reads_per_chr$V1)
+    reads_per_class <- aggregate(reads_per_chr$V2,by=list(class=reads_per_chr$class),FUN=sum)
+
+    reads_per_class$class <- paste("class:",reads_per_class$class,sep="")
+    reads_per_chr$class <-  paste("species:",reads_per_chr$V1,sep="")
+    reads_per_chr <- reads_per_chr[,c("class","V2")]
+
+    colnames(reads_per_chr) <- colnames(reads_per_class) <- out_col_names
+
+    # Add the results into the summary
+    contamination_summary <- do.call(rbind, list(contamination_summary, reads_per_class, reads_per_chr))
+}else{
+    pinfo("There were no mappings to contamination indices")
 }
-status=system(paste0("rm ",opt$out,".tmp "))
+
+status=system(paste0("rm ", reads_per_chr_file ))
 pinfo("Creating ",opt$out,"...")
-write.tsv(z,opt$out,header=T)
+write.tsv(contamination_summary, opt$out,header=T)
 pinfo("All done!")
 # 
 q(status=status)
