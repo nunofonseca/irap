@@ -391,28 +391,30 @@ for f in $SDRF_FILES; do
 	    s=`is_all_done $id $run_dir`
 	    echo "s=$s" > /dev/stderr
 	    if [ "$s" == "y" ]; then
-		# Copy results out of working directory
-        bundle_dir=`rundir2bundle_dir $run_dir $id`
-        mkdir -p $RESULTS_DIR/$species
-        results=$RESULTS_DIR/$species/$id
-        rm -rf $results
+            # Copy results out of working directory
+            bundle_dir=`rundir2bundle_dir $run_dir $id`
+            mkdir -p $RESULTS_DIR/$species
+            results=$RESULTS_DIR/$species/$id
+            rm -rf $results
 
-        cp -rp $bundle_dir $results
+            cp -rp $bundle_dir $results
 
-        # set as all done
-		ddd=$(readlink -f $results)
-		set_run_status $id all_done $ddd
-		echo $id $run_dir all_done $ddd
+            # set as all done
+            ddd=$(readlink -f $results)
+            set_run_status $id all_done $ddd
+            echo $id $run_dir all_done $ddd
+            
+            # Append to all_done.txt file
+            all_done=$RESULTS_DIR/all.done.txt
+            touch $all_done
+            echo $id $ddd >> $all_done
+            sort -u $all_done > $all_done.tmp && mv $all_done.tmp $all_done
 		
-        # Append to all_done.txt file
-        all_done=$RESULTS_DIR/all.done.txt
-        touch $all_done
-		echo $id $ddd >> $all_done
-		sort -u $all_done > $all_done.tmp && mv $all_done.tmp $all_done
-		
+            # Clean up any lingering .wave files pertaining to this run
+            grep -l $id $WORKING_DIR/.*.wave | xargs rm
 	    else
-		set_run_status $id complete_onhold
-		echo $id $run_dir complete_onhold
+            set_run_status $id complete_onhold
+            echo $id $run_dir complete_onhold
 	    fi
 	    ;;
 	all_done) echo $id all_done;;
