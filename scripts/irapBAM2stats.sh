@@ -3,12 +3,12 @@ set -e
 set -o pipefail
 
 if [ "$1-" = "-" ]; then
-    echo "Usage: irapBAM2stats2.sh bam_file_name" > /dev/stderr
+    echo "Usage: irapBAM2stats2.sh bam_file_name"  1>&2
     exit 1
 fi
 
 if [ ! -e $1.ridx ]; then
-    echo "Index not found: $1.ridx" > /dev/stderr
+    echo "Index not found: $1.ridx"  1>&2
     exit 1
 fi
 

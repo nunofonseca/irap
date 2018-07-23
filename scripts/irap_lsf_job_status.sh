@@ -17,7 +17,7 @@ sleep 60
 STATUS=`bjobs  -a -J $jobname| cut -c 17-22|tail -n 1| sed -E "s/([a-zA-Z]*).*/\1/"`
 
 if [ "$STATUS-" == "-" ]; then
-    echo "ERROR: Job $job information not found" > /dev/stderr
+    echo "ERROR: Job $job information not found"  1>&2
     exit 1
 fi
 

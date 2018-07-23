@@ -4,7 +4,7 @@
 FILES=$*
 set -e
 if [ "$1-" == "-" ]; then
-    echo "Missing arguments" > /dev/stderr
+    echo "Missing arguments"  1>&2
     exit 2
 fi
 OFILE=$1

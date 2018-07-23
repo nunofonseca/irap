@@ -107,7 +107,7 @@ function download2cache {
     mkdir -p $SRC_DIR/download
     pushd $SRC_DIR/download
     PACKAGES2DOWNLOAD=`set  | grep _URL=|sed "s/_URL.*//"|grep -v "PACKAGES"|uniq`
-    echo $PACKAGES2DOWNLOAD > /dev/stderr
+    echo $PACKAGES2DOWNLOAD  1>&2
     for p in $PACKAGES2DOWNLOAD; do
 	URL=${p}_URL
 	FILE=${p}_FILE
@@ -115,7 +115,7 @@ function download2cache {
 	download_software $p
 
 	if [ ! -e ${!FILE} ]; then
-	    echo "Failed downloading $p ${!URL}" > /dev/stderr
+	    echo "Failed downloading $p ${!URL}"  1>&2
 	    exit 1
 	else
 	    ls -lh ${!FILE}
@@ -2187,7 +2187,7 @@ fi
 
 
 if [ "$IRAP_DIR-" = "-" ]; then
-    echo ERROR: IRAP directory not defined. > /dev/stderr
+    echo ERROR: IRAP directory not defined.  1>&2
     usage
     exit 1    
 fi

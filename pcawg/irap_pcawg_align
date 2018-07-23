@@ -10,7 +10,7 @@ DATA_TOPLEVEL_DIR=test_data
 metadata_file=$DATA_TOPLEVEL_DIR/metadata.tsv
 
 if [ "$id-" == "-" ]; then
-   echo "Usage: irap_pcawg_align  SOP tar.gz ID" > /dev/stderr
+   echo "Usage: irap_pcawg_align  SOP tar.gz ID"  1>&2
    exit 1
 fi
 
@@ -26,7 +26,7 @@ if [ "$tarball-" == "-" ]; then
 fi
 
 if [ ! -e $tarball ]; then
-   echo "$tarball not found" > /dev/stderr
+   echo "$tarball not found"  1>&2
    exit 1
 fi
 

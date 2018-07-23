@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ "$1-" == "-" ]; then
-    echo "Usage: irap_lsf_filter_logs log_dir" > /dev/stderr
+    echo "Usage: irap_lsf_filter_logs log_dir"  1>&2
     exit 1
 fi
 
@@ -18,7 +18,7 @@ function check_jobs_status {
     out_files=`ls -1 $1/*.out 2>/dev/null`
     for f in $out_files; do
        OK=`grep -c -E  "^Successfully completed." $f`
-       #echo "OK=$OK" > /dev/stderr
+       #echo "OK=$OK"  1>&2
        if [ "$OK" == "1" ]; then
          let success_jobs=$success_jobs+1
        else 
