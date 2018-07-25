@@ -84,12 +84,6 @@ for (p in packages2install ) {
   cat("PACKAGE:",p,"\n")
   biocLite(p,ask=FALSE, suppressUpdates=c("^RcppArmadillo"))
 }
-## downgrade
-remove.packages("scater")
-remove.packages("SC3")
-install.packages('https://bioconductor.org/packages/3.5/bioc/src/contrib/scater_1.4.0.tar.gz')
-install.packages('https://bioconductor.org/packages/3.5/bioc/src/contrib/SC3_1.4.2.tar.gz')
-
 # http://bioconductor.org/packages/2.13/data/annotation/src/contrib/GO.db_2.10.1.tar.gz fails to install
 #biocLite('GO.db',ask=FALSE, suppressUpdates=TRUE)
 #biocLite("topGO",ask=FALSE, suppressUpdates=TRUE)
@@ -121,5 +115,11 @@ colnames(species2db)<-c("db","species")
 for (p in species2db[,'db']) {
   biocLite(p,ask=FALSE,, suppressUpdates=c("^RcppArmadillo"))
 }
+
+## downgrade
+remove.packages("scater")
+remove.packages("SC3")
+install.packages('https://bioconductor.org/packages/3.5/bioc/src/contrib/scater_1.4.0.tar.gz')
+install.packages('https://bioconductor.org/packages/3.5/bioc/src/contrib/SC3_1.4.2.tar.gz')
 
 q(status=0)
