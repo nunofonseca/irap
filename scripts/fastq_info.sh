@@ -3,7 +3,7 @@
 STDERR=/dev/stderr
 
 if [ "$*-" == "-"  ]; then
-    echo "fastq_info.sh .fastq [.fastq]" >  1>&2
+    echo "fastq_info.sh .fastq [.fastq]" 1>&2
     exit 1
 fi
 
