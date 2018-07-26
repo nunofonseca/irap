@@ -936,6 +936,9 @@ sc_quant_viz?=tsne
 tsne_min_cells?=1
 # filter cells based on the number of genes expressed
 tsne_min_genes?=1
+# max perplexity to consider
+tsne_max_perplexity?=35
+
 ########################
 ## Clustering
 ## Only used in sc mode
