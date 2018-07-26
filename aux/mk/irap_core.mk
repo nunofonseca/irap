@@ -554,7 +554,7 @@ reference_prefix=$(reference_abspath)
 reference_basename=$(notdir $(reference_abspath))
 
 ## transcripts
-override trans_abspath:=$(dir $(user_trans_abspath))/$(patsubst %.fasta,%.$(spikein_fasta_prefix),$(patsubst %.fa,%.fasta,$(subst .gz,,$(notdir $(user_trans_abspath))))).fa
+override user_trans_abspath:=$(dir $(user_trans_abspath))/$(patsubst %.fasta,%.$(spikein_fasta_prefix),$(patsubst %.fa,%.fasta,$(subst .gz,,$(notdir $(user_trans_abspath))))).fa
 
 user_gtf_abspath:=$(gtf_file_abspath)
 ifeq ($(share_files_in_reference),n)
@@ -2032,9 +2032,6 @@ $(user_trans_abspath): $(gtf_file_abspath) $(reference_abspath)
 endif
 
 ifdef spikein_data
-$(trans_abspath): $(subst .gz,,$(user_trans_abspath)) $(subst .gz,,$(spikein_fasta_abspath))
-	cat $^ > $@.tmp && mv $@.tmp $@
-
 
 $(reference_abspath): $(subst .gz,,$(user_reference_abspath)) $(subst .gz,,$(spikein_fasta_abspath))
 	cat $^ > $@.tmp && mv $@.tmp $@
