@@ -570,6 +570,8 @@ for (specie in species) {
     ## spikein
     if ( grepl("ercc.*",spikein) ) {
         conf.l <- rbind(conf.l,paste0("spikein_fasta=ERCC"))
+    } else if ( spikein == 'none' ) {
+        conf.l <- rbind(conf.l,paste0("spikein_fasta="))
     } else {
         conf.l <- rbind(conf.l,paste0("#spikein_fasta=",spikein))
     }
