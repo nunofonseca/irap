@@ -170,7 +170,7 @@ nbt <- RunPCA(object = nbt, pc.genes = nbt@var.genes, do.print = FALSE, pcs.prin
 
 gen.tsne <- function(nbt,perp,ofile) {
 
-    nbt.res <- myRunTSNE(object = nbt, dims.use = 1:30,  do.fast = TRUE,perplexity=perp)
+    nbt.res <- myRunTSNE(object = nbt, dim.embed = 3, dims.use = 1:30,  do.fast = TRUE,perplexity=perp)
 
     tosave <- nbt.res$tsne
     tosave <- cbind(tosave,Label=rownames(nbt.res$tsne))
