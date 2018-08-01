@@ -568,9 +568,13 @@ for (specie in species) {
     conf.l <- rbind(conf.l,paste0("gtf_file=",opt$gtf_file))
     
     ## spikein
+    #
+    # Value will be '' if no column was found, or if the column is empty (in
+    # which case we assert no spikes). 
+
     if ( grepl("ercc.*",spikein) ) {
         conf.l <- rbind(conf.l,paste0("spikein_fasta=ERCC"))
-    } else if ( spikein == 'none' ) {
+    } else if ( spikein == 'none' || spikein == '') {
         conf.l <- rbind(conf.l,paste0("spikein_fasta="))
     } else {
         conf.l <- rbind(conf.l,paste0("#spikein_fasta=",spikein))
