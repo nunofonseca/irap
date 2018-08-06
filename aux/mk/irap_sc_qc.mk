@@ -63,7 +63,7 @@ $(quant_toplevel_folder)/transcripts.raw.filtered.$(quant_method).$(expr_ext): $
 normailse_params=
 normalise_deps=
 ifdef spikein_fasta
-normalise_params:="-s $(spikein_gtf_file)"
+normalise_params:=-s $(spikein_gtf_file)
 normalise_deps:=$(spikein_gtf_file)
 endif
 
