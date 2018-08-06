@@ -60,11 +60,18 @@ $(quant_toplevel_folder)/transcripts.raw.filtered.$(quant_method).$(expr_ext): $
 
 # Normalise the sc matrices
 
-$(quant_toplevel_folder)/genes.raw.filtered.normalised.$(quant_method).$(expr_ext): $(quant_toplevel_folder)/genes.raw.filtered.$(quant_method).$(expr_ext)
-	irap_sc_normalise -i $< -o $@ --tsv -n genes
+normailse_params=
+normalise_deps=
+ifdef spikein_fasta
+normalise_params:="-s $(spikein_gtf_file)"
+normalise_deps:=$(spikein_gtf_file)
+endif
 
-$(quant_toplevel_folder)/transcripts.raw.filtered.normalised.$(quant_method).$(expr_ext): $(quant_toplevel_folder)/transcripts.raw.filtered.$(quant_method).$(expr_ext)
-	irap_sc_normalise -i $< -o $@ --tsv -n genes
+$(quant_toplevel_folder)/genes.raw.filtered.normalised.$(quant_method).$(expr_ext): $(quant_toplevel_folder)/genes.raw.filtered.$(quant_method).$(expr_ext) $(normalise_dep)
+	irap_sc_normalise -i $< -o $@ --tsv -n genes $(normalise_params)
+
+$(quant_toplevel_folder)/transcripts.raw.filtered.normalised.$(quant_method).$(expr_ext): $(quant_toplevel_folder)/transcripts.raw.filtered.$(quant_method).$(expr_ext) $(normalise_dep)
+	irap_sc_normalise -i $< -o $@ --tsv -n genes $(normalise_params)
 
 # STAGE4_OFILES+=
 # STAGE4_TARGETS+=
