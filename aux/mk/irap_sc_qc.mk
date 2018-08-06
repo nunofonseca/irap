@@ -58,6 +58,14 @@ $(quant_toplevel_folder)/genes.raw.filtered.$(quant_method).$(expr_ext): $(quant
 $(quant_toplevel_folder)/transcripts.raw.filtered.$(quant_method).$(expr_ext): $(quant_toplevel_folder)/transcripts.raw.$(quant_method).$(expr_ext) $(quant_toplevel_folder)/transcripts.raw.$(quant_method).qc.tsv
 	irap_filter_cols  -i $< -o $@ --$(expr_format) --qc $(quant_toplevel_folder)/transcripts.raw.$(quant_method).qc.tsv  || (rm -f $@ && exit 1)
 
+# Normalise the sc matrices
+
+$(quant_toplevel_folder)/genes.raw.normalised.filtered.$(quant_method).$(expr_ext): $(quant_toplevel_folder)/genes.raw.filtered.$(quant_method).$(expr_ext)
+	irap_sc_normalise -i $< -o $@ --tsv -n genes
+
+$(quant_toplevel_folder)/transcripts.raw.normalised.filtered.$(quant_method).$(expr_ext): $(quant_toplevel_folder)/transcripts.raw.filtered.$(quant_method).$(expr_ext)
+	irap_sc_normalise -i $< -o $@ --tsv -n genes
+
 # STAGE4_OFILES+=
 # STAGE4_TARGETS+=
 STAGE4_OUTFILES+=$(filtered_expr_matrices) $(cell_qc_files)
