@@ -60,10 +60,10 @@ $(quant_toplevel_folder)/transcripts.raw.filtered.$(quant_method).$(expr_ext): $
 
 # Normalise the sc matrices
 
-$(quant_toplevel_folder)/genes.raw.normalised.filtered.$(quant_method).$(expr_ext): $(quant_toplevel_folder)/genes.raw.filtered.$(quant_method).$(expr_ext)
+$(quant_toplevel_folder)/genes.raw.filtered.normalised.$(quant_method).$(expr_ext): $(quant_toplevel_folder)/genes.raw.filtered.$(quant_method).$(expr_ext)
 	irap_sc_normalise -i $< -o $@ --tsv -n genes
 
-$(quant_toplevel_folder)/transcripts.raw.normalised.filtered.$(quant_method).$(expr_ext): $(quant_toplevel_folder)/transcripts.raw.filtered.$(quant_method).$(expr_ext)
+$(quant_toplevel_folder)/transcripts.raw.filtered.normalised.$(quant_method).$(expr_ext): $(quant_toplevel_folder)/transcripts.raw.filtered.$(quant_method).$(expr_ext)
 	irap_sc_normalise -i $< -o $@ --tsv -n genes
 
 # STAGE4_OFILES+=
