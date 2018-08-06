@@ -41,7 +41,9 @@ filenames <- c("ifile","lengths")
 # specify our desired options in a list
 
 option_list <- list(
-    make_option(c("-i", "--ifile"), type="character", dest="ifile", help="TSV file name with the matrix with the counts per cell by gene/transcript."),
+    make_option(c("-i", "--ifile"), type="character", dest="ifile", help="TSV or MTX file name with the matrix with the counts per cell by gene/transcript."),
+    make_option(c("-j", "--jfile"), type="character", dest="ifile", help="TSV or MTX file name with the matrix with the normalised counts per cell by gene/transcript."),
+    make_option(c("-s", "--spikes"), type="character", dest="spikes", default=NULL, help="Optional GTF file with spike features"),
     make_option(c("--mtx"), action="store_true",default=FALSE,dest="is_mtx",help="The input file is in Matrix Market format. Default is TSV format."),
     make_option(c("--tsv"), action="store_false",default=FALSE,dest="is_mtx",help="The input file is in TSV format (default)."),
     make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name prefix."),
@@ -53,7 +55,7 @@ option_list <- list(
 )
 
 multiple.options <- NULL
-mandatory <- c("ifile","out")
+mandatory <- c("ifile","jfile","out")
 
 # Parse arguments
 
@@ -75,19 +77,22 @@ if ( opt$max_clusters<opt$min_clusters ) {
 
 pinfo("Loading ",opt$ifile)
 if ( opt$is_mtx ) {
-    table <- mtx.load(opt$ifile)
+    raw <- mtx.load(opt$ifile)
+    norm <- mtx.load(opt$jfile)
 } else {
-    table <- quant.load(opt$ifile)
+    raw <- as.matrix(quant.load(opt$ifile))
+    norm <- as.matrix(quant.load(opt$jfile))
 }
 pinfo("Loading ",opt$ifile," done.")
 
 do.clustering <- TRUE
 
-if ( is.null(table) )  {
-    do.clustering <- FALSE
+if ( is.null(raw) )  {
+  do.clustering <- FALSE
 } else {
-    if ( ncol(table)<=3 ) 
-        do.clustering <- FALSE
+  if ( ncol(raw)<=3 ){ 
+    do.clustering <- FALSE
+  }
 }
 
 # Load packages only after checking arguments and inputs
@@ -99,18 +104,28 @@ if (!do.clustering) {
     perror("Insufficient samples/cells to cluster")
     clusters_by_k <- matrix(ncol=0,nrow=0)
 } else {
-
-  counts_matrix <- as.matrix(table)
   
   # Create SingleCellExperiment
   
   sce <- SingleCellExperiment(
     assays = list(
-      counts = counts_matrix,
-      logcounts = log2(counts_matrix + 1)
+      counts = raw,
+      logcounts = norm
     )
   )
   rowData(sce)$feature_symbol <- rownames(sce)
+  
+  # Identify the spikes (where present)
+  
+  if ( ! is.null(opt$spikes) ){
+    spikes <- load.gtf(opt$spikes)
+    if (any(unique(spikes$seqid) %in% rownames(sce))){
+      isSpike(sce, "spikes") <- unique(spikes$seqid)
+    }else{
+      pinfo(paste("Supplied spikes in", opt$spikes, "don't exist in expression matrix"))
+      opt$spikes <- NULL
+    }
+  }
   
   # Estimate clusters anyway. We will report it even if we don't use it
   
