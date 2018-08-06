@@ -104,28 +104,18 @@ if (!do.clustering) {
     perror("Insufficient samples/cells to cluster")
     clusters_by_k <- matrix(ncol=0,nrow=0)
 } else {
+
+  counts_matrix <- as.matrix(table)
   
   # Create SingleCellExperiment
   
   sce <- SingleCellExperiment(
     assays = list(
-      counts = raw,
-      logcounts = norm
+      counts = counts_matrix,
+      logcounts = log2(counts_matrix + 1)
     )
   )
   rowData(sce)$feature_symbol <- rownames(sce)
-  
-  # Identify the spikes (where present)
-  
-  if ( ! is.null(opt$spikes) ){
-    spikes <- load.gtf(opt$spikes)
-    if (any(unique(spikes$seqid) %in% rownames(sce))){
-      isSpike(sce, "spikes") <- unique(spikes$seqid)
-    }else{
-      pinfo(paste("Supplied spikes in", opt$spikes, "don't exist in expression matrix"))
-      opt$spikes <- NULL
-    }
-  }
   
   # Estimate clusters anyway. We will report it even if we don't use it
   
@@ -148,7 +138,7 @@ if (!do.clustering) {
   # Do the actual clustering with SC3
   
   ks <- seq(k.range[1],k.range[2])
-  sce <- sc3(sce, ks = ks, biology = TRUE, n_cores=opt$max_threads, k_estimator=TRUE)
+  sceset <- sc3(sce, ks = ks, biology = TRUE, n_cores=opt$max_threads, k_estimator=TRUE)
 
   pdebug.save.state("irap_sc3","p1")
 
@@ -177,11 +167,10 @@ marker_cols <- c('clusts', 'padj', 'auroc')
 for (k in ks){
   sel <- data.frame(rowData(sce)[,paste0('sc3_', k, '_markers_', marker_cols), drop = FALSE ], row.names = rownames(sce))
   colnames(sel) <- marker_cols
-  sel$feat <- rownames(sel)
   
   # Output only those rows without NAs for 'clusts' or 'padj' column
   
-  ofile <- paste0(out.prefix,"_",k,"_marker_genes.tsv")
-  write.table(subset(sel, !( is.na(clusts) | is.na(padj))),file=ofile,  sep="\t",  row.names=FALSE,col.names=TRUE, quote=FALSE)
+  ofile <- paste0(out.prefix,"_",k,"_marker_genes_test.tsv")
+  write.table(subset(sel, !( is.na(clusts) | is.na(padj))),file=ofile,sep="\t",row.names=FALSE,col.names=TRUE,quote=FALSE)
   pinfo("Created ",ofile)
 }
