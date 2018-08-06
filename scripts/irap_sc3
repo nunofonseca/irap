@@ -165,7 +165,7 @@ for (k in ks){
   
   # Output only those rows without NAs for 'clusts' or 'padj' column
   
-  ofile <- paste0(out.prefix,"_",k,"_marker_genes_test.tsv")
+  ofile <- paste0(out.prefix,"_",k,"_marker_genes.tsv")
   write.table(subset(sel, !( is.na(clusts) | is.na(padj))),file=ofile,sep="\t",row.names=FALSE,col.names=TRUE,quote=FALSE)
   pinfo("Created ",ofile)
 }
