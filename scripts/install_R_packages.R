@@ -79,7 +79,7 @@ packages2install<-c("intervals","gclus",'R2HTML',"agricolae","bit64",
                     "Matrix","Matrix.utils",
                     'EBSeq',
                     'limma','marray','igraph',"scater","Rtsne","SC3",
-                    "Seurat")
+                    "scran", "Seurat")
 for (p in packages2install ) {
   cat("PACKAGE:",p,"\n")
   biocLite(p,ask=FALSE, suppressUpdates=c("^RcppArmadillo"))
