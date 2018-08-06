@@ -52,10 +52,10 @@ endif
 ## SC3 rules
 # also generates _marker_genes.tsv for each k
 # and multiple files with the coordinates of TSNe based on different perplexity values - tsne_perp_PERP_VAL.tsv
-$(quant_toplevel_folder)/sc3/genes.raw.filtered.$(quant_method).clusters.tsv: $(quant_toplevel_folder)/genes.raw.filtered.normalised.$(quant_method).$(expr_ext) 
+$(quant_toplevel_folder)/sc3/genes.raw.filtered.normalised.$(quant_method).clusters.tsv: $(quant_toplevel_folder)/genes.raw.filtered.normalised.$(quant_method).$(expr_ext) 
 	mkdir -p $(@D) && irap_sc3 -i $< --$(expr_format) --out $(quant_toplevel_folder)/sc3/genes.raw.filtered.$(quant_method).irap --min_clusters $(min_clusters) --max_clusters $(max_clusters) --max_threads $(max_threads) && mv $(quant_toplevel_folder)/sc3/genes.raw.filtered.$(quant_method).irap_clusters.tsv $@ || ( rm -f $@* && exit 1)
 
-$(quant_toplevel_folder)/sc3/transcripts.raw.filtered.$(quant_method).clusters.tsv: $(quant_toplevel_folder)/transcripts.raw.filtered.normalised.$(quant_method).$(expr_ext) 
+$(quant_toplevel_folder)/sc3/transcripts.raw.filtered.normalised.$(quant_method).clusters.tsv: $(quant_toplevel_folder)/transcripts.raw.filtered.normalised.$(quant_method).$(expr_ext) 
 	mkdir -p $(@D) &&  irap_sc3 -i $< --$(expr_format) --out $(quant_toplevel_folder)/sc3/transcripts.raw.$(quant_method).irap --min_clusters $(min_clusters) --max_clusters $(max_clusters) --max_threads $(max_threads)  || ( rm -f $@* && exit 1)
 
 
