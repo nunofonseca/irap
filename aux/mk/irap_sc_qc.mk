@@ -61,10 +61,10 @@ $(quant_toplevel_folder)/transcripts.raw.filtered.$(quant_method).$(expr_ext): $
 # Normalise the sc matrices
 
 normailse_params=
-normalise_deps=
+normalise_dep=
 ifdef spikein_fasta
 normalise_params:=-s $(spikein_gtf_file)
-normalise_deps:=$(spikein_gtf_file)
+normalise_dep:=$(spikein_gtf_file)
 endif
 
 $(quant_toplevel_folder)/genes.raw.filtered.normalised.$(quant_method).$(expr_ext): $(quant_toplevel_folder)/genes.raw.filtered.$(quant_method).$(expr_ext) $(normalise_dep)
