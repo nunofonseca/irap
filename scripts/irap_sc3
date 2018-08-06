@@ -42,7 +42,7 @@ filenames <- c("ifile","lengths")
 
 option_list <- list(
     make_option(c("-i", "--ifile"), type="character", dest="ifile", help="TSV or MTX file name with the matrix with the counts per cell by gene/transcript."),
-    make_option(c("-j", "--jfile"), type="character", dest="ifile", help="TSV or MTX file name with the matrix with the normalised counts per cell by gene/transcript."),
+    make_option(c("-j", "--jfile"), type="character", dest="jfile", help="TSV or MTX file name with the matrix with the normalised counts per cell by gene/transcript."),
     make_option(c("-s", "--spikes"), type="character", dest="spikes", default=NULL, help="Optional GTF file with spike features"),
     make_option(c("--mtx"), action="store_true",default=FALSE,dest="is_mtx",help="The input file is in Matrix Market format. Default is TSV format."),
     make_option(c("--tsv"), action="store_false",default=FALSE,dest="is_mtx",help="The input file is in TSV format (default)."),
