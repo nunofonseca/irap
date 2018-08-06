@@ -1,0 +1,110 @@
+#!/usr/bin/env Rscript
+#; -*- mode: R;-*-
+# =========================================================
+# Copyright 2012-2018,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+# =========================================================
+
+###############################################################
+
+# This script undertakes normalisation of single-cell RNA-seq data
+
+suppressPackageStartupMessages(library("optparse"))
+
+IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
+if ( IRAP.DIR == "" ) {
+  cat("ERROR: environment variable IRAP_DIR is not set\n")
+  q(status=1)
+}
+#
+# specify our desired options in a list
+#
+source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
+pdebug.enabled <- TRUE
+#######################
+usage <- "irap_sdrf2conf --name exp_name --species species --sdrf file --out_conf  [options]"
+
+option_list <- list(
+  make_option(c("-i", "--ifile"), type="character", dest="ifile", default=NULL, help="Expression matrix in .tsv format"),
+  make_option(c("-s", "--spikes"), type="character", dest="spikes", default=NULL, help="Optional GTF file with spike features"),
+  make_option(c("--mtx"), action="store_true",default=FALSE,dest="is_mtx",help="The input file is in Matrix Market format. Default is TSV format."),
+  make_option(c("--tsv"), action="store_false",default=FALSE,dest="is_mtx",help="The input file is in Matrix Market format. Default is TSV format."),
+  make_option(c("-n", "--normalisation"), type="character", dest="norm", default="genes", help="Normalisation method- 'genes' or 'spikes"),
+  make_option(c("-o","--out"),type="character",default=NULL,help="Output mtx file")
+)
+
+opt <- myParseArgs(usage = usage, option_list=option_list, filenames.exist=c('ifile'), mandatory=c('ifile', 'out'))
+
+# Once arguments are checked, load the necessary packages
+
+suppressPackageStartupMessages(library(SC3))
+suppressPackageStartupMessages(library(scater))
+suppressPackageStartupMessages(library(scran))
+
+# Load the count data
+
+pinfo("Loading ",opt$ifile)
+if ( opt$is_mtx ) {
+  
+  # scran requires a dgCMatrix rather than dgTMatrix
+  
+  filtered_counts <- as(mtx.load(opt$ifile), "dgCMatrix")
+} else {
+  filtered_counts <- as.matrix(quant.load(opt$ifile))
+}
+
+# Create the SingleCellExperiment object
+
+sce <- SingleCellExperiment(list(counts=filtered_counts))
+
+# Identify the spikes (where present)
+
+if ( ! is.null(opt$spikes) ){
+  spikes <- load.gtf(opt$spikes)
+  if (any(unique(spikes$seqid) %in% rownames(sce))){
+    isSpike(sce, "spikes") <- unique(spikes$seqid)
+  }else{
+    pinfo(paste("Supplied spikes in", opt$spikes, "don't exist in expression matrix"))
+    opt$spikes <- NULL
+  }
+}
+
+# Normalisation can be by gene or spikes. Even in the gene case, separate size
+# factors should be calculated for spikes (where present)
+
+if (opt$norm == 'genes'){
+  sce <- computeSumFactors(sce)
+  if ( ! is.null(opt$spikes) ){
+    sce <- computeSpikeFactors( sce, general.use=FALSE ) 
+  }
+}else if (opt$norm == 'spikes'){
+  sce <- computeSpikeFactors(sce)
+}
+
+# Do the actual normalisation
+
+sce <- normalize(sce)
+
+# Save the normalised counts
+
+pinfo("Writing output")
+if ( opt$is_mtx ) {
+  write.mtx(exprs(sce), filename=opt$out, gzip=TRUE)
+}else{
+  write.tsv(exprs(sce), file=opt$out, rownames.label = 'Feature') 
+}
