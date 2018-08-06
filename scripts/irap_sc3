@@ -138,7 +138,7 @@ if (!do.clustering) {
   # Do the actual clustering with SC3
   
   ks <- seq(k.range[1],k.range[2])
-  sceset <- sc3(sce, ks = ks, biology = TRUE, n_cores=opt$max_threads, k_estimator=TRUE)
+  sce <- sc3(sce, ks = ks, biology = TRUE, n_cores=opt$max_threads, k_estimator=TRUE)
 
   pdebug.save.state("irap_sc3","p1")
 
