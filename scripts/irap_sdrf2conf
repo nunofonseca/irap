@@ -402,17 +402,19 @@ if ( ! normalize.cols("technical replicate group") %in% colnames(sdrf) ) {
     ## some groups entries may be empty
     ## use the source name to fill the missing values
     nc <- normalize.cols("technical replicate group")
-    is.empty <- sdrf[,nc]==""
-    if ( sum(is.empty)>0) {
-        perror("SDRF: Found ",sum(is.empty)," entries in technical replicate group without values")
+
+    # Consider that there are no tech rep groups if 1) all values are empty (''
+    # or NA) or 2) there is a single value
+
+    tr <- sdrf[,nc]
+
+    is.empty <- tr == "" | is.na(tr)
+    if (all(is.empty) || length(unique(tr)) == 1){
+        sdrf[,nc] <- ""
+    }else if ( any(is.emtpy) ){
+        perror("SDRF: Found ",sum(is.empty)," entries in technical replicate group without values where some values are set")
         q(status=1)
     }
-    ## ignore if there is a single value: e.g., not aplicable
-    nn <- table(tolower(sdrf[,nc]))
-    if ( max(nn) == length(nrow(sdrf)) ) {
-        sdrf[,nc] <- ""
-    }
-    #sdrf$"technical replicate group"[is.empty] <- sdrf$"source name"[is.empty]
 }
 
 ######
