@@ -411,7 +411,7 @@ if ( ! normalize.cols("technical replicate group") %in% colnames(sdrf) ) {
     is.empty <- tr == "" | is.na(tr)
     if (all(is.empty) || length(unique(tr)) == 1){
         sdrf[,nc] <- ""
-    }else if ( any(is.emtpy) ){
+    }else if ( any(is.empty) ){
         perror("SDRF: Found ",sum(is.empty)," entries in technical replicate group without values where some values are set")
         q(status=1)
     }
