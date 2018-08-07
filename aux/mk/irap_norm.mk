@@ -70,7 +70,14 @@ $(quant_toplevel_folder)/exons.deseq_nlib.$(exon_quant_method).irap.tsv: $(quant
 	irap_deseq_norm $<  > $@.tmp && mv $@.tmp $@
 endif
 
-# scran- single-cell aware normalisation
+# scran- single-cell aware normalisation the sc matrices
+
+normalised_count_matrices=$(patsubst %,$(quant_toplevel_folder)/genes.scran_nlib.$(quant_method).%,$(expr_ext) .mtx.gz)
+#normalised_count_matrices=$(quant_toplevel_folder)/genes.scran_nlib.$(quant_method).$(expr_ext)
+ifeq ($(transcript_expr),y)
+normalised_count_matrices+=$(patsubst %,$(quant_toplevel_folder)/transcripts.scran_nlib.$(quant_method).%,$(expr_ext) .mtx.gz)
+#normalised_count_matrices+=$(quant_toplevel_folder)/transcripts.scran_nlib.$(quant_method).$(expr_ext)
+endif
 
 scran_params=
 scran_dep=
@@ -79,19 +86,11 @@ scran_params:=-s $(spikein_gtf_file)
 scran_dep:=$(spikein_gtf_file)
 endif
 
-$(quant_toplevel_folder)/genes.scran_gene.$(quant_method).$(expr_ext): $(quant_toplevel_folder)/genes.raw.filtered.$(quant_method).$(expr_ext) $(scran_dep)
-	irap_scran_normalise -i $< -o $@.tmp --tsv -n genes $(scran_params) && mv $@.tmp $@
+$(quant_toplevel_folder)/genes.scran_nlib.$(quant_method).$(expr_ext): $(quant_toplevel_folder)/genes.raw.filtered.$(quant_method).$(expr_ext) $(scran_dep)
+	irap_sc_normalise -i $< -o $@.tmp --tsv -n genes $(scran_params) && mv $@.tmp $@
 
-$(quant_toplevel_folder)/transcripts.scran_gene.$(quant_method).$(expr_ext): $(quant_toplevel_folder)/transcripts.raw.filtered.$(quant_method).$(expr_ext) $(scran_dep)
-	irap_scran_normalise -i $< -o $@.tmp --tsv -n genes $(scran_params) && mv $@.tmp $@
-
-# Return normalised count matrices, possibly in addition to another normalisation
-
-normalised_count_matrices=$(patsubst %,$(quant_toplevel_folder)/genes.$(quant_norm_libsize_method).$(quant_method).%,$(expr_ext) mtx.gz mtx_cols.gz mtx_rows.gz)
-ifeq ($(transcript_expr),y)
-normalised_count_matrices+=$(patsubst %,$(quant_toplevel_folder)/transcripts.$(quant_norm_libsize_method).$(quant_method).%,$(expr_ext) mtx.gz mtx_cols.gz mtx_rows.gz)
-endif
-
+$(quant_toplevel_folder)/transcripts.scran_nlib.$(quant_method).$(expr_ext): $(quant_toplevel_folder)/transcripts.raw.filtered.$(quant_method).$(expr_ext) $(scran_dep)
+	irap_sc_normalise -i $< -o $@.tmp --tsv -n genes $(scran_params) && mv $@.tmp $@
 
 #################################################################
 # Disabled: just copy the file with the raw quantification values
