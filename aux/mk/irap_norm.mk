@@ -72,11 +72,9 @@ endif
 
 # scran- single-cell aware normalisation the sc matrices
 
-normalised_count_matrices=$(patsubst %,$(quant_toplevel_folder)/genes.scran_nlib.$(quant_method).%,$(expr_ext) .mtx.gz)
-#normalised_count_matrices=$(quant_toplevel_folder)/genes.scran_nlib.$(quant_method).$(expr_ext)
+normalised_count_matrices=$(patsubst %,$(quant_toplevel_folder)/genes.scran_nlib.$(quant_method).%,$(expr_ext) mtx.gz)
 ifeq ($(transcript_expr),y)
-normalised_count_matrices+=$(patsubst %,$(quant_toplevel_folder)/transcripts.scran_nlib.$(quant_method).%,$(expr_ext) .mtx.gz)
-#normalised_count_matrices+=$(quant_toplevel_folder)/transcripts.scran_nlib.$(quant_method).$(expr_ext)
+normalised_count_matrices+=$(patsubst %,$(quant_toplevel_folder)/transcripts.scran_nlib.$(quant_method).%,$(expr_ext) mtx.gz)
 endif
 
 scran_params=
