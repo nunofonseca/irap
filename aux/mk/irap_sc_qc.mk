@@ -58,26 +58,6 @@ $(quant_toplevel_folder)/genes.raw.filtered.$(quant_method).$(expr_ext): $(quant
 $(quant_toplevel_folder)/transcripts.raw.filtered.$(quant_method).$(expr_ext): $(quant_toplevel_folder)/transcripts.raw.$(quant_method).$(expr_ext) $(quant_toplevel_folder)/transcripts.raw.$(quant_method).qc.tsv
 	irap_filter_cols  -i $< -o $@ --$(expr_format) --qc $(quant_toplevel_folder)/transcripts.raw.$(quant_method).qc.tsv  || (rm -f $@ && exit 1)
 
-# Normalise the sc matrices
-
-normalised_expr_matrices=$(quant_toplevel_folder)/genes.raw.filtered.normalised.$(quant_method).$(expr_ext)
-ifeq ($(transcript_expr),y)
-normalised_expr_matrices+=$(quant_toplevel_folder)/transcripts.raw.filtered.normalised.$(quant_method).$(expr_ext)
-endif
-
-normailse_params=
-normalise_dep=
-ifdef spikein_fasta
-normalise_params:=-s $(spikein_gtf_file)
-normalise_dep:=$(spikein_gtf_file)
-endif
-
-$(quant_toplevel_folder)/genes.raw.filtered.normalised.$(quant_method).$(expr_ext): $(quant_toplevel_folder)/genes.raw.filtered.$(quant_method).$(expr_ext) $(normalise_dep)
-	irap_sc_normalise -i $< -o $@ --tsv -n genes $(normalise_params)
-
-$(quant_toplevel_folder)/transcripts.raw.filtered.normalised.$(quant_method).$(expr_ext): $(quant_toplevel_folder)/transcripts.raw.filtered.$(quant_method).$(expr_ext) $(normalise_dep)
-	irap_sc_normalise -i $< -o $@ --tsv -n genes $(normalise_params)
-
 # STAGE4_OFILES+=
 # STAGE4_TARGETS+=
 STAGE4_OUTFILES+=$(filtered_expr_matrices) $(cell_qc_files)

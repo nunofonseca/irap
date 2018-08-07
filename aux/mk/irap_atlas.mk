@@ -32,7 +32,7 @@ ifeq ($(rnaseq_type),sc)
 ##ALL_TARGETS+=atlas_sc_wrap_up
 ## expression matrix
 ## QC
-ATLAS_SC_FILES+=$(qc_toplevel_folder)/qc.tsv $(cell_qc_files) $(filtered_expr_matrices) $(normalised_expr_matrices) $(clustering_files) $(report_toplevel_folder)/software.tsv   $(report_toplevel_folder)/versions.tsv
+ATLAS_SC_FILES+=$(qc_toplevel_folder)/qc.tsv $(cell_qc_files) $(filtered_expr_matrices) $(normalised_count_matrices) $(clustering_files) $(report_toplevel_folder)/software.tsv   $(report_toplevel_folder)/versions.tsv
 ifneq ($(sc_quant_viz),none)
 ATLAS_SC_FILES+=$(sc_visualization_files)
 endif
