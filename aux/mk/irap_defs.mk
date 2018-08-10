@@ -105,6 +105,11 @@ user_trans_biotypes:=protein_coding|lincRNA
 spikein_fasta:=ERCC
 ##
 
+# Count-based method iRAP must use internally for single cell, e.g. before
+# clustering
+quant-norm_tool?=scran
+quant_norm_count_method?=scran_gene
+
 ## get tsne
 sc_quant_viz:=tsne
 endif
