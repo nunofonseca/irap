@@ -177,10 +177,11 @@ marker_cols <- c('clusts', 'padj', 'auroc')
 for (k in ks){
   sel <- data.frame(rowData(sce)[,paste0('sc3_', k, '_markers_', marker_cols), drop = FALSE ], row.names = rownames(sce))
   colnames(sel) <- marker_cols
+  sel$feat <- rownames(sel)
   
   # Output only those rows without NAs for 'clusts' or 'padj' column
   
   ofile <- paste0(out.prefix,"_",k,"_marker_genes.tsv")
-  write.table(subset(sel, !( is.na(clusts) | is.na(padj))),file=ofile,sep="\t",row.names=FALSE,col.names=TRUE,quote=FALSE)
+  write.table(subset(sel, !( is.na(clusts) | is.na(padj))),file=ofile,  sep="\t",  row.names=FALSE,col.names=TRUE, quote=FALSE)
   pinfo("Created ",ofile)
 }
