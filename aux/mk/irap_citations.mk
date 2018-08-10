@@ -86,6 +86,11 @@ quant_norm_flux_cap=FLUX_CAPACITOR
 quant_norm_deseq=DESeq
 quant_norm_irap=IRAP
 
+# Method for making normalised counts
+
+quant_norm_count_method_scran_gene=scran
+quant_norm_count_method_scran_spike=scran
+
 # DE
 de_cuffdiff1=cuffdiff1
 de_cuffdiff2=cuffdiff2
@@ -98,6 +103,7 @@ de_bayseq=baySeq
 de_voom=baySeq
 de_ebseq=EBSeq
 
+# Clustering
 clustering_method_sc3=SC3
 clustering_method_seurat=Seurat
 
@@ -199,6 +205,9 @@ Seurat_citation=http://satijalab.org/seurat/
 Seurat_bibtex=
 Seurat_analysis=Clustering
 
+scran_citation=Lun ATL, McCarthy DJ and Marioni JC (2016). A step-by-step workflow for low-level analysis of single-cell RNA-seq data with Bioconductor. F1000Res. 5, 2122
+scran_bibtex=scran.bib
+scran_analysis=Single-cell-specific normalisation to produce normalised counts
 
 fastq_utils_citation=https://github.com/nunofonseca/fastq_utils
 fastq_utils_bibtex=
@@ -310,6 +319,7 @@ salmon_analysis=Gene/transcript quantification
 piano_citation=Väremo, Leif, Jens Nielsen, and Intawat Nookaew. Enriching the gene set analysis of genome-wide data by incorporating directionality of gene expression and combining statistical hypotheses and methods. Nucleic acids research 41.8 (2013): 4378-4391.
 piano_bibtex=piano.bib
 piano_analysis=Enrichment analysis 
+
 #################################################################
 phony_targets+= show_citations
 
@@ -329,7 +339,10 @@ endef
 
 # Scientific software
 progs_used?=
-progs_used+=$(qc_$(qual_filtering))  $(mapper_$(mapper)) $(quant_$(quant_method))  $(quant_norm_$(quant_norm_tool))  $(de_$(de_method)) $(gse_$(gse_tool)) IRAP $(clustering_method_$(clustering_method))
+progs_used+=$(qc_$(qual_filtering))  $(mapper_$(mapper)) $(quant_$(quant_method))  $(quant_norm_$(quant_norm_tool))  $(de_$(de_method)) $(gse_$(gse_tool)) IRAP
+ifeq ($(sop),atlas_sc)
+progs_used+=$(quant_norm_count_method_$(quant_norm_count_method)) $(clustering_method_$(clustering_method))
+endif
 
 silent_targets+= show_citations citations_file
 
