@@ -339,7 +339,7 @@ endef
 
 # Scientific software
 progs_used?=
-progs_used+=$(qc_$(qual_filtering))  $(mapper_$(mapper)) $(quant_$(quant_method))  $(quant_norm_$(quant_norm_tool))  $(de_$(de_method)) $(gse_$(gse_tool)) IRAP
+progs_used+=$(qc_$(qual_filtering)) $(mapper_$(mapper)) $(quant_$(quant_method)) $(quant_norm_$(quant_norm_tool)) $(de_$(de_method)) $(gse_$(gse_tool)) IRAP
 ifeq ($(sop),atlas_sc)
 progs_used+=$(quant_norm_count_method_$(quant_norm_count_method)) $(clustering_method_$(clustering_method))
 endif
