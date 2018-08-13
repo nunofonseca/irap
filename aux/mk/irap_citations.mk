@@ -88,8 +88,8 @@ quant_norm_irap=IRAP
 
 # Method for making normalised counts
 
-quant_norm_count_method_scran_gene=scran
-quant_norm_count_method_scran_spike=scran
+quant_norm_libsize_method_scran_gene=scran
+quant_norm_libsize_method_scran_spike=scran
 
 # DE
 de_cuffdiff1=cuffdiff1
@@ -341,7 +341,7 @@ endef
 progs_used?=
 progs_used+=$(qc_$(qual_filtering)) $(mapper_$(mapper)) $(quant_$(quant_method)) $(quant_norm_$(quant_norm_tool)) $(de_$(de_method)) $(gse_$(gse_tool)) IRAP
 ifeq ($(sop),atlas_sc)
-progs_used+=$(quant_norm_count_method_$(quant_norm_count_method)) $(clustering_method_$(clustering_method))
+progs_used+=$(quant_norm_libsize_method_$(quant_norm_libsize_method)) $(clustering_method_$(clustering_method))
 endif
 
 silent_targets+= show_citations citations_file
