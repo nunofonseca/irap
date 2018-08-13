@@ -357,8 +357,8 @@ def_quant_norm_tool?=none
 # normalised counts (rather than e.g. TPM)- e.g. SC3 in single-cell. May be the
 # same as def_quant_method_norm.
 
-def_quant_norm_count_method?=none
-def_quant_norm_count_tool?=none
+def_quant_norm_libsize_method?=none
+def_quant_norm_libsize_tool?=none
 
 # produce quantification per exon? default is gene level or transcript level depending on the method used
 def_exon_quant?=n
@@ -1115,12 +1115,12 @@ ifndef quant_norm_tool
 quant_norm_tool=$(def_quant_norm_tool)
 endif
 
-ifndef quant_norm_count_method
-quant_norm_count_method=$(def_quant_norm_count_method)
+ifndef quant_norm_libsize_method
+quant_norm_libsize_method=$(def_quant_norm_libsize_method)
 endif
 
-ifndef quant_norm_count_tool
-quant_norm_count_tool=$(def_quant_norm_count_tool)
+ifndef quant_norm_libsize_tool
+quant_norm_libsize_tool=$(def_quant_norm_libsize_tool)
 endif
 
 ###########################
@@ -1287,8 +1287,8 @@ endif
 # Method to normalize the counts to normalised counts 
 
 SUPPORTED_NORM_COUNT_METHODS=deseq_nlib scran_gene scran_spike
-ifeq (,$(filter $(quant_norm_count_method),none $(SUPPORTED_NORM_COUNT_METHODS)))
-$(call p_error,quant_norm_count_method '$(quant_norm_count_method)' invalid)
+ifeq (,$(filter $(quant_norm_libsize_method),none $(SUPPORTED_NORM_COUNT_METHODS)))
+$(call p_error,quant_norm_libsize_method '$(quant_norm_libsize_method)' invalid)
 endif
 
 #******************************

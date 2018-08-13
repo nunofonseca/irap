@@ -107,8 +107,8 @@ spikein_fasta:=ERCC
 
 # Count-based method iRAP must use internally for single cell, e.g. before
 # clustering
-quant_norm_count_tool?=scran
-quant_norm_count_method?=scran_gene
+quant_norm_libsize_tool?=scran
+quant_norm_libsize_method?=scran_gene
 
 ## get tsne
 sc_quant_viz:=tsne

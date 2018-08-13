@@ -87,9 +87,9 @@ $(quant_toplevel_folder)/transcripts.scran_gene.$(quant_method).$(expr_ext): $(q
 
 # Return normalised count matrices, possibly in addition to another normalisation
 
-normalised_count_matrices=$(patsubst %,$(quant_toplevel_folder)/genes.$(quant_norm_count_method).$(quant_method).%,$(expr_ext) mtx.gz mtx_cols.gz mtx_rows.gz)
+normalised_count_matrices=$(patsubst %,$(quant_toplevel_folder)/genes.$(quant_norm_libsize_method).$(quant_method).%,$(expr_ext) mtx.gz mtx_cols.gz mtx_rows.gz)
 ifeq ($(transcript_expr),y)
-normalised_count_matrices+=$(patsubst %,$(quant_toplevel_folder)/transcripts.$(quant_norm_count_method).$(quant_method).%,$(expr_ext) mtx.gz mtx_cols.gz mtx_rows.gz)
+normalised_count_matrices+=$(patsubst %,$(quant_toplevel_folder)/transcripts.$(quant_norm_libsize_method).$(quant_method).%,$(expr_ext) mtx.gz mtx_cols.gz mtx_rows.gz)
 endif
 
 
