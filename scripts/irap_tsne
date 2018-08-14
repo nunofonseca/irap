@@ -169,7 +169,16 @@ for (p in perp.values) {
   tsne <- data.frame(nbt.res@dr$tsne@cell.embeddings)
   tsne$Label = rownames(tsne)
   
+  # Write output table
+  
   write.table(tsne, file = paste0(out.prefix, "_tsne_perp_", p, ".tsv"), row.names=FALSE, quote=FALSE, sep="\t")
+
+  ## also generate the png
+
+  png(paste0(out.prefix, "_tsne_perp_", p, ".tsv.png"), height=1000, width=1000)
+  par(bty="l",mar=c(4,4,1,8))
+  plot(tsne[,c(1,2)])    
+  dev.off()  
 }
 pinfo("All done.")
 q(status=0)
