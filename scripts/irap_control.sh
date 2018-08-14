@@ -411,7 +411,7 @@ for f in $SDRF_FILES; do
             sort -u $all_done > $all_done.tmp && mv $all_done.tmp $all_done
 		
             # Clean up any lingering .wave files pertaining to this run
-            grep -l $id $WORKING_DIR/.*.wave | xargs rm
+            grep -l $id $WORKING_DIR/.*.wave | xargs -r rm
 	    else
             set_run_status $id complete_onhold
             echo $id $run_dir complete_onhold
