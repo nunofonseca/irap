@@ -41,9 +41,17 @@ endif
 sc_visualization: $(sc_visualization_files)
 
 ## TSNE
+
+# Supply spikes for exclusion (where present)
+
+tsne_spike_args=
+ifdef spikein_data
+tsne_spike_args= -s $(spikein_gtf_file)
+endif
+
 # multiple files with the coordinates of TSNe based on different perplexity values - tsne_perp_PERP_VAL.tsv
 %.tsne.tsv: %.$(expr_ext) 
-	irap_tsne -i $< --$(expr_format) --out $@ --max_threads $(max_threads) -C $(tsne_min_cells) -G $(tsne_min_genes) -P $(tsne_max_perplexity) && cp $@_tsne_perp_5.tsv $@ || ( rm -f $@* && exit 1)
+	irap_tsne -i $< --$(expr_format) --out $@ --max_threads $(max_threads) -C $(tsne_min_cells) -G $(tsne_min_genes) -P $(tsne_max_perplexity)$(tsne_spike_args) && cp $@_tsne_perp_5.tsv $@ || ( rm -f $@* && exit 1)
 
 # requires filtered+normalized expression
 STAGE5_OUTFILES+=$(sc_visualization_files)
