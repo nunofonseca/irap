@@ -207,7 +207,7 @@ Seurat_analysis=Clustering
 
 scran_citation=Lun ATL, McCarthy DJ and Marioni JC (2016). A step-by-step workflow for low-level analysis of single-cell RNA-seq data with Bioconductor. F1000Res. 5, 2122
 scran_bibtex=scran.bib
-scran_analysis=Single-cell-specific normalisation to produce normalised counts
+scran_analysis=Single-cell-specific library size normalisation
 
 fastq_utils_citation=https://github.com/nunofonseca/fastq_utils
 fastq_utils_bibtex=
