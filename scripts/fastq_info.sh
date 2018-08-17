@@ -1,13 +1,11 @@
 #!/bin/bash
 
-STDERR=/dev/stderr
-
 if [ "$*-" == "-"  ]; then
     echo "fastq_info.sh .fastq [.fastq]" 1>&2
     exit 1
 fi
 
-A="`fastq_info $* 2>&1 | tee $STDERR |tail -n 5`"  
+A="`fastq_info $* 2>&1 | tee >(cat 1>&2) |tail -n 5`"  
 ret=$?
 if [ $ret != 0 ]; then
     echo "ERROR" 1>&2
