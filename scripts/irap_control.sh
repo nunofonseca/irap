@@ -101,7 +101,7 @@ mkdir -p $control_folder
 
 
 if [ "$ID-" == "-" ]; then
-    SDRF_FILES=`grep conf .control/*.sdrf.status|cut -f 1 -d:`
+    SDRF_FILES=`grep -H conf .control/*.sdrf.status|cut -f 1 -d:`
     files=( $SDRF_FILES )
     echo "Found ${#files[@]} SDRF files"
 else
