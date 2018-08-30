@@ -164,6 +164,15 @@ perp.values <- c(1, seq(5,opt$max.perplexity,5))
 
 for (p in perp.values) {
   pinfo("TSNE: perplexity ", p)
+
+  # This condititional is necessary to match the one inside Rtsne and prevent
+  # errors with smaller cell numbers:
+  # https://github.com/jkrijthe/Rtsne/blob/master/R/Rtsne.R
+
+  if (ncol(table) - 1 < 3 * p){
+        warning(paste0("Too few cells (", ncol(table) ,") for perplexity of ", p, " or greater"))
+        break
+  }
   
   nbt.res <- RunTSNE(object = nbt, dim.embed = opt$dim, dims.use = 1:opt$pca_components, do.fast = TRUE, perplexity = p)
   tsne <- data.frame(nbt.res@dr$tsne@cell.embeddings)
