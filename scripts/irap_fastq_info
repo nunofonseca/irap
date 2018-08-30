@@ -66,8 +66,7 @@ endef
 # complain if a file does not exist and exit
 file_exists=$(if  $(realpath $(1)),,$(call p_error,$(1) not found))
 
-
-version=1.0.0d1
+version:=$(shell cat $(IRAP_DIR)/version)
 
 pname=irap_fastq_info
 

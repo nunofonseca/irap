@@ -68,7 +68,7 @@ cat $(2) | $(1) -stdin
 endef
 
 #Version and license info
-version=1.0.0d1
+version:=$(shell cat $(IRAP_DIR)/version)
 
 #******************************
 # command line parameters
