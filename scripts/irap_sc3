@@ -154,7 +154,7 @@ if (!do.clustering) {
 
   # Extract cluster columns from results and prepend k-related columns
 
-  clusters_by_k <- data.frame(cbind(data.frame(sel.K = (ks == sel.k), K=ks), t(as.matrix(colData(sce)[,paste0("sc3_",ks,"_clusters")]))))
+  clusters_by_k <- data.frame(cbind(data.frame(sel.K = (ks == sel.k), K=ks), t(as.matrix(colData(sce)[,paste0("sc3_",ks,"_clusters")]))), check.names = FALSE)
 }
 
 if (nrow(clusters_by_k)==0) {
