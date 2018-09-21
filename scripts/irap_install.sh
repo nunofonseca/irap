@@ -1006,7 +1006,7 @@ function YAP_install {
     pushd mainline
     # cleanup
     rm -rf $IRAP_DIR/include/Yap $IRAP_DIR/share/Yap $IRAP_DIR/lib/Yap $IRAP_DIR/lib/libYap*
-    CXXFLAGS= CFLAGS=  ./configure --prefix=$IRAP_DIR --disable-myddas --disable-horus
+    CXXFLAGS= CFLAGS=  ./configure --prefix=$IRAP_DIR --disable-myddas --disable-horus --with-python=no --with-mpi=no --with-r=no --disable-horus --disable-clpbn
     CXXFLAGS=  CFLAGS=  make clean
     CXXFLAGS=  CFLAGS=  make
     CXXFLAGS=  CFLAGS=  make install
