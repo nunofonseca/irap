@@ -1018,10 +1018,11 @@ function deps_install {
 
     pinfo "Installing dependencies (make, perl, boost, gnuplot, R, samtools, ...)"
     # only install make if the version available is not acceptable
-    if [ `make --version|head -n 1 | cut -f3 -d\ ` \< 4.2 ]; then
+    local v=`make2 --version 2> /dev/null|head -n 1 | cut -f3 -d\ |cut -f 1,2 -d.`
+    if [ "$v-" == "-" ] || [ $v \< 4.2 ]; then
 	make_install
     else
-	pinfo "make found - skipping installation"
+	pinfo "make found ($v) - skipping installation"
     fi
 
     zlib_install
