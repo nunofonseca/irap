@@ -102,7 +102,7 @@ user_trans:=auto
 ## which genes will be included in the cdna file
 user_trans_biotypes:=protein_coding|lincRNA
 ## always include the ercc spikeins
-spikein_fasta:=ERCC
+spikein_fasta?=ERCC
 ##
 
 # Count-based method iRAP must use internally for single cell, e.g. before
