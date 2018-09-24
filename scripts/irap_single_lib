@@ -727,9 +727,10 @@ mkdir -p $odir/qc
 cp -ar $TSVs $odir/qc
 
 # rename the files (remove the l prefix added by fastq_info)
-$rename_cmd $libname $libname_noprefix `dirname $odir/$f1_bn`/$libname*
-$rename_cmd $libname $libname_noprefix `dirname $odir/$f1_bn`/qc/$libname*
-
+if [ "$libname-" != "$libname_noprefix-" ]; then
+    $rename_cmd $libname $libname_noprefix `dirname $odir/$f1_bn`/$libname*
+    $rename_cmd $libname $libname_noprefix `dirname $odir/$f1_bn`/qc/$libname*
+fi
 # data (genome and annotation)
 echo $cmd $irap_single_lib_options  $irap_options print_data_stats_file
 TSV=`$cmd $irap_single_lib_options  $irap_options print_data_stats_file  |tail -n 1`
