@@ -137,6 +137,7 @@ spikein_fasta?=ERCC
 
 mapper?=none
 quant_method?=kallisto
+kallisto_threads=1
 quant_norm_method?=tpm
 quant_norm_tool?=irap
 qc?=on
