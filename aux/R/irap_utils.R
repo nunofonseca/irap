@@ -29,6 +29,8 @@ if ( IRAP.DIR == "" ) {
   q(status=1)
 }
 
+options(datatable.fread.input.cmd.message=FALSE)
+
 # PATH to the CSS file used in all HTML reports
 irap_css_file <- paste(IRAP.DIR,"/aux/css/irap.css",sep="")
 irap_menu_css_file <- paste(IRAP.DIR,"/aux/css/menu.css",sep="")
