@@ -106,11 +106,11 @@ if (!do.clustering) {
 } else {
   
   # Create SingleCellExperiment
-  
+  # 2018-09-24: SingleCellExperiment does not support sparse matrices :(
   sce <- SingleCellExperiment(
     assays = list(
-      counts = raw,
-      logcounts = norm
+      counts = as.matrix(raw),
+      logcounts = as.matrix(norm)
     )
   )
   rowData(sce)$feature_symbol <- rownames(sce)
