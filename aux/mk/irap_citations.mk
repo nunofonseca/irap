@@ -340,10 +340,12 @@ endef
 # Scientific software
 progs_used?=
 progs_used+=$(qc_$(qual_filtering)) $(mapper_$(mapper)) $(quant_$(quant_method)) $(quant_norm_$(quant_norm_tool)) $(de_$(de_method)) $(gse_$(gse_tool)) IRAP
+
+ifdef sop
 ifeq ($(sop),atlas_sc)
 progs_used+=$(quant_norm_libsize_method_$(quant_norm_libsize_method)) $(clustering_method_$(clustering_method))
 endif
-
+endif
 silent_targets+= show_citations citations_file
 
 show_citations: 
