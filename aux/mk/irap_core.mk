@@ -992,6 +992,9 @@ ifndef max_threads
 endif
 $(info *	max_threads=$(max_threads))
 
+# by default kallisto threads = max_threads
+kallisto_threads?=$(max_threads)
+
 #********************
 # Temporary directory
 #********************
