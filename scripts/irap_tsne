@@ -54,7 +54,7 @@ option_list <- list(
     make_option(c("-C", "--min_cells"), type="numeric",default=1,dest="min.cells",help="Filter genes based on the number of cells where it is expressed."),
     make_option(c("-G", "--min_genes"), type="numeric",default=1,dest="min.genes",help="Filter cells based on the number of genes expressed."),
     make_option(c("-P", "--max-perplexity"), type="numeric",default=35,dest="max.perplexity",help="Maximum perplexity to consider."),
-    make_option(c("-p", "--pca_components"), type="numeric", default = 30),
+    make_option(c("-p", "--pca_components"), type="numeric", default = 20),
     make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode")
 )
 
@@ -178,7 +178,17 @@ for (p in perp.values) {
   tsne <- data.frame(nbt.res@dr$tsne@cell.embeddings)
   tsne$Label = rownames(tsne)
   
+  # Write output table
+  
   write.table(tsne, file = paste0(out.prefix, "_tsne_perp_", p, ".tsv"), row.names=FALSE, quote=FALSE, sep="\t")
+
+  ## also generate the png
+
+  png(paste0(out.prefix, "_tsne_perp_", p, ".tsv.png"), height=1000, width=1000)
+  par(bty="l",mar=c(4,4,1,8))
+  plot(tsne[,c(1,2)])    
+  dev.off()  
+
 }
 pinfo("All done.")
 q(status=0)
