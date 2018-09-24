@@ -466,7 +466,7 @@ umis_VERSION=0.7.0
 umis_FILE=v${umis_VERSION}.tar.gz
 umis_URL=https://github.com/vals/umis/archive/${umis_FILE}
 
-MAKE_VERSION=4.2
+MAKE_VERSION=4.2.1
 MAKE_FILE=make-${MAKE_VERSION}.tar.gz
 MAKE_URL=http://ftp.gnu.org/gnu/make/$MAKE_FILE
 ##################################
