@@ -995,6 +995,13 @@ $(info *	max_threads=$(max_threads))
 # by default kallisto threads = max_threads
 kallisto_threads?=$(max_threads)
 
+# by default the value is the read length
+kallisto_se_fragment_length?=
+kallisto_se_sd?=1
+#kallisto_pe_frag_length?=
+#kallisto_pe_sd?=
+
+
 #********************
 # Temporary directory
 #********************

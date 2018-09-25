@@ -1066,10 +1066,11 @@ define run_kallisto_index=
 	touch $(call kallisto_index_filename)
 endef
 
+
 # should be used for single cell only
 define run_kallisto_map=
 	$(call tophat_setup_dirs,$(1))
-	irap_wrapper.sh kallisto kallisto quant $(if $(call is_pe_lib,$(1)),,--single -l $($(1)_rs) -s 1)  $(call kallisto_strand_params,$(1))  $(kallisto_map_params) -i $(call kallisto_index_prefix) -o $(call lib2bam_folder,$(1))$(1)/ $(2)   && \
+	irap_wrapper.sh kallisto kallisto quant $(if $(call is_pe_lib,$(1)),,--single -l $(if $(kallisto_se_fragment_length),$(kallisto_se_fragment_length),$($(1)_rs)) -s $(kallisto_se_sd))  $(call kallisto_strand_params,$(1))  $(kallisto_map_params) -i $(call kallisto_index_prefix) -o $(call lib2bam_folder,$(1))$(1)/ $(2)   && \
 	$(call do_post_process_trans_bam_cmd,$(call lib2bam_folder,$(1))$(1)/pseudoalignments.bam, $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam) &&\
 	samtools sort --threads $(max_threads) -m $(SAMTOOLS_SORT_MEM_MT) -T $(call lib2bam_folder,$(1))$(1)/$(1) -o $(call lib2bam_folder,$(1))$(1)/$(1).bam $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam && \
 	$(call bam_rehead,$(call lib2bam_folder,$(1))$(1)/$(1).bam,$(1)) && \
