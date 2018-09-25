@@ -106,6 +106,7 @@ function get_species {
 ###################################
 ROOT_DIR=$PWD
 DATA_DIR=$ROOT_DIR/data
+CONF_DIR=$ROOT_DIR/conf/study
 PROTOCOL=
 ID=
 DEBUG=0
@@ -227,7 +228,7 @@ set -e
 #set -ex
 pinfo "id=$ID"
 TOP_FOLDER=$ROOT_DIR/tmp/$ID
-SPECIES_CONF_DIR=$ROOT_DIR/species_conf
+SPECIES_CONF_DIR=$ROOT_DIR/conf/species
 CONF_FILE_PREF=$TOP_FOLDER/$ID
 CONF_FILE=$CONF_FILE_PREF.conf
 create_dir $TOP_FOLDER
@@ -625,7 +626,7 @@ sed -i "s/^reference/#reference/;s|^gtf_file.*|include $SPECIES_CONF_DIR/$SPECIE
 #sed -i "s/^reference/#reference/;s/.*_dir=.*fastq//;s|^gtf_file.*|include $SPECIES_CONF_DIR/$SPECIES.conf|" $CONF_FILE
 ## Move to the destination dir
 ##
-DEST_DIR=$ROOT_DIR/$SPECIES/$ID
+DEST_DIR=$CONF_DIR/$SPECIES/$ID
 mkdir -p $DEST_DIR   
 if [ -e $CONF_FILE_PREF.conf ]; then
     mv $CONF_FILE_PREF.* $DEST_DIR

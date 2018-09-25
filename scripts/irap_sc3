@@ -29,17 +29,21 @@ if ( IRAP.DIR == "" ) {
   cat("ERROR: environment variable IRAP_DIR is not set\n")
   q(status=1)
 }
-#
-# specify our desired options in a list
-#
+
+# Load accessory functions
+
 source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
 pdebug.enabled <- TRUE
 #######################
 usage <- "irap_sc3 --ifile file --out out_file_prefix [options]"
 filenames <- c("ifile","lengths")
 
+# specify our desired options in a list
+
 option_list <- list(
-    make_option(c("-i", "--ifile"), type="character", dest="ifile", help="TSV file name with the matrix with the counts per cell by gene/transcript."),
+    make_option(c("-i", "--ifile"), type="character", dest="ifile", help="TSV or MTX file name with the matrix with the counts per cell by gene/transcript."),
+    make_option(c("-j", "--jfile"), type="character", dest="jfile", help="TSV or MTX file name with the matrix with the normalised counts per cell by gene/transcript."),
+    make_option(c("-s", "--spikes"), type="character", dest="spikes", default=NULL, help="Optional GTF file with spike features"),
     make_option(c("--mtx"), action="store_true",default=FALSE,dest="is_mtx",help="The input file is in Matrix Market format. Default is TSV format."),
     make_option(c("--tsv"), action="store_false",default=FALSE,dest="is_mtx",help="The input file is in TSV format (default)."),
     make_option(c("-o", "--out"), type="character",default=NULL,help="Output file name prefix."),
@@ -51,35 +55,17 @@ option_list <- list(
 )
 
 multiple.options <- NULL
-mandatory <- c("ifile","out")
+mandatory <- c("ifile","jfile","out")
 
-#pinfo("saved")
+# Parse arguments
+
 opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
-
-##Sys.setenv(IRAP_DIR="../irap")
-## opt <- list()
-## opt$tsv_file <- "test_files/quant/huge.genes.raw.tsv"
-## opt$min_clusters <- 5
-## opt$max_clusters <- 9
-## opt$max_threads <- 3
-
-suppressPackageStartupMessages(library(SC3))
-suppressPackageStartupMessages(library(scater))
-
-out.prefix <- opt$out
 pdebug.enabled <- opt$debug
 
-#
 pdebug.save.state("irap_sc3","p0")
-## data("sc_example_counts")
-## data("sc_example_cell_info")
-## sc_example_cell_info
 
+# Run some checks on arguments
 
-
-## head(sc_example_counts)
-## head(table)
-##
 if ( opt$min_clusters<1 ) {
     perror("Invalid --min_cluster value:",opt$min_clusters)
     q(status=1)
@@ -88,126 +74,114 @@ if ( opt$max_clusters<opt$min_clusters ) {
     perror("Invalid --max_cluster value:",opt$max_clusters)
     q(status=1)
 }
+
 pinfo("Loading ",opt$ifile)
 if ( opt$is_mtx ) {
-    table <- mtx.load(opt$ifile)
+    raw <- mtx.load(opt$ifile)
+    norm <- mtx.load(opt$jfile)
 } else {
-    table <- quant.load(opt$ifile)
+    raw <- as.matrix(quant.load(opt$ifile))
+    norm <- as.matrix(quant.load(opt$jfile))
 }
 pinfo("Loading ",opt$ifile," done.")
 
 do.clustering <- TRUE
 
-if ( is.null(table) )  {
-    do.clustering <- FALSE
+if ( is.null(raw) )  {
+  do.clustering <- FALSE
 } else {
-    if ( ncol(table)<=3 ) 
-        do.clustering <- FALSE
+  if ( ncol(raw)<=3 ){ 
+    do.clustering <- FALSE
+  }
 }
+
+# Load packages only after checking arguments and inputs
+
+suppressPackageStartupMessages(library(SC3))
+suppressPackageStartupMessages(library(scater))
 
 if (!do.clustering) {
     perror("Insufficient samples/cells to cluster")
-    clusters.m <- matrix(ncol=0,nrow=0)
-    ##q(status=1)
+    clusters_by_k <- matrix(ncol=0,nrow=0)
 } else {
-
-    ##source("http://bioconductor.org/biocLite.R")
-    ##biocLite("SC3",suppressUpdates=TRUE)
-
-    sceset <- newSCESet(countData = table)
-    sceset <- calculateQCMetrics(sceset)
-    ##    plotPCA(sceset)
-
-    #####################################################
-    ## Tracy-Widom theory on random matrices to estimate
-    ## $ k_estimation - which should be the default value of K
-    if (opt$auto_k) {
-        sceset <- sc3_estimate_k(sceset)
-        sel.k <- sceset@sc3$k_estimation
-        pinfo("Automatically selected K = ",sel.k)
-        clusters2test <- round(abs(opt$max_clusters-opt$min_clusters)/2,0)
-        k.range <- c(max(2,sel.k-clusters2test),max(2,sel.k+clusters2test))
-        pinfo("Checking clusters in the range ",k.range[1]," to ", k.range[2])
-    } else {
-        sceset <- sc3_estimate_k(sceset)
-        sel.k <- sceset@sc3$k_estimation
-        clusters2test <- round(abs(opt$max_clusters-opt$min_clusters)/2,0)
-        min.k <- max(2,opt$min_clusters)
-        k.range <- c(min.k,max(min.k,opt$max_clusters))
-        pinfo("Checking clusters in the range ",k.range[1]," to ", k.range[2])
-        
+  
+  # Create SingleCellExperiment
+  # 2018-09-24: SingleCellExperiment does not support sparse matrices :(
+  sce <- SingleCellExperiment(
+    assays = list(
+      counts = as.matrix(raw),
+      logcounts = as.matrix(norm)
+    )
+  )
+  rowData(sce)$feature_symbol <- rownames(sce)
+  
+  # Identify the spikes (where present)
+  
+  if ( ! is.null(opt$spikes) ){
+    spikes <- load.gtf(opt$spikes)
+    if (any(unique(spikes$seqid) %in% rownames(sce))){
+      isSpike(sce, "spikes") <- unique(spikes$seqid)
+    }else{
+      pinfo(paste("Supplied spikes in", opt$spikes, "don't exist in expression matrix"))
+      opt$spikes <- NULL
     }
+  }
+  
+  # Estimate clusters anyway. We will report it even if we don't use it
+  
+  sce <- sc3_estimate_k(sce)
+  sel.k <- metadata(sce)$sc3$k_estimation
+  clusters2test <- round(abs(opt$max_clusters-opt$min_clusters)/2,0)  
+  
+  # Either use the auto-k or user-specified range
+  
+  if (opt$auto_k) {
+    pinfo("Automatically selected K = ",sel.k)
+    k.range <- c(max(2,sel.k-clusters2test),max(2,sel.k+clusters2test))
+    pinfo("Checking clusters in the range ",k.range[1]," to ", k.range[2])
+  } else {
+    min.k <- max(2,opt$min_clusters)
+    k.range <- c(min.k,max(min.k,opt$max_clusters))
+    pinfo("Checking clusters in the range ",k.range[1]," to ", k.range[2])
+  }
     
-    sceset <- sc3(sceset, ks = seq(k.range[1],k.range[2]), biology = TRUE, n_cores=opt$max_threads,k_estimator=TRUE)
+  # Do the actual clustering with SC3
+  
+  ks <- seq(k.range[1],k.range[2])
+  sce <- sc3(sce, ks = ks, biology = TRUE, n_cores=opt$max_threads, k_estimator=TRUE)
 
-    pdebug.save.state("irap_sc3","p1")
-    ##sc3_plot_cluster_stability(sceset, k = sel.k)
-    ##sc3_plot_markers(sceset, k = sel.k)
-    ##data.frame containing the marker genes, corresponding cluster indexes and adjusted p-values##
-    ##sc3_plot_consensus(sceset,k=sel.k)
-    ##sc3_plot_cluster_stability(sceset,k=max(ks))
+  pdebug.save.state("irap_sc3","p1")
 
-    #######################################
-    ## single matrix with all clusters
-    pinfo("Preparing to save clusters table")
-    l <- matrix(nrow=0,ncol=ncol(table))
-    colnames(l) <- colnames(table)
-    ##l <- as.matrix(table[NULL,,drop=FALSE])
-    for (k in seq(k.range[1],k.range[2])) {
-        p_data <- pData(sceset)
-        label <- paste0("sc3_",k,"_clusters")
-        ##pData(sceset)[,label]
-        clus <- p_data[,label]
-        names(clus) <- rownames(p_data)
-        l <- rbind(l,clus[colnames(l)])
-    }
+  # Extract cluster columns from results and prepend k-related columns
 
-    l <- as.data.frame(cbind(K=seq(k.range[1],k.range[2]),l))
-    sel.K <- l$K==sel.k
-    l <- cbind(sel.K,l)
-    clusters.m <- l
+  clusters_by_k <- data.frame(cbind(data.frame(sel.K = (ks == sel.k), K=ks), t(as.matrix(colData(sce)[,paste0("sc3_",ks,"_clusters")]))))
 }
 
-## save the cluster(s)
-ofile <- paste0(out.prefix,"_clusters.tsv")
-write.table(clusters.m,file=ofile,sep="\t",row.names=FALSE,col.names=TRUE,quote=FALSE)
-pinfo("Created ",ofile)
-
-if (nrow(clusters.m)==0) {
-    pwarning("No clusters generated.")
-    q(status=0)
+if (nrow(clusters_by_k)==0) {
+  pwarning("No clusters generated.")
+  q(status=0)
+}else{
+  # save the cluster(s)
+  out.prefix <- opt$out
+  ofile <- paste0(out.prefix, "_clusters.tsv")
+  write.table(clusters_by_k, file=ofile, sep="\t", row.names=FALSE, col.names=TRUE, quote=FALSE)
+  pinfo("Created ",ofile)
 }
+
 ##########################################
 ## Marker genes for each cluster
 ## gene x #clusters
 pinfo("Preparing to save marker genes")
 
-## TODO: parameter
-p.val.cutoff <- 0.01
-auroc.cutoff <- 0.95
-
-f_data <- fData(sceset)
-sel <- f_data[ , grep("*_markers_*", colnames(f_data))]
-print(head(sel))
-#k <- sel.k
-for (k in seq(k.range[1],k.range[2])) {
-    label <- paste0("sc3_",k,"_markers_clusts")
-    pval.col <- paste0("sc3_",k,"_markers_padj")
-    auroc.col <- paste0("sc3_",k,"_markers_auroc")
-    #genes2keep <- sel[,pval.col]<=p.val.cutoff & sel[,auroc.col]>=auroc.cutoff
-    sel2 <- sel[,c(label,pval.col,auroc.col),drop=FALSE]
-    sel2$feat <- rownames(sel2)
-    # arrange column names
-    colnames(sel2) <- gsub("sc3_.*_markers_","",colnames(sel2))
-    ## clean table
-    x <- rowSums(apply(sel2,c(1,2),is.na))
-    clean.sel <- sel2[x==0,,drop=FALSE]
-    dim(clean.sel)
-    ## write
-    ofile <- paste0(out.prefix,"_",k,"_marker_genes.tsv")
-    write.table(clean.sel,file=ofile,sep="\t",row.names=FALSE,col.names=TRUE,quote=FALSE)
-    pinfo("Created ",ofile)
+marker_cols <- c('clusts', 'padj', 'auroc')
+for (k in ks){
+  sel <- data.frame(rowData(sce)[,paste0('sc3_', k, '_markers_', marker_cols), drop = FALSE ], row.names = rownames(sce))
+  colnames(sel) <- marker_cols
+  sel$feat <- rownames(sel)
+  
+  # Output only those rows without NAs for 'clusts' or 'padj' column
+  
+  ofile <- paste0(out.prefix,"_",k,"_marker_genes.tsv")
+  write.table(subset(sel, !( is.na(clusts) | is.na(padj))),file=ofile,  sep="\t",  row.names=FALSE,col.names=TRUE, quote=FALSE)
+  pinfo("Created ",ofile)
 }
-pinfo("All done")
-q(status=0)
-

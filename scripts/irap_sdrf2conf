@@ -570,8 +570,14 @@ for (specie in species) {
     conf.l <- rbind(conf.l,paste0("gtf_file=",opt$gtf_file))
     
     ## spikein
+    #
+    # Value will be '' if no column was found, or if the column is empty (in
+    # which case we assert no spikes). 
+
     if ( grepl("ercc.*",spikein) ) {
         conf.l <- rbind(conf.l,paste0("spikein_fasta=ERCC"))
+    } else if ( spikein == 'none' || gsub(' ', '', spikein) == '') {
+        conf.l <- rbind(conf.l,paste0("spikein_fasta="))
     } else {
         conf.l <- rbind(conf.l,paste0("#spikein_fasta=",spikein))
     }
@@ -695,7 +701,7 @@ for (specie in species) {
             ofile <- paste0(opt$out_conf,".metadata.tsv")
             to.save <- sdfcols2save2tsv
             if (has.tr) { to.save <- c(to.save,"technical replicate group") }
-            layout2save <- layout[,normalize.cols(to.save)]
+            layout2save <- layout[,normalize.cols(to.save),drop=FALSE]
             layout2save <- cbind(run=rownames(layout2save),layout2save)
             write.tsv(layout2save,file=ofile,header=TRUE)
             pinfo("Created ",ofile)

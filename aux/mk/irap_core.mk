@@ -353,6 +353,13 @@ def_quant_norm_method?=none
 # default tool to compute the normalized expression values
 def_quant_norm_tool?=none
 
+# count-specific normalisation method to be used by analysis tools that use
+# normalised counts (rather than e.g. TPM)- e.g. SC3 in single-cell. May be the
+# same as def_quant_method_norm.
+
+def_quant_norm_libsize_method?=none
+def_quant_norm_libsize_tool?=none
+
 # produce quantification per exon? default is gene level or transcript level depending on the method used
 def_exon_quant?=n
 def_transcript_quant?=n
@@ -985,6 +992,9 @@ ifndef max_threads
 endif
 $(info *	max_threads=$(max_threads))
 
+# by default kallisto threads = max_threads
+kallisto_threads?=$(max_threads)
+
 #********************
 # Temporary directory
 #********************
@@ -1100,19 +1110,20 @@ mapper:=$(strip $(mapper))
 # Quantification/Transcr. assembly program
 #***************************
 
-
 ifndef quant_norm_method
-# ifndef quant_method
 quant_norm_method=$(def_quant_norm_method)
-# else
-# quant_norm_method=none
-# endif
 endif
-
-
 
 ifndef quant_norm_tool
 quant_norm_tool=$(def_quant_norm_tool)
+endif
+
+ifndef quant_norm_libsize_method
+quant_norm_libsize_method=$(def_quant_norm_libsize_method)
+endif
+
+ifndef quant_norm_libsize_tool
+quant_norm_libsize_tool=$(def_quant_norm_libsize_tool)
 endif
 
 ###########################
@@ -1230,8 +1241,7 @@ endif
 # method to normalize the counts
 ##################################
 
-
-SUPPORTED_NORM_TOOLS=cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd flux_cap  nurd stringtie irap kallisto
+SUPPORTED_NORM_TOOLS=cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd flux_cap  nurd stringtie irap kallisto scran
 ifeq (,$(filter $(quant_norm_tool),none $(SUPPORTED_NORM_TOOLS)))
 $(call p_error,quant_norm_tool '$(quant_norm_tool)' invalid)
 endif
@@ -1241,13 +1251,11 @@ $(call p_error,quant_norm_method Please use fpkm instead of RPKM)
 endif
 
 # Normalization methods
-SUPPORTED_NORM_METHODS=fpkm uq-fpkm fpkm-uq deseq_nlib tpm
+SUPPORTED_NORM_METHODS=fpkm uq-fpkm fpkm-uq deseq_nlib tpm scran_gene scran_spike
 
 ifeq (,$(filter $(quant_norm_method),none $(SUPPORTED_NORM_METHODS)))
 $(call p_error,quant_norm_method '$(quant_norm_method)' invalid)
 endif
-
-
 
 ifneq (,$(filter $(quant_method),cufflinks1 cufflinks2 cufflinks1_nd cufflinks2_nd nurd stringtie stringtie_nd flux_cap))
 ifndef quant_norm_tool
@@ -1261,7 +1269,6 @@ override quant_norm_method=fpkm
 $(info * Enabling generation of table of FPKMs since $(quant_method) produces F/RPKMs by default)
 endif
 endif
-
 
 $(info *	quant_norm_tool=$(quant_norm_tool))
 $(info *	quant_norm_method=$(quant_norm_method))
@@ -1279,6 +1286,14 @@ irap_raw2metric_params?=
 ifneq ($(irap_raw2metric_params),)
 $(info *	irap_raw2metric_params=$(irap_raw2metric_params))
 endif
+
+# Method to normalize the counts to normalised counts 
+
+SUPPORTED_NORM_COUNT_METHODS=deseq_nlib scran_gene scran_spike
+ifeq (,$(filter $(quant_norm_libsize_method),none $(SUPPORTED_NORM_COUNT_METHODS)))
+$(call p_error,quant_norm_libsize_method '$(quant_norm_libsize_method)' invalid)
+endif
+
 #******************************
 # Use unspliced mapping: yes/no 
 #******************************
