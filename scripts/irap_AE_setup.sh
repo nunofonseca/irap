@@ -269,7 +269,7 @@ if [ $habemus_batches != 0 ]; then
 	    rename split.$batch_size.0 split.$batch_size. $tmp_file_split.0*
 	    rm -f $tmp_file_lock
 	else
-	    echo "ERROR: unable to proceed - please delete lock file $tmp_file_lock"
+	    perror "unable to proceed - please delete lock file $tmp_file_lock"
 	    exit
 	fi
     fi
@@ -296,7 +296,7 @@ if [ $habemus_batches != 0 ]; then
 		    builtin wait -n
 		    ret=$?
 		    if [ "$ret-" != "0-" ] && [ "$ret-" != "127-" ] ; then
-			echo "Failed to process batch."
+			perror "Failed to process batch."
 			exit 1
 		    fi
 		    echo "done."
@@ -306,7 +306,7 @@ if [ $habemus_batches != 0 ]; then
 	done
 	builtin wait
 	if [ "$?-" != "0-" ]; then
-	    echo "Failed to process batch."
+	    perror "Failed to process batch."
 	    exit 1
 	fi
 	# finally...generate a single conf file
@@ -344,7 +344,7 @@ if [ $skip_idf != "y" ]; then
 	irap_cmd=irap_sc
 	## expected number of clusters
 	if [ $(grep -c EAExpectedClusters $IDF_FILE_FP) -eq 0 ]; then
-	    echo ERROR: EAExpectedClusters not found in IDF  1>&2
+	    perror "EAExpectedClusters not found in IDF"
 	    exit 1
 	fi
 	expected_clusters=$(grep EAExpectedClusters $IDF_FILE_FP|cut -f 2)
@@ -524,7 +524,7 @@ function download {
 		ln -s $(readlink -f  $local_download_folder/$file) $(readlink -f $fn)
 	    fi
 	else
-	    echo "File $local_download_folder/$file  not found"
+	    perror "File $local_download_folder/$file  not found"
 	    exit 1
 	fi
     else
@@ -549,7 +549,7 @@ function download {
 		stdbuf -o0 echo -n
 		DOWNLOAD_PRIVATE2 $file $fn $ID $SDRF_FILE_FP
 		if [ $? -ne 0 ]; then
-		    echo "Failed to download from private location2 $file ...given up"  1>&2
+		    perror "Failed to download from private location2 $file ...given up"
 		    exit 1
 		fi
 	    fi
@@ -584,7 +584,7 @@ else
 		builtin wait -n
 		ret=$?
 		if [ "$ret-" != "0-" ] && [ "$ret-" != "127-" ] ; then
-		    echo "Failed to download."
+		    perror "Failed to download."
 		    exit 1
 		fi
 	    fi
@@ -599,7 +599,7 @@ else
     done
     builtin wait
     if [ "$?-" != "0-" ]; then
-	echo "Failed to download."
+	perror "Failed to download."
 	exit 1
     fi
 
