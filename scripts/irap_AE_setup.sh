@@ -48,7 +48,7 @@ function pinfo {
 }
 
 function perror {
-    echo "ERROR: $*" > /dev/stderr
+    echo "ERROR: $*"  1>&2
 }
 
 ## fix the filename by replacing some characters
@@ -344,7 +344,7 @@ if [ $skip_idf != "y" ]; then
 	irap_cmd=irap_sc
 	## expected number of clusters
 	if [ $(grep -c EAExpectedClusters $IDF_FILE_FP) -eq 0 ]; then
-	    echo ERROR: EAExpectedClusters not found in IDF > /dev/stderr
+	    echo ERROR: EAExpectedClusters not found in IDF  1>&2
 	    exit 1
 	fi
 	expected_clusters=$(grep EAExpectedClusters $IDF_FILE_FP|cut -f 2)
@@ -534,7 +534,7 @@ function download {
 	    set +e
 	    DOWNLOAD_PUBLIC $file $fn $download_program
 	    if [ $? -ne 0 ]; then
-	    echo "Failed to download from ENA  $file ..." > /dev/stderr
+	    echo "Failed to download from ENA  $file ..."  1>&2
 	    dl_fun="DOWNLOAD_PRIVATE"
 	fi
 	    set -e
@@ -545,11 +545,11 @@ function download {
 	    set +e
 	    DOWNLOAD_PRIVATE $file $fn $ID $SDRF_FILE_FP
 	    if [ $? -ne 0 ]; then
-		echo "Failed to download from private location $file ..." > /dev/stderr
+		echo "Failed to download from private location $file ..."  1>&2
 		stdbuf -o0 echo -n
 		DOWNLOAD_PRIVATE2 $file $fn $ID $SDRF_FILE_FP
 		if [ $? -ne 0 ]; then
-		    echo "Failed to download from private location2 $file ...given up" > /dev/stderr
+		    echo "Failed to download from private location2 $file ...given up"  1>&2
 		    exit 1
 		fi
 	    fi

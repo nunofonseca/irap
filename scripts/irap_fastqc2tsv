@@ -13,16 +13,16 @@ zip=y
 ifile=$1
 cat_cmd="unzip -p $ifile"
 if [ ! -e $ifile ] ; then
-   echo "WARNING: $ifile not found" > /dev/stderr
+   echo "WARNING: $ifile not found"  1>&2
    zip=n	
    ifile=`echo $ifile|sed "s/.fastqc.zip/_fastqc/"`
    if [ ! -e $ifile ] ; then 
-       echo "ERROR: $ifile not found" > /dev/stderr	
+       echo "ERROR: $ifile not found"  1>&2	
       exit 1
    fi   
    cat_cmd=cat
 else
-    unzip -t $1 > /dev/stderr
+    unzip -t $1  1>&2
 fi
 pref=`basename $ifile|sed "s/.fastqc.zip//"|sed "s/_fastqc//"`
 echo "FASTQC $pref" | tr " " "\t"

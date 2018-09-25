@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
 if [ "$1-" = "-" ] ; then
-    echo "atlas_clean_html.sh HTML file" > /dev/stderr
+    echo "atlas_clean_html.sh HTML file"  1>&2
     exit 1
 fi
 
 if [ ! -e "$1" ] ; then
-    echo "ERROR: file not found $1" > /dev/stderr
+    echo "ERROR: file not found $1"  1>&2
     exit 1
 fi
 

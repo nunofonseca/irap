@@ -1,16 +1,14 @@
 #!/bin/bash
 
-STDERR=/dev/stderr
-
 if [ "$*-" == "-"  ]; then
-    echo "fastq_info.sh .fastq [.fastq]" > $STDERR
+    echo "fastq_info.sh .fastq [.fastq]" 1>&2
     exit 1
 fi
 
-A="`fastq_info $* 2>/dev/stdout | tee $STDERR |tail -n 5`"  
+A="`fastq_info $* 2>&1 | tee >(cat 1>&2) |tail -n 5`"  
 ret=$?
 if [ $ret != 0 ]; then
-    echo "ERROR" > $STDERR
+    echo "ERROR" 1>&2
     exit $ret
 fi
 if [ `echo "$A"|grep -c -i "Error" ` != 0 ]; then
@@ -35,7 +33,7 @@ qual=`echo $A| sed -E "s/.*Quality encoding: ([0-9]+|solexa).*/\1/" `
 
 
 if [ "$qual-"  == "solexa-" ]; then
-    echo "ERROR: Quality encoding not supported by iRAP -  $qual" > /dev/stderr
+    echo "ERROR: Quality encoding not supported by iRAP -  $qual"  1>&2
     exit 1
 fi
 

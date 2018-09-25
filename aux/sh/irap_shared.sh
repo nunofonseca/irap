@@ -107,12 +107,12 @@ function conf_get_species {
 function conf_ok {
     local conf=$1
     local irap_options=$2
-    echo  "irap conf=$conf $irap_options -n" > /dev/stderr
+    echo  "irap conf=$conf $irap_options -n"  1>&2
     set +e
     irap conf=$conf $irap_options -n 2>/dev/null    
     if [ $? == 2 ]; then
 	irap conf=$conf $irap_options -n
-	echo "ERROR: error in iRAP options." > /dev/stderr	
+	echo "ERROR: error in iRAP options."  1>&2	
 	exit 2
     fi
     set -e
@@ -125,15 +125,15 @@ function conf_get_var_value {
     local irap_options=$3
     # lookup in the conf file
     #
-    echo  "irap conf=$conf $irap_options -n | grep $conf_var=" > /dev/stderr
+    echo  "irap conf=$conf $irap_options -n | grep $conf_var="  1>&2
     d=`irap conf=$conf $irap_options pe= se= -n 2>/dev/null|grep -E "*\s*$conf_var\s*="|tail -n 1`
     if [ "$d-" == "-" ]; then
-	echo "ERROR: unable to get $conf_var value" > /dev/stderr	
+	echo "ERROR: unable to get $conf_var value"  1>&2	
 	exit 1
     else
 	d=`echo $d|cut -f 2 -d=`
     fi
-    echo "debug:$conf_var=$d" > /dev/stderr
+    echo "debug:$conf_var=$d"  1>&2
     echo $d
 }
 
@@ -235,7 +235,7 @@ function run_AND_timeIt {
     EXIT_STATUS=$?
     # output stderr
     #cat $sout >/dev/stdout
-    #cat $serr > /dev/stderr
+    #cat $serr  1>&2
 
     if [ $EXIT_STATUS -ne 0 ]; then
 	classify_error $label $serr
@@ -252,7 +252,7 @@ function run_AND_timeIt {
 function classify_error {
     perror "LOG files: $2"    
     ${1}_errors $2
-    #echo "!!!!!!!!!!!!!!$classified_error<<<<<<<<<<<<<<<<<<<<" > /dev/stderr
+    #echo "!!!!!!!!!!!!!!$classified_error<<<<<<<<<<<<<<<<<<<<"  1>&2
     print_classified_error
 }
 

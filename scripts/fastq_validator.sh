@@ -18,7 +18,7 @@ if [ "$ext-" == "bam-" ]; then
     echo "Checking for unmapped reads"
     UN=`samtools view -c -f 4 $f`
     if [ "$UN-" == "0-" ]; then
-	echo "ERROR: No unaligned reads found in $f." > /dev/stderr
+	echo "ERROR: No unaligned reads found in $f."  1>&2
 	exit 1
     fi
     named_pipe=.`basename .$f`.pipe.fastq

@@ -21,7 +21,7 @@
 # =========================================================
 # Script to merge a set of quantification matrices
 FILES=$*
-echo $* > /dev/stderr
+echo $*  1>&2
 
 ## Read the list of files from stdin
 NAMES=$FILES
@@ -61,20 +61,20 @@ function my_wait {
     let jobs_run=$(jobs -r | wc -l)
     set -e		
     if [ $jobs_run -gt $MAX_THREADS ]; then
-	echo -n "waiting for slot..." > /dev/stderr
+	echo -n "waiting for slot..."  1>&2
 	builtin wait -n
 	ret=$?
 	if [ "$ret-" != "0-" ] && [ "$ret-" != "127-" ] ; then
-	    echo "Failed to process batch." > /dev/stderr
+	    echo "Failed to process batch."  1>&2
 	    exit 1
 	fi
-	echo "done." > /dev/stderr
+	echo "done."  1>&2
     fi    
 }
 
 if [ "$MAX_THREADS" != "1" ]; then
     # split the list of files into chunks of $FILES_PER_THREAD
-    echo "Using $MAX_THREADS threads..." > /dev/stderr
+    echo "Using $MAX_THREADS threads..."  1>&2
 #    set -eux
     set -e
     ## check if version of bash is recent enough
@@ -85,7 +85,7 @@ if [ "$MAX_THREADS" != "1" ]; then
     if [ $major -lt 4 ] ||
 	   ( [ $major -eq 4 ] && [ $minor -lt 4 ] ) ||
 	   ( [ $major -eq 4 ] && [ $minor -eq 4 ] &&  [ $rev -lt 18 ]) ; then
-	echo "Invalid version of bash: expected 4.4.18+ and got $bash_version" > /dev/stderr
+	echo "Invalid version of bash: expected 4.4.18+ and got $bash_version"  1>&2
 	exit 1
     fi
     ## bask ok...carry on
@@ -112,7 +112,7 @@ EOF
 	    let files_chunk=0
 	    set -e
 	fi
-	#echo $files_chunk > /dev/stderr
+	#echo $files_chunk  1>&2
     done
     # last chunk
     if [ $files_chunk -gt 0 ]; then
@@ -126,16 +126,16 @@ EOF
 	let files_chunk=0
 	set -e
     fi
-    echo "Waiting for all jobs to finish..."  > /dev/stderr    
+    echo "Waiting for all jobs to finish..."   1>&2    
     set +e
     builtin wait
     if [ "$?-" != "0-" ]; then
 	rm -f $fname_prefix $ofiles
-	echo "Failed to merge." > /dev/stderr
+	echo "Failed to merge."  1>&2
 	exit 1
     fi
     set -e
-    echo Merging $chunk files  > /dev/stderr
+    echo Merging $chunk files   1>&2
     # merge all tmp files (in parallel if necessary)
     ofile=$fname_prefix.tsv
     if [ $chunk == 1 ]; then

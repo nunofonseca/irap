@@ -196,7 +196,8 @@ function is_all_done {
     conf=$(id2conf_fp $id)
 
     pushd $run_dir >/dev/null
-    irap_sc conf=$conf atlas_bundle > /dev/stderr
+    irap_sc conf=$(basename $conf) atlas_bundle 1>&2
+
     let ret=$?
     ##echo ret=$ret > /dev/stderr
     popd >/dev/null
@@ -389,7 +390,7 @@ for f in $SDRF_FILES; do
 #	complete)
 	run_complete)
 	    s=`is_all_done $id $run_dir`
-	    echo "s=$s" > /dev/stderr
+	    echo "s=$s" 1>&2
 	    if [ "$s" == "y" ]; then
             # Copy results out of working directory
             bundle_dir=`rundir2bundle_dir $run_dir $id`

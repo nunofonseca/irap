@@ -7,15 +7,15 @@ meta_data_file=$3
 SOP_VERSION=1
 
 if [  "-$user_analysis_id" = "-" ]; then
-    echo "ERROR: analysis_id not given" > /dev/stderr
+    echo "ERROR: analysis_id not given"  1>&2
     exit 1
 fi
 if [  "-$file_prefix" = "-" ]; then
-    echo "ERROR: file_prefix not given" > /dev/stderr
+    echo "ERROR: file_prefix not given"  1>&2
     exit 1
 fi
 if [ ! -e "$meta_data_file" ]; then
-    echo "ERROR: $meta_data_file not found"  > /dev/stderr
+    echo "ERROR: $meta_data_file not found"   1>&2
    exit 1
 fi
 
@@ -23,14 +23,14 @@ if [  "$file_prefix" == "icgc" ]; then
      file_prefix=$user_analysis_id                                                 
 fi   
 if [ ! -e $meta_data_file ]; then
-    echo "ERROR: file $meta_data_file not found"  > /dev/stderr
+    echo "ERROR: file $meta_data_file not found"   1>&2
     exit 1
 fi
 
 # 
 sample_metadata=`grep -F "$file_prefix" $meta_data_file|tr '\t' '|'`
 if [ "-$sample_metadata" = "-" ]; then
-    echo "ERROR: Unable to find sample $file_prefix in $meta_data_file"  > /dev/stderr
+    echo "ERROR: Unable to find sample $file_prefix in $meta_data_file"   1>&2
     exit 1
 fi
 
@@ -60,13 +60,13 @@ done
 for var in analysis_id fastq_files center_name platform platform_model sample_id submitter_sample_id lib_id read_group_label fastq_files ; do
     #echo $var=${!var}
     if [ "${!var}-" == "-" ]; then
-	echo "ERROR: Unable to get value for $var"  > /dev/stderr
+	echo "ERROR: Unable to get value for $var"   1>&2
 	exit 1
     fi
 done
 # analysis id should match
 if [ "$analysis_id" != "$user_analysis_id" ]; then
-    echo "ERROR: Analysis id mismatch - expected $user_analysis_id and got $analysis_id"  > /dev/stderr
+    echo "ERROR: Analysis id mismatch - expected $user_analysis_id and got $analysis_id"   1>&2
     exit 1
 fi
 

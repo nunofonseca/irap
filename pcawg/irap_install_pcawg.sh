@@ -37,7 +37,7 @@ do
 done
 
 if [ "$DIR-" = "-" ]; then
-    echo "You need to provide the instalation directory" > /dev/stderr
+    echo "You need to provide the instalation directory"  1>&2
     exit 1
 fi
 

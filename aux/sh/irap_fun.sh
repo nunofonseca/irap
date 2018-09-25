@@ -172,7 +172,7 @@ function get_param_value {
 function get_cached_value {
 
     if [ ! -e $name/cached_vars.mk ]; then
-	echo ERROR: File $name/cached_vars.mk not found > /dev/stderr
+	echo ERROR: File $name/cached_vars.mk not found  1>&2
 	exit 1
     fi
     val=`grep "^$1=" $name/cached_vars.mk|cut -f 2 -d=`
@@ -489,10 +489,10 @@ function submit_jobs4target {
 }
 		
 function get_pe_libs {
-    #echo $cmd conf=$conf $IRAP_PARAMS print_pe_libs se= > /dev/stderr
+    #echo $cmd conf=$conf $IRAP_PARAMS print_pe_libs se=  1>&2
     $cmd conf=$conf $IRAP_PARAMS print_pe_libs se= |tail -n 1
 }
 function get_se_libs {
-    #echo $cmd conf=$conf $IRAP_PARAMS print_se_libs pe= > /dev/stderr
+    #echo $cmd conf=$conf $IRAP_PARAMS print_se_libs pe=  1>&2
     $cmd conf=$conf $IRAP_PARAMS print_se_libs pe= | tail -n 1
 }

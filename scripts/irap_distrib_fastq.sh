@@ -6,12 +6,12 @@ data_dir=$3
 species=test_species
 
 if [ "$1-" == "-" ] ; then
-    echo "Usage: irap_distrib_fastq.sh irap_conf_file max_files_per_folder [data_dir]" > /dev/stderr
+    echo "Usage: irap_distrib_fastq.sh irap_conf_file max_files_per_folder [data_dir]"  1>&2
     exit 1
 fi
 
 if [ "$CONF-" == "-" ] || [ ! -e $CONF ]; then
-    echo "Unable to open configuration file" > /dev/stderr 
+    echo "Unable to open configuration file"  1>&2 
     exit 1
 fi
 if [ "$data_dir-" == "-" ]; then
