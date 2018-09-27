@@ -114,7 +114,7 @@ if (ncol(quant.data)>=2 && ncol(quant.data)<12 && nrow(quant.data)>20 ) {
                     height=500,
                          caption=paste("Clustering (distance=",d,"; method=",m,";restarts= ",nboot,"): ",pprint.metric(opt$metric),sep=""),
                     to.plot=function() {
-                      con<-irap.consensus(as.data.frame(t(dolog2(quant.data.group$mean))),distance=d,method=m, nboot=nboot,duplicate=TRUE,xlab="",yaxt='n', ann=FALSE,leafsColours=coloursbygroup)      
+                      con<-irap.consensus(data=as.data.frame(t(dolog2(quant.data.group$mean))),distance=d,method=m, nboot=nboot,duplicate=TRUE,xlab="",yaxt='n', ann=FALSE,leafsColours=coloursbygroup)      
                     }
                     )
     html <- p$html
@@ -125,7 +125,7 @@ if (ncol(quant.data)>=2 && ncol(quant.data)<12 && nrow(quant.data)>20 ) {
                     height=500,
                     caption=paste("Clustering (distance=",d,"; method=",m,";restarts= ",nboot,"): ",pprint.metric("nlib"),sep=""),
                     to.plot=function() {
-                      con<-irap.consensus(as.data.frame(t(dolog2(quant.data.norm.group$mean))),distance=d,method=m, nboot=nboot,duplicate=TRUE, xlab="",yaxt='n', ann=FALSE,leafsColours=coloursbygroup)      
+                      con<-irap.consensus(data=as.data.frame(t(dolog2(quant.data.norm.group$mean))),distance=d,method=m, nboot=nboot,duplicate=TRUE, xlab="",yaxt='n', ann=FALSE,leafsColours=coloursbygroup)      
                     }
                     )
        html <- paste(html,p$html,sep=" ")
@@ -293,7 +293,7 @@ if (ncol(quant.data)>=10 ) {
                     height=500,
                     caption=paste("Clustering (distance=",d,"; method=",m,";restarts= ",nboot,"):",pprint.metric(opt$metric),sep=""),
                     to.plot=function() {
-                      con<-irap.consensus(as.data.frame(t(dolog2(quant.data))),distance=d,method=m, nboot=nboot,duplicate=TRUE,xlab="",yaxt='n', ann=FALSE, leafsColours=coloursbysample)
+                      con<-irap.consensus(data=as.data.frame(t(dolog2(quant.data))),distance=d,method=m, nboot=nboot,duplicate=TRUE,xlab="",yaxt='n', ann=FALSE, leafsColours=coloursbysample)
                     }
                     )
     html <- p$html
@@ -303,7 +303,7 @@ if (ncol(quant.data)>=10 ) {
                            height=500,
                            caption=paste("Clustering (distance=",d,"; method=",m,";restarts= ",nboot,"): ",pprint.metric("nlib"),sep=""),
                            to.plot=function() {
-                             con<-irap.consensus(as.data.frame(t(dolog2(quant.data.norm))),distance=d,method=m, nboot=nboot,duplicate=TRUE,xlab="",yaxt='n', ann=FALSE,leafsColours=coloursbysample)      
+                             con<-irap.consensus(data=as.data.frame(t(dolog2(quant.data.norm))),distance=d,method=m, nboot=nboot,duplicate=TRUE,xlab="",yaxt='n', ann=FALSE,leafsColours=coloursbysample)      
                            }
                            )
       html <- paste(html,p$html, sep=" ")
