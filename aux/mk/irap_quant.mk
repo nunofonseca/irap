@@ -1004,7 +1004,7 @@ $(kallisto_index): $(trans_abspath)
 # read lenth - 3
 # lib - 5
 define run_kallisto_quant=
-irap_wrapper.sh kallisto kallisto quant $(kallisto_quant_params) -i $(kallisto_index_name) $(if $(4),-l $(3),--single -l $(if $(kallisto_se_fragment_length),$(kallisto_se_fragment_length),$($(5)_rs)) -s $(kallisto_se_sd)) $(call kallisto_strand_params,$(5))  -t $(kallisto_threads) -o $(1)  $(2)
+irap_wrapper.sh kallisto kallisto quant $(kallisto_quant_params) -i $(kallisto_index_name) $(if $(4),,-l $(if $(kallisto_se_fragment_length),$(kallisto_se_fragment_length),$($(5)_rs)) -s $(kallisto_se_sd) --single)  $(call kallisto_strand_params,$(5))  -t $(kallisto_threads) -o $(1)  $(2)
 endef
 # 
 
