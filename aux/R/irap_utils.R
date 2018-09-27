@@ -856,16 +856,21 @@ irap.ctr <- function(c.name,add.label=TRUE) {
   return(x)
 }
 
-brew.wrapper <- function(...) {
-  x <- try(brew(...,envir=parent.frame()))
-  if ( inherits(x,"try-error") ) {
-    perror("Failed to generate HTML.",attr(x,"condition"))
-    if (pdebug.enabled) {
-      code <- brew(...,envir=parent.frame(),run=FALSE,parseCode=FALSE)
-      cat(paste(unlist(code),collapse="\n",sep="\n"))
+brew.wrapper <- function(file,output,...) {
+
+    #print(inherits(file, "connection"))
+    #print(summary(file))
+    x <- try(brew(file=file,output=output,...,envir=parent.frame()))
+    if ( inherits(x,"try-error") ) {
+        perror("Failed to generate HTML: ",attr(x,"condition"))
+        if (pdebug.enabled) {
+            debug(brew)
+            code <- brew(file=file,output=output,...,envir=parent.frame(),run=FALSE,parseCode=TRUE)
+                                        #perror(paste(unlist(code),collapse="\n",sep="\n"))
+            #print(code)
+        }
+        q(status=2)
     }
-    q(status=2)
-  }
 }
 
 

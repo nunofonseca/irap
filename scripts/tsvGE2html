@@ -32,7 +32,6 @@ if ( IRAP.DIR == "" ) {
   cat("ERROR: environment variable IRAP_DIR is not set\n")
   q(status=1)
 }
-
 # specify our desired options in a list
 #
 source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
@@ -77,7 +76,8 @@ opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filena
 opt$browser <- paste(gsub("/$","",opt$browser),"/",sep="")
 pdebug.enabled <- opt$debug
 
-html.template <- get.path2template(paste("tsvGE2html_",gsub(".*_","",opt$metric),sep=""))
+#html.template <- get.path2template(paste("tsvGE2html_",gsub(".*_","",opt$metric),sep=""))
+html.template <- get.path2template("tsvGE2html_raw")
 pinfo("html template=",html.template)
 ############
 # process group names and definition
@@ -179,7 +179,7 @@ pinfo("data loaded=",nrow(table)," rows ",ncol(table)," cols")
 if (is.null(table) ) {
   pwarning("'empty' input file: ",opt$tsv_file)
   # generate an empty file
-  brew.wrapper(get.path2template("no_data"),o.html.file)  
+  brew.wrapper(file=get.path2template("no_data"),output=o.html.file)  
   q(status=0)
 }
 # fix id column name
@@ -297,28 +297,37 @@ gen.page <- function (o.html.file) {
 
 
   if ( nrow(uncut.table)<1 ) {
-    pdebug("Not enough data")
+    pinfo("Not enough data to generate a report")
     write.tsv(uncut.table,file=tsv.file)
     system(paste("rm -f ",tsv.file,".gz ;gzip ",tsv.file,sep=""))
+    pinfo(get.path2template("not_enough_data"))
     brew.wrapper(get.path2template("not_enough_data"),o.html.file)
     return
   }
   irap.assert(ncol(table.html)>0,"unexpected empty table")
   # setup variables
   quant.data<-table.html[,html.cols2sel]
-  rownames(quant.data)<-quant.data[,1]
+    rownames(quant.data)<-quant.data[,1]
+
   quant.data <- data.frame(quant.data[,-1])
   colnames(quant.data) <- html.cols2sel[-1]
   rownames(quant.data) <- rownames(table.html)
   quant.data <- round(quant.data,0)
+
   # colours for each group
-  coloursbygroup <- rainbow(length(names(groups.l)))
-  names(coloursbygroup) <- names(groups.l)
+    if (length(groups.l)==0) {
+        # what to do when no groups are provided...
+        coloursbygroup <- rainbow(length(names(quant.data)))
+        names(coloursbygroup) <- names(quant.data)
+    } else {
+        coloursbygroup <- rainbow(length(names(groups.l)))
+        names(coloursbygroup) <- names(groups.l)
+    }
   # colours by sample
   conds <- lib2group(groups.l,names(quant.data))
   coloursbysample <- coloursbygroup[conds]
   names(coloursbysample) <- colnames(quant.data)
-  
+
     quant.data.norm <- NULL
     ## data per group
   pdebug("conds=",conds)
@@ -330,7 +339,7 @@ gen.page <- function (o.html.file) {
   pdebug("temp=",html.template)
   options("R2HTML.format.decimal.mark"=".")
   caption <- ""
-  brew.wrapper(html.template,o.html.file)
+  brew.wrapper(file=html.template,output=o.html.file)
 }
 
 
@@ -342,6 +351,7 @@ table.html <- table
 
 pdebug.save.state("tsvGE2html0","p1")
 gen.page(o.html.file)
+
 
 if ( ! "biotype" %in% colnames(table) && "biotype" %in% colnames(table)) {
   table$biotype=table$source
@@ -361,14 +371,14 @@ for (filt.name  in get.source.filter.names() ) {
     }
     table.html <- table
     pinfo("Filter:",filt.name)
-    print(head(table))
     o.html.file <- get.source.filename(opt$out,filt.name)
     tsv.file <- gsub(".html$",".tsv",o.html.file)
     tsv.file.ref <- basename(tsv.file)
     file.prefix <- gsub(".html","",o.html.file)
     if ( nrow(table)==0 ) {
-      tsv.file<-""
-      brew.wrapper(get.path2template("not_enough_data"),o.html.file)  
+        tsv.file<-""
+        pinfo(get.path2template("not_enough_data"))
+        brew.wrapper(file=get.path2template("not_enough_data"),output=o.html.file)  
     } else {
       gen.page(o.html.file)
     }

@@ -84,6 +84,7 @@ do_cor_heatmap<-function(m) {
 <H3><%=irap.ctr("Figure")%>: Correlation scatterplot</H3>
 
 <%
+
 if (ncol(quant.data)>=2 && ncol(quant.data)<12 && nrow(quant.data)>20 ) {
   pdebug("Correlation scatterplots\n")    
   p <- gen.plot2report(filename=paste(file.prefix,"_group_pairs.png",sep=""),
