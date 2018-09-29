@@ -970,7 +970,8 @@ function R_install {
     CFLAGS=$CFLAGS_noboost $SPECIAL_SH_TO_USE ./configure --prefix=$IRAP_DIR
     make clean
     make -j $J
-    make -j $J check
+    # 
+    #make -j $J check
     make install
     popd
     # wrappers
