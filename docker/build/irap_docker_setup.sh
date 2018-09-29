@@ -20,7 +20,7 @@ if [ "$OS-" == "fedora_27-" ]; then
     # texlive-incons*
     dnf clean all
     os_install_done=y
-    INSTALL_OPTIONS=$INSTALL_OPTIONS -R
+    INSTALL_OPTIONS="$INSTALL_OPTIONS -R"
 fi
 
 if [ "$OS-" == "fedora_28-" ]; then
@@ -41,7 +41,7 @@ if [ "$OS-" == "fedora_22-" ]; then
     # texlive-incons*  
     dnf clean all
     os_install_done=y
-    INSTALL_OPTIONS=$INSTALL_OPTIONS -R
+    INSTALL_OPTIONS="$INSTALL_OPTIONS -R"
 fi
 
 if [ "$OS-" == "ubuntu_14-" ]; then
@@ -51,9 +51,9 @@ if [ "$OS-" == "ubuntu_14-" ]; then
     apt-get clean
     os_install_done=y
     # 
-    INSTALL_OPTIONS=$INSTALL_OPTIONS -R
+    INSTALL_OPTIONS="$INSTALL_OPTIONS -R"
 fi
-if [ "$OS-" == "ubuntu_16-" ]; then
+if [ "$OS-" == "ubuntu_16-" ] || [ "$OS-" == "ubuntu-" ]; then
     ## ubuntu
     echo "Updating and installing Ubuntu packages"
     #apt-get install -y
@@ -61,30 +61,40 @@ if [ "$OS-" == "ubuntu_16-" ]; then
     if [ "$IRAP_VERSION-" != "devel-" ]; then
 	apt-get update
     fi
+    if [ "$OS-" == "ubuntu-" ]; then
+	apt-get update
+	apt-get install -yq  --no-install-recommends software-properties-common ca-certificates wget curl ssh
+	apt-get install -yq --no-install-recommends make
+	make --version
+    fi
     apt-get install -yq --no-install-recommends build-essential
     apt-get install -yq --no-install-recommends unzip
     apt-get install -yq --no-install-recommends libpcre3-dev
     apt-get install -yq --no-install-recommends libssl-dev
     apt-get install -yq --no-install-recommends lsb-release
     apt-get install -yq --no-install-recommends curl
-    apt-get install -yq --no-install-recommends bison bzip2 curl gettext gfortran git graphviz libboost-all-dev libbz2-1.0  libbz2-dev libcurl4-openssl-dev libdb-dev libexpat1 libexpat1-dev libgd-dev libncurses5-dev libpangocairo-1.0-0 libpcre++-dev libpng12-0 libreadline-dev libsqlite3-dev  libx11-dev libxml2 libxml2-dev libxt-dev lsb-release openjdk-8-jre openjdk-8-jdk poxml python-dev python-numpy sqlite sqlite3 texinfo texlive  wget xvfb zlib1g zlib1g-dev zlibc libpthread-stubs0-dev 
-    echo "deb http://cran.rstudio.com/bin/linux/ubuntu/ $(lsb_release -cs)/" >> /etc/apt/sources.list 
-    gpg --keyserver hkp://keyserver.ubuntu.com --recv-key E084DAB9
-    gpg -a --export E084DAB9 | apt-key add -
-    ## update needed before installing R
-    apt-get update
-    apt-get install -y --no-install-recommends  r-base r-base-dev
+    apt-get install -yq --no-install-recommends bison bzip2 curl gettext gfortran git graphviz libboost-all-dev libbz2-1.0  libbz2-dev libcurl4-openssl-dev libdb-dev libexpat1 libexpat1-dev libgd-dev libncurses5-dev libpangocairo-1.0-0 libpcre++-dev libpng-dev libreadline-dev libsqlite3-dev  libx11-dev libxml2 libxml2-dev libxt-dev lsb-release openjdk-8-jre openjdk-8-jdk poxml python-dev python-numpy sqlite sqlite3 texinfo texlive  wget xvfb zlib1g zlib1g-dev zlibc libpthread-stubs0-dev 
+    echo "deb http://cran.rstudio.com/bin/linux/ubuntu/ $(lsb_release -cs)/" >> /etc/apt/sources.list
+    if [ "$OS-" == "ubuntu_16-" ]; then
+	gpg --keyserver hkp://keyserver.ubuntu.com --recv-key E084DAB9    0
+	gpg -a --export E084DAB9 | apt-key add -
+	## update needed before installing R
+	apt-get update
+	apt-get install -y --no-install-recommends  r-base r-base-dev
+    else
+	INSTALL_OPTIONS="$INSTALL_OPTIONS -R"
+    fi
     # clean up
     apt-get clean
     os_install_done=y
 fi
 if [ "$OS-" == "aws-" ]; then
     #yum update -y
-    yum install -y make zlib-devel python-devel bzip2-devel python readline-devel libgfortran gcc-gfortran gcc-c++ libX11-devel libXt-devel numpy gd-devel libxml2-devel libxml2 libpng texi2html libcurl-devel expat-devel  pango-devel cairo-devel  java python gcc gcc-c++ gcc-objc++  gcc-gfortran curl git which make bzip2 bison gettext-devel  unzip make wget sqlite sqlite-devel db4-devel libdb-devel graphviz texlive tar java-devel texinfo  xorg-x11-server-Xvfb automake evince  texlive-collection-latex firefox tk-devel tcl-devel libtool python3-devel python3
+    yum install -y make zlib-devel python-devel bzip2-devel python readline-devel libgfortran gcc-gfortran gcc-c++ libX11-devel libXt-devel numpy gd-devel libxml2-devel libxml2 libpng texi2html libcurl-devel expat-devel  pango-devel cairo-devel  java python gcc gcc-c++ gcc-objc++  gcc-gfortran curl git which make bzip2 bison gettext-devel  unzip make wget sqlite sqlite-devel db4-devel libdb-devel graphviz texlive tar java-devel texinfo  xorg-x11-server-Xvfb automake evince  texlive-collection-latex firefox tk-devel tcl-devel libtool python3-devel python3 openssl-devel
     # texlive-incons*  
     yum clean all
     os_install_done=y
-    INSTALL_OPTIONS=$INSTALL_OPTIONS -R
+    INSTALL_OPTIONS="$INSTALL_OPTIONS -R"
 fi
 if [ "$OS-" == "skip_os_install-" ]; then
     os_install_done=y
