@@ -1,4 +1,4 @@
-FROM ubuntu:16.04
+FROM ubuntu:18.04
 MAINTAINER Nuno Fonseca email: nuno.fonseca at gmail.com
 # Initially created by Natalja Kurbatova
 # Update the image with the latest packages (recommended)
@@ -8,16 +8,9 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 LABEL iRAP.vesion="pre_release" maintainer="nuno.fonseca at gmail.com"
 
-
-RUN apt-get update
-RUN apt-get install -y  bison build-essential bzip2 curl gettext gfortran git graphviz libboost-all-dev libbz2-1.0  libbz2-dev libcurl4-openssl-dev libdb-dev libexpat1 libexpat1-dev libgd-dev libncurses5-dev libpangocairo-1.0-0 libpcre3-dev libpcre++-dev libpng12-0 libreadline-dev libsqlite3-dev libssl-dev libx11-dev libxml2 libxml2-dev libxt-dev lsb-release openjdk-8-jre openjdk-8-jdk poxml python-dev python-numpy sqlite sqlite3 texinfo texlive unzip wget xvfb zlib1g zlib1g-dev zlibc libpthread-stubs0-dev libpthread-stubs0-dev
-
-
 ADD build/irap_docker_setup.sh build
 # R
-RUN echo "deb http://cran.rstudio.com/bin/linux/ubuntu xenial/" >> /etc/apt/sources.list &&  gpg --keyserver hkp://keyserver.ubuntu.com --recv-key E084DAB9 &&  gpg -a --export E084DAB9 | apt-key add - &&  apt-get update &&  apt-get install -y r-base r-base-dev
-
-RUN bash build skip_os_install devel minimal
+RUN bash build ubuntu devel minimal
 
 #ENTRYPOINT ["irap"]
 
