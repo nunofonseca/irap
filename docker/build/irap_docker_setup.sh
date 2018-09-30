@@ -16,7 +16,7 @@ if [ "$OS-" == "fedora_27-" ]; then
     echo "Updating and installing Fedora packages"
     dnf update -y
     # R>=3.4.3
-    dnf install -y --nodocs zlib-devel python-devel bzip2-devel python readline-devel libgfortran gcc-gfortran gcc-c++ libX11-devel libXt-devel numpy gd-devel libxml2-devel libxml2 libpng texi2html libcurl-devel expat-devel  pango-devel cairo-devel  java python gcc gcc-c++ gcc-objc++  gcc-gfortran curl git which make bzip2 bison gettext-devel  unzip make wget sqlite sqlite-devel db4-devel libdb-devel graphviz texlive tar java-devel texinfo texinfo-tex xorg-x11-server-Xvfb  openssl-devel
+    dnf install -y --nodocs zlib-devel python-devel bzip2-devel python readline-devel libgfortran gcc-gfortran gcc-c++ libX11-devel libXt-devel numpy gd-devel libxml2-devel libxml2 libpng texi2html libcurl-devel expat-devel  pango-devel cairo-devel  java python gcc gcc-c++ gcc-objc++  gcc-gfortran curl git which make bzip2 bison gettext-devel  unzip make wget sqlite sqlite-devel db4-devel libdb-devel graphviz texlive tar java-devel texinfo texinfo-tex xorg-x11-server-Xvfb openssl-devel hdf5-devel
     # texlive-incons*
     dnf clean all
     os_install_done=y
@@ -27,7 +27,7 @@ if [ "$OS-" == "fedora_28-" ]; then
     echo "Updating and installing Fedora packages"
     dnf update -y
     # R>=3.4.3
-    dnf install -y --nodocs R zlib-devel python-devel bzip2-devel python readline-devel libgfortran gcc-gfortran gcc-c++ libX11-devel libXt-devel numpy gd-devel libxml2-devel libxml2 libpng texi2html libcurl-devel expat-devel  pango-devel cairo-devel  java python gcc gcc-c++ gcc-objc++  gcc-gfortran curl git which make bzip2 bison gettext-devel  unzip make wget sqlite sqlite-devel db4-devel libdb-devel graphviz texlive tar java-devel texinfo texinfo-tex xorg-x11-server-Xvfb  openssl-devel
+    dnf install -y --nodocs R zlib-devel python-devel bzip2-devel python readline-devel libgfortran gcc-gfortran gcc-c++ libX11-devel libXt-devel numpy gd-devel libxml2-devel libxml2 libpng texi2html libcurl-devel expat-devel  pango-devel cairo-devel  java python gcc gcc-c++ gcc-objc++  gcc-gfortran curl git which make bzip2 bison gettext-devel  unzip make wget sqlite sqlite-devel db4-devel libdb-devel graphviz texlive tar java-devel texinfo texinfo-tex xorg-x11-server-Xvfb  openssl-devel hdf5-devel
     # texlive-incons*
     dnf clean all
     os_install_done=y
@@ -37,7 +37,8 @@ fi
 if [ "$OS-" == "fedora_22-" ]; then
     echo "Updating and installing Fedora packages"
     dnf update -y
-    dnf install -y --nodocs zlib-devel python-devel bzip2-devel python readline-devel libgfortran gcc-gfortran gcc-c++ libX11-devel libXt-devel numpy gd-devel libxml2-devel libxml2 libpng texi2html libcurl-devel expat-devel  pango-devel cairo-devel  java python gcc gcc-c++ gcc-objc++  gcc-gfortran curl git which make bzip2 bison gettext-devel  unzip make wget sqlite sqlite-devel db4-devel libdb-devel graphviz texlive tar java-devel texinfo  xorg-x11-server-Xvfb automake evince  texlive-collection-latex firefox tk-devel tcl-devel libtool 
+    dnf install -y --nodocs zlib-devel python-devel bzip2-devel python readline-devel libgfortran gcc-gfortran gcc-c++ libX11-devel libXt-devel numpy gd-devel libxml2-devel libxml2 libpng texi2html libcurl-devel expat-devel  pango-devel cairo-devel  java python gcc gcc-c++ gcc-objc++  gcc-gfortran curl git which make bzip2 bison gettext-devel  unzip make wget sqlite sqlite-devel db4-devel libdb-devel graphviz texlive tar java-devel texinfo  xorg-x11-server-Xvfb automake evince  texlive-collection-latex firefox tk-devel tcl-devel libtool
+    # hdf5 is not installed
     # texlive-incons*  
     dnf clean all
     os_install_done=y
@@ -73,7 +74,7 @@ if [ "$OS-" == "ubuntu_16-" ] || [ "$OS-" == "ubuntu-" ]; then
     apt-get install -yq --no-install-recommends libssl-dev
     apt-get install -yq --no-install-recommends lsb-release
     apt-get install -yq --no-install-recommends curl
-    apt-get install -yq --no-install-recommends bison bzip2 curl gettext gfortran git graphviz libboost-all-dev libbz2-1.0  libbz2-dev libcurl4-openssl-dev libdb-dev libexpat1 libexpat1-dev libgd-dev libncurses5-dev libpangocairo-1.0-0 libpcre++-dev libpng-dev libreadline-dev libsqlite3-dev  libx11-dev libxml2 libxml2-dev libxt-dev lsb-release openjdk-8-jre openjdk-8-jdk poxml python-dev python-numpy sqlite sqlite3 texinfo texlive  wget xvfb zlib1g zlib1g-dev zlibc libpthread-stubs0-dev 
+    apt-get install -yq --no-install-recommends bison bzip2 curl gettext gfortran git graphviz libboost-all-dev libbz2-1.0  libbz2-dev libcurl4-openssl-dev libdb-dev libexpat1 libexpat1-dev libgd-dev libncurses5-dev libpangocairo-1.0-0 libpcre++-dev libpng-dev libreadline-dev libsqlite3-dev  libx11-dev libxml2 libxml2-dev libxt-dev lsb-release openjdk-8-jre openjdk-8-jdk poxml python-dev python-numpy sqlite sqlite3 texinfo texlive  wget xvfb zlib1g zlib1g-dev zlibc libpthread-stubs0-dev  libhdf5-dev
     echo "deb http://cran.rstudio.com/bin/linux/ubuntu/ $(lsb_release -cs)/" >> /etc/apt/sources.list
     if [ "$OS-" == "ubuntu_16-" ]; then
 	gpg --keyserver hkp://keyserver.ubuntu.com --recv-key E084DAB9    0
@@ -90,7 +91,9 @@ if [ "$OS-" == "ubuntu_16-" ] || [ "$OS-" == "ubuntu-" ]; then
 fi
 if [ "$OS-" == "aws-" ]; then
     #yum update -y
-    yum install -y make zlib-devel python-devel bzip2-devel python readline-devel libgfortran gcc-gfortran gcc-c++ libX11-devel libXt-devel numpy gd-devel libxml2-devel libxml2 libpng texi2html libcurl-devel expat-devel  pango-devel cairo-devel  java python gcc gcc-c++ gcc-objc++  gcc-gfortran curl git which make bzip2 bison gettext-devel  unzip make wget sqlite sqlite-devel db4-devel libdb-devel graphviz texlive tar java-devel texinfo  xorg-x11-server-Xvfb automake evince  texlive-collection-latex firefox tk-devel tcl-devel libtool python3-devel python3 openssl-devel
+    yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+    ## Note: When you install the EPEL rpm package on Amazon Linux 2, the EPEL repository is already enabled.
+    yum install -y make zlib-devel python-devel bzip2-devel python readline-devel libgfortran gcc-gfortran gcc-c++ libX11-devel libXt-devel numpy gd-devel libxml2-devel libxml2 libpng texi2html libcurl-devel expat-devel  pango-devel cairo-devel  java python gcc gcc-c++ gcc-objc++  gcc-gfortran curl git which make bzip2 bison gettext-devel  unzip make wget sqlite sqlite-devel db4-devel libdb-devel graphviz texlive tar java-devel texinfo  xorg-x11-server-Xvfb automake evince  texlive-collection-latex firefox tk-devel tcl-devel libtool python3-devel python3 openssl-devel hdf5-devel
     # texlive-incons*  
     yum clean all
     os_install_done=y
