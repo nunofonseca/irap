@@ -4,7 +4,7 @@ FROM fedora:27
 LABEL iRAP.version="pre_release" maintainer="nuno.fonseca at gmail.com"
 
 COPY build/irap_docker_setup.sh build
-RUN bash build fedora27 devel minimal -R
+RUN bash build fedora_27 devel minimal -R
 
 #ENTRYPOINT ["irap"]
 
