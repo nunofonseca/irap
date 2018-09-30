@@ -107,9 +107,9 @@ species2db<-matrix(c('org.Ag.eg.db','Anopheles',
                      'org.Pt.eg.db','Chimp',
                      'org.Rn.eg.db','Rat',
                      'org.Sc.sgd.db','Yeast',
-                     'org.Sco.eg.db','Streptomyces coelicolor',
+                     'Streptomyces coelicolor',
                      'org.Ss.eg.db','Pig',
-                     'org.Tgondii.eg.db','Toxoplasma gondii',
+                     'Toxoplasma gondii',
                      'org.Xl.eg.db','Xenopus'),byrow=T,ncol=2)
 colnames(species2db)<-c("db","species")
 for (p in species2db[,'db']) {
