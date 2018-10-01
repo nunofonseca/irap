@@ -1,4 +1,4 @@
-FROM ubuntu:16.04
+FROM ubuntu:18.04
 # Update the image with the latest packages (recommended)
 # and install missing packages
 
@@ -7,7 +7,7 @@ ENV IRAP_VERSION=devel
 
 LABEL iRAP.version="$IRAP_VERSION" maintainer="nuno.fonseca at gmail.com"
 
-ADD build/irap_docker_setup.sh build
-RUN bash build ubuntu_16 $IRAP_VERSION light 
+ADD docker/build/irap_docker_setup.sh build
+RUN bash build ubuntu $IRAP_VERSION light 
 
 #ENTRYPOINT ["irap"]
