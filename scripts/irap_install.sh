@@ -23,7 +23,7 @@ install=all
 IRAP_DIR1=
 SRC_DIR=
 
-IRAP_VERSION=1.0.0
+IRAP_VERSION=1.0.0d1
 
 
 #
