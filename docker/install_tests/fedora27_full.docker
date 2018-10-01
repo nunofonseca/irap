@@ -4,9 +4,6 @@ MAINTAINER Nuno Fonseca email: nuno.fonseca at gmail.com
 # docker build -f fedora27_full.docker -t fedora/irapf:v2 ..
 LABEL iRAP.version="pre_release" maintainer="nuno.fonseca at gmail.com"
 
-RUN dnf update -y
-RUN dnf install -y zlib-devel python-devel bzip2-devel python readline-devel libgfortran gcc-gfortran gcc-c++ libX11-devel libXt-devel numpy gd-devel libxml2-devel libxml2 libpng texi2html libcurl-devel expat-devel  pango-devel cairo-devel  java python gcc gcc-c++ gcc-objc++  gcc-gfortran curl git which make bzip2 bison gettext-devel  unzip make wget sqlite sqlite-devel db4-devel libdb-devel graphviz texlive tar java-devel texinfo texinfo-tex xorg-x11-server-Xvfb texlive-incons* &&  dnf clean all
-
 COPY build/irap_docker_setup.sh build 
 RUN bash build fedora_27 devel full -R
 
