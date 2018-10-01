@@ -1,0 +1,10 @@
+FROM fedora:28
+
+# docker build -f fedora27_full.docker -t fedora/irapf:v2 ..
+LABEL iRAP.version="pre_release" maintainer="nuno.fonseca at gmail.com"
+
+COPY build/irap_docker_setup.sh build
+RUN bash build fedora_28 devel minimal
+
+#ENTRYPOINT ["irap"]
+
