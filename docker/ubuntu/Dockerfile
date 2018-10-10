@@ -9,7 +9,7 @@ ENV IRAP_VERSION=1.0.0
 LABEL iRAP.version="$IRAP_VERSION" maintainer="nuno.fonseca at gmail.com"
 
 
-ADD docker/build/irap_docker_setup.sh build
+ADD build/irap_docker_setup.sh build
 RUN bash build ubuntu $IRAP_VERSION full 
 
 #ENTRYPOINT ["irap"]
