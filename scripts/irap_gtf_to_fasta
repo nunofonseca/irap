@@ -88,7 +88,7 @@ print "Transcripts loaded:".(scalar keys %trans2strand)."\ndone.\n";
 
 print "Creating fasta (1/2)...\n";
 
-my $cmd2="set -o pipefail; tophat2_gtf_to_fasta $tmp_gtf $fasta_file /dev/stdout|tail -n +2| sed -E  's/^>([a-zA-Z0-9|]+)\\s/>/;s/\\s.*//' > $tmp_out1";
+my $cmd2="bash -c \"set -o pipefail; tophat2_gtf_to_fasta $tmp_gtf $fasta_file /dev/stdout|tail -n +2| sed -E  's/^>([a-zA-Z0-9|]+)\\s/>/;s/\\s.*//' > $tmp_out1 \"";
 #print $cmd2;
 system($cmd2) == 0
     or byebye "$cmd2 failed: $?";
