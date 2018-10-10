@@ -17,7 +17,7 @@ Problems? Errors?
 
 Errors may occur while running one of the many different pieces of
 software included in IRAP (e.g., a mapper, a quantification method,
-etc). If this happens then the error should be reported directly to
+etc). If this happens then please report the error directly to
 the developers of the program.
 
 The authors of IRAP always appreciate receiving suggestions for
