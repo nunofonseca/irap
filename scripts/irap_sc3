@@ -106,7 +106,7 @@ if (!do.clustering) {
 } else {
   
   # Create SingleCellExperiment
-  # 2018-09-24: SingleCellExperiment does not support sparse matrices :(
+  # 2018-09-24: SC3 does not support sparse matrices :(
   sce <- SingleCellExperiment(
     assays = list(
       counts = as.matrix(raw),
