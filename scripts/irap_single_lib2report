@@ -88,7 +88,7 @@ endif
 #
 ifeq ($(quant_method),)
 # look for files from each quant method
-QUANT_METHODS=$(shell grep "^SUPPORTED_QUANT_METHODS=" `which irap`|cut -f 2 -d=)
+QUANT_METHODS=$(shell grep "^SUPPORTED_QUANT_METHODS=" $(IRAP_DIR)/aux/mk/irap_core.mk|cut -f 2 -d=)
 $(info $(QUANT_METHODS))
 quant_method=$(QUANT_METHODS)
 endif
