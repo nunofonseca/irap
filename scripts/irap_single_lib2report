@@ -153,13 +153,13 @@ endef
 # 1 - quant_method
 define gen_files=
 $(call p_info,Looking for gene level quantification files $(1) (raw counts))
-$(call matching_files,$(folders_file),"*genes.raw.*$(1)*.irap.tsv",$(out)/.genes_raw_quants_file.$(1))
+$(call matching_files,$(folders_file),"*genes.raw.*$(1).tsv",$(out)/.genes_raw_quants_file.$(1))
 $(call p_info,Looking for gene level quantification files $(1)  (fpkm))
 $(call matching_files,$(folders_file),"*genes.fpkm.*$(1)*.irap.tsv",$(out)/.genes_fpkm_quants_file.$(1))
 $(call p_info,Looking for gene level quantification files  $(1) (tpm))
 $(call matching_files,$(folders_file),"*genes.tpm.*$(1)*.irap.tsv",$(out)/.genes_tpm_quants_file.$(1))
 $(call p_info,Looking for exon level quantification files  $(1) (raw counts))
-$(call matching_files,$(folders_file),"*exons.raw.*$(1)*.irap.tsv",$(out)/.exons_raw_quants_file.$(1))
+$(call matching_files,$(folders_file),"*exons.raw.*$(1).tsv",$(out)/.exons_raw_quants_file.$(1))
 $(call p_info,Looking for exon level quantification files  $(1) (fpkm))
 $(call matching_files,$(folders_file),"*exons.fpkm.*$(1)*.irap.tsv",$(out)/.exons_fpkm_quants_file.$(1))
 ifndef no_exons_tpm
@@ -167,13 +167,13 @@ $(call p_info,Looking for exon level quantification files  $(1) (tpm))
 $(call matching_files,$(folders_file),"*exons.tpm.*$(1)*.irap.tsv",$(out)/.exons_tpm_quants_file.$(1))
 endif
 $(call p_info,Looking for transcript level quantification files  $(1)  (raw counts))
-$(call matching_files,$(folders_file),"*transcripts.raw.*$(1)*.irap.tsv",$(out)/.transcripts_raw_quants_file.$(1))
+$(call matching_files,$(folders_file),"*.transcripts.raw.*$(1).tsv",$(out)/.transcripts_raw_quants_file.$(1))
 $(call p_info,Looking for transcript level quantification files  $(1) (fpkm))
-$(call matching_files,$(folders_file),"*transcripts.fpkm.*$(1)*.irap.tsv",$(out)/.transcripts_fpkm_quants_file.$(1))
+$(call matching_files,$(folders_file),"*.transcripts.fpkm.*$(1)*.irap.tsv",$(out)/.transcripts_fpkm_quants_file.$(1))
 $(call p_info,Looking for transcript level quantification files  $(1) (tpm))
-$(call matching_files,$(folders_file),"*transcripts.tpm.*$(1)*.irap.tsv",$(out)/.transcripts_tpm_quants_file.$(1))
+$(call matching_files,$(folders_file),"*.transcripts.tpm.*$(1)*.irap.tsv",$(out)/.transcripts_tpm_quants_file.$(1))
 $(call p_info,Looking for transcript relative isoform usage files  $(1)  (riu))
-$(call matching_files,$(folders_file),"*transcripts.riu.*$(1)*.irap.tsv",$(out)/.transcripts_riu_quants_file.$(1))
+$(call matching_files,$(folders_file),"*.transcripts.riu.*$(1)*.irap.tsv",$(out)/.transcripts_riu_quants_file.$(1))
 endef
 
 #x=$(call $(foreach q,$(QUANT_METHODS), $(call gen_files,$q))))
