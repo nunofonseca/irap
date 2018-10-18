@@ -30,7 +30,7 @@ echo "Converting to bedgraph/bw..."
 for f in $cram_files; do
     echo -n "$f..."
     # include intron-spanning reads
-    samtools view -b $f | bedtools  genomecov -ibam stdin -bg -g $chr_sizes > $f.bedgraph
+    samtools view -b $f | samtools sort - | bedtools  genomecov -ibam stdin -bg -g $chr_sizes > $f.bedgraph
     bedGraphToBigWig $f.bedgraph $chr_sizes $f.bw
     # rm -f $f.bedgraph
     bw_files="$f.bw $bw_files"
