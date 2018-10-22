@@ -210,7 +210,7 @@ irap_strand2featurecounts_option=$(if $(findstring $(1),first),-s 1,$(if $(finds
 
 ## only support gene and exon quantification
 define featurecounts_id_param=
-$(if $(filter $(1),gene),-g  gene_id,-g exon_id -f)
+$(if $(filter $(1),gene),-g gene_id,-g exon_id -f -O)
 endef 
 
 
@@ -221,7 +221,8 @@ endef
 #5- lib
 define run_featurecounts=
 	featureCounts  $(call irap_strand2featurecounts_option,$(call irap_strand2htseqoption,$($(5)_strand))) $(call featurecounts_id_param,$(4))  $(featurecounts_params)  -a $(2) -F GTF  -o $(3).tmp -T $(max_threads) --donotsort $(1) && \
-	tail -n +2 $(3).tmp | cut -f 1,7  > $(3).tmp2 && \
+	head -2 $(3).tmp | tail -1 | cut -f 1,7 > $(3).tmp2 && \
+	tail -n +3 $(3).tmp | cut -f 1,7 | sort -k 1,1 | uniq >> $(3).tmp2 && \
 	mv $(3).tmp $(3).featurecounts && sed -i -E "1s/Geneid/Gene/;1s/(.pe|.se).*//;1s|$(dir $(1))||" $(3).tmp2 && \
 	mv $(3).tmp2 $(3)
 endef
