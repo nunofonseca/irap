@@ -362,7 +362,7 @@ endef
 endif
 
 define run_hisat2_index=
-	irap_map.sh HISAT2  hisat2-build $(hisat2_index_params) $(1) $(1)
+	irap_map.sh HISAT2  hisat2-build $(hisat2_index_params) $(1) $(1) && touch $(1).ht2indexed
 endef
 
 # 1 - GTF
@@ -395,7 +395,7 @@ endef
 
 # same arguments used for *_index
 define hisat2_index_filename=
-$(2).1.ht2
+$(2).ht2indexed
 endef
 
 define hisat2_trans_index_filename=
