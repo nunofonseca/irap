@@ -110,6 +110,16 @@ endif
 ifneq ($(mapper),kallisto)
 ifneq ($(mapper),none)
 MAPPING_REPORT_PRE_STATS+=$(foreach s,$(se), $(call lib2bam_folder,$(s))$(s).se.hits.bam.gene.stats  $(call lib2bam_folder,$(s))$(s).se.hits.bam.stats) $(foreach s,$(pe), $(call lib2bam_folder,$(s))$(s).pe.hits.bam.gene.stats $(call lib2bam_folder,$(s))$(s).pe.hits.bam.stats)
+
+# For HISAT2, also return the novel splicing file
+
+ifeq ($(mapper),hisat2)
+MAPPING_REPORT_PRE_STATS+=$(foreach s,$(se), $(call lib2bam_folder,$(s))$(s).se.novel_splicing.tsv) $(foreach s,$(pe), $(call lib2bam_folder,$(s))$(s).pe.novel_splicing.tsv)
+
+%.novel_splicing.tsv: %.hits.bam
+	cp $*.hits.bam.novel_splicing.tsv $@
+
+endif 
 endif
 endif	
 
