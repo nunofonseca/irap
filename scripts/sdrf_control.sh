@@ -54,7 +54,7 @@ IRAP_AE_SETUP_PARAMS=
 QUEUE=production-rh7
 LSF_GROUP=/download
 EMAIL_CC=
-MEM=8000
+MEM=16384
 
 sdrf_control_conf_file=$TOPLEVEL_FOLDER/sdrf_control.conf
 if [ -e $sdrf_control_conf_file ]; then
