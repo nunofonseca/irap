@@ -161,14 +161,14 @@ rm -rf $IRAP_DEST_DIR/tmp /opt/irap_clone  /root/.cpan*
 cat <<EOF > /usr/bin/irap
 #!/usr/bin/env bash
 source $IRAP_DEST_DIR/irap_setup.sh
-$IRAP_DEST_DIR/scripts/irap "$@"
+$IRAP_DEST_DIR/scripts/irap "\$@"
 EOF
 chmod u+x /usr/bin/irap
 
 cat <<EOF > /usr/bin/irap_sc
 #!/usr/bin/env bash
 source $IRAP_DEST_DIR/irap_setup.sh
-$IRAP_DEST_DIR/scripts/irap_sc "$@"
+$IRAP_DEST_DIR/scripts/irap_sc "\$@"
 EOF
 chmod u+x /usr/bin/irap_sc
 exit 0
