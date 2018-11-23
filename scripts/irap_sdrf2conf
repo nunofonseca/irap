@@ -294,7 +294,7 @@ exp.characteristic.cols <- c()
 exp.factor.cols <- c()
 opt.cols <- c("ORGANISM","organism part","sex","spike in","molecule","technical replicate group","ENA_RUN","ENA_SAMPLE","Scan Name")
 
-sc.exp.cols <- c("Material Type","technical replicate group","library_construction","single cell isolation")
+sc.exp.cols <- c("Material Type","library_construction","single cell isolation")
 sc.exp.comment.cols <- c("LIBRARY_STRAND")
 
 ##
