@@ -412,7 +412,7 @@ hisat2_reference_prefix=$(reference_prefix)
 # hisat2
 define run_hisat2_map=
         $(call hisat2_setup_dirs,$(1)) && \
-	irap_map.sh HISAT2 hisat2   -p $(max_threads) --met-file $(call lib2bam_folder,$(1))$(1).hisat2.metrics  $(hisat2_map_params) $(if $($(1)_rgid),--rg-id "$($(1)_rgid)")  $(call runtime_splicing_params,$(hisat2_reference_prefix),$(3))   $(hisat2_reference_prefix) $(call hisat2_file_params,$(1),$(2)) -S $(call lib2bam_folder,$(1))$(1)/$(1).tmp.sam &&\
+	irap_map.sh HISAT2 hisat2   -p $(max_threads) --met-file $(call lib2bam_folder,$(1))$(1).hisat2.metrics  $(hisat2_map_params) $(if $($(1)_rgid),--rg-id "$($(1)_rgid)")  $(call runtime_splicing_params,$(hisat2_reference_prefix),$(3)) -x $(hisat2_reference_prefix) $(call hisat2_file_params,$(1),$(2)) -S $(call lib2bam_folder,$(1))$(1)/$(1).tmp.sam &&\
 	samtools view --threads $(max_threads)   -bS  $(call lib2bam_folder,$(1))$(1)/$(1).tmp.sam >  $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam  && \
 	irap_bam_fixSQ_order $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam $(call lib2bam_folder,$(1))$(1)/$(1).tmp2.bam && \
 	rm -f  $(call lib2bam_folder,$(1))$(1)/$(1).tmp.bam $(call lib2bam_folder,$(1))$(1)/$(1).tmp.sam $(call lib2bam_folder,$(1))$(1)/$(1).0{0,1,2,3,4,5,6,7,8,9}*.bam && \
