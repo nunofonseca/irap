@@ -221,7 +221,7 @@ if [ $N_FQ -gt 5090 ]; then
 fi
 
 ## avoid keeping the local download folder under ROOT_DIR
-local_download_folder=$(readlink -f $ROOT_DIR/../ManuallyDownloaded/$ID)
+local_download_folder=$(readlink -f $DATA_DIR/ManuallyDownloaded/$ID)
 pinfo "previously downloaded data folder=$local_download_folder"
 ###################################
 set -e
