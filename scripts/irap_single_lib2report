@@ -68,7 +68,7 @@ cat $(2) | $(1) -stdin
 endef
 
 #Version and license info
-version=1.0.1d1
+version=1.0.2
 
 #******************************
 # command line parameters

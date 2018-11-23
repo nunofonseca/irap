@@ -27,7 +27,7 @@
 #include <sam.h>
 #include <kstring.h>      
 
-#define VERSION "1.0.1d1"
+#define VERSION "1.0.2"
 
 #define MAX_INSERT_SIZE 1000
 #define BIN_SIZE 10
