@@ -224,7 +224,7 @@ $(out)/genes.fpkm.%.tsv: $(call silent_cat,$(out)/.genes_fpkm_quants_file.%)
 $(out)/genes.tpm.%.tsv: $(call silent_cat,$(out)/.genes_tpm_quants_file.%)
 	echo -n --rowname_col 'Gene ID'  --add_header --out $@.tmp $(MERGE_EXTRA_OPTIONS) --in \" > $@.tmp.cmd && cat $(out)/.genes_tpm_quants_file.$* | tr "\n" " " | head -n 1 >> $@.tmp.cmd && echo \" >> $@.tmp.cmd && cat $@.tmp.cmd | irap_merge2tsv -stdin && rm -f $@.tmp.cmd && mv $@.tmp $@
 
-$(out)/exons.raw.%/tsv: $(call silent_cat,$(out)/.exons_raw_quants_file.%)
+$(out)/exons.raw.%.tsv: $(call silent_cat,$(out)/.exons_raw_quants_file.%)
 	echo -n --rowname_col 'Exon ID' --has_no_header --add_header --out $@.tmp $(MERGE_EXTRA_OPTIONS) --in \"  > $@.tmp.cmd && cat $(out)/.exons_raw_quants_file.$* | tr "\n" " " | head -n 1 >> $@.tmp.cmd && echo \" >> $@.tmp.cmd && cat $@.tmp.cmd | irap_merge2tsv -stdin && rm -f $@.tmp.cmd && mv $@.tmp $@
 
 $(out)/exons.fpkm.%.tsv: $(call silent_cat,$(out)/.exons_fpkm_quants_file.%)
