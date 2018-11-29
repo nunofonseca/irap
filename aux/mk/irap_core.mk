@@ -2170,6 +2170,10 @@ endef
 %.cdna.fa:
 	$(call p_error,Missing cdna file $@)
 
+%.cdna.all.fa:
+	$(call p_error,Missing cdna file $@)
+
+
 %.mapping_trans.tsv: %.gtf
 	irap_gtf2mapping.pl --gtf $< --feature transcript > $@.tmp && mv $@.tmp $@
 
