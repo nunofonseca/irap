@@ -1179,7 +1179,9 @@ endef
 
 else
 
+ifeq ($(rnaseq_type),sc)
 STAGE3_S_OFILES+= $(quant_toplevel_folder)/transcripts.raw.$(quant_method).$(expr_ext)
+endif
 
 ifeq ($(gen_riu),y)
 
