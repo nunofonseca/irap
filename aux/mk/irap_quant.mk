@@ -210,7 +210,7 @@ irap_strand2featurecounts_option=$(if $(findstring $(1),first),-s 1,$(if $(finds
 
 ## only support gene and exon quantification
 define featurecounts_id_param=
-$(if $(filter $(1),gene),-g  gene_id,-g exon_id -f)
+$(if $(filter $(1),gene),-g gene_id,-g exon_id -f -O)
 endef 
 
 
@@ -221,6 +221,7 @@ endef
 #5- lib
 #6- -p for paired-end (fragment counting) behaviour 
 define run_featurecounts=
+
 	featureCounts  $(call irap_strand2featurecounts_option,$(call irap_strand2htseqoption,$($(5)_strand))) $(call featurecounts_id_param,$(4))  $(featurecounts_params) $(6) -a $(2) -F GTF  -o $(3).tmp -T $(max_threads) --donotsort $(1) && \
 	head -2 $(3).tmp | tail -1 | cut -f 1,7 > $(3).tmp2 && \
 	tail -n +3 $(3).tmp | cut -f 1,7 | sort -k 1,1 | uniq >> $(3).tmp2 && \
