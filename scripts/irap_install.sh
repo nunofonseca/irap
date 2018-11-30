@@ -23,7 +23,7 @@ install=all
 IRAP_DIR1=
 SRC_DIR=
 
-IRAP_VERSION=1.0.0d1
+IRAP_VERSION=1.0.2
 
 
 #
@@ -457,9 +457,9 @@ PICARD_FILE=picard-tools-$PICARD_VERSION.zip
 PICARD_URL=http://sourceforge.net/projects/picard/files/picard-tools/$PICARD_VERSION/$PICARD_FILE/download
 
 ## 1.6.0 -> 1.6.2
-FEATURECOUNTS_VERSION=1.6.2
-FEATURECOUNTS_FILE=subread-$FEATURECOUNTS_VERSION-Linux-x86_64.tar.gz
-FEATURECOUNTS_URL=https://sourceforge.net/projects/subread/files/subread-$FEATURECOUNTS_VERSION/$FEATURECOUNTS_FILE/download
+FeatureCounts_VERSION=1.6.2
+FEATURECOUNTS_FILE=subread-$FeatureCounts_VERSION-Linux-x86_64.tar.gz
+FEATURECOUNTS_URL=https://sourceforge.net/projects/subread/files/subread-$FeatureCounts_VERSION/$FEATURECOUNTS_FILE/download
 
 fastq_utils_VERSION=0.16.3
 fastq_utils_FILE=$fastq_utils_VERSION.tar.gz
@@ -2120,7 +2120,7 @@ function featurecounts_install {
     pinfo "Installing subread/feature counts..."
     download_software FEATURECOUNTS
     tar xzvf $FEATURECOUNTS_FILE
-    mv subread-$FEATURECOUNTS_VERSION-Linux-x86_64/bin/* $BIN_DIR
+    mv subread-$FeatureCounts_VERSION-Linux-x86_64/bin/* $BIN_DIR
     pinfo "FeatureCounts installed"    
 }
 

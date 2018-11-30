@@ -196,8 +196,7 @@ function is_all_done {
     conf=$(id2conf_fp $id)
 
     pushd $run_dir >/dev/null
-    irap_sc conf=$(basename $conf) atlas_bundle 1>&2
-
+    irap_sc conf=$conf atlas_bundle 1>&2
     let ret=$?
     ##echo ret=$ret > /dev/stderr
     popd >/dev/null

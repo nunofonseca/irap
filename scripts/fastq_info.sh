@@ -5,7 +5,7 @@ if [ "$*-" == "-"  ]; then
     exit 1
 fi
 
-A="`fastq_info $* 2>&1 | tee >(cat 1>&2) |tail -n 5`"  
+A="`fastq_info $* 2>&1 | tee >(cat 1>&2) | sed -n '/Number of reads/,$p'`"  
 ret=$?
 if [ $ret != 0 ]; then
     echo "ERROR" 1>&2

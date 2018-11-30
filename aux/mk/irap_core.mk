@@ -238,7 +238,7 @@ endif
 #************************
 #Version and license info
 pname=IRAP
-version=1.0.0b
+version=1.0.2
 contact=Developed by Nuno Fonseca (authorname (at) acm.org)
 license=This pipeline is distributed  under the terms of the GNU General Public License 3
 
@@ -1888,7 +1888,7 @@ STAGE1_S_TARGETS?=
 
 ifneq ($(mapper),none)
 
-bam_files:=$(foreach p,$(pe), $(call lib2bam_folder,$(p))$(p).pe.hits.byname.bam) $(foreach s,$(se), $(call lib2bam_folder,$(s))$(s).se.hits.bam)
+bam_files:=$(foreach p,$(pe), $(call lib2bam_folder,$(p))$(p).pe.hits.bam) $(foreach s,$(se), $(call lib2bam_folder,$(s))$(s).se.hits.bam)
 STAGE2BYNAME_OUT_FILES:=$(subst .hits.bam,.hits.byname.bam,$(bam_files))
 
 else
@@ -2169,6 +2169,10 @@ endef
 # fail if file needs to be generated
 %.cdna.fa:
 	$(call p_error,Missing cdna file $@)
+
+%.cdna.all.fa:
+	$(call p_error,Missing cdna file $@)
+
 
 %.mapping_trans.tsv: %.gtf
 	irap_gtf2mapping.pl --gtf $< --feature transcript > $@.tmp && mv $@.tmp $@

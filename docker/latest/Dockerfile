@@ -1,11 +1,11 @@
-FROM fedora:27
+FROM fedora:28
 
-ENV IRAP_VERSION=1.0.0a
+ENV IRAP_VERSION=1.0.2
 LABEL iRAP.version="$IRAP_VERSION" maintainer="nuno.fonseca at gmail.com"
 
 # docker build -f Dockerfile -t irap/latest:v0 ..
 COPY build/irap_docker_setup.sh build 
-RUN bash build fedora_27 master full 
+RUN bash build fedora_28 master full 
 
 
 #ENTRYPOINT ["irap"]

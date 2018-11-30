@@ -219,8 +219,10 @@ endef
 #3- output file 
 #4- exon|gene|transctript 
 #5- lib
+#6- -p for paired-end (fragment counting) behaviour 
 define run_featurecounts=
-	featureCounts  $(call irap_strand2featurecounts_option,$(call irap_strand2htseqoption,$($(5)_strand))) $(call featurecounts_id_param,$(4))  $(featurecounts_params)  -a $(2) -F GTF  -o $(3).tmp -T $(max_threads) --donotsort $(1) && \
+
+	featureCounts  $(call irap_strand2featurecounts_option,$(call irap_strand2htseqoption,$($(5)_strand))) $(call featurecounts_id_param,$(4))  $(featurecounts_params) $(6) -a $(2) -F GTF  -o $(3).tmp -T $(max_threads) --donotsort $(1) && \
 	head -2 $(3).tmp | tail -1 | cut -f 1,7 > $(3).tmp2 && \
 	tail -n +3 $(3).tmp | cut -f 1,7 | sort -k 1,1 | uniq >> $(3).tmp2 && \
 	mv $(3).tmp $(3).featurecounts && sed -i -E "1s/Geneid/Gene/;1s/(.pe|.se).*//;1s|$(dir $(1))||" $(3).tmp2 && \
@@ -236,22 +238,23 @@ $(quant_toplevel_folder1)/featurecounts/genes.uraw.featurecounts.tsv: $(foreach 
 # $2 - bam file prefix (includes .se|.pe)
 # $3 - quantification of exon|gene|trans
 # $4 - gtf file
+# $5 - '-p' for paired end
 define make-featurecounts-quant-rule=
 $(call lib2quant_folder,$(1))$(2).$(3)s.raw.featurecounts.tsv: $(call lib2bam_folder,$(1))$(2).hits.byname.bam $(4)
-	mkdir -p $$(@D) && $$(call run_featurecounts,$$<,$(4),$$@,$(3),$(1))
+	mkdir -p $$(@D) && $$(call run_featurecounts,$$<,$(4),$$@,$(3),$(1),$(5))
 endef
 
 # generate the rules for htseq
 ifeq ($(patsubst featurecounts,,$(quant_method)),)
 # gene level quantification
-$(foreach l,$(se),$(eval $(call make-featurecounts-quant-rule,$(l),$(l).se,gene,$(gtf_file_abspath))))	
-$(foreach l,$(pe),$(eval $(call make-featurecounts-quant-rule,$(l),$(l).pe,gene,$(gtf_file_abspath))))
+$(foreach l,$(se),$(eval $(call make-featurecounts-quant-rule,$(l),$(l).se,gene,$(gtf_file_abspath),)))	
+$(foreach l,$(pe),$(eval $(call make-featurecounts-quant-rule,$(l),$(l).pe,gene,$(gtf_file_abspath), -p)))
 
 ifeq ($(exon_quant),y)
 # exon level quantification
 ifeq ($(patsubst featurecounts,,$(exon_quant_method)),)
-$(foreach l,$(se),$(eval $(call make-featurecounts-quant-rule,$(l),$(l).se,exon,$(gtf_file_wexonid))))	
-$(foreach l,$(pe),$(eval $(call make-featurecounts-quant-rule,$(l),$(l).pe,exon,$(gtf_file_wexonid))))
+$(foreach l,$(se),$(eval $(call make-featurecounts-quant-rule,$(l),$(l).se,exon,$(gtf_file_wexonid),)))	
+$(foreach l,$(pe),$(eval $(call make-featurecounts-quant-rule,$(l),$(l).pe,exon,$(gtf_file_wexonid), -p)))
 
 # counts per exon
 $(quant_toplevel_folder)/exons.uraw.$(exon_quant_method).tsv: $(foreach p, $(pe),$(call lib2quant_folder,$(p))$(p).pe.exons.raw.$(exon_quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.exons.raw.$(exon_quant_method).tsv)
@@ -1177,7 +1180,9 @@ endef
 
 else
 
+ifeq ($(rnaseq_type),sc)
 STAGE3_S_OFILES+= $(quant_toplevel_folder)/transcripts.raw.$(quant_method).$(expr_ext)
+endif
 
 ifeq ($(gen_riu),y)
 
