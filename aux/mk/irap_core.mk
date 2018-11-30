@@ -1888,7 +1888,7 @@ STAGE1_S_TARGETS?=
 
 ifneq ($(mapper),none)
 
-bam_files:=$(foreach p,$(pe), $(call lib2bam_folder,$(p))$(p).pe.hits.byname.bam) $(foreach s,$(se), $(call lib2bam_folder,$(s))$(s).se.hits.bam)
+bam_files:=$(foreach p,$(pe), $(call lib2bam_folder,$(p))$(p).pe.hits.bam) $(foreach s,$(se), $(call lib2bam_folder,$(s))$(s).se.hits.bam)
 STAGE2BYNAME_OUT_FILES:=$(subst .hits.bam,.hits.byname.bam,$(bam_files))
 
 else
