@@ -423,6 +423,11 @@ define run_hisat2_map=
 	mv $(call lib2bam_folder,$(1))$(1)/$(1).bam $(3)
 endef
 
+ifeq ($(mapper),hisat2)
+STAGE3_S_OFILES+=$(foreach s,$(se), $(call lib2bam_folder,$(s))$(s).se.novel_splicing.tsv) $(foreach s,$(pe), $(call lib2bam_folder,$(s))$(s).pe.novel_splicing.tsv)
+%.novel_splicing.tsv: %.hits.bam
+	cp $*.hits.bam.novel_splicing.tsv $@
+endif
 ####################################################
 # SMALT
 smalt_map_params= -n $(max_threads)  -f samsoft  $(smalt_map_options)
