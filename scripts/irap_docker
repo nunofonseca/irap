@@ -21,13 +21,14 @@
 # =========================================================
 # run iRAP in a docker image
 set -e
-
+ARGS=$*
 if [ "$IRAP_DOCKER_IMAGE-" == "-" ]; then
     echo "ERROR: IRAP_DOCKER_IMAGE undefined"
     exit 1
 fi
 # set the correct permission in SELINUX in order to be able to access the current folder in the container
 #chcon -Rt svirt_sandbox_file_t $PWD
-docker run -v `pwd`:/irap_data --entrypoint="env" -i -t $IRAP_DOCKER_IMAGE bash -c "source /opt/irap/irap_setup.sh && cd /irap_data && xvfb-run irap $*"
+echo "INFO: running iRAP in a docker container ($IRAP_DOCKER_IMAGE)"
+docker run -v `pwd`:/irap_data   --workdir /irap_data --init -i -t $IRAP_DOCKER_IMAGE irap "$@"
 
 exit 0
