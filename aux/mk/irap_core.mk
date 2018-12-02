@@ -487,7 +487,7 @@ gtf_file_dir:=$(abspath $(data_dir)/reference/$(species))
 gtf_file_abspath:=$(abspath $(gtf_file_dir)/$(subst .gz,,$(gtf_file)))
 
 
-$(info *       gtf_file  = $(gtf_file))
+$(info *	gtf_file  = $(gtf_file))
 $(call file_exists,$(gtf_file_dir)/$(gtf_file))
 
 DEXSEQ_GFF:=$(gtf_file_abspath).DEXSeq.gff
@@ -524,6 +524,8 @@ user_trans_biotypes?=protein_coding|IG_([a-zA-Z0-9]+)_gene|TR_([a-zA-Z0-9]+)_gen
 user_trans?=cdna
 ifeq ($(user_trans),cdna)
 trans_abspath:=$(cdna_file_abspath)
+# file should exist
+$(call file_exists,$(trans_abspath))
 else
 ## auto
 trans_abspath:=$(patsubst %.gtf,%.trans.irap.fa,$(gtf_file_abspath))
@@ -596,7 +598,7 @@ endif
 $(info * Currently spikeins are not used while performing differential expression analysis)
 endif
 
-$(info *       Transcripts = $(trans_abspath))
+$(info *	Transcripts = $(trans_abspath))
 
 gtf_file_basename:=$(notdir $(gtf_file_abspath))
 
@@ -628,7 +630,7 @@ gff3_file_abspath:=$(subst .gz,,$(gff3_file))
 endif
 
 gff3_file:=$(notdir $(gff3_file_abspath))
-$(info *       gff3_file  = $(gff3_file_abspath))
+$(info *	gff3_file  = $(gff3_file_abspath))
 
 
 
@@ -1905,7 +1907,7 @@ WAVE3_p_TARGETS+=$(subst .hits.bam,.hits.bytag_$(CELL_TAG).bam,$(bam_files))
 endif
 
 
-
+$(call p_info, Loading modules...)
 ################################################################################
 # Load extra code
 # shared code
@@ -1954,6 +1956,7 @@ endif
 # Atlas (atlas specific stuff)
 include $(irap_path)/../aux/mk/irap_atlas.mk
 
+$(call p_info, Loading modules complete)
 # Check if the options provided are valid
 ifeq (invalid,$(shell irap_paths $(mapper) $(quant_method) $(quant_norm_tool) $(quant_norm_method) $(de_method) $(transcript_de_method) $(exon_de_method) $(gse_tool) $(has_stranded_data) $(rnaseq_type) $(sc_protocol)))
   $(error invalid combination mapper:$(mapper) -> quant_method:$(quant_method) -> quant_norm method:$(quant_norm_method) quant_norm_tool:$(quant_norm_tool) -> de_method:$(de_method) transcriptDE:$(transcript_de_method) exonDE:$(exon_de_method) rnaseq_type:$(rnaseq_type) sc_protocol:$(sc_protocol) for the given data)
