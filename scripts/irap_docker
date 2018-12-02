@@ -1,0 +1,33 @@
+#!/bin/bash
+# =========================================================
+# Copyright 2012-2018,  Nuno A. Fonseca (nuno dot fonseca at gmail dot com)
+#
+# This file is part of iRAP.
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with iRAP.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+# =========================================================
+# run iRAP in a docker image
+set -e
+
+if [ "$IRAP_DOCKER_IMAGE-" == "-" ]; then
+    echo "ERROR: IRAP_DOCKER_IMAGE undefined"
+    exit 1
+fi
+# set the correct permission in SELINUX in order to be able to access the current folder in the container
+#chcon -Rt svirt_sandbox_file_t $PWD
+docker run -v `pwd`:/irap_data --entrypoint="env" -i -t $IRAP_DOCKER_IMAGE bash -c "source /opt/irap/irap_setup.sh && cd /irap_data && xvfb-run irap $*"
+
+exit 0
