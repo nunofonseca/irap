@@ -20,7 +20,7 @@
 #
 # =========================================================
 
-VERSION=0.4d
+#VERSION=0.4d
 #irap_single_lib -1 fastq_file [-2 fastq_file2] -c conf  [-s strand (first,second,both)]  -m MEM -t threads -i irap_options [-0] [-h]
 f1=
 f2=
@@ -61,6 +61,12 @@ if [ "$IRAP_DIR-" == "-" ]; then
     exit 1
 fi
 
+
+if [ ! -e $IRAP_DIR/version ]; then
+    echo "ERROR: iRAP's version file $IRAP_DIR/version not found"
+    exit 1
+fi
+VERSION=$(cat $IRAP_DIR/version)
 source $IRAP_DIR/aux/sh/irap_shared.sh
 
 ######################
@@ -74,7 +80,7 @@ fi
 #
 function print_usage {
 cat <<EOF
-iRAP wrapper to process a single library
+iRAP ($VERSION) wrapper to process a single library
 Usage: irap_single_lib -1 fastq_file [-2 fastq_file2] -c irap.configuration  [-s strand (first,second,both)] [-p spikein_fasta] [-m MEM] [-t threads] [-i irap_options] [-0] [-V] [-C] [-l min_read_length] [-b] [-B] [-A] [-o output_folder] [-h] 
 
 -0  - should be executed once for each
