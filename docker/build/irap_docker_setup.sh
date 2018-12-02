@@ -48,7 +48,7 @@ fi
 if [ "$OS-" == "ubuntu_14-" ]; then
     echo "Updating and installing Ubuntu packages"
     apt-get update
-    apt-get install -y build-essential texlive xvfb zlibc zlib1g zlib1g-dev libncurses5-dev sqlite sqlite3 libsqlite3-dev gettext python python-dev gfortran bzip2 libbz2-1.0 libbz2-dev libreadline-dev libx11-dev libxt-dev python-numpy libgd-dev libxml2-dev libxml2 libpng12-0 curl texinfo libcurl4-openssl-dev libexpat1 libexpat1-dev libpangocairo-1.0-0 libdb-dev openjdk-7-jre openjdk-7-jre-lib git bison poxml unzip wget graphviz libpcre3-dev libpcre++-dev
+    apt-get install -y build-essential texlive xvfb zlibc zlib1g zlib1g-dev libncurses5-dev sqlite sqlite3 libsqlite3-dev gettext python python-dev gfortran bzip2 libbz2-1.0 libbz2-dev libreadline-dev libx11-dev libxt-dev python-numpy libgd-dev libxml2-dev libxml2 libpng12-0 curl texinfo libcurl4-openssl-dev libexpat1 libexpat1-dev libpangocairo-1.0-0 libdb-dev openjdk-7-jre openjdk-7-jre-lib git bison poxml unzip wget graphviz libpcre3-dev libpcre++-dev bc libtbb-dev  xfonts-75dpi
     apt-get clean
     os_install_done=y
     # 
@@ -68,13 +68,14 @@ if [ "$OS-" == "ubuntu_16-" ] || [ "$OS-" == "ubuntu-" ]; then
 	apt-get install -yq --no-install-recommends make
 	make --version
     fi
+    
     apt-get install -yq --no-install-recommends build-essential
     apt-get install -yq --no-install-recommends unzip
     apt-get install -yq --no-install-recommends libpcre3-dev
     apt-get install -yq --no-install-recommends libssl-dev
     apt-get install -yq --no-install-recommends lsb-release
     apt-get install -yq --no-install-recommends curl
-    apt-get install -yq --no-install-recommends bison bzip2 curl gettext gfortran git graphviz libboost-all-dev libbz2-1.0  libbz2-dev libcurl4-openssl-dev libdb-dev libexpat1 libexpat1-dev libgd-dev libncurses5-dev libpangocairo-1.0-0 libpcre++-dev libpng-dev libreadline-dev libsqlite3-dev  libx11-dev libxml2 libxml2-dev libxt-dev lsb-release openjdk-8-jre openjdk-8-jdk poxml python-dev python-numpy sqlite sqlite3 texinfo texlive  wget xvfb zlib1g zlib1g-dev zlibc libpthread-stubs0-dev  libhdf5-dev bc
+    apt-get install -yq --no-install-recommends bison bzip2 curl gettext gfortran git graphviz libboost-all-dev libbz2-1.0  libbz2-dev libcurl4-openssl-dev libdb-dev libexpat1 libexpat1-dev libgd-dev libncurses5-dev libpangocairo-1.0-0 libpcre++-dev libpng-dev libreadline-dev libsqlite3-dev  libx11-dev libxml2 libxml2-dev libxt-dev lsb-release openjdk-8-jre openjdk-8-jdk poxml python-dev python-numpy sqlite sqlite3 texinfo texlive  wget xvfb zlib1g zlib1g-dev zlibc libpthread-stubs0-dev  libhdf5-dev bc libtbb-dev  xfonts-75dpi
     echo "deb http://cran.rstudio.com/bin/linux/ubuntu/ $(lsb_release -cs)/" >> /etc/apt/sources.list
     if [ "$OS-" == "ubuntu_16-" ]; then
 	gpg --keyserver hkp://keyserver.ubuntu.com --recv-key E084DAB9    0
