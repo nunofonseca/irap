@@ -656,6 +656,17 @@ endif
 # dry_run?
 dry_run=$(findstring n,$(firstword $(MAKEFLAGS)))
 
+# reduce/do not check for dependencies if nocheck is passed as a target
+phony_targets+=nocheck
+nocheck:
+no_deps_check=$(findstring nocheck,$(TARGETS))
+check_files=
+ifeq ($(no_deps_check),nocheck)
+check_deps=
+#$(foreach f,$(1),$(call file_exists,$f))
+check_files=$(foreach f,$(1),$(call file_exists,$f))
+endif
+
 # 
 ifeq ($(TARGETS),all)
 tr_validation=y
@@ -698,11 +709,14 @@ ifneq ($(se),)
  #$(foreach l,$(se),$(info $(l)=$($(l)))) 
  # check if fastq file is in a different directory
  $(foreach l,$(se),$(eval $(l)_dir=$(call check_libdir_ok,$(l))))
- $(foreach l,$(se),$(eval $(l)_strand=$(call check_libstrand_ok,$(l)))) 
 # read group id
  $(foreach l,$(se),$(eval $(l)_rgid=$(call check_rgid_ok,$(l)))) 
 # sam header (may/should include @RG)
  $(foreach l,$(se),$(eval $(l)_shl=$(call check_sheader_ok,$(l)))) 
+
+ifneq ($(no_deps_check),nocheck)
+
+ $(foreach l,$(se),$(eval $(l)_strand=$(call check_libstrand_ok,$(l)))) 
  #$(foreach l,$(se),$(info $(l)_dir=$($(l)_dir)))
  #$(foreach l,$(se),$(info $(l)_dir=$($(l)_dir)))
  #$(foreach l,$(se),$(info $(l)_dir=$(call check_libdir_ok,$(l))))
@@ -711,6 +725,7 @@ ifneq ($(se),)
  $(foreach l,$(se),$(call check_param_ok,$(l)_qual))
  $(foreach l,$(se),$(foreach bc,known_umi_file known_cells_file index1 index2 index3 umi_read umi_offset umi_size cell_read cell_offset cell_size sample_read sample_offset sample_size read1_offset read2_offset read1_size read2_size sample_name,$(eval $(l)_$(bc)=$(call check_bc_value_ok,$(l),$(bc)))))
  ifile_given=1
+endif
 endif
 endif
 # PE files (libraries)
@@ -736,11 +751,13 @@ ifneq ($(pe),)
  set_rs_list=$(eval rs_list+= $($(1)))
  $(foreach l,$(pe),$(call check_pe_libname_ok,$(l)))
  $(foreach l,$(pe),$(eval $(l)_dir=$(call check_libdir_ok,$(l))))
- $(foreach l,$(pe),$(eval $(l)_strand=$(call check_libstrand_ok,$(l))))
 # read group id
- $(foreach l,$(pe),$(eval $(l)_rgid=$(call check_rgid_ok,$(l)))) 
+ $(foreach l,$(pe),$(eval $(l)_rgid=$(call check_rgid_ok,$(l))))
 # sam header lines (may/should include @RG)
  $(foreach l,$(pe),$(eval $(l)_shl=$(call check_sheader_ok,$(l)))) 
+ifneq ($(no_deps_check),nocheck)
+ $(foreach l,$(pe),$(eval $(l)_strand=$(call check_libstrand_ok,$(l))))
+
  #$(foreach l,$(pe),$(info $(l)_dir=$($(l)_dir)))
  $(foreach l,$(pe),$(call check_param_ok,$(l)_sd))
  $(foreach l,$(pe),$(call check_param_ok,$(l)_ins))
@@ -752,24 +769,27 @@ ifneq ($(pe),)
  ifile_given=1
 endif
 endif
-
-all_fq_files:=$(all_pe_files) $(all_se_files)
-nfqfiles:=$(words $(all_fq_files))
-nfqfilesu:=$(words $(sort $(all_fq_files)))
-
-ifndef skip_lib_validation
-ifneq ($(nfqfiles),$(nfqfilesu))
-$(call p_error,Some of the libraries provided in se and/or pe have the same filename)
 endif
+
+
+ifneq ($(no_deps_check),nocheck)
+ all_fq_files:=$(all_pe_files) $(all_se_files)
+ nfqfiles:=$(words $(all_fq_files))
+ nfqfilesu:=$(words $(sort $(all_fq_files)))
+
+#
+ ifndef skip_lib_validation
+  ifneq ($(nfqfiles),$(nfqfilesu))
+   $(call p_error,Some of the libraries provided in se and/or pe have the same filename)
+  endif
 #$(call p_info,has_stranded_data=$(has_stranded_data))
 
-ifndef ifile_given
-$(info *	pe parameter or se parameter should be defined and non-empty)
+   ifndef ifile_given
+   $(info *	pe parameter or se parameter should be defined and non-empty)
+   endif
+  endif
+ endif
 endif
-endif
-
-endif
-
 #***********
 # Contrasts
 #***********
@@ -833,22 +853,25 @@ endif
 # ex. technical.replicates=SE1,SE2;PE1,PE3,PE4;SE3
 # means that there are two groups of tech. replicates (separated by;), group 1 composed by SE1 and SE2  and group2 composed by PE1,PE3 and PE4, SE3 does not have tech. replicates
 ifndef technical_replicates
-technical_replicates=
+ technical_replicates=
  $(info *	technical_replicates=NONE)
 else
- $(info *	technical_replicates=$(technical_replicates))
- # validate the libraries names
- comma=,
- quote="
- $(foreach  l,$(subst $(quote), ,$(subst $(comma), ,$(subst ;, ,$(technical_replicates)))),$(call check_param_ok,$(strip $(l))))
+ ifeq ($(no_deps_check),nocheck)
+  $(info *       technical_replicates= skipping checks)
+ else
+  $(info *	technical_replicates=$(technical_replicates))
+  # validate the libraries names
+  comma=,
+  quote="
+  $(foreach  l,$(subst $(quote), ,$(subst $(comma), ,$(subst ;, ,$(technical_replicates)))),$(call check_param_ok,$(strip $(l))))
 #"
 ## check - should be improved...
-num_tr=$(words $(sort $(subst $(quote), ,$(subst $(comma), ,$(subst ;, ,$(technical_replicates))))))
-num_libs=$(words $(sort $(se) $(pe)))
+  num_tr=$(words $(sort $(subst $(quote), ,$(subst $(comma), ,$(subst ;, ,$(technical_replicates))))))
+  num_libs=$(words $(sort $(se) $(pe)))
 
 ifdef tr_validation
-ifneq ($(num_tr),$(num_libs))
-$(error technical_replicates should include all libs in se and pe: found $(num_tr) labels but expected $(num_libs))
+ ifneq ($(num_tr),$(num_libs))
+  $(error technical_replicates should include all libs in se and pe: found $(num_tr) labels but expected $(num_libs))
 endif
 ## technical replicate names 
 ifndef technical_replicates_labels
@@ -870,7 +893,7 @@ $(info *	number of technical replicate groups/labels=$(ng1))
 endif
 
 
-
+endif
 #####################
 # Other Optional parameters
 #####################
@@ -887,15 +910,14 @@ $(info *	rnaseq_type=$(rnaseq_type))
 
 ifeq ($(rnaseq_type),sc)
 ## single cell protocol
-SUPPORTED_SCP:=none smart-seq2 smart-seq smart drop-seq 10xV1 10xV2 10xV1a
+SUPPORTED_SCP:=none smart-seq2 smart-seq smart drop-seq 10xV1 10xV2 10xV1a 
+$(info *	sc_protocol=$(sc_protocol))
 
 # drop-seq 10x
 ifeq (,$(filter $(sc_protocol),$(SUPPORTED_SCP)))
 $(call p_info,[ERROR] Invalid sc_protocol - valid values are $(SUPPORTED_SCP))
 $(error Invalid sc_protocol)
 endif
-$(info *	sc_protocol=$(sc_protocol))
-
 endif
 
 ################################################################

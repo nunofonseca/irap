@@ -68,6 +68,8 @@ $(call lib2filt_folder,$(1))$(1).f.fastq%gz $(call lib2filt_folder,$(1))$(1).f.f
 	$$(call do_quality_filtering_and_report,$(1),$(raw_data_dir)$($(1)_dir),$$(@D),) || (rm -f $(call lib2filt_folder,$(1))$(1).f.fastq.gz && exit 1)
 
 endef
+
+ifneq ($(no_deps_check),nocheck)
 # rules for SE libraries
 $(foreach l,$(se),$(eval $(call make-se-qc-rule,$(l))))
 # rules for PE libraries
@@ -79,6 +81,7 @@ STAGE1_OUT_FILES+=$(qc_files)
 STAGE1_TARGETS+=$(qc_files)
 STAGE1_S_TARGETS+=$(qc_files)
 
+endif
 
 CLEANUP_TARGETS+= clean_quality_filtering_and_report
 phony_targets+= clean_quality_filtering_and_report
@@ -91,8 +94,9 @@ clean_quality_filtering_and_report:
 # a single file with the mapping stats
 MAPPING_REPORT_PRE_STATS=
 ifneq ($(mapper),none)
+ifneq ($(no_deps_check),nocheck)
 MAPPING_REPORT_PRE_STATS:=$(foreach s,$(se),$(call lib2bam_folder,$(s))$(s).se.hits.bam.stats.csv) $(foreach s,$(pe),$(call lib2bam_folder,$(s))$(s).pe.hits.bam.stats.csv   )
-
+endif
 $(mapper_toplevel_folder)/libs_qc.tsv: $(mapper_toplevel_folder)/stats_raw.tsv $(mapper_toplevel_folder)/stats_perc.tsv  $(mapper_toplevel_folder)/featstats_raw.tsv  $(mapper_toplevel_folder)/featstats_perc.tsv   $(mapper_toplevel_folder)/genestats_raw.tsv 
 	irap_append2tsv --in "$(mapper_toplevel_folder)/stats_raw.tsv $(mapper_toplevel_folder)/featstats_raw.tsv $(mapper_toplevel_folder)/genestats_raw.tsv" --exclude_aggr  --cols_not_sorted --out $@.1.tmp &&\
 	irap_append2tsv --in "$(mapper_toplevel_folder)/stats_perc.tsv $(mapper_toplevel_folder)/featstats_perc.tsv $(mapper_toplevel_folder)/genestats_perc.tsv" --exclude_aggr --add_row_suffix "_perc" --cols_not_sorted --out $@.2.tmp && \
@@ -109,10 +113,11 @@ endif
 ## the reference in the BAMs generated with kallisto is not the mapper
 ifneq ($(mapper),kallisto)
 ifneq ($(mapper),none)
+ifneq ($(no_deps_check),nocheck)
 MAPPING_REPORT_PRE_STATS+=$(foreach s,$(se), $(call lib2bam_folder,$(s))$(s).se.hits.bam.gene.stats  $(call lib2bam_folder,$(s))$(s).se.hits.bam.stats) $(foreach s,$(pe), $(call lib2bam_folder,$(s))$(s).pe.hits.bam.gene.stats $(call lib2bam_folder,$(s))$(s).pe.hits.bam.stats)
 endif
 endif	
-
+endif
 WAVE3_s_TARGETS+=$(MAPPING_REPORT_PRE_STATS)
 ifneq ($(mapper),none)
 WAVE3_TARGETS+=$(mapper_toplevel_folder)/libs_qc.tsv
@@ -217,11 +222,17 @@ $(qc_toplevel_folder)/qc%html $(qc_toplevel_folder)/qc%tsv: $(conf) $(call must_
 
 
 ifneq ($(qc),off)
+ifneq ($(no_deps_check),nocheck)
 FASTQC_REPORT_FILES=$(foreach p,$(se),$(call lib2filt_folder,$(p))$(p).f.fastqc.tsv) $(foreach p,$(pe),$(call lib2filt_folder,$(p))$(p)_1.f.fastqc.tsv $(call lib2filt_folder,$(p))$(p)_2.f.fastqc.tsv)
 
 QC_CSV_FILES=$(foreach p,$(se),$(call lib2filt_folder,$(p))$(p).f.csv) $(foreach p,$(pe),$(call lib2filt_folder,$(p))$(p)_1.f.csv $(call lib2filt_folder,$(p))$(p)_2.f.csv)
 
 ZIP_FILES=$(foreach p,$(se),$(qc_toplevel_folder)/$($(p)_dir)$(p).f.fastqc.zip) $(foreach p,$(pe),$(qc_toplevel_folder)/$($(p)_dir)$(p)_1.f.fastqc.zip $(qc_toplevel_folder)/$($(p)_dir)$(p)_2.f.fastqc.zip)
+else
+ZIP_FILES=
+QC_CSV_FILES=
+FASTQC_REPORT_FILES=
+endif
 else
 ZIP_FILES=
 QC_CSV_FILES=
@@ -242,6 +253,10 @@ $(qc_toplevel_folder)/qc_report.csv:  $(QC_CSV_FILES)
 	$(call stdin_cat,$^,$@.tmp) && mv $@.tmp $@
 
 ## qc=on |report
+endif
+
+ifeq ($(no_deps_check),nocheck)
+$(call p_info,irap_qc_stats.mk loaded)
 endif
 
 

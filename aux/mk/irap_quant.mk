@@ -33,12 +33,14 @@ WAVE1_TARGETS+=$(mapTrans2gene)
 STAGE0_TARGETS+=$(mapTrans2gene)
 SETUP_DATA_FILES+=$(mapTrans2gene)
 
+## Quantification statistics
+a_quant_qc_stats:=
+
+ifneq ($(no_deps_check),nocheck)
 ## Output files produced
 STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).$(expr_ext)) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).$(expr_ext))
 
 
-## Quantification statistics
-a_quant_qc_stats:=
 quant_qc_stats:=$(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).quant_qc.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).quant_qc.tsv)
 WAVE3_s_TARGETS+=$(quant_qc_stats)
 
@@ -60,6 +62,8 @@ WAVE3_s_TARGETS+=$(quant_qc_statse)
 STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.exons.raw.$(exon_quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.exons.raw.$(exon_quant_method).tsv) 
 endif
 
+endif
+# nocheck
 
 #*****************
 # Cufflinks 1 & 2
@@ -246,16 +250,20 @@ endef
 
 # generate the rules for htseq
 ifeq ($(patsubst featurecounts,,$(quant_method)),)
+
+ifneq ($(no_deps_check),nocheck)
 # gene level quantification
 $(foreach l,$(se),$(eval $(call make-featurecounts-quant-rule,$(l),$(l).se,gene,$(gtf_file_abspath),)))	
 $(foreach l,$(pe),$(eval $(call make-featurecounts-quant-rule,$(l),$(l).pe,gene,$(gtf_file_abspath), -p)))
+endif
 
 ifeq ($(exon_quant),y)
 # exon level quantification
 ifeq ($(patsubst featurecounts,,$(exon_quant_method)),)
+ifneq ($(no_deps_check),nocheck)
 $(foreach l,$(se),$(eval $(call make-featurecounts-quant-rule,$(l),$(l).se,exon,$(gtf_file_wexonid),)))	
 $(foreach l,$(pe),$(eval $(call make-featurecounts-quant-rule,$(l),$(l).pe,exon,$(gtf_file_wexonid), -p)))
-
+endif
 # counts per exon
 $(quant_toplevel_folder)/exons.uraw.$(exon_quant_method).tsv: $(foreach p, $(pe),$(call lib2quant_folder,$(p))$(p).pe.exons.raw.$(exon_quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.exons.raw.$(exon_quant_method).tsv)
 	( $(call pass_args_stdin,irap_merge_tsv.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
@@ -438,9 +446,10 @@ endef
 
 # generate the rules for cufflinks
 ifeq ($(patsubst cufflinks%,,$(quant_method)),)
+ifneq ($(no_deps_check),nocheck)
 $(foreach l,$(se),$(eval $(call make-cufflinks-quant-rule,$(l),$(quant_method),$(l).se,gene)))	
 $(foreach l,$(pe),$(eval $(call make-cufflinks-quant-rule,$(l),$(quant_method),$(l).pe,gene)))
-
+endif
 # cufflinks* specific rules
 $(quant_toplevel_folder)/transcripts.uraw.$(quant_method).tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).tsv)
 	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) )  > $@.tmp && mv $@.tmp $@
@@ -520,16 +529,18 @@ endef
 # generate the rules for htseq
 ifeq ($(patsubst htseq%,,$(quant_method)),)
 
+ifneq ($(no_deps_check),nocheck)
 # gene level quantification
 $(foreach l,$(se),$(eval $(call make-htseq-quant-rule,$(l),$(quant_method),$(l).se,gene,$(gtf_file_abspath))))	
 $(foreach l,$(pe),$(eval $(call make-htseq-quant-rule,$(l),$(quant_method),$(l).pe,gene,$(gtf_file_abspath))))
-
+endif
 ifeq ($(exon_quant),y)
 # exon level quantification
 ifeq ($(patsubst htseq%,,$(exon_quant_method)),)
+ifneq ($(no_deps_check),nocheck)
 $(foreach l,$(se),$(eval $(call make-htseq-quant-rule,$(l),$(exon_quant_method),$(l).se,exon,$(gtf_file_wexonid))))	
 $(foreach l,$(pe),$(eval $(call make-htseq-quant-rule,$(l),$(exon_quant_method),$(l).pe,exon,$(gtf_file_wexonid))))
-
+endif
 # counts per exon
 $(quant_toplevel_folder)/exons.uraw.$(exon_quant_method).tsv: $(foreach p, $(pe),$(call lib2quant_folder,$(p))$(p).pe.exons.raw.$(exon_quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.exons.raw.$(exon_quant_method).tsv)
 	( $(call pass_args_stdin,irap_merge_tsv.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
@@ -540,9 +551,10 @@ endif
 
 # transcript level quantification
 ifeq ($(transcript_quant),y)
+ifneq ($(no_deps_check),nocheck)
 $(foreach l,$(se),$(eval $(call make-htseq-quant-rule,$(l),$(quant_method),$(l).se,transcript,$(gtf_file_abspath))))	
 $(foreach l,$(pe),$(eval $(call make-htseq-quant-rule,$(l),$(quant_method),$(l).pe,transcript,$(gtf_file_abspath))))
-
+endif
 # counts per transcript
 $(quant_toplevel_folder)/transcripts.uraw.$(quant_method).tsv: $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).tsv)
 	( $(call pass_args_stdin,irap_merge_tsv.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
@@ -582,9 +594,10 @@ $(quant_toplevel_folder1)/basic/%.transcripts.raw.basic.tsv: $(mapper_toplevel_f
 
 ##
 ## gene and exon rules
+ifneq ($(no_deps_check),nocheck)
 $(foreach l,$(se),$(eval $(call make-basic-quant-rule,$(l),basic,$(l).se,gene,$(gtf_file_wexonid))))
 $(foreach l,$(pe),$(eval $(call make-basic-quant-rule,$(l),basic,$(l).pe,gene,$(gtf_file_wexonid))))
-
+endif
 endif
 
 #*****************
@@ -695,10 +708,11 @@ $(call lib2quant_folder,$(1))$(2).transcripts.fpkm.nurd.nurd.tsv: $(call lib2qua
 
 endef
 
+ifneq ($(no_deps_check),nocheck)
 
 $(foreach l,$(se),$(eval $(call make-nurd-quant-rule,$(l),$(l).se)))	
 $(foreach l,$(pe),$(eval $(call make-nurd-quant-rule,$(l),$(l).pe)))
-
+endif
 
 # exons
 %.exons.raw.nurd.tsv: 
@@ -772,9 +786,12 @@ $(call lib2quant_folder,$(1))$(3).genes.raw.$(quant_method).tsv: $(call lib2quan
 
 endef
 
+ifneq ($(no_deps_check),nocheck)
+
 # dynamic rules
 $(foreach l,$(se),$(eval $(call make-stringtie-quant-rule,$(l),$(quant_method),$(l).se,gene)))	
 $(foreach l,$(pe),$(eval $(call make-stringtie-quant-rule,$(l),$(quant_method),$(l).pe,gene)))
+endif
 
 # stringtie* specific rules
 $(quant_toplevel_folder)/transcripts.uraw.$(quant_method).tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).tsv)
@@ -866,8 +883,11 @@ endef
 $(quant_toplevel_folder)/exons.uraw.dexseq.tsv: $(foreach p, $(pe),$(call lib2quant_folder,$(p))$(p).pe.exons.raw.$(exon_quant_method).tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.exons.raw.$(exon_quant_method).tsv)
 	( $(call pass_args_stdin,irap_merge_tsv.sh,$@,$^) ) > $@.tmp && mv $@.tmp $@
 
+ifneq ($(no_deps_check),nocheck)
+
 $(foreach l,$(se),$(eval $(call make-dexseq-quant-rule,$(l),$(l).se)))
 $(foreach l,$(pe),$(eval $(call make-dexseq-quant-rule,$(l),$(l).pe)))
+endif
 
 endif
 endif
@@ -929,10 +949,11 @@ $(call lib2quant_folder,$(1))$(2).transcripts.raw.rsem.tsv: $(call lib2quant_fol
 
 endef
 
+ifneq ($(no_deps_check),nocheck)
 # quantification
 $(foreach l,$(se),$(eval $(call make-rsem-quant-rule,$(l),$(l).se,)))
 $(foreach l,$(pe),$(eval $(call make-rsem-quant-rule,$(l),$(l).pe,--paired-end)))
-
+endif
 
 %.genes.raw.rsem.tsv: %.genes.results
 	cut -f 1,5 $< |tail -n +2 > $@.tmp && mv $@.tmp $@
@@ -1035,11 +1056,12 @@ $(call lib2quant_folder,$(1))$(2).genes.raw.kallisto.tsv: $(call lib2quant_folde
 
 endef
 
+ifneq ($(no_deps_check),nocheck)
 
 # quantification
 $(foreach l,$(se),$(eval $(call make-kallisto-quant-rule,$(l),$(l).se)))
 $(foreach l,$(pe),$(eval $(call make-kallisto-quant-rule,$(l),$(l).pe)))
-
+endif
 
 
 $(quant_toplevel_folder)/transcripts.uraw.$(quant_method).tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).tsv) 
@@ -1132,10 +1154,11 @@ $(call lib2quant_folder,$(1))$(2).genes.raw.salmon.tsv: $(call lib2quant_folder,
 
 endef
 
+ifneq ($(no_deps_check),nocheck)
 # quantification
 $(foreach l,$(se),$(eval $(call make-salmon-quant-rule,$(l),$(l).se,se)))
 $(foreach l,$(pe),$(eval $(call make-salmon-quant-rule,$(l),$(l).pe,pe)))
-
+endif
 
 $(quant_toplevel_folder)/transcripts.uraw.$(quant_method).tsv: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).tsv) $(foreach s,$(se),$(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).tsv) 
 	( $(call pass_args_stdin,$(call merge_tsv,$(quant_method)),$@,$^) )  > $@.tmp && mv $@.tmp $@
@@ -1191,7 +1214,8 @@ ifeq ($(dt_fc),n)
 trans_file_target=riu
 else
 trans_file_target=dt
-# include riu files are part of the set of files produced in stage3 
+# include riu files are part of the set of files produced in stage3
+ifneq ($(no_deps_check),nocheck)
 STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.riu.$(quant_method).irap.tsv) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.riu.$(quant_method).irap.tsv)
 endif
 
@@ -1202,6 +1226,7 @@ STAGE3_S_TARGETS+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.trans
 # riu files are always produced
 STAGE3_S_OFILES+= $(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.transcripts.riu.$(quant_method).irap.$(expr_ext)) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.riu.$(quant_method).irap.$(expr_ext)) 
 
+endif
 
 # include the raw counts
 STAGE3_S_OFILES+= $(quant_toplevel_folder)/transcripts.riu.$(quant_method).irap.$(expr_ext)
@@ -1366,3 +1391,6 @@ $(quant_toplevel_folder)/%.transcripts.raw.$(quant_method).quant_qc.tsv: $(quant
 
 
 
+ifeq ($(no_deps_check),nocheck)
+$(call p_info,irap_quant.mk loaded)
+endif

@@ -40,6 +40,8 @@ SETUP_DATA_FILES+=$(feat_length)
 endif
 
 
+ifneq ($(no_deps_check),nocheck)
+
 # 
 ifdef atlas_run
 norm_files1=$(foreach p,$(pe), $(call lib2quant_folder,$(p))$(p).pe.genes.fpkm.$(quant_method).irap.$(expr_ext) $(call lib2quant_folder,$(p))$(p).pe.genes.tpm.$(quant_method).irap.$(expr_ext)) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.fpkm.$(quant_method).irap.$(expr_ext) $(call lib2quant_folder,$(s))$(s).se.genes.tpm.$(quant_method).irap.$(expr_ext))
@@ -53,6 +55,7 @@ STAGE3_S_OFILES+=$(norm_files2)
 endif
 endif
 
+endif
 
 #########
 # DEseq - normalize by library size

@@ -1102,3 +1102,6 @@ define $(mapper)_index_filenames=
 endef
 endif
 
+ifeq ($(no_deps_check),nocheck)
+$(call p_info,irap_map.mk loaded)
+endif
