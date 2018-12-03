@@ -4,7 +4,7 @@ FROM ubuntu:18.04
 # and install missing packages
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV IRAP_VERSION=1.0.4
+ENV IRAP_VERSION=1.0.5d
 
 LABEL iRAP.version="$IRAP_VERSION" maintainer="nuno.fonseca at gmail.com"
 
