@@ -786,7 +786,7 @@ function mappers_install {
    tophat2_install
    #bfast_install
    #smalt_install
-   gsnap_install 
+   #gsnap_install 
    #osa_install
    star_install
    hisat2_install
@@ -794,6 +794,7 @@ function mappers_install {
    # pinfo "To install HISAT2 run: irap_install.sh -s . -x hisat2"
    pinfo "To install OSA run: irap_install.sh -s . -x osa"
    pinfo "To install soap2 run: irap_install.sh -s . -x soap2"
+   pinfo "To install gsnap run: irap_install.sh -s . -x gsnap"
    pinfo "To install soap_splice run: irap_install.sh -s . -x soap_splice"
    pinfo "To install smalt run: irap_install.sh -s . -x smalt"
    pinfo "To install MapSplice run: irap_install.sh -s . -x mapsplice"
