@@ -819,7 +819,7 @@ function make_install {
     download_software MAKE
     tar xzvf $MAKE_FILE
     pushd `echo $MAKE_FILE|sed "s/.tar.gz//"`
-    patch --verbose --backup < $SRC_DIR/download/make.patch
+    #patch --verbose --backup < $SRC_DIR/download/make.patch
     ./configure 
     make -j $J
     cp make $IRAP_DIR/bin
@@ -1024,7 +1024,7 @@ function deps_install {
     pinfo "Installing dependencies (make, perl, boost, gnuplot, R, samtools, ...)"
     # only install make if the version available is not acceptable
     local v=`make --version 2> /dev/null|head -n 1 | cut -f3 -d\ |cut -f 1,2 -d.`
-    if [ "$v-" == "-" ] || [ $v \< 4.2 ]; then
+    if [ "$v-" == "-" ] || [ $v \< 4.1 ]; then
 	make_install
     else
 	pinfo "make found ($v) - skipping installation"

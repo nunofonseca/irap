@@ -68,8 +68,9 @@ cat $(2) | $(1) -stdin
 endef
 
 #Version and license info
-version=$(file < $(IRAP_DIR)/version)
-
+# only works on 4.2:(
+#version=$(file < $(IRAP_DIR)/version)
+version=$(shell cat $(IRAP_DIR)/version)
 #******************************
 # command line parameters
 ifndef quant_method

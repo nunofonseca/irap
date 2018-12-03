@@ -30,6 +30,15 @@ SHELL=bash
 ################################################################################
 # Auxiliary functions
 ################################################################################
+# only works on 4.2
+#define get_irap_version=
+#$(file < $(IRAP_DIR)/version)
+#endef
+define get_irap_version=
+$(shell cat $(IRAP_DIR)/version)
+endef
+
+
 
 # Information messages
 define p_info=
@@ -238,7 +247,7 @@ endif
 #************************
 #Version and license info
 pname=IRAP
-version=$(file < $(IRAP_DIR)/version)
+version=$(call get_irap_version)
 contact=Developed by Nuno Fonseca (authorname (at) acm.org)
 license=This pipeline is distributed  under the terms of the GNU General Public License 3
 
