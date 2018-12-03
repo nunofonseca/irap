@@ -818,6 +818,7 @@ function make_install {
     download_software MAKE
     tar xzvf $MAKE_FILE
     pushd `echo $MAKE_FILE|sed "s/.tar.gz//"`
+    patch --verbose --backup < $SRC_DIR/download/make.patch
     ./configure 
     make -j $J
     cp make $IRAP_DIR/bin
