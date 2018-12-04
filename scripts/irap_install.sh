@@ -459,7 +459,7 @@ FeatureCounts_VERSION=1.6.2
 FEATURECOUNTS_FILE=subread-$FeatureCounts_VERSION-Linux-x86_64.tar.gz
 FEATURECOUNTS_URL=https://sourceforge.net/projects/subread/files/subread-$FeatureCounts_VERSION/$FEATURECOUNTS_FILE/download
 
-fastq_utils_VERSION=0.16.3
+fastq_utils_VERSION=0.18.1
 fastq_utils_FILE=$fastq_utils_VERSION.tar.gz
 fastq_utils_URL=https://github.com/nunofonseca/fastq_utils/archive/$fastq_utils_FILE
 
