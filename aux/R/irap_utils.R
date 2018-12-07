@@ -1238,7 +1238,7 @@ write.tsv <- function(x,file,header=TRUE,rownames.label=NULL,fix=TRUE,gzip=FALSE
         tryCatch(close(con),error=function(x) return(NULL))
     } else {
         library(data.table)
-        if (!is.null(x) && ! is.data.frame(x)) {
+        if (!is.null(x) && ! is.data.frame(x) && ! is.data.table(x)) {
             x <- as.data.frame(x)
         }
         fwrite(x,file=file,sep="\t",row.names=FALSE,col.names=header,quote=FALSE,verbose=FALSE)
@@ -1489,7 +1489,7 @@ load.annot <- function(file) {
 }
 # keep backwards compatibility by using read.table when data.table is not 
 # available
-qload.tsv <- function(f,header=NULL,comment.char="",nrows=-1L,fill=FALSE,quote="\"",colClasses=NULL) {
+qload.tsv <- function(f,header=NULL,comment.char="",nrows=-1L,fill=FALSE,quote="\"",colClasses=NULL,drop=NULL,select=NULL) {
   tsv.data <- NULL
   if (require("data.table",quietly=TRUE,character.only=TRUE) &&
       compareVersion(as.character(packageVersion("data.table")),"1.9.6")>=0) {
@@ -1504,7 +1504,7 @@ qload.tsv <- function(f,header=NULL,comment.char="",nrows=-1L,fill=FALSE,quote="
       f <- paste(f," | grep -v \"^",comment.char,"\"",sep="")
     }
     if (is.null(header)) header="auto"
-    tryCatch(tsv.data <- fread(input=f,sep = "\t", nrows=nrows, header=header,check.names=FALSE,data.table=FALSE,fill=fill,quote=quote,colClasses=colClasses),error=function(x) NULL)
+    tryCatch(tsv.data <- fread(input=f,sep = "\t", nrows=nrows, header=header,check.names=FALSE,data.table=FALSE,fill=fill,drop=drop,select=select,quote=quote,colClasses=colClasses),error=function(x) NULL)
   } else 
     tryCatch(tsv.data <- read.table(f,sep = "\t", header=header, comment.char=comment.char, quote = quote, nrows=nrows, check.names=FALSE),error=function(x) NULL)
   return(tsv.data)
