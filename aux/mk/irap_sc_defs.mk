@@ -46,6 +46,10 @@ sc_max_features?=40000
 ## average number of features expected to be expressed per cell
 feat_cell?=5000
 bam_umi_count_params?=--min_reads 1 --min_umis 1
+##
+quant_norm_libsize_tool?=none
+quant_norm_libsize_method?=none
+
 endef
 
 

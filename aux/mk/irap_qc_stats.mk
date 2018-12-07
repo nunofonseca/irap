@@ -69,7 +69,7 @@ $(call lib2filt_folder,$(1))$(1).f.fastq%gz $(call lib2filt_folder,$(1))$(1).f.f
 
 endef
 
-ifneq ($(no_deps_check),nocheck)
+ifneq ($(deps_check),nocheck)
 # rules for SE libraries
 $(foreach l,$(se),$(eval $(call make-se-qc-rule,$(l))))
 # rules for PE libraries
@@ -94,8 +94,8 @@ clean_quality_filtering_and_report:
 # a single file with the mapping stats
 MAPPING_REPORT_PRE_STATS=
 ifneq ($(mapper),none)
-ifneq ($(no_deps_check),nocheck)
-MAPPING_REPORT_PRE_STATS:=$(foreach s,$(se),$(call lib2bam_folder,$(s))$(s).se.hits.bam.stats.csv) $(foreach s,$(pe),$(call lib2bam_folder,$(s))$(s).pe.hits.bam.stats.csv   )
+ifneq ($(deps_check),nocheck)
+MAPPING_REPORT_PRE_STATS:=$(foreach s,$(se),$(call lib2bam_folder,$(s))$(s).se.hits.bam.stats.csv) $(foreach s,$(pe),$(call lib2bam_folder,$(s))$(s).pe.hits.bam.stats.csv  )
 endif
 $(mapper_toplevel_folder)/libs_qc.tsv: $(mapper_toplevel_folder)/stats_raw.tsv $(mapper_toplevel_folder)/stats_perc.tsv  $(mapper_toplevel_folder)/featstats_raw.tsv  $(mapper_toplevel_folder)/featstats_perc.tsv   $(mapper_toplevel_folder)/genestats_raw.tsv 
 	irap_append2tsv --in "$(mapper_toplevel_folder)/stats_raw.tsv $(mapper_toplevel_folder)/featstats_raw.tsv $(mapper_toplevel_folder)/genestats_raw.tsv" --exclude_aggr  --cols_not_sorted --out $@.1.tmp &&\
@@ -113,7 +113,7 @@ endif
 ## the reference in the BAMs generated with kallisto is not the mapper
 ifneq ($(mapper),kallisto)
 ifneq ($(mapper),none)
-ifneq ($(no_deps_check),nocheck)
+ifneq ($(deps_check),nocheck)
 MAPPING_REPORT_PRE_STATS+=$(foreach s,$(se), $(call lib2bam_folder,$(s))$(s).se.hits.bam.gene.stats  $(call lib2bam_folder,$(s))$(s).se.hits.bam.stats) $(foreach s,$(pe), $(call lib2bam_folder,$(s))$(s).pe.hits.bam.gene.stats $(call lib2bam_folder,$(s))$(s).pe.hits.bam.stats)
 endif
 endif	
@@ -204,6 +204,7 @@ STAGE1_TARGETS+=$(qc_toplevel_folder)/qc.tsv
 
 ifeq ($(qc),off)
 $(qc_toplevel_folder)/qc.html $(qc_toplevel_folder)/qc.tsv: 
+	touch $@
 
 # empty file
 FASTQC_REPORT_FILES=
@@ -215,14 +216,20 @@ print_qc_dirs_files:
 
 ## end qc=off
 else
+
+ifeq ($(HUGE_NUM_LIBS),0)
 ## qc=on |report
 $(qc_toplevel_folder)/qc%html $(qc_toplevel_folder)/qc%tsv: $(conf) $(call must_exist,$(auxdata_toplevel_folder)/)  $(qc_toplevel_folder)/fastq_qc_report.tsv $(qc_toplevel_folder)/qc_report.csv $(lib_info)
 	irap_report_qc $(IRAP_REPORT_MAIN_OPTIONS) --conf $(conf) --out_dir $(qc_toplevel_folder) --qc_dir $(qc_toplevel_folder) --css $(CSS_FILE) $(call get_lib_info_option) || ( rm -f $(qc_toplevel_folder)/qc.tsv && exit 1)
 
-
+else
+# too many libs - this code needs to be optimized to support more than 20k libs
+$(qc_toplevel_folder)/qc%html $(qc_toplevel_folder)/qc%tsv:
+	touch $(qc_toplevel_folder)/qc.html $(qc_toplevel_folder)/qc.tsv
+endif
 
 ifneq ($(qc),off)
-ifneq ($(no_deps_check),nocheck)
+ifneq ($(deps_check),nocheck)
 FASTQC_REPORT_FILES=$(foreach p,$(se),$(call lib2filt_folder,$(p))$(p).f.fastqc.tsv) $(foreach p,$(pe),$(call lib2filt_folder,$(p))$(p)_1.f.fastqc.tsv $(call lib2filt_folder,$(p))$(p)_2.f.fastqc.tsv)
 
 QC_CSV_FILES=$(foreach p,$(se),$(call lib2filt_folder,$(p))$(p).f.csv) $(foreach p,$(pe),$(call lib2filt_folder,$(p))$(p)_1.f.csv $(call lib2filt_folder,$(p))$(p)_2.f.csv)
@@ -255,7 +262,7 @@ $(qc_toplevel_folder)/qc_report.csv:  $(QC_CSV_FILES)
 ## qc=on |report
 endif
 
-ifeq ($(no_deps_check),nocheck)
+ifeq ($(deps_check),nocheck)
 $(call p_info,irap_qc_stats.mk loaded)
 endif
 

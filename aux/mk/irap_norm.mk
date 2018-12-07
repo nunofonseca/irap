@@ -40,7 +40,7 @@ SETUP_DATA_FILES+=$(feat_length)
 endif
 
 
-ifneq ($(no_deps_check),nocheck)
+ifneq ($(deps_check),nocheck)
 
 # 
 ifdef atlas_run
@@ -75,11 +75,11 @@ endif
 
 # scran- single-cell aware normalisation
 
-scran_params=
-scran_dep=
+scran_params?=
+scran_dep?=
 ifdef spikein_fasta
-scran_params:=-s $(spikein_gtf_file)
-scran_dep:=$(spikein_gtf_file)
+scran_params+=-s $(spikein_gtf_file)
+scran_dep+=$(spikein_gtf_file)
 endif
 
 $(quant_toplevel_folder)/genes.scran_gene.$(quant_method).$(expr_ext): $(quant_toplevel_folder)/genes.raw.filtered.$(quant_method).$(expr_ext) $(scran_dep)
@@ -102,6 +102,18 @@ endif
 $(quant_toplevel_folder)/%.nlib.none.tsv: 
 	$(call p_info,Quantification normalization disabled. Please set the quant_norm_method parameter if you do not want this behavior.)
 	@$(call empty_file,$@)
+
+$(quant_toplevel_folder)/%.none.$(quant_method).tsv: $(quant_toplevel_folder)/%.raw.filtered.$(quant_method).tsv
+	rm -f $@ && ln -s $< $@
+
+$(quant_toplevel_folder)/%.none.$(quant_method).mtx.gz: $(quant_toplevel_folder)/%.raw.filtered.$(quant_method).mtx.gz
+	rm -f $@ && ln -s $< $@
+
+$(quant_toplevel_folder)/%.none.$(quant_method).mtx_cols.gz: $(quant_toplevel_folder)/%.raw.filtered.$(quant_method).mtx_cols.gz
+	rm -f $@ && ln -s $< $@
+
+$(quant_toplevel_folder)/%.none.$(quant_method).mtx_rows.gz: $(quant_toplevel_folder)/%.raw.filtered.$(quant_method).mtx_rows.gz
+	rm -f $@ && ln -s $< $@
 
 
 ################################################################################

@@ -70,6 +70,10 @@ file_exists_ce=$(if  $(realpath $(1)),,$(call p_error,$(1) - $(2)))
 
 must_exist=$(if  $(realpath $(1)),,$(1))
 
+# this may be redefined later to avoid checking if the dependencies
+# of a rule are consistent
+check_files=$(1)
+
 # 1- pat
 define quiet_ls=
 $(shell ls --color=never -1 $(1) 2>/dev/null)
@@ -291,7 +295,7 @@ ifdef lib_info
  $(call file_exists,$(lib_info))
  $(info * Trying to load information about the libraries - file $(lib_info)...)
  include $(lib_info)
- $(info * Information about the libraries loaded.)
+ $(info * Loaded information about the libraries.)
 endif
 lib_info?=
 
@@ -600,11 +604,11 @@ override gtf_file:=$(notdir $(gtf_file_abspath))
 ## concentration (TSV file)
 ifndef spikein_concentration
 spikein_concentration=
-$(info * Warning:  spikein concentration not provided)
+#$(info *	Warning:  spikein concentration not provided)
+else
+$(info *	Currently spikeins are not used while performing differential expression analysis)
 endif
 
-#
-$(info * Currently spikeins are not used while performing differential expression analysis)
 endif
 
 $(info *	Transcripts = $(trans_abspath))
@@ -665,16 +669,11 @@ endif
 # dry_run?
 dry_run=$(findstring n,$(firstword $(MAKEFLAGS)))
 
-# reduce/do not check for dependencies if nocheck is passed as a target
-phony_targets+=nocheck
-nocheck:
-no_deps_check=$(findstring nocheck,$(TARGETS))
-check_files=
-ifeq ($(no_deps_check),nocheck)
-check_deps=
-#$(foreach f,$(1),$(call file_exists,$f))
-check_files=$(foreach f,$(1),$(call file_exists,$f))
-endif
+## check for dependencies: empty or nocheck
+## only applies to code related to processing libraries
+## - when nocheck is used the code is not loaded
+## - only works/is applicable when the libraries were already processed
+deps_check=$(findstring nocheck,$(TARGETS))
 
 # 
 ifeq ($(TARGETS),all)
@@ -703,17 +702,69 @@ ifdef do_stage0_only
 skip_lib_validation=y
 endif
 
+num_libs=$(words $(sort $(se) $(pe)))
+
+###############################################################################
+# When the number of libraries is greater than BIG_LIM then pass the arguments
+# to some scripts from stdin
+BIG_LIM?=400
+
+ifeq ($(shell expr $(num_libs) \<  $(BIG_LIM)),0)
+# too many libs to be able to pass them as an argument
+$(call p_info, Big number of libraries mode (>$(BIG_LIM)))
+BIG_EXP=400
+# cmd=$1
+# out_file=$2
+# args=$3
+ifeq ($(dry_run),n)
+define pass_args_stdin=
+cat $(2).in | $(1) -stdin && rm -f $(2).in
+endef
+else
+define pass_args_stdin=
+$(call args2file,$(2).in,$(3)) cat $(2).in | $(1) -stdin && rm -f $(2).in
+endef
+endif
+
+# 1- infiles
+# 2- outfile
+define stdin_cat=
+$(call args2file,$(2).in,$(1)) xargs -a $(2).in cat > $(2)
+endef
+
+else
+BIG_EXP=0
+#$(call p_info, Small number of libraries mode)
+# cmd=$1
+# out_file=$2
+# args=$3
+define pass_args_stdin=
+$(1) $(3) 
+endef
+
+# $(1) input files
+# 2- outfile
+define stdin_cat=
+cat $(1) > $(2)
+endef
+
+endif
+
 #
 ifdef skip_lib_validation
-$(info * Skipping validation of se and pe)
+$(info *	Skipping validation of se and pe)
 override se:=
 override pe:=
 else
-$(info * Validating se and pe)
+$(info *	Validating se and pe)
 ifdef se
 ifneq ($(se),)
  $(foreach l,$(se),$(call check_param_ok,$(l)))
- $(info *	se=$(se))
+ ifeq ($(BIG_EXP),0)	
+  $(info *	se=$(se))
+ else
+  $(info *	se= skipping listing - $(num_libs))
+ endif
  all_se_files:=$(foreach l,$(se),$($(l)))
  #$(foreach l,$(se),$(info $(l)=$($(l)))) 
  # check if fastq file is in a different directory
@@ -723,18 +774,17 @@ ifneq ($(se),)
 # sam header (may/should include @RG)
  $(foreach l,$(se),$(eval $(l)_shl=$(call check_sheader_ok,$(l)))) 
 
-ifneq ($(no_deps_check),nocheck)
+ $(foreach l,$(se),$(foreach bc,known_umi_file known_cells_file,$(eval $(l)_$(bc)=$(call check_bc_value_ok,$(l),$(bc)))))
+
 
  $(foreach l,$(se),$(eval $(l)_strand=$(call check_libstrand_ok,$(l)))) 
- #$(foreach l,$(se),$(info $(l)_dir=$($(l)_dir)))
- #$(foreach l,$(se),$(info $(l)_dir=$($(l)_dir)))
  #$(foreach l,$(se),$(info $(l)_dir=$(call check_libdir_ok,$(l))))
  $(foreach l,$(se),$(call check_se_libname_ok,$(l)))
  $(foreach l,$(se),$(call check_param_ok,$(l)_rs))
  $(foreach l,$(se),$(call check_param_ok,$(l)_qual))
- $(foreach l,$(se),$(foreach bc,known_umi_file known_cells_file index1 index2 index3 umi_read umi_offset umi_size cell_read cell_offset cell_size sample_read sample_offset sample_size read1_offset read2_offset read1_size read2_size sample_name,$(eval $(l)_$(bc)=$(call check_bc_value_ok,$(l),$(bc)))))
+
+ $(foreach l,$(se),$(foreach bc,index1 index2 index3 umi_read umi_offset umi_size cell_read cell_offset cell_size sample_read sample_offset sample_size read1_offset read2_offset read1_size read2_size sample_name,$(eval $(l)_$(bc)=$(call check_bc_value_ok,$(l),$(bc)))))
  ifile_given=1
-endif
 endif
 endif
 # PE files (libraries)
@@ -745,7 +795,11 @@ ifdef pe
 ifneq ($(pe),)
  $(foreach l,$(pe),$(call check_param_ok,$(l)))
  all_pe_files:=$(foreach l,$(pe),$($(l)))
- $(info *	pe=$(pe))
+ ifeq ($(BIG_EXP),0)	
+  $(info *	pe=$(pe))
+ else
+  $(info *	pe= skipping listing - $(num_libs))
+ endif
  # $(info * debug * fastq_files=$(fastq_files))
  # check the definition of 
  #  insert size
@@ -763,8 +817,9 @@ ifneq ($(pe),)
 # read group id
  $(foreach l,$(pe),$(eval $(l)_rgid=$(call check_rgid_ok,$(l))))
 # sam header lines (may/should include @RG)
- $(foreach l,$(pe),$(eval $(l)_shl=$(call check_sheader_ok,$(l)))) 
-ifneq ($(no_deps_check),nocheck)
+ $(foreach l,$(pe),$(eval $(l)_shl=$(call check_sheader_ok,$(l))))
+ $(foreach l,$(pe),$(foreach bc,known_umi_file known_cells_file,$(eval $(l)_$(bc)=$(call check_bc_value_ok,$(l),$(bc)))))
+
  $(foreach l,$(pe),$(eval $(l)_strand=$(call check_libstrand_ok,$(l))))
 
  #$(foreach l,$(pe),$(info $(l)_dir=$($(l)_dir)))
@@ -773,19 +828,19 @@ ifneq ($(no_deps_check),nocheck)
  $(foreach l,$(pe),$(call check_param_ok,$(l)_rs))
  $(foreach l,$(pe),$(call check_param_ok,$(l)_qual))
  $(foreach l,$(pe),$(call set_rs_list,$(l)_rs))
- $(foreach l,$(pe),$(foreach bc,known_umi_file known_cells_file index1 index2 index3 umi_read umi_offset umi_size cell_read cell_offset cell_size sample_read sample_offset sample_size read1_offset read2_offset read1_size read2_size sample_name,$(eval $(l)_$(bc)=$(call check_bc_value_ok,$(l),$(bc)))))
+ $(foreach l,$(pe),$(foreach bc, index1 index2 index3 umi_read umi_offset umi_size cell_read cell_offset cell_size sample_read sample_offset sample_size read1_offset read2_offset read1_size read2_size sample_name,$(eval $(l)_$(bc)=$(call check_bc_value_ok,$(l),$(bc)))))
  #$(foreach l,$(pe),$(call check_param_ok,$(l)_mp))
  ifile_given=1
 endif
 endif
-endif
 
 
-ifneq ($(no_deps_check),nocheck)
- all_fq_files:=$(all_pe_files) $(all_se_files)
- nfqfiles:=$(words $(all_fq_files))
- nfqfilesu:=$(words $(sort $(all_fq_files)))
 
+all_fq_files:=$(all_pe_files) $(all_se_files)
+nfqfiles:=$(words $(all_fq_files))
+nfqfilesu:=$(words $(sort $(all_fq_files)))
+
+ifneq ($(deps_check),nocheck)
 #
  ifndef skip_lib_validation
   ifneq ($(nfqfiles),$(nfqfilesu))
@@ -865,7 +920,7 @@ ifndef technical_replicates
  technical_replicates=
  $(info *	technical_replicates=NONE)
 else
- ifeq ($(no_deps_check),nocheck)
+ ifeq ($(deps_check),nocheck)
   $(info *       technical_replicates= skipping checks)
  else
   $(info *	technical_replicates=$(technical_replicates))
@@ -876,7 +931,7 @@ else
 #"
 ## check - should be improved...
   num_tr=$(words $(sort $(subst $(quote), ,$(subst $(comma), ,$(subst ;, ,$(technical_replicates))))))
-  num_libs=$(words $(sort $(se) $(pe)))
+
 
 ifdef tr_validation
  ifneq ($(num_tr),$(num_libs))
@@ -947,11 +1002,11 @@ bam_umi_count_params?=--min_reads 1 --multi_mapped --min_umis 1
 ## may be used by different methods
 ## currently only bam_umi_count takes advantage of the following options (to reduce memory usage)
 ## max. number of cell barcodes
-sc_max_cells=800000
+sc_max_cells=900000
 ## max. number of features quantified (if protein coding only genes are considered then this value can be reduced)
 sc_max_features=80000
-## average number of features expected to be expressed per cell
-sc_feat_cell=5000
+## number of features expected to be expressed per cell
+sc_feat_cell=50000
 
 ## --uniq_mapped --multi_mapped
 umis_params?=--cb_cutoff 2
@@ -1606,54 +1661,29 @@ true
 endef
 endif
 
-###############################################################################
-# When the number of libraries is greater than BIG_LIM then pass the arguments
-# to some scripts from stdin
-ifndef BIG_LIM
-BIG_LIM:=400
+##################################################################
+# small optimization to simply check if a file (dependency) exists
+# if the number of libraries is greater than HUGE_LIM
+HUGE_LIM?=10000
+HUGE_NUM_LIBS=0
+##
+ifeq ($(shell expr $(num_libs) \<  $(HUGE_LIM)),0)
+## 
+HUGE_NUM_LIBS=1
 endif
 
-ifeq ($(shell expr $(words $(se) $(pe)) \<  $(BIG_LIM)),0)
-# too many libs to be able to pass them as an argument
-$(call p_info, Big number of libraries mode (>$(BIG_LIM)))
-BIG_EXP=400
-# cmd=$1
-# out_file=$2
-# args=$3
-ifeq ($(dry_run),n)
-define pass_args_stdin=
-cat $(2).in | $(1) -stdin && rm -f $(2).in
-endef
-else
-define pass_args_stdin=
-$(call args2file,$(2).in,$(3)) cat $(2).in | $(1) -stdin && rm -f $(2).in
+
+###############################3
+# reduce/do not check for dependencies if nocheck is passed as a target
+phony_targets+=nocheck
+nocheck:
+
+ifeq ($(deps_check),nocheck)
+# redefine function
+define check_files=
+$(foreach f,$(1),$f $(call file_exists,$f))
 endef
 endif
-
-# 1- infiles
-# 2- outfile
-define stdin_cat=
-$(call args2file,$(2).in,$(1)) xargs -a $(2).in cat > $(2)
-endef
-
-else
-BIG_EXP=0
-#$(call p_info, Small number of libraries mode)
-# cmd=$1
-# out_file=$2
-# args=$3
-define pass_args_stdin=
-$(1) $(3) 
-endef
-
-# $(1) input files
-# 2- outfile
-define stdin_cat=
-cat $(1) > $(2)
-endef
-
-endif
-
 
 # *****************************************************
 # Paths
@@ -2243,7 +2273,7 @@ WAVE1_TARGETS+= $(setup2_files)  $(word 2,$(index_files))
 setup_data_files2: $(setup2_files) 
 #phony_targets+=setup_data_files2
 
-# TODO: move $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.sorted.txt to $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.txt
+
 # No need to include these files since they are generated by some rule
 # $(auxdata_toplevel_folder)/introns.bed -> $(auxdata_toplevel_folder)/genes.bed $(auxdata_toplevel_folder)/exons.bed 
 # $(gff3_file_abspath).csv -> $(gff3_file_abspath) 
@@ -2413,9 +2443,6 @@ $(tmp_dir):
 %/:
 	@mkdir -p $@
 
-
-
-
 ################################################################################
 # Initial fastq QC
 ################################################################################
@@ -2425,7 +2452,7 @@ qc: quality_filtering_and_report
 phony_targets+= qc quality_filtering_and_report
 # 
 # TODO:	signature=filtering parameters (if they are the same then avoid recomputation between experiments)  minlen=$(min_read_len) min_qual=$(min_qual) qual_perc=$(min_qu
-quality_filtering_and_report: setup	$(STAGE1_OUT_FILES)
+quality_filtering_and_report: setup $(STAGE1_OUT_FILES)
 	$(call p_info,[DONE] Quality filtering)
 
 phony_targets+= do_qc
@@ -2458,7 +2485,8 @@ outbams=
 ifeq ($(mapper),none)
 $(mapper)_mapping:
 else
-outbams:=$(foreach p,$(pe), $(call lib2bam_folder,$(p))$(p).pe.hits.bam) $(foreach s,$(se), $(call lib2bam_folder,$(s))$(s).se.hits.bam)
+#$(foreach p,$(pe), $(call lib2bam_folder,$(p))$(p).pe.hits.bam) $(foreach s,$(se), $(call lib2bam_folder,$(s))$(s).se.hits.bam)
+outbams:=$(bam_files)
 STAGE2_OUT_FILES+=$(outbams)
 STAGE2_TARGETS+=$(outbams)
 
@@ -2520,12 +2548,16 @@ endef
 
 # create the output directories
 ifneq ($(mapper),none)
-#$(foreach l,$(se) $(pe),$(eval $(shell mkdir -p $(call lib2bam_folder,$(l)))))
 
+ifneq ($(deps_check),nocheck)
+# if we are only going to check if the files exist
+# then we do not need the rules...
 # rules for SE libraries
 $(foreach l,$(se),$(eval $(call make-se-bam-rule,$(l))))
 # rules for PE libraries
 $(foreach l,$(pe),$(eval $(call make-pe-bam-rule,$(l))))
+endif
+
 endif
 
 
@@ -2536,12 +2568,12 @@ endif
 %.$(mapper).index: %.fa
 
 
-$(mapper_toplevel_folder)/alignments.bam: $(foreach s,$(se), $(call lib2bam_folder,$(s))$(s).se.hits.bam)
-	set -o pipefail && $(call samcat,$^) | samtools sort -m $(SAMTOOLS_SORT_MEM) -T $@.sorted -o $@.sorted.bam -  && mv  $@.sorted.bam $@  && samtools index $@
+# $(mapper_toplevel_folder)/alignments.bam: $(foreach s,$(se), $(call lib2bam_folder,$(s))$(s).se.hits.bam)
+# 	set -o pipefail && $(call samcat,$^) | samtools sort -m $(SAMTOOLS_SORT_MEM) -T $@.sorted -o $@.sorted.bam -  && mv  $@.sorted.bam $@  && samtools index $@
 
 
-$(mapper_toplevel_folder)/alignments.bam.paired.bam: $(foreach s,$(pe), $(call lib2bam_folder,$(s))$(s).pe.hits.bam)
-	set -o pipefail && $(call samcat,$^) | samtools sort  -m $(SAMTOOLS_SORT_MEM) -T $@.tmp -o $@.tmp.bam -  && mv $@.tmp.bam $@ && samtools index $@
+# $(mapper_toplevel_folder)/alignments.bam.paired.bam: $(foreach s,$(pe), $(call lib2bam_folder,$(s))$(s).pe.hits.bam)
+# 	set -o pipefail && $(call samcat,$^) | samtools sort  -m $(SAMTOOLS_SORT_MEM) -T $@.tmp -o $@.tmp.bam -  && mv $@.tmp.bam $@ && samtools index $@
 
 
 $(reference_abspath)_files: $(reference_abspath)
@@ -2570,6 +2602,7 @@ print_stage3_targets:
 print_stage3_s_targets: 
 	echo $(STAGE3_S_TARGETS)
 
+
 ################################################################################
 # Stage 4
 ################################################################################
@@ -2581,6 +2614,7 @@ print_stage4_files:
 print_stage4_targets:
 	echo $(STAGE4_TARGETS)
 
+
 ################################################################################
 # Stage 5
 ################################################################################
@@ -2591,6 +2625,7 @@ print_stage5_files:
 
 print_stage5_targets:
 	echo $(STAGE5_TARGETS)
+
 
 #############################################################
 # GSE
@@ -2661,6 +2696,7 @@ assemble: quantification
 %.ref.gtf: %.ref.gff
 	ensembl_gtf_to_gff.pl $< > $@
 
+
 ##############################################################################
 # Reporting
 
@@ -2687,11 +2723,18 @@ define stage3_tracks_targets=
 $(subst .$(expr_ext),.$(expr_ext).tracks,$(call exclude_empty,$(STAGE3_TSV_FILES)))
 endef
 
-stage3_tracks: $(call stage3_tracks_targets)
+ifneq ($(deps_check),nocheck)
+stage3_tracks_targets=$(call get_stage3_tracks_targets)
+else
+stage3_tracks_targets=
+endif
+
+stage3_tracks: $(stage3_tracks_targets)
 	$(call p_info,[DONE] Generated stage 3 tracks)
 
 stage3_upload_tracks: $(subst .tracks,.tracks.uploaded,$(stage3_tracks_targets))
 	$(call p_info,[DONE] Uploaded stage 3 tracks)
+
 
 stage4_tracks_targets=$(subst .$(expr_ext),.$(expr_ext).tracks,$(STAGE4_OUT_FILES))
 
@@ -2835,3 +2878,6 @@ FORCE:
 .SECONDARY: $(precious_targets)
 .PRECIOUS: $(precious_targets)
 ###################################################
+ifeq ($(deps_check),nocheck)
+$(call p_info,  iRAP code loaded)
+endif

@@ -62,10 +62,11 @@ $(call lib2quant_folder,$(1))$(2).genes.raw.kallisto.tsv: $(call lib2quant_folde
 endef
 
 
+ifneq ($(deps_check),nocheck)
 # quantification
 $(foreach l,$(se),$(eval $(call make-kallisto-quant-rule,$(l),$(l).se)))
 $(foreach l,$(pe),$(eval $(call make-kallisto-quant-rule,$(l),$(l).pe)))
-
+endif
 
 endif
 
@@ -94,9 +95,11 @@ endef
 #	time umis tagcount $$(umis_params) --sparse --parse_tags --gene_tags $$< /dev/stdout | tr "," "\t" > $$@.tmp   && \
 #	add_missing_features --sort --tsv $$@.tmp --all_feat $$(mapTrans2gene) --all_feat_col $(4) --out $$@.tmp2 &&\
 
+ifneq ($(deps_check),nocheck)
 # gene level quantification
 $(foreach l,$(se),$(eval $(call make-umis-rule,$(l),$(l).se,gene,1)))	
 $(foreach l,$(pe),$(eval $(call make-umis-rule,$(l),$(l).pe,gene,1)))
+endif
 
 ifeq ($(transcript_expr),y)
 $(call p_error,Unable to get transcript level quantification while using "umis". Please select another value for the transcript_quant option.)
@@ -133,14 +136,17 @@ endef
 
 #irap_sc conf=conf/sc/10x_v2_pbmc.conf stage2  mapper=bowtie2 stage3 quant_method=irap_umi_count
 
+ifneq ($(deps_check),nocheck)
 # gene level quantification
 $(foreach l,$(se),$(eval $(call make-iumi-count-rule,$(l),$(l).se,gene,1)))	
 $(foreach l,$(pe),$(eval $(call make-iumi-count-rule,$(l),$(l).pe,gene,1)))
+endif
 
 ifeq ($(transcript_expr),y)
+ifneq ($(deps_check),nocheck)
 $(foreach l,$(se),$(eval $(call make-iumi-count-rule,$(l),$(l).se,transcript,2)))	
 $(foreach l,$(pe),$(eval $(call make-iumi-count-rule,$(l),$(l).pe,transcript,2)))
-
+endif
 ## 
 $(quant_toplevel_folder)/transcripts.raw.$(quant_method).mtx.gz: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).mtx.gz) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).mtx.gz)
 	( $(call pass_args_stdin,irap_merge_mtx,$@, -o $@ --all_feat $(mapTrans2gene) --all_feat_col 2 --in "$^") ) || ( rm -f $@ && exit 1)

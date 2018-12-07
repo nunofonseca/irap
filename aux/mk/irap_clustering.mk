@@ -21,11 +21,9 @@
 # =========================================================
 
 ## sample/cell clustering
-
+clustering_files=
 ##
 ifeq ($(rnaseq_type),sc)
-
-clustering_files=
 all_clustering_files=
 ifneq ($(clustering_method),none)
 # always based on gene expression
