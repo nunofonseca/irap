@@ -1626,7 +1626,7 @@ mat2mtx <- function(mat,...) {
 
 # load a file with a quant. matrix
 # returns NULL in case of failure
-quant.load <- function(f,clean.cuff=FALSE,header=NULL) {
+quant.load <- function(f,clean.cuff=FALSE,header=NULL,...) {
   tsv.data <- NULL
 
   if (is.null(header))
@@ -1635,9 +1635,9 @@ quant.load <- function(f,clean.cuff=FALSE,header=NULL) {
   if ( !is.null(header) || (!is.null(tsv.data) && ncol(tsv.data)>1 )) {
     if (  (!is.null(header) && header) || sum(grepl("(Gene|Exon|Transcript|ID|feature)",tsv.data[1,1],ignore.case=T))!=0 || tsv.data[1,1]=="") {
       # reload to include the header
-      tsv.data <- qload.tsv(f,header=TRUE)
+      tsv.data <- qload.tsv(f,header=TRUE,...)
     } else {
-      tsv.data <- qload.tsv(f,header=FALSE)
+      tsv.data <- qload.tsv(f,header=FALSE,...)
     }
   }
   if(is.null(tsv.data)) return(NULL);
