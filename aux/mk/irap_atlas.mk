@@ -56,7 +56,7 @@ atlas_sc_wrap_up: atlas_bundle
 
 sc_bundle_dir=$(name)/sc_bundle
 ## single cell bundle
-atlas_bundle: $(sc_bundle_dir)/ $(ATLAS_SC_FILES) $(EXPR_FILES)
+atlas_bundle: $(sc_bundle_dir)/  $(ATLAS_SC_FILES) $(EXPR_FILES)
 	cp -ar $(ATLAS_SC_FILES) $(sc_bundle_dir) 
 	cp -ar $(sort $(EXPR_FILES)) $(sc_bundle_dir)
 ifneq ($(sc_quant_viz),none)
