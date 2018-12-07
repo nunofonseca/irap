@@ -1591,7 +1591,7 @@ function umis_install {
     #pushd umis-master
     pushd umis-$umis_VERSION
     # temporary fix
-    sed -i "s/'UM'/'QX'/" umis/umis.py
+    sed -i "s/'UM'/'RX'/" umis/umis.py
     pip install  --prefix $IRAP_DIR .
     popd
     pinfo "Compiling and installing umis...done."
