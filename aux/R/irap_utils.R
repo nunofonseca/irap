@@ -1217,9 +1217,13 @@ fix.cufflinks.fpkms <- function(t,id.col=1,value.col=2) {
 write.tsv <- function(x,file,header=TRUE,rownames.label=NULL,fix=TRUE,gzip=FALSE) {
     ##
     if (!is.null(x)) {
-        if (!is.matrix(x)) {
-            x <- as.matrix(x)
+        # 2018-12-07
+        if (!is.null(x) && ! is.data.frame(x) && ! is.data.table(x)) {
+            x <- as.data.frame(x)
         }
+        #if (!is.matrix(x)) {
+        #    x <- as.matrix(x)
+        #}
         if (fix) {
             x <- apply(x,c(1,2),gsub,pattern="'",replacement="")
         }
