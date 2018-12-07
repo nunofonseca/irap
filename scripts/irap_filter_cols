@@ -103,9 +103,17 @@ if ( ! opt$is_mtx ) {
     }
     ##
     drop <- which(cols%in%names(failed[failed]))
-    cmd <- paste0("cut --complement --fields ",paste(drop,sep=",",collapse=",")," ",mat.file," > ",out.file)
-    pinfo("Running ",cmd)
-    system(cmd)
+    if (length(drop) <= 1000 ) {
+        cmd <- paste0("cut --complement --fields ",paste(drop,sep=",",collapse=",")," ",mat.file," > ",out.file)
+        pinfo("Running ",cmd)
+        system(cmd)
+    } else {
+        pinfo("Loading matrix...")
+        x <- qload.tsv(mat.file,header=TRUE,drop=drop)
+        pinfo("Loading matrix...done")
+        write.tsv(x,out.file,header=TRUE,gzip=FALSE,fix=FALSE)
+        pinfo("Saved ",out.file)
+    }
 } else {
     ## mtx
     ## load the tsv/sparse matrix
