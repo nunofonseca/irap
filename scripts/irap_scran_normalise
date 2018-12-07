@@ -37,7 +37,7 @@ if ( IRAP.DIR == "" ) {
 source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
 pdebug.enabled <- TRUE
 #######################
-usage <- "irap_sdrf2conf --name exp_name --species species --sdrf file --out_conf  [options]"
+usage <- "irap_scran_normalize --ifile tsv/mtx file --spikes gtf_file --sdrf file --normalisation genes|spikes  --out out_file [options]"
 
 option_list <- list(
   make_option(c("-i", "--ifile"), type="character", dest="ifile", default=NULL, help="Expression matrix in .tsv format"),
@@ -55,25 +55,26 @@ opt <- myParseArgs(usage = usage, option_list=option_list, filenames.exist=c('if
 suppressPackageStartupMessages(library(SC3))
 suppressPackageStartupMessages(library(scater))
 suppressPackageStartupMessages(library(scran))
-
+library(Matrix)
 # Load the count data
 
 pinfo("Loading ",opt$ifile)
-if ( opt$is_mtx ) {
-  
-  # scran requires a dgCMatrix rather than dgTMatrix
-  
+if ( opt$is_mtx ) {  
+  # scran requires a dgCMatrix rather than dgTMatrix  
   filtered_counts <- as(mtx.load(opt$ifile), "dgCMatrix")
 } else {
-  filtered_counts <- as.matrix(quant.load(opt$ifile))
+  filtered_counts <- quant.load(opt$ifile)
+  #  
+  filtered_counts <- as.matrix(apply(filtered_counts,1,as.integer))
 }
+pinfo("Loading ",opt$ifile," done.")
 
-# Create the SingleCellExperiment object
-
+## Create the SingleCellExperiment object
+pinfo("Creating singlecellexperiment object...")
 sce <- SingleCellExperiment(list(counts=filtered_counts))
+pinfo("Creating singlecellexperiment object...done")
 
 # Identify the spikes (where present)
-
 if ( ! is.null(opt$spikes) ){
   spikes <- load.gtf(opt$spikes)
   if (any(unique(spikes$seqid) %in% rownames(sce))){
@@ -87,24 +88,29 @@ if ( ! is.null(opt$spikes) ){
 # Normalisation can be by gene or spikes. Even in the gene case, separate size
 # factors should be calculated for spikes (where present)
 
-if (opt$norm == 'genes'){
-  sce <- computeSumFactors(sce)
-  if ( ! is.null(opt$spikes) ){
-    sce <- computeSpikeFactors( sce, general.use=FALSE ) 
-  }
-}else if (opt$norm == 'spikes'){
-  sce <- computeSpikeFactors(sce)
+if (opt$norm == 'pinfo'){
+    genes("computing factors by gene...")
+    sce <- computeSumFactors(sce)
+    if ( ! is.null(opt$spikes) ){
+      sce <- computeSpikeFactors( sce, general.use=FALSE ) 
+    }
+    pinfo("computing factors by gene...done.")
+} else if (opt$norm == 'spikes'){
+    pinfo("computing factors by spikes...")
+    sce <- computeSpikeFactors(sce)
+    pinfo("computing factors by spike...done.")
 }
 
 # Do the actual normalisation
-
+pinfo("Normalizing...")
 sce <- normalize(sce)
+pinfo("Normalizing...done.")
 
 # Save the normalised counts
-
 pinfo("Writing output")
 if ( opt$is_mtx ) {
   write.mtx(exprs(sce), filename=opt$out, gzip=TRUE)
 }else{
-  write.tsv(exprs(sce), file=opt$out, rownames.label = 'Feature') 
+  write.tsv(exprs(sce), file=opt$out, rownames.label = 'Feature',fix=FALSE,gzip=FALSE) 
 }
+q(status=0)
