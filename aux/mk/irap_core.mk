@@ -2719,7 +2719,7 @@ define exclude_empty=
 $(foreach f,$(1), $(if $(call is_empty_file,$(f)),,$(f)))
 endef
 
-define stage3_tracks_targets=
+define get_stage3_tracks_targets=
 $(subst .$(expr_ext),.$(expr_ext).tracks,$(call exclude_empty,$(STAGE3_TSV_FILES)))
 endef
 
