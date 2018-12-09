@@ -196,7 +196,8 @@ function is_all_done {
     conf=$(id2conf_fp $id)
 
     pushd $run_dir >/dev/null
-    irap_sc conf=$conf atlas_bundle 1>&2
+    ## no check to speed the run
+    irap_sc conf=$conf nocheck atlas_bundle 1>&2
     let ret=$?
     ##echo ret=$ret > /dev/stderr
     popd >/dev/null
@@ -348,7 +349,7 @@ for f in $SDRF_FILES; do
 	    fi
 	    ;;
 	rerunb)
-	    run_wrapper $id runb $run_dir bsub -M $MEM irap_sc conf=$conf atlas_bundle
+	    run_wrapper $id runb $run_dir bsub -M $MEM irap_sc conf=$conf nocheck atlas_bundle
 	    ;;
 	runa) s=`status_wrapper $id`
 	      if [ "$s-" == "DONE-" ]; then
