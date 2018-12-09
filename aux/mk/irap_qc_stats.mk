@@ -95,13 +95,32 @@ clean_quality_filtering_and_report:
 MAPPING_REPORT_PRE_STATS=
 ifneq ($(mapper),none)
 ifneq ($(deps_check),nocheck)
+ifneq ($(transcriptome_alignment_only),n)
+# only get stats (gene, exon, ...) when the alignments were made against the genome
 MAPPING_REPORT_PRE_STATS:=$(foreach s,$(se),$(call lib2bam_folder,$(s))$(s).se.hits.bam.stats.csv) $(foreach s,$(pe),$(call lib2bam_folder,$(s))$(s).pe.hits.bam.stats.csv  )
 endif
-$(mapper_toplevel_folder)/libs_qc.tsv: $(mapper_toplevel_folder)/stats_raw.tsv $(mapper_toplevel_folder)/stats_perc.tsv  $(mapper_toplevel_folder)/featstats_raw.tsv  $(mapper_toplevel_folder)/featstats_perc.tsv   $(mapper_toplevel_folder)/genestats_raw.tsv 
+endif
+
+LIBS_QC_REQS=$(mapper_toplevel_folder)/stats_raw.tsv $(mapper_toplevel_folder)/stats_perc.tsv  
+
+ifeq ($(transcriptome_alignment_only),n)
+LIBS_QC_REQS+=$(mapper_toplevel_folder)/featstats_raw.tsv  $(mapper_toplevel_folder)/featstats_perc.tsv   $(mapper_toplevel_folder)/genestats_raw.tsv
+$(mapper_toplevel_folder)/libs_qc.tsv: $(LIBS_QC_REQS)
 	irap_append2tsv --in "$(mapper_toplevel_folder)/stats_raw.tsv $(mapper_toplevel_folder)/featstats_raw.tsv $(mapper_toplevel_folder)/genestats_raw.tsv" --exclude_aggr  --cols_not_sorted --out $@.1.tmp &&\
 	irap_append2tsv --in "$(mapper_toplevel_folder)/stats_perc.tsv $(mapper_toplevel_folder)/featstats_perc.tsv $(mapper_toplevel_folder)/genestats_perc.tsv" --exclude_aggr --add_row_suffix "_perc" --cols_not_sorted --out $@.2.tmp && \
 	irap_append2tsv --in "$@.1.tmp $@.2.tmp" --exclude_aggr --transpose --out $@.tmp && mv $@.tmp $@ &&\
 	rm -f $@.1.tmp $@.2.tmp
+else
+## alignment to transcripts
+$(mapper_toplevel_folder)/libs_qc.tsv: $(LIBS_QC_REQS)
+	irap_append2tsv --in "$(mapper_toplevel_folder)/stats_raw.tsv " --exclude_aggr  --cols_not_sorted --out $@.1.tmp &&\
+	irap_append2tsv --in "$(mapper_toplevel_folder)/stats_perc.tsv  " --exclude_aggr --add_row_suffix "_perc" --cols_not_sorted --out $@.2.tmp && \
+	irap_append2tsv --in "$@.1.tmp $@.2.tmp" --exclude_aggr --transpose --out $@.tmp && mv $@.tmp $@ &&\
+	rm -f $@.1.tmp $@.2.tmp
+
+endif
+## endif($(transcriptome_alignment_only),n)
+
 else
 # empty file
 $(mapper_toplevel_folder)/libs_qc.tsv:
@@ -136,8 +155,11 @@ $(mapper_toplevel_folder)/genestats_raw%tsv $(mapper_toplevel_folder)/genestats_
 	$(call pass_args_stdin,merge_featstats,$(mapper_toplevel_folder)/genestats_raw.tsv, --stats "$(call remove_spaces,$(foreach p,$(pe),;$(call lib2bam_folder,$(p))$(p).pe.hits.bam.gene.stats))$(call remove_spaces,$(foreach p,$(se),;$(call lib2bam_folder,$(p))$(p).se.hits.bam.gene.stats))"  --labels "$(call remove_spaces,$(foreach p,$(pe) $(se),;$(p)))"  --out $(mapper_toplevel_folder)/$(mapper).gtmp) && mv $(mapper_toplevel_folder)/$(mapper).gtmp_featstats_perc.tsv $(mapper_toplevel_folder)/genestats_perc.tsv && mv $(mapper_toplevel_folder)/$(mapper).gtmp_featstats_raw.tsv $(mapper_toplevel_folder)/genestats_raw.tsv 
 
 ################
-
+#
 # statistics per bam file
+#
+ifeq ($(transcriptome_alignment_only),n)
+# 
 %.bam.gff3: %.bam $(gff3_file_abspath).filt.gff3 $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.sorted.txt
 	bedtools coverage -counts -sorted  -a $(gff3_file_abspath).filt.gff3 -b $< -g  $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.sorted.txt > $@.tmp  &&\
 	mv $@.tmp $@
@@ -155,6 +177,14 @@ $(mapper_toplevel_folder)/genestats_raw%tsv $(mapper_toplevel_folder)/genestats_
 	bedtools intersect -sorted -g $(auxdata_toplevel_folder)/$(reference_basename).chr_sizes.sorted.txt -abam $<  -b $(auxdata_toplevel_folder)/$(reference_basename).introns.bed |samtools view -c - >> $@.tmp && echo >> $@ && \
 	expr `wc -l $@.tmp | cut -f 1 -d\ ` == 2 && \
 	mv $@.tmp $@
+
+else
+
+%.bam.stats: %.bam
+	echo WIP
+	touch $@
+
+endif
 
 # bed files required to get some extra stats
 # exons.bed
