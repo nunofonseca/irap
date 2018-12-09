@@ -1546,6 +1546,10 @@ mtx.load <- function(f,rows.file=NULL, cols.file=NULL,col.suffix="_cols",row.suf
         return(NULL)
     }
     pinfo("Read ",f,"(rows, cols) :",paste(dim(mtx),collapse=","))
+    if (ncol(mtx)<1) {
+        pwarning("Got an empty matrix while reading ",f)
+        return(matrix(nrow=0,ncol=0))    
+    }
     tryCatch(close(con),error=function(x) return(NULL))
     ## read the extra files
     rows.m <- qload.tsv(rows.file,header=FALSE)
