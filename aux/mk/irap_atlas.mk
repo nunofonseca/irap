@@ -40,7 +40,7 @@ ifneq ($(mapper),none)
 ATLAS_SC_FILES+=$(mapper_toplevel_folder)/libs_qc.tsv
 endif
 # mtx - always
-EXPR_FILES=$(quant_toplevel_folder)/genes.raw.$(quant_method).mtx.gz $(quant_toplevel_folder)/genes.uraw.$(quant_method).mtx.gz $(quant_toplevel_folder)/genes.raw.$(quant_method).mtx_cols.gz $(quant_toplevel_folder)/genes.raw.$(quant_method).mtx_cols.gz $(quant_toplevel_folder)/genes.$(quant_norm_method).$(quant_method).$(quant_norm_tool).$(expr_ext) $(filtered_expr_matrices)
+EXPR_FILES=$(quant_toplevel_folder)/genes.raw.$(quant_method).mtx.gz $(quant_toplevel_folder)/genes.uraw.$(quant_method).mtx.gz $(quant_toplevel_folder)/genes.uraw.$(quant_method).mtx_cols.gz $(quant_toplevel_folder)/genes.uraw.$(quant_method).mtx_cols.gz  $(quant_toplevel_folder)/genes.raw.$(quant_method).mtx_cols.gz $(quant_toplevel_folder)/genes.raw.$(quant_method).mtx_cols.gz $(quant_toplevel_folder)/genes.$(quant_norm_method).$(quant_method).$(quant_norm_tool).$(expr_ext) $(filtered_expr_matrices)
 ifeq ($(transcript_quant),y)
 EXPR_FILES+=$(quant_toplevel_folder)/transcripts.raw.$(quant_method).$(expr_ext) $(quant_toplevel_folder)/transcripts.uraw.$(quant_method).$(expr_ext) $(quant_toplevel_folder)/transcripts.$(quant_norm_method).$(quant_method).$(quant_norm_tool).$(expr_ext)
 endif
@@ -56,12 +56,15 @@ atlas_sc_wrap_up: atlas_bundle
 
 sc_bundle_dir=$(name)/sc_bundle
 ## single cell bundle
-atlas_bundle: $(sc_bundle_dir)/  $(ATLAS_SC_FILES) $(EXPR_FILES)
+atlas_bundle: $(sc_bundle_dir)/bundle.complete
+
+$(sc_bundle_dir)/bundle.complete: $(sc_bundle_dir)/  $(ATLAS_SC_FILES) $(EXPR_FILES)
 	cp -ar $(ATLAS_SC_FILES) $(sc_bundle_dir) 
 	cp -ar $(sort $(EXPR_FILES)) $(sc_bundle_dir)
+	touch $@
 ifneq ($(sc_quant_viz),none)
 	cp -ar $(quant_toplevel_folder)/genes.raw.filtered.$(quant_method).*tsne_perp*.tsv $(sc_bundle_dir)
-	cp -ar $(subst .clusters.tsv,*_marker_genes.tsv,$(clustering_files)) $(sc_bundle_dir)
+	cp -ar $(subst .clusters.tsv,*_marker_genes.tsv,$(clustering_files)) $(sc_bundle_dir)	
 
 $(sc_bundle_dir)/: 
 	mkdir -p $@
@@ -69,8 +72,10 @@ $(sc_bundle_dir)/:
 
 endif 
 
+ifneq ($(expr_ext),mtx.gz)
 %.mtx.gz %.mtx_cols.gz %.mtx_rows.gz: %.tsv
 	irap_tsv2mtx --tsv $< --out $*.tmp.mtx && mv $*.tmp.mtx.gz $*.mtx.gz  && mv $*.tmp.mtx_cols.gz  $*.mtx_cols.gz  && mv $*.tmp.mtx_rows.gz  $*.mtx_rows.gz 
+endif
 
 # Reduce the resolution of some images
 ATLAS_IMAGES2CONVERT=$(shell ls --color=never -1 $(report_toplevel_folder)/read_filtering_plot.png $(if $(call GEN_REPORT_QC_ONLY),,$(report_toplevel_folder)/mapping/$(mapper)*.png) 2>/dev/null | grep -v orig.png | grep -v scaled.png )
