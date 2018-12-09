@@ -1346,6 +1346,15 @@ ifeq ($(droplet_based_sc_protocol),y)
 ifneq ($(technical_replicates),)
 $(call p_info,technical replicates information ignored for droplet-based data)
 endif
+$(quant_toplevel_folder)/genes.raw.$(quant_method).mtx.gz $(quant_toplevel_folder)/genes.raw.$(quant_method).mtx_cols.gz $(quant_toplevel_folder)/genes.raw.$(quant_method).mtx_rows.gz: $(quant_toplevel_folder)/genes.uraw.$(quant_method).mtx.gz $(quant_toplevel_folder)/genes.uraw.$(quant_method).mtx_cols.gz $(quant_toplevel_folder)/genes.uraw.$(quant_method).mtx_rows.gz
+	cp $(quant_toplevel_folder)/genes.uraw.$(quant_method).mtx.gz $(quant_toplevel_folder)/genes.raw.$(quant_method).mtx.gz
+	cp $(quant_toplevel_folder)/genes.uraw.$(quant_method).mtx_cols.gz $(quant_toplevel_folder)/genes.raw.$(quant_method).mtx_cols.gz
+	cp $(quant_toplevel_folder)/genes.uraw.$(quant_method).mtx_rows.gz $(quant_toplevel_folder)/genes.raw.$(quant_method).mtx_rows.gz
+
+$(quant_toplevel_folder)/transcripts.raw.$(quant_method).mtx.gz $(quant_toplevel_folder)/transcripts.raw.$(quant_method).mtx_cols.gz $(quant_toplevel_folder)/transcripts.raw.$(quant_method).mtx_rows.gz: $(quant_toplevel_folder)/transcripts.uraw.$(quant_method).mtx.gz $(quant_toplevel_folder)/transcripts.uraw.$(quant_method).mtx_cols.gz $(quant_toplevel_folder)/transcripts.uraw.$(quant_method).mtx_rows.gz
+	cp $(quant_toplevel_folder)/transcripts.uraw.$(quant_method).mtx.gz $(quant_toplevel_folder)/transcripts.raw.$(quant_method).mtx.gz
+	cp $(quant_toplevel_folder)/transcripts.uraw.$(quant_method).mtx_cols.gz $(quant_toplevel_folder)/transcripts.raw.$(quant_method).mtx_cols.gz
+	cp $(quant_toplevel_folder)/transcripts.uraw.$(quant_method).mtx_rows.gz $(quant_toplevel_folder)/transcripts.raw.$(quant_method).mtx_rows.gz
 else
 ifeq ($(technical_replicates),)
 ## no technical replicates
