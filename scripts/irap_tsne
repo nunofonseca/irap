@@ -89,6 +89,14 @@ if ( opt$is_mtx ) {
 }
 pinfo("Loading ",opt$ifile," done.")
 
+
+if ( !is.null(table) || ncol(table)==0) {
+    # empty file...
+    pwarning("Empty input matrix...quitting")
+    write.table(matrix(ncol=0,nrow=0), file = paste0(out.prefix, "_tsne_perp_", 5, ".tsv"), row.names=FALSE, quote=FALSE, sep="\t")
+
+    q(status=0)
+}
 # Remove any indicated spikes
 
 if ( ! is.null(opt$spikes) ){
@@ -104,7 +112,6 @@ if ( ! is.null(opt$spikes) ){
 }
 
 # Check the final matrix size
-
 if ( is.null(table) || ncol(table)<=3) {
     perror("Number of samples/cells too small (",ncol(table),")")
     q(status=1)
