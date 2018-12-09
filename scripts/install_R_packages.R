@@ -67,6 +67,9 @@ cat("Installing packages:\n")
 biocLite("Rcpp",ask=FALSE, suppressUpdates=FALSE)
 install.packages("http://cran.rstudio.com/src/contrib/00Archive/RcppArmadillo/RcppArmadillo_0.6.600.4.0.tar.gz")
 
+# hdf5r requires a version of hdf5 lib too recent
+biocLite("https://stat.ethz.ch/CRAN/src/contrib/00Archive/hdf5r/hdf5r_1.0.0.tar.gz",suppressUpdates=c("^RcppArmadillo"))
+B
 # 
 
 # Include the main packages in irap_gen_version_mk.sh
@@ -82,7 +85,7 @@ packages2install<-c("intervals","gclus",'R2HTML',"agricolae","bit64",
                     "scran", "Seurat")
 for (p in packages2install ) {
   cat("PACKAGE:",p,"\n")
-  biocLite(p,ask=FALSE, suppressUpdates=c("^RcppArmadillo"))
+  biocLite(p,ask=FALSE, suppressUpdates=c("^RcppArmadillo","^hdf5r"))
 }
 # http://bioconductor.org/packages/2.13/data/annotation/src/contrib/GO.db_2.10.1.tar.gz fails to install
 #biocLite('GO.db',ask=FALSE, suppressUpdates=TRUE)
@@ -113,7 +116,7 @@ species2db<-matrix(c('org.Ag.eg.db','Anopheles',
                      'org.Xl.eg.db','Xenopus'),byrow=T,ncol=2)
 colnames(species2db)<-c("db","species")
 for (p in species2db[,'db']) {
-  biocLite(p,ask=FALSE,, suppressUpdates=c("^RcppArmadillo"))
+  biocLite(p,ask=FALSE,, suppressUpdates=c("^RcppArmadillo","^hdf5r"))
 }
 
 q(status=0)
