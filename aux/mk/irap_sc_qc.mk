@@ -52,11 +52,17 @@ endif
 filter_cells: $(filtered_expr_matrices)
 
 ## filter the expression matrix based on the QC outcome
-$(quant_toplevel_folder)/genes.raw.filtered.$(quant_method).$(expr_ext): $(quant_toplevel_folder)/genes.raw.$(quant_method).$(expr_ext) $(quant_toplevel_folder)/genes.raw.$(quant_method).qc.tsv
-	(irap_filter_cols  -i $< -o $@.tmp --$(expr_format) --qc $(quant_toplevel_folder)/genes.raw.$(quant_method).qc.tsv && mv $@.tmp $@ ) || (rm -f $@ && exit 1)
+$(quant_toplevel_folder)/genes.raw.filtered.$(quant_method).tsv: $(quant_toplevel_folder)/genes.raw.$(quant_method).tsv $(quant_toplevel_folder)/genes.raw.$(quant_method).qc.tsv
+	(irap_filter_cols  -i $< -o $@.tmp --tsv --qc $(quant_toplevel_folder)/genes.raw.$(quant_method).qc.tsv && mv $@.tmp $@ ) || (rm -f $@ && exit 1)
 
-$(quant_toplevel_folder)/transcripts.raw.filtered.$(quant_method).$(expr_ext): $(quant_toplevel_folder)/transcripts.raw.$(quant_method).$(expr_ext) $(quant_toplevel_folder)/transcripts.raw.$(quant_method).qc.tsv
-	irap_filter_cols  -i $< -o $@ --$(expr_format) --qc $(quant_toplevel_folder)/transcripts.raw.$(quant_method).qc.tsv  || (rm -f $@ && exit 1)
+$(quant_toplevel_folder)/genes.raw.filtered.$(quant_method).mtx.gz: $(quant_toplevel_folder)/genes.raw.$(quant_method).mtx.gz $(quant_toplevel_folder)/genes.raw.$(quant_method).qc.tsv
+	(irap_filter_cols  -i $< -o $(subst .gz,,$@) --mtx --qc $(quant_toplevel_folder)/genes.raw.$(quant_method).qc.tsv ) || (rm -f $@ && exit 1)
+
+$(quant_toplevel_folder)/transcripts.raw.filtered.$(quant_method).tsv: $(quant_toplevel_folder)/transcripts.raw.$(quant_method).tsv $(quant_toplevel_folder)/transcripts.raw.$(quant_method).qc.tsv
+	irap_filter_cols  -i $< -o $@ --tsv --qc $(quant_toplevel_folder)/transcripts.raw.$(quant_method).qc.tsv  || (rm -f $@ && exit 1)
+
+$(quant_toplevel_folder)/transcripts.raw.filtered.$(quant_method).mtx.gz: $(quant_toplevel_folder)/transcripts.raw.$(quant_method).mtx.gz $(quant_toplevel_folder)/transcripts.raw.$(quant_method).qc.tsv
+	irap_filter_cols  -i $< -o $@ --mtx --qc $(quant_toplevel_folder)/transcripts.raw.$(quant_method).qc.tsv  || (rm -f $@ && exit 1)
 
 # STAGE4_OFILES+=
 # STAGE4_TARGETS+=
