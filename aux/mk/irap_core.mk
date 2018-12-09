@@ -376,6 +376,10 @@ def_quant_norm_libsize_tool?=none
 # produce quantification per exon? default is gene level or transcript level depending on the method used
 def_exon_quant?=n
 def_transcript_quant?=n
+def_transcriptome_alignment_only?=n
+
+# alignment is made only against the transcripts = only active when kallisto is used
+transcriptome_alignment_only?=$(def_transcriptome_alignment_only)
 
 # maximum number of hits reported by the mapper
 def_max_hits?=10
@@ -1200,6 +1204,8 @@ SUPPORTED_MAPPERS+= kallisto
 ifeq ($(mapper),kallisto)
 # aligns to the transcriptome
 mapper_splicing=no
+# alignment is made to the transcripts
+transcriptome_alignment_only=y
 endif
 endif
 
