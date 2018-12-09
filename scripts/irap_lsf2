@@ -143,13 +143,14 @@ stop_now 1 $wfb $wf1
 
 ## stage3
 let ip=$THREADS/2+1
-IRAP_PARAMS="$IRAP_PARAMS_O -j $ip"
+## nocheck since all lib specific targets should be complete
+IRAP_PARAMS="$IRAP_PARAMS_O -j $ip nocheck"
 MEM=$MEM_O THREADS=$THREADS_O wf2=`submit_jobs4target $wf1 3 stage3 |tail -n 1`
 stop_now 2 $wfb $wf2
 
 ## waves...
 let ip=$THREADS_O/3+1
-IRAP_PARAMS="$IRAP_PARAMS_O -j $ip"
+IRAP_PARAMS="$IRAP_PARAMS_O -j $ip nocheck"
 
 MEM=$MEM_O THREADS=$THREADS_O wf3=`submit_jobs4target $wf2 3_7 run_wave_1 run_wave_2 run_wave_3 run_wave_4 run_wave_5 run_wave_6 run_wave_7 |tail -n 1`
 
