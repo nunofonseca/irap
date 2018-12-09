@@ -146,7 +146,7 @@ tot.expr <- Matrix::colSums(table[genes.expressed,,drop=FALSE],na.rm=TRUE)
 
 ## ERCCs
 if ( ! is.null(ercc.feat) && opt$max_ERCC>0 ) {
-    pinfo("Percentage of expression of control genes - max. expression:",opt$max_ERCC)
+    pinfo("Percentage of expression of control genes - max. % expression per cell:",opt$max_ERCC)
     tot.ercc.expr <- Matrix::colSums(table[ercc.feat,,drop=FALSE],na.rm=TRUE)
     pct.ercc.expr <- round(tot.ercc.expr/tot.expr*100,0)
     print(summary(pct.ercc.expr))
