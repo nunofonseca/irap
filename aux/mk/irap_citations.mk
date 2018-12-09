@@ -87,7 +87,7 @@ quant_norm_deseq=DESeq
 quant_norm_irap=IRAP
 
 # Method for making normalised counts
-
+quant_norm_libsize_method_none=empty
 quant_norm_libsize_method_scran_gene=scran
 quant_norm_libsize_method_scran_spike=scran
 
