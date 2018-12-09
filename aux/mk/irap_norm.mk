@@ -104,16 +104,30 @@ $(quant_toplevel_folder)/%.nlib.none.tsv:
 	@$(call empty_file,$@)
 
 $(quant_toplevel_folder)/%.none.$(quant_method).tsv: $(quant_toplevel_folder)/%.raw.filtered.$(quant_method).tsv
-	rm -f $@ && ln -s $< $@
+	rm -f $@ && ln -s $(abspath $<) $@
 
-$(quant_toplevel_folder)/%.none.$(quant_method).mtx.gz: $(quant_toplevel_folder)/%.raw.filtered.$(quant_method).mtx.gz
-	rm -f $@ && ln -s $< $@
+$(quant_toplevel_folder)/%.none.$(quant_method).mtx.gz: $(quant_toplevel_folder)/%.raw.filtered.$(quant_method).mtx.gz $(quant_toplevel_folder)/%.raw.filtered.$(quant_method).mtx_cols.gz $(quant_toplevel_folder)/%.raw.filtered.$(quant_method).mtx_rows.gz
+	rm -f $@ && ln -s $(abspath $<) $@ && touch $@
 
 $(quant_toplevel_folder)/%.none.$(quant_method).mtx_cols.gz: $(quant_toplevel_folder)/%.raw.filtered.$(quant_method).mtx_cols.gz
-	rm -f $@ && ln -s $< $@
+	rm -f $@ && ln -s $(abspath $<) $@
 
 $(quant_toplevel_folder)/%.none.$(quant_method).mtx_rows.gz: $(quant_toplevel_folder)/%.raw.filtered.$(quant_method).mtx_rows.gz
-	rm -f $@ && ln -s $< $@
+	rm -f $@ && ln -s $(abspath $<) $@
+
+
+###
+$(quant_toplevel_folder)/%.none.$(quant_method).none.tsv: $(quant_toplevel_folder)/%.raw.filtered.$(quant_method).tsv
+	rm -f $@ && ln -s $(abspath $<) $@
+
+$(quant_toplevel_folder)/%.none.$(quant_method).none.mtx.gz: $(quant_toplevel_folder)/%.raw.filtered.$(quant_method).mtx.gz $(quant_toplevel_folder)/%.raw.filtered.$(quant_method).mtx_cols.gz $(quant_toplevel_folder)/%.raw.filtered.$(quant_method).mtx_rows.gz
+	rm -f $@ && ln -s $(abspath $<) $@ && touch $@
+
+$(quant_toplevel_folder)/%.none.$(quant_method).none.mtx_cols.gz: $(quant_toplevel_folder)/%.raw.filtered.$(quant_method).mtx_cols.gz
+	rm -f $@ && ln -s $(abspath $<) $@
+
+$(quant_toplevel_folder)/%.none.$(quant_method).none.mtx_rows.gz: $(quant_toplevel_folder)/%.raw.filtered.$(quant_method).mtx_rows.gz
+	rm -f $@ && ln -s $(abspath $<) $@
 
 
 ################################################################################
