@@ -1,11 +1,12 @@
 #!/bin/bash
-set -e
+set -e -o pipefail
 # Collect and save the versions of the software installed
 install_script=../scripts/irap_install.sh
 DEST_FILE=$IRAP_DIR/aux/mk/irap_versions.mk
 
 echo  "# Generated `date` " > $DEST_FILE
-grep "VERSION=" $IRAP_DIR/scripts/irap_install.sh |sort -u | grep -v "^#"| sed -e "s/^ *//" >> $DEST_FILE
+grep -E "^[^\s]+_VERSION=" $IRAP_DIR/scripts/irap_install.sh |sort -u | grep -v "^#"| sed -e "s/^ *//" >> $DEST_FILE
+echo "# R packages" >> $DEST_FILE
 # R packages
 if [ "`which R 2>/dev/null`-" = "-" ]; then
     echo "R not found"  1>&2
