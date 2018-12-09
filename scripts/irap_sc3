@@ -157,12 +157,16 @@ if (!do.clustering) {
   clusters_by_k <- data.frame(cbind(data.frame(sel.K = (ks == sel.k), K=ks), t(as.matrix(colData(sce)[,paste0("sc3_",ks,"_clusters")]))), check.names = FALSE)
 }
 
+# save the cluster(s)
+out.prefix <- opt$out
 if (nrow(clusters_by_k)==0) {
-  pwarning("No clusters generated.")
-  q(status=0)
+    pwarning("No clusters generated.")
+    ofile <- paste0(out.prefix, "_clusters.tsv")
+    write.table(clusters_by_k, file=ofile, sep="\t", row.names=FALSE, col.names=TRUE, quote=FALSE)
+    pinfo("Created empty file ",ofile)
+    q(status=0)
 }else{
-  # save the cluster(s)
-  out.prefix <- opt$out
+
   ofile <- paste0(out.prefix, "_clusters.tsv")
   write.table(clusters_by_k, file=ofile, sep="\t", row.names=FALSE, col.names=TRUE, quote=FALSE)
   pinfo("Created ",ofile)
