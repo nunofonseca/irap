@@ -106,7 +106,7 @@ $(call p_error,Unable to get transcript level quantification while using "umis".
 endif
 
 # Generate a single matrix
-$(quant_toplevel_folder)/genes.raw.$(quant_method).mtx.gz: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).mtx.gz) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).mtx.gz) 
+$(quant_toplevel_folder)/genes.uraw.$(quant_method).mtx.gz: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).mtx.gz) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).mtx.gz) 
 	( $(call pass_args_stdin,irap_merge_mtx,$@,-o $@ --all_feat $(mapTrans2gene) --all_feat_col 1 --in "$^") ) || ( rm -f $@ && exit 1)
 
 
@@ -148,12 +148,12 @@ $(foreach l,$(se),$(eval $(call make-iumi-count-rule,$(l),$(l).se,transcript,2))
 $(foreach l,$(pe),$(eval $(call make-iumi-count-rule,$(l),$(l).pe,transcript,2)))
 endif
 ## 
-$(quant_toplevel_folder)/transcripts.raw.$(quant_method).mtx.gz: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).mtx.gz) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).mtx.gz)
+$(quant_toplevel_folder)/transcripts.uraw.$(quant_method).mtx.gz: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.transcripts.raw.$(quant_method).mtx.gz) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.transcripts.raw.$(quant_method).mtx.gz)
 	( $(call pass_args_stdin,irap_merge_mtx,$@, -o $@ --all_feat $(mapTrans2gene) --all_feat_col 2 --in "$^") ) || ( rm -f $@ && exit 1)
 endif
 
 # Generate a single matrix
-$(quant_toplevel_folder)/genes.raw.$(quant_method).mtx.gz: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).mtx.gz) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).mtx.gz) 
+$(quant_toplevel_folder)/genes.uraw.$(quant_method).mtx.gz: $(foreach p,$(pe),$(call lib2quant_folder,$(p))$(p).pe.genes.raw.$(quant_method).mtx.gz) $(foreach s,$(se), $(call lib2quant_folder,$(s))$(s).se.genes.raw.$(quant_method).mtx.gz) 
 	( $(call pass_args_stdin,irap_merge_mtx,$@, -o $@ --all_feat_col 1 --all_feat $(mapTrans2gene) --in "$^") ) || ( rm -f $@ && exit 1)
 
 
