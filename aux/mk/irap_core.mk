@@ -1051,7 +1051,7 @@ tsne_max_perplexity?=35
 ## Only used in sc mode
 min_clusters?=2
 max_clusters?=2
-clustering_method:=sc3
+clustering_method?=none
 
 
 # Optional two column tsv file with cell annotations 
