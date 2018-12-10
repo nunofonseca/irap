@@ -172,7 +172,7 @@ cell_filt_max_ERCC?=30
 ## minimum expression per feature
 cell_filt_min_expression=1
 
-cell_filt_outliers=y
+cell_filt_outliers=n
 cell_outliers_mad=5
 ## minimum number of reads per cell
 cell_filt_min_tot_expr=1000 
