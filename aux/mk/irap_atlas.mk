@@ -59,12 +59,14 @@ sc_bundle_dir=$(name)/sc_bundle
 atlas_bundle: $(sc_bundle_dir)/bundle.complete
 
 $(sc_bundle_dir)/bundle.complete: $(sc_bundle_dir)/  $(ATLAS_SC_FILES) $(EXPR_FILES)
-	cp -ar $(ATLAS_SC_FILES) $(sc_bundle_dir) 
+	cp -ar $(sort $(ATLAS_SC_FILES)) $(sc_bundle_dir) 
 	cp -ar $(sort $(EXPR_FILES)) $(sc_bundle_dir)
-	touch $@
 ifneq ($(sc_quant_viz),none)
-	cp -ar $(quant_toplevel_folder)/genes.raw.filtered.$(quant_method).*tsne_perp*.tsv $(sc_bundle_dir)
-	cp -ar $(subst .clusters.tsv,*_marker_genes.tsv,$(clustering_files)) $(sc_bundle_dir)	
+	cp -ar  $(quant_toplevel_folder)/genes.raw.filtered.$(quant_method).*tsne_perp*.tsv $(sc_bundle_dir)
+ifneq ($(clustering_method),none)
+	cp -ar $(sort $(subst.clusters.tsv,*_marker_genes.tsv,$(clustering_files))) $(sc_bundle_dir)
+endif
+	touch $@
 
 $(sc_bundle_dir)/: 
 	mkdir -p $@
