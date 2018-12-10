@@ -33,7 +33,7 @@ endif
 # generate the QC files
 cell_qc: $(cell_qc_files)
 
-irap_cell_qc_params=$(if $(cell_filt_controls),--controls "$(cell_filt_controls)") --min_features $(cell_filt_min_features) $(if $(subst y,,$(cell_filt_outliers)),--filt_outliers) --max_ERCC $(cell_filt_max_ERCC) --min_counts $(cell_filt_min_tot_expr) --min_expression $(cell_filt_min_expression)  -M $(cell_outliers_mad)
+irap_cell_qc_params=$(if $(cell_filt_controls),--controls "$(cell_filt_controls)") --min_features $(cell_filt_min_features) $(if $(filter $(strip $(cell_filt_outliers)),y),--filt_outliers) --max_ERCC $(cell_filt_max_ERCC) --min_counts $(cell_filt_min_tot_expr) --min_expression $(cell_filt_min_expression)  -M $(cell_outliers_mad)
 
 $(quant_toplevel_folder)/genes.raw.$(quant_method).qc.tsv: $(quant_toplevel_folder)/genes.raw.$(quant_method).$(expr_ext) $(cell_filt_controls)
 	irap_cell_qc --$(expr_format) -i $< --out $@ $(irap_cell_qc_params) || (rm -f $@* && exit 1)
