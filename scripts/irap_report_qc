@@ -367,6 +367,9 @@ pinfo("Loading ",fastqc.sum.tsv," done.")
 
 if ( is.null(fastqc.sum) ) {
     pinfo("Nothing to do, qc was probably set to off hence there are no QC stats")
+    pinfo("Generating an empty file")
+    ## save an empty file to avoid trying multiple times
+    write.table(matrix(ncol=0,nrow=0),file=paste(report.dir,"qc.tsv",sep=""))
     q(status=0)
 }
 
