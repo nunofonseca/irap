@@ -39,6 +39,7 @@ cell_filt_min_features?=10
 cell_filt_max_ERCC?=50
 ## minimum expression per feature
 cell_filt_min_expression=1
+cell_filt_outliers=n
 cell_outliers_mad=5
 ## minimum number of reads per cell
 cell_filt_min_tot_expr=100
@@ -58,7 +59,7 @@ bam_umi_count_params?=--min_reads 1 --min_umis 1
 ##
 quant_norm_libsize_tool?=none
 quant_norm_libsize_method?=none
-
+clustering_method=none
 endef
 
 
@@ -172,7 +173,7 @@ cell_filt_max_ERCC?=30
 ## minimum expression per feature
 cell_filt_min_expression=1
 
-cell_filt_outliers=n
+cell_filt_outliers=y
 cell_outliers_mad=5
 ## minimum number of reads per cell
 cell_filt_min_tot_expr=1000 
@@ -181,6 +182,7 @@ single_cell?=y
 expr_format?=tsv
 expr_ext?=tsv
 
+clustering_method=sc3
 min_clusters?=2
 max_clusters?=5
 endef
