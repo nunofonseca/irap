@@ -1216,6 +1216,7 @@ fix.cufflinks.fpkms <- function(t,id.col=1,value.col=2) {
 #
 write.tsv <- function(x,file,header=TRUE,rownames.label=NULL,fix=TRUE,gzip=FALSE) {
     ##
+    library(data.table)
     if (!is.null(x)) {
         # 2018-12-07
         if (!is.null(x) && ! is.data.frame(x) && ! is.data.table(x)) {
