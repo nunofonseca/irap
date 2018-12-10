@@ -64,7 +64,7 @@ cat("-----------------------------------------------------\n")
 cat("Installing packages:\n")
 
 # Install an older version of the package (required by DEseq2 and DEXseq)
-biocLite("Rcpp",ask=FALSE, suppressUpdates=suppressUpdates=c("^hdf5r"))
+biocLite("Rcpp",ask=FALSE, suppressUpdates=c("^hdf5r"))
 install.packages("http://cran.rstudio.com/src/contrib/00Archive/RcppArmadillo/RcppArmadillo_0.6.600.4.0.tar.gz")
 
 biocLite("hdf5r",ask=FALSE, suppressUpdates=c("^RcppArmadillo"))
@@ -122,7 +122,7 @@ species2db<-matrix(c('org.Ag.eg.db','Anopheles',
                      'org.Xl.eg.db','Xenopus'),byrow=T,ncol=2)
 colnames(species2db)<-c("db","species")
 for (p in species2db[,'db']) {
-  biocLite(p,ask=FALSE,, suppressUpdates=c("^RcppArmadillo","^hdf5r"))
+  biocLite(p,ask=FALSE,suppressUpdates=c("^RcppArmadillo","^hdf5r"))
 }
 
 q(status=0)
