@@ -113,8 +113,8 @@ kallisto_se_fragment_length=200
 
 # Count-based method iRAP must use internally for single cell, e.g. before
 # clustering
-quant_norm_libsize_tool?=scran
-quant_norm_libsize_method?=scran_gene
+quant_norm_libsize_tool=scran
+quant_norm_libsize_method=scran_gene
 
 ## get tsne
 sc_quant_viz:=tsne
