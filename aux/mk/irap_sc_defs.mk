@@ -31,9 +31,18 @@ define set_10x_params=
 mapper?=kallisto
 quant_method?=umi_count
 sc_non_zero_rows?=1
-cell_filt_min_features?=30
-cell_filt_max_ERCC?=75
-cell_filt_outliers?=y
+
+##  cell exclusion criteria
+## minimum number of features expressed as a percentage of the total number of features
+cell_filt_min_features?=10
+## maximum percentage of expression that may be atributed to ERCC spike-ins
+cell_filt_max_ERCC?=50
+## minimum expression per feature
+cell_filt_min_expression=1
+cell_outliers_mad=5
+## minimum number of reads per cell
+cell_filt_min_tot_expr=100
+
 qc?=report
 droplet_based_sc_protocol=y
 # include GX and TX and other tags in the BAM files
