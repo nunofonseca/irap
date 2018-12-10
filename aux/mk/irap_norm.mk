@@ -82,11 +82,17 @@ scran_params+=-s $(spikein_gtf_file)
 scran_dep+=$(spikein_gtf_file)
 endif
 
-$(quant_toplevel_folder)/genes.scran_gene.$(quant_method).$(expr_ext): $(quant_toplevel_folder)/genes.raw.filtered.$(quant_method).$(expr_ext) $(scran_dep)
+$(quant_toplevel_folder)/genes.scran_gene.$(quant_method).tsv: $(quant_toplevel_folder)/genes.raw.filtered.$(quant_method).tsv $(scran_dep)
 	irap_scran_normalise -i $< -o $@.tmp --tsv -n genes $(scran_params) && mv $@.tmp $@
 
-$(quant_toplevel_folder)/transcripts.scran_gene.$(quant_method).$(expr_ext): $(quant_toplevel_folder)/transcripts.raw.filtered.$(quant_method).$(expr_ext) $(scran_dep)
+$(quant_toplevel_folder)/transcripts.scran_gene.$(quant_method).tsv: $(quant_toplevel_folder)/transcripts.raw.filtered.$(quant_method).tsv $(scran_dep)
 	irap_scran_normalise -i $< -o $@.tmp --tsv -n genes $(scran_params) && mv $@.tmp $@
+
+$(quant_toplevel_folder)/genes.scran_gene.$(quant_method).mtx.gz: $(quant_toplevel_folder)/genes.raw.filtered.$(quant_method).mtx.gz $(scran_dep)
+	irap_scran_normalise -i $< -o $@ --mtx -n genes $(scran_params) || (rm -f $@ && exit 1)
+
+$(quant_toplevel_folder)/transcripts.scran_gene.$(quant_method).mtx.gz: $(quant_toplevel_folder)/transcripts.raw.filtered.$(quant_method).mtx.gz $(scran_dep)
+	irap_scran_normalise -i $< -o $@ --mtx -n genes $(scran_params) || (rm -f $@ && exit 1)
 
 # Return normalised count matrices, possibly in addition to another normalisation
 
