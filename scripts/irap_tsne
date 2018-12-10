@@ -90,7 +90,7 @@ if ( opt$is_mtx ) {
 pinfo("Loading ",opt$ifile," done.")
 
 
-if ( !is.null(table) || ncol(table)==0) {
+if ( !is.null(table) && ncol(table)==0) {
     # empty file...
     pwarning("Empty input matrix...quitting")
     write.table(matrix(ncol=0,nrow=0), file = paste0(out.prefix, "_tsne_perp_", 5, ".tsv"), row.names=FALSE, quote=FALSE, sep="\t")
@@ -181,7 +181,7 @@ for (p in perp.values) {
         break
   }
   
-  nbt.res <- RunTSNE(object = nbt, dim.embed = opt$dim, dims.use = 1:opt$pca_components, do.fast = TRUE, perplexity = p)
+  nbt.res <- RunTSNE(object = nbt, dim.embed = opt$dim, dims.use = 1:opt$pca_components, do.fast = TRUE, perplexity = p,check_duplicates = FALSE )
   tsne <- data.frame(nbt.res@dr$tsne@cell.embeddings)
   tsne$Label = rownames(tsne)
   
