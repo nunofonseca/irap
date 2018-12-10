@@ -1,6 +1,6 @@
 FROM fedora:28
 
-ENV IRAP_VERSION=1.0.5d
+ENV IRAP_VERSION=1.0.4
 LABEL iRAP.version="$IRAP_VERSION" maintainer="nuno.fonseca at gmail.com"
 
 # docker build -f Dockerfile -t irap/latest:v0 ..
