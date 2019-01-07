@@ -27,7 +27,7 @@ process.cmdline.args <- function(cmd) {
   usage <- paste(cmd," --tsv file --min min.reads --contrasts contrast.def --labels label1;label2;... --annotation tsv.file [--annot-genes-only --feat gene|transcript --g2t gene2transcript.tsv] --out outprefix ",sep="")
   option_list <- list(
     make_option(c("--independent-filtering"),action="store_true",dest="indfilter",default=FALSE,help="Use independent filtering (DESeq2 only) [default %default]"),
-    make_option(c("-m", "--min"), type="character", dest="min_count", default=NULL,help="exclude genes with counts < min"),
+    make_option(c("-m", "--min"), type="numeric", dest="min_count", default=0,help="exclude genes with counts < min"),
     make_option(c("--contrasts"), type="character", dest="contrasts", default=NULL,help="contrasts definition."),
     make_option(c("--tech-rep"), type="character", dest="tech_replicates", default=NULL,help="technical replicates. E.g., 'L1R1,L1R2;L2R1,L2R2,L2R3'"),
     make_option(c("--labels"), type="character", dest="labels", default=NULL,help="labels/contrasts names/aka factor values"),
@@ -218,6 +218,11 @@ filter.read.counts.table <- function(data,opt) {
     rows.sel <- apply(data,1,max)>opt$min_count ;# filter out the rows with the maximum number of reads under the given threshold
     data.f <- data.f[rows.sel,,drop=FALSE]
     pinfo("Filtering out genes with low counts (<=",opt$min_count,")...done.")
+    pinfo("nrows=",nrow(data.f)," ncols=",ncol(data.f))
+    if (nrow(data.f)<=1) {
+        perror("No data left after filtering")
+        q(status=1)
+    }
   }
   if(opt$only.annot.genes) {
     pinfo("Filtering out genes not in annotation file...")
