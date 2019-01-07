@@ -485,7 +485,7 @@ if ( opt$is_sc ) {
     }
     pp <- unique(as.character(sdrf[,normalize.cols("library_construction")]))
     ## smart-seq2 and smarter
-    supported.single.cell.protocols <- c("smart-seq2","smarter","smart-like","10xv2")
+    supported.single.cell.protocols <- c("smart-seq2","smarter","smart-like","10xv2","10xv1","drop-seq","10xv1a")
     not.in.pp <- pp[!tolower(pp)%in%supported.single.cell.protocols]
     if ( length(not.in.pp) ) {
         perror("SDRF: Unsupported single cell protocol ",not.in.pp)
