@@ -436,6 +436,7 @@ echo "SUBMITTED_FILE_NAME=$ALT_NAME_COL"
 # files to download
 FASTQ_COL=
 FASTQ_COL=`get_column $SDRF_FILE_FP "[FASTQ_URI]" ''`
+FASTQ_COL=${FASTQ_COL// /,}
 echo "FASTQ_URI=$FASTQ_COL"
 if [ "$FASTQ_COL-" == "-" ]; then
     ##Comment[ArrayExpress FTP file]
@@ -445,6 +446,7 @@ if [ "$FASTQ_COL-" == "-" ]; then
 	perror "FASTQ_URI and ArrayExpress FTP file columns not found"
 	exit 1
     fi
+    FASTQ_COL=${FASTQ_COL// /,}
     echo "FASTQ_LOCATION=$FASTQ_COL"
 fi
 
