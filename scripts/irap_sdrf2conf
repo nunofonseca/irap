@@ -79,7 +79,6 @@ checkFiles <- function(filenames.v,validator.cmd="irap_fastq_info",subfolders=FA
         filenames.v <- sapply(filenames.v,addLibSubfolder)
     }
     filenames.v <- sapply(filenames.v,fixFilename)
-    print(filenames.v)
     exp.files <- filenames.v
     dir <- paste0(opt$data_dir,"/raw_data")
     #exp.files.p <- paste(opt$raw_dir,"/",exp.files,sep="")
@@ -667,7 +666,7 @@ for (specie in species) {
         tr <- paste(unlist(v1$x),collapse=";",sep="")
         tr.labels <- paste(v1$v1,collapse=";",sep="")
 
-        if ( run.pp != "10xV2" ) {
+        if ( ! run.pp %in% c("10xV2") ) {
             ## technical replicates are encoded in the sample
             conf.l <- rbind(conf.l,paste0("technical_replicates=",tr))
             conf.l <- rbind(conf.l,paste0("technical_replicates_labels=",tr.labels))
@@ -708,7 +707,8 @@ for (specie in species) {
             pinfo("Created ",ofile)
             conf.l <- rbind(conf.l,paste0("extra_metadata=",basename(ofile)))            
         }
-        ## 
+
+        ##
         for (run in sruns ) {
             ## lib
             sfiles <- ""
@@ -717,7 +717,8 @@ for (specie in species) {
             if ( !is.na(v1) && v1 !="" ) {
                 sfiles <- sort(basename(sdrf.tmp[sdrf.tmp$run==run,norm.fastq.uri]))
             }
-            if ( length(sfiles) == 0 || sfiles == "" ) {
+            ##if ( length(sfiles) == 0 || sfiles == "" ) {
+            if ( tolower(run.pp) %in% c("10xv2","10xv1","10xv1a","drop-seq") ) {
                 ## if empty URI then look for read1 and read2
                 if ( "read1 file" %in% colnames(sdrf.tmp) ) {
                     sfiles <- sdrf.tmp[sdrf.tmp$run==run,"read1 file"]
@@ -728,15 +729,37 @@ for (specie in species) {
                         sfiles <- c(sfiles,sdrf.tmp[sdrf.tmp$run==run,"index1 file"])
                     }
                     sfiles <- sfiles[sfiles!=""]
+                    sfiles <- sfiles[sfiles!="-1"]
                 } else {                    
                     perror("SDRF: No raw data file for ",run)                
                     q(status=1)
                 }
             }
             #########################################
-            ##
+            ## 
             exp.files <- c()
-            if ( opt$is_sc==TRUE && run.pp == "10xV2" ) {
+            if ( opt$is_sc==TRUE && run.pp %in% c("10xV2","drop-seq","10xV1") ) {
+                ## "index1 file" is optional
+                exp.files <- c("read2 file","read1 file")
+                if ( sum(!exp.files %in% colnames(sdrf))>0 ) {
+                    perror("SDRF: missing columns for ",run.pp," - expected ",paste(exp.files,collapse=","))
+                    q(status=1)
+                }
+                ## we must have files
+                files <- sdrf.tmp[sdrf.tmp$run==run,exp.files]
+                if ( sum(files!="")!=length(exp.files)) {
+                    perror("SDRF: files missing for ",run,"")
+                    q(status=1)
+                }
+                ##,"index1 file"
+                files.cols <- c(exp.files,"index1 file")
+                sfiles <- sdrf.tmp[sdrf.tmp$run==run,files.cols]
+                names(sfiles) <- files.cols
+                sfiles <- sfiles[names(sfiles)[sfiles!="-1"]]
+            }
+            ## 10xV1*
+            if ( opt$is_sc==TRUE && run.pp %in% c("10xV1a") ) {
+                ## "index2 file" is optional
                 exp.files <- c("read2 file","read1 file","index1 file")
                 if ( sum(!exp.files %in% colnames(sdrf))>0 ) {
                     perror("SDRF: missing columns for ",run.pp," - expected ",paste(exp.files,collapse=","))
@@ -748,10 +771,13 @@ for (specie in species) {
                     perror("SDRF: files missing for ",run,"")
                     q(status=1)
                 }
-                sfiles <- sdrf.tmp[sdrf.tmp$run==run,"read2 file"]                
+                ##,"index1 file"
+                files.cols <- c(exp.files,"index2 file")
+                sfiles <- sdrf.tmp[sdrf.tmp$run==run,files.cols]
+                names(sfiles) <- files.cols
+                sfiles <- sfiles[names(sfiles)[sfiles!="-1"]]
             }
             ##
-            cat(run,"-->",sfiles,"\n")            
             if ( run %in% pe.runs && length(sfiles)!=2) {
                 ## do not fail for some protocols
                 do.not.fail <- FALSE
@@ -795,14 +821,16 @@ for (specie in species) {
             ## 
             ## 10x,drop-seq, ...
             ## index,cell,umi
-            if ( run.pp == "10xV2" ) {
+            if ( tolower(run.pp) %in% c("10xv2","10xv1","10xv1a","drop-seq") ) {
                 ## No need to check if values exist, already done
                 ## but check files...
-                exp.files.cols <- c("read1 file","index1 file")
+                exp.files.cols <- names(sfiles)
                 exp.files <- sdrf.tmp[sdrf.tmp$run==run,exp.files.cols]
                 checkFiles(exp.files,validator.cmd="fastq_info",subfolders=split.files.by.subfolders,opt=opt)
-                conf.l <- rbind(conf.l,paste0("",run,"_index1=",exp.files[1]))
-                conf.l <- rbind(conf.l,paste0("",run,"_index2=",exp.files[2]))
+                if ( "index1 file" %in% exp.files.cols) 
+                    conf.l <- rbind(conf.l,paste0("",run,"_index1=",exp.files[1]))
+                if ( "index2 file" %in% exp.files.cols) 
+                    conf.l <- rbind(conf.l,paste0("",run,"_index2=",exp.files[2]))
                 sss <- as.numeric(as.factor(sdrf.tmp[,"technical replicate group"]))[sdrf.tmp$run==run]
                 conf.l <- rbind(conf.l,paste0("",run,"_sample=",sss))
                 ## not PE but SE
