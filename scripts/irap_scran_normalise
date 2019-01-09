@@ -55,7 +55,8 @@ opt <- myParseArgs(usage = usage, option_list=option_list, filenames.exist=c('if
 suppressPackageStartupMessages(library(SC3))
 suppressPackageStartupMessages(library(scater))
 suppressPackageStartupMessages(library(scran))
-library(Matrix)
+suppressPackageStartupMessages(library(Matrix))
+
 # Load the count data
 
 pinfo("Loading ",opt$ifile)
@@ -63,9 +64,7 @@ if ( opt$is_mtx ) {
   # scran requires a dgCMatrix rather than dgTMatrix  
   filtered_counts <- as(mtx.load(opt$ifile), "dgCMatrix")
 } else {
-  filtered_counts <- quant.load(opt$ifile)
-  #  
-  filtered_counts <- as.matrix(apply(filtered_counts,1,as.integer))
+  filtered_counts <- as.matrix(quant.load(opt$ifile))
 }
 pinfo("Loading ",opt$ifile," done.")
 
@@ -88,8 +87,8 @@ if ( ! is.null(opt$spikes) ){
 # Normalisation can be by gene or spikes. Even in the gene case, separate size
 # factors should be calculated for spikes (where present)
 
-if (opt$norm == 'pinfo'){
-    genes("computing factors by gene...")
+if (opt$norm == 'genes'){
+    pinfo("computing factors by gene...")
     sce <- computeSumFactors(sce)
     if ( ! is.null(opt$spikes) ){
       sce <- computeSpikeFactors( sce, general.use=FALSE ) 
