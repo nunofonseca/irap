@@ -28,12 +28,14 @@ if ( IRAP.DIR == "" ) {
   cat("ERROR: environment variable IRAP_DIR is not set\n")
   q(status=1)
 }
-#
+
 # specify our desired options in a list
-#
+
 source(paste(IRAP.DIR,"aux/R","irap_utils.R",sep="/"))
 pdebug.enabled <- TRUE
+
 #######################
+
 usage <- "irap_sdrf2conf --name exp_name --species species --sdrf file --out_conf  [options]"
 filenames <- c("sdrf_file","idf_file")
 
@@ -61,14 +63,17 @@ option_list <- list(
 multiple.options = list()
 mandatory <- c("sdrf_file","out_conf","name","species")
 
-#pinfo("saved")
 opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=multiple.options,mandatory=mandatory)
 
 pdebug.enabled <- opt$debug
 
-## validates each file independently using fastq_info
+################################################################################
+# Function definitions
+################################################################################
+
 checkFiles <- function(filenames.v,validator.cmd="irap_fastq_info",subfolders=FALSE,opt) {
     ## filenames.v - as provided in the SDRF
+
     addLibSubfolder <- function(f) {
         paste0(system(paste0("get_lib_folder ",f),intern=TRUE),"/",f)
     }
@@ -81,13 +86,13 @@ checkFiles <- function(filenames.v,validator.cmd="irap_fastq_info",subfolders=FA
     filenames.v <- sapply(filenames.v,fixFilename)
     exp.files <- filenames.v
     dir <- paste0(opt$data_dir,"/raw_data")
-    #exp.files.p <- paste(opt$raw_dir,"/",exp.files,sep="")
     exp.files.ps <- paste(exp.files,collapse=" ",sep="")
 
     stopifnot(validator.cmd %in% c("fastq_info","irap_fastq_info"))
     stopifnot(length(filenames.v)>0 && length(filenames.v)<=2)
     use.cached <- FALSE
     info.file <- paste0(dir,"/",opt$raw_dir,"/",exp.files[1],".info")
+    
     if (validator.cmd=="fastq_info" ) {
         ## check if file exists before running fastq_info again
         if ( file.exists(info.file) ) {
@@ -108,10 +113,9 @@ checkFiles <- function(filenames.v,validator.cmd="irap_fastq_info",subfolders=FA
         pinfo("Checking ",exp.files.ps)
         rr <- system(paste0(cmd),intern=FALSE,ignore.stdout=TRUE)
         
-        ##print(rr)
         if ( ! file.exists(info.file) || rr!=0 ) {
             print(cmd)
-        ## rerun command to report the error
+            ## rerun command to report the error
             rr <- system(paste0("pushd ",dir," && ",cmd.err),intern=FALSE,ignore.stdout=TRUE,ignore.stderr=FALSE)        
             perror("Failed to validate and generate info file ",info.file)
             q(status=1)
@@ -146,179 +150,7 @@ normalize.cols <- function(vals,strip.brackets=TRUE) {
     x <- gsub("_+"," ",x) ## no underscores
     return(tolower(gsub(" +"," ",x))) ##lowercase and single space
 }
-#
-pdebug.save.state("irap_sdrf2conf","p0")
-sdfcols2save2tsv <- c()
 
-for ( n in names(opt) ) {
-    cat(paste0(n,"=",opt[[n]]))
-}
-##
-
-pinfo("Loading SDRF ",opt$sdrf_file," ...")
-sdrf <- read.tsv(opt$sdrf_file,header=TRUE,comment.char="")
-pinfo("Loading SDRF...done.")
-cat("Columns: ",ncol(sdrf),"\n")
-cat("Entries: ",nrow(sdrf),"\n")
-pinfo("Columns found in SDRF:")
-cat(paste(colnames(sdrf),collapse=","),"\n")
-##print(head(sdrf))
-
-#################################################
-## factors should not be simultaneously comments 
-factors <- normalize.cols(colnames(sdrf)[grepl("^factorvalue",colnames(sdrf),ignore.case=TRUE)])
-comments <- normalize.cols(colnames(sdrf)[grepl("^comment",colnames(sdrf),ignore.case=TRUE)])
-characteristics <- normalize.cols(colnames(sdrf)[grepl("^characteristics",colnames(sdrf),ignore.case=TRUE)])
-
-common <- intersect(factors,comments)
-if (length(common)>0) {
-    if ( opt$atlas_mode==TRUE ) {
-        perror("SDRF: common factors and comments - ",paste(common,collapse=","))
-        q(status=1)
-    }
-    addWarning("SDRF: common factors and comments - ",paste(common,collapse=","))
-}
-## common <- intersect(factors,characteristics)
-## if (length(common)>0) {
-##     if ( opt$atlas_mode==TRUE ) {
-##         perror("SDRF: common factors and characteristics - ",paste(common,collapse=","))
-##         q(status=1)
-##     }
-##     addWarning("SDRF: common factors and characteristics - ",paste(common,collapse=","))
-## }
-common <- intersect(comments,characteristics)
-if (length(common)>0) {
-    if ( opt$atlas_mode==TRUE ) {
-        perror("SDRF: common characteristics and comments - ",paste(common,collapse=","))
-        q(status=1)
-    }
-    addWarning("SDRF: common characteristics and comments - ",paste(common,collapse=","))
-}
-
-##
-idf <- NULL
-if ( !is.null(opt$idf_file) ) {
-    pinfo("Loading IDF...")
-    #idf <- read.tsv(opt$idf_file,header=FALSE,comment.char="",fill=TRUE,blank.lines.skip = TRUE,sep="\t")
-    idf <- read.tsv(opt$idf_file,header=FALSE,comment.char="",fill=TRUE,quote="")
-    if (is.null(idf) ) {
-        perror("Error while loading IDF file ",opt$idf_file)
-        q(status=1)
-    }
-    pinfo("Loading IDF...done.")    
-    ## exclude blank lines
-    idf <- idf[idf$V1!="",,drop=FALSE]
-    cat("Columns: ",ncol(idf),"\n")
-    cat("Entries: ",nrow(idf),"\n")
-    #######################################
-    ## SecondaryAccession may be non-unique
-    if ( sum(tolower(idf[,1])!="comment[secondaryaccession]") > 1 ) {
-        addWarning("IDF: Multiple 'SecondaryAccession' entries")
-    }
-    idf <- idf[tolower(idf[,1])!="comment[secondaryaccession]",]
-    ## basic idf check (non unique rownames)
-    dups <- duplicated(idf[,1])
-    if ( sum(dups) > 0 ) {
-        dupss <- paste(idf[dups,1],sep=",",collapse=",")
-        perror("Duplicated entries: ",dupss)
-        q(status=1)
-    }
-    ## error handling should be improved...
-    rownames(idf) <- tolower(gsub("\\s*\\]\\s*","",gsub("^\\s*COMMENT\\s*\\[\\s*","",as.character(idf[,1]),ignore.case=TRUE)))
-    idf <- idf[,-1,drop=FALSE]
-    ## be tolerant about the EA comments
-    rownames(idf) <- gsub("^ea","",rownames(idf))
-    ## initial check
-    if (! "sdrf file" %in% rownames(idf) ) {
-        perror("SDRF file missing from IDF file")
-        q(status=1)
-    }
-    if ( idf["sdrf file",1]!=basename(opt$sdrf_file) ) {      
-        perror("SDRF file in IDF (",idf["sdrf file",1],") differs from given sdrf file name ",basename(opt$sdrf_file))
-        q(status=1)
-    }
-    cat("IDF:",paste(rownames(idf),collapse=","),"\n")    
-    ##expectedclusters
-    ##
-    ## ExperimentType       differential|baseline (mandatory)
-    ## ExpectedClusters     may be empty
-    ## AdditionalAttributes - characteristics (optional) exist in the SDRF
-    ## AEExperimentType RNA-seq of coding RNA from single cells (single cell)
-    ## Protocol Name should match SDRF
-    ## Experimental Factor Name (mandatory) exist in the SDRF
-    ## note: factors and characteristics should always be lower case!! @Laura
-    expected.in.idf <- c()
-    if ( opt$is_sc ) {
-        expected.in.idf <- c("expectedclusters")
-        names(expected.in.idf) <- c("EAExpectedClusters")
-    }
-    if ( opt$atlas_mode ) {
-        expected.in.idf2 <- c("experimenttype","experimental factor name","protocol name")
-        names(expected.in.idf2) <- c("AEExperimentType","Experimental Factor Name","Protocol Name")
-        expected.in.idf <- c(expected.in.idf,expected.in.idf2)
-    }
-    not.present <- (!expected.in.idf%in%rownames(idf))
-    if ( sum(not.present)>0 ) {
-        perror("IDF incomplete. Missing ",paste(names(expected.in.idf)[not.present],sep=",",collapse=","))
-        q(status=1)
-    }
-    if ( opt$atlas_mode ) {
-        if ( sum(c("baseline","differential") %in% tolower(idf["experimenttype",1]))==0 ) {
-            perror("IDF error in EAExperimentType: Invalid value (",idf["experimenttype",1],") expected baseline or differential")
-            q(status=1)
-        }
-        ##AEExperimentType
-        expected.vals <- tolower(c("RNA-seq of coding RNA from single cells","RNA-seq of coding RNA"))
-        if ( sum( expected.vals %in% tolower(idf["aeexperimenttype",1]))==0 ) {
-            perror("IDF error in AEExperimentType: Invalid value (",idf["aeexperimenttype",1],") expected ",paste(expected.vals,sep=" or ",collapse=" or "))
-            q(status=1)
-        }
-        if ( expected.vals[1] %in% tolower(idf["aeexperimenttype",1]) ) {
-            opt$is_sc <- TRUE
-        }
-    }
-}
-
-if (opt$is_sc) {
-    pinfo("Single cell experiment")
-} 
-#################################
-## Check mandactory columns (SDRF)
-exp.cols <- c("Source Name")
-
-exp.comment.cols <- c("LIBRARY_STRATEGY","LIBRARY_SOURCE","LIBRARY_SELECTION","LIBRARY_LAYOUT","FASTQ_URI")
-
-## 
-exp.characteristic.cols <- c()
-exp.factor.cols <- c()
-opt.cols <- c("ORGANISM","organism part","sex","spike in","molecule","technical replicate group","ENA_RUN","ENA_SAMPLE","Scan Name")
-
-sc.exp.cols <- c("Material Type","library_construction","single cell isolation")
-sc.exp.comment.cols <- c("LIBRARY_STRAND")
-
-##
-#sc.exp.factor.cols <- c("single cell identifier")
-sc.exp.factor.cols <- c()
-sc.exp.characteristic.cols <- c()
-sc.opt.cols <- c("single cell quality","input molecule","end bias","single cell library method","read1 file","read2 file","index1 file")
-
-#optional.cols <- c("")
-
-expected.cols <- exp.cols
-expected.comment.cols <- exp.comment.cols
-expected.factor.cols <- exp.factor.cols
-expected.characteristic.cols <- exp.characteristic.cols
-#opt.cols <- 
-if( opt$is_sc ) {
-    expected.cols <- append(expected.cols,sc.exp.cols)
-    expected.comment.cols <- append(exp.comment.cols,sc.exp.comment.cols)
-    expected.characteristic.cols <- append(exp.characteristic.cols,sc.exp.characteristic.cols)
-    expected.factor.cols <- append(exp.factor.cols,sc.exp.factor.cols)
-    opt.cols <- append(opt.cols,sc.opt.cols)
-}
-
-#"Characteristics[developmental stage]"           
-#"Characteristics [cell type]"               
 colsInSDRF <- function(cols,sdrf,comment.cols=FALSE,characteristic.cols=FALSE,factor.cols=FALSE,exit.on.error=TRUE) {
     if ( length(cols) == 0 ) return
     sdrf.cols <- normalize.cols(colnames(sdrf),strip.brackets=FALSE)
@@ -347,6 +179,178 @@ colsInSDRF <- function(cols,sdrf,comment.cols=FALSE,characteristic.cols=FALSE,fa
     }
 }
 
+################################################################################
+# Main script body
+################################################################################
+
+pdebug.save.state("irap_sdrf2conf","p0")
+sdfcols2save2tsv <- c()
+
+for ( n in names(opt) ) {
+    cat(paste0(n,"=",opt[[n]]))
+}
+
+pinfo("Loading SDRF ",opt$sdrf_file," ...")
+sdrf <- read.tsv(opt$sdrf_file,header=TRUE,comment.char="")
+pinfo("Loading SDRF...done.")
+cat("Columns: ",ncol(sdrf),"\n")
+cat("Entries: ",nrow(sdrf),"\n")
+pinfo("Columns found in SDRF:")
+cat(paste(colnames(sdrf),collapse=","),"\n")
+
+## Factors should not be simultaneously comments 
+
+factors <- normalize.cols(colnames(sdrf)[grepl("^factorvalue",colnames(sdrf),ignore.case=TRUE)])
+comments <- normalize.cols(colnames(sdrf)[grepl("^comment",colnames(sdrf),ignore.case=TRUE)])
+characteristics <- normalize.cols(colnames(sdrf)[grepl("^characteristics",colnames(sdrf),ignore.case=TRUE)])
+
+common <- intersect(factors,comments)
+if (length(common)>0) {
+    if ( opt$atlas_mode==TRUE ) {
+        perror("SDRF: common factors and comments - ",paste(common,collapse=","))
+        q(status=1)
+    }
+    addWarning("SDRF: common factors and comments - ",paste(common,collapse=","))
+}
+
+common <- intersect(comments,characteristics)
+if (length(common)>0) {
+    if ( opt$atlas_mode==TRUE ) {
+        perror("SDRF: common characteristics and comments - ",paste(common,collapse=","))
+        q(status=1)
+    }
+    addWarning("SDRF: common characteristics and comments - ",paste(common,collapse=","))
+}
+
+## Load and check the IDF where provided
+
+idf <- NULL
+if ( !is.null(opt$idf_file) ) {
+    pinfo("Loading IDF...")
+    idf <- read.tsv(opt$idf_file,header=FALSE,comment.char="",fill=TRUE,quote="")
+    if (is.null(idf) ) {
+        perror("Error while loading IDF file ",opt$idf_file)
+        q(status=1)
+    }
+    pinfo("Loading IDF...done.")    
+    ## exclude blank lines
+    idf <- idf[idf$V1!="",,drop=FALSE]
+    cat("Columns: ",ncol(idf),"\n")
+    cat("Entries: ",nrow(idf),"\n")
+
+    ## SecondaryAccession may be non-unique
+    if ( sum(tolower(idf[,1])!="comment[secondaryaccession]") > 1 ) {
+        addWarning("IDF: Multiple 'SecondaryAccession' entries")
+    }
+
+    idf <- idf[tolower(idf[,1])!="comment[secondaryaccession]",]
+    
+    ## basic idf check (non unique rownames)
+    dups <- duplicated(idf[,1])
+    if ( sum(dups) > 0 ) {
+        dupss <- paste(idf[dups,1],sep=",",collapse=",")
+        perror("Duplicated entries: ",dupss)
+        q(status=1)
+    }
+  
+    ## error handling should be improved...
+    rownames(idf) <- tolower(gsub("\\s*\\]\\s*","",gsub("^\\s*COMMENT\\s*\\[\\s*","",as.character(idf[,1]),ignore.case=TRUE)))
+    idf <- idf[,-1,drop=FALSE]
+
+    ## be tolerant about the EA comments
+    rownames(idf) <- gsub("^ea","",rownames(idf))
+
+    ## initial check
+    if (! "sdrf file" %in% rownames(idf) ) {
+        perror("SDRF file missing from IDF file")
+        q(status=1)
+    }
+    if ( idf["sdrf file",1]!=basename(opt$sdrf_file) ) {      
+        perror("SDRF file in IDF (",idf["sdrf file",1],") differs from given sdrf file name ",basename(opt$sdrf_file))
+        q(status=1)
+    }
+    cat("IDF:",paste(rownames(idf),collapse=","),"\n")    
+
+    ##expectedclusters
+    ##
+    ## ExperimentType       differential|baseline (mandatory)
+    ## ExpectedClusters     may be empty
+    ## AdditionalAttributes - characteristics (optional) exist in the SDRF
+    ## AEExperimentType RNA-seq of coding RNA from single cells (single cell)
+    ## Protocol Name should match SDRF
+    ## Experimental Factor Name (mandatory) exist in the SDRF
+    ## note: factors and characteristics should always be lower case!! @Laura
+
+    expected.in.idf <- c()
+    if ( opt$is_sc ) {
+        expected.in.idf <- c("expectedclusters")
+        names(expected.in.idf) <- c("EAExpectedClusters")
+    }
+
+    if ( opt$atlas_mode ) {
+        expected.in.idf2 <- c("experimenttype","experimental factor name","protocol name")
+        names(expected.in.idf2) <- c("AEExperimentType","Experimental Factor Name","Protocol Name")
+        expected.in.idf <- c(expected.in.idf,expected.in.idf2)
+    }
+
+    not.present <- (!expected.in.idf%in%rownames(idf))
+    if ( sum(not.present)>0 ) {
+        perror("IDF incomplete. Missing ",paste(names(expected.in.idf)[not.present],sep=",",collapse=","))
+        q(status=1)
+    }
+
+    if ( opt$atlas_mode ) {
+        if ( sum(c("baseline","differential") %in% tolower(idf["experimenttype",1]))==0 ) {
+            perror("IDF error in EAExperimentType: Invalid value (",idf["experimenttype",1],") expected baseline or differential")
+            q(status=1)
+        }
+
+        ##AEExperimentType
+        expected.vals <- tolower(c("RNA-seq of coding RNA from single cells","RNA-seq of coding RNA"))
+        if ( sum( expected.vals %in% tolower(idf["aeexperimenttype",1]))==0 ) {
+            perror("IDF error in AEExperimentType: Invalid value (",idf["aeexperimenttype",1],") expected ",paste(expected.vals,sep=" or ",collapse=" or "))
+            q(status=1)
+        }
+
+        if ( expected.vals[1] %in% tolower(idf["aeexperimenttype",1]) ) {
+            opt$is_sc <- TRUE
+        }
+    }
+}
+
+if (opt$is_sc) {
+    pinfo("Single cell experiment")
+} 
+
+## Check mandactory columns (SDRF)
+
+exp.comment.cols <- c("LIBRARY_STRATEGY","LIBRARY_SOURCE","LIBRARY_SELECTION","LIBRARY_LAYOUT","FASTQ_URI")
+exp.characteristic.cols <- c()
+exp.factor.cols <- c()
+
+opt.cols <- c("ORGANISM","organism part","sex","spike in","molecule","technical replicate group","ENA_RUN","ENA_SAMPLE","Scan Name")
+
+expected.cols <- exp.cols
+expected.comment.cols <- exp.comment.cols
+expected.factor.cols <- exp.factor.cols
+expected.characteristic.cols <- exp.characteristic.cols
+
+## Single-cell specific
+
+sc.exp.cols <- c("Material Type","library_construction","single cell isolation")
+sc.exp.comment.cols <- c("LIBRARY_STRAND")
+sc.exp.factor.cols <- c()
+sc.exp.characteristic.cols <- c()
+sc.opt.cols <- c("single cell quality","input molecule","end bias","single cell library method","read1 file","read2 file","index1 file")
+
+if( opt$is_sc ) {
+    expected.cols <- append(expected.cols,sc.exp.cols)
+    expected.comment.cols <- append(exp.comment.cols,sc.exp.comment.cols)
+    expected.characteristic.cols <- append(exp.characteristic.cols,sc.exp.characteristic.cols)
+    expected.factor.cols <- append(exp.factor.cols,sc.exp.factor.cols)
+    opt.cols <- append(opt.cols,sc.opt.cols)
+}
+
 pinfo("Checking presence of columns...")
 colsInSDRF(expected.cols,sdrf)
 colsInSDRF(expected.characteristic.cols,sdrf,characteristic.cols=TRUE)
@@ -370,7 +374,6 @@ for (col in tolower(c(expected.cols,expected.comment.cols,expected.factor.cols,e
         pinfo(col,": single value per row")
     } else {
         pinfo(col,": ",length(tt)," unique values")
-        ##pinfo(col,": ");print(head(sort(tt,decreasing=TRUE),n=10))
     }
 }
 #######################
