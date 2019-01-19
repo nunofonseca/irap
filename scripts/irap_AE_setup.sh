@@ -211,6 +211,21 @@ function download {
     fi
 }
 
+function remote_to_local {
+    local file=$1
+    local distribute_by_subfolders=$2
+
+    fn=$(basename $file)
+    
+    if [ $distribute_by_subfolders == 1 ]; then
+        ## avoid relying on the download path since not all files come from ENA
+        dest_dir=$(get_lib_folder $file)
+        mkdir -p $dest_dir
+    fi
+    echo $dest_dir/$fn
+}
+
+
 ################################################################################
 # Parse arguments
 ################################################################################
@@ -459,7 +474,6 @@ fi
 
 # Use IDF to determine single-cell status and expected cluster number
 
-expected_clusters_params=""
 if [ $skip_idf != "y" ]; then
     pinfo "Processing IDF..."
     set +e
@@ -468,17 +482,6 @@ if [ $skip_idf != "y" ]; then
         pinfo "single cell RNA-seq"
         sc_params="--sop atlas_sc --sc"
         irap_cmd=irap_sc
-        ## expected number of clusters
-        if [ $(grep -c EAExpectedClusters $IDF_FILE_FP) -eq 0 ]; then
-            perror "EAExpectedClusters not found in IDF"
-            exit 1
-        fi
-        expected_clusters=$(grep EAExpectedClusters $IDF_FILE_FP|cut -f 2)
-        if [ "$expected_clusters-" != "-" ]; then
-            expected_clusters_params="--nc $expected_clusters"
-        else
-            expected_clusters_params=""
-        fi
     else
         ## assume, by default, that is bulk RNA-seq
         pinfo "bulk RNA-seq"
@@ -490,40 +493,7 @@ fi
 
 # Check for variables in the SDRF
 
-SOURCE_NAME_COL=$(get_column $SDRF_FILE_FP "SOURCE NAME" 1)
-
 set +e
-#ENA_SAMPLE for tech replicates
-ENA_SAMPLE_COL=$(get_column $SDRF_FILE_FP "[ENA_SAMPLE]")
-pinfo "ENA_SAMPLE_COL: $ENA_SAMPLE_COL"
-
-TECH_REPL_COL=$(get_column $SDRF_FILE_FP "[technical replicate group]")
-pinfo "TECH_REPL_COL: $TECH_REPL_COL"
-
-ENA_RUN_COL=$(get_column $SDRF_FILE_FP "[ENA_RUN]")
-pinfo "ENA_RUN_COL: $ENA_RUN_COL"
-set -e
-if [ "$ENA_RUN_COL-" == "-" ]; then
-    ENA_RUN_COL=$(get_column $SDRF_FILE_FP "[RUN]" 1)
-    pinfo "RUN_COL: $ENA_RUN_COL"
-fi
-
-STRAND_COL=$(get_column $SDRF_FILE_FP "[LIBRARY_STRAND]")
-pinfo "LIBRARY_STRAND_COL: $STRAND_COL"
-
-LAYOUT_COL=$(get_column $SDRF_FILE_FP "[LIBRARY_LAYOUT]" 1)
-pinfo "LIBRARY_LAYOUT_COL: $LAYOUT_COL"
-
-LAYOUT_COL=$(get_column $SDRF_FILE_FP "[LIBRARY_LAYOUT]" 1)
-pinfo "LIBRARY_LAYOUT_COL: $LAYOUT_COL"
-
-#[LIBRARY_STRATEGY]==RNA_SEQ
-LIB_STRATEGY_COL=$(get_column $SDRF_FILE_FP "[LIBRARY_STRATEGY]" 1)
-pinfo "LIBRARY_STRATEGY_COL: $LIB_STRATEGY_COL"
-#[LIBRARY_SOURCE]==TRANSCRIPTOMIC
-LIBRARY_SOURCE_COL=$(get_column $SDRF_FILE_FP "[LIBRARY_SOURCE]" 1)
-pinfo "LIBRARY_SOURCE_COL: $LIBRARY_SOURCE_COL"
-#[LIBRARY_SELECTION]==other => ignore otherwise fail
 
 # quickly validate the sdrf before continuing
 set -e
@@ -573,14 +543,13 @@ else
     dl_fun=DOWNLOAD_PUBLIC
     dest_dir=.
     pinfo Downloading $N_FQ fastq files
+
+
+    # Flatten the list possibly multiple files per row (by not quoting
+    # FASTQ_FILES) and download
+    
     for file in $FASTQ_FILES; do
-	fn=$(basename $file)
-        if [ $distribute_by_subfolders == 1 ]; then
-            ## avoid relying on the download path since not all files come from ENA
-            dest_dir=$(get_lib_folder $file)
-            mkdir -p $dest_dir
-        fi
-        fn=$dest_dir/$fn
+	    fn=$(remote_to_local $file $distribute_by_subfolders)
         if ( ( [ -e $fn ] || [ -h $fn ] ) && [ $USE_CACHE -eq 1 ] ) || ( [ $DEBUG -eq 1 ] ); then
             pinfo "skipped downloading $fn"
         else
@@ -612,6 +581,19 @@ else
     fi
 fi
    
+# Now iterate over the files by set, and run irap
+echo "$FASTQ_FILES" | while read -r l; do
+    first_file=echo "$l" | awk '{print $1}'
+    fn=$(remote_to_local $file $distribute_by_subfolders)
+   
+    info_file=${fn}.info
+    if ( ! -e $info_file );then 
+        pushd $SPECIES/$ID/fastq
+        irap_fastq_info files=$l
+        popd
+    fi
+done
+
 popd 2>/dev/null
 
 extra_params=
@@ -622,11 +604,6 @@ echo irap_sdrf2conf --name $ID --sdrf $SDRF_FILE_FP --out_conf $CONF_FILE_PREF  
 
 set -e
 irap_sdrf2conf --name $ID --sdrf $SDRF_FILE_FP --out_conf $CONF_FILE_PREF  --species=$SPECIES --data_dir=$DATA_DIR --raw_dir=$SPECIES/$ID/fastq $sc_params $expected_clusters_params --sc --atlas $extra_params --atlas
-## comment reference/gtf lines
-## add an include to the species.conf file
-
-pinfo "Adding last details to the conf. file"
-sed -i "s/^reference/#reference/;s|^gtf_file.*|include $SPECIES_CONF_DIR/$SPECIES.conf|" $CONF_FILE
 
 ## Move to the destination dir
 
