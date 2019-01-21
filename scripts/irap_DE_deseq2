@@ -104,7 +104,9 @@ if ( opt$indfilter ) {
 }
 res<-results(dds,contrast=append("Contrast",opt$labels.v),independentFiltering=opt$indfilter)
 
-
+## As of DESeq2 version 1.18, ‘type="apeglm"’ and ‘type="ashr"’ are
+##     new features, and still under development.
+# res <- lfcShrink(dds, coef = 2, res = res, type = "apeglm")
 pdebug.save.state("irap_DE_deseq2","2")
 #
 # column names are different from DESeq1
