@@ -497,11 +497,8 @@ set +e
 
 # quickly validate the sdrf before continuing
 set -e
-irap_sdrf2conf --name $ID --sdrf $SDRF_FILE_FP --out_conf $CONF_FILE_PREF --species=$SPECIES --data_dir=$DATA_DIR --raw_dir=$SPECIES/$ID/fastq $sc_params $expected_clusters_params -c --atlas
+irap_sdrf2conf --name $ID --sdrf $SDRF_FILE_FP --idf $IDF_FILE_FP --out_conf $CONF_FILE_PREF --species=$SPECIES --species_conf $SPECIES_CONF_DIR/$SPECIES.conf --data_dir=$DATA_DIR --raw_dir=$SPECIES/$ID/fastq $sc_params $expected_clusters_params -c --atlas
 set +e
-
-# get unique runs
-RUNS=$(cut -f $ENA_RUN_COL $SDRF_FILE_FP|tail -n +2|sort -u)
 
 ################################################
 # create folders
@@ -600,10 +597,10 @@ extra_params=
 if [ $distribute_by_subfolders == 1 ]; then
     extra_params=--subfolder
 fi
-echo irap_sdrf2conf --name $ID --sdrf $SDRF_FILE_FP --out_conf $CONF_FILE_PREF  --species=$SPECIES --data_dir=$DATA_DIR --raw_dir=$SPECIES/$ID/fastq --sop atlas_sc $sc_params $expected_clusters_params $extra_params --atlas
+echo irap_sdrf2conf --name $ID --sdrf $SDRF_FILE_FP --idf $IDF_FILE_FP --out_conf $CONF_FILE_PREF  --species=$SPECIES --species_conf $SPECIES_CONF_DIR/$SPECIES.conf --data_dir=$DATA_DIR --raw_dir=$SPECIES/$ID/fastq --sop atlas_sc $sc_params $expected_clusters_params $extra_params --atlas
 
 set -e
-irap_sdrf2conf --name $ID --sdrf $SDRF_FILE_FP --out_conf $CONF_FILE_PREF  --species=$SPECIES --data_dir=$DATA_DIR --raw_dir=$SPECIES/$ID/fastq $sc_params $expected_clusters_params --sc --atlas $extra_params --atlas
+irap_sdrf2conf --name $ID --sdrf $SDRF_FILE_FP --idf $IDF_FILE_FP --out_conf $CONF_FILE_PREF --species=$SPECIES --species_conf $SPECIES_CONF_DIR/$SPECIES.conf --data_dir=$DATA_DIR --raw_dir=$SPECIES/$ID/fastq $sc_params $expected_clusters_params --sc --atlas $extra_params --atlas
 
 ## Move to the destination dir
 

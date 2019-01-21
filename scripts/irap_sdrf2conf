@@ -78,11 +78,6 @@ if (opt$is_sc) {
   pinfo("Single cell experiment")
 } 
 
-split.files.by.subfolders <- FALSE
-if ( nrow(sdrf) > 5090 || opt$fastq.splited.by.subfolders) {    
-  split.files.by.subfolders <- TRUE
-}
-
 pdebug.enabled <- opt$debug
 
 ################################################################################
@@ -276,7 +271,7 @@ getRunInfo <- function(run){
 }
 
 ################################################################################
-# First round SDRF field checks: non-conditional 
+# First round SDRF field checks: before we know about field content 
 ################################################################################
 
 # Load the SDRF
@@ -284,6 +279,13 @@ getRunInfo <- function(run){
 pinfo("Loading SDRF ",opt$sdrf_file," ...")
 sdrf <- read.tsv(opt$sdrf_file,header=TRUE,comment.char="",fill=TRUE)
 pinfo("Loading SDRF...done.")
+
+# Do we have enough rows that we'll have to split the files? 
+
+split.files.by.subfolders <- FALSE
+if ( nrow(sdrf) > 5090 || opt$fastq.splited.by.subfolders) {    
+  split.files.by.subfolders <- TRUE
+}
 
 ## Factors should not be simultaneously comments, niether should characteristics 
 
@@ -517,7 +519,8 @@ if ( !is.null(opt$idf_file) ) {
 }
 
 ################################################################################
-# Second round SDRF field checks: beyond simple field presence 
+# Further SDRF checks now we know the right fields are there and we can look at
+# the content
 ################################################################################
 
 ## User can specify species, in which case we can discard irrelevant rows
