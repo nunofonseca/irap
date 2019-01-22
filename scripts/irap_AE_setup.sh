@@ -217,7 +217,7 @@ function remote_to_local {
 
     fn=$(basename $file)
     
-    if [ $distribute_by_subfolders == 1 ]; then
+    if [ "$distribute_by_subfolders" -eq 1 ]; then
         ## avoid relying on the download path since not all files come from ENA
         dest_dir=$(get_lib_folder $file)
         mkdir -p $dest_dir
@@ -580,17 +580,19 @@ fi
    
 # Now iterate over the files by set, and run irap
 echo "$FASTQ_FILES" | while read -r l; do
-    first_file=echo "$l" | awk '{print $1}'
-    fn=$(remote_to_local $file $distribute_by_subfolders)
-   
+    first_file=$(echo "$l" | awk '{print $1}')
+    fn=$(remote_to_local $first_file $distribute_by_subfolders)
+
+    localFiles=
+    for fqfile in $l; do
+        localFiles="$localFiles $(remote_to_local $fqfile $distribute_by_subfolders)"
+    done
+
     info_file=${fn}.info
     if ( ! -e $info_file );then 
-        pushd $SPECIES/$ID/fastq
-        irap_fastq_info files=$l
-        popd
+        irap_fastq_info files="$localFiles"
     fi
 done
-
 popd 2>/dev/null
 
 extra_params=
