@@ -498,6 +498,9 @@ pushd $FASTQ_FOLDER >/dev/null
 # Download fastq files
 # by default assumes that data is in ENA
 
+echo
+echo "### FASTQ downloads:"
+
 FTP_DIR_PREF=
 
 ALT_NAME_COL=`get_column $SDRF_FILE_FP "[SUBMITTED_FILE_NAME]" ''`
@@ -505,7 +508,6 @@ ALT_NAME_COL=`get_column $SDRF_FILE_FP "[SUBMITTED_FILE_NAME]" ''`
 FASTQ_COL=
 FASTQ_COL=`get_column $SDRF_FILE_FP "[FASTQ_URI]" ''`
 FASTQ_COL=${FASTQ_COL// /,}
-echo "FASTQ_URI=$FASTQ_COL"
 
 if [ "$FASTQ_COL-" == "-" ]; then
     echo "FASTQ_URI not found...Looking for alternative column"    
@@ -565,6 +567,9 @@ else
     fi
 fi
    
+echo
+echo "### FASTQ FILE checks:"
+
 # Now iterate over the files by set, and run irap
 echo "$FASTQ_FILES" | while read -r l; do
     first_file=$(echo "$l" | awk '{print $1}')

@@ -277,6 +277,7 @@ getRunInfo <- function(run, layout){
 # Basic initalisation 
 ################################################################################
 
+cat("\n")
 pinfo(">>> Commencing SDRF validation")
 
 # Do some introspection on arguments
@@ -509,7 +510,6 @@ if ( !is.null(opt$idf_file) ) {
 
 if( is.singlecell ) {
  
-  cat("\n")
   pinfo("Single cell experiment found")
  
   sc.opt.cols <- c("single cell quality","input molecule","end bias","single cell library method","read1 file","read2 file","index1 file", "index2 file","index3 file")
@@ -1014,12 +1014,6 @@ if ( length(configs)==0 ) {
 }
 
 ## Write final outputs
-
-cat("\n################################################################################\n")
-pinfo('### SDRF checks are done. Summary and warning printed below')
-cat("################################################################################\n")
-
-## We're done parseing the SDRF, print some information on its content
 
 cat("\n")
 pinfo("### SDRF summary info\n")
