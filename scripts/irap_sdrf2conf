@@ -57,6 +57,7 @@ option_list <- list(
     make_option(c("-i", "--idf"), type="character", dest="idf_file", default=NULL, help="IDF file name"),
     make_option(c("--sc"), action="store_true",default=FALSE,dest="is_sc",help="Single cell experiment?. Default is FALSE."),
     make_option(c("-c","--check_only"),action="store_true",dest="check_only",default=FALSE,help="Checks the sdrf/idf but skips the generation of the configuration file."),
+    make_option(c("-v","--verbose"),action="store_true",dest="verbose",default=FALSE,help="Produce verbose output."),
     make_option(c("--atlas"),action="store_true",dest="atlas_mode",default=FALSE,help="Enable more stringent checks for the sdrf/idf files (for ExpressionAtlas)"),
     make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
     make_option(c("--subfolders"),action="store_true",dest="fastq.splited.by.subfolders",default=FALSE,help="Are the files distributed across subfolders"),
@@ -74,10 +75,6 @@ for ( n in names(opt) ) {
   cat(paste0(n,"=",opt[[n]]))
 }
 
-if (opt$is_sc) {
-  pinfo("Single cell experiment")
-} 
-
 pdebug.enabled <- opt$debug
 
 ################################################################################
@@ -90,14 +87,21 @@ warnings.lst <- c()
 addWarning <- function(...) {
     warnings.lst <- append(warnings.lst,paste0(...))
     assign("warnings.lst",warnings.lst,envir = .GlobalEnv)
-    pwarning(...)
 }
 
 printAllWarnings <- function() {
     n <- length(warnings.lst)
     if ( n > 0 ) return
-    pwarning(n," warnings:")
-    sapply(warnings.lst,pwarning)
+    pinfo('### ', n," warnings. Unique entries:")
+    prints <- sapply(unique(warnings.lst),pwarning)
+}
+
+# Print info only in the verbose case
+
+print.info <- function(...){
+    if (opt$verbose){
+        pinfo(paste(...))
+    }
 }
 
 # Simplify column names
@@ -141,11 +145,13 @@ colsInSDRF <- function(cols, sdrf, comment.cols=FALSE,  characteristic.cols=FALS
     
     if (any(! found) ) {
       missed_cols <- cols[! found]
-        if (exit.on.error) {
-            perror("SDRF: Column(s) ", paste(missed_cols, collapse=","), " not found")
+      missing.error <- paste0("SDRF: Column(s) ", paste(missed_cols, collapse=","), " not found")
+
+      if (exit.on.error) {
+            perror(missing.error)
             q(status=1)
         }
-        addWarning("SDRF: Column(s) ", paste(missed_cols, collapse=","), " not found")
+        addWarning(missing.error)
     }
     return(found)
 }
@@ -214,9 +220,9 @@ is.droplet.protocol <- function(x){
 
 # Get the contents of a .info file for a run, if available
 
-getRunInfo <- function(run){
+getRunInfo <- function(run, layout){
   runfiles <- run.fastq.files[[run]]
-  info.file <- file.path(opt$data_dir, "raw_data", paste0(runfiles[1], ".info"))
+  info.file <- file.path(opt$data_dir, "raw_data", opt$raw_dir, paste0(runfiles[1], ".info"))
   
   if (file.exists(info.file)){
     
@@ -237,8 +243,8 @@ getRunInfo <- function(run){
     # The code needs to be changed if that is not the case.
     
     rr <- system(paste0("cat ",info.file,"|sed -E 's/_L[0-9]+_R[A0-9]+_[0-9]+//'"),intern=TRUE)
-    
-    strand <- layout[run,normalize.cols("library_strand")]
+   
+    strand <- getSDRFCol('library strand', layout, drop = FALSE)[run,]
     
     if ( grepl("(first|second)",strand ) ) {
       
@@ -255,15 +261,19 @@ getRunInfo <- function(run){
     # Add in index
     
     if ( "index1 file" %in% names(runfiles)){
-      rr <- c(rr, paste0("",run,"_index1=", runfiles[['index 1 file']]))
+      rr <- c(rr, paste0("",run,"_index1=", runfiles[['index1 file']]))
     } 
     if ( "index2 file" %in% names(runfiles)){
-      rr <- c(rr, paste0("",run,"_index2=", runfiles[['index 2 file']]))
+      rr <- c(rr, paste0("",run,"_index2=", runfiles[['index2 file']]))
     } 
     
     # Record a technical replicate group
-    
-    conf.l <- rbind(conf.l,paste0("",run,"_sample=", as.numeric(as.factor(sdrf.tmp[,techrep.col]))[sdrf.tmp$run==run]))
+    if ( colsInSDRF(techrep.col, layout) ){
+        techrep.groups <- getSDRFCol(techrep.col, layout, drop = FALSE)
+        tr.numeric.groups <- as.numeric(as.factor(techrep.groups[,1]))
+
+        rr <- c(rr,paste0("",run,"_sample=", tr.numeric.groups[rownames(techrep.groups) == run]))
+    }
     rr
   }else{
     addWarning(paste("Info file", info.file, 'not found'))  
@@ -274,11 +284,15 @@ getRunInfo <- function(run){
 # First round SDRF field checks: before we know about field content 
 ################################################################################
 
+if (opt$is_sc) {
+    print.info("Single cell experiment")
+} 
+
 # Load the SDRF
 
-pinfo("Loading SDRF ",opt$sdrf_file," ...")
+print.info("Loading SDRF ",opt$sdrf_file," ...")
 sdrf <- read.tsv(opt$sdrf_file,header=TRUE,comment.char="",fill=TRUE)
-pinfo("Loading SDRF...done.")
+print.info("Loading SDRF...done.")
 
 # Do we have enough rows that we'll have to split the files? 
 
@@ -329,14 +343,14 @@ if( opt$is_sc ) {
   opt.cols <- append(opt.cols,sc.opt.cols)
 }
 
-pinfo("Checking presence of columns...")
+print.info("Checking presence of columns...")
 
 found <- colsInSDRF(expected.cols, sdrf, exit.on.error = TRUE)
 found <- colsInSDRF(expected.characteristic.cols,sdrf,characteristic.cols=TRUE, exit.on.error = TRUE)
 found <- colsInSDRF(expected.comment.cols,sdrf,comment.cols=TRUE, exit.on.error = TRUE)
 found <- colsInSDRF(expected.factor.cols,sdrf,factor.cols=TRUE, exit.on.error = TRUE)
 
-pinfo("Checking the presence of columns... done.")
+print.info("Checking the presence of columns... done.")
 
 # Set some variable names we'll be using a lot
 
@@ -357,19 +371,17 @@ idf <- NULL
 idf.attrs <- idf.factors <- c()
 
 if ( !is.null(opt$idf_file) ) {
-  pinfo("Loading IDF...")
+  print.info("Loading IDF...")
   idf <- read.tsv(opt$idf_file,header=FALSE,comment.char="",fill=TRUE,quote="")
   if (is.null(idf) ) {
     perror("Error while loading IDF file ",opt$idf_file)
     q(status=1)
   }
-  pinfo("Loading IDF...done.")
+  print.info("Loading IDF...done.")
   
   ## exclude blank lines
   
   idf <- idf[idf$V1!="",,drop=FALSE]
-  cat("Columns: ",ncol(idf),"\n")
-  cat("Entries: ",nrow(idf),"\n")
   
   ## SecondaryAccession and SequenceDataURI may be non-unique
   
@@ -377,7 +389,6 @@ if ( !is.null(opt$idf_file) ) {
   
   for (ad in allowed_dups){
     if ( sum(tolower(idf[,1]) == ad) > 1 ) {
-      print(paste0("IDF: Multiple '", ad,"' entries"))
       addWarning("IDF: Multiple '", ad,"' entries")
     }
   }
@@ -411,7 +422,6 @@ if ( !is.null(opt$idf_file) ) {
     perror("SDRF file in IDF (",idf["sdrf file",1],") differs from given sdrf file name ",basename(opt$sdrf_file))
     q(status=1)
   }
-  cat("IDF:",paste(rownames(idf),collapse=","),"\n")    
   
   ##expectedclusters
   ##
@@ -535,7 +545,7 @@ if ( !is.null(opt$species) ) {
   sdrf <- sdrf[sdrf$organism == opt$species, ]
 }
 
-pinfo("Species: ",paste(unique(sdrf$organism)),"\n")
+print.info("Species: ",paste(unique(sdrf$organism)),"\n")
 
 ## SDRF-wide single-cell checks. This can result in filtering out rows, so do it
 ## early. In the process we also work out what fastq files are required
@@ -554,7 +564,7 @@ if ( opt$is_sc ) {
     ## Discard cells from analysis that are low quality
     ## OK, OK filtered or not OK
     
-    pinfo("Discarding ",single.cell.quality.counts["not ok"]," runs/cells")
+    print.info("Discarding ",single.cell.quality.counts["not ok"]," runs/cells")
     sdrf <- sdrf[getSDRFCol(sc.quality.col, sdrf) != 'not ok', ]
   }
   
@@ -587,7 +597,7 @@ if ( opt$is_sc ) {
   # Ignore single-cell identifier for droplet-only experiments
   
   if (all(protocols %in% sc.droplet.protocols) && sc.identifier.col %in% factors) {
-    addWarning("You have supplied 'single cell identifier' for an exlusively droplet-based experiment. This column is meaningless in this context and will be ignored")
+    addWarning("You have supplied 'single cell identifier' for an exclusively droplet-based experiment. This column is meaningless in this context and will be ignored")
     factors <- factors[factors != sc.identifier.col]
     sdrf <- sdrf[, colnames(sdrf) != sc.identifier.col]
   }
@@ -608,10 +618,10 @@ if ( opt$is_sc ) {
   # Drop-seq: read 1 = cell + UMI barcodes, read 2 = cDNA
   
   sc.required.fastq.fields = list(
-    '10xv1' = c('read2 file', 'read1 file'),    
-    '10xv1a' = c('read2 file', 'read1 file', 'index1 file'),         
-    '10xv1i' = c('read2 file', 'read1 file', 'index1 file'),
-    '10xv2' = c('read2 file', 'read1 file'),
+    '10xv1' = c('read1 file', 'read2 file'),    
+    '10xv1a' = c('read1 file', 'read2 file', 'index1 file'),         
+    '10xv1i' = c('read1 file', 'read2 file', 'index1 file'),
+    '10xv2' = c('read1 file', 'read2 file'),
     'drop-seq' = c('read1 file', 'read2 file'), 
     "smart-seq2" = 'fastq uri',
     "smarter" = 'fastq uri',
@@ -757,27 +767,6 @@ run.fastq.files <- lapply(unique(sdrf$run), function(run){
 })
 names(run.fastq.files) <- unique(sdrf$run)
 
-## We're done parseing the SDRF, print some information on its content
-
-pinfo("Printing SDRF summary info")
-cat("Columns: ",ncol(sdrf),"\n")
-cat("Entries: ",nrow(sdrf),"\n")
-pinfo("Columns found in SDRF:")
-cat(paste(colnames(sdrf),collapse=","),"\n")
-
-## print the values
-pinfo("Most frequent values per column...")
-for (col in tolower(c(expected.cols,expected.comment.cols,expected.factor.cols,expected.characteristic.cols)) ) {
-  # ignore spaces
-  col <- normalize.cols(col,FALSE)
-  tt <- table(sdrf[,col])
-  if (length(tt)==nrow(sdrf) ) {
-    pinfo(col,": single value per row")
-  } else {
-    pinfo(col,": ",length(tt)," unique values")
-  }
-}
-
 ################################################################################
 # We'll be making a config per species, and these sub-experiments will then we
 # analysed separately. So checks that with an experimental context (presence of
@@ -813,7 +802,7 @@ for (species in names(sdrf.by.species)){
   ## non-empty values of a single type.
   
   if ( colsInSDRF('spike_in', species.sdrf) ) {
-    pinfo("Found 'spike in' column")
+    print.info("Found 'spike in' column")
     spikein <- unique(getSDRFCol('spike_in', species.sdrf))
     if ( length(spikein) > 1 ) {
       perror("SDRF error: Expected one or no spike ins (found ",length(spikein),").")
@@ -861,8 +850,7 @@ for (species in names(sdrf.by.species)){
     runs <- length(unique(getSDRFCol('run', species.sdrf)))
     has.techrep.from.samples <- sum(samples != runs) > 0
     if ( has.techrep.from.samples != properties$has.techrep  ) {
-      pinfo("Technical replicates: SDRF column ", techrep.col, ' ', properties$has.techrep," vs ena_sample ", has.techrep.from.samples)
-      addWarning("Technical replicate group inconsistent with ena_sample")
+      addWarning(paste("Technical replicate group from", techrep.col, paste0('(',properties$has.techrep,')'), " inconsistent with ena_sample", paste0('(',has.techrep.from.samples,')')))
     }
   }
   
@@ -944,7 +932,7 @@ configs <- lapply(names(sdrf.by.species), function(species){
     # Guess at a central K when not provided
     
     if ( opt$nc < 2 ) {
-      opt$nc <- round(log2(nrow(layout)))
+      opt$nc <- round(log2(nrow(species.layout)))
     }
     
     num.min.c <- max(round(opt$nc - opt$nc_window/2,0),2)
@@ -961,7 +949,7 @@ configs <- lapply(names(sdrf.by.species), function(species){
   
   # Get the combined .info file content of each run
   
-  run.info <- unlist(lapply(species.layout$run, getRunInfo ))
+  run.info <- unlist(lapply(species.layout$run, function(x) getRunInfo(x, species.layout) ))
   if (! is.null(run.info)){
     info.conf <- run.info
   }
@@ -991,7 +979,7 @@ configs <- lapply(names(sdrf.by.species), function(species){
   metadata <- NULL
   
   sdfcols2save2tsv <- unique(c(
-    factor.cols,
+    factors,
     idf.factors,
     idf.attrs,
     techrep.col
@@ -1008,12 +996,44 @@ configs <- lapply(names(sdrf.by.species), function(species){
 names(configs) <- names(sdrf.by.species)
 
 
-if ( length(confs)==0 ) {
+if ( length(configs)==0 ) {
   perror("Unable to create configuration file, see above errors")
   q(status=1)
 }
 
 ## Write final outputs
+
+cat("\n\n")
+pinfo('### SDRF checks are done. Summary and warning printed below')
+cat("\n")
+
+## We're done parseing the SDRF, print some information on its content
+
+cat("\n")
+pinfo("### Printing SDRF summary info")
+cat("Columns: ",ncol(sdrf),"\n")
+cat("Entries: ",nrow(sdrf),"\n")
+pinfo("Columns found in SDRF:")
+cat(paste(colnames(sdrf),collapse=","),"\n")
+
+## print the values
+pinfo("Most frequent values per column...")
+for (col in tolower(c(expected.cols,expected.comment.cols,expected.factor.cols,expected.characteristic.cols)) ) {
+  # ignore spaces
+  col <- normalize.cols(col,FALSE)
+  tt <- table(sdrf[,col])
+  if (length(tt)==nrow(sdrf) ) {
+    pinfo(col,": single value per row")
+  } else {
+    pinfo(col,": ",length(tt)," unique values")
+  }
+}
+
+cat("\n")
+printAllWarnings()
+
+cat("\n")
+pinfo("### Outputs:")
 
 for (species in names(configs)){
   
@@ -1042,6 +1062,6 @@ for (species in names(configs)){
   pinfo("Created ", conf.file)
 }
 
-printAllWarnings()
+cat("\n")
 pinfo("All done")
 q(status=0)

@@ -495,9 +495,15 @@ fi
 
 set +e
 
+# Prepare the sdrf2 conf command
+
+SDRF2CONF_COMMAND="irap_sdrf2conf --name $ID --sdrf $SDRF_FILE_FP --idf $IDF_FILE_FP --out_conf $CONF_FILE_PREF --species=$SPECIES --species_conf $SPECIES_CONF_DIR/$SPECIES.conf --data_dir=$DATA_DIR --raw_dir=$SPECIES/$ID/fastq $sc_params $expected_clusters_params --sc --atlas $extra_params --atlas"
+
 # quickly validate the sdrf before continuing
 set -e
-irap_sdrf2conf --name $ID --sdrf $SDRF_FILE_FP --idf $IDF_FILE_FP --out_conf $CONF_FILE_PREF --species=$SPECIES --species_conf $SPECIES_CONF_DIR/$SPECIES.conf --data_dir=$DATA_DIR --raw_dir=$SPECIES/$ID/fastq $sc_params $expected_clusters_params -c --atlas
+
+$SDRF2CONF_COMMAND --check_only
+#irap_sdrf2conf --check_only --name $ID --sdrf $SDRF_FILE_FP --idf $IDF_FILE_FP --out_conf $CONF_FILE_PREF --species=$SPECIES --species_conf $SPECIES_CONF_DIR/$SPECIES.conf --data_dir=$DATA_DIR --raw_dir=$SPECIES/$ID/fastq $sc_params $expected_clusters_params -c --atlas
 set +e
 
 ################################################
@@ -589,8 +595,10 @@ echo "$FASTQ_FILES" | while read -r l; do
     done
 
     info_file=${fn}.info
-    if ( ! -e $info_file );then 
+    if [ ! -e $info_file ];then
         irap_fastq_info files="$localFiles"
+    else
+        echo "Skipped generation of $info_file"
     fi
 done
 popd 2>/dev/null
@@ -612,7 +620,6 @@ if [ -e $CONF_FILE_PREF.conf ]; then
     mv $CONF_FILE_PREF.* $DEST_DIR
 fi
 
-echo "Files placed in $DEST_DIR"
 if [ $batch_number == 0 ]; then
     rm -rf $TOP_FOLDER
 fi
