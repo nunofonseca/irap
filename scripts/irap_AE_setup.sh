@@ -283,6 +283,9 @@ fi
 set +e
 set -o pipefail
 # folder where previously downloaded data may be found
+
+echo
+echo "### Input parameters:"
 pinfo "root_dir=$ROOT_DIR"
 pinfo "data_dir=$DATA_DIR"
 pinfo "protocol=$PROTOCOL"
@@ -370,7 +373,7 @@ CONF_FILE_PREF=$TOP_FOLDER/$ID
 CONF_FILE=$CONF_FILE_PREF.conf
 create_dir $TOP_FOLDER
 create_dir $SPECIES_CONF_DIR
-pushd $TOP_FOLDER 2>/dev/null
+pushd $TOP_FOLDER >/dev/null
 SPECIES=`get_species $SDRF_FILE_FP|tr ' ' '_'|tr 'A-Z' 'a-z'`
 
 pinfo species=$SPECIES
@@ -471,46 +474,25 @@ if [ $habemus_batches != 0 ]; then
     pinfo "CONF_FILE=$CONF_FILE"
     pinfo "SDRF_FILE=$SDRF_FILE_FP"
 fi
-
-# Use IDF to determine single-cell status and expected cluster number
-
-if [ $skip_idf != "y" ]; then
-    pinfo "Processing IDF..."
-    set +e
-    is_single_cell=$(grep AEExperimentType $IDF_FILE_FP|grep -c "single cells")
-    if [ $is_single_cell == 1 ]; then
-        pinfo "single cell RNA-seq"
-        sc_params="--sop atlas_sc --sc"
-        irap_cmd=irap_sc
-    else
-        ## assume, by default, that is bulk RNA-seq
-        pinfo "bulk RNA-seq"
-        sc_params=
-    fi
-    pinfo "Processing IDF...done"
-    set -e
-fi
+echo
 
 # Check for variables in the SDRF
 
 set +e
 
 # Prepare the sdrf2 conf command
-
 SDRF2CONF_COMMAND="irap_sdrf2conf --name $ID --sdrf $SDRF_FILE_FP --idf $IDF_FILE_FP --out_conf $CONF_FILE_PREF --species=$SPECIES --species_conf $SPECIES_CONF_DIR/$SPECIES.conf --data_dir=$DATA_DIR --raw_dir=$SPECIES/$ID/fastq $sc_params $expected_clusters_params --sc --atlas $extra_params --atlas"
 
-# quickly validate the sdrf before continuing
+# Run the sdrf2conf command to quickly validate the sdrf before continuing
 set -e
-
 $SDRF2CONF_COMMAND --check_only
-#irap_sdrf2conf --check_only --name $ID --sdrf $SDRF_FILE_FP --idf $IDF_FILE_FP --out_conf $CONF_FILE_PREF --species=$SPECIES --species_conf $SPECIES_CONF_DIR/$SPECIES.conf --data_dir=$DATA_DIR --raw_dir=$SPECIES/$ID/fastq $sc_params $expected_clusters_params -c --atlas
 set +e
 
 ################################################
 # create folders
 FASTQ_FOLDER=$DATA_DIR/raw_data/$SPECIES/$ID/fastq
 create_dir $FASTQ_FOLDER
-pushd $FASTQ_FOLDER
+pushd $FASTQ_FOLDER >/dev/null
 
 ################################################
 # Download fastq files
@@ -519,7 +501,6 @@ pushd $FASTQ_FOLDER
 FTP_DIR_PREF=
 
 ALT_NAME_COL=`get_column $SDRF_FILE_FP "[SUBMITTED_FILE_NAME]" ''`
-echo "SUBMITTED_FILE_NAME=$ALT_NAME_COL"
 # files to download
 FASTQ_COL=
 FASTQ_COL=`get_column $SDRF_FILE_FP "[FASTQ_URI]" ''`
@@ -601,16 +582,17 @@ echo "$FASTQ_FILES" | while read -r l; do
         echo "Skipped generation of $info_file"
     fi
 done
-popd 2>/dev/null
+popd >/dev/null
 
 extra_params=
 if [ $distribute_by_subfolders == 1 ]; then
     extra_params=--subfolder
 fi
-echo irap_sdrf2conf --name $ID --sdrf $SDRF_FILE_FP --idf $IDF_FILE_FP --out_conf $CONF_FILE_PREF  --species=$SPECIES --species_conf $SPECIES_CONF_DIR/$SPECIES.conf --data_dir=$DATA_DIR --raw_dir=$SPECIES/$ID/fastq --sop atlas_sc $sc_params $expected_clusters_params $extra_params --atlas
-
 set -e
-irap_sdrf2conf --name $ID --sdrf $SDRF_FILE_FP --idf $IDF_FILE_FP --out_conf $CONF_FILE_PREF --species=$SPECIES --species_conf $SPECIES_CONF_DIR/$SPECIES.conf --data_dir=$DATA_DIR --raw_dir=$SPECIES/$ID/fastq $sc_params $expected_clusters_params --sc --atlas $extra_params --atlas
+
+
+# Run the sdrf2conf file for read
+$SDRF2CONF_COMMAND
 
 ## Move to the destination dir
 

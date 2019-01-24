@@ -23,7 +23,6 @@
 ################################################################################
 # Initialisation
 ################################################################################
-
 suppressPackageStartupMessages(library("optparse"))
 
 IRAP.DIR <- Sys.getenv(c("IRAP_DIR"))
@@ -69,12 +68,6 @@ mandatory <- c("sdrf_file","out_conf","name","species", "species_conf", "idf_fil
 
 opt <- myParseArgs(usage = usage, option_list=option_list,filenames.exist=filenames,multiple.options=list(),mandatory=mandatory)
 
-# Do some introspection on arguments
-
-for ( n in names(opt) ) {
-  cat(paste0(n,"=",opt[[n]]))
-}
-
 pdebug.enabled <- opt$debug
 
 ################################################################################
@@ -92,7 +85,7 @@ addWarning <- function(...) {
 printAllWarnings <- function() {
     n <- length(warnings.lst)
     if ( n > 0 ) return
-    pinfo('### ', n," warnings. Unique entries:")
+    pinfo(n," warnings. Unique entries:")
     prints <- sapply(unique(warnings.lst),pwarning)
 }
 
@@ -215,7 +208,7 @@ fastqFileExists <- function(filenames, topdir, subfolders = F){
 # Check if a method is a droplet protocol
 
 is.droplet.protocol <- function(x){
-  opt$is_sc && tolower(x) %in% tolower(sc.droplet.protocols)
+  is.singlecell && tolower(x) %in% tolower(sc.droplet.protocols)
 }
 
 # Get the contents of a .info file for a run, if available
@@ -281,12 +274,29 @@ getRunInfo <- function(run, layout){
 }
 
 ################################################################################
-# First round SDRF field checks: before we know about field content 
+# Basic initalisation 
 ################################################################################
 
-if (opt$is_sc) {
-    print.info("Single cell experiment")
-} 
+pinfo(">>> Commencing SDRF validation")
+
+# Do some introspection on arguments
+
+print.info("### Argument values")
+
+for ( n in names(opt) ) {
+  print.info(paste0(n,"=",opt[[n]]))
+}
+
+# Set some variable names we'll be using a lot
+
+techrep.col <- 'technical replicate group'
+sc.identifier.col <- 'single cell identifier'
+sc.protocol.col <- 'library construction'
+is.singlecell <- FALSE
+
+################################################################################
+# First round SDRF field checks: before we know about field content 
+################################################################################
 
 # Load the SDRF
 
@@ -328,40 +338,6 @@ expected.characteristic.cols <- c()
 expected.factor.cols <- c()
 opt.cols <- c("ORGANISM","organism part","sex","spike in","molecule","technical replicate group","ENA_RUN","ENA_SAMPLE","Scan Name")
 layout.cols <- c("run", "library_layout", "ena_sample", "library_layout", "library_strand", "technical replicate group")
-
-# Single-cell specific.
-
-if( opt$is_sc ) {
-  
-  sc.opt.cols <- c("single cell quality","input molecule","end bias","single cell library method","read1 file","read2 file","index1 file", "index2 file","index3 file")
-  
-  supported.single.cell.protocols <- c("smart-seq2","smarter","smart-like","10xv2","10xv1","drop-seq","10xv1a")
-  sc.droplet.protocols <- c('10xv1', '10xv1a', '10xv1i', '10xv2', 'drop-seq')
-  
-  expected.cols <- append(expected.cols, c("Material Type","library_construction","single cell isolation"))
-  expected.comment.cols <- append(expected.comment.cols, c("LIBRARY_STRAND"))
-  opt.cols <- append(opt.cols,sc.opt.cols)
-}
-
-print.info("Checking presence of columns...")
-
-found <- colsInSDRF(expected.cols, sdrf, exit.on.error = TRUE)
-found <- colsInSDRF(expected.characteristic.cols,sdrf,characteristic.cols=TRUE, exit.on.error = TRUE)
-found <- colsInSDRF(expected.comment.cols,sdrf,comment.cols=TRUE, exit.on.error = TRUE)
-found <- colsInSDRF(expected.factor.cols,sdrf,factor.cols=TRUE, exit.on.error = TRUE)
-
-print.info("Checking the presence of columns... done.")
-
-# Set some variable names we'll be using a lot
-
-techrep.col <- 'technical replicate group'
-sc.identifier.col <- 'single cell identifier'
-sc.protocol.col <- 'library construction'
-
-# Now we've checked comments etc we can forget what sort of field these are and
-# regularise the column names
-
-colnames(sdrf) <- normalize.cols(tolower(colnames(sdrf)))
 
 ################################################################################
 # Load and check the IDF where provided, and cross-reference with the SDRF
@@ -437,7 +413,7 @@ if ( !is.null(opt$idf_file) ) {
   
   # Required fields for single-cell
   
-  if ( opt$is_sc ) {
+  if ( is.singlecell ) {
     expected.in.idf <- c("expectedclusters")
     names(expected.in.idf) <- c("EAExpectedClusters")
   }
@@ -479,7 +455,7 @@ if ( !is.null(opt$idf_file) ) {
     
     # Override argument if we find single-cell experiment type
     
-    opt$is_sc <- names(valid.exp.types)[tolower(valid.exp.types) == exp.type] == 'single_cell'
+    is.singlecell <- names(valid.exp.types)[tolower(valid.exp.types) == exp.type] == 'single_cell'
     
     ## - Experimental Factor Name (mandatory) exist in the SDRF
     
@@ -519,7 +495,7 @@ if ( !is.null(opt$idf_file) ) {
     idf.attrs <- sapply(attrs[attrs!=""],tolower)
     
     # Check for fields absent in the SDRF
-    not.present <- (! idf.attrs %in% colnames(sdrf))
+    not.present <- (! idf.attrs %in% normalize.cols(colnames(sdrf)))
     
     if (sum(not.present)) {
       perror("IDF error in EAAdditionalAttributes:",paste(idf.attrs[not.present],sep=",")," not found in SDRF")
@@ -527,6 +503,40 @@ if ( !is.null(opt$idf_file) ) {
     }
   }
 }
+
+# Having derived possible single-cell status from the IDF we can add
+# single-cell specific things to the checks.
+
+if( is.singlecell ) {
+ 
+  cat("\n")
+  pinfo("Single cell experiment found")
+ 
+  sc.opt.cols <- c("single cell quality","input molecule","end bias","single cell library method","read1 file","read2 file","index1 file", "index2 file","index3 file")
+  
+  supported.single.cell.protocols <- c("smart-seq2","smarter","smart-like","10xv2","10xv1","drop-seq","10xv1a")
+  sc.droplet.protocols <- c('10xv1', '10xv1a', '10xv1i', '10xv2', 'drop-seq')
+  
+  expected.cols <- append(expected.cols, c("Material Type","library_construction","single cell isolation"))
+  expected.comment.cols <- append(expected.comment.cols, c("LIBRARY_STRAND"))
+  opt.cols <- append(opt.cols,sc.opt.cols)
+}
+
+# Now do the checks
+
+print.info("Checking presence of columns...")
+
+found <- colsInSDRF(expected.cols, sdrf, exit.on.error = TRUE)
+found <- colsInSDRF(expected.characteristic.cols,sdrf,characteristic.cols=TRUE, exit.on.error = TRUE)
+found <- colsInSDRF(expected.comment.cols,sdrf,comment.cols=TRUE, exit.on.error = TRUE)
+found <- colsInSDRF(expected.factor.cols,sdrf,factor.cols=TRUE, exit.on.error = TRUE)
+
+print.info("Checking the presence of columns... done.")
+
+# Now we've checked comments etc we can forget what sort of field these are and
+# regularise the column names
+
+colnames(sdrf) <- normalize.cols(tolower(colnames(sdrf)))
 
 ################################################################################
 # Further SDRF checks now we know the right fields are there and we can look at
@@ -550,7 +560,7 @@ print.info("Species: ",paste(unique(sdrf$organism)),"\n")
 ## SDRF-wide single-cell checks. This can result in filtering out rows, so do it
 ## early. In the process we also work out what fastq files are required
 
-if ( opt$is_sc ) {
+if ( is.singlecell ) {
   
   ## single cell quality
   
@@ -834,7 +844,7 @@ for (species in names(sdrf.by.species)){
       # technical replication. But since droplet protocols have multiple cells per
       # run we'll give these entries the benefit of the doubt.
       
-      if (opt$is_sc && all(is.droplet.protocol(unique(getSDRFCol('library construction', species.sdrf))))){
+      if (is.singlecell && all(is.droplet.protocol(unique(getSDRFCol('library construction', species.sdrf))))){
         properties$has.techrep <- TRUE
       }
     }else{
@@ -854,7 +864,7 @@ for (species in names(sdrf.by.species)){
     }
   }
   
-  if (opt$is_sc){
+  if (is.singlecell){
     
     # Need a single protocol
     
@@ -870,9 +880,11 @@ for (species in names(sdrf.by.species)){
 
 # With all checks done, we can stop if no further output is required
 
+pinfo("SDRF/IDF looks OK!")    
+
 if ( opt$check_only ) {
   printAllWarnings()
-  pinfo("SDRF/IDF looks OK!")    
+  pinfo("<<< All done: SDRF validation complete, exiting before config creation")
   q(status=0)
 }
 
@@ -923,7 +935,7 @@ configs <- lapply(names(sdrf.by.species), function(species){
   sc.prot.conf = c()
   sc.clusters.conf = c()
   
-  if (opt$is_sc){
+  if (is.singlecell){
     sc.prot.conf = paste0("sc_protocol=", getSDRFCol(sc.protocol.col, species.sdrf)[1])
     
     ## Decide what range of K values to try. Use a window around the provided
@@ -1003,14 +1015,14 @@ if ( length(configs)==0 ) {
 
 ## Write final outputs
 
-cat("\n\n")
+cat("\n################################################################################\n")
 pinfo('### SDRF checks are done. Summary and warning printed below')
-cat("\n")
+cat("################################################################################\n")
 
 ## We're done parseing the SDRF, print some information on its content
 
 cat("\n")
-pinfo("### Printing SDRF summary info")
+pinfo("### SDRF summary info\n")
 cat("Columns: ",ncol(sdrf),"\n")
 cat("Entries: ",nrow(sdrf),"\n")
 pinfo("Columns found in SDRF:")
@@ -1030,10 +1042,11 @@ for (col in tolower(c(expected.cols,expected.comment.cols,expected.factor.cols,e
 }
 
 cat("\n")
+pinfo("### Warnings\n")
 printAllWarnings()
 
 cat("\n")
-pinfo("### Outputs:")
+pinfo("### Outputs\n")
 
 for (species in names(configs)){
   
@@ -1063,5 +1076,5 @@ for (species in names(configs)){
 }
 
 cat("\n")
-pinfo("All done")
+pinfo("<<< All done: SDRF validation complete")
 q(status=0)
