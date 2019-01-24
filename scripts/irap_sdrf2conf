@@ -44,22 +44,22 @@ usage <- "irap_sdrf2conf --name exp_name --species species --sdrf file --out_con
 filenames <- c("sdrf_file","idf_file")
 
 option_list <- list(
-    make_option(c("-n", "--name"), type="character", dest="name", default=NULL, help="(short) name of the experiment (no spaces)"),
-    make_option(c("--species"), type="character", dest="species", default=NULL, help="Species name."),
-    make_option(c("--species_conf"), type="character", dest="species_conf", default=NULL, help="iRAP species config file."),
-    make_option(c("--data_dir"), type="character", dest="data_dir", default=".", help="iRAP's toplevel data directory"),
-    make_option(c("--raw_dir"), type="character", dest="raw_dir", default=".", help="fastq directory"),
-    make_option(c("--sop"), type="character", dest="sop", default=NULL, help="iRAP's toplevel data directory"),
-    make_option(c("--nc"), type="numeric", dest="nc", default=0, help="estimated number of clusters [default %default]"),
-    make_option(c("--nc_window"), type="numeric", dest="nc_window", default=10, help="Clusters window [default %default]"),  
-    make_option(c("-s", "--sdrf"), type="character", dest="sdrf_file", default=NULL, help="SDRF file name"),
-    make_option(c("-i", "--idf"), type="character", dest="idf_file", default=NULL, help="IDF file name"),
-    make_option(c("--sc"), action="store_true",default=FALSE,dest="is_sc",help="Single cell experiment?. Default is FALSE."),
-    make_option(c("-c","--check_only"),action="store_true",dest="check_only",default=FALSE,help="Checks the sdrf/idf but skips the generation of the configuration file."),
-    make_option(c("-v","--verbose"),action="store_true",dest="verbose",default=FALSE,help="Produce verbose output."),
-    make_option(c("--atlas"),action="store_true",dest="atlas_mode",default=FALSE,help="Enable more stringent checks for the sdrf/idf files (for ExpressionAtlas)"),
-    make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
-    make_option(c("--subfolders"),action="store_true",dest="fastq.splited.by.subfolders",default=FALSE,help="Are the files distributed across subfolders"),
+  make_option(c("-n", "--name"), type="character", dest="name", default=NULL, help="(short) name of the experiment (no spaces)"),
+  make_option(c("--species"), type="character", dest="species", default=NULL, help="Species name."),
+  make_option(c("--species_conf"), type="character", dest="species_conf", default=NULL, help="iRAP species config file."),
+  make_option(c("--data_dir"), type="character", dest="data_dir", default=".", help="iRAP's toplevel data directory"),
+  make_option(c("--raw_dir"), type="character", dest="raw_dir", default=".", help="fastq directory"),
+  make_option(c("--sop"), type="character", dest="sop", default=NULL, help="iRAP's toplevel data directory"),
+  make_option(c("--nc"), type="numeric", dest="nc", default=0, help="estimated number of clusters [default %default]"),
+  make_option(c("--nc_window"), type="numeric", dest="nc_window", default=10, help="Clusters window [default %default]"),  
+  make_option(c("-s", "--sdrf"), type="character", dest="sdrf_file", default=NULL, help="SDRF file name"),
+  make_option(c("-i", "--idf"), type="character", dest="idf_file", default=NULL, help="IDF file name"),
+  make_option(c("--sc"), action="store_true",default=FALSE,dest="is_sc",help="Single cell experiment?. Default is FALSE."),
+  make_option(c("-c","--check_only"),action="store_true",dest="check_only",default=FALSE,help="Checks the sdrf/idf but skips the generation of the configuration file."),
+  make_option(c("-v","--verbose"),action="store_true",dest="verbose",default=FALSE,help="Produce verbose output."),
+  make_option(c("--atlas"),action="store_true",dest="atlas_mode",default=FALSE,help="Enable more stringent checks for the sdrf/idf files (for ExpressionAtlas)"),
+  make_option(c("--debug"),action="store_true",dest="debug",default=FALSE,help="Debug mode"),
+  make_option(c("--subfolders"),action="store_true",dest="fastq.splited.by.subfolders",default=FALSE,help="Are the files distributed across subfolders"),
   make_option(c("-o", "--out_conf"), type="character",default=NULL,help="Filename of the new iRAP's configuration file.")
 )
 
@@ -78,75 +78,75 @@ pdebug.enabled <- opt$debug
 
 warnings.lst <- c()
 addWarning <- function(...) {
-    warnings.lst <- append(warnings.lst,paste0(...))
-    assign("warnings.lst",warnings.lst,envir = .GlobalEnv)
+  warnings.lst <- append(warnings.lst,paste0(...))
+  assign("warnings.lst",warnings.lst,envir = .GlobalEnv)
 }
 
 printAllWarnings <- function() {
-    n <- length(warnings.lst)
-    if ( n > 0 ) return
-    pinfo(n," warnings. Unique entries:")
-    prints <- sapply(unique(warnings.lst),pwarning)
+  n <- length(warnings.lst)
+  if ( n > 0 ) return
+  pinfo(n," warnings. Unique entries:")
+  prints <- sapply(unique(warnings.lst),pwarning)
 }
 
 # Print info only in the verbose case
 
 print.info <- function(...){
-    if (opt$verbose){
-        pinfo(paste(...))
-    }
+  if (opt$verbose){
+    pinfo(paste(...))
+  }
 }
 
 # Simplify column names
 
 normalize.cols <- function(vals,strip.brackets=TRUE) {
-    ## try to workaround typos & inconsistencies
-    x <- vals
-    if (strip.brackets)
-        x <- gsub("\\].*","",gsub(".*\\[","",x))
-    else {
-        x <- gsub(" +\\]","]",gsub(" +\\[","[",x))
-        x <- gsub("] +","]",x)
-    }
-    # a space or underscore seems to be the same thing
-    x <- gsub("_+"," ",x) ## no underscores
-    return(tolower(gsub(" +"," ",x))) ##lowercase and single space
+  ## try to workaround typos & inconsistencies
+  x <- vals
+  if (strip.brackets)
+    x <- gsub("\\].*","",gsub(".*\\[","",x))
+  else {
+    x <- gsub(" +\\]","]",gsub(" +\\[","[",x))
+    x <- gsub("] +","]",x)
+  }
+  # a space or underscore seems to be the same thing
+  x <- gsub("_+"," ",x) ## no underscores
+  return(tolower(gsub(" +"," ",x))) ##lowercase and single space
 }
 
 # Check for SDRF column presence
 
 colsInSDRF <- function(cols, sdrf, comment.cols=FALSE,  characteristic.cols=FALSE, factor.cols=FALSE, exit.on.error = FALSE) {
-
-    if ( length(cols) == 0 ) return()
-
-    sdrf.cols <- normalize.cols(colnames(sdrf),strip.brackets=FALSE)
-    to.check.cols <- normalize.cols(cols,strip.brackets=FALSE)
-    if (comment.cols) {
-        to.check.cols <- paste("comment[",to.check.cols,"]",sep="")
-    }
-    if (factor.cols) {
-        to.check.cols <- paste("factorvalue[",to.check.cols,"]",sep="")
-    }
-    if (characteristic.cols) {
-        to.check.cols <- paste("characteristics[",to.check.cols,"]",sep="")
-    }
-    if ( !comment.cols && ! characteristic.cols && !factor.cols ) {        
-        sdrf.cols <- normalize.cols(colnames(sdrf),strip.brackets=TRUE)
-        to.check.cols <- normalize.cols(cols,strip.brackets=TRUE)
-    }
-    found <- to.check.cols %in% sdrf.cols
+  
+  if ( length(cols) == 0 ) return()
+  
+  sdrf.cols <- normalize.cols(colnames(sdrf),strip.brackets=FALSE)
+  to.check.cols <- normalize.cols(cols,strip.brackets=FALSE)
+  if (comment.cols) {
+    to.check.cols <- paste("comment[",to.check.cols,"]",sep="")
+  }
+  if (factor.cols) {
+    to.check.cols <- paste("factorvalue[",to.check.cols,"]",sep="")
+  }
+  if (characteristic.cols) {
+    to.check.cols <- paste("characteristics[",to.check.cols,"]",sep="")
+  }
+  if ( !comment.cols && ! characteristic.cols && !factor.cols ) {        
+    sdrf.cols <- normalize.cols(colnames(sdrf),strip.brackets=TRUE)
+    to.check.cols <- normalize.cols(cols,strip.brackets=TRUE)
+  }
+  found <- to.check.cols %in% sdrf.cols
+  
+  if (any(! found) ) {
+    missed_cols <- cols[! found]
+    missing.error <- paste0("SDRF: Column(s) ", paste(missed_cols, collapse=","), " not found")
     
-    if (any(! found) ) {
-      missed_cols <- cols[! found]
-      missing.error <- paste0("SDRF: Column(s) ", paste(missed_cols, collapse=","), " not found")
-
-      if (exit.on.error) {
-            perror(missing.error)
-            q(status=1)
-        }
-        addWarning(missing.error)
+    if (exit.on.error) {
+      perror(missing.error)
+      q(status=1)
     }
-    return(found)
+    addWarning(missing.error)
+  }
+  return(found)
 }
 
 # Get an SDRF column, normalising the supplied field name
@@ -236,7 +236,7 @@ getRunInfo <- function(run, layout){
     # The code needs to be changed if that is not the case.
     
     rr <- system(paste0("cat ",info.file,"|sed -E 's/_L[0-9]+_R[A0-9]+_[0-9]+//'"),intern=TRUE)
-   
+    
     strand <- getSDRFCol('library strand', layout, drop = FALSE)[run,]
     
     if ( grepl("(first|second)",strand ) ) {
@@ -262,10 +262,10 @@ getRunInfo <- function(run, layout){
     
     # Record a technical replicate group
     if ( colsInSDRF(techrep.col, layout) ){
-        techrep.groups <- getSDRFCol(techrep.col, layout, drop = FALSE)
-        tr.numeric.groups <- as.numeric(as.factor(techrep.groups[,1]))
-
-        rr <- c(rr,paste0("",run,"_sample=", tr.numeric.groups[rownames(techrep.groups) == run]))
+      techrep.groups <- getSDRFCol(techrep.col, layout, drop = FALSE)
+      tr.numeric.groups <- as.numeric(as.factor(techrep.groups[,1]))
+      
+      rr <- c(rr,paste0("",run,"_sample=", tr.numeric.groups[rownames(techrep.groups) == run]))
     }
     rr
   }else{
@@ -509,9 +509,9 @@ if ( !is.null(opt$idf_file) ) {
 # single-cell specific things to the checks.
 
 if( is.singlecell ) {
- 
+  
   pinfo("Single cell experiment found")
- 
+  
   sc.opt.cols <- c("single cell quality","input molecule","end bias","single cell library method","read1 file","read2 file","index1 file", "index2 file","index3 file")
   
   supported.single.cell.protocols <- c("smart-seq2","smarter","smart-like","10xv2","10xv1","drop-seq","10xv1a")
@@ -639,7 +639,7 @@ if ( is.singlecell ) {
   )
   
   row.required.fastq.fields <- sc.required.fastq.fields[match(protocols, tolower(names(sc.required.fastq.fields)))] 
-    
+  
   sc.optional.fastq.fields = list(
     '10xv1' = c('index1 file', 'index2 file'),    
     '10xv1a' = c('index2 file'),         
@@ -650,13 +650,13 @@ if ( is.singlecell ) {
     "smarter" = c(),
     "smart-like" = c()
   )
-
+  
   # Consider any of the optional file fields that occur in the SDRF
   
   row.optional.fastq.fields <- lapply(sc.optional.fastq.fields[match(protocols, tolower(names(sc.optional.fastq.fields)))], function(x) intersect(x, colnames(sdrf))) 
   
 }else{
-
+  
   # For bulk, just check rows for fastq_uri
   
   row.required.fastq.fields <- rep(list('fastq_uri'), nrow(sdrf))
@@ -740,13 +740,10 @@ row.files <- lapply(1:nrow(sdrf), function(row.no){
 
 ## Check that all specified files actually exist
 
-fastq.dir <- file.path(opt$data_dir,"raw_data", opt$raw_dir)
-rows.files.exist <- lapply(row.files, function(x) fastqFileExists(x, fastq.dir, subfolders=split.files.by.subfolders) )
-
-rows.with.missing.files <- which(unlist(lapply(rows.files.exist, function(x) any(! x))))
-
-if (length(rows.with.missing.files) > 0){
-  missing.row.files <- unlist(lapply(rows.with.missing.files, function(x) paste(paste0('Row ', x, ':'), paste(names(row.files[[x]])[ ! rows.files.exist[[x]]], collapse=','))))
+if ( ! opt$check_only ) {
+  
+  fastq.dir <- file.path(opt$data_dir,"raw_data", opt$raw_dir)
+  rows.files.exist <- lapply(row.files, function(x) fastqFileExists(x, fastq.dir, subfolders=split.files.by.subfolders) )
   
   first_missing <- missing.row.files[1:min(length(missing.row.files),10)]
   
@@ -832,7 +829,7 @@ for (species in names(sdrf.by.species)){
     n.techrep.groups <- length(unique(tr))
     
     is.empty <- tr == "" | is.na(tr) | tr == 'NA' | tr == 'not applicable'
-
+    
     if ( (! all(is.empty)) && any(is.empty) ){
       perror("SDRF: Found ",sum(is.empty)," entries in technical replicate group without values where some values are set")
       q(status=1)
@@ -874,7 +871,7 @@ for (species in names(sdrf.by.species)){
       q(status=1)
     }
   }
- 
+  
   species.properties[[species]] <- properties 
 }
 
@@ -915,20 +912,20 @@ configs <- lapply(names(sdrf.by.species), function(species){
   ## Set up for technical replication (or not)
   
   techreps.conf=#technical_replicates="
-  
-  if(properties$has.techrep) {
     
-    # Subset the layout to get samples and replicate groups
-    techreps.runs <- getSDRFCol(c('run', techrep.col), species.layout, order.by = techrep.col)
-    
-    # Group runs/samples by techrep group
-    techreps.by.group <- aggregate( techreps.runs$run, by=list(techrep.group=techreps.runs[,2]), FUN=paste, collapse="," )
-    
-    techrep.run.groups <- paste(unlist(techreps.by.group$x),collapse=";",sep="")
-    techrep.group.labels <- paste(techreps.by.group$techrep.group,collapse=";",sep="")
-    
-    techreps.conf = paste(paste0("technical_replicates=", techrep.run.groups), paste0("technical_replicates_labels=",techrep.group.labels), sep = "\n")  
-  }
+    if(properties$has.techrep) {
+      
+      # Subset the layout to get samples and replicate groups
+      techreps.runs <- getSDRFCol(c('run', techrep.col), species.layout, order.by = techrep.col)
+      
+      # Group runs/samples by techrep group
+      techreps.by.group <- aggregate( techreps.runs$run, by=list(techrep.group=techreps.runs[,2]), FUN=paste, collapse="," )
+      
+      techrep.run.groups <- paste(unlist(techreps.by.group$x),collapse=";",sep="")
+      techrep.group.labels <- paste(techreps.by.group$techrep.group,collapse=";",sep="")
+      
+      techreps.conf = paste(paste0("technical_replicates=", techrep.run.groups), paste0("technical_replicates_labels=",techrep.group.labels), sep = "\n")  
+    }
   
   # SC prototol
   
