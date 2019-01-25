@@ -738,17 +738,24 @@ row.files <- lapply(1:nrow(sdrf), function(row.no){
   }
 })
 
-## Check that all specified files actually exist
+## Provided we're not just checking file validity, check that all specified
+## files actually exist
 
 if ( ! opt$check_only ) {
   
   fastq.dir <- file.path(opt$data_dir,"raw_data", opt$raw_dir)
   rows.files.exist <- lapply(row.files, function(x) fastqFileExists(x, fastq.dir, subfolders=split.files.by.subfolders) )
   
-  first_missing <- missing.row.files[1:min(length(missing.row.files),10)]
+  rows.with.missing.files <- which(unlist(lapply(rows.files.exist, function(x) any(! x))))
   
-  perror("SDRF: some rows have missing files. Up to first 10 examples: \n", paste(first_missing, collapse = '\n'))
-  q(status=1)
+  if (length(rows.with.missing.files) > 0){
+    missing.row.files <- unlist(lapply(rows.with.missing.files, function(x) paste(paste0('Row ', x, ':'), paste(names(row.files[[x]])[ ! rows.files.exist[[x]]], collapse=','))))
+    
+    first_missing <- missing.row.files[1:min(length(missing.row.files),10)]
+    
+    perror("SDRF: some rows have missing files. Up to first 10 examples: \n", paste(first_missing, collapse = '\n'))
+    q(status=1)
+  }
 }
 
 ## Check there are the required number of rows (and therefore files) for
