@@ -216,13 +216,37 @@ function remote_to_local {
     local distribute_by_subfolders=$2
 
     fn=$(basename $file)
-    
+    dest_dir="."   
+ 
     if [ "$distribute_by_subfolders" -eq 1 ]; then
         ## avoid relying on the download path since not all files come from ENA
         dest_dir=$(get_lib_folder $file)
         mkdir -p $dest_dir
     fi
     echo $dest_dir/$fn
+}
+
+# Given a set of fastq files, run irap_fastq_info. A single line is either a
+# single-ended library or a droplet run, in which case all files are on the
+# same line. irap_fastq_info decides which file to use for the info file name,
+# but we can just check for them all
+
+function run_irap_fastq_info {
+    local fq_files=$1
+    local local_files=
+    local delim=''
+   
+    for fqfile in $fq_files; do
+        local_fqfile=$(remote_to_local $fqfile $distribute_by_subfolders)
+        if [ -e "${local_fqfile}.info" ]; then
+            return 2
+        fi
+        local_files="$local_files$delim$local_fqfile"
+        delim=' '
+    done
+
+    echo irap_fastq_info files="$local_files"
+    fq_info=$(irap_fastq_info files="$local_files")
 }
 
 
@@ -528,16 +552,18 @@ if [ $skip_file_checking == 1 ]; then
 else
     dl_fun=DOWNLOAD_PUBLIC
     dest_dir=.
-    pinfo Downloading $N_FQ fastq files
+    pinfo "Downloading $N_FQ fastq files (where necessary)"
 
 
     # Flatten the list possibly multiple files per row (by not quoting
     # FASTQ_FILES) and download
+
+    skipped_downloads=0
     
     for file in $FASTQ_FILES; do
 	    fn=$(remote_to_local $file $distribute_by_subfolders)
         if ( ( [ -e $fn ] || [ -h $fn ] ) && [ $USE_CACHE -eq 1 ] ) || ( [ $DEBUG -eq 1 ] ); then
-            pinfo "skipped downloading $fn"
+            skipped_downloads=$((skipped_downloads+1))
         else
             set +e	
             let jobs_run=$(jobs -r | wc -l)
@@ -565,35 +591,80 @@ else
         perror "Failed to download."
         exit 1
     fi
-fi
-   
-echo
-echo "### FASTQ FILE checks:"
+    
+    pinfo "Skipped downloading $skipped_downloads files already present"
+    set +e
 
-# Now iterate over the files by set, and run irap
-echo "$FASTQ_FILES" | while read -r l; do
-    first_file=$(echo "$l" | awk '{print $1}')
-    fn=$(remote_to_local $first_file $distribute_by_subfolders)
+    # Now run irap_fastq_info over all runs. To do this we need to collect the
+    # files by run
 
-    localFiles=
-    for fqfile in $l; do
-        localFiles="$localFiles $(remote_to_local $fqfile $distribute_by_subfolders)"
+    echo
+    echo "### FASTQ FILE checks:"
+
+    FASTQ_COL=${FASTQ_COL//,/ }
+
+    FASTQ_AWK_COLS=''
+    for fac in $FASTQ_COL; do
+        if [ "$FASTQ_AWK_COLS" != '' ]; then
+            FASTQ_AWK_COLS="$FASTQ_AWK_COLS\" \""
+        fi
+        FASTQ_AWK_COLS="$FASTQ_AWK_COLS\$$fac"
     done
 
-    info_file=${fn}.info
-    if [ ! -e $info_file ];then
-        irap_fastq_info files="$localFiles"
-    else
-        echo "Skipped generation of $info_file"
+    # Derive the runs for each row
+
+    ENA_RUN_COL=$(get_column $SDRF_FILE_FP "[ENA_RUN]")
+    
+    if [ "$ENA_RUN_COL-" == "-" ]; then
+        ENA_RUN_COL=$(get_column $SDRF_FILE_FP "[RUN]" 1)
+        pinfo "RUN_COL: $ENA_RUN_COL"
     fi
-done
+
+    # Get a set of fastq files with corresponding run IDs
+
+    FASTQ_AWK_COLS="\$$ENA_RUN_COL\" \"$FASTQ_AWK_COLS"
+    FASTQ_FILES=$(awk -F'\t' "{if (NR!=1) print $FASTQ_AWK_COLS}" $SDRF_FILE_FP)
+
+    # Iterate over list
+
+    last_run=''
+    run_fastqs=''
+    line_count=0
+    total_lines=$(echo "$FASTQ_FILES" | wc -w)
+    skipped_info=0
+
+    while read -r l; do
+        line_count=$((line_count+1))
+        fq_run=$(echo "$l" | awk '{print $1}')
+        line_fq_files=$(echo "$l" | cut -d " " -f2-)
+
+        if [ "$fq_run" != "$last_run" ]; then
+            if [ "$last_run" != '' ]; then
+                run_irap_fastq_info "$run_fastqs"
+                if [ $? -eq 2 ]; then
+                    skipped_info=$((skipped_info+1))
+                fi
+                run_fastqs=''
+            fi
+        fi
+
+        run_fastqs="$run_fastqs $line_fq_files"
+        last_run=$fq_run
+    done <<< "$(echo "$FASTQ_FILES")"
+
+    run_irap_fastq_info "$run_fastqs"
+    if [ $? -eq 2 ]; then
+        skipped_info=$((skipped_info+1))
+    fi
+    pinfo "Skipped info file generation for $skipped_info runs for which results were already present"
+fi
+   
 popd >/dev/null
 
 extra_params=
 if [ $distribute_by_subfolders == 1 ]; then
     extra_params=--subfolder
 fi
-set -e
 
 
 # Run the sdrf2conf file for read
@@ -605,6 +676,7 @@ DEST_DIR=$CONF_DIR/$SPECIES/$ID
 mkdir -p $DEST_DIR   
 if [ -e $CONF_FILE_PREF.conf ]; then
     mv $CONF_FILE_PREF.* $DEST_DIR
+    pinfo "Config files moved to $DEST_DIR"
 fi
 
 if [ $batch_number == 0 ]; then

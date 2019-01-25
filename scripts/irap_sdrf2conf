@@ -493,7 +493,7 @@ if ( !is.null(opt$idf_file) ) {
     idf.attrs <- idf["additionalattributes",]
     
     # exclude "" and ignore case
-    idf.attrs <- sapply(attrs[attrs!=""],tolower)
+    idf.attrs <- sapply(idf.attrs[idf.attrs!=""],tolower)
     
     # Check for fields absent in the SDRF
     not.present <- (! idf.attrs %in% normalize.cols(colnames(sdrf)))
@@ -770,7 +770,17 @@ if(any(n.paired.run.files != 2)){
 ## Finally, collapse to files per run
 
 run.fastq.files <- lapply(unique(sdrf$run), function(run){
-  unlist(row.files[sdrf$run == run])
+  
+  # If there are multiple rows, then this is paired-end. Sort so that first
+  # read file comes first. Otherwise maintain ordering
+
+  fq.files <- unlist(row.files[sdrf$run == run])
+  
+  if ( length(which(sdrf$run == run)) > 1 ){
+    sort(fq.files)  
+  }else{
+    fq.files
+  }
 })
 names(run.fastq.files) <- unique(sdrf$run)
 
@@ -958,7 +968,10 @@ configs <- lapply(names(sdrf.by.species), function(species){
   
   # Get the combined .info file content of each run
   
+  pinfo("Deriving run information from .info files...")
   run.info <- unlist(lapply(species.layout$run, function(x) getRunInfo(x, species.layout) ))
+  pinfo("Run info retrieval done")  
+
   if (! is.null(run.info)){
     info.conf <- run.info
   }
