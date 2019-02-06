@@ -1079,7 +1079,7 @@ for (species in names(configs)){
   
   if ( ! is.null(metadata)){
     config <- c(config, paste0("extra_metadata=", basename(meta.file)))
-    write.tsv(meta.file, file=meta.file, header=TRUE)
+    write.tsv(metadata, file=meta.file, header=TRUE)
     pinfo("Created ", meta.file)
   }
   
