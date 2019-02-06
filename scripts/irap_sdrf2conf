@@ -840,6 +840,8 @@ for (species in names(sdrf.by.species)){
   ## if:
   ##   1) all values are empty ('' or NA) 
   ##   or 2) there is a single value
+    
+  nruns <- length(unique(getSDRFCol('run', species.sdrf)))
   
   if ( colsInSDRF(techrep.col, species.sdrf) ) {
     tr <- getSDRFCol(techrep.col, species.sdrf)
@@ -850,7 +852,7 @@ for (species in names(sdrf.by.species)){
     if ( (! all(is.empty)) && any(is.empty) ){
       perror("SDRF: Found ",sum(is.empty)," entries in technical replicate group without values where some values are set")
       q(status=1)
-    }else if(n.techrep.groups == 1 ||  n.techrep.groups == nrow(species.sdrf)){
+    }else if(n.techrep.groups == 1 ||  n.techrep.groups == nruns){
       
       # If the technica replicate field has been set, but the group numbers don't
       # indicate technical replication (i.e. every run has its own group, or
@@ -870,9 +872,8 @@ for (species in names(sdrf.by.species)){
   # replicates when we don't
   
   if ( colsInSDRF('ena_sample', species.sdrf) ) {
-    samples <- length(unique(getSDRFCol('ena_sample', species.sdrf)))
-    runs <- length(unique(getSDRFCol('run', species.sdrf)))
-    has.techrep.from.samples <- sum(samples != runs) > 0
+    nsamples <- length(unique(getSDRFCol('ena_sample', species.sdrf)))
+    has.techrep.from.samples <- nsamples != nruns
     if ( has.techrep.from.samples != properties$has.techrep  ) {
       addWarning(paste("Technical replicate group from", techrep.col, paste0('(',properties$has.techrep,')'), " inconsistent with ena_sample", paste0('(',has.techrep.from.samples,')')))
     }
