@@ -491,13 +491,13 @@ if ( !is.null(opt$idf_file) ) {
   
   if ( "additionalattributes" %in% rownames(idf) && idf["additionalattributes",1] != "" ) {
     idf.attrs <- idf["additionalattributes",]
-    
+
     # exclude "" and ignore case
-    idf.attrs <- sapply(idf.attrs[idf.attrs!=""],tolower)
-    
+    idf.attrs <- sapply(idf.attrs[which(idf.attrs != "" && ! is.na(idf.attrs))],tolower)
+
     # Check for fields absent in the SDRF
     not.present <- (! idf.attrs %in% normalize.cols(colnames(sdrf)))
-    
+
     if (sum(not.present)) {
       perror("IDF error in EAAdditionalAttributes:",paste(idf.attrs[not.present],sep=",")," not found in SDRF")
       q(status=1)
