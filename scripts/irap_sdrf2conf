@@ -711,7 +711,7 @@ if (any(! fastq.fields.in.sdrf)){
 
 row.files <- lapply(1:nrow(sdrf), function(row.no){
   req.fields <- row.required.fastq.fields[[row.no]]
-  structure(basename(as.character(sdrf[row.no, req.fields])), names = req.fields)
+  structure(basename(as.character(getSDRFCol(req.fields, sdrf, drop = FALSE)[row.no,])), names = req.fields)
 })
 
 ## Check that the required fields are populated
